@@ -3,4 +3,9 @@
 
 @theme {
   --font-sans: "Archivo", sans-serif;
+  --ui-primary: black;
+}
+
+.dark {
+  --ui-primary: white;
 }
