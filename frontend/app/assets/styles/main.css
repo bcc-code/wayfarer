@@ -3,6 +3,8 @@
 
 @theme {
   --font-sans: "Archivo", sans-serif;
+  --font-serif: 'Source Serif 4',serif;
+  --ui-radius: 0rem;
   --ui-primary: black;
 }
 
