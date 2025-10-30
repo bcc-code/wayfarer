@@ -8,10 +8,10 @@ defineProps<{
 const colorMode = useColorMode()
 
 const user = ref({
-  name: 'Benjamin Canac',
+  name: 'Sigve Hansen',
   avatar: {
-    src: 'https://github.com/benjamincanac.png',
-    alt: 'Benjamin Canac',
+    src: 'https://api.dicebear.com/9.x/thumbs/svg?seed=Sigve%20Hansen',
+    alt: 'Sigve Hansen',
   },
 })
 

@@ -25,6 +25,21 @@ const groups = computed(() => [
     items: links.flat(),
   },
 ])
+
+// Black and white theme
+onMounted(() => {
+  const styleElement = document.createElement('style')
+  styleElement.innerHTML = `
+    /* Admin theme */
+    :root {
+      --ui-primary: black;
+    }
+    .dark {
+      --ui-primary: white;
+    }
+  `
+  document.body.appendChild(styleElement)
+})
 </script>
 
 <template>
@@ -38,7 +53,7 @@ const groups = computed(() => [
       :ui="{ footer: 'lg:border-t lg:border-default' }"
     >
       <template #header>
-        <p class="font-serif text-xl ml-2">Wayfarer</p>
+        <p class="font-serif text-xl ml-2 text-primary">Wayfarer</p>
       </template>
 
       <template #default="{ collapsed }">
