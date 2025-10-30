@@ -13,7 +13,12 @@ const { data: projects, status, error } = useFetch('/api/projects')
     <ul class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       <template v-if="status == 'success'">
         <li v-for="project in projects" :key="project.id">
-          <NuxtLink :to="`/projects/${project.id}`">
+          <NuxtLink
+            :to="{
+              name: 'admin-projects-projectId',
+              params: { projectId: project.id },
+            }"
+          >
             <UCard
               class="aspect-video shadow"
               :style="{ '--accent': project.color }"

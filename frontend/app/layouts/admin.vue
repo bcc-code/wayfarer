@@ -8,12 +8,12 @@ const links = [
     {
       label: 'Home',
       icon: 'lucide:house',
-      to: '/',
+      to: '/admin',
     },
     {
       label: 'Projects',
       icon: 'lucide:layers',
-      to: '/projects',
+      to: '/admin/projects',
     },
   ],
 ] satisfies NavigationMenuItem[][]
@@ -38,7 +38,7 @@ const groups = computed(() => [
       :ui="{ footer: 'lg:border-t lg:border-default' }"
     >
       <template #header>
-        <NuxtLink to="/" class="font-serif text-xl ml-2">Wayfarer</NuxtLink>
+        <p class="font-serif text-xl ml-2">Wayfarer</p>
       </template>
 
       <template #default="{ collapsed }">
