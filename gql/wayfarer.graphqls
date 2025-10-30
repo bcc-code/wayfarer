@@ -1,0 +1,264 @@
+directive @goField(
+    forceResolver: Boolean
+    name: String
+) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+
+schema {
+    query: UserQueryRoot
+}
+
+type M2MQueryRoot {
+    user(id: ID!): User!
+    project(id: ID!): Project!
+    event(id: ID!): Event!
+    currentProject: Project!
+    currentEvent: Event!
+    team(id: ID!): Team!
+    superteam(id: ID!): SuperTeam!
+    achievement(id: ID!): Achievement!
+    challenges(ids: [ID!]!): [Challenge!]!
+}
+
+scalar HTML
+scalar DateTime
+
+type AgeRange {
+    min: Int!
+    max: Int!
+}
+
+type Article {
+    id: ID!
+    title: String!
+    author: String!
+    url: String!
+}
+
+type Track {
+    id: ID!
+    name: String!
+    description: String!
+    image: String!
+}
+
+interface Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String!
+    project: Project!
+    event: Event
+    url: String!
+    buttonText: String!
+    publishedAt: DateTime!
+    endTime: DateTime
+    userCompletedAt: DateTime
+}
+
+interface Achievement {
+    id: ID!
+    name: String!
+    description: String!
+    image: String!
+    project: Project!
+    event: Event
+    challenge: Challenge
+    achievedAt: DateTime
+    points: Int!
+    hidden: Boolean!
+}
+
+type SimpleAchievement implements Achievement {
+    id: ID!
+    name: String!
+    description: String!
+    image: String!
+    project: Project!
+    event: Event
+    challenge: Challenge
+    achievedAt: DateTime!
+    points: Int!
+    hidden: Boolean!
+}
+
+type ReadingAchievement implements Achievement {
+    id: ID!
+    name: String!
+    description: String!
+    image: String!
+    project: Project!
+    event: Event
+    challenge: Challenge
+    achievedAt: DateTime
+    articles: [Article!]!
+    userHasRead: [Article!]!
+    nextArticle: Article!
+    points: Int!
+    hidden: Boolean!
+}
+
+type ListeningAchievement implements Achievement {
+    id: ID!
+    name: String!
+    description: String!
+    image: String!
+    project: Project!
+    event: Event
+    challenge: Challenge
+    achievedAt: DateTime!
+    tracks: [Track!]!
+    userHasListened: [Track!]!
+    nextTrack: Track!
+    points: Int!
+    hidden: Boolean!
+}
+
+type StreakAchievement implements Achievement {
+    id: ID!
+    name: String!
+    description: String!
+    image: String!
+    project: Project!
+    event: Event
+    challenge: Challenge
+    achievedAt: DateTime!
+    neededStreak: Int!
+    currentStreak: Int!
+    points: Int!
+    hidden: Boolean!
+}
+
+type UserQueryRoot {
+    projects(ids: [ID!]!): [Project!]!
+    events(ids: [ID!]!): [Event!]!
+    currentProject: Project!
+    currentEvent: Event!
+    me: User!
+    challenges: [Challenge!]!
+}
+
+type User {
+    id: ID!
+    membersId: ID!
+    gender: Gender!
+    church: Church!
+    age: Int!
+    email: String!
+    name: String!
+    projects: [Project!]!
+    events: [Event!]!
+    teams: [Team!]!
+    superTeams: [SuperTeam!]!
+}
+
+type Church {
+    id: ID!
+    name: String!
+    country: String!
+    category: ChurchCategory!
+}
+
+enum Gender {
+    MALE
+    FEMALE
+}
+
+enum ChurchCategory {
+    S
+    L
+    XL
+}
+
+type Project {
+    id: ID!
+    name: String!
+    description: String!
+    challenges: [Challenge!]!
+    leaderboard(
+        type: LeaderboardType!
+        filter: LeaderboardFilter
+    ): [LeaderboardEntry!]!
+    events: [Event!]!
+    startDate: DateTime!
+    endDate: DateTime!
+    branding: Branding!
+    teams: [Team!]! # Maybe not accessible to normal users?
+    myTeam: Team!
+    achievements: [Achievement!]!
+}
+
+type Team {
+    id: ID!
+    name: String!
+    description: String!
+    members: [User!]!
+    leaderboard(
+        type: LeaderboardType!
+        filter: LeaderboardFilter
+    ): [LeaderboardEntry!]!
+    parentProject: Project!
+    superTeam: SuperTeam
+}
+
+type SuperTeam {
+    id: ID!
+    name: String!
+    description: String!
+    members: [User!]!
+    leaderboard(
+        type: LeaderboardType!
+        filter: LeaderboardFilter
+    ): [LeaderboardEntry!]!
+    parentProject: Project!
+    teams: [Team!]!
+}
+
+type LeaderboardFilter {
+    minScore: Int
+    maxScore: Int
+    churchId: ID
+    country: String
+    churchCategory: ChurchCategory
+    gender: Gender
+    ageRange: AgeRange
+    teamId: ID
+    superTeamId: ID
+}
+
+type Branding {
+    logo: String!
+    colors: Colors!
+}
+
+type Colors {
+    primary: String!
+    secondary: String!
+    tertiary: String!
+}
+
+type Event {
+    id: ID!
+    name: String!
+    description: String!
+    challenges: [Challenge!]!
+    leaderboard(
+        type: LeaderboardType!
+        filter: LeaderboardFilter
+    ): [LeaderboardEntry!]!
+    startDate: DateTime!
+    endDate: DateTime!
+    parentProject: Project!
+}
+
+enum LeaderboardType {
+    TOTAL
+    WEEKLY
+    MONTHLY
+}
+
+type LeaderboardEntry {
+    name: String!
+    score: Int!
+    description: String
+    image: String
+}
