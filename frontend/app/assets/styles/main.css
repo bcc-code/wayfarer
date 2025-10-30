@@ -5,9 +5,10 @@
   --font-sans: 'Archivo', sans-serif;
   --font-serif: 'Source Serif 4', serif;
   --ui-radius: 0.3rem;
-  --ui-primary: black;
 }
 
-.dark {
-  --ui-primary: white;
+html,
+body,
+#__nuxt {
+  height: 100%;
 }

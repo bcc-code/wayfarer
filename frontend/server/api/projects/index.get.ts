@@ -1,12 +1,4 @@
-type Project = {
-  id: string
-  name: string
-  description?: string
-  logo?: string
-  color?: string
-  startDate: string
-  endDate: string
-}
+import type { Project } from '#shared/types'
 
 export default defineEventHandler(async () => {
   return [
