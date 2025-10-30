@@ -1,61 +1,30 @@
 <script setup lang="ts">
-import type { NavigationMenuItem, } from '@nuxt/ui'
+import type { NavigationMenuItem } from '@nuxt/ui'
 
-const route = useRoute()
-const toast = useToast()
-
-const open = ref(false,)
+const open = ref(false)
 
 const links = [
   [
     {
       label: 'Home',
-      icon: 'i-lucide-house',
+      icon: 'lucide:house',
       to: '/',
+    },
+    {
+      label: 'Projects',
+      icon: 'lucide:layers',
+      to: '/projects',
     },
   ],
 ] satisfies NavigationMenuItem[][]
 
-const groups = computed(() => [{
-  id: 'links',
-  label: 'Go to',
-  items: links.flat(),
-}, {
-  id: 'code',
-  label: 'Code',
-  items: [{
-    id: 'source',
-    label: 'View page source',
-    icon: 'i-simple-icons-github',
-    to: `https://github.com/nuxt-ui-templates/dashboard/blob/main/app/pages${route.path === '/' ? '/index' : route.path}.vue`,
-    target: '_blank',
-  },],
-},],)
-
-onMounted(async () => {
-  const cookie = useCookie('cookie-consent',)
-  if (cookie.value === 'accepted') {
-    return
-  }
-
-  toast.add({
-    title: 'We use first-party cookies to enhance your experience on our website.',
-    duration: 0,
-    close: false,
-    actions: [{
-      label: 'Accept',
-      color: 'neutral',
-      variant: 'outline',
-      onClick: () => {
-        cookie.value = 'accepted'
-      },
-    }, {
-      label: 'Opt out',
-      color: 'neutral',
-      variant: 'ghost',
-    },],
-  },)
-},)
+const groups = computed(() => [
+  {
+    id: 'links',
+    label: 'Go to',
+    items: links.flat(),
+  },
+])
 </script>
 
 <template>
@@ -66,13 +35,13 @@ onMounted(async () => {
       collapsible
       resizable
       class="bg-elevated/25"
-      :ui="{ footer: 'lg:border-t lg:border-default', }"
+      :ui="{ footer: 'lg:border-t lg:border-default' }"
     >
       <template #header>
-        <strong class="font-serif text-xl">Wayfarer</strong>
+        <NuxtLink to="/" class="font-serif text-xl ml-2">Wayfarer</NuxtLink>
       </template>
 
-      <template #default="{ collapsed, }">
+      <template #default="{ collapsed }">
         <UDashboardSearchButton
           :collapsed="collapsed"
           class="bg-transparent ring-default"
@@ -95,7 +64,7 @@ onMounted(async () => {
         />
       </template>
 
-      <template #footer="{ collapsed, }">
+      <template #footer="{ collapsed }">
         <UserMenu :collapsed="collapsed" />
       </template>
     </UDashboardSidebar>
@@ -103,7 +72,5 @@ onMounted(async () => {
     <UDashboardSearch :groups="groups" />
 
     <slot />
-
-    <!-- <NotificationsSlideover /> -->
   </UDashboardGroup>
 </template>

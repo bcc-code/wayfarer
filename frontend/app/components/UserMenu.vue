@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DropdownMenuItem, } from '@nuxt/ui'
+import type { DropdownMenuItem } from '@nuxt/ui'
 
 defineProps<{
   collapsed?: boolean
@@ -13,56 +13,71 @@ const user = ref({
     src: 'https://github.com/benjamincanac.png',
     alt: 'Benjamin Canac',
   },
-},)
+})
 
-const items = computed<DropdownMenuItem[][]>(() => ([[{
-  type: 'label',
-  label: user.value.name,
-  avatar: user.value.avatar,
-},], [{
-  label: 'Appearance',
-  icon: 'i-lucide-sun-moon',
-  children: [{
-    label: 'Light',
-    icon: 'i-lucide-sun',
-    type: 'checkbox',
-    checked: colorMode.value === 'light',
-    onSelect(e: Event,) {
-      e.preventDefault()
+const items = computed<DropdownMenuItem[][]>(() => [
+  [
+    {
+      type: 'label',
+      label: user.value.name,
+      avatar: user.value.avatar,
+    },
+  ],
+  [
+    {
+      label: 'Appearance',
+      icon: 'lucide:sun-moon',
+      children: [
+        {
+          label: 'Light',
+          icon: 'lucide:sun',
+          type: 'checkbox',
+          checked: colorMode.value === 'light',
+          onSelect(e: Event) {
+            e.preventDefault()
 
-      colorMode.preference = 'light'
+            colorMode.preference = 'light'
+          },
+        },
+        {
+          label: 'Dark',
+          icon: 'lucide:moon',
+          type: 'checkbox',
+          checked: colorMode.value === 'dark',
+          onUpdateChecked(checked: boolean) {
+            if (checked) {
+              colorMode.preference = 'dark'
+            }
+          },
+          onSelect(e: Event) {
+            e.preventDefault()
+          },
+        },
+      ],
     },
-  }, {
-    label: 'Dark',
-    icon: 'i-lucide-moon',
-    type: 'checkbox',
-    checked: colorMode.value === 'dark',
-    onUpdateChecked(checked: boolean,) {
-      if (checked) {
-        colorMode.preference = 'dark'
-      }
+  ],
+  [
+    {
+      label: 'Log out',
+      icon: 'lucide:log-out',
     },
-    onSelect(e: Event,) {
-      e.preventDefault()
-    },
-  },],
-},], [{
-  label: 'Log out',
-  icon: 'i-lucide-log-out',
-},],]),)
+  ],
+])
 </script>
 
 <template>
   <UDropdownMenu
     :items="items"
-    :content="{ align: 'center', collisionPadding: 12, }"
-    :ui="{ content: collapsed ? 'w-48' : 'w-(--reka-dropdown-menu-trigger-width)', }"
+    :content="{ align: 'center', collisionPadding: 12 }"
+    :ui="{
+      content: collapsed ? 'w-48' : 'w-(--reka-dropdown-menu-trigger-width)',
+    }"
   >
     <UButton
       v-bind="{
         ...user,
         label: collapsed ? undefined : user?.name,
-        trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down',
+        trailingIcon: collapsed ? undefined : 'lucide:chevrons-up-down',
       }"
       color="neutral"
       variant="ghost"
@@ -74,7 +89,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       }"
     />
 
-    <template #chip-leading="{ item, }">
+    <template #chip-leading="{ item }">
       <div class="inline-flex items-center justify-center shrink-0 size-5">
         <span
           class="rounded-full ring ring-bg bg-(--chip-light) dark:bg-(--chip-dark) size-2"
