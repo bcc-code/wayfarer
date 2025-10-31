@@ -26,73 +26,98 @@ query AdminProjectsPage {
 `)
 
 const { data, error, fetching } = useAdminProjectsPageQuery()
+
+const currentProjects = computed(() => {
+  if (!data.value?.admin.projects) return []
+  return data.value.admin.projects.filter((project) =>
+    isWithinRange(new Date(), project.startDate, project.endDate),
+  )
+})
+
+const futureProjects = computed(() => {
+  if (!data.value?.admin.projects) return []
+  return data.value.admin.projects.filter((project) => {
+    const now = new Date()
+    const startDate = new Date(project.startDate)
+    return startDate > now
+  })
+})
+
+const pastProjects = computed(() => {
+  if (!data.value?.admin.projects) return []
+  return data.value.admin.projects.filter((project) => {
+    const now = new Date()
+    const endDate = new Date(project.endDate)
+    return (
+      endDate < now && !isWithinRange(now, project.startDate, project.endDate)
+    )
+  })
+})
 </script>
 
 <template>
   <UContainer>
     <h1 class="text-3xl my-8">Projects</h1>
 
-    <ul class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-      <template v-if="fetching">
+    <template v-if="fetching">
+      <ul class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         <USkeleton v-for="i in 3" :key="i" class="aspect-video" />
-      </template>
-      <template v-else-if="error">
-        <p class="text-error">Error: {{ error.message }}</p>
-      </template>
-      <template v-else-if="data">
-        <li v-for="project in data.admin.projects" :key="project.id">
-          <NuxtLink
-            :to="{
-              name: 'admin-projects-projectId',
-              params: { projectId: project.id },
-            }"
-          >
-            <UCard
-              class="aspect-video shadow"
-              :style="{ '--accent': project.branding.colors.primary }"
-              :ui="{
-                root: project.branding.colors.primary && 'ring-(--accent)/25',
-                body: [
-                  project.branding.colors.primary && 'bg-(--accent)/5',
-                  'h-full flex gap-2',
-                ],
+      </ul>
+    </template>
+    <template v-else-if="error">
+      <p class="text-error">Error: {{ error.message }}</p>
+    </template>
+    <template v-else-if="data">
+      <!-- Current Projects -->
+      <div v-if="currentProjects.length > 0" class="mb-8">
+        <h2 class="mb-4">Active Projects</h2>
+        <ul class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <li v-for="project in currentProjects" :key="project.id">
+            <NuxtLink
+              :to="{
+                name: 'admin-projects-projectId',
+                params: { projectId: project.id },
               }"
             >
-              <div class="grow flex flex-col">
-                <h3 class="font-semibold mb-2">
-                  {{ project.name }}
-                </h3>
-                <p v-if="project.description" class="text-sm text-muted mb-2">
-                  {{ project.description }}
-                </p>
-                <p class="text-xs font-medium text-muted mt-auto">
-                  {{ formatDateRange(project.startDate, project.endDate) }}
-                </p>
-              </div>
-              <div class="shrink-0 flex flex-col justify-between items-end">
-                <NuxtImg
-                  v-if="project.branding.logo"
-                  :src="project.branding.logo"
-                  height="32"
-                  width="32"
-                />
-                <UBadge
-                  v-if="
-                    isWithinRange(
-                      new Date(),
-                      project.startDate,
-                      project.endDate,
-                    )
-                  "
-                  variant="outline"
-                >
-                  Active
-                </UBadge>
-              </div>
-            </UCard>
-          </NuxtLink>
-        </li>
-      </template>
-    </ul>
+              <AdminProjectCard :project />
+            </NuxtLink>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Future Projects -->
+      <div v-if="futureProjects.length > 0" class="mb-8">
+        <h2 class="mb-4">Upcoming Projects</h2>
+        <ul class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <li v-for="project in futureProjects" :key="project.id">
+            <NuxtLink
+              :to="{
+                name: 'admin-projects-projectId',
+                params: { projectId: project.id },
+              }"
+            >
+              <AdminProjectCard :project />
+            </NuxtLink>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Past Projects -->
+      <div v-if="pastProjects.length > 0" class="mb-8">
+        <h2 class="mb-4">Past Projects</h2>
+        <ul class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <li v-for="project in pastProjects" :key="project.id">
+            <NuxtLink
+              :to="{
+                name: 'admin-projects-projectId',
+                params: { projectId: project.id },
+              }"
+            >
+              <AdminProjectCard :project />
+            </NuxtLink>
+          </li>
+        </ul>
+      </div>
+    </template>
   </UContainer>
 </template>

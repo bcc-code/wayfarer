@@ -1178,12 +1178,12 @@ export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type CurrentProjectQuery = { __typename?: 'CombinedQuery', user: { __typename?: 'UserQueryRoot', currentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } } };
 
-export type ProjectPageQueryVariables = Exact<{
+export type AdminProjectPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
 
 
-export type ProjectPageQuery = { __typename?: 'CombinedQuery', admin: { __typename?: 'AdminQueryRoot', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } } };
+export type AdminProjectPageQuery = { __typename?: 'CombinedQuery', admin: { __typename?: 'AdminQueryRoot', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } } };
 
 export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1237,8 +1237,8 @@ export const CurrentProjectDocument = gql`
 export function useCurrentProjectQuery(options?: Omit<Urql.UseQueryArgs<never, CurrentProjectQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<CurrentProjectQuery, CurrentProjectQueryVariables | undefined>({ query: CurrentProjectDocument, variables: undefined, ...options });
 };
-export const ProjectPageDocument = gql`
-    query ProjectPage($projectId: ID!) {
+export const AdminProjectPageDocument = gql`
+    query AdminProjectPage($projectId: ID!) {
   admin {
     project(id: $projectId) {
       id
@@ -1260,8 +1260,8 @@ export const ProjectPageDocument = gql`
 }
     `;
 
-export function useProjectPageQuery(options?: Omit<Urql.UseQueryArgs<never, ProjectPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<ProjectPageQuery, ProjectPageQueryVariables | undefined>({ query: ProjectPageDocument, variables: undefined, ...options });
+export function useAdminProjectPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectPageQuery, AdminProjectPageQueryVariables | undefined>({ query: AdminProjectPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectsPageDocument = gql`
     query AdminProjectsPage {

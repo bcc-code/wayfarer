@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useProjectPageQuery } from '~/api/generated'
+import { useAdminProjectPageQuery } from '~/api/generated'
 
 definePageMeta({
   layout: 'admin',
@@ -8,7 +8,7 @@ definePageMeta({
 const route = useRoute('admin-projects-projectId')
 
 gql(`
-  query ProjectPage($projectId: ID!) {
+  query AdminProjectPage($projectId: ID!) {
     admin {
       project(id: $projectId) {
         id
@@ -30,7 +30,7 @@ gql(`
   }
 `)
 
-const { data, error, fetching } = useProjectPageQuery({
+const { data, error, fetching } = useAdminProjectPageQuery({
   variables: {
     projectId: route.params.projectId,
   },
