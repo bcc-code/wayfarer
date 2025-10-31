@@ -126,7 +126,7 @@ const mocks = {
       `The ${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Quest', 'Journey', 'Path'])}`
     ]),
     description: () => `<p>${faker.lorem.paragraph()}</p><p><strong>${faker.lorem.sentence()}</strong></p>`,
-    image: () => `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/400/300`,
+    image: () => faker.image.url(),
     url: () => faker.internet.url(),
     buttonText: () => faker.helpers.arrayElement(['Start Challenge', 'Begin', 'Take Challenge', 'Accept', 'Join Now']),
     publishedAt: () => faker.date.recent({ days: 7 }).toISOString(),
@@ -149,7 +149,7 @@ const mocks = {
       `Episode ${faker.number.int({ min: 1, max: 100 })}: ${faker.lorem.words(3)}`
     ]),
     description: () => faker.lorem.sentence(),
-    image: () => `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/400/300`,
+    image: () => faker.image.url(),
   }),
 
   SimpleAchievement: () => ({
@@ -160,7 +160,7 @@ const mocks = {
       `The ${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Path', 'Journey', 'Way'])}`
     ]),
     description: () => faker.lorem.sentence(),
-    image: () => `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/200/200`,
+    image: () => faker.image.url(),
     points: () => faker.number.int({ min: 10, max: 100 }),
     hidden: () => faker.datatype.boolean(0.3),
     achievedAt: () => faker.datatype.boolean() ? faker.date.recent().toISOString() : null,
@@ -174,7 +174,7 @@ const mocks = {
       `The ${faker.word.adjective({ capitalize: true })} Mind`
     ]),
     description: () => faker.lorem.sentence(),
-    image: () => `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/200/200`,
+    image: () => faker.image.url(),
     points: () => faker.number.int({ min: 20, max: 150 }),
     hidden: () => faker.datatype.boolean(0.2),
     achievedAt: () => faker.datatype.boolean(0.6) ? faker.date.recent().toISOString() : null,
@@ -188,7 +188,7 @@ const mocks = {
       `Audio ${faker.word.adjective({ capitalize: true })}`
     ]),
     description: () => faker.lorem.sentence(),
-    image: () => `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/200/200`,
+    image: () => faker.image.url(),
     points: () => faker.number.int({ min: 30, max: 120 }),
     hidden: () => faker.datatype.boolean(0.2),
     achievedAt: () => faker.date.recent().toISOString(),
@@ -205,7 +205,7 @@ const mocks = {
         `Streak ${faker.word.adjective({ capitalize: true })}`
       ]),
       description: () => faker.lorem.sentence(),
-      image: () => `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/200/200`,
+      image: () => faker.image.url(),
       points: () => faker.number.int({ min: 50, max: 200 }),
       hidden: () => faker.datatype.boolean(0.2),
       neededStreak: () => neededStreak,
@@ -220,11 +220,11 @@ const mocks = {
       : `Team ${faker.color.human()}`,
     score: () => faker.number.int({ min: 100, max: 10000 }),
     description: () => faker.datatype.boolean() ? faker.lorem.sentence({ min: 1, max: 3 }) : null,
-    image: () => faker.datatype.boolean() ? `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/100/100` : null,
+    image: () => faker.datatype.boolean() ? faker.image.url() : null,
   }),
 
   Branding: () => ({
-    logo: () => `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/200/100`,
+    logo: () => faker.image.avatar(),
     colors: () => ({}),
     rounding: () => faker.helpers.arrayElement([0, 4, 8, 12, 16, 20, 24]),
   }),
