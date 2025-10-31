@@ -57,3 +57,14 @@ export function getProjectStatus(startDate: string, endDate: string) {
   if (end < now) return 'Completed'
   return 'In Progress'
 }
+
+export function isWithinRange(
+  date: string | number | Date,
+  startDate: string | number | Date,
+  endDate: string | number | Date,
+) {
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  const input = new Date(date)
+  return input >= start && input <= end
+}

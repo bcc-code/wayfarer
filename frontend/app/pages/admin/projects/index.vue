@@ -69,13 +69,25 @@ const { data, error, fetching } = useAdminProjectsPageQuery()
                   {{ formatDateRange(project.startDate, project.endDate) }}
                 </p>
               </div>
-              <div class="shrink-0">
+              <div class="shrink-0 flex flex-col justify-between items-end">
                 <NuxtImg
                   v-if="project.branding.logo"
                   :src="project.branding.logo"
                   height="32"
                   width="32"
                 />
+                <UBadge
+                  v-if="
+                    isWithinRange(
+                      new Date(),
+                      project.startDate,
+                      project.endDate,
+                    )
+                  "
+                  variant="outline"
+                >
+                  Active
+                </UBadge>
               </div>
             </UCard>
           </NuxtLink>
