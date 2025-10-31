@@ -1,5 +1,5 @@
-import { ApolloServer } from '@apollo/server';
-import { startStandaloneServer } from '@apollo/server/standalone';
+import { createYoga } from 'graphql-yoga';
+import { createServer } from 'node:http';
 import { addMocksToSchema } from '@graphql-tools/mock';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { readFileSync } from 'fs';
@@ -9,12 +9,41 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Read the schema and fix type/input issues
-let typeDefs = readFileSync(join(__dirname, '../gql/wayfarer.graphqls'), 'utf-8');
+// Read all schema files
+const sharedSchema = readFileSync(join(__dirname, '../gql/shared.graphqls'), 'utf-8');
+const userSchema = readFileSync(join(__dirname, '../gql/user.graphqls'), 'utf-8');
+const adminSchema = readFileSync(join(__dirname, '../gql/admin.graphqls'), 'utf-8');
+const m2mSchema = readFileSync(join(__dirname, '../gql/m2m.graphqls'), 'utf-8');
 
-// Fix LeaderboardFilter and AgeRange - they should be input types, not types
-typeDefs = typeDefs.replace('type LeaderboardFilter {', 'input LeaderboardFilter {');
-typeDefs = typeDefs.replace('type AgeRange {', 'input AgeRange {');
+// Remove individual schema definitions and combine
+const removeSchemaDefinition = (schema) => {
+  return schema.replace(/schema\s*{[^}]*}/g, '');
+};
+
+// Combine all schemas with a unified schema definition that exposes all APIs
+const typeDefs = `
+${sharedSchema}
+${removeSchemaDefinition(userSchema)}
+${removeSchemaDefinition(adminSchema)}
+${removeSchemaDefinition(m2mSchema)}
+
+schema {
+  query: CombinedQuery
+  mutation: CombinedMutation
+}
+
+type CombinedQuery {
+  user: UserQueryRoot!
+  admin: AdminQueryRoot!
+  m2m: M2MQueryRoot!
+}
+
+type CombinedMutation {
+  user: UserMutationRoot!
+  admin: AdminMutationRoot!
+  m2m: M2MMutationRoot!
+}
+`;
 
 // Create mock data generators
 const mocks = {
@@ -64,6 +93,18 @@ const mocks = {
     id: () => Math.random().toString(36).substring(2, 15),
     name: () => ['Red Division', 'Blue Division', 'Green Division'][Math.floor(Math.random() * 3)],
     description: () => 'A super team consisting of multiple teams.',
+  }),
+
+  Challenge: () => ({
+    id: () => Math.random().toString(36).substring(2, 15),
+    name: () => ['Daily Reading', 'Prayer Challenge', 'Scripture Memory'][Math.floor(Math.random() * 3)],
+    description: () => '<p>Complete this <strong>exciting challenge</strong> to earn points!</p>',
+    image: () => `https://picsum.photos/seed/${Math.random()}/400/300`,
+    url: () => `https://example.com/challenges/${Math.random().toString(36).substring(2, 15)}`,
+    buttonText: () => ['Start Challenge', 'Begin', 'Take Challenge'][Math.floor(Math.random() * 3)],
+    publishedAt: () => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    endTime: () => Math.random() > 0.5 ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() : null,
+    userCompletedAt: () => Math.random() > 0.6 ? new Date().toISOString() : null,
   }),
 
   Article: () => ({
@@ -144,19 +185,88 @@ const mocks = {
     max: () => 25,
   }),
 
-  // Query resolvers with more control
+  Streak: () => ({
+    id: () => Math.random().toString(36).substring(2, 15),
+    name: () => ['Daily Devotion', 'Weekly Reading', 'Monthly Challenge'][Math.floor(Math.random() * 3)],
+    description: () => 'Keep up your streak by completing daily activities.',
+    status: () => Math.floor(Math.random() * 30),
+  }),
+
+  DateRange: () => ({
+    start: () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    end: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  }),
+
+  Date: () => new Date().toISOString().split('T')[0],
+  Upload: () => null,
+
+  // Combined root resolvers
+  CombinedQuery: () => ({
+    user: () => ({}),
+    admin: () => ({}),
+    m2m: () => ({}),
+  }),
+
+  CombinedMutation: () => ({
+    user: () => ({}),
+    admin: () => ({}),
+    m2m: () => ({}),
+  }),
+
+  // User API Query resolvers
   UserQueryRoot: () => ({
     currentProject: () => ({}),
     currentEvent: () => ({}),
     me: () => ({}),
-    challenges: () => [],
-    projects: (_root, args) => {
-      return args.ids.map(() => ({}));
-    },
-    events: (_root, args) => {
-      return args.ids.map(() => ({}));
-    },
+    projects: () => Array(3).fill(null).map(() => ({})),
+    events: () => Array(2).fill(null).map(() => ({})),
   }),
+
+  UserMutationRoot: () => ({}),
+
+  // Admin API Query resolvers
+  AdminQueryRoot: () => ({
+    user: () => ({}),
+    users: () => Array(5).fill(null).map(() => ({})),
+    project: () => ({}),
+    projects: () => Array(3).fill(null).map(() => ({})),
+    event: () => ({}),
+    events: () => Array(2).fill(null).map(() => ({})),
+    team: () => ({}),
+    teams: () => Array(4).fill(null).map(() => ({})),
+    superteam: () => ({}),
+    superteams: () => Array(2).fill(null).map(() => ({})),
+    achievement: () => ({}),
+    achievements: () => Array(5).fill(null).map(() => ({})),
+    challenge: () => ({}),
+    challenges: () => Array(3).fill(null).map(() => ({})),
+    church: () => ({}),
+    churches: () => Array(10).fill(null).map(() => ({})),
+    streak: () => ({}),
+    streaks: () => Array(2).fill(null).map(() => ({})),
+    currentProject: () => ({}),
+    currentEvent: () => ({}),
+  }),
+
+  AdminMutationRoot: () => ({}),
+
+  // M2M API Query resolvers
+  M2MQueryRoot: () => ({
+    user: () => ({}),
+    project: () => ({}),
+    event: () => ({}),
+    team: () => ({}),
+    superteam: () => ({}),
+    achievement: () => ({}),
+    challenge: () => ({}),
+    users: () => Array(5).fill(null).map(() => ({})),
+    challenges: () => Array(3).fill(null).map(() => ({})),
+    achievements: () => Array(5).fill(null).map(() => ({})),
+    currentProject: () => ({}),
+    currentEvent: () => ({}),
+  }),
+
+  M2MMutationRoot: () => ({}),
 };
 
 // Create executable schema
@@ -169,32 +279,87 @@ const schemaWithMocks = addMocksToSchema({
   preserveResolvers: false,
 });
 
-// Create Apollo Server
-const server = new ApolloServer({
+// Create Yoga instance with GraphiQL
+const yoga = createYoga({
   schema: schemaWithMocks,
+  graphiql: true,
 });
 
-// Start the server
-const { url } = await startStandaloneServer(server, {
-  listen: { port: 4000 },
-});
+// Create and start the server
+const server = createServer(yoga);
+const port = 4000;
 
-console.log(`🚀 Mock GraphQL server ready at: ${url}`);
-console.log(`📝 GraphQL Playground available at: ${url}`);
+server.listen(port, () => {
+  console.log(`🚀 Mock GraphQL server ready at: http://localhost:${port}/graphql`);
+  console.log(`📝 GraphiQL UI available at: http://localhost:${port}/graphql`);
 console.log('');
-console.log('Example query:');
+console.log('The schema now exposes three separate APIs:');
+console.log('  - user: End user API (mobile/web apps)');
+console.log('  - admin: Admin API (management interface)');
+console.log('  - m2m: Machine-to-Machine API (external integrations)');
+console.log('');
+console.log('Example User API query:');
 console.log(`
   query {
-    me {
-      id
-      name
-      email
-      age
-    }
-    currentProject {
-      id
-      name
-      description
+    user {
+      me {
+        id
+        name
+        email
+        age
+        gender
+        church {
+          name
+          country
+        }
+      }
+      currentProject {
+        id
+        name
+        description
+        startDate
+        endDate
+      }
+      projects {
+        id
+        name
+        events {
+          id
+          name
+        }
+      }
     }
   }
 `);
+console.log('');
+console.log('Example Admin API query:');
+console.log(`
+  query {
+    admin {
+      projects {
+        id
+        name
+        description
+      }
+      users(filter: { gender: MALE }) {
+        id
+        name
+        email
+      }
+    }
+  }
+`);
+console.log('');
+console.log('Example M2M API mutation:');
+console.log(`
+  mutation {
+    m2m {
+      awardAchievement(userId: "user123", achievementId: "ach456") {
+        id
+        name
+        points
+      }
+    }
+  }
+`);
+});

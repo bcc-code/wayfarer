@@ -81,7 +81,7 @@ input LeaderboardFilter {
     country: String
     churchCategory: ChurchCategory
     gender: Gender
-    ageRange: AgeRange
+    ageRange: AgeRangeInput
     teamId: ID
     superTeamId: ID
 }
@@ -185,7 +185,7 @@ type SuperTeam {
 
 # ==================== Interfaces ====================
 
-interface Challenge {
+type Challenge {
     id: ID!
     name: String!
     description: HTML!

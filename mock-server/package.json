@@ -8,9 +8,9 @@
     "dev": "node --watch server.js"
   },
   "dependencies": {
-    "@apollo/server": "^4.11.0",
+    "graphql": "^16.9.0",
+    "graphql-yoga": "^5.8.3",
     "@graphql-tools/mock": "^9.0.4",
-    "@graphql-tools/schema": "^10.0.6",
-    "graphql": "^16.9.0"
+    "@graphql-tools/schema": "^10.0.6"
   }
 }

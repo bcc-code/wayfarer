@@ -1,16 +1,23 @@
 <script setup lang="ts">
-import type { Challenge } from '#shared/types'
+import type { ChallengesPageQuery } from '~/api/generated'
 
 defineProps<{
-  challenge: Challenge
+  challenge: ChallengesPageQuery['user']['currentProject']['challenges'][number]
 }>()
 </script>
 
 <template>
-  <UCard :ui="{ body: 'flex flex-col aspect-video' }">
+  <UCard :ui="{ body: 'flex flex-col', header: 'p-0' }">
+    <template #header>
+      <NuxtImg
+        v-if="challenge.image"
+        :src="challenge.image"
+        class="w-full aspect-video object-cover"
+      />
+    </template>
     <template #default>
-      <h3 class="mb-1">{{ challenge.name }}</h3>
-      <p class="text-sm text-muted mb-4">{{ challenge.description }}</p>
+      <h3 class="mb-1 font-bold">{{ challenge.name }}</h3>
+      <div class="text-sm text-muted mb-4" v-html="challenge.description" />
       <UButton
         :to="
           challenge.url ?? {
@@ -21,7 +28,7 @@ defineProps<{
         block
         class="mt-auto"
       >
-        Accept Challenge
+        {{ challenge.buttonText ?? 'Accept Challenge' }}
       </UButton>
     </template>
   </UCard>
