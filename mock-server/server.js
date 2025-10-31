@@ -73,17 +73,37 @@ const mocks = {
     category: () => faker.helpers.arrayElement(['S', 'L', 'XL']),
   }),
 
-  Project: () => ({
-    id: () => faker.string.uuid(),
-    name: () => faker.helpers.arrayElement([
-      `${faker.date.month()} ${faker.helpers.arrayElement(['Camp', 'Retreat', 'Study', 'Challenge', 'Journey'])} ${new Date().getFullYear()}`,
-      `${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Bible Study', 'Discipleship', 'Youth Camp', 'Faith Journey'])}`,
-      `The ${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Path', 'Way', 'Journey', 'Quest'])}`
-    ]),
-    description: () => faker.lorem.paragraph(),
-    startDate: () => faker.date.recent({ days: 30 }).toISOString(),
-    endDate: () => faker.date.soon({ days: 60 }).toISOString(),
-  }),
+  Project: () => {
+    // Randomly choose project time state: past, active, or future
+    const timeState = faker.helpers.arrayElement(['past', 'active', 'future']);
+
+    let startDate, endDate;
+    if (timeState === 'past') {
+      // Past project: both dates in the past
+      startDate = faker.date.past({ years: 1 });
+      endDate = faker.date.between({ from: startDate, to: new Date() });
+    } else if (timeState === 'active') {
+      // Active project: started in past, ends in future
+      startDate = faker.date.recent({ days: 30 });
+      endDate = faker.date.soon({ days: 60 });
+    } else {
+      // Future project: both dates in the future
+      startDate = faker.date.soon({ days: 30 });
+      endDate = faker.date.soon({ days: 90 });
+    }
+
+    return {
+      id: () => faker.string.uuid(),
+      name: () => faker.helpers.arrayElement([
+        `${faker.date.month()} ${faker.helpers.arrayElement(['Camp', 'Retreat', 'Study', 'Challenge', 'Journey'])} ${new Date().getFullYear()}`,
+        `${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Bible Study', 'Discipleship', 'Youth Camp', 'Faith Journey'])}`,
+        `The ${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Path', 'Way', 'Journey', 'Quest'])}`
+      ]),
+      description: () => faker.lorem.paragraph(),
+      startDate: () => startDate.toISOString(),
+      endDate: () => endDate.toISOString(),
+    };
+  },
 
   Event: () => ({
     id: () => faker.string.uuid(),
@@ -286,15 +306,15 @@ const mocks = {
   // Admin API Query resolvers
   AdminQueryRoot: () => ({
     user: () => ({}),
-    users: () => Array(5).fill(null).map(() => ({})),
+    users: () => Array(100).fill(null).map(() => ({})),
     project: () => ({}),
-    projects: () => Array(3).fill(null).map(() => ({})),
+    projects: () => Array(6).fill(null).map(() => ({})),
     event: () => ({}),
-    events: () => Array(2).fill(null).map(() => ({})),
+    events: () => Array(4).fill(null).map(() => ({})),
     team: () => ({}),
-    teams: () => Array(4).fill(null).map(() => ({})),
+    teams: () => Array(20).fill(null).map(() => ({})),
     superteam: () => ({}),
-    superteams: () => Array(2).fill(null).map(() => ({})),
+    superteams: () => Array(4).fill(null).map(() => ({})),
     achievement: () => ({}),
     achievements: () => Array(5).fill(null).map(() => ({})),
     challenge: () => ({}),

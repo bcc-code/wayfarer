@@ -67,10 +67,10 @@ const pastProjects = computed(() => {
     <template v-else-if="error">
       <p class="text-error">Error: {{ error.message }}</p>
     </template>
-    <template v-else-if="data">
+    <div v-else-if="data" class="space-y-12">
       <!-- Current Projects -->
-      <div v-if="currentProjects.length > 0" class="mb-8">
-        <h2 class="mb-4">Active Projects</h2>
+      <section v-if="currentProjects.length > 0">
+        <h2 class="mb-4">Current Projects</h2>
         <ul class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           <li v-for="project in currentProjects" :key="project.id">
             <NuxtLink
@@ -83,10 +83,10 @@ const pastProjects = computed(() => {
             </NuxtLink>
           </li>
         </ul>
-      </div>
+      </section>
 
       <!-- Future Projects -->
-      <div v-if="futureProjects.length > 0" class="mb-8">
+      <section v-if="futureProjects.length > 0">
         <h2 class="mb-4">Upcoming Projects</h2>
         <ul class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           <li v-for="project in futureProjects" :key="project.id">
@@ -100,13 +100,17 @@ const pastProjects = computed(() => {
             </NuxtLink>
           </li>
         </ul>
-      </div>
+      </section>
 
       <!-- Past Projects -->
-      <div v-if="pastProjects.length > 0" class="mb-8">
+      <section v-if="pastProjects.length > 0">
         <h2 class="mb-4">Past Projects</h2>
         <ul class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          <li v-for="project in pastProjects" :key="project.id">
+          <li
+            v-for="project in pastProjects"
+            :key="project.id"
+            class="opacity-50 hover:opacity-100 transition-opacity"
+          >
             <NuxtLink
               :to="{
                 name: 'admin-projects-projectId',
@@ -117,7 +121,7 @@ const pastProjects = computed(() => {
             </NuxtLink>
           </li>
         </ul>
-      </div>
-    </template>
+      </section>
+    </div>
   </UContainer>
 </template>

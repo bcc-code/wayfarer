@@ -35,7 +35,14 @@ defineProps<{
         :src="project.branding.logo"
         height="32"
         width="32"
+        class="rounded"
       />
+      <UBadge
+        v-if="isWithinRange(new Date(), project.startDate, project.endDate)"
+        variant="outline"
+      >
+        Active
+      </UBadge>
     </div>
   </UCard>
 </template>
