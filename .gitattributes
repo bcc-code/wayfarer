@@ -1,0 +1,7 @@
+# Collapse generated GraphQL files in GitHub PR reviews
+**/generated.go linguist-generated=true
+**/models_gen.go linguist-generated=true
+**/*.resolvers.go linguist-generated=true
+
+# Other generated files
+**/sqlc_gen.go linguist-generated=true
