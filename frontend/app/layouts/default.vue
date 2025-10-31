@@ -37,6 +37,7 @@ query CurrentProject {
           secondary
           tertiary
         }
+        rounding
       }
     }
   }
@@ -55,6 +56,7 @@ watch(data, (newData) => {
       --ui-primary: ${newData.user.currentProject.branding.colors.primary};
       --ui-secondary: ${newData.user.currentProject.branding.colors.secondary};
       --ui-tertiary: ${newData.user.currentProject.branding.colors.tertiary};
+      --ui-radius: ${newData.user.currentProject.branding.rounding}px;
     }
   `
   document.body.appendChild(styleElement)

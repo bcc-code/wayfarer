@@ -59,6 +59,7 @@ type Track {
 type Branding {
     logo: String!
     colors: Colors!
+    rounding: Int! # border-radius in pixels
 }
 
 type Colors {
@@ -222,7 +223,7 @@ type SimpleAchievement implements Achievement {
     project: Project!
     event: Event
     challenge: Challenge
-    achievedAt: DateTime!
+    achievedAt: DateTime
     points: Int!
     hidden: Boolean!
 }
@@ -267,7 +268,7 @@ type StreakAchievement implements Achievement {
     project: Project!
     event: Event
     challenge: Challenge
-    achievedAt: DateTime!
+    achievedAt: DateTime
     neededStreak: Int!
     points: Int!
     hidden: Boolean!

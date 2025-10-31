@@ -438,6 +438,7 @@ export type Branding = {
   __typename?: 'Branding';
   colors: Colors;
   logo: Scalars['String']['output'];
+  rounding: Scalars['Int']['output'];
 };
 
 export type BrandingInput = {
@@ -955,7 +956,7 @@ export type ReadingAchievement = Achievement & {
 
 export type SimpleAchievement = Achievement & {
   __typename?: 'SimpleAchievement';
-  achievedAt: Scalars['DateTime']['output'];
+  achievedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   description: Scalars['String']['output'];
   event?: Maybe<Event>;
@@ -985,7 +986,7 @@ export type StreakListenedDaysArgs = {
 
 export type StreakAchievement = Achievement & {
   __typename?: 'StreakAchievement';
-  achievedAt: Scalars['DateTime']['output'];
+  achievedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   description: Scalars['String']['output'];
   event?: Maybe<Event>;
@@ -1174,7 +1175,7 @@ export type UserQueryRootEventsArgs = {
 export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type CurrentProjectQuery = { __typename?: 'CombinedQuery', user: { __typename?: 'UserQueryRoot', currentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo: string, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } } };
+export type CurrentProjectQuery = { __typename?: 'CombinedQuery', user: { __typename?: 'UserQueryRoot', currentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } } };
 
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1192,8 +1193,8 @@ export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
 export type ProfilePageQuery = { __typename?: 'CombinedQuery', user: { __typename?: 'UserQueryRoot', me: { __typename?: 'User', id: string, name: string, church: { __typename?: 'Church', id: string, name: string }, projects: Array<{ __typename?: 'Project', id: string, achievements: Array<
           | { __typename?: 'ListeningAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
           | { __typename?: 'ReadingAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
-          | { __typename?: 'SimpleAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt: any, points: number }
-          | { __typename?: 'StreakAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt: any, points: number }
+          | { __typename?: 'SimpleAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
+          | { __typename?: 'StreakAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
         > }> } } };
 
 export type UnitPageQueryVariables = Exact<{ [key: string]: never; }>;
@@ -1213,6 +1214,7 @@ export const CurrentProjectDocument = gql`
           secondary
           tertiary
         }
+        rounding
       }
     }
   }

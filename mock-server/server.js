@@ -160,7 +160,7 @@ const mocks = {
     hidden: () => Math.random() > 0.8,
     neededStreak: () => Math.floor(Math.random() * 20) + 5,
     currentStreak: () => Math.floor(Math.random() * 15),
-    achievedAt: () => new Date().toISOString(),
+    achievedAt: () => Math.random() > 0.5 ? new Date().toISOString() : null,
   }),
 
   LeaderboardEntry: () => ({
@@ -172,6 +172,7 @@ const mocks = {
 
   Branding: () => ({
     logo: () => `https://picsum.photos/seed/${Math.random()}/200/100`,
+    rounding: () => [0, 4, 8, 12, 16][Math.floor(Math.random() * 5)],
   }),
 
   Colors: () => ({
