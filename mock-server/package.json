@@ -1,0 +1,16 @@
+{
+  "name": "wayfarer-mock-server",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@apollo/server": "^4.11.0",
+    "@graphql-tools/mock": "^9.0.4",
+    "@graphql-tools/schema": "^10.0.6",
+    "graphql": "^16.9.0"
+  }
+}

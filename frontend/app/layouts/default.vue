@@ -33,7 +33,7 @@ onMounted(() => {
 
 <template>
   <UContainer class="relative h-full">
-    <div class="py-4">
+    <div class="py-4 h-full">
       <slot />
     </div>
     <ul
