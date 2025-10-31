@@ -57,7 +57,10 @@ const pastProjects = computed(() => {
 
 <template>
   <UContainer>
-    <h1 class="text-3xl my-8">Projects</h1>
+    <div class="flex gap-4 items-center">
+      <h1 class="text-3xl my-8">Projects</h1>
+      <UButton icon="lucide:plus">New Project</UButton>
+    </div>
 
     <template v-if="fetching">
       <ul class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
