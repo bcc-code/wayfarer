@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { useCurrentProjectQuery } from '~/api/generated'
 
 const links = [
   {
@@ -24,10 +25,39 @@ const links = [
   },
 ] satisfies NavigationMenuItem[]
 
-const appConfig = useAppConfig()
+// Current project theme
+gql(`
+query CurrentProject {
+  user {
+    currentProject {
+      branding {
+        logo
+        colors {
+          primary
+          secondary
+          tertiary
+        }
+      }
+    }
+  }
+}
+`)
 
-onMounted(() => {
-  appConfig.ui.colors.primary = 'blue'
+const { data } = useCurrentProjectQuery()
+
+watch(data, (newData) => {
+  if (!newData) return
+
+  const styleElement = document.createElement('style')
+  styleElement.innerHTML = `
+    /* Current project theme */
+    :root {
+      --ui-primary: ${newData.user.currentProject.branding.colors.primary};
+      --ui-secondary: ${newData.user.currentProject.branding.colors.secondary};
+      --ui-tertiary: ${newData.user.currentProject.branding.colors.tertiary};
+    }
+  `
+  document.body.appendChild(styleElement)
 })
 </script>
 

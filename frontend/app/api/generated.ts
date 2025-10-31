@@ -1171,6 +1171,11 @@ export type UserQueryRootEventsArgs = {
   project: Scalars['ID']['input'];
 };
 
+export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type CurrentProjectQuery = { __typename?: 'CombinedQuery', user: { __typename?: 'UserQueryRoot', currentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo: string, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } } };
+
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1197,6 +1202,26 @@ export type UnitPageQueryVariables = Exact<{ [key: string]: never; }>;
 export type UnitPageQuery = { __typename?: 'CombinedQuery', user: { __typename?: 'UserQueryRoot', currentProject: { __typename?: 'Project', id: string, myTeam: { __typename?: 'Team', id: string, name: string, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null, leaderboard: Array<{ __typename?: 'LeaderboardEntry', name: string, description?: string | null, score: number, image?: string | null }> } } } };
 
 
+export const CurrentProjectDocument = gql`
+    query CurrentProject {
+  user {
+    currentProject {
+      branding {
+        logo
+        colors {
+          primary
+          secondary
+          tertiary
+        }
+      }
+    }
+  }
+}
+    `;
+
+export function useCurrentProjectQuery(options?: Omit<Urql.UseQueryArgs<never, CurrentProjectQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<CurrentProjectQuery, CurrentProjectQueryVariables | undefined>({ query: CurrentProjectDocument, variables: undefined, ...options });
+};
 export const ChallengesPageDocument = gql`
     query ChallengesPage {
   user {
