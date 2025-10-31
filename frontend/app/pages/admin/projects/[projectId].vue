@@ -18,12 +18,44 @@ gql(`
         endDate
         branding {
           logo
+          rounding
           colors {
             primary
             secondary
             tertiary
           }
-          rounding
+        }
+        achievements {
+          id
+          name
+          description
+          image
+        }
+        challenges {
+          id
+          name
+          description
+          image
+          url
+          buttonText
+          publishedAt
+          endTime
+        }
+        events {
+          id
+          name
+          description
+          startDate
+          endDate
+        }
+        streaks {
+          id
+          name
+          description
+          relevantDays {
+            start
+            end
+          }
         }
       }
     }
@@ -44,13 +76,6 @@ const { data, error, fetching } = useAdminProjectPageQuery({
     <template v-else-if="data">
       <header class="my-8">
         <div class="flex flex-col gap-6 mb-8">
-          <NuxtImg
-            v-if="data.admin.project.branding.logo"
-            :src="data.admin.project.branding.logo"
-            height="64"
-            width="64"
-            class="shrink-0 overflow-hidden"
-          />
           <div>
             <h1 class="text-3xl font-bold mb-2">
               {{ data.admin.project.name }}
@@ -63,30 +88,75 @@ const { data, error, fetching } = useAdminProjectPageQuery({
             </p>
           </div>
         </div>
-
-        <div class="mt-6">
-          <h2 class="text-lg font-semibold mb-3">Schedule</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <UCard>
-              <div>
-                <div class="text-sm text-muted mb-1">Start Date</div>
-                <div class="font-medium">
-                  {{ formatDate(data.admin.project.startDate) }}
-                </div>
-              </div>
-            </UCard>
-
-            <UCard>
-              <div>
-                <div class="text-sm text-muted mb-1">End Date</div>
-                <div class="font-medium">
-                  {{ formatDate(data.admin.project.endDate) }}
-                </div>
-              </div>
-            </UCard>
-          </div>
-        </div>
       </header>
+
+      <UTabs
+        :items="[
+          { label: 'Branding', slot: 'branding' },
+          { label: 'Events', slot: 'events' },
+          { label: 'Challenges', slot: 'challenges' },
+          { label: 'Streaks', slot: 'streaks' },
+          { label: 'Achievements', slot: 'achievements' },
+        ]"
+        variant="link"
+      >
+        <template #branding>
+          <div class="flex gap-4 mt-4 flex-col">
+            <UFormField label="Logo">
+              <NuxtImg :src="data.admin.project.branding.logo" width="64" />
+            </UFormField>
+            <UFormField label="Primary Color">
+              <UInput
+                v-model="data.admin.project.branding.colors.primary"
+                type="color"
+                class="w-12"
+              />
+            </UFormField>
+            <UFormField label="Secondary Color">
+              <UInput
+                v-model="data.admin.project.branding.colors.secondary"
+                type="color"
+                class="w-12"
+              />
+            </UFormField>
+            <UFormField label="Tertiary Color">
+              <UInput
+                v-model="data.admin.project.branding.colors.tertiary"
+                type="color"
+                class="w-12"
+              />
+            </UFormField>
+          </div>
+        </template>
+        <template #events>
+          <UTable :data="data.admin.project.events" />
+        </template>
+        <template #challenges>
+          <UTable :data="data.admin.project.challenges" />
+        </template>
+        <template #streaks>
+          <UTable :data="data.admin.project.streaks" />
+        </template>
+        <template #achievements>
+          <UTable
+            :data="data.admin.project.achievements"
+            :columns="[
+              { accessorKey: 'image', header: 'Image' },
+              { accessorKey: 'name', header: 'Name' },
+              { accessorKey: 'description', header: 'Description' },
+            ]"
+          >
+            <template #image-cell="{ row }">
+              <NuxtImg
+                :src="row.getValue('image')"
+                height="64"
+                width="64"
+                class="shrink-0 overflow-hidden rounded size-10"
+              />
+            </template>
+          </UTable>
+        </template>
+      </UTabs>
     </template>
   </UContainer>
 </template>

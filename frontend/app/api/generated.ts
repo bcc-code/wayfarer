@@ -1183,7 +1183,12 @@ export type AdminProjectPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectPageQuery = { __typename?: 'CombinedQuery', admin: { __typename?: 'AdminQueryRoot', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } } };
+export type AdminProjectPageQuery = { __typename?: 'CombinedQuery', admin: { __typename?: 'AdminQueryRoot', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } }, achievements: Array<
+        | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image: string }
+        | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image: string }
+        | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image: string }
+        | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image: string }
+      >, challenges: Array<{ __typename?: 'Challenge', id: string, name: string, description: any, image: string, url: string, buttonText: string, publishedAt: any, endTime?: any | null }>, events: Array<{ __typename?: 'Event', id: string, name: string, description: string, startDate: any, endDate: any }>, streaks: Array<{ __typename?: 'Streak', id: string, name: string, description: string, relevantDays: Array<{ __typename?: 'DateRange', start: any, end: any }> }> } } };
 
 export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1248,12 +1253,44 @@ export const AdminProjectPageDocument = gql`
       endDate
       branding {
         logo
+        rounding
         colors {
           primary
           secondary
           tertiary
         }
-        rounding
+      }
+      achievements {
+        id
+        name
+        description
+        image
+      }
+      challenges {
+        id
+        name
+        description
+        image
+        url
+        buttonText
+        publishedAt
+        endTime
+      }
+      events {
+        id
+        name
+        description
+        startDate
+        endDate
+      }
+      streaks {
+        id
+        name
+        description
+        relevantDays {
+          start
+          end
+        }
       }
     }
   }
