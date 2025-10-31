@@ -1113,6 +1113,7 @@ export type User = {
   events: Array<Event>;
   gender: Gender;
   id: Scalars['ID']['output'];
+  image?: Maybe<Scalars['String']['output']>;
   membersId: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   projects: Array<Project>;
@@ -1190,7 +1191,7 @@ export type StandingsPageQuery = { __typename?: 'CombinedQuery', user: { __typen
 export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ProfilePageQuery = { __typename?: 'CombinedQuery', user: { __typename?: 'UserQueryRoot', me: { __typename?: 'User', id: string, name: string, church: { __typename?: 'Church', id: string, name: string }, projects: Array<{ __typename?: 'Project', id: string, achievements: Array<
+export type ProfilePageQuery = { __typename?: 'CombinedQuery', user: { __typename?: 'UserQueryRoot', me: { __typename?: 'User', id: string, name: string, image?: string | null, church: { __typename?: 'Church', id: string, name: string }, projects: Array<{ __typename?: 'Project', id: string, achievements: Array<
           | { __typename?: 'ListeningAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
           | { __typename?: 'ReadingAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
           | { __typename?: 'SimpleAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
@@ -1272,6 +1273,7 @@ export const ProfilePageDocument = gql`
     me {
       id
       name
+      image
       church {
         id
         name

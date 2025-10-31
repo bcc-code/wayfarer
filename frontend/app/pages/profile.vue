@@ -7,6 +7,7 @@ query ProfilePage {
     me {
       id
       name
+      image
       church {
         id
         name
@@ -35,7 +36,14 @@ const { data, error, fetching } = useProfilePageQuery()
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <template v-else-if="data">
-      <div class="p-4 text-center">
+      <div class="p-8 text-center flex flex-col items-center gap-2">
+        <NuxtImg
+          v-if="data.user.me.image"
+          :src="data.user.me.image"
+          height="64"
+          width="64"
+          class="rounded-full"
+        />
         <h1 class="text-xl font-bold">{{ data.user.me.name }}</h1>
       </div>
 

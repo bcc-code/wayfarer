@@ -97,6 +97,7 @@ type User {
     age: Int!
     email: String!
     name: String!
+    image: String
     projects: [Project!]!
     events: [Event!]!
     teams: [Team!]!

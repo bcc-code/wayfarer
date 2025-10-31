@@ -7,7 +7,7 @@ defineProps<{
 </script>
 
 <template>
-  <UCard :ui="{ body: 'flex flex-col', header: 'p-0' }">
+  <UCard :ui="{ body: 'flex flex-col', header: 'p-0' }" class="shadow-lg">
     <template #header>
       <NuxtImg
         v-if="challenge.image"
@@ -26,6 +26,7 @@ defineProps<{
           }
         "
         block
+        size="xl"
         class="mt-auto"
       >
         {{ challenge.buttonText ?? 'Accept Challenge' }}

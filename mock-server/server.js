@@ -5,6 +5,7 @@ import { makeExecutableSchema } from '@graphql-tools/schema';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { faker } from '@faker-js/faker';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -47,158 +48,215 @@ type CombinedMutation {
 
 // Create mock data generators
 const mocks = {
-  ID: () => Math.random().toString(36).substring(2, 15),
-  DateTime: () => new Date().toISOString(),
-  HTML: () => '<p>This is <strong>HTML</strong> content with formatting.</p>',
+  ID: () => faker.string.uuid(),
+  DateTime: () => faker.date.recent().toISOString(),
+  HTML: () => `<p>${faker.lorem.paragraph()}</p><p><strong>${faker.lorem.sentence()}</strong></p>`,
 
   User: () => ({
-    id: () => Math.random().toString(36).substring(2, 15),
-    membersId: () => 'MEM-' + Math.floor(Math.random() * 10000),
-    name: () => ['John Doe', 'Jane Smith', 'Bob Johnson', 'Alice Williams'][Math.floor(Math.random() * 4)],
-    email: () => `user${Math.floor(Math.random() * 1000)}@example.com`,
-    age: () => Math.floor(Math.random() * 50) + 15,
-    gender: () => Math.random() > 0.5 ? 'MALE' : 'FEMALE',
+    id: () => faker.string.uuid(),
+    membersId: () => 'MEM-' + faker.number.int({ min: 1000, max: 99999 }),
+    name: () => faker.person.fullName(),
+    email: () => faker.internet.email().toLowerCase(),
+    age: () => faker.number.int({ min: 15, max: 65 }),
+    gender: () => faker.helpers.arrayElement(['MALE', 'FEMALE']),
+    image: () => faker.image.personPortrait()
   }),
 
   Church: () => ({
-    id: () => Math.random().toString(36).substring(2, 15),
-    name: () => ['Grace Church', 'Faith Community', 'Hope Chapel', 'Trinity Church'][Math.floor(Math.random() * 4)],
-    country: () => ['Norway', 'Sweden', 'Denmark', 'Finland'][Math.floor(Math.random() * 4)],
-    category: () => ['S', 'L', 'XL'][Math.floor(Math.random() * 3)],
+    id: () => faker.string.uuid(),
+    name: () => faker.helpers.arrayElement([
+      `${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Church', 'Chapel', 'Community', 'Fellowship', 'Parish'])}`,
+      `${faker.person.lastName()} ${faker.helpers.arrayElement(['Church', 'Chapel', 'Community'])}`,
+      `${faker.location.city()} ${faker.helpers.arrayElement(['Church', 'Chapel', 'Community'])}`
+    ]),
+    country: () => faker.location.country(),
+    category: () => faker.helpers.arrayElement(['S', 'L', 'XL']),
   }),
 
   Project: () => ({
-    id: () => Math.random().toString(36).substring(2, 15),
-    name: () => ['Summer Camp 2024', 'Winter Retreat', 'Bible Study Challenge'][Math.floor(Math.random() * 3)],
-    description: () => 'An exciting project to engage youth in biblical learning and community building.',
-    startDate: () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    endDate: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    id: () => faker.string.uuid(),
+    name: () => faker.helpers.arrayElement([
+      `${faker.date.month()} ${faker.helpers.arrayElement(['Camp', 'Retreat', 'Study', 'Challenge', 'Journey'])} ${new Date().getFullYear()}`,
+      `${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Bible Study', 'Discipleship', 'Youth Camp', 'Faith Journey'])}`,
+      `The ${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Path', 'Way', 'Journey', 'Quest'])}`
+    ]),
+    description: () => faker.lorem.paragraph(),
+    startDate: () => faker.date.recent({ days: 30 }).toISOString(),
+    endDate: () => faker.date.soon({ days: 60 }).toISOString(),
   }),
 
   Event: () => ({
-    id: () => Math.random().toString(36).substring(2, 15),
-    name: () => ['Week 1', 'Week 2', 'Opening Ceremony', 'Final Challenge'][Math.floor(Math.random() * 4)],
-    description: () => 'A special event as part of the project timeline.',
-    startDate: () => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    endDate: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    id: () => faker.string.uuid(),
+    name: () => faker.helpers.arrayElement([
+      `Week ${faker.number.int({ min: 1, max: 8 })}`,
+      `${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Ceremony', 'Challenge', 'Session', 'Gathering'])}`,
+      `${faker.date.weekday()} ${faker.helpers.arrayElement(['Meeting', 'Service', 'Event'])}`
+    ]),
+    description: () => faker.lorem.sentence(),
+    startDate: () => faker.date.recent({ days: 7 }).toISOString(),
+    endDate: () => faker.date.soon({ days: 14 }).toISOString(),
   }),
 
   Team: () => ({
-    id: () => Math.random().toString(36).substring(2, 15),
-    name: () => ['Team Alpha', 'Team Beta', 'Team Gamma', 'Team Delta'][Math.floor(Math.random() * 4)],
-    description: () => 'A dedicated team working together towards common goals.',
+    id: () => faker.string.uuid(),
+    name: () => faker.helpers.arrayElement([
+      `Team ${faker.color.human()}`,
+      `The ${faker.animal.type()}s`,
+      `${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Warriors', 'Champions', 'Heroes', 'Squad'])}`,
+      faker.location.city()
+    ]),
+    description: () => faker.lorem.sentence(),
   }),
 
   SuperTeam: () => ({
-    id: () => Math.random().toString(36).substring(2, 15),
-    name: () => ['Red Division', 'Blue Division', 'Green Division'][Math.floor(Math.random() * 3)],
-    description: () => 'A super team consisting of multiple teams.',
+    id: () => faker.string.uuid(),
+    name: () => faker.helpers.arrayElement([
+      `${faker.color.human()} Division`,
+      `${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Alliance', 'Coalition', 'League'])}`,
+      `The ${faker.animal.type()} Group`
+    ]),
+    description: () => faker.lorem.sentence(),
   }),
 
   Challenge: () => ({
-    id: () => Math.random().toString(36).substring(2, 15),
-    name: () => ['Daily Reading', 'Prayer Challenge', 'Scripture Memory'][Math.floor(Math.random() * 3)],
-    description: () => '<p>Complete this <strong>exciting challenge</strong> to earn points!</p>',
-    image: () => `https://picsum.photos/seed/${Math.random()}/400/300`,
-    url: () => `https://example.com/challenges/${Math.random().toString(36).substring(2, 15)}`,
-    buttonText: () => ['Start Challenge', 'Begin', 'Take Challenge'][Math.floor(Math.random() * 3)],
-    publishedAt: () => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    endTime: () => Math.random() > 0.5 ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() : null,
-    userCompletedAt: () => Math.random() > 0.6 ? new Date().toISOString() : null,
+    id: () => faker.string.uuid(),
+    name: () => faker.helpers.arrayElement([
+      `${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Reading', 'Prayer', 'Service', 'Study', 'Memory'])} Challenge`,
+      `${faker.number.int({ min: 7, max: 30 })} Day ${faker.helpers.arrayElement(['Devotion', 'Scripture', 'Prayer'])}`,
+      `The ${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Quest', 'Journey', 'Path'])}`
+    ]),
+    description: () => `<p>${faker.lorem.paragraph()}</p><p><strong>${faker.lorem.sentence()}</strong></p>`,
+    image: () => `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/400/300`,
+    url: () => faker.internet.url(),
+    buttonText: () => faker.helpers.arrayElement(['Start Challenge', 'Begin', 'Take Challenge', 'Accept', 'Join Now']),
+    publishedAt: () => faker.date.recent({ days: 7 }).toISOString(),
+    endTime: () => faker.datatype.boolean() ? faker.date.soon({ days: 14 }).toISOString() : null,
+    userCompletedAt: () => faker.datatype.boolean(0.4) ? faker.date.recent().toISOString() : null,
   }),
 
   Article: () => ({
-    id: () => Math.random().toString(36).substring(2, 15),
-    title: () => ['Understanding Grace', 'Faith in Action', 'The Power of Prayer'][Math.floor(Math.random() * 3)],
-    author: () => ['C.S. Lewis', 'John Piper', 'Tim Keller'][Math.floor(Math.random() * 3)],
-    url: () => `https://example.com/articles/${Math.random().toString(36).substring(2, 15)}`,
+    id: () => faker.string.uuid(),
+    title: () => faker.lorem.sentence({ min: 3, max: 8 }).replace('.', ''),
+    author: () => faker.person.fullName(),
+    url: () => faker.internet.url(),
   }),
 
   Track: () => ({
-    id: () => Math.random().toString(36).substring(2, 15),
-    name: () => ['Sermon on the Mount', 'Psalms Reading', 'Gospel Reflection'][Math.floor(Math.random() * 3)],
-    description: () => 'An audio track for listening and reflection.',
-    image: () => `https://picsum.photos/seed/${Math.random()}/400/300`,
+    id: () => faker.string.uuid(),
+    name: () => faker.helpers.arrayElement([
+      `${faker.music.genre()} ${faker.helpers.arrayElement(['Worship', 'Meditation', 'Study'])}`,
+      `${faker.lorem.words(3)}`,
+      `Episode ${faker.number.int({ min: 1, max: 100 })}: ${faker.lorem.words(3)}`
+    ]),
+    description: () => faker.lorem.sentence(),
+    image: () => `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/400/300`,
   }),
 
   SimpleAchievement: () => ({
-    id: () => Math.random().toString(36).substring(2, 15),
-    name: () => ['First Steps', 'Early Bird', 'Consistent Learner'][Math.floor(Math.random() * 3)],
-    description: () => 'Complete your first challenge.',
-    image: () => `https://picsum.photos/seed/${Math.random()}/200/200`,
-    points: () => Math.floor(Math.random() * 100) + 10,
-    hidden: () => Math.random() > 0.7,
-    achievedAt: () => Math.random() > 0.5 ? new Date().toISOString() : null,
+    id: () => faker.string.uuid(),
+    name: () => faker.helpers.arrayElement([
+      `${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Starter', 'Beginner', 'Achiever', 'Champion'])}`,
+      `${faker.number.int({ min: 1, max: 10 })} ${faker.helpers.arrayElement(['Steps', 'Milestones', 'Days', 'Weeks'])}`,
+      `The ${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Path', 'Journey', 'Way'])}`
+    ]),
+    description: () => faker.lorem.sentence(),
+    image: () => `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/200/200`,
+    points: () => faker.number.int({ min: 10, max: 100 }),
+    hidden: () => faker.datatype.boolean(0.3),
+    achievedAt: () => faker.datatype.boolean() ? faker.date.recent().toISOString() : null,
   }),
 
   ReadingAchievement: () => ({
-    id: () => Math.random().toString(36).substring(2, 15),
-    name: () => ['Bookworm', 'Bible Scholar', 'Knowledge Seeker'][Math.floor(Math.random() * 3)],
-    description: () => 'Read all the assigned articles.',
-    image: () => `https://picsum.photos/seed/${Math.random()}/200/200`,
-    points: () => Math.floor(Math.random() * 100) + 10,
-    hidden: () => Math.random() > 0.8,
-    achievedAt: () => Math.random() > 0.6 ? new Date().toISOString() : null,
+    id: () => faker.string.uuid(),
+    name: () => faker.helpers.arrayElement([
+      `${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Reader', 'Scholar', 'Bookworm', 'Student'])}`,
+      `${faker.number.int({ min: 5, max: 100 })} ${faker.helpers.arrayElement(['Articles', 'Pages', 'Books', 'Chapters'])}`,
+      `The ${faker.word.adjective({ capitalize: true })} Mind`
+    ]),
+    description: () => faker.lorem.sentence(),
+    image: () => `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/200/200`,
+    points: () => faker.number.int({ min: 20, max: 150 }),
+    hidden: () => faker.datatype.boolean(0.2),
+    achievedAt: () => faker.datatype.boolean(0.6) ? faker.date.recent().toISOString() : null,
   }),
 
   ListeningAchievement: () => ({
-    id: () => Math.random().toString(36).substring(2, 15),
-    name: () => ['Attentive Listener', 'Audio Devotee', 'Sound Student'][Math.floor(Math.random() * 3)],
-    description: () => 'Listen to all the audio tracks.',
-    image: () => `https://picsum.photos/seed/${Math.random()}/200/200`,
-    points: () => Math.floor(Math.random() * 100) + 10,
-    hidden: () => Math.random() > 0.8,
-    achievedAt: () => new Date().toISOString(),
+    id: () => faker.string.uuid(),
+    name: () => faker.helpers.arrayElement([
+      `${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Listener', 'Ear', 'Devotee', 'Enthusiast'])}`,
+      `${faker.number.int({ min: 5, max: 50 })} ${faker.helpers.arrayElement(['Tracks', 'Hours', 'Sessions'])}`,
+      `Audio ${faker.word.adjective({ capitalize: true })}`
+    ]),
+    description: () => faker.lorem.sentence(),
+    image: () => `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/200/200`,
+    points: () => faker.number.int({ min: 30, max: 120 }),
+    hidden: () => faker.datatype.boolean(0.2),
+    achievedAt: () => faker.date.recent().toISOString(),
   }),
 
-  StreakAchievement: () => ({
-    id: () => Math.random().toString(36).substring(2, 15),
-    name: () => ['Streak Master', 'Consistency King', 'Daily Dedication'][Math.floor(Math.random() * 3)],
-    description: () => 'Maintain a daily streak.',
-    image: () => `https://picsum.photos/seed/${Math.random()}/200/200`,
-    points: () => Math.floor(Math.random() * 100) + 10,
-    hidden: () => Math.random() > 0.8,
-    neededStreak: () => Math.floor(Math.random() * 20) + 5,
-    currentStreak: () => Math.floor(Math.random() * 15),
-    achievedAt: () => Math.random() > 0.5 ? new Date().toISOString() : null,
-  }),
+  StreakAchievement: () => {
+    const neededStreak = faker.number.int({ min: 5, max: 25 });
+    const currentStreak = faker.number.int({ min: 0, max: neededStreak + 5 });
+    return {
+      id: () => faker.string.uuid(),
+      name: () => faker.helpers.arrayElement([
+        `${neededStreak} Day Streak`,
+        `${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Consistency', 'Dedication', 'Commitment'])}`,
+        `Streak ${faker.word.adjective({ capitalize: true })}`
+      ]),
+      description: () => faker.lorem.sentence(),
+      image: () => `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/200/200`,
+      points: () => faker.number.int({ min: 50, max: 200 }),
+      hidden: () => faker.datatype.boolean(0.2),
+      neededStreak: () => neededStreak,
+      currentStreak: () => currentStreak,
+      achievedAt: () => currentStreak >= neededStreak ? faker.date.recent().toISOString() : null,
+    };
+  },
 
   LeaderboardEntry: () => ({
-    name: () => ['Team Alpha', 'Team Beta', 'Jane Doe', 'John Smith'][Math.floor(Math.random() * 4)],
-    score: () => Math.floor(Math.random() * 1000) + 100,
-    description: () => Math.random() > 0.5 ? 'Doing great!' : null,
-    image: () => Math.random() > 0.5 ? `https://picsum.photos/seed/${Math.random()}/100/100` : null,
+    name: () => faker.datatype.boolean()
+      ? faker.person.fullName()
+      : `Team ${faker.color.human()}`,
+    score: () => faker.number.int({ min: 100, max: 10000 }),
+    description: () => faker.datatype.boolean() ? faker.lorem.sentence({ min: 1, max: 3 }) : null,
+    image: () => faker.datatype.boolean() ? `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/100/100` : null,
   }),
 
   Branding: () => ({
-    logo: () => `https://picsum.photos/seed/${Math.random()}/200/100`,
-    rounding: () => [0, 4, 8, 12, 16][Math.floor(Math.random() * 5)],
+    logo: () => `https://picsum.photos/seed/${faker.string.alphanumeric(10)}/200/100`,
+    colors: () => ({}),
+    rounding: () => faker.helpers.arrayElement([0, 4, 8, 12, 16, 20, 24]),
   }),
 
   Colors: () => ({
-    primary: () => ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A'][Math.floor(Math.random() * 4)],
-    secondary: () => ['#95E1D3', '#F38181', '#AA96DA', '#FCBAD3'][Math.floor(Math.random() * 4)],
-    tertiary: () => ['#C7CEEA', '#FFDAC1', '#E2F0CB', '#B5EAD7'][Math.floor(Math.random() * 4)],
+    primary: () => faker.color.rgb(),
+    secondary: () => faker.color.rgb(),
+    tertiary: () => faker.color.rgb(),
   }),
 
   AgeRange: () => ({
-    min: () => 15,
-    max: () => 25,
+    min: () => faker.number.int({ min: 12, max: 18 }),
+    max: () => faker.number.int({ min: 20, max: 35 }),
   }),
 
   Streak: () => ({
-    id: () => Math.random().toString(36).substring(2, 15),
-    name: () => ['Daily Devotion', 'Weekly Reading', 'Monthly Challenge'][Math.floor(Math.random() * 3)],
-    description: () => 'Keep up your streak by completing daily activities.',
-    status: () => Math.floor(Math.random() * 30),
+    id: () => faker.string.uuid(),
+    name: () => faker.helpers.arrayElement([
+      `${faker.date.weekday()} ${faker.helpers.arrayElement(['Devotion', 'Reading', 'Prayer'])}`,
+      `${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Streak', 'Challenge', 'Journey'])}`,
+      `${faker.number.int({ min: 7, max: 30 })} Day Challenge`
+    ]),
+    description: () => faker.lorem.sentence(),
+    status: () => faker.number.int({ min: 0, max: 30 }),
   }),
 
   DateRange: () => ({
-    start: () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    start: () => faker.date.recent({ days: 30 }).toISOString().split('T')[0],
+    end: () => faker.date.soon({ days: 30 }).toISOString().split('T')[0],
   }),
 
-  Date: () => new Date().toISOString().split('T')[0],
+  Date: () => faker.date.recent().toISOString().split('T')[0],
   Upload: () => null,
 
   // Combined root resolvers
@@ -293,14 +351,14 @@ const port = 4000;
 server.listen(port, () => {
   console.log(`🚀 Mock GraphQL server ready at: http://localhost:${port}/graphql`);
   console.log(`📝 GraphiQL UI available at: http://localhost:${port}/graphql`);
-console.log('');
-console.log('The schema now exposes three separate APIs:');
-console.log('  - user: End user API (mobile/web apps)');
-console.log('  - admin: Admin API (management interface)');
-console.log('  - m2m: Machine-to-Machine API (external integrations)');
-console.log('');
-console.log('Example User API query:');
-console.log(`
+  console.log('');
+  console.log('The schema now exposes three separate APIs:');
+  console.log('  - user: End user API (mobile/web apps)');
+  console.log('  - admin: Admin API (management interface)');
+  console.log('  - m2m: Machine-to-Machine API (external integrations)');
+  console.log('');
+  console.log('Example User API query:');
+  console.log(`
   query {
     user {
       me {
@@ -332,9 +390,9 @@ console.log(`
     }
   }
 `);
-console.log('');
-console.log('Example Admin API query:');
-console.log(`
+  console.log('');
+  console.log('Example Admin API query:');
+  console.log(`
   query {
     admin {
       projects {
@@ -350,9 +408,9 @@ console.log(`
     }
   }
 `);
-console.log('');
-console.log('Example M2M API mutation:');
-console.log(`
+  console.log('');
+  console.log('Example M2M API mutation:');
+  console.log(`
   mutation {
     m2m {
       awardAchievement(userId: "user123", achievementId: "ach456") {
