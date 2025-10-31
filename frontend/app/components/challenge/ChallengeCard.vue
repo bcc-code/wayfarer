@@ -21,7 +21,7 @@ defineProps<{
         block
         class="mt-auto"
       >
-        Solve
+        Accept Challenge
       </UButton>
     </template>
   </UCard>
