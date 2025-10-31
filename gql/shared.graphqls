@@ -1,0 +1,474 @@
+directive @goField(
+    forceResolver: Boolean
+    name: String
+) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+
+# ==================== Scalars ====================
+
+scalar HTML
+scalar DateTime
+scalar Date
+scalar Upload
+
+# ==================== Enums ====================
+
+enum Gender {
+    MALE
+    FEMALE
+}
+
+enum ChurchCategory {
+    S
+    L
+    XL
+}
+
+enum LeaderboardType {
+    TOTAL
+    WEEKLY
+    MONTHLY
+}
+
+enum ExportFormat {
+    JSON
+    CSV
+    EXCEL
+}
+
+# ==================== Supporting Types ====================
+
+type AgeRange {
+    min: Int!
+    max: Int!
+}
+
+type Article {
+    id: ID!
+    title: String!
+    author: String!
+    url: String!
+}
+
+type Track {
+    id: ID!
+    name: String!
+    description: String!
+    image: String!
+}
+
+type Branding {
+    logo: String!
+    colors: Colors!
+}
+
+type Colors {
+    primary: String!
+    secondary: String!
+    tertiary: String!
+}
+
+type LeaderboardEntry {
+    name: String!
+    score: Int!
+    description: String
+    image: String
+}
+
+input LeaderboardFilter {
+    minScore: Int
+    maxScore: Int
+    churchId: ID
+    country: String
+    churchCategory: ChurchCategory
+    gender: Gender
+    ageRange: AgeRange
+    teamId: ID
+    superTeamId: ID
+}
+
+# ==================== Core Entities ====================
+
+type User {
+    id: ID!
+    membersId: ID!
+    gender: Gender!
+    church: Church!
+    age: Int!
+    email: String!
+    name: String!
+    projects: [Project!]!
+    events: [Event!]!
+    teams: [Team!]!
+    superTeams: [SuperTeam!]!
+}
+
+type Church {
+    id: ID!
+    name: String!
+    country: String!
+    category: ChurchCategory!
+}
+
+type Project {
+    id: ID!
+    name: String!
+    description: String!
+    challenges: [Challenge!]!
+    leaderboard(
+        type: LeaderboardType!
+        filter: LeaderboardFilter
+    ): [LeaderboardEntry!]!
+    events: [Event!]!
+    startDate: DateTime!
+    endDate: DateTime!
+    branding: Branding!
+    teams: [Team!]!
+    myTeam: Team!
+    achievements: [Achievement!]!
+    streaks: [Streak!]!
+}
+
+type Streak {
+    id: ID!
+    name: String!
+    description: String!
+    status: Int!
+    relevantDays: [DateRange!]!
+    listenedDays(last: Int!): [Date!]!
+    project: Project!
+}
+
+type DateRange {
+    start: Date!
+    end: Date!
+}
+
+type Event {
+    id: ID!
+    name: String!
+    description: String!
+    challenges: [Challenge!]!
+    leaderboard(
+        type: LeaderboardType!
+        filter: LeaderboardFilter
+    ): [LeaderboardEntry!]!
+    startDate: DateTime!
+    endDate: DateTime!
+    parentProject: Project!
+}
+
+type Team {
+    id: ID!
+    name: String!
+    description: String!
+    members: [User!]!
+    leaderboard(
+        type: LeaderboardType!
+        filter: LeaderboardFilter
+    ): [LeaderboardEntry!]!
+    parentProject: Project!
+    superTeam: SuperTeam
+}
+
+type SuperTeam {
+    id: ID!
+    name: String!
+    description: String!
+    members: [User!]!
+    leaderboard(
+        type: LeaderboardType!
+        filter: LeaderboardFilter
+    ): [LeaderboardEntry!]!
+    parentProject: Project!
+    teams: [Team!]!
+}
+
+# ==================== Interfaces ====================
+
+interface Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String!
+    project: Project!
+    event: Event
+    url: String!
+    buttonText: String!
+    publishedAt: DateTime!
+    endTime: DateTime
+    userCompletedAt: DateTime
+}
+
+interface Achievement {
+    id: ID!
+    name: String!
+    description: String!
+    image: String!
+    project: Project!
+    event: Event
+    challenge: Challenge
+    achievedAt: DateTime
+    points: Int!
+    hidden: Boolean!
+}
+
+# ==================== Achievement Implementations ====================
+
+type SimpleAchievement implements Achievement {
+    id: ID!
+    name: String!
+    description: String!
+    image: String!
+    project: Project!
+    event: Event
+    challenge: Challenge
+    achievedAt: DateTime!
+    points: Int!
+    hidden: Boolean!
+}
+
+type ReadingAchievement implements Achievement {
+    id: ID!
+    name: String!
+    description: String!
+    image: String!
+    project: Project!
+    event: Event
+    challenge: Challenge
+    achievedAt: DateTime
+    articles: [Article!]!
+    userHasRead: [Article!]!
+    nextArticle: Article!
+    points: Int!
+    hidden: Boolean!
+}
+
+type ListeningAchievement implements Achievement {
+    id: ID!
+    name: String!
+    description: String!
+    image: String!
+    project: Project!
+    event: Event
+    challenge: Challenge
+    achievedAt: DateTime
+    tracks: [Track!]!
+    userHasListened: [Track!]!
+    nextTrack: Track!
+    points: Int!
+    hidden: Boolean!
+}
+
+type StreakAchievement implements Achievement {
+    id: ID!
+    name: String!
+    description: String!
+    image: String!
+    project: Project!
+    event: Event
+    challenge: Challenge
+    achievedAt: DateTime!
+    neededStreak: Int!
+    points: Int!
+    hidden: Boolean!
+    streak: Streak!
+}
+
+# ==================== Input Types ====================
+
+input AgeRangeInput {
+    min: Int!
+    max: Int!
+}
+
+input BrandingInput {
+    logo: String!
+    colors: ColorsInput!
+}
+
+input ColorsInput {
+    primary: String!
+    secondary: String!
+    tertiary: String!
+}
+
+input ArticleInput {
+    title: String!
+    author: String!
+    url: String!
+}
+
+input TrackInput {
+    name: String!
+    description: String!
+    image: String!
+}
+
+input CreateProjectInput {
+    name: String!
+    description: String!
+    startDate: DateTime!
+    endDate: DateTime!
+    branding: BrandingInput!
+}
+
+input UpdateProjectInput {
+    name: String
+    description: String
+    startDate: DateTime
+    endDate: DateTime
+    branding: BrandingInput
+}
+
+input CreateEventInput {
+    name: String!
+    description: String!
+    startDate: DateTime!
+    endDate: DateTime!
+}
+
+input UpdateEventInput {
+    name: String
+    description: String
+    startDate: DateTime
+    endDate: DateTime
+}
+
+input CreateChallengeInput {
+    name: String!
+    description: HTML!
+    image: String!
+    projectId: ID!
+    eventId: ID
+    url: String!
+    buttonText: String!
+    endTime: DateTime
+}
+
+input UpdateChallengeInput {
+    name: String
+    description: HTML
+    image: String
+    eventId: ID
+    url: String
+    buttonText: String
+    endTime: DateTime
+}
+
+input CreateSimpleAchievementInput {
+    name: String!
+    description: String!
+    image: String!
+    projectId: ID!
+    eventId: ID
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+}
+
+input CreateReadingAchievementInput {
+    name: String!
+    description: String!
+    image: String!
+    projectId: ID!
+    eventId: ID
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+    articles: [ArticleInput!]!
+}
+
+input CreateListeningAchievementInput {
+    name: String!
+    description: String!
+    image: String!
+    projectId: ID!
+    eventId: ID
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+    tracks: [TrackInput!]!
+}
+
+input CreateStreakAchievementInput {
+    name: String!
+    description: String!
+    image: String!
+    projectId: ID!
+    eventId: ID
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+    neededStreak: Int!
+}
+
+input UpdateAchievementInput {
+    name: String
+    description: String
+    image: String
+    eventId: ID
+    challengeId: ID
+    points: Int
+    hidden: Boolean
+}
+
+input CreateTeamInput {
+    name: String!
+    description: String!
+}
+
+input UpdateTeamInput {
+    name: String
+    description: String
+}
+
+input CreateSuperTeamInput {
+    name: String!
+    description: String!
+    teamIds: [ID!]
+}
+
+input UpdateSuperTeamInput {
+    name: String
+    description: String
+}
+
+input CreateUserInput {
+    membersId: ID!
+    email: String!
+    name: String!
+    gender: Gender!
+    churchId: ID!
+    age: Int!
+}
+
+input CreateChurchInput {
+    name: String!
+    country: String!
+    category: ChurchCategory!
+}
+
+input UpdateChurchInput {
+    name: String
+    country: String
+    category: ChurchCategory
+}
+
+# Streak Inputs
+input DateRangeInput {
+    start: Date!
+    end: Date!
+}
+
+input CreateStreakInput {
+    name: String!
+    description: String!
+    projectId: ID!
+    relevantDays: [DateRangeInput!]!
+}
+
+input UpdateStreakInput {
+    name: String
+    description: String
+    relevantDays: [DateRangeInput!]
+}

@@ -1,0 +1,32 @@
+# End User API schema
+# Imports shared types from shared.graphqls
+# This API is used by end users (mobile/web apps)
+
+schema {
+    query: UserQueryRoot
+    mutation: UserMutationRoot
+}
+
+# ==================== User Query Root ====================
+
+type UserQueryRoot {
+    projects: [Project!]!
+    events(project: ID!): [Event!]!
+    currentProject: Project!
+    currentEvent: Event!
+    me: User!
+}
+
+# ==================== User Mutation Root ====================
+
+type UserMutationRoot {
+    # Project & Event Participation
+    joinProject(projectId: ID!): Project!
+    joinEvent(eventId: ID!): Event!
+
+    # Team Participation
+    joinTeam(code: ID!): Team!
+
+    # Profile Management
+    updateAvatar(file: Upload!): User!
+}

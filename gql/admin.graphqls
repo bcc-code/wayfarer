@@ -1,0 +1,108 @@
+# Admin API schema
+# Imports shared types from shared.graphqls
+# This API is used by administrators to manage the entire system
+
+schema {
+    query: AdminQueryRoot
+    mutation: AdminMutationRoot
+}
+
+# ==================== Admin Query Root ====================
+
+type AdminQueryRoot {
+    # Entity Lookups
+    user(id: ID!): User!
+    users(filter: UserFilter): [User!]!
+    project(id: ID!): Project!
+    projects: [Project!]!
+    event(id: ID!): Event!
+    events(projectId: ID): [Event!]!
+    team(id: ID!): Team!
+    teams(projectId: ID): [Team!]!
+    superteam(id: ID!): SuperTeam!
+    superteams(projectId: ID): [SuperTeam!]!
+    achievement(id: ID!): Achievement!
+    achievements(projectId: ID!, eventId: ID): [Achievement!]!
+    challenge(id: ID!): Challenge!
+    challenges(projectId: ID!, eventId: ID): [Challenge!]!
+    church(id: ID!): Church!
+    churches: [Church!]!
+    streak(id: ID!): Streak!
+    streaks(projectId: ID): [Streak!]!
+
+    # Current Context
+    currentProject: Project!
+    currentEvent: Event!
+}
+
+input UserFilter {
+    churchId: ID
+    gender: Gender
+    minAge: Int
+    maxAge: Int
+    projectId: ID
+    eventId: ID
+    teamId: ID
+}
+
+# ==================== Admin Mutation Root ====================
+
+type AdminMutationRoot {
+    # Project Management
+    createProject(input: CreateProjectInput!): Project!
+    updateProject(id: ID!, input: UpdateProjectInput!): Project!
+    deleteProject(id: ID!): Boolean!
+    cloneProject(id: ID!, newName: String!): Project!
+    archiveProject(id: ID!): Boolean!
+
+    # Event Management
+    createEvent(projectId: ID!, input: CreateEventInput!): Event!
+    updateEvent(id: ID!, input: UpdateEventInput!): Event!
+    deleteEvent(id: ID!): Boolean!
+    moveEvent(id: ID!, newProjectId: ID!): Event!
+
+    # Challenge Management
+    createChallenge(input: CreateChallengeInput!): Challenge!
+    updateChallenge(id: ID!, input: UpdateChallengeInput!): Challenge!
+    deleteChallenge(id: ID!): Boolean!
+    publishChallenge(id: ID!, publishedAt: DateTime!): Challenge!
+    assignChallengeToEvent(challengeId: ID!, eventId: ID!): Challenge!
+    bulkPublishChallenges(ids: [ID!]!, publishedAt: DateTime!): [Challenge!]!
+    bulkCreateChallenges(inputs: [CreateChallengeInput!]!): [Challenge!]!
+
+    # Achievement Management
+    createSimpleAchievement(input: CreateSimpleAchievementInput!): SimpleAchievement!
+    createReadingAchievement(input: CreateReadingAchievementInput!): ReadingAchievement!
+    createListeningAchievement(input: CreateListeningAchievementInput!): ListeningAchievement!
+    createStreakAchievement(input: CreateStreakAchievementInput!): StreakAchievement!
+    updateAchievement(id: ID!, input: UpdateAchievementInput!): Achievement!
+    deleteAchievement(id: ID!): Boolean!
+    linkAchievementToChallenge(achievementId: ID!, challengeId: ID!): Achievement!
+
+    # Team Management
+    createTeam(projectId: ID!, input: CreateTeamInput!): Team!
+    updateTeam(id: ID!, input: UpdateTeamInput!): Team!
+    deleteTeam(id: ID!): Boolean!
+    addTeamMembers(teamId: ID!, userIds: [ID!]!): Team!
+    removeTeamMembers(teamId: ID!, userIds: [ID!]!): Team!
+    bulkAssignUsersToTeam(teamId: ID!, userIds: [ID!]!): Team!
+
+    # SuperTeam Management
+    createSuperTeam(projectId: ID!, input: CreateSuperTeamInput!): SuperTeam!
+    updateSuperTeam(id: ID!, input: UpdateSuperTeamInput!): SuperTeam!
+    deleteSuperTeam(id: ID!): Boolean!
+    assignTeamsToSuperTeam(superTeamId: ID!, teamIds: [ID!]!): SuperTeam!
+
+    # User Management
+    assignUserToProject(userId: ID!, projectId: ID!): User!
+    removeUserFromProject(userId: ID!, projectId: ID!): User!
+    assignUserToEvent(userId: ID!, eventId: ID!): User!
+
+    # Streak Management
+    createStreak(input: CreateStreakInput!): Streak!
+    updateStreak(id: ID!, input: UpdateStreakInput!): Streak!
+    deleteStreak(id: ID!): Boolean!
+
+    # Leaderboard Management
+    adjustUserScore(userId: ID!, projectId: ID!, points: Int!): Boolean!
+}

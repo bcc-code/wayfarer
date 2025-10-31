@@ -1,0 +1,84 @@
+# Machine-to-Machine API schema
+# Imports shared types from shared.graphqls
+# This API is used by external systems to notify Wayfarer about events
+# (e.g., achievements unlocked, challenge completions, reading/listening progress)
+
+schema {
+    query: M2MQueryRoot
+    mutation: M2MMutationRoot
+}
+
+# ==================== M2M Query Root ====================
+
+type M2MQueryRoot {
+    # Direct entity lookups by ID
+    user(id: ID!): User!
+    project(id: ID!): Project!
+    event(id: ID!): Event!
+    team(id: ID!): Team!
+    superteam(id: ID!): SuperTeam!
+    achievement(id: ID!): Achievement!
+    challenge(id: ID!): Challenge!
+
+    # Bulk lookups
+    users(ids: [ID!]!): [User!]!
+    challenges(ids: [ID!]!): [Challenge!]!
+    achievements(ids: [ID!]!): [Achievement!]!
+
+    # Context queries
+    currentProject: Project!
+    currentEvent: Event!
+}
+
+# ==================== M2M Mutation Root ====================
+
+type M2MMutationRoot {
+    # Achievement Notifications
+    # Used when external systems determine a user has achieved something
+    awardAchievement(userId: ID!, achievementId: ID!): Achievement!
+    revokeAchievement(userId: ID!, achievementId: ID!): Boolean!
+
+    # Challenge Completion Notifications
+    # Used when external systems verify challenge completion
+    completeChallenge(userId: ID!, challengeId: ID!, completedAt: DateTime): Challenge!
+    uncompleteChallenge(userId: ID!, challengeId: ID!): Boolean!
+
+    # Reading Progress Tracking
+    # Used by reading platforms to track article completion
+    markArticleAsRead(userId: ID!, achievementId: ID!, articleId: ID!): ReadingAchievement!
+    unmarkArticleAsRead(userId: ID!, achievementId: ID!, articleId: ID!): ReadingAchievement!
+
+    # Listening Progress Tracking
+    # Used by audio platforms to track track completion
+    markTrackAsListened(userId: ID!, achievementId: ID!, trackId: ID!): ListeningAchievement!
+    unmarkTrackAsListened(userId: ID!, achievementId: ID!, trackId: ID!): ListeningAchievement!
+
+    # Streak Tracking
+    # Used by external systems to update user activity streaks
+    updateStreak(userId: ID!, achievementId: ID!, currentStreak: Int!): StreakAchievement!
+
+    # Score Adjustments
+    # Used when external systems need to adjust user scores directly
+    adjustUserScore(userId: ID!, projectId: ID!, points: Int!, reason: String): Boolean!
+    adjustTeamScore(teamId: ID!, projectId: ID!, points: Int!, reason: String): Boolean!
+    adjustSuperTeamScore(superTeamId: ID!, projectId: ID!, points: Int!, reason: String): Boolean!
+
+    # Team Achievements
+    # Used when external systems determine a team has achieved something
+    awardTeamAchievement(teamId: ID!, achievementId: ID!): Achievement!
+    revokeTeamAchievement(teamId: ID!, achievementId: ID!): Boolean!
+
+    # SuperTeam Achievements
+    # Used when external systems determine a superteam has achieved something
+    awardSuperTeamAchievement(superTeamId: ID!, achievementId: ID!): Achievement!
+    revokeSuperTeamAchievement(superTeamId: ID!, achievementId: ID!): Boolean!
+
+    # Bulk Operations for Performance
+    # Used when multiple users complete the same action simultaneously
+    bulkAwardAchievements(userIds: [ID!]!, achievementId: ID!): [Achievement!]!
+    bulkCompleteChallenges(userIds: [ID!]!, challengeId: ID!, completedAt: DateTime): [Challenge!]!
+
+    # Bulk operations for teams
+    bulkAwardTeamAchievements(teamIds: [ID!]!, achievementId: ID!): [Achievement!]!
+    bulkAwardSuperTeamAchievements(superTeamIds: [ID!]!, achievementId: ID!): [Achievement!]!
+}
