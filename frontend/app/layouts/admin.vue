@@ -1,9 +1,23 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { useAdminSidebarQuery } from '~/api/generated'
+
+gql(`
+  query AdminSidebar {
+    admin {
+      projects {
+        id
+        name
+      }
+    }
+  }
+`)
+
+const { data } = useAdminSidebarQuery()
 
 const open = ref(false)
 
-const links = [
+const links = computed<NavigationMenuItem[][]>(() => [
   [
     {
       label: 'Home',
@@ -14,15 +28,20 @@ const links = [
       label: 'Projects',
       icon: 'lucide:layers',
       to: '/admin/projects',
+      children:
+        data.value?.admin.projects.map((project) => ({
+          label: project.name,
+          to: `/admin/projects/${project.id}`,
+        })) ?? [],
     },
   ],
-] satisfies NavigationMenuItem[][]
+])
 
 const groups = computed(() => [
   {
     id: 'links',
     label: 'Go to',
-    items: links.flat(),
+    items: links.value.flat(),
   },
 ])
 
@@ -64,18 +83,11 @@ onMounted(() => {
 
         <UNavigationMenu
           :collapsed="collapsed"
-          :items="links[0]"
+          :items="links"
           orientation="vertical"
           tooltip
+          highlight
           popover
-        />
-
-        <UNavigationMenu
-          :collapsed="collapsed"
-          :items="links[1]"
-          orientation="vertical"
-          tooltip
-          class="mt-auto"
         />
       </template>
 

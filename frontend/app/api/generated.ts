@@ -1173,6 +1173,11 @@ export type UserQueryRootEventsArgs = {
   project: Scalars['ID']['input'];
 };
 
+export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminSidebarQuery = { __typename?: 'CombinedQuery', admin: { __typename?: 'AdminQueryRoot', projects: Array<{ __typename?: 'Project', id: string, name: string }> } };
+
 export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1226,6 +1231,20 @@ export type UnitPageQueryVariables = Exact<{ [key: string]: never; }>;
 export type UnitPageQuery = { __typename?: 'CombinedQuery', user: { __typename?: 'UserQueryRoot', currentProject: { __typename?: 'Project', id: string, myTeam: { __typename?: 'Team', id: string, name: string, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null, leaderboard: Array<{ __typename?: 'LeaderboardEntry', name: string, description?: string | null, score: number, image?: string | null }> } } } };
 
 
+export const AdminSidebarDocument = gql`
+    query AdminSidebar {
+  admin {
+    projects {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useAdminSidebarQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSidebarQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminSidebarQuery, AdminSidebarQueryVariables | undefined>({ query: AdminSidebarDocument, variables: undefined, ...options });
+};
 export const CurrentProjectDocument = gql`
     query CurrentProject {
   user {
