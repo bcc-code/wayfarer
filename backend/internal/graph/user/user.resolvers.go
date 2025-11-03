@@ -54,25 +54,16 @@ func (r *userQueryRootResolver) CurrentEvent(ctx context.Context) (*model.Event,
 
 // Me is the resolver for the me field.
 func (r *userQueryRootResolver) Me(ctx context.Context) (*model.User, error) {
-	// TODO: Extract user ID from JWT token in context
-	// For now, hardcode a test user ID
-	testUserID := "US01K8XV6EBHHRWDGZRQDWTR9SA8"
-
-	row, err := r.DB.Queries.GetUserByID(ctx, testUserID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user: %w", err)
+	// Extract user ID from JWT context (set by JWTAuth middleware)
+	userID, ok := ctx.Value("user_id").(string)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// Convert sqlc row to GraphQL model
-	user := &model.User{
-		ID:        row.ID,
-		MembersID: row.MembersID,
-		Gender:    model.Gender(row.Gender),
-		ChurchID:  row.ChurchID,
-		Age:       int(row.Age),
-		Email:     row.Email,
-		Name:      row.Name,
-		Image:     row.AvatarUrl,
+	// Use DataLoader for batching and caching
+	user, err := r.Loaders.UserByIDLoader.Load(ctx, userID)()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
 	return user, nil

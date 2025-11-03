@@ -1,11 +1,15 @@
 package user
 
-import "github.com/bcc-media/wayfarer/internal/database"
+import (
+	"github.com/bcc-media/wayfarer/internal/database"
+	"github.com/bcc-media/wayfarer/internal/loaders"
+)
 
 // This file will not be regenerated automatically.
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	DB *database.DB
+	DB      *database.DB
+	Loaders *loaders.Loaders
 }

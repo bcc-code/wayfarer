@@ -1,43 +1,34 @@
 package loaders
 
 import (
-	"context"
-
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/graph/user/model"
 	"github.com/graph-gophers/dataloader/v7"
 )
 
-type contextKey string
-
-const loadersKey contextKey = "dataloaders"
-
 // Loaders holds all dataloader instances for batching database queries
+// These are shared globally across all requests and use built-in caching
 type Loaders struct {
+	UserByIDLoader       *dataloader.Loader[string, *model.User]
 	ChurchLoader         *dataloader.Loader[string, *model.Church]
 	ProjectsByUserLoader *dataloader.Loader[string, []*model.Project]
 }
 
-// NewLoaders creates all dataloaders with batch functions
+// NewLoaders creates all dataloaders with batch functions and default caching
+// Should be called once at server startup
 func NewLoaders(db *database.DB) *Loaders {
 	return &Loaders{
+		UserByIDLoader: dataloader.NewBatchedLoader(
+			userByIDBatchFunc(db),
+			dataloader.WithBatchCapacity[string, *model.User](100),
+		),
 		ChurchLoader: dataloader.NewBatchedLoader(
 			churchBatchFunc(db),
-			dataloader.WithCache[string, *model.Church](&dataloader.NoCache[string, *model.Church]{}),
+			dataloader.WithBatchCapacity[string, *model.Church](100),
 		),
 		ProjectsByUserLoader: dataloader.NewBatchedLoader(
 			projectsByUserBatchFunc(db),
-			dataloader.WithCache[string, []*model.Project](&dataloader.NoCache[string, []*model.Project]{}),
+			dataloader.WithBatchCapacity[string, []*model.Project](100),
 		),
 	}
-}
-
-// GetLoaders retrieves loaders from context
-func GetLoaders(ctx context.Context) *Loaders {
-	return ctx.Value(loadersKey).(*Loaders)
-}
-
-// Inject adds loaders to context
-func Inject(ctx context.Context, loaders *Loaders) context.Context {
-	return context.WithValue(ctx, loadersKey, loaders)
 }

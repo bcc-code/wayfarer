@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/graph/user/model"
-	"github.com/bcc-media/wayfarer/internal/loaders"
 )
 
 // Project is the resolver for the project field.
@@ -164,14 +163,12 @@ func (r *teamResolver) SuperTeam(ctx context.Context, obj *model.Team) (*model.S
 
 // Church is the resolver for the church field.
 func (r *userResolver) Church(ctx context.Context, obj *model.User) (*model.Church, error) {
-	dataLoaders := loaders.GetLoaders(ctx)
-	return dataLoaders.ChurchLoader.Load(ctx, obj.ChurchID)()
+	return r.Loaders.ChurchLoader.Load(ctx, obj.ChurchID)()
 }
 
 // Projects is the resolver for the projects field.
 func (r *userResolver) Projects(ctx context.Context, obj *model.User) ([]model.Project, error) {
-	dataLoaders := loaders.GetLoaders(ctx)
-	projects, err := dataLoaders.ProjectsByUserLoader.Load(ctx, obj.ID)()
+	projects, err := r.Loaders.ProjectsByUserLoader.Load(ctx, obj.ID)()
 	if err != nil {
 		return nil, err
 	}

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -18,6 +17,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/admin"
 	"github.com/bcc-media/wayfarer/internal/graph/m2m"
 	"github.com/bcc-media/wayfarer/internal/graph/user"
+	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/logger"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/gin-gonic/gin"
@@ -27,7 +27,8 @@ func main() {
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		slog.Error("Failed to load config", "error", err)
+		os.Exit(1)
 	}
 
 	// Initialize structured logger
@@ -45,8 +46,12 @@ func main() {
 
 	slog.Info("Connected to database successfully")
 
+	// Initialize DataLoaders (shared globally across all requests)
+	dataLoaders := loaders.NewLoaders(db)
+	slog.Info("DataLoaders initialized with global caching")
+
 	// Initialize GraphQL resolvers
-	userResolver := &user.Resolver{DB: db}
+	userResolver := &user.Resolver{DB: db, Loaders: dataLoaders}
 	adminResolver := &admin.Resolver{DB: db}
 	m2mResolver := &m2m.Resolver{DB: db}
 
@@ -68,7 +73,7 @@ func main() {
 	})
 
 	// User API endpoints
-	router.POST("/graphql/user", middleware.DataLoader(db), middleware.JWTAuth(cfg.JWT), graphqlHandler(userHandler))
+	router.POST("/graphql/user", middleware.JWTAuth(cfg.JWT), graphqlHandler(userHandler))
 	if cfg.Server.Environment != "production" {
 		router.GET("/graphql/user", gin.WrapH(playground.Handler("User API", "/graphql/user")))
 	}
