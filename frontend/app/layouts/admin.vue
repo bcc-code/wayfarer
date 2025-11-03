@@ -29,8 +29,6 @@ const projectsLinks = computed(() => {
   }))
 })
 
-const open = ref(false)
-
 const links = computed<NavigationMenuItem[]>(() => [
   {
     label: 'Home',
@@ -41,7 +39,6 @@ const links = computed<NavigationMenuItem[]>(() => [
     label: 'Projects',
     icon: 'lucide:layers',
     to: '/admin/projects',
-    children: projectsLinks.value,
   },
 ])
 
@@ -76,40 +73,26 @@ onMounted(() => {
 
 <template>
   <UDashboardGroup unit="rem">
-    <UDashboardSidebar
-      id="default"
-      v-model:open="open"
-      collapsible
-      resizable
-      class="bg-elevated/25"
-      :ui="{ footer: 'lg:border-t lg:border-default' }"
-    >
-      <template #header>
-        <p class="font-serif text-xl ml-2 text-primary">Wayfarer</p>
-      </template>
-
-      <template #default="{ collapsed }">
-        <UDashboardSearchButton
-          :collapsed="collapsed"
-          class="bg-transparent ring-default"
-        />
-
-        <UNavigationMenu
-          :collapsed="collapsed"
-          :items="links"
-          orientation="vertical"
-          tooltip
-          popover
-        />
-      </template>
-
-      <template #footer="{ collapsed }">
-        <AdminUserMenu :collapsed="collapsed" />
-      </template>
-    </UDashboardSidebar>
-
-    <UDashboardSearch :groups="groups" />
-
-    <slot />
+    <UDashboardPanel>
+      <header class="border-b border-default">
+        <UContainer class="flex gap-8 items-center">
+          <NuxtLink to="/admin" class="font-serif text-xl text-primary">
+            Wayfarer
+          </NuxtLink>
+          <UNavigationMenu
+            :items="links"
+            highlight
+            variant="link"
+            orientation="horizontal"
+          />
+          <div class="ml-auto flex gap-2">
+            <UDashboardSearchButton class="bg-transparent ring-default" />
+            <AdminUserMenu />
+          </div>
+        </UContainer>
+      </header>
+      <slot />
+      <UDashboardSearch :groups="groups" />
+    </UDashboardPanel>
   </UDashboardGroup>
 </template>
