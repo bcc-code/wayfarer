@@ -1176,7 +1176,7 @@ export type UserQueryRootEventsArgs = {
 export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminSidebarQuery = { __typename?: 'CombinedQuery', admin: { __typename?: 'AdminQueryRoot', projects: Array<{ __typename?: 'Project', id: string, name: string }> } };
+export type AdminSidebarQuery = { __typename?: 'CombinedQuery', admin: { __typename?: 'AdminQueryRoot', projects: Array<{ __typename?: 'Project', id: string, name: string, endDate: any, startDate: any }> } };
 
 export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1237,6 +1237,8 @@ export const AdminSidebarDocument = gql`
     projects {
       id
       name
+      endDate
+      startDate
     }
   }
 }

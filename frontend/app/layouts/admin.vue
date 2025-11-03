@@ -8,12 +8,27 @@ gql(`
       projects {
         id
         name
+        endDate
+        startDate
       }
     }
   }
 `)
 
 const { data } = useAdminSidebarQuery()
+const projects = computed(() => {
+  return (
+    data.value?.admin.projects
+      .filter((project) => new Date(project.startDate) < new Date())
+      .sort((a, b) =>
+        isWithinRange(new Date(), a.startDate, a.endDate)
+          ? -1
+          : isWithinRange(new Date(), b.startDate, b.endDate)
+            ? 1
+            : 0,
+      ) ?? []
+  )
+})
 
 const open = ref(false)
 
@@ -29,8 +44,11 @@ const links = computed<NavigationMenuItem[][]>(() => [
       icon: 'lucide:layers',
       to: '/admin/projects',
       children:
-        data.value?.admin.projects.map((project) => ({
+        projects.value.map((project) => ({
           label: project.name,
+          badge: isWithinRange(new Date(), project.startDate, project.endDate)
+            ? 'Current'
+            : undefined,
           to: `/admin/projects/${project.id}`,
         })) ?? [],
     },
@@ -86,7 +104,6 @@ onMounted(() => {
           :items="links"
           orientation="vertical"
           tooltip
-          highlight
           popover
         />
       </template>

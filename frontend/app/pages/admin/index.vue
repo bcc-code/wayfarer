@@ -30,10 +30,8 @@ gql(`
 
 const { data } = useAdminHomePageQuery()
 const currentProjects = computed(() => {
-  return data.value?.admin.projects.filter(
-    (project) =>
-      new Date(project.startDate) < new Date() &&
-      (!project.endDate || new Date(project.endDate) > new Date()),
+  return data.value?.admin.projects.filter((project) =>
+    isWithinRange(new Date(), project.startDate, project.endDate),
   )
 })
 

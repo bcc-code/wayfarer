@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
 
-@theme {
+:root {
   --font-sans: 'Archivo', sans-serif;
   --font-serif: 'Noto Serif', serif;
   --ui-radius: 0.3rem;
