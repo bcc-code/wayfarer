@@ -14,9 +14,8 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
-	"github.com/bcc-media/wayfarer/internal/graph/admin"
-	"github.com/bcc-media/wayfarer/internal/graph/m2m"
-	"github.com/bcc-media/wayfarer/internal/graph/user"
+	"github.com/bcc-media/wayfarer/internal/graph/api"
+	"github.com/bcc-media/wayfarer/internal/graph/directives"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/logger"
 	"github.com/bcc-media/wayfarer/internal/middleware"
@@ -50,15 +49,16 @@ func main() {
 	dataLoaders := loaders.NewLoaders(db)
 	slog.Info("DataLoaders initialized with global caching")
 
-	// Initialize GraphQL resolvers
-	userResolver := &user.Resolver{DB: db, Loaders: dataLoaders}
-	adminResolver := &admin.Resolver{DB: db}
-	m2mResolver := &m2m.Resolver{DB: db}
+	// Initialize GraphQL resolver
+	apiResolver := &api.Resolver{DB: db, Loaders: dataLoaders}
 
-	// Create GraphQL handlers
-	userHandler := handler.NewDefaultServer(user.NewExecutableSchema(user.Config{Resolvers: userResolver}))
-	adminHandler := handler.NewDefaultServer(admin.NewExecutableSchema(admin.Config{Resolvers: adminResolver}))
-	m2mHandler := handler.NewDefaultServer(m2m.NewExecutableSchema(m2m.Config{Resolvers: m2mResolver}))
+	// Create GraphQL handler with directive
+	apiHandler := handler.NewDefaultServer(api.NewExecutableSchema(api.Config{
+		Resolvers: apiResolver,
+		Directives: api.DirectiveRoot{
+			RequireRole: directives.RequireRole,
+		},
+	}))
 
 	// Set up Gin router
 	if cfg.Server.Environment == "production" {
@@ -72,22 +72,10 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	// User API endpoints
-	router.POST("/graphql/user", middleware.JWTAuth(cfg.JWT), graphqlHandler(userHandler))
+	// GraphQL API endpoint
+	router.POST("/graphql", middleware.JWTAuth(cfg.JWT), graphqlHandler(apiHandler))
 	if cfg.Server.Environment != "production" {
-		router.GET("/graphql/user", gin.WrapH(playground.Handler("User API", "/graphql/user")))
-	}
-
-	// Admin API endpoints
-	router.POST("/graphql/admin", middleware.JWTAuth(cfg.JWT), graphqlHandler(adminHandler))
-	if cfg.Server.Environment != "production" {
-		router.GET("/graphql/admin", gin.WrapH(playground.Handler("Admin API", "/graphql/admin")))
-	}
-
-	// M2M API endpoints
-	router.POST("/graphql/m2m", middleware.JWTAuth(cfg.JWT), graphqlHandler(m2mHandler))
-	if cfg.Server.Environment != "production" {
-		router.GET("/graphql/m2m", gin.WrapH(playground.Handler("M2M API", "/graphql/m2m")))
+		router.GET("/graphql", gin.WrapH(playground.Handler("GraphQL API", "/graphql")))
 	}
 
 	// Create HTTP server
@@ -113,9 +101,7 @@ func main() {
 	}()
 
 	slog.Info("Server started successfully",
-		"user_api", fmt.Sprintf("http://%s/graphql/user", addr),
-		"admin_api", fmt.Sprintf("http://%s/graphql/admin", addr),
-		"m2m_api", fmt.Sprintf("http://%s/graphql/m2m", addr),
+		"graphql_api", fmt.Sprintf("http://%s/graphql", addr),
 	)
 
 	// Wait for interrupt signal to gracefully shut down the server

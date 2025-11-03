@@ -1,4 +1,4 @@
-package user
+package api
 
 // This file will be automatically regenerated based on the schema, any resolver implementations
 // will be copied through when generating and any unknown code will be moved to the end.
@@ -8,192 +8,181 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bcc-media/wayfarer/internal/graph/user/model"
+	model1 "github.com/bcc-media/wayfarer/internal/graph/api/model"
 )
 
 // Project is the resolver for the project field.
-func (r *challengeResolver) Project(ctx context.Context, obj *model.Challenge) (*model.Project, error) {
+func (r *challengeResolver) Project(ctx context.Context, obj *model1.Challenge) (*model1.Project, error) {
 	panic(fmt.Errorf("not implemented: Project - project"))
 }
 
 // Event is the resolver for the event field.
-func (r *challengeResolver) Event(ctx context.Context, obj *model.Challenge) (*model.Event, error) {
+func (r *challengeResolver) Event(ctx context.Context, obj *model1.Challenge) (*model1.Event, error) {
 	panic(fmt.Errorf("not implemented: Event - event"))
 }
 
 // Challenges is the resolver for the challenges field.
-func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]model.Challenge, error) {
+func (r *eventResolver) Challenges(ctx context.Context, obj *model1.Event) ([]model1.Challenge, error) {
 	panic(fmt.Errorf("not implemented: Challenges - challenges"))
 }
 
 // ParentProject is the resolver for the parentProject field.
-func (r *eventResolver) ParentProject(ctx context.Context, obj *model.Event) (*model.Project, error) {
+func (r *eventResolver) ParentProject(ctx context.Context, obj *model1.Event) (*model1.Project, error) {
 	panic(fmt.Errorf("not implemented: ParentProject - parentProject"))
 }
 
 // Project is the resolver for the project field.
-func (r *listeningAchievementResolver) Project(ctx context.Context, obj *model.ListeningAchievement) (*model.Project, error) {
+func (r *listeningAchievementResolver) Project(ctx context.Context, obj *model1.ListeningAchievement) (*model1.Project, error) {
 	panic(fmt.Errorf("not implemented: Project - project"))
 }
 
 // Event is the resolver for the event field.
-func (r *listeningAchievementResolver) Event(ctx context.Context, obj *model.ListeningAchievement) (*model.Event, error) {
+func (r *listeningAchievementResolver) Event(ctx context.Context, obj *model1.ListeningAchievement) (*model1.Event, error) {
 	panic(fmt.Errorf("not implemented: Event - event"))
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *listeningAchievementResolver) Challenge(ctx context.Context, obj *model.ListeningAchievement) (*model.Challenge, error) {
+func (r *listeningAchievementResolver) Challenge(ctx context.Context, obj *model1.ListeningAchievement) (*model1.Challenge, error) {
 	panic(fmt.Errorf("not implemented: Challenge - challenge"))
 }
 
 // Challenges is the resolver for the challenges field.
-func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error) {
+func (r *projectResolver) Challenges(ctx context.Context, obj *model1.Project) ([]model1.Challenge, error) {
 	panic(fmt.Errorf("not implemented: Challenges - challenges"))
 }
 
 // Events is the resolver for the events field.
-func (r *projectResolver) Events(ctx context.Context, obj *model.Project) ([]model.Event, error) {
+func (r *projectResolver) Events(ctx context.Context, obj *model1.Project) ([]model1.Event, error) {
 	panic(fmt.Errorf("not implemented: Events - events"))
 }
 
 // Teams is the resolver for the teams field.
-func (r *projectResolver) Teams(ctx context.Context, obj *model.Project) ([]model.Team, error) {
+func (r *projectResolver) Teams(ctx context.Context, obj *model1.Project) ([]model1.Team, error) {
 	panic(fmt.Errorf("not implemented: Teams - teams"))
 }
 
 // MyTeam is the resolver for the myTeam field.
-func (r *projectResolver) MyTeam(ctx context.Context, obj *model.Project) (*model.Team, error) {
+func (r *projectResolver) MyTeam(ctx context.Context, obj *model1.Project) (*model1.Team, error) {
 	panic(fmt.Errorf("not implemented: MyTeam - myTeam"))
 }
 
 // Achievements is the resolver for the achievements field.
-func (r *projectResolver) Achievements(ctx context.Context, obj *model.Project) ([]model.Achievement, error) {
+func (r *projectResolver) Achievements(ctx context.Context, obj *model1.Project) ([]model1.Achievement, error) {
 	panic(fmt.Errorf("not implemented: Achievements - achievements"))
 }
 
 // Streaks is the resolver for the streaks field.
-func (r *projectResolver) Streaks(ctx context.Context, obj *model.Project) ([]model.Streak, error) {
+func (r *projectResolver) Streaks(ctx context.Context, obj *model1.Project) ([]model1.Streak, error) {
 	panic(fmt.Errorf("not implemented: Streaks - streaks"))
 }
 
 // Project is the resolver for the project field.
-func (r *readingAchievementResolver) Project(ctx context.Context, obj *model.ReadingAchievement) (*model.Project, error) {
+func (r *readingAchievementResolver) Project(ctx context.Context, obj *model1.ReadingAchievement) (*model1.Project, error) {
 	panic(fmt.Errorf("not implemented: Project - project"))
 }
 
 // Event is the resolver for the event field.
-func (r *readingAchievementResolver) Event(ctx context.Context, obj *model.ReadingAchievement) (*model.Event, error) {
+func (r *readingAchievementResolver) Event(ctx context.Context, obj *model1.ReadingAchievement) (*model1.Event, error) {
 	panic(fmt.Errorf("not implemented: Event - event"))
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *readingAchievementResolver) Challenge(ctx context.Context, obj *model.ReadingAchievement) (*model.Challenge, error) {
+func (r *readingAchievementResolver) Challenge(ctx context.Context, obj *model1.ReadingAchievement) (*model1.Challenge, error) {
 	panic(fmt.Errorf("not implemented: Challenge - challenge"))
 }
 
 // Project is the resolver for the project field.
-func (r *simpleAchievementResolver) Project(ctx context.Context, obj *model.SimpleAchievement) (*model.Project, error) {
+func (r *simpleAchievementResolver) Project(ctx context.Context, obj *model1.SimpleAchievement) (*model1.Project, error) {
 	panic(fmt.Errorf("not implemented: Project - project"))
 }
 
 // Event is the resolver for the event field.
-func (r *simpleAchievementResolver) Event(ctx context.Context, obj *model.SimpleAchievement) (*model.Event, error) {
+func (r *simpleAchievementResolver) Event(ctx context.Context, obj *model1.SimpleAchievement) (*model1.Event, error) {
 	panic(fmt.Errorf("not implemented: Event - event"))
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *simpleAchievementResolver) Challenge(ctx context.Context, obj *model.SimpleAchievement) (*model.Challenge, error) {
+func (r *simpleAchievementResolver) Challenge(ctx context.Context, obj *model1.SimpleAchievement) (*model1.Challenge, error) {
 	panic(fmt.Errorf("not implemented: Challenge - challenge"))
 }
 
 // Project is the resolver for the project field.
-func (r *streakResolver) Project(ctx context.Context, obj *model.Streak) (*model.Project, error) {
+func (r *streakResolver) Project(ctx context.Context, obj *model1.Streak) (*model1.Project, error) {
 	panic(fmt.Errorf("not implemented: Project - project"))
 }
 
 // Project is the resolver for the project field.
-func (r *streakAchievementResolver) Project(ctx context.Context, obj *model.StreakAchievement) (*model.Project, error) {
+func (r *streakAchievementResolver) Project(ctx context.Context, obj *model1.StreakAchievement) (*model1.Project, error) {
 	panic(fmt.Errorf("not implemented: Project - project"))
 }
 
 // Event is the resolver for the event field.
-func (r *streakAchievementResolver) Event(ctx context.Context, obj *model.StreakAchievement) (*model.Event, error) {
+func (r *streakAchievementResolver) Event(ctx context.Context, obj *model1.StreakAchievement) (*model1.Event, error) {
 	panic(fmt.Errorf("not implemented: Event - event"))
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *streakAchievementResolver) Challenge(ctx context.Context, obj *model.StreakAchievement) (*model.Challenge, error) {
+func (r *streakAchievementResolver) Challenge(ctx context.Context, obj *model1.StreakAchievement) (*model1.Challenge, error) {
 	panic(fmt.Errorf("not implemented: Challenge - challenge"))
 }
 
 // Streak is the resolver for the streak field.
-func (r *streakAchievementResolver) Streak(ctx context.Context, obj *model.StreakAchievement) (*model.Streak, error) {
+func (r *streakAchievementResolver) Streak(ctx context.Context, obj *model1.StreakAchievement) (*model1.Streak, error) {
 	panic(fmt.Errorf("not implemented: Streak - streak"))
 }
 
 // Members is the resolver for the members field.
-func (r *superTeamResolver) Members(ctx context.Context, obj *model.SuperTeam) ([]model.User, error) {
+func (r *superTeamResolver) Members(ctx context.Context, obj *model1.SuperTeam) ([]model1.User, error) {
 	panic(fmt.Errorf("not implemented: Members - members"))
 }
 
 // ParentProject is the resolver for the parentProject field.
-func (r *superTeamResolver) ParentProject(ctx context.Context, obj *model.SuperTeam) (*model.Project, error) {
+func (r *superTeamResolver) ParentProject(ctx context.Context, obj *model1.SuperTeam) (*model1.Project, error) {
 	panic(fmt.Errorf("not implemented: ParentProject - parentProject"))
 }
 
 // Teams is the resolver for the teams field.
-func (r *superTeamResolver) Teams(ctx context.Context, obj *model.SuperTeam) ([]model.Team, error) {
+func (r *superTeamResolver) Teams(ctx context.Context, obj *model1.SuperTeam) ([]model1.Team, error) {
 	panic(fmt.Errorf("not implemented: Teams - teams"))
 }
 
 // Members is the resolver for the members field.
-func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.User, error) {
+func (r *teamResolver) Members(ctx context.Context, obj *model1.Team) ([]model1.User, error) {
 	panic(fmt.Errorf("not implemented: Members - members"))
 }
 
 // ParentProject is the resolver for the parentProject field.
-func (r *teamResolver) ParentProject(ctx context.Context, obj *model.Team) (*model.Project, error) {
+func (r *teamResolver) ParentProject(ctx context.Context, obj *model1.Team) (*model1.Project, error) {
 	panic(fmt.Errorf("not implemented: ParentProject - parentProject"))
 }
 
 // SuperTeam is the resolver for the superTeam field.
-func (r *teamResolver) SuperTeam(ctx context.Context, obj *model.Team) (*model.SuperTeam, error) {
+func (r *teamResolver) SuperTeam(ctx context.Context, obj *model1.Team) (*model1.SuperTeam, error) {
 	panic(fmt.Errorf("not implemented: SuperTeam - superTeam"))
 }
 
 // Church is the resolver for the church field.
-func (r *userResolver) Church(ctx context.Context, obj *model.User) (*model.Church, error) {
-	return r.Loaders.ChurchLoader.Load(ctx, obj.ChurchID)()
+func (r *userResolver) Church(ctx context.Context, obj *model1.User) (*model1.Church, error) {
+	panic(fmt.Errorf("not implemented: Church - church"))
 }
 
 // Projects is the resolver for the projects field.
-func (r *userResolver) Projects(ctx context.Context, obj *model.User) ([]model.Project, error) {
-	projects, err := r.Loaders.ProjectsByUserLoader.Load(ctx, obj.ID)()
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert []*model.Project to []model.Project
-	result := make([]model.Project, len(projects))
-	for i, project := range projects {
-		result[i] = *project
-	}
-
-	return result, nil
+func (r *userResolver) Projects(ctx context.Context, obj *model1.User) ([]model1.Project, error) {
+	panic(fmt.Errorf("not implemented: Projects - projects"))
 }
 
 // Events is the resolver for the events field.
-func (r *userResolver) Events(ctx context.Context, obj *model.User) ([]model.Event, error) {
+func (r *userResolver) Events(ctx context.Context, obj *model1.User) ([]model1.Event, error) {
 	panic(fmt.Errorf("not implemented: Events - events"))
 }
 
 // Teams is the resolver for the teams field.
-func (r *userResolver) Teams(ctx context.Context, obj *model.User) ([]model.Team, error) {
+func (r *userResolver) Teams(ctx context.Context, obj *model1.User) ([]model1.Team, error) {
 	panic(fmt.Errorf("not implemented: Teams - teams"))
 }
 
 // SuperTeams is the resolver for the superTeams field.
-func (r *userResolver) SuperTeams(ctx context.Context, obj *model.User) ([]model.SuperTeam, error) {
+func (r *userResolver) SuperTeams(ctx context.Context, obj *model1.User) ([]model1.SuperTeam, error) {
 	panic(fmt.Errorf("not implemented: SuperTeams - superTeams"))
 }
 

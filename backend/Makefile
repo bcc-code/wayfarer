@@ -1,21 +1,11 @@
-.PHONY: help generate generate-user generate-admin generate-m2m migrate seed test build clean
+.PHONY: help generate migrate seed test build clean
 
 help: ## Display this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-generate: generate-user generate-admin generate-m2m ## Generate all GraphQL code for all three APIs
-
-generate-user: ## Generate User API GraphQL code
-	@echo "Generating User API..."
+generate: ## Generate GraphQL code
+	@echo "Generating GraphQL API..."
 	@go run github.com/99designs/gqlgen generate --config gqlgen.yml
-
-generate-admin: ## Generate Admin API GraphQL code
-	@echo "Generating Admin API..."
-	@go run github.com/99designs/gqlgen generate --config gqlgen.admin.yml
-
-generate-m2m: ## Generate M2M API GraphQL code
-	@echo "Generating M2M API..."
-	@go run github.com/99designs/gqlgen generate --config gqlgen.m2m.yml
 
 migrate: ## Run database migrations
 	@echo "Running migrations..."

@@ -1,0 +1,166 @@
+# GraphQL Schema
+# Imports shared types from shared.graphqls
+
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+# ==================== Root Query (Flattened) ====================
+
+type Query {
+    # ==================== User API Queries ====================
+    # User-scoped queries (filtered by current user context)
+    me: User!
+    myProjects: [Project!]!
+    myEvents(project: ID): [Event!]!
+    myCurrentProject: Project!
+    myCurrentEvent: Event!
+
+    # ==================== Admin/M2M API Queries ====================
+    # System-wide queries with explicit filtering
+    user(id: ID!): User!
+    users(filter: UserFilter): [User!]!
+
+    project(id: ID!): Project!
+    projects: [Project!]!
+
+    event(id: ID!): Event!
+    events(projectId: ID): [Event!]!
+
+    team(id: ID!): Team!
+    teams(projectId: ID): [Team!]!
+
+    superteam(id: ID!): SuperTeam!
+    superteams(projectId: ID): [SuperTeam!]!
+
+    achievement(id: ID!): Achievement!
+    achievements(filter: AchievementFilter!): [Achievement!]!
+
+    challenge(id: ID!): Challenge!
+    challenges(filter: ChallengeFilter!): [Challenge!]!
+
+    church(id: ID!): Church!
+    churches: [Church!]!
+
+    streak(id: ID!): Streak!
+    streaks(projectId: ID): [Streak!]!
+
+    # Admin's current context (distinct from user's)
+    currentProject: Project!
+    currentEvent: Event!
+}
+
+# ==================== Root Mutation ====================
+
+type Mutation {
+    # ==================== User API Mutations ====================
+
+    # Project & Event Participation
+    joinProject(projectId: ID!): Project! @requireRole(roles: ["user"])
+    joinEvent(eventId: ID!): Event! @requireRole(roles: ["user"])
+
+    # Team Participation
+    joinTeam(code: ID!): Team! @requireRole(roles: ["user"])
+
+    # Profile Management
+    updateAvatar(file: Upload!): User! @requireRole(roles: ["user"])
+
+    # ==================== Admin API Mutations ====================
+
+    # Project Management
+    createProject(input: CreateProjectInput!): Project! @requireRole(roles: ["admin"])
+    updateProject(id: ID!, input: UpdateProjectInput!): Project! @requireRole(roles: ["admin"])
+    deleteProject(id: ID!): Boolean! @requireRole(roles: ["admin"])
+    cloneProject(id: ID!, newName: String!): Project! @requireRole(roles: ["admin"])
+    archiveProject(id: ID!): Boolean! @requireRole(roles: ["admin"])
+
+    # Event Management
+    createEvent(projectId: ID!, input: CreateEventInput!): Event! @requireRole(roles: ["admin"])
+    updateEvent(id: ID!, input: UpdateEventInput!): Event! @requireRole(roles: ["admin"])
+    deleteEvent(id: ID!): Boolean! @requireRole(roles: ["admin"])
+    moveEvent(id: ID!, newProjectId: ID!): Event! @requireRole(roles: ["admin"])
+
+    # Challenge Management
+    createChallenge(input: CreateChallengeInput!): Challenge! @requireRole(roles: ["admin"])
+    updateChallenge(id: ID!, input: UpdateChallengeInput!): Challenge! @requireRole(roles: ["admin"])
+    deleteChallenge(id: ID!): Boolean! @requireRole(roles: ["admin"])
+    publishChallenge(id: ID!, publishedAt: DateTime!): Challenge! @requireRole(roles: ["admin"])
+    assignChallengeToEvent(challengeId: ID!, eventId: ID!): Challenge! @requireRole(roles: ["admin"])
+    bulkPublishChallenges(ids: [ID!]!, publishedAt: DateTime!): [Challenge!]! @requireRole(roles: ["admin"])
+    bulkCreateChallenges(inputs: [CreateChallengeInput!]!): [Challenge!]! @requireRole(roles: ["admin"])
+
+    # Achievement Management
+    createSimpleAchievement(input: CreateSimpleAchievementInput!): SimpleAchievement! @requireRole(roles: ["admin"])
+    createReadingAchievement(input: CreateReadingAchievementInput!): ReadingAchievement! @requireRole(roles: ["admin"])
+    createListeningAchievement(input: CreateListeningAchievementInput!): ListeningAchievement! @requireRole(roles: ["admin"])
+    createStreakAchievement(input: CreateStreakAchievementInput!): StreakAchievement! @requireRole(roles: ["admin"])
+    updateAchievement(id: ID!, input: UpdateAchievementInput!): Achievement! @requireRole(roles: ["admin"])
+    deleteAchievement(id: ID!): Boolean! @requireRole(roles: ["admin"])
+    linkAchievementToChallenge(achievementId: ID!, challengeId: ID!): Achievement! @requireRole(roles: ["admin"])
+
+    # Team Management
+    createTeam(projectId: ID!, input: CreateTeamInput!): Team! @requireRole(roles: ["admin"])
+    updateTeam(id: ID!, input: UpdateTeamInput!): Team! @requireRole(roles: ["admin"])
+    deleteTeam(id: ID!): Boolean! @requireRole(roles: ["admin"])
+    addTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin"])
+    removeTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin"])
+    bulkAssignUsersToTeam(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin"])
+
+    # SuperTeam Management
+    createSuperTeam(projectId: ID!, input: CreateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin"])
+    updateSuperTeam(id: ID!, input: UpdateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin"])
+    deleteSuperTeam(id: ID!): Boolean! @requireRole(roles: ["admin"])
+    assignTeamsToSuperTeam(superTeamId: ID!, teamIds: [ID!]!): SuperTeam! @requireRole(roles: ["admin"])
+
+    # User Management
+    assignUserToProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin"])
+    removeUserFromProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin"])
+    assignUserToEvent(userId: ID!, eventId: ID!): User! @requireRole(roles: ["admin"])
+
+    # Streak Management
+    createStreak(input: CreateStreakInput!): Streak! @requireRole(roles: ["admin"])
+    updateStreak(id: ID!, input: UpdateStreakInput!): Streak! @requireRole(roles: ["admin"])
+    deleteStreak(id: ID!): Boolean! @requireRole(roles: ["admin"])
+
+    # ==================== M2M API Mutations ====================
+    # Accessible by both m2m and admin roles
+
+    # Achievement Notifications
+    awardAchievement(userId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin"])
+    revokeAchievement(userId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin"])
+
+    # Challenge Completion Notifications
+    completeChallenge(userId: ID!, challengeId: ID!, completedAt: DateTime): Challenge! @requireRole(roles: ["m2m", "admin"])
+    uncompleteChallenge(userId: ID!, challengeId: ID!): Boolean! @requireRole(roles: ["m2m", "admin"])
+
+    # Reading Progress Tracking
+    markArticleAsRead(userId: ID!, achievementId: ID!, articleId: ID!): ReadingAchievement! @requireRole(roles: ["m2m", "admin"])
+    unmarkArticleAsRead(userId: ID!, achievementId: ID!, articleId: ID!): ReadingAchievement! @requireRole(roles: ["m2m", "admin"])
+
+    # Listening Progress Tracking
+    markTrackAsListened(userId: ID!, achievementId: ID!, trackId: ID!): ListeningAchievement! @requireRole(roles: ["m2m", "admin"])
+    unmarkTrackAsListened(userId: ID!, achievementId: ID!, trackId: ID!): ListeningAchievement! @requireRole(roles: ["m2m", "admin"])
+
+    # Streak Tracking
+    recordStreakActivity(userId: ID!, achievementId: ID!, currentStreak: Int!): StreakAchievement! @requireRole(roles: ["m2m", "admin"])
+
+    # Score Adjustments (unified signature with optional reason for audit trail)
+    adjustUserScore(userId: ID!, projectId: ID!, points: Int!, reason: String): Boolean! @requireRole(roles: ["admin", "m2m"])
+    adjustTeamScore(teamId: ID!, projectId: ID!, points: Int!, reason: String): Boolean! @requireRole(roles: ["admin", "m2m"])
+    adjustSuperTeamScore(superTeamId: ID!, projectId: ID!, points: Int!, reason: String): Boolean! @requireRole(roles: ["admin", "m2m"])
+
+    # Team Achievements
+    awardTeamAchievement(teamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin"])
+    revokeTeamAchievement(teamId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin"])
+
+    # SuperTeam Achievements
+    awardSuperTeamAchievement(superTeamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin"])
+    revokeSuperTeamAchievement(superTeamId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin"])
+
+    # Bulk Operations
+    bulkAwardAchievements(userIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin"])
+    bulkCompleteChallenges(userIds: [ID!]!, challengeId: ID!, completedAt: DateTime): [Challenge!]! @requireRole(roles: ["m2m", "admin"])
+    bulkAwardTeamAchievements(teamIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin"])
+    bulkAwardSuperTeamAchievements(superTeamIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin"])
+}

@@ -3,6 +3,8 @@ directive @goField(
     name: String
 ) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
 
+directive @requireRole(roles: [String!]!) on FIELD_DEFINITION
+
 # ==================== Scalars ====================
 
 scalar HTML
@@ -474,4 +476,28 @@ input UpdateStreakInput {
     name: String
     description: String
     relevantDays: [DateRangeInput!]
+}
+
+# Query Filter Inputs
+input UserFilter {
+    churchId: ID
+    gender: Gender
+    minAge: Int
+    maxAge: Int
+    projectId: ID
+    eventId: ID
+    teamId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+}
+
+input ChallengeFilter {
+    projectId: ID
+    eventId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+}
+
+input AchievementFilter {
+    projectId: ID
+    eventId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
 }
