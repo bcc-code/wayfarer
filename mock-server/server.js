@@ -6,9 +6,71 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { faker } from '@faker-js/faker';
+import { ulid } from 'ulid';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Load seeded data
+const seedData = JSON.parse(readFileSync(join(__dirname, 'data.json'), 'utf-8'));
+
+// Initialize seeded projects and events with proper IDs
+const seededProjects = seedData.projects.map(project => {
+  const projectId = 'PR' + ulid();
+  const events = project.events.map(event => {
+    const eventId = 'EV' + ulid();
+    const eventObj = {
+      __typename: 'Event',
+      id: eventId,
+      name: event.name,
+      description: faker.lorem.sentence(),
+      startDate: project.startDate,
+      endDate: project.endDate,
+      __seeded: true, // Mark as seeded
+    };
+    return eventObj;
+  });
+
+  return {
+    __typename: 'Project',
+    id: projectId,
+    name: project.name,
+    description: faker.lorem.paragraph(),
+    startDate: project.startDate,
+    endDate: project.endDate,
+    events: events,
+    __seeded: true, // Mark as seeded
+  };
+});
+
+// Create a map for quick lookups
+const projectsMap = new Map(seededProjects.map(p => [p.id, p]));
+const eventsMap = new Map();
+seededProjects.forEach(project => {
+  project.events.forEach(event => {
+    eventsMap.set(event.id, event);
+  });
+});
+
+// Track current context for resolvers
+let eventIndex = 0;
+let currentProjectEvents = [];
+
+// Helper function to remove internal fields
+const cleanSeededData = (obj) => {
+  if (!obj) return obj;
+  const { __seeded, __typename, ...clean } = obj;
+
+  // Also clean nested event arrays
+  if (clean.events && Array.isArray(clean.events)) {
+    clean.events = clean.events.map(e => {
+      const { __seeded: _, __typename: __, ...cleanEvent } = e;
+      return cleanEvent;
+    });
+  }
+
+  return clean;
+};
 
 // Read all schema files
 const sharedSchema = readFileSync(join(__dirname, '../gql/shared.graphqls'), 'utf-8');
@@ -73,8 +135,13 @@ const mocks = {
     category: () => faker.helpers.arrayElement(['S', 'L', 'XL']),
   }),
 
-  Project: () => {
-    // Randomly choose project time state: past, active, or future
+  Project: (parent) => {
+    // If this is a seeded project, preserve its data
+    if (parent && parent.__seeded) {
+      return parent;
+    }
+
+    // Otherwise generate mock data
     const timeState = faker.helpers.arrayElement(['past', 'active', 'future']);
 
     let startDate, endDate;
@@ -105,17 +172,24 @@ const mocks = {
     };
   },
 
-  Event: () => ({
-    id: () => faker.string.uuid(),
-    name: () => faker.helpers.arrayElement([
-      `Week ${faker.number.int({ min: 1, max: 8 })}`,
-      `${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Ceremony', 'Challenge', 'Session', 'Gathering'])}`,
-      `${faker.date.weekday()} ${faker.helpers.arrayElement(['Meeting', 'Service', 'Event'])}`
-    ]),
-    description: () => faker.lorem.sentence(),
-    startDate: () => faker.date.recent({ days: 7 }).toISOString(),
-    endDate: () => faker.date.soon({ days: 14 }).toISOString(),
-  }),
+  Event: (parent) => {
+    // If this is a seeded event, preserve its data
+    if (parent && parent.__seeded) {
+      return parent;
+    }
+    // Otherwise generate mock data
+    return {
+      id: () => faker.string.uuid(),
+      name: () => faker.helpers.arrayElement([
+        `Week ${faker.number.int({ min: 1, max: 8 })}`,
+        `${faker.word.adjective({ capitalize: true })} ${faker.helpers.arrayElement(['Ceremony', 'Challenge', 'Session', 'Gathering'])}`,
+        `${faker.date.weekday()} ${faker.helpers.arrayElement(['Meeting', 'Service', 'Event'])}`
+      ]),
+      description: () => faker.lorem.sentence(),
+      startDate: () => faker.date.recent({ days: 7 }).toISOString(),
+      endDate: () => faker.date.soon({ days: 14 }).toISOString(),
+    };
+  },
 
   Team: () => ({
     id: () => faker.string.uuid(),
@@ -294,11 +368,11 @@ const mocks = {
 
   // User API Query resolvers
   UserQueryRoot: () => ({
-    currentProject: () => ({}),
-    currentEvent: () => ({}),
+    currentProject: () => cleanSeededData(seededProjects[0]) || {},
+    currentEvent: () => cleanSeededData(seededProjects[0]?.events[0]) || {},
     me: () => ({}),
-    projects: () => Array(3).fill(null).map(() => ({})),
-    events: () => Array(2).fill(null).map(() => ({})),
+    projects: () => seededProjects.map(p => cleanSeededData(p)),
+    events: () => seededProjects.flatMap(p => p.events).map(e => cleanSeededData(e)),
   }),
 
   UserMutationRoot: () => ({}),
@@ -307,10 +381,20 @@ const mocks = {
   AdminQueryRoot: () => ({
     user: () => ({}),
     users: () => Array(100).fill(null).map(() => ({})),
-    project: () => ({}),
-    projects: () => Array(6).fill(null).map(() => ({})),
-    event: () => ({}),
-    events: () => Array(4).fill(null).map(() => ({})),
+    project: (root, args) => {
+      if (args && args.id) {
+        return cleanSeededData(projectsMap.get(args.id)) || {};
+      }
+      return cleanSeededData(seededProjects[0]) || {};
+    },
+    projects: () => seededProjects.map(p => cleanSeededData(p)),
+    event: (root, args) => {
+      if (args && args.id) {
+        return cleanSeededData(eventsMap.get(args.id)) || {};
+      }
+      return cleanSeededData(seededProjects[0]?.events[0]) || {};
+    },
+    events: () => seededProjects.flatMap(p => p.events).map(e => cleanSeededData(e)),
     team: () => ({}),
     teams: () => Array(20).fill(null).map(() => ({})),
     superteam: () => ({}),
@@ -332,8 +416,18 @@ const mocks = {
   // M2M API Query resolvers
   M2MQueryRoot: () => ({
     user: () => ({}),
-    project: () => ({}),
-    event: () => ({}),
+    project: (root, args) => {
+      if (args && args.id) {
+        return cleanSeededData(projectsMap.get(args.id)) || {};
+      }
+      return cleanSeededData(seededProjects[0]) || {};
+    },
+    event: (root, args) => {
+      if (args && args.id) {
+        return cleanSeededData(eventsMap.get(args.id)) || {};
+      }
+      return cleanSeededData(seededProjects[0]?.events[0]) || {};
+    },
     team: () => ({}),
     superteam: () => ({}),
     achievement: () => ({}),
@@ -341,21 +435,34 @@ const mocks = {
     users: () => Array(5).fill(null).map(() => ({})),
     challenges: () => Array(3).fill(null).map(() => ({})),
     achievements: () => Array(5).fill(null).map(() => ({})),
-    currentProject: () => ({}),
-    currentEvent: () => ({}),
+    currentProject: () => cleanSeededData(seededProjects[0]) || {},
+    currentEvent: () => cleanSeededData(seededProjects[0]?.events[0]) || {},
   }),
 
   M2MMutationRoot: () => ({}),
 };
 
-// Create executable schema
-const schema = makeExecutableSchema({ typeDefs });
+// Create executable schema with custom resolvers for seeded data
+const resolvers = {
+  Project: {
+    events: (parent) => {
+      // If this is a seeded project, return its events without internal fields
+      if (parent.__seeded && parent.events) {
+        return parent.events.map(e => cleanSeededData(e));
+      }
+      // Otherwise return empty to let mocks handle it
+      return undefined;
+    },
+  },
+};
+
+const schema = makeExecutableSchema({ typeDefs, resolvers });
 
 // Add mocks to schema
 const schemaWithMocks = addMocksToSchema({
   schema,
   mocks,
-  preserveResolvers: false,
+  preserveResolvers: true, // Preserve our custom resolvers
 });
 
 // Create Yoga instance with GraphiQL
