@@ -22,7 +22,10 @@ defineProps<{
       <h3 class="font-semibold mb-2">
         {{ project.name }}
       </h3>
-      <p v-if="project.description" class="text-sm text-muted mb-2">
+      <p
+        v-if="project.description"
+        class="text-sm text-muted mb-2 truncate line-clamp-3 whitespace-normal"
+      >
         {{ project.description }}
       </p>
       <p class="text-xs font-medium text-muted mt-auto">
