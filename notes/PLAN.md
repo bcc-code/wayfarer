@@ -1,7 +1,8 @@
 # Wayfarer Backend - Implementation Plan
 
 **Created**: 2025-10-31
-**Status**: Phase 1 Complete - Foundation Established
+**Updated**: 2025-11-03
+**Status**: Phase 2 Complete - GraphQL Code Generation Ready
 
 ## Project Overview
 
@@ -47,51 +48,42 @@ Building a Go backend for the Wayfarer gamification system with three separate G
 
 ---
 
-## Phase 2: Code Generation & Queries 🔄 IN PROGRESS
+## Phase 2: Code Generation & Queries ✅ COMPLETE
 
-### 2.1 SQLc Configuration ⏳ NEXT
-- [ ] Create sqlc.yaml configuration file
-  - Set SQL engine to PostgreSQL
-  - Configure output directory (pkg/models)
-  - Set package name and emit settings
-- [ ] Write initial SQL queries in queries/ directory:
-  - churches.sql (CRUD operations)
-  - users.sql (CRUD + lookups by church, gender, age)
-  - projects.sql (CRUD + archived filtering)
-  - events.sql (CRUD + project filtering)
-  - teams.sql (CRUD + join code lookup)
-  - achievements.sql (CRUD + type filtering)
-  - user_progress.sql (achievement tracking, challenge completions)
-- [ ] Run `sqlc generate` to create type-safe models
-- [ ] Test generated code compiles
+### 2.1 GraphQL Configuration ✅
+- [x] Three separate gqlgen.yml files (user, admin, m2m)
+- [x] Reference ../gql/ schemas directly (no symlink)
+- [x] Configure three separate APIs with own resolver paths
+- [x] Map custom scalars (DateTime, Date, HTML, Upload)
+- [x] Run `gqlgen generate` for all three APIs
+- [x] Verify all generated code compiles
+- [x] Add .gitattributes to collapse generated files in PR reviews
 
-### 2.2 GraphQL Configuration ⏳
-- [ ] Create gqlgen.yml configuration
-  - Reference ../gql/ schemas directly (no symlink)
-  - Configure three separate APIs (user, admin, m2m)
-  - Set up resolver generation paths
-  - Map GraphQL types to Go types (ULID IDs, etc.)
-- [ ] Run `gqlgen generate` to create resolvers
-- [ ] Verify generated code structure
-
-### 2.3 Makefile Creation ⏳
-- [ ] Create Makefile with common targets:
-  - `make generate` - runs both sqlc and gqlgen
-  - `make migrate-up` - runs migrations up
-  - `make migrate-down` - runs migrations down
-  - `make migrate-status` - shows migration status
-  - `make dev` - starts development server with hot reload
-  - `make test` - runs all tests
+### 2.2 Makefile Creation ✅
+- [x] Create Makefile with common targets:
+  - `make generate` - runs gqlgen for all three APIs
+  - `make generate-user/admin/m2m` - individual API generation
+  - `make migrate` / `migrate-down` / `migrate-status` - migrations
+  - `make seed` - database seeding
+  - `make test` - runs all tests with coverage
   - `make build` - builds all binaries
   - `make clean` - cleans build artifacts
-- [ ] Test all Makefile targets
+  - `make fmt` / `lint` / `tidy` - code quality
+  - `make dev` - starts development server
+- [x] Test `make generate` successfully generates all three APIs
 
-### 2.4 Documentation ⏳
-- [ ] Create notes/03-code-generation.md documenting:
-  - sqlc configuration and workflow
-  - gqlgen configuration and workflow
-  - Makefile usage
-  - Code generation best practices
+### 2.3 Documentation ✅
+- [x] Create notes/03-code-generation.md documenting:
+  - gqlgen configuration for three APIs
+  - Custom scalar implementations
+  - Generated code structure
+  - Makefile usage and workflow
+  - Best practices and common issues
+
+### 2.4 SQLc Configuration ⏳ DEFERRED
+- [ ] Create sqlc.yaml configuration file (deferred per user request)
+- [ ] Write initial SQL queries in queries/ directory (deferred)
+- [ ] Run `sqlc generate` to create type-safe models (deferred)
 
 ---
 
@@ -257,11 +249,20 @@ Building a Go backend for the Wayfarer gamification system with three separate G
 - ✅ Database migrations tested against CockroachDB cloud
 - ✅ All 21 tables created successfully
 
+**Phase 2 Complete**: GraphQL code generation configured
+- ✅ Three separate gqlgen configurations (user, admin, m2m)
+- ✅ All GraphQL resolvers generated and compiling
+- ✅ Custom scalars implemented (DateTime, Date, HTML)
+- ✅ Makefile with all development targets
+- ✅ .gitattributes for PR review optimization
+- ✅ Documentation complete
+
 **Next Steps**:
-1. Configure sqlc and write initial queries
-2. Create Makefile for development workflow
-3. Implement middleware layer
-4. Set up GraphQL servers
+1. Implement middleware layer (auth, logging, recovery)
+2. Create HTTP server with Gin
+3. Wire up three GraphQL endpoints
+4. Implement resolver business logic
+5. Configure sqlc for database queries (optional)
 
 **Estimated Remaining Work**:
 - Phase 2: ~2-3 hours

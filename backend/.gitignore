@@ -1,16 +1,50 @@
 # Binaries
 /server
 /migrate
+/seed
 /bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
 
 # Test coverage
 coverage.out
+coverage.html
+*.test
+*.prof
+
+# Go workspace file
+go.work
 
 # Environment variables
 .env
+.env.local
+.env.*.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Log files
+*.log
+logs/
+
+# Air (live reload) temporary files
+tmp/
+.air.toml
+
+# Database files (local development)
+*.db
+*.sqlite
+*.sqlite3
 
 # macOS
 .DS_Store
+.AppleDouble
+.LSOverride
 
 # IDE
 .vscode/
@@ -18,3 +52,9 @@ coverage.out
 *.swp
 *.swo
 *~
+*.iml
+
+# Editor backups
+*~
+\#*\#
+.\#*

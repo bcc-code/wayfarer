@@ -1,4 +1,4 @@
-.PHONY: help generate generate-user generate-admin generate-m2m migrate test build clean
+.PHONY: help generate generate-user generate-admin generate-m2m migrate seed test build clean
 
 help: ## Display this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -29,6 +29,14 @@ migrate-status: ## Check migration status
 	@echo "Checking migration status..."
 	@go run ./cmd/migrate -direction status
 
+seed: ## Seed database with test data
+	@echo "Seeding database..."
+	@go run ./cmd/seed
+
+seed-reproducible: ## Seed database with reproducible data (seed=42)
+	@echo "Seeding database with seed 42..."
+	@go run ./cmd/seed -seed 42
+
 test: ## Run all tests
 	@echo "Running tests..."
 	@go test -v -race -coverprofile=coverage.out ./...
@@ -40,6 +48,7 @@ build: ## Build all binaries
 	@echo "Building binaries..."
 	@go build -o bin/migrate ./cmd/migrate
 	@go build -o bin/server ./cmd/server
+	@go build -o bin/seed ./cmd/seed
 
 clean: ## Remove build artifacts
 	@echo "Cleaning..."

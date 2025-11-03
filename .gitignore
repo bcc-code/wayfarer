@@ -5,9 +5,24 @@
 .nitro
 .cache
 dist
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
 
 # Node dependencies
 node_modules
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment variables
+.env
+.env.local
+.env.*.local
 
 # Logs
 logs
@@ -22,3 +37,4 @@ logs
 .env
 .env.*
 !.env.example
+logs/
