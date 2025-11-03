@@ -9,6 +9,59 @@ import (
 	"context"
 )
 
+const CreateUser = `-- name: CreateUser :one
+INSERT INTO users (id, members_id, email, name, gender, age, church_id, avatar_url)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, members_id, gender, church_id, age, email, name, avatar_url
+`
+
+type CreateUserParams struct {
+	ID        string  `json:"id"`
+	MembersID string  `json:"members_id"`
+	Email     string  `json:"email"`
+	Name      string  `json:"name"`
+	Gender    string  `json:"gender"`
+	Age       int32   `json:"age"`
+	ChurchID  string  `json:"church_id"`
+	AvatarUrl *string `json:"avatar_url"`
+}
+
+type CreateUserRow struct {
+	ID        string  `json:"id"`
+	MembersID string  `json:"members_id"`
+	Gender    string  `json:"gender"`
+	ChurchID  string  `json:"church_id"`
+	Age       int32   `json:"age"`
+	Email     string  `json:"email"`
+	Name      string  `json:"name"`
+	AvatarUrl *string `json:"avatar_url"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*CreateUserRow, error) {
+	row := q.db.QueryRow(ctx, CreateUser,
+		arg.ID,
+		arg.MembersID,
+		arg.Email,
+		arg.Name,
+		arg.Gender,
+		arg.Age,
+		arg.ChurchID,
+		arg.AvatarUrl,
+	)
+	var i CreateUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.MembersID,
+		&i.Gender,
+		&i.ChurchID,
+		&i.Age,
+		&i.Email,
+		&i.Name,
+		&i.AvatarUrl,
+	)
+	return &i, err
+}
+
 const GetUserByID = `-- name: GetUserByID :one
 SELECT id, members_id, gender, church_id, age, email, name, avatar_url
 FROM users
@@ -29,6 +82,39 @@ type GetUserByIDRow struct {
 func (q *Queries) GetUserByID(ctx context.Context, id string) (*GetUserByIDRow, error) {
 	row := q.db.QueryRow(ctx, GetUserByID, id)
 	var i GetUserByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.MembersID,
+		&i.Gender,
+		&i.ChurchID,
+		&i.Age,
+		&i.Email,
+		&i.Name,
+		&i.AvatarUrl,
+	)
+	return &i, err
+}
+
+const GetUserByMembersID = `-- name: GetUserByMembersID :one
+SELECT id, members_id, gender, church_id, age, email, name, avatar_url
+FROM users
+WHERE members_id = $1
+`
+
+type GetUserByMembersIDRow struct {
+	ID        string  `json:"id"`
+	MembersID string  `json:"members_id"`
+	Gender    string  `json:"gender"`
+	ChurchID  string  `json:"church_id"`
+	Age       int32   `json:"age"`
+	Email     string  `json:"email"`
+	Name      string  `json:"name"`
+	AvatarUrl *string `json:"avatar_url"`
+}
+
+func (q *Queries) GetUserByMembersID(ctx context.Context, membersID string) (*GetUserByMembersIDRow, error) {
+	row := q.db.QueryRow(ctx, GetUserByMembersID, membersID)
+	var i GetUserByMembersIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.MembersID,

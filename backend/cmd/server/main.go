@@ -12,10 +12,12 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/MicahParks/keyfunc/v3"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/graph/api"
 	"github.com/bcc-media/wayfarer/internal/graph/directives"
+	"github.com/bcc-media/wayfarer/internal/handlers"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/logger"
 	"github.com/bcc-media/wayfarer/internal/middleware"
@@ -45,6 +47,14 @@ func main() {
 
 	slog.Info("Connected to database successfully")
 
+	// Initialize JWKS for Brunstad TV JWT validation
+	jwks, err := keyfunc.NewDefault([]string{cfg.JWT.BrunstadTVJWKSURL})
+	if err != nil {
+		slog.Error("Failed to initialize JWKS", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("JWKS initialized successfully", "url", cfg.JWT.BrunstadTVJWKSURL)
+
 	// Initialize DataLoaders (shared globally across all requests)
 	dataLoaders := loaders.NewLoaders(db)
 	slog.Info("DataLoaders initialized with global caching")
@@ -71,6 +81,10 @@ func main() {
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+
+	// Authentication callback endpoint (no JWT middleware)
+	authHandler := &handlers.AuthHandler{DB: db, Cfg: cfg, JWKS: jwks}
+	router.GET("/callback", authHandler.Callback)
 
 	// GraphQL API endpoint
 	router.POST("/graphql", middleware.JWTAuth(cfg.JWT), graphqlHandler(apiHandler))

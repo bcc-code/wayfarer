@@ -39,12 +39,13 @@ type Challenge struct {
 }
 
 type Church struct {
-	ID        string             `json:"id"`
-	Name      string             `json:"name"`
-	Country   string             `json:"country"`
-	Category  string             `json:"category"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ID         string             `json:"id"`
+	Name       string             `json:"name"`
+	Country    string             `json:"country"`
+	Category   string             `json:"category"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	ExternalID *int32             `json:"external_id"`
 }
 
 type Event struct {

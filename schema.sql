@@ -7,6 +7,7 @@
 
 CREATE TABLE churches (
     id CHAR(28) PRIMARY KEY CHECK (id ~ '^CH[0-9A-Z]{26}$'),
+    external_id INT UNIQUE,
     name VARCHAR(255) NOT NULL,
     country VARCHAR(100) NOT NULL,
     category VARCHAR(10) NOT NULL CHECK (category IN ('S', 'L', 'XL')),
@@ -20,7 +21,7 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
     gender VARCHAR(10) NOT NULL CHECK (gender IN ('MALE', 'FEMALE')),
-    age INT NOT NULL CHECK (age > 0),
+    age INT NOT NULL CHECK (age >= 0),
     church_id CHAR(28) NOT NULL REFERENCES churches(id) ON DELETE RESTRICT,
     avatar_url VARCHAR(500),
     created_at TIMESTAMPTZ DEFAULT now(),

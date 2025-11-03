@@ -1,13 +1,22 @@
 package middleware
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
+
+// WayfarerClaims represents the JWT claims issued by Wayfarer
+type WayfarerClaims struct {
+	UserID   string `json:"user_id"`
+	UserRole string `json:"user_role"`
+	jwt.RegisteredClaims
+}
 
 // JWTAuth is a middleware that validates JWT tokens and extracts user information
 func JWTAuth(cfg config.JWTConfig) gin.HandlerFunc {
@@ -39,49 +48,65 @@ func JWTAuth(cfg config.JWTConfig) gin.HandlerFunc {
 			return
 		}
 
-		token := parts[1]
+		tokenString := parts[1]
 
-		// TODO: Implement actual JWT validation here
-		// For now, we'll parse a mock structure for development
-		// In production, use a proper JWT library like github.com/golang-jwt/jwt
-
-		// Mock JWT parsing for development
-		// Expected format: token contains role information
-		// In a real implementation, you would:
-		// 1. Validate the token signature
-		// 2. Check expiration
-		// 3. Extract claims
-
-		// For development, we'll accept tokens in format: "user:<userId>" or "admin:<userId>" or "m2m:<systemId>"
-		var userID string
-		var role string
-
-		if strings.HasPrefix(token, "user:") {
-			role = "user"
-			userID = strings.TrimPrefix(token, "user:")
-		} else if strings.HasPrefix(token, "admin:") {
-			role = "admin"
-			userID = strings.TrimPrefix(token, "admin:")
-		} else if strings.HasPrefix(token, "m2m:") {
-			role = "m2m"
-			userID = strings.TrimPrefix(token, "m2m:")
-		} else {
-			// Default to user role for any other token (for backward compatibility during development)
-			role = "user"
-			userID = token
+		// Parse and validate JWT
+		claims, err := validateToken(tokenString, cfg)
+		if err != nil {
+			slog.Warn("Invalid JWT token",
+				"error", err,
+				"path", c.Request.URL.Path,
+			)
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid or expired token",
+			})
+			c.Abort()
+			return
 		}
 
 		// Set user context for GraphQL resolvers
-		c.Set("user_id", userID)
-		c.Set("user_role", role)
+		c.Set("user_id", claims.UserID)
+		c.Set("user_role", claims.UserRole)
 
-		slog.Debug("JWT parsed",
-			"user_id", userID,
-			"role", role,
+		slog.Debug("JWT validated",
+			"user_id", claims.UserID,
+			"role", claims.UserRole,
 		)
 
 		c.Next()
 	}
+}
+
+// validateToken parses and validates a JWT token
+func validateToken(tokenString string, cfg config.JWTConfig) (*WayfarerClaims, error) {
+	// Parse the token
+	token, err := jwt.ParseWithClaims(tokenString, &WayfarerClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// Verify signing method is HS256
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return []byte(cfg.Secret), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, errors.New("invalid token")
+	}
+
+	claims, ok := token.Claims.(*WayfarerClaims)
+	if !ok {
+		return nil, errors.New("invalid token claims")
+	}
+
+	// Verify issuer if configured
+	if cfg.Issuer != "" && claims.Issuer != cfg.Issuer {
+		return nil, errors.New("invalid token issuer")
+	}
+
+	return claims, nil
 }
 
 // RequireAuth is a stricter middleware that rejects requests without valid JWT
