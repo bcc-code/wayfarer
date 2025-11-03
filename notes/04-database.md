@@ -175,7 +175,4 @@ if err := db.Ping(ctx); err != nil {
 }
 ```
 
-Test database provided:
-```
-postgresql://wayfarer:bPf3oJVyEwIlMqunqCg8_g@bccm-wayfarer-17762.j77.aws-eu-west-1.cockroachlabs.cloud:26257/wayfarer-test?sslmode=verify-full
-```
+Test database provided: see .env file
