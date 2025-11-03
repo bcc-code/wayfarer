@@ -7,20 +7,14 @@ defineProps<{
 
 const colorMode = useColorMode()
 
-const user = ref({
-  name: 'Sigve Hansen',
-  avatar: {
-    src: 'https://api.dicebear.com/9.x/thumbs/svg?seed=Sigve%20Hansen',
-    alt: 'Sigve Hansen',
-  },
-})
+const { user } = useAuth()
 
 const items = computed<DropdownMenuItem[][]>(() => [
   [
     {
       type: 'label',
       label: user.value.name,
-      avatar: user.value.avatar,
+      avatar: { src: user.value.image, alt: user.value.name },
     },
   ],
   [
@@ -75,7 +69,7 @@ const items = computed<DropdownMenuItem[][]>(() => [
   >
     <UButton
       v-bind="{
-        ...user,
+        avatar: { src: user?.image, alt: user?.name },
         label: collapsed ? undefined : user?.name,
         trailingIcon: collapsed ? undefined : 'lucide:chevrons-up-down',
       }"

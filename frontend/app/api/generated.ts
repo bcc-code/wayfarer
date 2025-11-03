@@ -1178,6 +1178,11 @@ export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type CurrentProjectQuery = { __typename?: 'CombinedQuery', user: { __typename?: 'UserQueryRoot', currentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } } };
 
+export type AdminHomePageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminHomePageQuery = { __typename?: 'CombinedQuery', admin: { __typename?: 'AdminQueryRoot', projects: Array<{ __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } }> } };
+
 export type AdminProjectPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
@@ -1241,6 +1246,32 @@ export const CurrentProjectDocument = gql`
 
 export function useCurrentProjectQuery(options?: Omit<Urql.UseQueryArgs<never, CurrentProjectQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<CurrentProjectQuery, CurrentProjectQueryVariables | undefined>({ query: CurrentProjectDocument, variables: undefined, ...options });
+};
+export const AdminHomePageDocument = gql`
+    query AdminHomePage {
+  admin {
+    projects {
+      id
+      name
+      description
+      endDate
+      startDate
+      branding {
+        logo
+        rounding
+        colors {
+          primary
+          secondary
+          tertiary
+        }
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminHomePageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminHomePageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminHomePageQuery, AdminHomePageQueryVariables | undefined>({ query: AdminHomePageDocument, variables: undefined, ...options });
 };
 export const AdminProjectPageDocument = gql`
     query AdminProjectPage($projectId: ID!) {

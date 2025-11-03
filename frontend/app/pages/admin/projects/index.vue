@@ -57,9 +57,9 @@ const pastProjects = computed(() => {
 
 <template>
   <UContainer>
-    <div class="flex gap-4 items-center">
-      <h1 class="text-3xl my-8">Projects</h1>
-      <UButton icon="lucide:plus">New Project</UButton>
+    <div class="flex gap-6 items-center">
+      <h1 class="text-3xl my-12">Projects</h1>
+      <UButton icon="lucide:plus" variant="soft">New Project</UButton>
     </div>
 
     <template v-if="fetching">

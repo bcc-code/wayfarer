@@ -74,7 +74,7 @@ const { data, error, fetching } = useAdminProjectPageQuery({
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <template v-else-if="data">
-      <header class="my-8">
+      <header class="my-12">
         <div class="flex flex-col gap-6 mb-8">
           <div>
             <h1 class="text-3xl font-bold mb-2">
