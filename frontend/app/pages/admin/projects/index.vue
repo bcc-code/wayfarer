@@ -27,32 +27,9 @@ query AdminProjectsPage {
 
 const { data, error, fetching } = useAdminProjectsPageQuery()
 
-const currentProjects = computed(() => {
-  if (!data.value?.admin.projects) return []
-  return data.value.admin.projects.filter((project) =>
-    isWithinRange(new Date(), project.startDate, project.endDate),
-  )
-})
-
-const futureProjects = computed(() => {
-  if (!data.value?.admin.projects) return []
-  return data.value.admin.projects.filter((project) => {
-    const now = new Date()
-    const startDate = new Date(project.startDate)
-    return startDate > now
-  })
-})
-
-const pastProjects = computed(() => {
-  if (!data.value?.admin.projects) return []
-  return data.value.admin.projects.filter((project) => {
-    const now = new Date()
-    const endDate = new Date(project.endDate)
-    return (
-      endDate < now && !isWithinRange(now, project.startDate, project.endDate)
-    )
-  })
-})
+const { currentProjects, futureProjects, pastProjects } = useGroupedProjects(
+  () => data.value?.admin.projects,
+)
 </script>
 
 <template>

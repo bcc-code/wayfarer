@@ -29,11 +29,7 @@ gql(`
 `)
 
 const { data } = useAdminHomePageQuery()
-const currentProjects = computed(() => {
-  return data.value?.admin.projects.filter((project) =>
-    isWithinRange(new Date(), project.startDate, project.endDate),
-  )
-})
+const { currentProjects } = useGroupedProjects(() => data.value?.admin.projects)
 
 const { user } = useAuth()
 
@@ -51,12 +47,22 @@ const greeting = computed(() => {
       {{ greeting }}, {{ user.name }}
     </h1>
 
-    <section v-if="data?.admin.projects">
+    <section>
       <div class="flex items-baseline gap-4 mb-3">
         <h2>Current Projects</h2>
-        <UButton variant="soft" size="xs" to="/admin/projects">See all</UButton>
+        <UButton
+          v-if="currentProjects.length"
+          variant="soft"
+          size="xs"
+          to="/admin/projects"
+        >
+          See all
+        </UButton>
       </div>
-      <div class="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+      <div
+        v-if="currentProjects.length"
+        class="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4"
+      >
         <NuxtLink
           v-for="project in currentProjects"
           :key="project.id"
@@ -68,6 +74,13 @@ const greeting = computed(() => {
           <AdminProjectCard :project />
         </NuxtLink>
       </div>
+      <UEmpty
+        v-else
+        icon="lucide:square-dashed-mouse-pointer"
+        title="A whole lotta nothin'"
+        description="There are no projects currently running"
+        :actions="[{ label: 'See all projects', to: '/admin/projects' }]"
+      />
     </section>
   </UContainer>
 </template>

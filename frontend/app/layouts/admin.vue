@@ -16,43 +16,33 @@ gql(`
 `)
 
 const { data } = useAdminSidebarQuery()
-const projects = computed(() => {
-  return (
-    data.value?.admin.projects
-      .filter((project) => new Date(project.startDate) < new Date())
-      .sort((a, b) =>
-        isWithinRange(new Date(), a.startDate, a.endDate)
-          ? -1
-          : isWithinRange(new Date(), b.startDate, b.endDate)
-            ? 1
-            : 0,
-      ) ?? []
-  )
+const { currentProjects, futureProjects } = useGroupedProjects(
+  () => data.value?.admin.projects,
+)
+const projectsLinks = computed(() => {
+  return [...currentProjects.value, ...futureProjects.value].map((project) => ({
+    label: project.name,
+    badge: isWithinRange(new Date(), project.startDate, project.endDate)
+      ? 'Current'
+      : undefined,
+    to: `/admin/projects/${project.id}`,
+  }))
 })
 
 const open = ref(false)
 
-const links = computed<NavigationMenuItem[][]>(() => [
-  [
-    {
-      label: 'Home',
-      icon: 'lucide:house',
-      to: '/admin',
-    },
-    {
-      label: 'Projects',
-      icon: 'lucide:layers',
-      to: '/admin/projects',
-      children:
-        projects.value.map((project) => ({
-          label: project.name,
-          badge: isWithinRange(new Date(), project.startDate, project.endDate)
-            ? 'Current'
-            : undefined,
-          to: `/admin/projects/${project.id}`,
-        })) ?? [],
-    },
-  ],
+const links = computed<NavigationMenuItem[]>(() => [
+  {
+    label: 'Home',
+    icon: 'lucide:house',
+    to: '/admin',
+  },
+  {
+    label: 'Projects',
+    icon: 'lucide:layers',
+    to: '/admin/projects',
+    children: projectsLinks.value,
+  },
 ])
 
 const groups = computed(() => [
@@ -60,6 +50,11 @@ const groups = computed(() => [
     id: 'links',
     label: 'Go to',
     items: links.value.flat(),
+  },
+  {
+    id: 'projects',
+    label: 'Projects',
+    items: projectsLinks.value,
   },
 ])
 
