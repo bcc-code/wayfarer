@@ -98,3 +98,4 @@ Projects contain data about the eg. bible study, such as branding (logo, colors,
 ### Events
 
 Each project can contain multiple events, which usually is some form of in-person event. The event contains some data, such as points, achievements and leaderboards.
+- In queries, use named, not numbered parameters. For example @userid::text.

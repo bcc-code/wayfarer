@@ -39,6 +39,17 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Challenge() ChallengeResolver
+	Event() EventResolver
+	ListeningAchievement() ListeningAchievementResolver
+	Project() ProjectResolver
+	ReadingAchievement() ReadingAchievementResolver
+	SimpleAchievement() SimpleAchievementResolver
+	Streak() StreakResolver
+	StreakAchievement() StreakAchievementResolver
+	SuperTeam() SuperTeamResolver
+	Team() TeamResolver
+	User() UserResolver
 	UserMutationRoot() UserMutationRootResolver
 	UserQueryRoot() UserQueryRootResolver
 }
@@ -60,8 +71,23 @@ type ComplexityRoot struct {
 	}
 
 	Branding struct {
-		Colors func(childComplexity int) int
-		Logo   func(childComplexity int) int
+		Colors   func(childComplexity int) int
+		Logo     func(childComplexity int) int
+		Rounding func(childComplexity int) int
+	}
+
+	Challenge struct {
+		ButtonText      func(childComplexity int) int
+		Description     func(childComplexity int) int
+		EndTime         func(childComplexity int) int
+		Event           func(childComplexity int) int
+		ID              func(childComplexity int) int
+		Image           func(childComplexity int) int
+		Name            func(childComplexity int) int
+		Project         func(childComplexity int) int
+		PublishedAt     func(childComplexity int) int
+		URL             func(childComplexity int) int
+		UserCompletedAt func(childComplexity int) int
 	}
 
 	Church struct {
@@ -216,10 +242,12 @@ type ComplexityRoot struct {
 	User struct {
 		Age        func(childComplexity int) int
 		Church     func(childComplexity int) int
+		ChurchID   func(childComplexity int) int
 		Email      func(childComplexity int) int
 		Events     func(childComplexity int) int
 		Gender     func(childComplexity int) int
 		ID         func(childComplexity int) int
+		Image      func(childComplexity int) int
 		MembersID  func(childComplexity int) int
 		Name       func(childComplexity int) int
 		Projects   func(childComplexity int) int
@@ -243,6 +271,70 @@ type ComplexityRoot struct {
 	}
 }
 
+type ChallengeResolver interface {
+	Project(ctx context.Context, obj *model.Challenge) (*model.Project, error)
+	Event(ctx context.Context, obj *model.Challenge) (*model.Event, error)
+}
+type EventResolver interface {
+	Challenges(ctx context.Context, obj *model.Event) ([]model.Challenge, error)
+
+	ParentProject(ctx context.Context, obj *model.Event) (*model.Project, error)
+}
+type ListeningAchievementResolver interface {
+	Project(ctx context.Context, obj *model.ListeningAchievement) (*model.Project, error)
+	Event(ctx context.Context, obj *model.ListeningAchievement) (*model.Event, error)
+	Challenge(ctx context.Context, obj *model.ListeningAchievement) (*model.Challenge, error)
+}
+type ProjectResolver interface {
+	Challenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error)
+
+	Events(ctx context.Context, obj *model.Project) ([]model.Event, error)
+
+	Teams(ctx context.Context, obj *model.Project) ([]model.Team, error)
+	MyTeam(ctx context.Context, obj *model.Project) (*model.Team, error)
+	Achievements(ctx context.Context, obj *model.Project) ([]model.Achievement, error)
+	Streaks(ctx context.Context, obj *model.Project) ([]model.Streak, error)
+}
+type ReadingAchievementResolver interface {
+	Project(ctx context.Context, obj *model.ReadingAchievement) (*model.Project, error)
+	Event(ctx context.Context, obj *model.ReadingAchievement) (*model.Event, error)
+	Challenge(ctx context.Context, obj *model.ReadingAchievement) (*model.Challenge, error)
+}
+type SimpleAchievementResolver interface {
+	Project(ctx context.Context, obj *model.SimpleAchievement) (*model.Project, error)
+	Event(ctx context.Context, obj *model.SimpleAchievement) (*model.Event, error)
+	Challenge(ctx context.Context, obj *model.SimpleAchievement) (*model.Challenge, error)
+}
+type StreakResolver interface {
+	Project(ctx context.Context, obj *model.Streak) (*model.Project, error)
+}
+type StreakAchievementResolver interface {
+	Project(ctx context.Context, obj *model.StreakAchievement) (*model.Project, error)
+	Event(ctx context.Context, obj *model.StreakAchievement) (*model.Event, error)
+	Challenge(ctx context.Context, obj *model.StreakAchievement) (*model.Challenge, error)
+
+	Streak(ctx context.Context, obj *model.StreakAchievement) (*model.Streak, error)
+}
+type SuperTeamResolver interface {
+	Members(ctx context.Context, obj *model.SuperTeam) ([]model.User, error)
+
+	ParentProject(ctx context.Context, obj *model.SuperTeam) (*model.Project, error)
+	Teams(ctx context.Context, obj *model.SuperTeam) ([]model.Team, error)
+}
+type TeamResolver interface {
+	Members(ctx context.Context, obj *model.Team) ([]model.User, error)
+
+	ParentProject(ctx context.Context, obj *model.Team) (*model.Project, error)
+	SuperTeam(ctx context.Context, obj *model.Team) (*model.SuperTeam, error)
+}
+type UserResolver interface {
+	Church(ctx context.Context, obj *model.User) (*model.Church, error)
+
+	Projects(ctx context.Context, obj *model.User) ([]model.Project, error)
+	Events(ctx context.Context, obj *model.User) ([]model.Event, error)
+	Teams(ctx context.Context, obj *model.User) ([]model.Team, error)
+	SuperTeams(ctx context.Context, obj *model.User) ([]model.SuperTeam, error)
+}
 type UserMutationRootResolver interface {
 	JoinProject(ctx context.Context, projectID string) (*model.Project, error)
 	JoinEvent(ctx context.Context, eventID string) (*model.Event, error)
@@ -326,6 +418,79 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Branding.Logo(childComplexity), true
+	case "Branding.rounding":
+		if e.complexity.Branding.Rounding == nil {
+			break
+		}
+
+		return e.complexity.Branding.Rounding(childComplexity), true
+
+	case "Challenge.buttonText":
+		if e.complexity.Challenge.ButtonText == nil {
+			break
+		}
+
+		return e.complexity.Challenge.ButtonText(childComplexity), true
+	case "Challenge.description":
+		if e.complexity.Challenge.Description == nil {
+			break
+		}
+
+		return e.complexity.Challenge.Description(childComplexity), true
+	case "Challenge.endTime":
+		if e.complexity.Challenge.EndTime == nil {
+			break
+		}
+
+		return e.complexity.Challenge.EndTime(childComplexity), true
+	case "Challenge.event":
+		if e.complexity.Challenge.Event == nil {
+			break
+		}
+
+		return e.complexity.Challenge.Event(childComplexity), true
+	case "Challenge.id":
+		if e.complexity.Challenge.ID == nil {
+			break
+		}
+
+		return e.complexity.Challenge.ID(childComplexity), true
+	case "Challenge.image":
+		if e.complexity.Challenge.Image == nil {
+			break
+		}
+
+		return e.complexity.Challenge.Image(childComplexity), true
+	case "Challenge.name":
+		if e.complexity.Challenge.Name == nil {
+			break
+		}
+
+		return e.complexity.Challenge.Name(childComplexity), true
+	case "Challenge.project":
+		if e.complexity.Challenge.Project == nil {
+			break
+		}
+
+		return e.complexity.Challenge.Project(childComplexity), true
+	case "Challenge.publishedAt":
+		if e.complexity.Challenge.PublishedAt == nil {
+			break
+		}
+
+		return e.complexity.Challenge.PublishedAt(childComplexity), true
+	case "Challenge.url":
+		if e.complexity.Challenge.URL == nil {
+			break
+		}
+
+		return e.complexity.Challenge.URL(childComplexity), true
+	case "Challenge.userCompletedAt":
+		if e.complexity.Challenge.UserCompletedAt == nil {
+			break
+		}
+
+		return e.complexity.Challenge.UserCompletedAt(childComplexity), true
 
 	case "Church.category":
 		if e.complexity.Church.Category == nil {
@@ -1020,6 +1185,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.Church(childComplexity), true
+	case "User.churchId":
+		if e.complexity.User.ChurchID == nil {
+			break
+		}
+
+		return e.complexity.User.ChurchID(childComplexity), true
 	case "User.email":
 		if e.complexity.User.Email == nil {
 			break
@@ -1044,6 +1215,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.ID(childComplexity), true
+	case "User.image":
+		if e.complexity.User.Image == nil {
+			break
+		}
+
+		return e.complexity.User.Image(childComplexity), true
 	case "User.membersId":
 		if e.complexity.User.MembersID == nil {
 			break
@@ -1349,6 +1526,7 @@ type Track {
 type Branding {
     logo: String!
     colors: Colors!
+    rounding: Int! # border-radius in pixels
 }
 
 type Colors {
@@ -1382,14 +1560,16 @@ type User {
     id: ID!
     membersId: ID!
     gender: Gender!
-    church: Church!
+    churchId: ID!
+    church: Church! @goField(forceResolver: true)
     age: Int!
     email: String!
     name: String!
-    projects: [Project!]!
-    events: [Event!]!
-    teams: [Team!]!
-    superTeams: [SuperTeam!]!
+    image: String
+    projects: [Project!]! @goField(forceResolver: true)
+    events: [Event!]! @goField(forceResolver: true)
+    teams: [Team!]! @goField(forceResolver: true)
+    superTeams: [SuperTeam!]! @goField(forceResolver: true)
 }
 
 type Church {
@@ -1403,19 +1583,19 @@ type Project {
     id: ID!
     name: String!
     description: String!
-    challenges: [Challenge!]!
+    challenges: [Challenge!]! @goField(forceResolver: true)
     leaderboard(
         type: LeaderboardType!
         filter: LeaderboardFilter
     ): [LeaderboardEntry!]!
-    events: [Event!]!
+    events: [Event!]! @goField(forceResolver: true)
     startDate: DateTime!
     endDate: DateTime!
     branding: Branding!
-    teams: [Team!]!
-    myTeam: Team!
-    achievements: [Achievement!]!
-    streaks: [Streak!]!
+    teams: [Team!]! @goField(forceResolver: true)
+    myTeam: Team! @goField(forceResolver: true)
+    achievements: [Achievement!]! @goField(forceResolver: true)
+    streaks: [Streak!]! @goField(forceResolver: true)
 }
 
 type Streak {
@@ -1425,7 +1605,7 @@ type Streak {
     status: Int!
     relevantDays: [DateRange!]!
     listenedDays(last: Int!): [Date!]!
-    project: Project!
+    project: Project! @goField(forceResolver: true)
 }
 
 type DateRange {
@@ -1437,51 +1617,51 @@ type Event {
     id: ID!
     name: String!
     description: String!
-    challenges: [Challenge!]!
+    challenges: [Challenge!]! @goField(forceResolver: true)
     leaderboard(
         type: LeaderboardType!
         filter: LeaderboardFilter
     ): [LeaderboardEntry!]!
     startDate: DateTime!
     endDate: DateTime!
-    parentProject: Project!
+    parentProject: Project! @goField(forceResolver: true)
 }
 
 type Team {
     id: ID!
     name: String!
     description: String!
-    members: [User!]!
+    members: [User!]! @goField(forceResolver: true)
     leaderboard(
         type: LeaderboardType!
         filter: LeaderboardFilter
     ): [LeaderboardEntry!]!
-    parentProject: Project!
-    superTeam: SuperTeam
+    parentProject: Project! @goField(forceResolver: true)
+    superTeam: SuperTeam @goField(forceResolver: true)
 }
 
 type SuperTeam {
     id: ID!
     name: String!
     description: String!
-    members: [User!]!
+    members: [User!]! @goField(forceResolver: true)
     leaderboard(
         type: LeaderboardType!
         filter: LeaderboardFilter
     ): [LeaderboardEntry!]!
-    parentProject: Project!
-    teams: [Team!]!
+    parentProject: Project! @goField(forceResolver: true)
+    teams: [Team!]! @goField(forceResolver: true)
 }
 
 # ==================== Interfaces ====================
 
-interface Challenge {
+type Challenge {
     id: ID!
     name: String!
     description: HTML!
     image: String!
-    project: Project!
-    event: Event
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
     url: String!
     buttonText: String!
     publishedAt: DateTime!
@@ -1494,9 +1674,9 @@ interface Achievement {
     name: String!
     description: String!
     image: String!
-    project: Project!
-    event: Event
-    challenge: Challenge
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime
     points: Int!
     hidden: Boolean!
@@ -1509,10 +1689,10 @@ type SimpleAchievement implements Achievement {
     name: String!
     description: String!
     image: String!
-    project: Project!
-    event: Event
-    challenge: Challenge
-    achievedAt: DateTime!
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
+    achievedAt: DateTime
     points: Int!
     hidden: Boolean!
 }
@@ -1522,9 +1702,9 @@ type ReadingAchievement implements Achievement {
     name: String!
     description: String!
     image: String!
-    project: Project!
-    event: Event
-    challenge: Challenge
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime
     articles: [Article!]!
     userHasRead: [Article!]!
@@ -1538,9 +1718,9 @@ type ListeningAchievement implements Achievement {
     name: String!
     description: String!
     image: String!
-    project: Project!
-    event: Event
-    challenge: Challenge
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime
     tracks: [Track!]!
     userHasListened: [Track!]!
@@ -1554,14 +1734,14 @@ type StreakAchievement implements Achievement {
     name: String!
     description: String!
     image: String!
-    project: Project!
-    event: Event
-    challenge: Challenge
-    achievedAt: DateTime!
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
+    achievedAt: DateTime
     neededStreak: Int!
     points: Int!
     hidden: Boolean!
-    streak: Streak!
+    streak: Streak! @goField(forceResolver: true)
 }
 
 # ==================== Input Types ====================
@@ -2236,6 +2416,400 @@ func (ec *executionContext) fieldContext_Branding_colors(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Branding_rounding(ctx context.Context, field graphql.CollectedField, obj *model.Branding) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Branding_rounding,
+		func(ctx context.Context) (any, error) {
+			return obj.Rounding, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Branding_rounding(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Branding",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Challenge_id(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Challenge_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Challenge_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Challenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Challenge_name(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Challenge_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Challenge_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Challenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Challenge_description(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Challenge_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalNHTML2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐHTML,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Challenge_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Challenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type HTML does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Challenge_image(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Challenge_image,
+		func(ctx context.Context) (any, error) {
+			return obj.Image, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Challenge_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Challenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Challenge_project(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Challenge_project,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Challenge().Project(ctx, obj)
+		},
+		nil,
+		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐProject,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Challenge_project(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Challenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Project_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Project_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Project_description(ctx, field)
+			case "challenges":
+				return ec.fieldContext_Project_challenges(ctx, field)
+			case "leaderboard":
+				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "events":
+				return ec.fieldContext_Project_events(ctx, field)
+			case "startDate":
+				return ec.fieldContext_Project_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_Project_endDate(ctx, field)
+			case "branding":
+				return ec.fieldContext_Project_branding(ctx, field)
+			case "teams":
+				return ec.fieldContext_Project_teams(ctx, field)
+			case "myTeam":
+				return ec.fieldContext_Project_myTeam(ctx, field)
+			case "achievements":
+				return ec.fieldContext_Project_achievements(ctx, field)
+			case "streaks":
+				return ec.fieldContext_Project_streaks(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Challenge_event(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Challenge_event,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Challenge().Event(ctx, obj)
+		},
+		nil,
+		ec.marshalOEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐEvent,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Challenge_event(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Challenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Event_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Event_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Event_description(ctx, field)
+			case "challenges":
+				return ec.fieldContext_Event_challenges(ctx, field)
+			case "leaderboard":
+				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "startDate":
+				return ec.fieldContext_Event_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_Event_endDate(ctx, field)
+			case "parentProject":
+				return ec.fieldContext_Event_parentProject(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Challenge_url(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Challenge_url,
+		func(ctx context.Context) (any, error) {
+			return obj.URL, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Challenge_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Challenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Challenge_buttonText(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Challenge_buttonText,
+		func(ctx context.Context) (any, error) {
+			return obj.ButtonText, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Challenge_buttonText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Challenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Challenge_publishedAt(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Challenge_publishedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.PublishedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Challenge_publishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Challenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Challenge_endTime(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Challenge_endTime,
+		func(ctx context.Context) (any, error) {
+			return obj.EndTime, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Challenge_endTime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Challenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Challenge_userCompletedAt(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Challenge_userCompletedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UserCompletedAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Challenge_userCompletedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Challenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Church_id(ctx context.Context, field graphql.CollectedField, obj *model.Church) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2591,7 +3165,7 @@ func (ec *executionContext) _Event_challenges(ctx context.Context, field graphql
 		field,
 		ec.fieldContext_Event_challenges,
 		func(ctx context.Context) (any, error) {
-			return obj.Challenges, nil
+			return ec.resolvers.Event().Challenges(ctx, obj)
 		},
 		nil,
 		ec.marshalNChallenge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChallengeᚄ,
@@ -2604,10 +3178,34 @@ func (ec *executionContext) fieldContext_Event_challenges(_ context.Context, fie
 	fc = &graphql.FieldContext{
 		Object:     "Event",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Challenge_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Challenge_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Challenge_description(ctx, field)
+			case "image":
+				return ec.fieldContext_Challenge_image(ctx, field)
+			case "project":
+				return ec.fieldContext_Challenge_project(ctx, field)
+			case "event":
+				return ec.fieldContext_Challenge_event(ctx, field)
+			case "url":
+				return ec.fieldContext_Challenge_url(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_Challenge_buttonText(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_Challenge_publishedAt(ctx, field)
+			case "endTime":
+				return ec.fieldContext_Challenge_endTime(ctx, field)
+			case "userCompletedAt":
+				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
 		},
 	}
 	return fc, nil
@@ -2728,7 +3326,7 @@ func (ec *executionContext) _Event_parentProject(ctx context.Context, field grap
 		field,
 		ec.fieldContext_Event_parentProject,
 		func(ctx context.Context) (any, error) {
-			return obj.ParentProject, nil
+			return ec.resolvers.Event().ParentProject(ctx, obj)
 		},
 		nil,
 		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐProject,
@@ -2741,8 +3339,8 @@ func (ec *executionContext) fieldContext_Event_parentProject(_ context.Context, 
 	fc = &graphql.FieldContext{
 		Object:     "Event",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -3017,7 +3615,7 @@ func (ec *executionContext) _ListeningAchievement_project(ctx context.Context, f
 		field,
 		ec.fieldContext_ListeningAchievement_project,
 		func(ctx context.Context) (any, error) {
-			return obj.Project, nil
+			return ec.resolvers.ListeningAchievement().Project(ctx, obj)
 		},
 		nil,
 		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐProject,
@@ -3030,8 +3628,8 @@ func (ec *executionContext) fieldContext_ListeningAchievement_project(_ context.
 	fc = &graphql.FieldContext{
 		Object:     "ListeningAchievement",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -3074,7 +3672,7 @@ func (ec *executionContext) _ListeningAchievement_event(ctx context.Context, fie
 		field,
 		ec.fieldContext_ListeningAchievement_event,
 		func(ctx context.Context) (any, error) {
-			return obj.Event, nil
+			return ec.resolvers.ListeningAchievement().Event(ctx, obj)
 		},
 		nil,
 		ec.marshalOEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐEvent,
@@ -3087,8 +3685,8 @@ func (ec *executionContext) fieldContext_ListeningAchievement_event(_ context.Co
 	fc = &graphql.FieldContext{
 		Object:     "ListeningAchievement",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -3121,10 +3719,10 @@ func (ec *executionContext) _ListeningAchievement_challenge(ctx context.Context,
 		field,
 		ec.fieldContext_ListeningAchievement_challenge,
 		func(ctx context.Context) (any, error) {
-			return obj.Challenge, nil
+			return ec.resolvers.ListeningAchievement().Challenge(ctx, obj)
 		},
 		nil,
-		ec.marshalOChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChallenge,
+		ec.marshalOChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChallenge,
 		true,
 		false,
 	)
@@ -3134,10 +3732,34 @@ func (ec *executionContext) fieldContext_ListeningAchievement_challenge(_ contex
 	fc = &graphql.FieldContext{
 		Object:     "ListeningAchievement",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Challenge_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Challenge_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Challenge_description(ctx, field)
+			case "image":
+				return ec.fieldContext_Challenge_image(ctx, field)
+			case "project":
+				return ec.fieldContext_Challenge_project(ctx, field)
+			case "event":
+				return ec.fieldContext_Challenge_event(ctx, field)
+			case "url":
+				return ec.fieldContext_Challenge_url(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_Challenge_buttonText(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_Challenge_publishedAt(ctx, field)
+			case "endTime":
+				return ec.fieldContext_Challenge_endTime(ctx, field)
+			case "userCompletedAt":
+				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
 		},
 	}
 	return fc, nil
@@ -3441,7 +4063,7 @@ func (ec *executionContext) _Project_challenges(ctx context.Context, field graph
 		field,
 		ec.fieldContext_Project_challenges,
 		func(ctx context.Context) (any, error) {
-			return obj.Challenges, nil
+			return ec.resolvers.Project().Challenges(ctx, obj)
 		},
 		nil,
 		ec.marshalNChallenge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChallengeᚄ,
@@ -3454,10 +4076,34 @@ func (ec *executionContext) fieldContext_Project_challenges(_ context.Context, f
 	fc = &graphql.FieldContext{
 		Object:     "Project",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Challenge_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Challenge_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Challenge_description(ctx, field)
+			case "image":
+				return ec.fieldContext_Challenge_image(ctx, field)
+			case "project":
+				return ec.fieldContext_Challenge_project(ctx, field)
+			case "event":
+				return ec.fieldContext_Challenge_event(ctx, field)
+			case "url":
+				return ec.fieldContext_Challenge_url(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_Challenge_buttonText(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_Challenge_publishedAt(ctx, field)
+			case "endTime":
+				return ec.fieldContext_Challenge_endTime(ctx, field)
+			case "userCompletedAt":
+				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
 		},
 	}
 	return fc, nil
@@ -3520,7 +4166,7 @@ func (ec *executionContext) _Project_events(ctx context.Context, field graphql.C
 		field,
 		ec.fieldContext_Project_events,
 		func(ctx context.Context) (any, error) {
-			return obj.Events, nil
+			return ec.resolvers.Project().Events(ctx, obj)
 		},
 		nil,
 		ec.marshalNEvent2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐEventᚄ,
@@ -3533,8 +4179,8 @@ func (ec *executionContext) fieldContext_Project_events(_ context.Context, field
 	fc = &graphql.FieldContext{
 		Object:     "Project",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -3646,6 +4292,8 @@ func (ec *executionContext) fieldContext_Project_branding(_ context.Context, fie
 				return ec.fieldContext_Branding_logo(ctx, field)
 			case "colors":
 				return ec.fieldContext_Branding_colors(ctx, field)
+			case "rounding":
+				return ec.fieldContext_Branding_rounding(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Branding", field.Name)
 		},
@@ -3660,7 +4308,7 @@ func (ec *executionContext) _Project_teams(ctx context.Context, field graphql.Co
 		field,
 		ec.fieldContext_Project_teams,
 		func(ctx context.Context) (any, error) {
-			return obj.Teams, nil
+			return ec.resolvers.Project().Teams(ctx, obj)
 		},
 		nil,
 		ec.marshalNTeam2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐTeamᚄ,
@@ -3673,8 +4321,8 @@ func (ec *executionContext) fieldContext_Project_teams(_ context.Context, field 
 	fc = &graphql.FieldContext{
 		Object:     "Project",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -3705,7 +4353,7 @@ func (ec *executionContext) _Project_myTeam(ctx context.Context, field graphql.C
 		field,
 		ec.fieldContext_Project_myTeam,
 		func(ctx context.Context) (any, error) {
-			return obj.MyTeam, nil
+			return ec.resolvers.Project().MyTeam(ctx, obj)
 		},
 		nil,
 		ec.marshalNTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐTeam,
@@ -3718,8 +4366,8 @@ func (ec *executionContext) fieldContext_Project_myTeam(_ context.Context, field
 	fc = &graphql.FieldContext{
 		Object:     "Project",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -3750,7 +4398,7 @@ func (ec *executionContext) _Project_achievements(ctx context.Context, field gra
 		field,
 		ec.fieldContext_Project_achievements,
 		func(ctx context.Context) (any, error) {
-			return obj.Achievements, nil
+			return ec.resolvers.Project().Achievements(ctx, obj)
 		},
 		nil,
 		ec.marshalNAchievement2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐAchievementᚄ,
@@ -3763,8 +4411,8 @@ func (ec *executionContext) fieldContext_Project_achievements(_ context.Context,
 	fc = &graphql.FieldContext{
 		Object:     "Project",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
@@ -3779,7 +4427,7 @@ func (ec *executionContext) _Project_streaks(ctx context.Context, field graphql.
 		field,
 		ec.fieldContext_Project_streaks,
 		func(ctx context.Context) (any, error) {
-			return obj.Streaks, nil
+			return ec.resolvers.Project().Streaks(ctx, obj)
 		},
 		nil,
 		ec.marshalNStreak2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐStreakᚄ,
@@ -3792,8 +4440,8 @@ func (ec *executionContext) fieldContext_Project_streaks(_ context.Context, fiel
 	fc = &graphql.FieldContext{
 		Object:     "Project",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -3940,7 +4588,7 @@ func (ec *executionContext) _ReadingAchievement_project(ctx context.Context, fie
 		field,
 		ec.fieldContext_ReadingAchievement_project,
 		func(ctx context.Context) (any, error) {
-			return obj.Project, nil
+			return ec.resolvers.ReadingAchievement().Project(ctx, obj)
 		},
 		nil,
 		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐProject,
@@ -3953,8 +4601,8 @@ func (ec *executionContext) fieldContext_ReadingAchievement_project(_ context.Co
 	fc = &graphql.FieldContext{
 		Object:     "ReadingAchievement",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -3997,7 +4645,7 @@ func (ec *executionContext) _ReadingAchievement_event(ctx context.Context, field
 		field,
 		ec.fieldContext_ReadingAchievement_event,
 		func(ctx context.Context) (any, error) {
-			return obj.Event, nil
+			return ec.resolvers.ReadingAchievement().Event(ctx, obj)
 		},
 		nil,
 		ec.marshalOEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐEvent,
@@ -4010,8 +4658,8 @@ func (ec *executionContext) fieldContext_ReadingAchievement_event(_ context.Cont
 	fc = &graphql.FieldContext{
 		Object:     "ReadingAchievement",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -4044,10 +4692,10 @@ func (ec *executionContext) _ReadingAchievement_challenge(ctx context.Context, f
 		field,
 		ec.fieldContext_ReadingAchievement_challenge,
 		func(ctx context.Context) (any, error) {
-			return obj.Challenge, nil
+			return ec.resolvers.ReadingAchievement().Challenge(ctx, obj)
 		},
 		nil,
-		ec.marshalOChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChallenge,
+		ec.marshalOChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChallenge,
 		true,
 		false,
 	)
@@ -4057,10 +4705,34 @@ func (ec *executionContext) fieldContext_ReadingAchievement_challenge(_ context.
 	fc = &graphql.FieldContext{
 		Object:     "ReadingAchievement",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Challenge_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Challenge_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Challenge_description(ctx, field)
+			case "image":
+				return ec.fieldContext_Challenge_image(ctx, field)
+			case "project":
+				return ec.fieldContext_Challenge_project(ctx, field)
+			case "event":
+				return ec.fieldContext_Challenge_event(ctx, field)
+			case "url":
+				return ec.fieldContext_Challenge_url(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_Challenge_buttonText(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_Challenge_publishedAt(ctx, field)
+			case "endTime":
+				return ec.fieldContext_Challenge_endTime(ctx, field)
+			case "userCompletedAt":
+				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
 		},
 	}
 	return fc, nil
@@ -4393,7 +5065,7 @@ func (ec *executionContext) _SimpleAchievement_project(ctx context.Context, fiel
 		field,
 		ec.fieldContext_SimpleAchievement_project,
 		func(ctx context.Context) (any, error) {
-			return obj.Project, nil
+			return ec.resolvers.SimpleAchievement().Project(ctx, obj)
 		},
 		nil,
 		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐProject,
@@ -4406,8 +5078,8 @@ func (ec *executionContext) fieldContext_SimpleAchievement_project(_ context.Con
 	fc = &graphql.FieldContext{
 		Object:     "SimpleAchievement",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -4450,7 +5122,7 @@ func (ec *executionContext) _SimpleAchievement_event(ctx context.Context, field 
 		field,
 		ec.fieldContext_SimpleAchievement_event,
 		func(ctx context.Context) (any, error) {
-			return obj.Event, nil
+			return ec.resolvers.SimpleAchievement().Event(ctx, obj)
 		},
 		nil,
 		ec.marshalOEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐEvent,
@@ -4463,8 +5135,8 @@ func (ec *executionContext) fieldContext_SimpleAchievement_event(_ context.Conte
 	fc = &graphql.FieldContext{
 		Object:     "SimpleAchievement",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -4497,10 +5169,10 @@ func (ec *executionContext) _SimpleAchievement_challenge(ctx context.Context, fi
 		field,
 		ec.fieldContext_SimpleAchievement_challenge,
 		func(ctx context.Context) (any, error) {
-			return obj.Challenge, nil
+			return ec.resolvers.SimpleAchievement().Challenge(ctx, obj)
 		},
 		nil,
-		ec.marshalOChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChallenge,
+		ec.marshalOChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChallenge,
 		true,
 		false,
 	)
@@ -4510,10 +5182,34 @@ func (ec *executionContext) fieldContext_SimpleAchievement_challenge(_ context.C
 	fc = &graphql.FieldContext{
 		Object:     "SimpleAchievement",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Challenge_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Challenge_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Challenge_description(ctx, field)
+			case "image":
+				return ec.fieldContext_Challenge_image(ctx, field)
+			case "project":
+				return ec.fieldContext_Challenge_project(ctx, field)
+			case "event":
+				return ec.fieldContext_Challenge_event(ctx, field)
+			case "url":
+				return ec.fieldContext_Challenge_url(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_Challenge_buttonText(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_Challenge_publishedAt(ctx, field)
+			case "endTime":
+				return ec.fieldContext_Challenge_endTime(ctx, field)
+			case "userCompletedAt":
+				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
 		},
 	}
 	return fc, nil
@@ -4529,9 +5225,9 @@ func (ec *executionContext) _SimpleAchievement_achievedAt(ctx context.Context, f
 			return obj.AchievedAt, nil
 		},
 		nil,
-		ec.marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -4804,7 +5500,7 @@ func (ec *executionContext) _Streak_project(ctx context.Context, field graphql.C
 		field,
 		ec.fieldContext_Streak_project,
 		func(ctx context.Context) (any, error) {
-			return obj.Project, nil
+			return ec.resolvers.Streak().Project(ctx, obj)
 		},
 		nil,
 		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐProject,
@@ -4817,8 +5513,8 @@ func (ec *executionContext) fieldContext_Streak_project(_ context.Context, field
 	fc = &graphql.FieldContext{
 		Object:     "Streak",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -4977,7 +5673,7 @@ func (ec *executionContext) _StreakAchievement_project(ctx context.Context, fiel
 		field,
 		ec.fieldContext_StreakAchievement_project,
 		func(ctx context.Context) (any, error) {
-			return obj.Project, nil
+			return ec.resolvers.StreakAchievement().Project(ctx, obj)
 		},
 		nil,
 		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐProject,
@@ -4990,8 +5686,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_project(_ context.Con
 	fc = &graphql.FieldContext{
 		Object:     "StreakAchievement",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -5034,7 +5730,7 @@ func (ec *executionContext) _StreakAchievement_event(ctx context.Context, field 
 		field,
 		ec.fieldContext_StreakAchievement_event,
 		func(ctx context.Context) (any, error) {
-			return obj.Event, nil
+			return ec.resolvers.StreakAchievement().Event(ctx, obj)
 		},
 		nil,
 		ec.marshalOEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐEvent,
@@ -5047,8 +5743,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_event(_ context.Conte
 	fc = &graphql.FieldContext{
 		Object:     "StreakAchievement",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -5081,10 +5777,10 @@ func (ec *executionContext) _StreakAchievement_challenge(ctx context.Context, fi
 		field,
 		ec.fieldContext_StreakAchievement_challenge,
 		func(ctx context.Context) (any, error) {
-			return obj.Challenge, nil
+			return ec.resolvers.StreakAchievement().Challenge(ctx, obj)
 		},
 		nil,
-		ec.marshalOChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChallenge,
+		ec.marshalOChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChallenge,
 		true,
 		false,
 	)
@@ -5094,10 +5790,34 @@ func (ec *executionContext) fieldContext_StreakAchievement_challenge(_ context.C
 	fc = &graphql.FieldContext{
 		Object:     "StreakAchievement",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Challenge_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Challenge_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Challenge_description(ctx, field)
+			case "image":
+				return ec.fieldContext_Challenge_image(ctx, field)
+			case "project":
+				return ec.fieldContext_Challenge_project(ctx, field)
+			case "event":
+				return ec.fieldContext_Challenge_event(ctx, field)
+			case "url":
+				return ec.fieldContext_Challenge_url(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_Challenge_buttonText(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_Challenge_publishedAt(ctx, field)
+			case "endTime":
+				return ec.fieldContext_Challenge_endTime(ctx, field)
+			case "userCompletedAt":
+				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
 		},
 	}
 	return fc, nil
@@ -5113,9 +5833,9 @@ func (ec *executionContext) _StreakAchievement_achievedAt(ctx context.Context, f
 			return obj.AchievedAt, nil
 		},
 		nil,
-		ec.marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -5226,7 +5946,7 @@ func (ec *executionContext) _StreakAchievement_streak(ctx context.Context, field
 		field,
 		ec.fieldContext_StreakAchievement_streak,
 		func(ctx context.Context) (any, error) {
-			return obj.Streak, nil
+			return ec.resolvers.StreakAchievement().Streak(ctx, obj)
 		},
 		nil,
 		ec.marshalNStreak2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐStreak,
@@ -5239,8 +5959,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_streak(_ context.Cont
 	fc = &graphql.FieldContext{
 		Object:     "StreakAchievement",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -5358,7 +6078,7 @@ func (ec *executionContext) _SuperTeam_members(ctx context.Context, field graphq
 		field,
 		ec.fieldContext_SuperTeam_members,
 		func(ctx context.Context) (any, error) {
-			return obj.Members, nil
+			return ec.resolvers.SuperTeam().Members(ctx, obj)
 		},
 		nil,
 		ec.marshalNUser2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐUserᚄ,
@@ -5371,8 +6091,8 @@ func (ec *executionContext) fieldContext_SuperTeam_members(_ context.Context, fi
 	fc = &graphql.FieldContext{
 		Object:     "SuperTeam",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -5381,6 +6101,8 @@ func (ec *executionContext) fieldContext_SuperTeam_members(_ context.Context, fi
 				return ec.fieldContext_User_membersId(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
+			case "churchId":
+				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
 			case "age":
@@ -5389,6 +6111,8 @@ func (ec *executionContext) fieldContext_SuperTeam_members(_ context.Context, fi
 				return ec.fieldContext_User_email(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
+			case "image":
+				return ec.fieldContext_User_image(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -5461,7 +6185,7 @@ func (ec *executionContext) _SuperTeam_parentProject(ctx context.Context, field 
 		field,
 		ec.fieldContext_SuperTeam_parentProject,
 		func(ctx context.Context) (any, error) {
-			return obj.ParentProject, nil
+			return ec.resolvers.SuperTeam().ParentProject(ctx, obj)
 		},
 		nil,
 		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐProject,
@@ -5474,8 +6198,8 @@ func (ec *executionContext) fieldContext_SuperTeam_parentProject(_ context.Conte
 	fc = &graphql.FieldContext{
 		Object:     "SuperTeam",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -5518,7 +6242,7 @@ func (ec *executionContext) _SuperTeam_teams(ctx context.Context, field graphql.
 		field,
 		ec.fieldContext_SuperTeam_teams,
 		func(ctx context.Context) (any, error) {
-			return obj.Teams, nil
+			return ec.resolvers.SuperTeam().Teams(ctx, obj)
 		},
 		nil,
 		ec.marshalNTeam2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐTeamᚄ,
@@ -5531,8 +6255,8 @@ func (ec *executionContext) fieldContext_SuperTeam_teams(_ context.Context, fiel
 	fc = &graphql.FieldContext{
 		Object:     "SuperTeam",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -5650,7 +6374,7 @@ func (ec *executionContext) _Team_members(ctx context.Context, field graphql.Col
 		field,
 		ec.fieldContext_Team_members,
 		func(ctx context.Context) (any, error) {
-			return obj.Members, nil
+			return ec.resolvers.Team().Members(ctx, obj)
 		},
 		nil,
 		ec.marshalNUser2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐUserᚄ,
@@ -5663,8 +6387,8 @@ func (ec *executionContext) fieldContext_Team_members(_ context.Context, field g
 	fc = &graphql.FieldContext{
 		Object:     "Team",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -5673,6 +6397,8 @@ func (ec *executionContext) fieldContext_Team_members(_ context.Context, field g
 				return ec.fieldContext_User_membersId(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
+			case "churchId":
+				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
 			case "age":
@@ -5681,6 +6407,8 @@ func (ec *executionContext) fieldContext_Team_members(_ context.Context, field g
 				return ec.fieldContext_User_email(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
+			case "image":
+				return ec.fieldContext_User_image(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -5753,7 +6481,7 @@ func (ec *executionContext) _Team_parentProject(ctx context.Context, field graph
 		field,
 		ec.fieldContext_Team_parentProject,
 		func(ctx context.Context) (any, error) {
-			return obj.ParentProject, nil
+			return ec.resolvers.Team().ParentProject(ctx, obj)
 		},
 		nil,
 		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐProject,
@@ -5766,8 +6494,8 @@ func (ec *executionContext) fieldContext_Team_parentProject(_ context.Context, f
 	fc = &graphql.FieldContext{
 		Object:     "Team",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -5810,7 +6538,7 @@ func (ec *executionContext) _Team_superTeam(ctx context.Context, field graphql.C
 		field,
 		ec.fieldContext_Team_superTeam,
 		func(ctx context.Context) (any, error) {
-			return obj.SuperTeam, nil
+			return ec.resolvers.Team().SuperTeam(ctx, obj)
 		},
 		nil,
 		ec.marshalOSuperTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐSuperTeam,
@@ -5823,8 +6551,8 @@ func (ec *executionContext) fieldContext_Team_superTeam(_ context.Context, field
 	fc = &graphql.FieldContext{
 		Object:     "Team",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -6051,6 +6779,35 @@ func (ec *executionContext) fieldContext_User_gender(_ context.Context, field gr
 	return fc, nil
 }
 
+func (ec *executionContext) _User_churchId(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_User_churchId,
+		func(ctx context.Context) (any, error) {
+			return obj.ChurchID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_User_churchId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_church(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6058,7 +6815,7 @@ func (ec *executionContext) _User_church(ctx context.Context, field graphql.Coll
 		field,
 		ec.fieldContext_User_church,
 		func(ctx context.Context) (any, error) {
-			return obj.Church, nil
+			return ec.resolvers.User().Church(ctx, obj)
 		},
 		nil,
 		ec.marshalNChurch2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChurch,
@@ -6071,8 +6828,8 @@ func (ec *executionContext) fieldContext_User_church(_ context.Context, field gr
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -6177,6 +6934,35 @@ func (ec *executionContext) fieldContext_User_name(_ context.Context, field grap
 	return fc, nil
 }
 
+func (ec *executionContext) _User_image(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_User_image,
+		func(ctx context.Context) (any, error) {
+			return obj.Image, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_User_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_projects(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6184,7 +6970,7 @@ func (ec *executionContext) _User_projects(ctx context.Context, field graphql.Co
 		field,
 		ec.fieldContext_User_projects,
 		func(ctx context.Context) (any, error) {
-			return obj.Projects, nil
+			return ec.resolvers.User().Projects(ctx, obj)
 		},
 		nil,
 		ec.marshalNProject2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐProjectᚄ,
@@ -6197,8 +6983,8 @@ func (ec *executionContext) fieldContext_User_projects(_ context.Context, field 
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -6241,7 +7027,7 @@ func (ec *executionContext) _User_events(ctx context.Context, field graphql.Coll
 		field,
 		ec.fieldContext_User_events,
 		func(ctx context.Context) (any, error) {
-			return obj.Events, nil
+			return ec.resolvers.User().Events(ctx, obj)
 		},
 		nil,
 		ec.marshalNEvent2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐEventᚄ,
@@ -6254,8 +7040,8 @@ func (ec *executionContext) fieldContext_User_events(_ context.Context, field gr
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -6288,7 +7074,7 @@ func (ec *executionContext) _User_teams(ctx context.Context, field graphql.Colle
 		field,
 		ec.fieldContext_User_teams,
 		func(ctx context.Context) (any, error) {
-			return obj.Teams, nil
+			return ec.resolvers.User().Teams(ctx, obj)
 		},
 		nil,
 		ec.marshalNTeam2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐTeamᚄ,
@@ -6301,8 +7087,8 @@ func (ec *executionContext) fieldContext_User_teams(_ context.Context, field gra
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -6333,7 +7119,7 @@ func (ec *executionContext) _User_superTeams(ctx context.Context, field graphql.
 		field,
 		ec.fieldContext_User_superTeams,
 		func(ctx context.Context) (any, error) {
-			return obj.SuperTeams, nil
+			return ec.resolvers.User().SuperTeams(ctx, obj)
 		},
 		nil,
 		ec.marshalNSuperTeam2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐSuperTeamᚄ,
@@ -6346,8 +7132,8 @@ func (ec *executionContext) fieldContext_User_superTeams(_ context.Context, fiel
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -6587,6 +7373,8 @@ func (ec *executionContext) fieldContext_UserMutationRoot_updateAvatar(ctx conte
 				return ec.fieldContext_User_membersId(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
+			case "churchId":
+				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
 			case "age":
@@ -6595,6 +7383,8 @@ func (ec *executionContext) fieldContext_UserMutationRoot_updateAvatar(ctx conte
 				return ec.fieldContext_User_email(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
+			case "image":
+				return ec.fieldContext_User_image(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -6871,6 +7661,8 @@ func (ec *executionContext) fieldContext_UserQueryRoot_me(_ context.Context, fie
 				return ec.fieldContext_User_membersId(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
+			case "churchId":
+				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
 			case "age":
@@ -6879,6 +7671,8 @@ func (ec *executionContext) fieldContext_UserQueryRoot_me(_ context.Context, fie
 				return ec.fieldContext_User_email(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
+			case "image":
+				return ec.fieldContext_User_image(ctx, field)
 			case "projects":
 				return ec.fieldContext_User_projects(ctx, field)
 			case "events":
@@ -9918,15 +10712,6 @@ func (ec *executionContext) _Achievement(ctx context.Context, sel ast.SelectionS
 	}
 }
 
-func (ec *executionContext) _Challenge(ctx context.Context, sel ast.SelectionSet, obj model.Challenge) graphql.Marshaler {
-	switch obj := (obj).(type) {
-	case nil:
-		return graphql.Null
-	default:
-		panic(fmt.Errorf("unexpected type %T", obj))
-	}
-}
-
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
@@ -10050,6 +10835,153 @@ func (ec *executionContext) _Branding(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "rounding":
+			out.Values[i] = ec._Branding_rounding(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var challengeImplementors = []string{"Challenge"}
+
+func (ec *executionContext) _Challenge(ctx context.Context, sel ast.SelectionSet, obj *model.Challenge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, challengeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Challenge")
+		case "id":
+			out.Values[i] = ec._Challenge_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._Challenge_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "description":
+			out.Values[i] = ec._Challenge_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "image":
+			out.Values[i] = ec._Challenge_image(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "project":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Challenge_project(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "event":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Challenge_event(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "url":
+			out.Values[i] = ec._Challenge_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "buttonText":
+			out.Values[i] = ec._Challenge_buttonText(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "publishedAt":
+			out.Values[i] = ec._Challenge_publishedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "endTime":
+			out.Values[i] = ec._Challenge_endTime(ctx, field, obj)
+		case "userCompletedAt":
+			out.Values[i] = ec._Challenge_userCompletedAt(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10234,43 +11166,105 @@ func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, ob
 		case "id":
 			out.Values[i] = ec._Event_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._Event_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "description":
 			out.Values[i] = ec._Event_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "challenges":
-			out.Values[i] = ec._Event_challenges(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Event_challenges(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "leaderboard":
 			out.Values[i] = ec._Event_leaderboard(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "startDate":
 			out.Values[i] = ec._Event_startDate(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "endDate":
 			out.Values[i] = ec._Event_endDate(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "parentProject":
-			out.Values[i] = ec._Event_parentProject(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Event_parentProject(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10356,58 +11350,151 @@ func (ec *executionContext) _ListeningAchievement(ctx context.Context, sel ast.S
 		case "id":
 			out.Values[i] = ec._ListeningAchievement_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._ListeningAchievement_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "description":
 			out.Values[i] = ec._ListeningAchievement_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "image":
 			out.Values[i] = ec._ListeningAchievement_image(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "project":
-			out.Values[i] = ec._ListeningAchievement_project(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ListeningAchievement_project(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "event":
-			out.Values[i] = ec._ListeningAchievement_event(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ListeningAchievement_event(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "challenge":
-			out.Values[i] = ec._ListeningAchievement_challenge(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ListeningAchievement_challenge(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "achievedAt":
 			out.Values[i] = ec._ListeningAchievement_achievedAt(ctx, field, obj)
 		case "tracks":
 			out.Values[i] = ec._ListeningAchievement_tracks(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "userHasListened":
 			out.Values[i] = ec._ListeningAchievement_userHasListened(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "nextTrack":
 			out.Values[i] = ec._ListeningAchievement_nextTrack(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "points":
 			out.Values[i] = ec._ListeningAchievement_points(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "hidden":
 			out.Values[i] = ec._ListeningAchievement_hidden(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -10446,68 +11533,254 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 		case "id":
 			out.Values[i] = ec._Project_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._Project_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "description":
 			out.Values[i] = ec._Project_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "challenges":
-			out.Values[i] = ec._Project_challenges(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_challenges(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "leaderboard":
 			out.Values[i] = ec._Project_leaderboard(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "events":
-			out.Values[i] = ec._Project_events(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_events(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "startDate":
 			out.Values[i] = ec._Project_startDate(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "endDate":
 			out.Values[i] = ec._Project_endDate(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "branding":
 			out.Values[i] = ec._Project_branding(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "teams":
-			out.Values[i] = ec._Project_teams(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_teams(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "myTeam":
-			out.Values[i] = ec._Project_myTeam(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_myTeam(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "achievements":
-			out.Values[i] = ec._Project_achievements(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_achievements(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "streaks":
-			out.Values[i] = ec._Project_streaks(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_streaks(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10545,58 +11818,151 @@ func (ec *executionContext) _ReadingAchievement(ctx context.Context, sel ast.Sel
 		case "id":
 			out.Values[i] = ec._ReadingAchievement_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._ReadingAchievement_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "description":
 			out.Values[i] = ec._ReadingAchievement_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "image":
 			out.Values[i] = ec._ReadingAchievement_image(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "project":
-			out.Values[i] = ec._ReadingAchievement_project(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ReadingAchievement_project(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "event":
-			out.Values[i] = ec._ReadingAchievement_event(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ReadingAchievement_event(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "challenge":
-			out.Values[i] = ec._ReadingAchievement_challenge(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ReadingAchievement_challenge(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "achievedAt":
 			out.Values[i] = ec._ReadingAchievement_achievedAt(ctx, field, obj)
 		case "articles":
 			out.Values[i] = ec._ReadingAchievement_articles(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "userHasRead":
 			out.Values[i] = ec._ReadingAchievement_userHasRead(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "nextArticle":
 			out.Values[i] = ec._ReadingAchievement_nextArticle(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "points":
 			out.Values[i] = ec._ReadingAchievement_points(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "hidden":
 			out.Values[i] = ec._ReadingAchievement_hidden(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -10635,46 +12001,136 @@ func (ec *executionContext) _SimpleAchievement(ctx context.Context, sel ast.Sele
 		case "id":
 			out.Values[i] = ec._SimpleAchievement_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._SimpleAchievement_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "description":
 			out.Values[i] = ec._SimpleAchievement_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "image":
 			out.Values[i] = ec._SimpleAchievement_image(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "project":
-			out.Values[i] = ec._SimpleAchievement_project(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SimpleAchievement_project(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "event":
-			out.Values[i] = ec._SimpleAchievement_event(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SimpleAchievement_event(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "challenge":
-			out.Values[i] = ec._SimpleAchievement_challenge(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SimpleAchievement_challenge(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "achievedAt":
 			out.Values[i] = ec._SimpleAchievement_achievedAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "points":
 			out.Values[i] = ec._SimpleAchievement_points(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "hidden":
 			out.Values[i] = ec._SimpleAchievement_hidden(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -10713,38 +12169,69 @@ func (ec *executionContext) _Streak(ctx context.Context, sel ast.SelectionSet, o
 		case "id":
 			out.Values[i] = ec._Streak_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._Streak_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "description":
 			out.Values[i] = ec._Streak_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "status":
 			out.Values[i] = ec._Streak_status(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "relevantDays":
 			out.Values[i] = ec._Streak_relevantDays(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "listenedDays":
 			out.Values[i] = ec._Streak_listenedDays(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "project":
-			out.Values[i] = ec._Streak_project(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Streak_project(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10782,57 +12269,178 @@ func (ec *executionContext) _StreakAchievement(ctx context.Context, sel ast.Sele
 		case "id":
 			out.Values[i] = ec._StreakAchievement_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._StreakAchievement_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "description":
 			out.Values[i] = ec._StreakAchievement_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "image":
 			out.Values[i] = ec._StreakAchievement_image(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "project":
-			out.Values[i] = ec._StreakAchievement_project(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._StreakAchievement_project(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "event":
-			out.Values[i] = ec._StreakAchievement_event(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._StreakAchievement_event(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "challenge":
-			out.Values[i] = ec._StreakAchievement_challenge(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._StreakAchievement_challenge(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "achievedAt":
 			out.Values[i] = ec._StreakAchievement_achievedAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "neededStreak":
 			out.Values[i] = ec._StreakAchievement_neededStreak(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "points":
 			out.Values[i] = ec._StreakAchievement_points(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "hidden":
 			out.Values[i] = ec._StreakAchievement_hidden(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "streak":
-			out.Values[i] = ec._StreakAchievement_streak(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._StreakAchievement_streak(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10870,38 +12478,131 @@ func (ec *executionContext) _SuperTeam(ctx context.Context, sel ast.SelectionSet
 		case "id":
 			out.Values[i] = ec._SuperTeam_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._SuperTeam_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "description":
 			out.Values[i] = ec._SuperTeam_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "members":
-			out.Values[i] = ec._SuperTeam_members(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SuperTeam_members(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "leaderboard":
 			out.Values[i] = ec._SuperTeam_leaderboard(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "parentProject":
-			out.Values[i] = ec._SuperTeam_parentProject(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SuperTeam_parentProject(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "teams":
-			out.Values[i] = ec._SuperTeam_teams(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SuperTeam_teams(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10939,35 +12640,128 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._Team_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._Team_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "description":
 			out.Values[i] = ec._Team_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "members":
-			out.Values[i] = ec._Team_members(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Team_members(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "leaderboard":
 			out.Values[i] = ec._Team_leaderboard(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "parentProject":
-			out.Values[i] = ec._Team_parentProject(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Team_parentProject(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "superTeam":
-			out.Values[i] = ec._Team_superTeam(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Team_superTeam(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11059,58 +12853,220 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._User_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "membersId":
 			out.Values[i] = ec._User_membersId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "gender":
 			out.Values[i] = ec._User_gender(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "churchId":
+			out.Values[i] = ec._User_churchId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "church":
-			out.Values[i] = ec._User_church(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_church(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "age":
 			out.Values[i] = ec._User_age(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "email":
 			out.Values[i] = ec._User_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._User_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "image":
+			out.Values[i] = ec._User_image(ctx, field, obj)
 		case "projects":
-			out.Values[i] = ec._User_projects(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_projects(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "events":
-			out.Values[i] = ec._User_events(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_events(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "teams":
-			out.Values[i] = ec._User_teams(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_teams(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "superTeams":
-			out.Values[i] = ec._User_superTeams(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_superTeams(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11863,13 +13819,7 @@ func (ec *executionContext) unmarshalNBrandingInput2ᚖgithubᚗcomᚋbccᚑmedi
 }
 
 func (ec *executionContext) marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChallenge(ctx context.Context, sel ast.SelectionSet, v model.Challenge) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._Challenge(ctx, sel, v)
+	return ec._Challenge(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNChallenge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChallengeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Challenge) graphql.Marshaler {
@@ -11914,6 +13864,10 @@ func (ec *executionContext) marshalNChallenge2ᚕgithubᚗcomᚋbccᚑmediaᚋwa
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNChurch2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChurch(ctx context.Context, sel ast.SelectionSet, v model.Church) graphql.Marshaler {
+	return ec._Church(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNChurch2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChurch(ctx context.Context, sel ast.SelectionSet, v *model.Church) graphql.Marshaler {
@@ -12926,7 +14880,7 @@ func (ec *executionContext) unmarshalOBrandingInput2ᚖgithubᚗcomᚋbccᚑmedi
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChallenge(ctx context.Context, sel ast.SelectionSet, v model.Challenge) graphql.Marshaler {
+func (ec *executionContext) marshalOChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋuserᚋmodelᚐChallenge(ctx context.Context, sel ast.SelectionSet, v *model.Challenge) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

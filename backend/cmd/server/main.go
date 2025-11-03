@@ -68,7 +68,7 @@ func main() {
 	})
 
 	// User API endpoints
-	router.POST("/graphql/user", middleware.JWTAuth(cfg.JWT), graphqlHandler(userHandler))
+	router.POST("/graphql/user", middleware.DataLoader(db), middleware.JWTAuth(cfg.JWT), graphqlHandler(userHandler))
 	if cfg.Server.Environment != "production" {
 		router.GET("/graphql/user", gin.WrapH(playground.Handler("User API", "/graphql/user")))
 	}

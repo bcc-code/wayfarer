@@ -19,25 +19,10 @@ type Achievement interface {
 	GetImage() string
 	GetProject() *Project
 	GetEvent() *Event
-	GetChallenge() Challenge
+	GetChallenge() *Challenge
 	GetAchievedAt() *scalars.DateTime
 	GetPoints() int
 	GetHidden() bool
-}
-
-type Challenge interface {
-	IsChallenge()
-	GetID() string
-	GetName() string
-	GetDescription() scalars.HTML
-	GetImage() string
-	GetProject() *Project
-	GetEvent() *Event
-	GetURL() string
-	GetButtonText() string
-	GetPublishedAt() scalars.DateTime
-	GetEndTime() *scalars.DateTime
-	GetUserCompletedAt() *scalars.DateTime
 }
 
 type AgeRange struct {
@@ -64,13 +49,28 @@ type ArticleInput struct {
 }
 
 type Branding struct {
-	Logo   string  `json:"logo"`
-	Colors *Colors `json:"colors"`
+	Logo     string  `json:"logo"`
+	Colors   *Colors `json:"colors"`
+	Rounding int     `json:"rounding"`
 }
 
 type BrandingInput struct {
 	Logo   string       `json:"logo"`
 	Colors *ColorsInput `json:"colors"`
+}
+
+type Challenge struct {
+	ID              string            `json:"id"`
+	Name            string            `json:"name"`
+	Description     scalars.HTML      `json:"description"`
+	Image           string            `json:"image"`
+	Project         *Project          `json:"project"`
+	Event           *Event            `json:"event,omitempty"`
+	URL             string            `json:"url"`
+	ButtonText      string            `json:"buttonText"`
+	PublishedAt     scalars.DateTime  `json:"publishedAt"`
+	EndTime         *scalars.DateTime `json:"endTime,omitempty"`
+	UserCompletedAt *scalars.DateTime `json:"userCompletedAt,omitempty"`
 }
 
 type Church struct {
@@ -245,7 +245,7 @@ type ListeningAchievement struct {
 	Image           string            `json:"image"`
 	Project         *Project          `json:"project"`
 	Event           *Event            `json:"event,omitempty"`
-	Challenge       Challenge         `json:"challenge,omitempty"`
+	Challenge       *Challenge        `json:"challenge,omitempty"`
 	AchievedAt      *scalars.DateTime `json:"achievedAt,omitempty"`
 	Tracks          []Track           `json:"tracks"`
 	UserHasListened []Track           `json:"userHasListened"`
@@ -261,7 +261,7 @@ func (this ListeningAchievement) GetDescription() string           { return this
 func (this ListeningAchievement) GetImage() string                 { return this.Image }
 func (this ListeningAchievement) GetProject() *Project             { return this.Project }
 func (this ListeningAchievement) GetEvent() *Event                 { return this.Event }
-func (this ListeningAchievement) GetChallenge() Challenge          { return this.Challenge }
+func (this ListeningAchievement) GetChallenge() *Challenge         { return this.Challenge }
 func (this ListeningAchievement) GetAchievedAt() *scalars.DateTime { return this.AchievedAt }
 func (this ListeningAchievement) GetPoints() int                   { return this.Points }
 func (this ListeningAchievement) GetHidden() bool                  { return this.Hidden }
@@ -289,7 +289,7 @@ type ReadingAchievement struct {
 	Image       string            `json:"image"`
 	Project     *Project          `json:"project"`
 	Event       *Event            `json:"event,omitempty"`
-	Challenge   Challenge         `json:"challenge,omitempty"`
+	Challenge   *Challenge        `json:"challenge,omitempty"`
 	AchievedAt  *scalars.DateTime `json:"achievedAt,omitempty"`
 	Articles    []Article         `json:"articles"`
 	UserHasRead []Article         `json:"userHasRead"`
@@ -305,22 +305,22 @@ func (this ReadingAchievement) GetDescription() string           { return this.D
 func (this ReadingAchievement) GetImage() string                 { return this.Image }
 func (this ReadingAchievement) GetProject() *Project             { return this.Project }
 func (this ReadingAchievement) GetEvent() *Event                 { return this.Event }
-func (this ReadingAchievement) GetChallenge() Challenge          { return this.Challenge }
+func (this ReadingAchievement) GetChallenge() *Challenge         { return this.Challenge }
 func (this ReadingAchievement) GetAchievedAt() *scalars.DateTime { return this.AchievedAt }
 func (this ReadingAchievement) GetPoints() int                   { return this.Points }
 func (this ReadingAchievement) GetHidden() bool                  { return this.Hidden }
 
 type SimpleAchievement struct {
-	ID          string           `json:"id"`
-	Name        string           `json:"name"`
-	Description string           `json:"description"`
-	Image       string           `json:"image"`
-	Project     *Project         `json:"project"`
-	Event       *Event           `json:"event,omitempty"`
-	Challenge   Challenge        `json:"challenge,omitempty"`
-	AchievedAt  scalars.DateTime `json:"achievedAt"`
-	Points      int              `json:"points"`
-	Hidden      bool             `json:"hidden"`
+	ID          string            `json:"id"`
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Image       string            `json:"image"`
+	Project     *Project          `json:"project"`
+	Event       *Event            `json:"event,omitempty"`
+	Challenge   *Challenge        `json:"challenge,omitempty"`
+	AchievedAt  *scalars.DateTime `json:"achievedAt,omitempty"`
+	Points      int               `json:"points"`
+	Hidden      bool              `json:"hidden"`
 }
 
 func (SimpleAchievement) IsAchievement()                        {}
@@ -330,8 +330,8 @@ func (this SimpleAchievement) GetDescription() string           { return this.De
 func (this SimpleAchievement) GetImage() string                 { return this.Image }
 func (this SimpleAchievement) GetProject() *Project             { return this.Project }
 func (this SimpleAchievement) GetEvent() *Event                 { return this.Event }
-func (this SimpleAchievement) GetChallenge() Challenge          { return this.Challenge }
-func (this SimpleAchievement) GetAchievedAt() *scalars.DateTime { return &this.AchievedAt }
+func (this SimpleAchievement) GetChallenge() *Challenge         { return this.Challenge }
+func (this SimpleAchievement) GetAchievedAt() *scalars.DateTime { return this.AchievedAt }
 func (this SimpleAchievement) GetPoints() int                   { return this.Points }
 func (this SimpleAchievement) GetHidden() bool                  { return this.Hidden }
 
@@ -346,18 +346,18 @@ type Streak struct {
 }
 
 type StreakAchievement struct {
-	ID           string           `json:"id"`
-	Name         string           `json:"name"`
-	Description  string           `json:"description"`
-	Image        string           `json:"image"`
-	Project      *Project         `json:"project"`
-	Event        *Event           `json:"event,omitempty"`
-	Challenge    Challenge        `json:"challenge,omitempty"`
-	AchievedAt   scalars.DateTime `json:"achievedAt"`
-	NeededStreak int              `json:"neededStreak"`
-	Points       int              `json:"points"`
-	Hidden       bool             `json:"hidden"`
-	Streak       *Streak          `json:"streak"`
+	ID           string            `json:"id"`
+	Name         string            `json:"name"`
+	Description  string            `json:"description"`
+	Image        string            `json:"image"`
+	Project      *Project          `json:"project"`
+	Event        *Event            `json:"event,omitempty"`
+	Challenge    *Challenge        `json:"challenge,omitempty"`
+	AchievedAt   *scalars.DateTime `json:"achievedAt,omitempty"`
+	NeededStreak int               `json:"neededStreak"`
+	Points       int               `json:"points"`
+	Hidden       bool              `json:"hidden"`
+	Streak       *Streak           `json:"streak"`
 }
 
 func (StreakAchievement) IsAchievement()                        {}
@@ -367,8 +367,8 @@ func (this StreakAchievement) GetDescription() string           { return this.De
 func (this StreakAchievement) GetImage() string                 { return this.Image }
 func (this StreakAchievement) GetProject() *Project             { return this.Project }
 func (this StreakAchievement) GetEvent() *Event                 { return this.Event }
-func (this StreakAchievement) GetChallenge() Challenge          { return this.Challenge }
-func (this StreakAchievement) GetAchievedAt() *scalars.DateTime { return &this.AchievedAt }
+func (this StreakAchievement) GetChallenge() *Challenge         { return this.Challenge }
+func (this StreakAchievement) GetAchievedAt() *scalars.DateTime { return this.AchievedAt }
 func (this StreakAchievement) GetPoints() int                   { return this.Points }
 func (this StreakAchievement) GetHidden() bool                  { return this.Hidden }
 
@@ -466,10 +466,12 @@ type User struct {
 	ID         string      `json:"id"`
 	MembersID  string      `json:"membersId"`
 	Gender     Gender      `json:"gender"`
+	ChurchID   string      `json:"churchId"`
 	Church     *Church     `json:"church"`
 	Age        int         `json:"age"`
 	Email      string      `json:"email"`
 	Name       string      `json:"name"`
+	Image      *string     `json:"image,omitempty"`
 	Projects   []Project   `json:"projects"`
 	Events     []Event     `json:"events"`
 	Teams      []Team      `json:"teams"`

@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/99designs/gqlgen v0.17.81
 	github.com/gin-gonic/gin v1.11.0
+	github.com/graph-gophers/dataloader/v7 v7.1.2
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/jaswdr/faker v1.19.1
 	github.com/joho/godotenv v1.5.1

@@ -93,15 +93,16 @@ type User {
     id: ID!
     membersId: ID!
     gender: Gender!
-    church: Church!
+    churchId: ID!
+    church: Church! @goField(forceResolver: true)
     age: Int!
     email: String!
     name: String!
     image: String
-    projects: [Project!]!
-    events: [Event!]!
-    teams: [Team!]!
-    superTeams: [SuperTeam!]!
+    projects: [Project!]! @goField(forceResolver: true)
+    events: [Event!]! @goField(forceResolver: true)
+    teams: [Team!]! @goField(forceResolver: true)
+    superTeams: [SuperTeam!]! @goField(forceResolver: true)
 }
 
 type Church {
@@ -115,19 +116,19 @@ type Project {
     id: ID!
     name: String!
     description: String!
-    challenges: [Challenge!]!
+    challenges: [Challenge!]! @goField(forceResolver: true)
     leaderboard(
         type: LeaderboardType!
         filter: LeaderboardFilter
     ): [LeaderboardEntry!]!
-    events: [Event!]!
+    events: [Event!]! @goField(forceResolver: true)
     startDate: DateTime!
     endDate: DateTime!
     branding: Branding!
-    teams: [Team!]!
-    myTeam: Team!
-    achievements: [Achievement!]!
-    streaks: [Streak!]!
+    teams: [Team!]! @goField(forceResolver: true)
+    myTeam: Team! @goField(forceResolver: true)
+    achievements: [Achievement!]! @goField(forceResolver: true)
+    streaks: [Streak!]! @goField(forceResolver: true)
 }
 
 type Streak {
@@ -137,7 +138,7 @@ type Streak {
     status: Int!
     relevantDays: [DateRange!]!
     listenedDays(last: Int!): [Date!]!
-    project: Project!
+    project: Project! @goField(forceResolver: true)
 }
 
 type DateRange {
@@ -149,40 +150,40 @@ type Event {
     id: ID!
     name: String!
     description: String!
-    challenges: [Challenge!]!
+    challenges: [Challenge!]! @goField(forceResolver: true)
     leaderboard(
         type: LeaderboardType!
         filter: LeaderboardFilter
     ): [LeaderboardEntry!]!
     startDate: DateTime!
     endDate: DateTime!
-    parentProject: Project!
+    parentProject: Project! @goField(forceResolver: true)
 }
 
 type Team {
     id: ID!
     name: String!
     description: String!
-    members: [User!]!
+    members: [User!]! @goField(forceResolver: true)
     leaderboard(
         type: LeaderboardType!
         filter: LeaderboardFilter
     ): [LeaderboardEntry!]!
-    parentProject: Project!
-    superTeam: SuperTeam
+    parentProject: Project! @goField(forceResolver: true)
+    superTeam: SuperTeam @goField(forceResolver: true)
 }
 
 type SuperTeam {
     id: ID!
     name: String!
     description: String!
-    members: [User!]!
+    members: [User!]! @goField(forceResolver: true)
     leaderboard(
         type: LeaderboardType!
         filter: LeaderboardFilter
     ): [LeaderboardEntry!]!
-    parentProject: Project!
-    teams: [Team!]!
+    parentProject: Project! @goField(forceResolver: true)
+    teams: [Team!]! @goField(forceResolver: true)
 }
 
 # ==================== Interfaces ====================
@@ -192,8 +193,8 @@ type Challenge {
     name: String!
     description: HTML!
     image: String!
-    project: Project!
-    event: Event
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
     url: String!
     buttonText: String!
     publishedAt: DateTime!
@@ -206,9 +207,9 @@ interface Achievement {
     name: String!
     description: String!
     image: String!
-    project: Project!
-    event: Event
-    challenge: Challenge
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime
     points: Int!
     hidden: Boolean!
@@ -221,9 +222,9 @@ type SimpleAchievement implements Achievement {
     name: String!
     description: String!
     image: String!
-    project: Project!
-    event: Event
-    challenge: Challenge
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime
     points: Int!
     hidden: Boolean!
@@ -234,9 +235,9 @@ type ReadingAchievement implements Achievement {
     name: String!
     description: String!
     image: String!
-    project: Project!
-    event: Event
-    challenge: Challenge
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime
     articles: [Article!]!
     userHasRead: [Article!]!
@@ -250,9 +251,9 @@ type ListeningAchievement implements Achievement {
     name: String!
     description: String!
     image: String!
-    project: Project!
-    event: Event
-    challenge: Challenge
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime
     tracks: [Track!]!
     userHasListened: [Track!]!
@@ -266,14 +267,14 @@ type StreakAchievement implements Achievement {
     name: String!
     description: String!
     image: String!
-    project: Project!
-    event: Event
-    challenge: Challenge
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime
     neededStreak: Int!
     points: Int!
     hidden: Boolean!
-    streak: Streak!
+    streak: Streak! @goField(forceResolver: true)
 }
 
 # ==================== Input Types ====================

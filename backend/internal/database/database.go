@@ -7,15 +7,17 @@ import (
 	"log/slog"
 
 	"github.com/bcc-media/wayfarer/internal/config"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 //go:embed migrations/*.sql
 var Migrations embed.FS
 
-// DB wraps the pgxpool connection pool
+// DB wraps the pgxpool connection pool and sqlc queries
 type DB struct {
-	Pool *pgxpool.Pool
+	Pool    *pgxpool.Pool
+	Queries *sqlc.Queries
 }
 
 // Connect creates a new database connection pool
@@ -47,7 +49,10 @@ func Connect(ctx context.Context, cfg config.DatabaseConfig) (*DB, error) {
 		"min_conns", cfg.MaxIdleConns,
 	)
 
-	return &DB{Pool: pool}, nil
+	return &DB{
+		Pool:    pool,
+		Queries: sqlc.New(pool),
+	}, nil
 }
 
 // Close closes the database connection pool

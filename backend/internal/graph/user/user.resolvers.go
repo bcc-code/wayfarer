@@ -54,7 +54,28 @@ func (r *userQueryRootResolver) CurrentEvent(ctx context.Context) (*model.Event,
 
 // Me is the resolver for the me field.
 func (r *userQueryRootResolver) Me(ctx context.Context) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: Me - me"))
+	// TODO: Extract user ID from JWT token in context
+	// For now, hardcode a test user ID
+	testUserID := "US01K8XV6EBHHRWDGZRQDWTR9SA8"
+
+	row, err := r.DB.Queries.GetUserByID(ctx, testUserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	// Convert sqlc row to GraphQL model
+	user := &model.User{
+		ID:        row.ID,
+		MembersID: row.MembersID,
+		Gender:    model.Gender(row.Gender),
+		ChurchID:  row.ChurchID,
+		Age:       int(row.Age),
+		Email:     row.Email,
+		Name:      row.Name,
+		Image:     row.AvatarUrl,
+	}
+
+	return user, nil
 }
 
 // UserMutationRoot returns UserMutationRootResolver implementation.
