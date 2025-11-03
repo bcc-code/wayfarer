@@ -56,8 +56,8 @@ func TestGetPrefix(t *testing.T) {
 		id       string
 		expected string
 	}{
-		{"valid church ID", "CH01ARZ3NDEKTSV4RRFFQ69G5FAV", "CH"},
-		{"valid user ID", "US01ARZ3NDEKTSV4RRFFQ69G5FAV", "US"},
+		{"valid church ID", "CH01ARZ3NDEKTSV4RRFFQ69G5FAV", PrefixChurch},
+		{"valid user ID", "US01ARZ3NDEKTSV4RRFFQ69G5FAV", PrefixUser},
 		{"short ID", "X", ""},
 		{"empty ID", "", ""},
 	}
