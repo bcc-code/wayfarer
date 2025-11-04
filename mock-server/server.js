@@ -74,38 +74,12 @@ const cleanSeededData = (obj) => {
 
 // Read all schema files
 const sharedSchema = readFileSync(join(__dirname, '../gql/shared.graphqls'), 'utf-8');
-const userSchema = readFileSync(join(__dirname, '../gql/user.graphqls'), 'utf-8');
-const adminSchema = readFileSync(join(__dirname, '../gql/admin.graphqls'), 'utf-8');
-const m2mSchema = readFileSync(join(__dirname, '../gql/m2m.graphqls'), 'utf-8');
+const mainSchema = readFileSync(join(__dirname, '../gql/schema.graphqls'), 'utf-8');
 
-// Remove individual schema definitions and combine
-const removeSchemaDefinition = (schema) => {
-  return schema.replace(/schema\s*{[^}]*}/g, '');
-};
-
-// Combine all schemas with a unified schema definition that exposes all APIs
+// Combine schemas
 const typeDefs = `
 ${sharedSchema}
-${removeSchemaDefinition(userSchema)}
-${removeSchemaDefinition(adminSchema)}
-${removeSchemaDefinition(m2mSchema)}
-
-schema {
-  query: CombinedQuery
-  mutation: CombinedMutation
-}
-
-type CombinedQuery {
-  user: UserQueryRoot!
-  admin: AdminQueryRoot!
-  m2m: M2MQueryRoot!
-}
-
-type CombinedMutation {
-  user: UserMutationRoot!
-  admin: AdminMutationRoot!
-  m2m: M2MMutationRoot!
-}
+${mainSchema}
 `;
 
 // Create mock data generators
@@ -353,32 +327,16 @@ const mocks = {
   Date: () => faker.date.recent().toISOString().split('T')[0],
   Upload: () => null,
 
-  // Combined root resolvers
-  CombinedQuery: () => ({
-    user: () => ({}),
-    admin: () => ({}),
-    m2m: () => ({}),
-  }),
-
-  CombinedMutation: () => ({
-    user: () => ({}),
-    admin: () => ({}),
-    m2m: () => ({}),
-  }),
-
-  // User API Query resolvers
-  UserQueryRoot: () => ({
-    currentProject: () => cleanSeededData(seededProjects[0]) || {},
-    currentEvent: () => cleanSeededData(seededProjects[0]?.events[0]) || {},
+  // Query root resolvers
+  Query: () => ({
+    // User API queries
     me: () => ({}),
-    projects: () => seededProjects.map(p => cleanSeededData(p)),
-    events: () => seededProjects.flatMap(p => p.events).map(e => cleanSeededData(e)),
-  }),
+    myProjects: () => seededProjects.map(p => cleanSeededData(p)),
+    myEvents: () => seededProjects.flatMap(p => p.events).map(e => cleanSeededData(e)),
+    myCurrentProject: () => cleanSeededData(seededProjects[0]) || {},
+    myCurrentEvent: () => cleanSeededData(seededProjects[0]?.events[0]) || {},
 
-  UserMutationRoot: () => ({}),
-
-  // Admin API Query resolvers
-  AdminQueryRoot: () => ({
+    // Admin/M2M API queries
     user: () => ({}),
     users: () => Array(100).fill(null).map(() => ({})),
     project: (root, args) => {
@@ -407,39 +365,12 @@ const mocks = {
     churches: () => Array(10).fill(null).map(() => ({})),
     streak: () => ({}),
     streaks: () => Array(2).fill(null).map(() => ({})),
-    currentProject: () => ({}),
-    currentEvent: () => ({}),
-  }),
-
-  AdminMutationRoot: () => ({}),
-
-  // M2M API Query resolvers
-  M2MQueryRoot: () => ({
-    user: () => ({}),
-    project: (root, args) => {
-      if (args && args.id) {
-        return cleanSeededData(projectsMap.get(args.id)) || {};
-      }
-      return cleanSeededData(seededProjects[0]) || {};
-    },
-    event: (root, args) => {
-      if (args && args.id) {
-        return cleanSeededData(eventsMap.get(args.id)) || {};
-      }
-      return cleanSeededData(seededProjects[0]?.events[0]) || {};
-    },
-    team: () => ({}),
-    superteam: () => ({}),
-    achievement: () => ({}),
-    challenge: () => ({}),
-    users: () => Array(5).fill(null).map(() => ({})),
-    challenges: () => Array(3).fill(null).map(() => ({})),
-    achievements: () => Array(5).fill(null).map(() => ({})),
     currentProject: () => cleanSeededData(seededProjects[0]) || {},
     currentEvent: () => cleanSeededData(seededProjects[0]?.events[0]) || {},
   }),
 
-  M2MMutationRoot: () => ({}),
+  // Mutation root resolvers
+  Mutation: () => ({}),
 };
 
 // Create executable schema with custom resolvers for seeded data
@@ -479,40 +410,37 @@ server.listen(port, () => {
   console.log(`🚀 Mock GraphQL server ready at: http://localhost:${port}/graphql`);
   console.log(`📝 GraphiQL UI available at: http://localhost:${port}/graphql`);
   console.log('');
-  console.log('The schema now exposes three separate APIs:');
-  console.log('  - user: End user API (mobile/web apps)');
-  console.log('  - admin: Admin API (management interface)');
-  console.log('  - m2m: Machine-to-Machine API (external integrations)');
+  console.log('The schema exposes a unified GraphQL API with role-based access control:');
+  console.log('  - User queries: me, myProjects, myEvents, myCurrentProject, myCurrentEvent');
+  console.log('  - Admin/M2M queries: user, users, project, projects, event, events, etc.');
+  console.log('  - Mutations use @requireRole directives for access control');
   console.log('');
   console.log('Example User API query:');
   console.log(`
   query {
-    user {
-      me {
-        id
+    me {
+      id
+      name
+      email
+      gender
+      church {
         name
-        email
-        age
-        gender
-        church {
-          name
-          country
-        }
+        country
       }
-      currentProject {
+    }
+    myCurrentProject {
+      id
+      name
+      description
+      startDate
+      endDate
+    }
+    myProjects {
+      id
+      name
+      events {
         id
         name
-        description
-        startDate
-        endDate
-      }
-      projects {
-        id
-        name
-        events {
-          id
-          name
-        }
       }
     }
   }
@@ -521,17 +449,15 @@ server.listen(port, () => {
   console.log('Example Admin API query:');
   console.log(`
   query {
-    admin {
-      projects {
-        id
-        name
-        description
-      }
-      users(filter: { gender: MALE }) {
-        id
-        name
-        email
-      }
+    projects {
+      id
+      name
+      description
+    }
+    users(filter: { gender: MALE }) {
+      id
+      name
+      email
     }
   }
 `);
@@ -539,12 +465,10 @@ server.listen(port, () => {
   console.log('Example M2M API mutation:');
   console.log(`
   mutation {
-    m2m {
-      awardAchievement(userId: "user123", achievementId: "ach456") {
-        id
-        name
-        points
-      }
+    awardAchievement(userId: "user123", achievementId: "ach456") {
+      id
+      name
+      points
     }
   }
 `);
