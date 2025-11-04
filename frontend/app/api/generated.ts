@@ -1099,7 +1099,7 @@ export type CurrentProjectQuery = { __typename?: 'Query', currentProject: { __ty
 export type AdminHomePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminHomePageQuery = { __typename?: 'Query', projects: Array<{ __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } }> };
+export type AdminHomePageQuery = { __typename?: 'Query', me: { __typename?: 'User', name: string }, projects: Array<{ __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } }> };
 
 export type AdminProjectPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -1179,6 +1179,9 @@ export function useCurrentProjectQuery(options?: Omit<Urql.UseQueryArgs<never, C
 };
 export const AdminHomePageDocument = gql`
     query AdminHomePage {
+  me {
+    name
+  }
   projects {
     id
     name

@@ -7,6 +7,9 @@ definePageMeta({
 
 gql(`
   query AdminHomePage {
+    me {
+      name
+    }
     projects {
       id
       name
@@ -29,8 +32,6 @@ gql(`
 const { data, fetching, error } = useAdminHomePageQuery()
 const { currentProjects } = useGroupedProjects(() => data.value?.projects)
 
-const { user } = useAuth()
-
 const greeting = computed(() => {
   const hour = new Date().getHours()
   if (hour < 12) return 'Good morning'
@@ -41,8 +42,8 @@ const greeting = computed(() => {
 
 <template>
   <UContainer>
-    <h1 v-if="user" class="text-3xl my-12 text-balance">
-      {{ greeting }}, {{ user.name }}
+    <h1 v-if="data?.me" class="text-3xl my-12 text-balance">
+      {{ greeting }}, {{ data.me.name }}
     </h1>
 
     <LoadingState v-if="fetching" />
