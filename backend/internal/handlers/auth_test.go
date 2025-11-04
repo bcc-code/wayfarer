@@ -1,10 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/config"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/services/mocks"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -109,8 +113,12 @@ func TestGenerateWayfarerToken(t *testing.T) {
 		},
 	}
 
+	mockQueries := mocks.NewMockRoleQuerier(t)
+	roleService := services.NewRoleService(mockQueries)
+
 	handler := &AuthHandler{
-		Cfg: testConfig,
+		Cfg:         testConfig,
+		RoleService: roleService,
 	}
 
 	tests := []struct {
@@ -142,6 +150,15 @@ func TestGenerateWayfarerToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Mock the GetUserRoles call to return a default user role
+			mockQueries.On("GetUserRoles", context.Background(), tt.userID).Return([]*sqlc.UserRole{
+				{
+					ID:     "UR01ARZ3NDEKTSV4RRFFQ69G5FAV",
+					UserID: tt.userID,
+					Role:   "USER",
+				},
+			}, nil).Maybe()
+
 			token, err := handler.generateWayfarerToken(tt.userID)
 
 			if tt.wantErr {
@@ -168,8 +185,8 @@ func TestGenerateWayfarerToken(t *testing.T) {
 				// Verify user ID
 				assert.Equal(t, tt.userID, claims.UserID)
 
-				// Verify role is always "user"
-				assert.Equal(t, "user", claims.UserRole)
+				// Verify roles array exists and has at least one role
+				assert.NotEmpty(t, claims.UserRoles)
 
 				// Verify issuer
 				assert.Equal(t, testConfig.JWT.Issuer, claims.Issuer)
@@ -194,6 +211,9 @@ func TestGenerateWayfarerToken(t *testing.T) {
 }
 
 func TestGenerateWayfarerToken_SigningMethod(t *testing.T) {
+	mockQueries := mocks.NewMockRoleQuerier(t)
+	roleService := services.NewRoleService(mockQueries)
+
 	handler := &AuthHandler{
 		Cfg: &config.Config{
 			JWT: config.JWTConfig{
@@ -201,7 +221,12 @@ func TestGenerateWayfarerToken_SigningMethod(t *testing.T) {
 				Issuer: "test-issuer",
 			},
 		},
+		RoleService: roleService,
 	}
+
+	mockQueries.On("GetUserRoles", context.Background(), "US123").Return([]*sqlc.UserRole{
+		{ID: "UR01", UserID: "US123", Role: "USER"},
+	}, nil)
 
 	token, err := handler.generateWayfarerToken("US123")
 	require.NoError(t, err)
@@ -215,6 +240,9 @@ func TestGenerateWayfarerToken_SigningMethod(t *testing.T) {
 }
 
 func TestGenerateWayfarerToken_InvalidSignature(t *testing.T) {
+	mockQueries := mocks.NewMockRoleQuerier(t)
+	roleService := services.NewRoleService(mockQueries)
+
 	handler := &AuthHandler{
 		Cfg: &config.Config{
 			JWT: config.JWTConfig{
@@ -222,7 +250,12 @@ func TestGenerateWayfarerToken_InvalidSignature(t *testing.T) {
 				Issuer: "test-issuer",
 			},
 		},
+		RoleService: roleService,
 	}
+
+	mockQueries.On("GetUserRoles", context.Background(), "US123").Return([]*sqlc.UserRole{
+		{ID: "UR01", UserID: "US123", Role: "USER"},
+	}, nil)
 
 	token, err := handler.generateWayfarerToken("US123")
 	require.NoError(t, err)
@@ -237,6 +270,9 @@ func TestGenerateWayfarerToken_InvalidSignature(t *testing.T) {
 }
 
 func TestGenerateWayfarerToken_TokenStructure(t *testing.T) {
+	mockQueries := mocks.NewMockRoleQuerier(t)
+	roleService := services.NewRoleService(mockQueries)
+
 	handler := &AuthHandler{
 		Cfg: &config.Config{
 			JWT: config.JWTConfig{
@@ -244,7 +280,12 @@ func TestGenerateWayfarerToken_TokenStructure(t *testing.T) {
 				Issuer: "test-issuer",
 			},
 		},
+		RoleService: roleService,
 	}
+
+	mockQueries.On("GetUserRoles", context.Background(), "US123").Return([]*sqlc.UserRole{
+		{ID: "UR01", UserID: "US123", Role: "USER"},
+	}, nil)
 
 	token, err := handler.generateWayfarerToken("US123")
 	require.NoError(t, err)
@@ -255,6 +296,9 @@ func TestGenerateWayfarerToken_TokenStructure(t *testing.T) {
 }
 
 func TestGenerateWayfarerToken_DifferentUsersDifferentTokens(t *testing.T) {
+	mockQueries := mocks.NewMockRoleQuerier(t)
+	roleService := services.NewRoleService(mockQueries)
+
 	handler := &AuthHandler{
 		Cfg: &config.Config{
 			JWT: config.JWTConfig{
@@ -262,7 +306,16 @@ func TestGenerateWayfarerToken_DifferentUsersDifferentTokens(t *testing.T) {
 				Issuer: "test-issuer",
 			},
 		},
+		RoleService: roleService,
 	}
+
+	mockQueries.On("GetUserRoles", context.Background(), "US111").Return([]*sqlc.UserRole{
+		{ID: "UR01", UserID: "US111", Role: "USER"},
+	}, nil)
+
+	mockQueries.On("GetUserRoles", context.Background(), "US222").Return([]*sqlc.UserRole{
+		{ID: "UR02", UserID: "US222", Role: "USER"},
+	}, nil)
 
 	token1, err := handler.generateWayfarerToken("US111")
 	require.NoError(t, err)
@@ -290,9 +343,9 @@ func TestGenerateWayfarerToken_DifferentUsersDifferentTokens(t *testing.T) {
 	assert.Equal(t, "US111", claims1.UserID)
 	assert.Equal(t, "US222", claims2.UserID)
 
-	// But both should have same role
-	assert.Equal(t, "user", claims1.UserRole)
-	assert.Equal(t, "user", claims2.UserRole)
+	// But both should have roles
+	assert.NotEmpty(t, claims1.UserRoles)
+	assert.NotEmpty(t, claims2.UserRoles)
 }
 
 // Helper function to split JWT token into parts

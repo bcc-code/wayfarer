@@ -26,6 +26,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/logger"
 	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/sony/gobreaker/v2"
@@ -93,8 +94,12 @@ func main() {
 	dataLoaders := loaders.NewLoaders(db)
 	slog.Info("DataLoaders initialized with global caching")
 
+	// Initialize RoleService
+	roleService := services.NewRoleService(db.Queries)
+	slog.Info("RoleService initialized")
+
 	// Initialize GraphQL resolver
-	apiResolver := &api.Resolver{DB: db, Loaders: dataLoaders}
+	apiResolver := &api.Resolver{DB: db, Loaders: dataLoaders, RoleService: roleService}
 
 	apiHandler := handler.New(api.NewExecutableSchema(api.Config{
 		Resolvers: apiResolver,
@@ -141,6 +146,7 @@ func main() {
 		Cfg:           cfg,
 		JWKS:          jwks,
 		MembersClient: membersClient,
+		RoleService:   roleService,
 	}
 	router.GET("/callback", authHandler.Callback)
 
@@ -206,9 +212,9 @@ func graphqlHandler(h *handler.Server) gin.HandlerFunc {
 			ctx = context.WithValue(ctx, middleware.UserIDKey, userID)
 		}
 
-		// Transfer user_role if present
-		if userRole, exists := c.Get("user_role"); exists {
-			ctx = context.WithValue(ctx, middleware.UserRoleKey, userRole)
+		// Transfer user_roles if present
+		if userRoles, exists := c.Get("user_roles"); exists {
+			ctx = context.WithValue(ctx, middleware.UserRolesKey, userRoles)
 		}
 
 		// Create new request with updated context

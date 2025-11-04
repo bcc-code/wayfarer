@@ -92,6 +92,21 @@ func (r *readingAchievementResolver) Challenge(ctx context.Context, obj *model.R
 	panic(fmt.Errorf("not implemented: Challenge - challenge"))
 }
 
+// Church is the resolver for the church field.
+func (r *roleScopeResolver) Church(ctx context.Context, obj *model.RoleScope) (*model.Church, error) {
+	panic(fmt.Errorf("not implemented: Church - church"))
+}
+
+// Project is the resolver for the project field.
+func (r *roleScopeResolver) Project(ctx context.Context, obj *model.RoleScope) (*model.Project, error) {
+	panic(fmt.Errorf("not implemented: Project - project"))
+}
+
+// Team is the resolver for the team field.
+func (r *roleScopeResolver) Team(ctx context.Context, obj *model.RoleScope) (*model.Team, error) {
+	panic(fmt.Errorf("not implemented: Team - team"))
+}
+
 // Project is the resolver for the project field.
 func (r *simpleAchievementResolver) Project(ctx context.Context, obj *model.SimpleAchievement) (*model.Project, error) {
 	panic(fmt.Errorf("not implemented: Project - project"))
@@ -232,6 +247,26 @@ func (r *userResolver) SuperTeams(ctx context.Context, obj *model.User) ([]model
 	panic(fmt.Errorf("not implemented: SuperTeams - superTeams"))
 }
 
+// Roles is the resolver for the roles field.
+func (r *userResolver) Roles(ctx context.Context, obj *model.User) ([]model.UserRole, error) {
+	panic(fmt.Errorf("not implemented: Roles - roles"))
+}
+
+// User is the resolver for the user field.
+func (r *userRoleResolver) User(ctx context.Context, obj *model.UserRole) (*model.User, error) {
+	panic(fmt.Errorf("not implemented: User - user"))
+}
+
+// Scope is the resolver for the scope field.
+func (r *userRoleResolver) Scope(ctx context.Context, obj *model.UserRole) (*model.RoleScope, error) {
+	panic(fmt.Errorf("not implemented: Scope - scope"))
+}
+
+// AssignedBy is the resolver for the assignedBy field.
+func (r *userRoleResolver) AssignedBy(ctx context.Context, obj *model.UserRole) (*model.User, error) {
+	panic(fmt.Errorf("not implemented: AssignedBy - assignedBy"))
+}
+
 // Challenge returns ChallengeResolver implementation.
 func (r *Resolver) Challenge() ChallengeResolver { return &challengeResolver{r} }
 
@@ -250,6 +285,9 @@ func (r *Resolver) Project() ProjectResolver { return &projectResolver{r} }
 func (r *Resolver) ReadingAchievement() ReadingAchievementResolver {
 	return &readingAchievementResolver{r}
 }
+
+// RoleScope returns RoleScopeResolver implementation.
+func (r *Resolver) RoleScope() RoleScopeResolver { return &roleScopeResolver{r} }
 
 // SimpleAchievement returns SimpleAchievementResolver implementation.
 func (r *Resolver) SimpleAchievement() SimpleAchievementResolver {
@@ -273,14 +311,19 @@ func (r *Resolver) Team() TeamResolver { return &teamResolver{r} }
 // User returns UserResolver implementation.
 func (r *Resolver) User() UserResolver { return &userResolver{r} }
 
+// UserRole returns UserRoleResolver implementation.
+func (r *Resolver) UserRole() UserRoleResolver { return &userRoleResolver{r} }
+
 type challengeResolver struct{ *Resolver }
 type eventResolver struct{ *Resolver }
 type listeningAchievementResolver struct{ *Resolver }
 type projectResolver struct{ *Resolver }
 type readingAchievementResolver struct{ *Resolver }
+type roleScopeResolver struct{ *Resolver }
 type simpleAchievementResolver struct{ *Resolver }
 type streakResolver struct{ *Resolver }
 type streakAchievementResolver struct{ *Resolver }
 type superTeamResolver struct{ *Resolver }
 type teamResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
+type userRoleResolver struct{ *Resolver }

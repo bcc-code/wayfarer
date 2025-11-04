@@ -17,14 +17,14 @@ type contextKey string
 const (
 	// UserIDKey is the context key for user ID
 	UserIDKey contextKey = "user_id"
-	// UserRoleKey is the context key for user role
-	UserRoleKey contextKey = "user_role"
+	// UserRolesKey is the context key for user roles (array)
+	UserRolesKey contextKey = "user_roles"
 )
 
 // WayfarerClaims represents the JWT claims issued by Wayfarer
 type WayfarerClaims struct {
-	UserID   string `json:"user_id"`
-	UserRole string `json:"user_role"`
+	UserID    string   `json:"user_id"`
+	UserRoles []string `json:"user_roles"` // All roles the user has
 	jwt.RegisteredClaims
 }
 
@@ -76,11 +76,11 @@ func JWTAuth(cfg config.JWTConfig) gin.HandlerFunc {
 
 		// Set user context for GraphQL resolvers
 		c.Set("user_id", claims.UserID)
-		c.Set("user_role", claims.UserRole)
+		c.Set("user_roles", claims.UserRoles)
 
 		slog.Debug("JWT validated",
 			"user_id", claims.UserID,
-			"role", claims.UserRole,
+			"roles", claims.UserRoles,
 		)
 
 		c.Next()
@@ -117,25 +117,4 @@ func validateToken(tokenString string, cfg config.JWTConfig) (*WayfarerClaims, e
 	}
 
 	return claims, nil
-}
-
-// RequireAuth is a stricter middleware that rejects requests without valid JWT
-// Not currently used, but available for future use
-func RequireAuth(cfg config.JWTConfig) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Authorization header required",
-			})
-			c.Abort()
-			return
-		}
-
-		// TODO: Implement actual JWT validation
-		// For now, just check that something was provided
-
-		c.Next()
-	}
 }

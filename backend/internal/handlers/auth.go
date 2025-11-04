@@ -15,6 +15,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/members"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -27,6 +28,7 @@ type AuthHandler struct {
 	Cfg           *config.Config
 	JWKS          keyfunc.Keyfunc
 	MembersClient *members.Client
+	RoleService   *services.RoleService
 }
 
 // BrunstadTVClaims represents the JWT claims from Brunstad TV
@@ -40,8 +42,8 @@ type BrunstadTVClaims struct {
 
 // WayfarerClaims represents the JWT claims issued by Wayfarer
 type WayfarerClaims struct {
-	UserID   string `json:"user_id"`
-	UserRole string `json:"user_role"`
+	UserID    string   `json:"user_id"`
+	UserRoles []string `json:"user_roles"` // All roles the user has
 	jwt.RegisteredClaims
 }
 
@@ -278,9 +280,28 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 // generateWayfarerToken creates a new JWT for authentication against Wayfarer APIs
 func (h *AuthHandler) generateWayfarerToken(userID string) (string, error) {
 	now := time.Now()
+
+	// Load all user roles from database
+	userRoles, err := h.RoleService.LoadUserRoles(context.Background(), userID)
+	if err != nil {
+		slog.Warn("Failed to load user roles, defaulting to 'user'", "user_id", userID, "error", err)
+		return "", fmt.Errorf("failed to load user roles, defaulting to 'user'")
+	}
+
+	// Convert roles to string array
+	roles := make([]string, 0, len(userRoles))
+	if len(userRoles) > 0 {
+		for _, role := range userRoles {
+			roles = append(roles, role.Role)
+		}
+	} else {
+		// Default to USER role if no roles found
+		roles = append(roles, string(services.RoleUser))
+	}
+
 	claims := WayfarerClaims{
-		UserID:   userID,
-		UserRole: "user",
+		UserID:    userID,
+		UserRoles: roles,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    h.Cfg.JWT.Issuer,
 			IssuedAt:  jwt.NewNumericDate(now),

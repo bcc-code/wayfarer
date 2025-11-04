@@ -14,6 +14,7 @@ import (
 const (
 	PrefixChurch               = "CH" // Churches
 	PrefixUser                 = "US" // Users
+	PrefixUserRole             = "UR" // User Roles
 	PrefixProject              = "PR" // Projects
 	PrefixEvent                = "EV" // Events
 	PrefixSuperTeam            = "ST" // SuperTeams
@@ -54,6 +55,11 @@ func NewChurchID() string {
 // NewUserID generates a new ID for a user (US prefix)
 func NewUserID() string {
 	return newID(PrefixUser)
+}
+
+// NewUserRoleID generates a new ID for a user role (UR prefix)
+func NewUserRoleID() string {
+	return newID(PrefixUserRole)
 }
 
 // NewProjectID generates a new ID for a project (PR prefix)

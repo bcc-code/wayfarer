@@ -28,7 +28,7 @@ func init() {
 func generateTestToken(userID, userRole string, expiresIn time.Duration) string {
 	claims := WayfarerClaims{
 		UserID:   userID,
-		UserRole: userRole,
+		UserRoles: []string{userRole},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    testJWTConfig.Issuer,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -45,7 +45,7 @@ func generateTestToken(userID, userRole string, expiresIn time.Duration) string 
 func generateExpiredToken(userID, userRole string) string {
 	claims := WayfarerClaims{
 		UserID:   userID,
-		UserRole: userRole,
+		UserRoles: []string{userRole},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    testJWTConfig.Issuer,
 			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
@@ -62,7 +62,7 @@ func generateExpiredToken(userID, userRole string) string {
 func generateTokenWithWrongSecret(userID, userRole string) string {
 	claims := WayfarerClaims{
 		UserID:   userID,
-		UserRole: userRole,
+		UserRoles: []string{userRole},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    testJWTConfig.Issuer,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -79,7 +79,7 @@ func generateTokenWithWrongSecret(userID, userRole string) string {
 func generateTokenWithWrongIssuer(userID, userRole string) string {
 	claims := WayfarerClaims{
 		UserID:   userID,
-		UserRole: userRole,
+		UserRoles: []string{userRole},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "wrong-issuer",
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -104,9 +104,9 @@ func TestJWTAuth_ValidToken(t *testing.T) {
 		assert.True(t, exists)
 		assert.Equal(t, "US01ARZ3NDEKTSV4RRFFQ69G5FAV", userID)
 
-		userRole, exists := c.Get("user_role")
+		userRoles, exists := c.Get("user_roles")
 		assert.True(t, exists)
-		assert.Equal(t, "user", userRole)
+		assert.Equal(t, []string{"user"}, userRoles)
 
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
@@ -345,9 +345,9 @@ func TestJWTAuth_DifferentRoles(t *testing.T) {
 				require.True(t, exists)
 				assert.Equal(t, tc.userID, userID)
 
-				userRole, exists := c.Get("user_role")
+				userRoles, exists := c.Get("user_roles")
 				require.True(t, exists)
-				assert.Equal(t, tc.userRole, userRole)
+				assert.Equal(t, []string{tc.userRole}, userRoles)
 
 				c.JSON(http.StatusOK, gin.H{"status": "ok"})
 			})
@@ -372,7 +372,7 @@ func TestValidateToken(t *testing.T) {
 		claims, err := validateToken(token, testJWTConfig)
 		require.NoError(t, err)
 		assert.Equal(t, "US01ARZ3NDEKTSV4RRFFQ69G5FAV", claims.UserID)
-		assert.Equal(t, "user", claims.UserRole)
+		assert.Equal(t, []string{"user"}, claims.UserRoles)
 		assert.Equal(t, testJWTConfig.Issuer, claims.Issuer)
 	})
 
