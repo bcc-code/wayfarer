@@ -3,6 +3,7 @@ package seeders
 import (
 	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/ulid"
 )
@@ -12,7 +13,7 @@ func (s *Seeder) SeedUsers(stats *Stats) error {
 	numUsers := 75
 
 	query := `
-		INSERT INTO users (id, members_id, email, name, gender, age, church_id, avatar_url)
+		INSERT INTO users (id, members_id, email, name, gender, birthdate, church_id, avatar_url)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 
@@ -30,8 +31,10 @@ func (s *Seeder) SeedUsers(stats *Stats) error {
 			name = s.Fake.Person().FirstNameFemale() + " " + s.Fake.Person().LastName()
 		}
 
-		// Random age between 13 and 80
+		// Random age between 13 and 80 - convert to birthdate
 		age := 13 + rand.Intn(68)
+		now := time.Now()
+		birthdate := now.AddDate(-age, -rand.Intn(12), -rand.Intn(28))
 
 		// Random church
 		churchID := s.Data.ChurchIDs[rand.Intn(len(s.Data.ChurchIDs))]
@@ -52,7 +55,7 @@ func (s *Seeder) SeedUsers(stats *Stats) error {
 			email,
 			name,
 			gender,
-			age,
+			birthdate,
 			churchID,
 			avatarURL,
 		)

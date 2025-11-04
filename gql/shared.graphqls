@@ -97,7 +97,8 @@ type User {
     gender: Gender!
     churchId: ID!
     church: Church! @goField(forceResolver: true)
-    age: Int!
+    birthdate: String
+    age: Int @goField(forceResolver: true)
     email: String!
     name: String!
     image: String

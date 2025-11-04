@@ -13,6 +13,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/MicahParks/keyfunc/v3"
+	"github.com/bcc-media/wayfarer/internal/auth0"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/graph/api"
@@ -20,8 +21,10 @@ import (
 	"github.com/bcc-media/wayfarer/internal/handlers"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/logger"
+	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/gin-gonic/gin"
+	"github.com/sony/gobreaker/v2"
 )
 
 func main() {
@@ -55,6 +58,32 @@ func main() {
 	}
 	slog.Info("JWKS initialized successfully", "url", cfg.JWT.BrunstadTVJWKSURL)
 
+	// Initialize Auth0 client for Members API token management
+	var membersClient *members.Client
+	if cfg.Auth0.Domain != "" && cfg.Auth0.ClientID != "" && cfg.Members.Domain != "" {
+		auth0Client := auth0.New(auth0.Config{
+			Domain:       cfg.Auth0.Domain,
+			ClientID:     cfg.Auth0.ClientID,
+			ClientSecret: cfg.Auth0.ClientSecret,
+		})
+
+		// Create circuit breaker for Members API
+		membersBreaker := gobreaker.NewCircuitBreaker[[]byte](gobreaker.Settings{
+			Name:    "members-api",
+			Timeout: 2 * time.Second,
+		})
+
+		// Initialize Members API client
+		membersClient = members.New(
+			members.Config{Domain: cfg.Members.Domain},
+			auth0Client,
+			membersBreaker,
+		)
+		slog.Info("Members API client initialized", "domain", cfg.Members.Domain)
+	} else {
+		slog.Warn("Members API client not initialized - missing configuration")
+	}
+
 	// Initialize DataLoaders (shared globally across all requests)
 	dataLoaders := loaders.NewLoaders(db)
 	slog.Info("DataLoaders initialized with global caching")
@@ -83,7 +112,12 @@ func main() {
 	})
 
 	// Authentication callback endpoint (no JWT middleware)
-	authHandler := &handlers.AuthHandler{DB: db, Cfg: cfg, JWKS: jwks}
+	authHandler := &handlers.AuthHandler{
+		DB:            db,
+		Cfg:           cfg,
+		JWKS:          jwks,
+		MembersClient: membersClient,
+	}
 	router.GET("/callback", authHandler.Callback)
 
 	// GraphQL API endpoint
@@ -140,6 +174,21 @@ func main() {
 // graphqlHandler wraps a GraphQL handler for use with Gin
 func graphqlHandler(h *handler.Server) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		h.ServeHTTP(c.Writer, c.Request)
+		// Transfer Gin context values to request context for GraphQL resolvers
+		ctx := c.Request.Context()
+
+		// Transfer user_id if present
+		if userID, exists := c.Get("user_id"); exists {
+			ctx = context.WithValue(ctx, "user_id", userID)
+		}
+
+		// Transfer user_role if present
+		if userRole, exists := c.Get("user_role"); exists {
+			ctx = context.WithValue(ctx, "user_role", userRole)
+		}
+
+		// Create new request with updated context
+		r := c.Request.WithContext(ctx)
+		h.ServeHTTP(c.Writer, r)
 	}
 }

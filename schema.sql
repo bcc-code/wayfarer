@@ -21,14 +21,14 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
     gender VARCHAR(10) NOT NULL CHECK (gender IN ('MALE', 'FEMALE')),
-    age INT NOT NULL CHECK (age >= 0),
+    birthdate DATE,
     church_id CHAR(28) NOT NULL REFERENCES churches(id) ON DELETE RESTRICT,
     avatar_url VARCHAR(500),
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     INDEX idx_users_church (church_id),
     INDEX idx_users_gender (gender),
-    INDEX idx_users_age (age)
+    INDEX idx_users_birthdate (birthdate)
 );
 
 CREATE TABLE projects (

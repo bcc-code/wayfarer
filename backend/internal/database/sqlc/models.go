@@ -177,11 +177,11 @@ type User struct {
 	Email     string             `json:"email"`
 	Name      string             `json:"name"`
 	Gender    string             `json:"gender"`
-	Age       int32              `json:"age"`
 	ChurchID  string             `json:"church_id"`
 	AvatarUrl *string            `json:"avatar_url"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Birthdate pgtype.Date        `json:"birthdate"`
 }
 
 type UserAchievement struct {

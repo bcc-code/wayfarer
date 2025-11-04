@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,16 +14,19 @@ import (
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type AuthHandler struct {
-	DB   *database.DB
-	Cfg  *config.Config
-	JWKS keyfunc.Keyfunc
+	DB            *database.DB
+	Cfg           *config.Config
+	JWKS          keyfunc.Keyfunc
+	MembersClient *members.Client
 }
 
 // BrunstadTVClaims represents the JWT claims from Brunstad TV
@@ -63,7 +67,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 	claims, err := h.validateBrunstadTVToken(token)
 	if err != nil {
 		slog.Warn("callback: invalid token", "error", err)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token", "details": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 		return
 	}
 
@@ -160,6 +164,8 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 		return user, nil
 	}
 
+	return nil, fmt.Errorf("user %s not in DB. Please fix", claims.PersonID)
+
 	// If user doesn't exist, create new user
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("database error while finding user: %w", err)
@@ -170,17 +176,85 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 		"church_id", churchID,
 	)
 
+	// Fetch member data from Members API
+	var email string
+	var displayName string
+	var birthdate pgtype.Date
+
+	personID, err := strconv.Atoi(claims.PersonID)
+	if err != nil {
+		slog.Warn("callback: invalid person_id format", "person_id", claims.PersonID, "error", err)
+	} else if h.MembersClient != nil {
+		member, err := h.MembersClient.Lookup(ctx, personID)
+		if err != nil {
+			slog.Warn("callback: failed to fetch member data from Members API",
+				"person_id", personID,
+				"error", err,
+			)
+		} else {
+			// Use member data from API
+			email = member.Email
+			if member.DisplayName != "" {
+				displayName = member.DisplayName
+			} else {
+				displayName = member.FirstName
+			}
+
+			// Parse birthdate if available
+			if member.BirthDate != "" {
+				parsedDate, err := time.Parse("2006-01-02", member.BirthDate)
+				if err != nil {
+					slog.Warn("callback: invalid birthdate format",
+						"birthdate", member.BirthDate,
+						"error", err,
+					)
+				} else {
+					// Validate that the birthdate is reasonable (between 1900 and today)
+					now := time.Now()
+					minDate := time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
+
+					if parsedDate.Before(minDate) {
+						slog.Warn("callback: birthdate too far in the past",
+							"birthdate", member.BirthDate,
+						)
+					} else if parsedDate.After(now) {
+						slog.Warn("callback: birthdate is in the future",
+							"birthdate", member.BirthDate,
+						)
+					} else {
+						// Valid birthdate, store it
+						birthdate = pgtype.Date{
+							Time:  parsedDate,
+							Valid: true,
+						}
+					}
+				}
+			}
+
+			slog.Info("callback: fetched member data from Members API",
+				"person_id", personID,
+				"email", email,
+				"has_birthdate", birthdate.Valid,
+			)
+		}
+	}
+
+	// Fallback to JWT claims if Members API data not available
+	if displayName == "" {
+		displayName = claims.FirstName
+	}
+
 	// Normalize gender to match database constraint (MALE, FEMALE)
 	gender := normalizeGender(claims.Gender)
 
-	// Create new user with placeholder values for missing fields
+	// Create new user
 	newUser, err := h.DB.Queries.CreateUser(ctx, sqlc.CreateUserParams{
 		ID:        ulid.NewUserID(),
 		MembersID: claims.PersonID,
-		Email:     "", // Placeholder - will be updated when available
-		Name:      claims.FirstName,
+		Email:     email,
+		Name:      displayName,
 		Gender:    gender,
-		Age:       0, // Placeholder - will be updated when available
+		Birthdate: birthdate,
 		ChurchID:  churchID,
 		AvatarUrl: nil,
 	})
@@ -194,7 +268,7 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 		MembersID: newUser.MembersID,
 		Gender:    newUser.Gender,
 		ChurchID:  newUser.ChurchID,
-		Age:       newUser.Age,
+		Birthdate: newUser.Birthdate,
 		Email:     newUser.Email,
 		Name:      newUser.Name,
 		AvatarUrl: newUser.AvatarUrl,

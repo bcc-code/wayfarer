@@ -486,7 +486,8 @@ type User struct {
 	Gender     Gender      `json:"gender"`
 	ChurchID   string      `json:"churchId"`
 	Church     *Church     `json:"church"`
-	Age        int         `json:"age"`
+	Birthdate  *string     `json:"birthdate,omitempty"`
+	Age        *int        `json:"age,omitempty"`
 	Email      string      `json:"email"`
 	Name       string      `json:"name"`
 	Image      *string     `json:"image,omitempty"`

@@ -9,37 +9,37 @@ import (
 	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
-	model1 "github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 )
 
 // JoinProject is the resolver for the joinProject field.
-func (r *mutationResolver) JoinProject(ctx context.Context, projectID string) (*model1.Project, error) {
+func (r *mutationResolver) JoinProject(ctx context.Context, projectID string) (*model.Project, error) {
 	panic(fmt.Errorf("not implemented: JoinProject - joinProject"))
 }
 
 // JoinEvent is the resolver for the joinEvent field.
-func (r *mutationResolver) JoinEvent(ctx context.Context, eventID string) (*model1.Event, error) {
+func (r *mutationResolver) JoinEvent(ctx context.Context, eventID string) (*model.Event, error) {
 	panic(fmt.Errorf("not implemented: JoinEvent - joinEvent"))
 }
 
 // JoinTeam is the resolver for the joinTeam field.
-func (r *mutationResolver) JoinTeam(ctx context.Context, code string) (*model1.Team, error) {
+func (r *mutationResolver) JoinTeam(ctx context.Context, code string) (*model.Team, error) {
 	panic(fmt.Errorf("not implemented: JoinTeam - joinTeam"))
 }
 
 // UpdateAvatar is the resolver for the updateAvatar field.
-func (r *mutationResolver) UpdateAvatar(ctx context.Context, file graphql.Upload) (*model1.User, error) {
+func (r *mutationResolver) UpdateAvatar(ctx context.Context, file graphql.Upload) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: UpdateAvatar - updateAvatar"))
 }
 
 // CreateProject is the resolver for the createProject field.
-func (r *mutationResolver) CreateProject(ctx context.Context, input model1.CreateProjectInput) (*model1.Project, error) {
+func (r *mutationResolver) CreateProject(ctx context.Context, input model.CreateProjectInput) (*model.Project, error) {
 	panic(fmt.Errorf("not implemented: CreateProject - createProject"))
 }
 
 // UpdateProject is the resolver for the updateProject field.
-func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input model1.UpdateProjectInput) (*model1.Project, error) {
+func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input model.UpdateProjectInput) (*model.Project, error) {
 	panic(fmt.Errorf("not implemented: UpdateProject - updateProject"))
 }
 
@@ -49,7 +49,7 @@ func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (bool, 
 }
 
 // CloneProject is the resolver for the cloneProject field.
-func (r *mutationResolver) CloneProject(ctx context.Context, id string, newName string) (*model1.Project, error) {
+func (r *mutationResolver) CloneProject(ctx context.Context, id string, newName string) (*model.Project, error) {
 	panic(fmt.Errorf("not implemented: CloneProject - cloneProject"))
 }
 
@@ -59,12 +59,12 @@ func (r *mutationResolver) ArchiveProject(ctx context.Context, id string) (bool,
 }
 
 // CreateEvent is the resolver for the createEvent field.
-func (r *mutationResolver) CreateEvent(ctx context.Context, projectID string, input model1.CreateEventInput) (*model1.Event, error) {
+func (r *mutationResolver) CreateEvent(ctx context.Context, projectID string, input model.CreateEventInput) (*model.Event, error) {
 	panic(fmt.Errorf("not implemented: CreateEvent - createEvent"))
 }
 
 // UpdateEvent is the resolver for the updateEvent field.
-func (r *mutationResolver) UpdateEvent(ctx context.Context, id string, input model1.UpdateEventInput) (*model1.Event, error) {
+func (r *mutationResolver) UpdateEvent(ctx context.Context, id string, input model.UpdateEventInput) (*model.Event, error) {
 	panic(fmt.Errorf("not implemented: UpdateEvent - updateEvent"))
 }
 
@@ -74,17 +74,17 @@ func (r *mutationResolver) DeleteEvent(ctx context.Context, id string) (bool, er
 }
 
 // MoveEvent is the resolver for the moveEvent field.
-func (r *mutationResolver) MoveEvent(ctx context.Context, id string, newProjectID string) (*model1.Event, error) {
+func (r *mutationResolver) MoveEvent(ctx context.Context, id string, newProjectID string) (*model.Event, error) {
 	panic(fmt.Errorf("not implemented: MoveEvent - moveEvent"))
 }
 
 // CreateChallenge is the resolver for the createChallenge field.
-func (r *mutationResolver) CreateChallenge(ctx context.Context, input model1.CreateChallengeInput) (*model1.Challenge, error) {
+func (r *mutationResolver) CreateChallenge(ctx context.Context, input model.CreateChallengeInput) (*model.Challenge, error) {
 	panic(fmt.Errorf("not implemented: CreateChallenge - createChallenge"))
 }
 
 // UpdateChallenge is the resolver for the updateChallenge field.
-func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input model1.UpdateChallengeInput) (*model1.Challenge, error) {
+func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input model.UpdateChallengeInput) (*model.Challenge, error) {
 	panic(fmt.Errorf("not implemented: UpdateChallenge - updateChallenge"))
 }
 
@@ -94,47 +94,47 @@ func (r *mutationResolver) DeleteChallenge(ctx context.Context, id string) (bool
 }
 
 // PublishChallenge is the resolver for the publishChallenge field.
-func (r *mutationResolver) PublishChallenge(ctx context.Context, id string, publishedAt scalars.DateTime) (*model1.Challenge, error) {
+func (r *mutationResolver) PublishChallenge(ctx context.Context, id string, publishedAt scalars.DateTime) (*model.Challenge, error) {
 	panic(fmt.Errorf("not implemented: PublishChallenge - publishChallenge"))
 }
 
 // AssignChallengeToEvent is the resolver for the assignChallengeToEvent field.
-func (r *mutationResolver) AssignChallengeToEvent(ctx context.Context, challengeID string, eventID string) (*model1.Challenge, error) {
+func (r *mutationResolver) AssignChallengeToEvent(ctx context.Context, challengeID string, eventID string) (*model.Challenge, error) {
 	panic(fmt.Errorf("not implemented: AssignChallengeToEvent - assignChallengeToEvent"))
 }
 
 // BulkPublishChallenges is the resolver for the bulkPublishChallenges field.
-func (r *mutationResolver) BulkPublishChallenges(ctx context.Context, ids []string, publishedAt scalars.DateTime) ([]model1.Challenge, error) {
+func (r *mutationResolver) BulkPublishChallenges(ctx context.Context, ids []string, publishedAt scalars.DateTime) ([]model.Challenge, error) {
 	panic(fmt.Errorf("not implemented: BulkPublishChallenges - bulkPublishChallenges"))
 }
 
 // BulkCreateChallenges is the resolver for the bulkCreateChallenges field.
-func (r *mutationResolver) BulkCreateChallenges(ctx context.Context, inputs []model1.CreateChallengeInput) ([]model1.Challenge, error) {
+func (r *mutationResolver) BulkCreateChallenges(ctx context.Context, inputs []model.CreateChallengeInput) ([]model.Challenge, error) {
 	panic(fmt.Errorf("not implemented: BulkCreateChallenges - bulkCreateChallenges"))
 }
 
 // CreateSimpleAchievement is the resolver for the createSimpleAchievement field.
-func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input model1.CreateSimpleAchievementInput) (*model1.SimpleAchievement, error) {
+func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input model.CreateSimpleAchievementInput) (*model.SimpleAchievement, error) {
 	panic(fmt.Errorf("not implemented: CreateSimpleAchievement - createSimpleAchievement"))
 }
 
 // CreateReadingAchievement is the resolver for the createReadingAchievement field.
-func (r *mutationResolver) CreateReadingAchievement(ctx context.Context, input model1.CreateReadingAchievementInput) (*model1.ReadingAchievement, error) {
+func (r *mutationResolver) CreateReadingAchievement(ctx context.Context, input model.CreateReadingAchievementInput) (*model.ReadingAchievement, error) {
 	panic(fmt.Errorf("not implemented: CreateReadingAchievement - createReadingAchievement"))
 }
 
 // CreateListeningAchievement is the resolver for the createListeningAchievement field.
-func (r *mutationResolver) CreateListeningAchievement(ctx context.Context, input model1.CreateListeningAchievementInput) (*model1.ListeningAchievement, error) {
+func (r *mutationResolver) CreateListeningAchievement(ctx context.Context, input model.CreateListeningAchievementInput) (*model.ListeningAchievement, error) {
 	panic(fmt.Errorf("not implemented: CreateListeningAchievement - createListeningAchievement"))
 }
 
 // CreateStreakAchievement is the resolver for the createStreakAchievement field.
-func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input model1.CreateStreakAchievementInput) (*model1.StreakAchievement, error) {
+func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input model.CreateStreakAchievementInput) (*model.StreakAchievement, error) {
 	panic(fmt.Errorf("not implemented: CreateStreakAchievement - createStreakAchievement"))
 }
 
 // UpdateAchievement is the resolver for the updateAchievement field.
-func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, input model1.UpdateAchievementInput) (model1.Achievement, error) {
+func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, input model.UpdateAchievementInput) (model.Achievement, error) {
 	panic(fmt.Errorf("not implemented: UpdateAchievement - updateAchievement"))
 }
 
@@ -144,17 +144,17 @@ func (r *mutationResolver) DeleteAchievement(ctx context.Context, id string) (bo
 }
 
 // LinkAchievementToChallenge is the resolver for the linkAchievementToChallenge field.
-func (r *mutationResolver) LinkAchievementToChallenge(ctx context.Context, achievementID string, challengeID string) (model1.Achievement, error) {
+func (r *mutationResolver) LinkAchievementToChallenge(ctx context.Context, achievementID string, challengeID string) (model.Achievement, error) {
 	panic(fmt.Errorf("not implemented: LinkAchievementToChallenge - linkAchievementToChallenge"))
 }
 
 // CreateTeam is the resolver for the createTeam field.
-func (r *mutationResolver) CreateTeam(ctx context.Context, projectID string, input model1.CreateTeamInput) (*model1.Team, error) {
+func (r *mutationResolver) CreateTeam(ctx context.Context, projectID string, input model.CreateTeamInput) (*model.Team, error) {
 	panic(fmt.Errorf("not implemented: CreateTeam - createTeam"))
 }
 
 // UpdateTeam is the resolver for the updateTeam field.
-func (r *mutationResolver) UpdateTeam(ctx context.Context, id string, input model1.UpdateTeamInput) (*model1.Team, error) {
+func (r *mutationResolver) UpdateTeam(ctx context.Context, id string, input model.UpdateTeamInput) (*model.Team, error) {
 	panic(fmt.Errorf("not implemented: UpdateTeam - updateTeam"))
 }
 
@@ -164,27 +164,27 @@ func (r *mutationResolver) DeleteTeam(ctx context.Context, id string) (bool, err
 }
 
 // AddTeamMembers is the resolver for the addTeamMembers field.
-func (r *mutationResolver) AddTeamMembers(ctx context.Context, teamID string, userIds []string) (*model1.Team, error) {
+func (r *mutationResolver) AddTeamMembers(ctx context.Context, teamID string, userIds []string) (*model.Team, error) {
 	panic(fmt.Errorf("not implemented: AddTeamMembers - addTeamMembers"))
 }
 
 // RemoveTeamMembers is the resolver for the removeTeamMembers field.
-func (r *mutationResolver) RemoveTeamMembers(ctx context.Context, teamID string, userIds []string) (*model1.Team, error) {
+func (r *mutationResolver) RemoveTeamMembers(ctx context.Context, teamID string, userIds []string) (*model.Team, error) {
 	panic(fmt.Errorf("not implemented: RemoveTeamMembers - removeTeamMembers"))
 }
 
 // BulkAssignUsersToTeam is the resolver for the bulkAssignUsersToTeam field.
-func (r *mutationResolver) BulkAssignUsersToTeam(ctx context.Context, teamID string, userIds []string) (*model1.Team, error) {
+func (r *mutationResolver) BulkAssignUsersToTeam(ctx context.Context, teamID string, userIds []string) (*model.Team, error) {
 	panic(fmt.Errorf("not implemented: BulkAssignUsersToTeam - bulkAssignUsersToTeam"))
 }
 
 // CreateSuperTeam is the resolver for the createSuperTeam field.
-func (r *mutationResolver) CreateSuperTeam(ctx context.Context, projectID string, input model1.CreateSuperTeamInput) (*model1.SuperTeam, error) {
+func (r *mutationResolver) CreateSuperTeam(ctx context.Context, projectID string, input model.CreateSuperTeamInput) (*model.SuperTeam, error) {
 	panic(fmt.Errorf("not implemented: CreateSuperTeam - createSuperTeam"))
 }
 
 // UpdateSuperTeam is the resolver for the updateSuperTeam field.
-func (r *mutationResolver) UpdateSuperTeam(ctx context.Context, id string, input model1.UpdateSuperTeamInput) (*model1.SuperTeam, error) {
+func (r *mutationResolver) UpdateSuperTeam(ctx context.Context, id string, input model.UpdateSuperTeamInput) (*model.SuperTeam, error) {
 	panic(fmt.Errorf("not implemented: UpdateSuperTeam - updateSuperTeam"))
 }
 
@@ -194,32 +194,32 @@ func (r *mutationResolver) DeleteSuperTeam(ctx context.Context, id string) (bool
 }
 
 // AssignTeamsToSuperTeam is the resolver for the assignTeamsToSuperTeam field.
-func (r *mutationResolver) AssignTeamsToSuperTeam(ctx context.Context, superTeamID string, teamIds []string) (*model1.SuperTeam, error) {
+func (r *mutationResolver) AssignTeamsToSuperTeam(ctx context.Context, superTeamID string, teamIds []string) (*model.SuperTeam, error) {
 	panic(fmt.Errorf("not implemented: AssignTeamsToSuperTeam - assignTeamsToSuperTeam"))
 }
 
 // AssignUserToProject is the resolver for the assignUserToProject field.
-func (r *mutationResolver) AssignUserToProject(ctx context.Context, userID string, projectID string) (*model1.User, error) {
+func (r *mutationResolver) AssignUserToProject(ctx context.Context, userID string, projectID string) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: AssignUserToProject - assignUserToProject"))
 }
 
 // RemoveUserFromProject is the resolver for the removeUserFromProject field.
-func (r *mutationResolver) RemoveUserFromProject(ctx context.Context, userID string, projectID string) (*model1.User, error) {
+func (r *mutationResolver) RemoveUserFromProject(ctx context.Context, userID string, projectID string) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: RemoveUserFromProject - removeUserFromProject"))
 }
 
 // AssignUserToEvent is the resolver for the assignUserToEvent field.
-func (r *mutationResolver) AssignUserToEvent(ctx context.Context, userID string, eventID string) (*model1.User, error) {
+func (r *mutationResolver) AssignUserToEvent(ctx context.Context, userID string, eventID string) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: AssignUserToEvent - assignUserToEvent"))
 }
 
 // CreateStreak is the resolver for the createStreak field.
-func (r *mutationResolver) CreateStreak(ctx context.Context, input model1.CreateStreakInput) (*model1.Streak, error) {
+func (r *mutationResolver) CreateStreak(ctx context.Context, input model.CreateStreakInput) (*model.Streak, error) {
 	panic(fmt.Errorf("not implemented: CreateStreak - createStreak"))
 }
 
 // UpdateStreak is the resolver for the updateStreak field.
-func (r *mutationResolver) UpdateStreak(ctx context.Context, id string, input model1.UpdateStreakInput) (*model1.Streak, error) {
+func (r *mutationResolver) UpdateStreak(ctx context.Context, id string, input model.UpdateStreakInput) (*model.Streak, error) {
 	panic(fmt.Errorf("not implemented: UpdateStreak - updateStreak"))
 }
 
@@ -229,7 +229,7 @@ func (r *mutationResolver) DeleteStreak(ctx context.Context, id string) (bool, e
 }
 
 // AwardAchievement is the resolver for the awardAchievement field.
-func (r *mutationResolver) AwardAchievement(ctx context.Context, userID string, achievementID string) (model1.Achievement, error) {
+func (r *mutationResolver) AwardAchievement(ctx context.Context, userID string, achievementID string) (model.Achievement, error) {
 	panic(fmt.Errorf("not implemented: AwardAchievement - awardAchievement"))
 }
 
@@ -239,7 +239,7 @@ func (r *mutationResolver) RevokeAchievement(ctx context.Context, userID string,
 }
 
 // CompleteChallenge is the resolver for the completeChallenge field.
-func (r *mutationResolver) CompleteChallenge(ctx context.Context, userID string, challengeID string, completedAt *scalars.DateTime) (*model1.Challenge, error) {
+func (r *mutationResolver) CompleteChallenge(ctx context.Context, userID string, challengeID string, completedAt *scalars.DateTime) (*model.Challenge, error) {
 	panic(fmt.Errorf("not implemented: CompleteChallenge - completeChallenge"))
 }
 
@@ -249,27 +249,27 @@ func (r *mutationResolver) UncompleteChallenge(ctx context.Context, userID strin
 }
 
 // MarkArticleAsRead is the resolver for the markArticleAsRead field.
-func (r *mutationResolver) MarkArticleAsRead(ctx context.Context, userID string, achievementID string, articleID string) (*model1.ReadingAchievement, error) {
+func (r *mutationResolver) MarkArticleAsRead(ctx context.Context, userID string, achievementID string, articleID string) (*model.ReadingAchievement, error) {
 	panic(fmt.Errorf("not implemented: MarkArticleAsRead - markArticleAsRead"))
 }
 
 // UnmarkArticleAsRead is the resolver for the unmarkArticleAsRead field.
-func (r *mutationResolver) UnmarkArticleAsRead(ctx context.Context, userID string, achievementID string, articleID string) (*model1.ReadingAchievement, error) {
+func (r *mutationResolver) UnmarkArticleAsRead(ctx context.Context, userID string, achievementID string, articleID string) (*model.ReadingAchievement, error) {
 	panic(fmt.Errorf("not implemented: UnmarkArticleAsRead - unmarkArticleAsRead"))
 }
 
 // MarkTrackAsListened is the resolver for the markTrackAsListened field.
-func (r *mutationResolver) MarkTrackAsListened(ctx context.Context, userID string, achievementID string, trackID string) (*model1.ListeningAchievement, error) {
+func (r *mutationResolver) MarkTrackAsListened(ctx context.Context, userID string, achievementID string, trackID string) (*model.ListeningAchievement, error) {
 	panic(fmt.Errorf("not implemented: MarkTrackAsListened - markTrackAsListened"))
 }
 
 // UnmarkTrackAsListened is the resolver for the unmarkTrackAsListened field.
-func (r *mutationResolver) UnmarkTrackAsListened(ctx context.Context, userID string, achievementID string, trackID string) (*model1.ListeningAchievement, error) {
+func (r *mutationResolver) UnmarkTrackAsListened(ctx context.Context, userID string, achievementID string, trackID string) (*model.ListeningAchievement, error) {
 	panic(fmt.Errorf("not implemented: UnmarkTrackAsListened - unmarkTrackAsListened"))
 }
 
 // RecordStreakActivity is the resolver for the recordStreakActivity field.
-func (r *mutationResolver) RecordStreakActivity(ctx context.Context, userID string, achievementID string, currentStreak int) (*model1.StreakAchievement, error) {
+func (r *mutationResolver) RecordStreakActivity(ctx context.Context, userID string, achievementID string, currentStreak int) (*model.StreakAchievement, error) {
 	panic(fmt.Errorf("not implemented: RecordStreakActivity - recordStreakActivity"))
 }
 
@@ -289,7 +289,7 @@ func (r *mutationResolver) AdjustSuperTeamScore(ctx context.Context, superTeamID
 }
 
 // AwardTeamAchievement is the resolver for the awardTeamAchievement field.
-func (r *mutationResolver) AwardTeamAchievement(ctx context.Context, teamID string, achievementID string) (model1.Achievement, error) {
+func (r *mutationResolver) AwardTeamAchievement(ctx context.Context, teamID string, achievementID string) (model.Achievement, error) {
 	panic(fmt.Errorf("not implemented: AwardTeamAchievement - awardTeamAchievement"))
 }
 
@@ -299,7 +299,7 @@ func (r *mutationResolver) RevokeTeamAchievement(ctx context.Context, teamID str
 }
 
 // AwardSuperTeamAchievement is the resolver for the awardSuperTeamAchievement field.
-func (r *mutationResolver) AwardSuperTeamAchievement(ctx context.Context, superTeamID string, achievementID string) (model1.Achievement, error) {
+func (r *mutationResolver) AwardSuperTeamAchievement(ctx context.Context, superTeamID string, achievementID string) (model.Achievement, error) {
 	panic(fmt.Errorf("not implemented: AwardSuperTeamAchievement - awardSuperTeamAchievement"))
 }
 
@@ -309,147 +309,147 @@ func (r *mutationResolver) RevokeSuperTeamAchievement(ctx context.Context, super
 }
 
 // BulkAwardAchievements is the resolver for the bulkAwardAchievements field.
-func (r *mutationResolver) BulkAwardAchievements(ctx context.Context, userIds []string, achievementID string) ([]model1.Achievement, error) {
+func (r *mutationResolver) BulkAwardAchievements(ctx context.Context, userIds []string, achievementID string) ([]model.Achievement, error) {
 	panic(fmt.Errorf("not implemented: BulkAwardAchievements - bulkAwardAchievements"))
 }
 
 // BulkCompleteChallenges is the resolver for the bulkCompleteChallenges field.
-func (r *mutationResolver) BulkCompleteChallenges(ctx context.Context, userIds []string, challengeID string, completedAt *scalars.DateTime) ([]model1.Challenge, error) {
+func (r *mutationResolver) BulkCompleteChallenges(ctx context.Context, userIds []string, challengeID string, completedAt *scalars.DateTime) ([]model.Challenge, error) {
 	panic(fmt.Errorf("not implemented: BulkCompleteChallenges - bulkCompleteChallenges"))
 }
 
 // BulkAwardTeamAchievements is the resolver for the bulkAwardTeamAchievements field.
-func (r *mutationResolver) BulkAwardTeamAchievements(ctx context.Context, teamIds []string, achievementID string) ([]model1.Achievement, error) {
+func (r *mutationResolver) BulkAwardTeamAchievements(ctx context.Context, teamIds []string, achievementID string) ([]model.Achievement, error) {
 	panic(fmt.Errorf("not implemented: BulkAwardTeamAchievements - bulkAwardTeamAchievements"))
 }
 
 // BulkAwardSuperTeamAchievements is the resolver for the bulkAwardSuperTeamAchievements field.
-func (r *mutationResolver) BulkAwardSuperTeamAchievements(ctx context.Context, superTeamIds []string, achievementID string) ([]model1.Achievement, error) {
+func (r *mutationResolver) BulkAwardSuperTeamAchievements(ctx context.Context, superTeamIds []string, achievementID string) ([]model.Achievement, error) {
 	panic(fmt.Errorf("not implemented: BulkAwardSuperTeamAchievements - bulkAwardSuperTeamAchievements"))
 }
 
 // Me is the resolver for the me field.
-func (r *queryResolver) Me(ctx context.Context) (*model1.User, error) {
+func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: Me - me"))
 }
 
 // MyProjects is the resolver for the myProjects field.
-func (r *queryResolver) MyProjects(ctx context.Context) ([]model1.Project, error) {
+func (r *queryResolver) MyProjects(ctx context.Context) ([]model.Project, error) {
 	panic(fmt.Errorf("not implemented: MyProjects - myProjects"))
 }
 
 // MyEvents is the resolver for the myEvents field.
-func (r *queryResolver) MyEvents(ctx context.Context, project *string) ([]model1.Event, error) {
+func (r *queryResolver) MyEvents(ctx context.Context, project *string) ([]model.Event, error) {
 	panic(fmt.Errorf("not implemented: MyEvents - myEvents"))
 }
 
 // MyCurrentProject is the resolver for the myCurrentProject field.
-func (r *queryResolver) MyCurrentProject(ctx context.Context) (*model1.Project, error) {
+func (r *queryResolver) MyCurrentProject(ctx context.Context) (*model.Project, error) {
 	panic(fmt.Errorf("not implemented: MyCurrentProject - myCurrentProject"))
 }
 
 // MyCurrentEvent is the resolver for the myCurrentEvent field.
-func (r *queryResolver) MyCurrentEvent(ctx context.Context) (*model1.Event, error) {
+func (r *queryResolver) MyCurrentEvent(ctx context.Context) (*model.Event, error) {
 	panic(fmt.Errorf("not implemented: MyCurrentEvent - myCurrentEvent"))
 }
 
 // User is the resolver for the user field.
-func (r *queryResolver) User(ctx context.Context, id string) (*model1.User, error) {
+func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: User - user"))
 }
 
 // Users is the resolver for the users field.
-func (r *queryResolver) Users(ctx context.Context, filter *model1.UserFilter) ([]model1.User, error) {
+func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter) ([]model.User, error) {
 	panic(fmt.Errorf("not implemented: Users - users"))
 }
 
 // Project is the resolver for the project field.
-func (r *queryResolver) Project(ctx context.Context, id string) (*model1.Project, error) {
+func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project, error) {
 	panic(fmt.Errorf("not implemented: Project - project"))
 }
 
 // Projects is the resolver for the projects field.
-func (r *queryResolver) Projects(ctx context.Context) ([]model1.Project, error) {
+func (r *queryResolver) Projects(ctx context.Context) ([]model.Project, error) {
 	panic(fmt.Errorf("not implemented: Projects - projects"))
 }
 
 // Event is the resolver for the event field.
-func (r *queryResolver) Event(ctx context.Context, id string) (*model1.Event, error) {
+func (r *queryResolver) Event(ctx context.Context, id string) (*model.Event, error) {
 	panic(fmt.Errorf("not implemented: Event - event"))
 }
 
 // Events is the resolver for the events field.
-func (r *queryResolver) Events(ctx context.Context, projectID *string) ([]model1.Event, error) {
+func (r *queryResolver) Events(ctx context.Context, projectID *string) ([]model.Event, error) {
 	panic(fmt.Errorf("not implemented: Events - events"))
 }
 
 // Team is the resolver for the team field.
-func (r *queryResolver) Team(ctx context.Context, id string) (*model1.Team, error) {
+func (r *queryResolver) Team(ctx context.Context, id string) (*model.Team, error) {
 	panic(fmt.Errorf("not implemented: Team - team"))
 }
 
 // Teams is the resolver for the teams field.
-func (r *queryResolver) Teams(ctx context.Context, projectID *string) ([]model1.Team, error) {
+func (r *queryResolver) Teams(ctx context.Context, projectID *string) ([]model.Team, error) {
 	panic(fmt.Errorf("not implemented: Teams - teams"))
 }
 
 // Superteam is the resolver for the superteam field.
-func (r *queryResolver) Superteam(ctx context.Context, id string) (*model1.SuperTeam, error) {
+func (r *queryResolver) Superteam(ctx context.Context, id string) (*model.SuperTeam, error) {
 	panic(fmt.Errorf("not implemented: Superteam - superteam"))
 }
 
 // Superteams is the resolver for the superteams field.
-func (r *queryResolver) Superteams(ctx context.Context, projectID *string) ([]model1.SuperTeam, error) {
+func (r *queryResolver) Superteams(ctx context.Context, projectID *string) ([]model.SuperTeam, error) {
 	panic(fmt.Errorf("not implemented: Superteams - superteams"))
 }
 
 // Achievement is the resolver for the achievement field.
-func (r *queryResolver) Achievement(ctx context.Context, id string) (model1.Achievement, error) {
+func (r *queryResolver) Achievement(ctx context.Context, id string) (model.Achievement, error) {
 	panic(fmt.Errorf("not implemented: Achievement - achievement"))
 }
 
 // Achievements is the resolver for the achievements field.
-func (r *queryResolver) Achievements(ctx context.Context, filter model1.AchievementFilter) ([]model1.Achievement, error) {
+func (r *queryResolver) Achievements(ctx context.Context, filter model.AchievementFilter) ([]model.Achievement, error) {
 	panic(fmt.Errorf("not implemented: Achievements - achievements"))
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *queryResolver) Challenge(ctx context.Context, id string) (*model1.Challenge, error) {
+func (r *queryResolver) Challenge(ctx context.Context, id string) (*model.Challenge, error) {
 	panic(fmt.Errorf("not implemented: Challenge - challenge"))
 }
 
 // Challenges is the resolver for the challenges field.
-func (r *queryResolver) Challenges(ctx context.Context, filter model1.ChallengeFilter) ([]model1.Challenge, error) {
+func (r *queryResolver) Challenges(ctx context.Context, filter model.ChallengeFilter) ([]model.Challenge, error) {
 	panic(fmt.Errorf("not implemented: Challenges - challenges"))
 }
 
 // Church is the resolver for the church field.
-func (r *queryResolver) Church(ctx context.Context, id string) (*model1.Church, error) {
+func (r *queryResolver) Church(ctx context.Context, id string) (*model.Church, error) {
 	panic(fmt.Errorf("not implemented: Church - church"))
 }
 
 // Churches is the resolver for the churches field.
-func (r *queryResolver) Churches(ctx context.Context) ([]model1.Church, error) {
+func (r *queryResolver) Churches(ctx context.Context) ([]model.Church, error) {
 	panic(fmt.Errorf("not implemented: Churches - churches"))
 }
 
 // Streak is the resolver for the streak field.
-func (r *queryResolver) Streak(ctx context.Context, id string) (*model1.Streak, error) {
+func (r *queryResolver) Streak(ctx context.Context, id string) (*model.Streak, error) {
 	panic(fmt.Errorf("not implemented: Streak - streak"))
 }
 
 // Streaks is the resolver for the streaks field.
-func (r *queryResolver) Streaks(ctx context.Context, projectID *string) ([]model1.Streak, error) {
+func (r *queryResolver) Streaks(ctx context.Context, projectID *string) ([]model.Streak, error) {
 	panic(fmt.Errorf("not implemented: Streaks - streaks"))
 }
 
 // CurrentProject is the resolver for the currentProject field.
-func (r *queryResolver) CurrentProject(ctx context.Context) (*model1.Project, error) {
+func (r *queryResolver) CurrentProject(ctx context.Context) (*model.Project, error) {
 	panic(fmt.Errorf("not implemented: CurrentProject - currentProject"))
 }
 
 // CurrentEvent is the resolver for the currentEvent field.
-func (r *queryResolver) CurrentEvent(ctx context.Context) (*model1.Event, error) {
+func (r *queryResolver) CurrentEvent(ctx context.Context) (*model.Event, error) {
 	panic(fmt.Errorf("not implemented: CurrentEvent - currentEvent"))
 }
 
@@ -461,18 +461,3 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *queryResolver) Admin(ctx context.Context) (*model1.AdminQuery, error) {
-	panic(fmt.Errorf("not implemented: Admin - admin"))
-}
-func (r *queryResolver) M2m(ctx context.Context) (*model1.M2MQuery, error) {
-	panic(fmt.Errorf("not implemented: M2m - m2m"))
-}
-*/

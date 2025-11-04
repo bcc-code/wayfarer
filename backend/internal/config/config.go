@@ -16,6 +16,8 @@ type Config struct {
 	Database DatabaseConfig
 	JWT      JWTConfig
 	Log      LogConfig
+	Members  MembersConfig
+	Auth0    Auth0Config
 }
 
 // ServerConfig holds HTTP server configuration
@@ -51,6 +53,18 @@ type LogConfig struct {
 	Format string // json, text
 }
 
+// MembersConfig holds BCC Members API configuration
+type MembersConfig struct {
+	Domain string // Members API domain
+}
+
+// Auth0Config holds Auth0 client credentials configuration
+type Auth0Config struct {
+	Domain       string // Auth0 domain
+	ClientID     string // Auth0 client ID
+	ClientSecret string // Auth0 client secret
+}
+
 // Load reads all environment variables and returns a Config struct
 // This should be called once at application startup
 func Load() (*Config, error) {
@@ -82,6 +96,14 @@ func Load() (*Config, error) {
 		Log: LogConfig{
 			Level:  getEnv("LOG_LEVEL", "info"),
 			Format: getEnv("LOG_FORMAT", "json"),
+		},
+		Members: MembersConfig{
+			Domain: getEnv("MEMBERS_API_DOMAIN", ""),
+		},
+		Auth0: Auth0Config{
+			Domain:       getEnv("AUTH0_DOMAIN", ""),
+			ClientID:     getEnv("AUTH0_CLIENT_ID", ""),
+			ClientSecret: getEnv("AUTH0_CLIENT_SECRET", ""),
 		},
 	}
 

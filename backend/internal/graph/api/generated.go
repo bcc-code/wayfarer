@@ -336,6 +336,7 @@ type ComplexityRoot struct {
 
 	User struct {
 		Age        func(childComplexity int) int
+		Birthdate  func(childComplexity int) int
 		Church     func(childComplexity int) int
 		ChurchID   func(childComplexity int) int
 		Email      func(childComplexity int) int
@@ -501,6 +502,8 @@ type TeamResolver interface {
 }
 type UserResolver interface {
 	Church(ctx context.Context, obj *model.User) (*model.Church, error)
+
+	Age(ctx context.Context, obj *model.User) (*int, error)
 
 	Projects(ctx context.Context, obj *model.User) ([]model.Project, error)
 	Events(ctx context.Context, obj *model.User) ([]model.Event, error)
@@ -2268,6 +2271,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.Age(childComplexity), true
+	case "User.birthdate":
+		if e.complexity.User.Birthdate == nil {
+			break
+		}
+
+		return e.complexity.User.Birthdate(childComplexity), true
 	case "User.church":
 		if e.complexity.User.Church == nil {
 			break
@@ -2575,7 +2584,8 @@ type User {
     gender: Gender!
     churchId: ID!
     church: Church! @goField(forceResolver: true)
-    age: Int!
+    birthdate: String
+    age: Int @goField(forceResolver: true)
     email: String!
     name: String!
     image: String
@@ -6548,6 +6558,8 @@ func (ec *executionContext) fieldContext_Mutation_updateAvatar(ctx context.Conte
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
 				return ec.fieldContext_User_age(ctx, field)
 			case "email":
@@ -9096,6 +9108,8 @@ func (ec *executionContext) fieldContext_Mutation_assignUserToProject(ctx contex
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
 				return ec.fieldContext_User_age(ctx, field)
 			case "email":
@@ -9183,6 +9197,8 @@ func (ec *executionContext) fieldContext_Mutation_removeUserFromProject(ctx cont
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
 				return ec.fieldContext_User_age(ctx, field)
 			case "email":
@@ -9270,6 +9286,8 @@ func (ec *executionContext) fieldContext_Mutation_assignUserToEvent(ctx context.
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
 				return ec.fieldContext_User_age(ctx, field)
 			case "email":
@@ -11409,6 +11427,8 @@ func (ec *executionContext) fieldContext_Query_me(_ context.Context, field graph
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
 				return ec.fieldContext_User_age(ctx, field)
 			case "email":
@@ -11687,6 +11707,8 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
 				return ec.fieldContext_User_age(ctx, field)
 			case "email":
@@ -11756,6 +11778,8 @@ func (ec *executionContext) fieldContext_Query_users(ctx context.Context, field 
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
 				return ec.fieldContext_User_age(ctx, field)
 			case "email":
@@ -14530,6 +14554,8 @@ func (ec *executionContext) fieldContext_SuperTeam_members(_ context.Context, fi
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
 				return ec.fieldContext_User_age(ctx, field)
 			case "email":
@@ -14826,6 +14852,8 @@ func (ec *executionContext) fieldContext_Team_members(_ context.Context, field g
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
 				return ec.fieldContext_User_age(ctx, field)
 			case "email":
@@ -15272,6 +15300,35 @@ func (ec *executionContext) fieldContext_User_church(_ context.Context, field gr
 	return fc, nil
 }
 
+func (ec *executionContext) _User_birthdate(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_User_birthdate,
+		func(ctx context.Context) (any, error) {
+			return obj.Birthdate, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_User_birthdate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_age(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -15279,12 +15336,12 @@ func (ec *executionContext) _User_age(ctx context.Context, field graphql.Collect
 		field,
 		ec.fieldContext_User_age,
 		func(ctx context.Context) (any, error) {
-			return obj.Age, nil
+			return ec.resolvers.User().Age(ctx, obj)
 		},
 		nil,
-		ec.marshalNInt2int,
+		ec.marshalOInt2ᚖint,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -15292,8 +15349,8 @@ func (ec *executionContext) fieldContext_User_age(_ context.Context, field graph
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
 		},
@@ -21933,11 +21990,41 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "birthdate":
+			out.Values[i] = ec._User_birthdate(ctx, field, obj)
 		case "age":
-			out.Values[i] = ec._User_age(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_age(ctx, field, obj)
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "email":
 			out.Values[i] = ec._User_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
