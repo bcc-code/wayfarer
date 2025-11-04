@@ -39,6 +39,7 @@ build: ## Build all binaries
 	@go build -o bin/migrate ./cmd/migrate
 	@go build -o bin/server ./cmd/server
 	@go build -o bin/seed ./cmd/seed
+	@go build -o bin/debug ./cmd/debug
 
 clean: ## Remove build artifacts
 	@echo "Cleaning..."
@@ -60,3 +61,7 @@ tidy: ## Tidy Go modules
 dev: ## Run development server
 	@echo "Starting development server..."
 	@go run ./cmd/server
+
+debug: ## Run debug TUI tool
+	@echo "Starting debug tool..."
+	@go run ./cmd/debug
