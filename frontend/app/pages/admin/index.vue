@@ -26,7 +26,7 @@ gql(`
   }
 `)
 
-const { data } = useAdminHomePageQuery()
+const { data, fetching, error } = useAdminHomePageQuery()
 const { currentProjects } = useGroupedProjects(() => data.value?.projects)
 
 const { user } = useAuth()
@@ -45,7 +45,10 @@ const greeting = computed(() => {
       {{ greeting }}, {{ user.name }}
     </h1>
 
-    <section>
+    <LoadingState v-if="fetching" />
+    <ErrorState v-else-if="error" :error />
+
+    <section v-else-if="data">
       <div class="flex items-baseline gap-4 mb-3">
         <h2>Current Projects</h2>
         <UButton
