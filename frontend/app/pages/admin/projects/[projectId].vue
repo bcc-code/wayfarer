@@ -75,9 +75,24 @@ const { data, error, fetching } = useAdminProjectPageQuery({
     <ErrorState v-else-if="error" :error />
     <template v-else-if="data">
       <header class="my-12">
-        <div class="flex flex-col gap-6 mb-8">
+        <UBreadcrumb
+          :items="[
+            {
+              label: 'Projects',
+              to: { name: 'admin-projects' },
+            },
+            {
+              label: data.admin.project.name,
+              to: {
+                name: 'admin-projects-projectId',
+                params: { projectId: data.admin.project.id },
+              },
+            },
+          ]"
+        />
+        <div class="flex flex-col gap-6 my-8">
           <div>
-            <h1 class="text-3xl font-bold mb-2">
+            <h1 class="text-3xl mb-2">
               {{ data.admin.project.name }}
             </h1>
             <p
