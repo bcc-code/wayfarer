@@ -26,6 +26,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/logger"
 	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/sony/gobreaker/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -117,6 +118,16 @@ func main() {
 	}
 
 	router := gin.Default()
+
+	// Configure CORS to allow all headers
+	router.Use(cors.New(cors.Config{
+		AllowAllOrigins:  true,
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"*"},
+		ExposeHeaders:    []string{"*"},
+		AllowCredentials: false,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	// Health check endpoint
 	// TODO: Actually check things, like DB connection
