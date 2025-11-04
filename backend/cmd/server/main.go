@@ -12,15 +12,19 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/MicahParks/keyfunc/v3"
+	"github.com/bcc-media/wayfarer/internal/auth0"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
-	"github.com/bcc-media/wayfarer/internal/graph/admin"
-	"github.com/bcc-media/wayfarer/internal/graph/m2m"
-	"github.com/bcc-media/wayfarer/internal/graph/user"
+	"github.com/bcc-media/wayfarer/internal/graph/api"
+	"github.com/bcc-media/wayfarer/internal/graph/directives"
+	"github.com/bcc-media/wayfarer/internal/handlers"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/logger"
+	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/gin-gonic/gin"
+	"github.com/sony/gobreaker/v2"
 )
 
 func main() {
@@ -46,19 +50,54 @@ func main() {
 
 	slog.Info("Connected to database successfully")
 
+	// Initialize JWKS for Brunstad TV JWT validation
+	jwks, err := keyfunc.NewDefault([]string{cfg.JWT.BrunstadTVJWKSURL})
+	if err != nil {
+		slog.Error("Failed to initialize JWKS", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("JWKS initialized successfully", "url", cfg.JWT.BrunstadTVJWKSURL)
+
+	// Initialize Auth0 client for Members API token management
+	var membersClient *members.Client
+	if cfg.Auth0.Domain != "" && cfg.Auth0.ClientID != "" && cfg.Members.Domain != "" {
+		auth0Client := auth0.New(auth0.Config{
+			Domain:       cfg.Auth0.Domain,
+			ClientID:     cfg.Auth0.ClientID,
+			ClientSecret: cfg.Auth0.ClientSecret,
+		})
+
+		// Create circuit breaker for Members API
+		membersBreaker := gobreaker.NewCircuitBreaker[[]byte](gobreaker.Settings{
+			Name:    "members-api",
+			Timeout: 2 * time.Second,
+		})
+
+		// Initialize Members API client
+		membersClient = members.New(
+			members.Config{Domain: cfg.Members.Domain},
+			auth0Client,
+			membersBreaker,
+		)
+		slog.Info("Members API client initialized", "domain", cfg.Members.Domain)
+	} else {
+		slog.Warn("Members API client not initialized - missing configuration")
+	}
+
 	// Initialize DataLoaders (shared globally across all requests)
 	dataLoaders := loaders.NewLoaders(db)
 	slog.Info("DataLoaders initialized with global caching")
 
-	// Initialize GraphQL resolvers
-	userResolver := &user.Resolver{DB: db, Loaders: dataLoaders}
-	adminResolver := &admin.Resolver{DB: db}
-	m2mResolver := &m2m.Resolver{DB: db}
+	// Initialize GraphQL resolver
+	apiResolver := &api.Resolver{DB: db, Loaders: dataLoaders}
 
-	// Create GraphQL handlers
-	userHandler := handler.NewDefaultServer(user.NewExecutableSchema(user.Config{Resolvers: userResolver}))
-	adminHandler := handler.NewDefaultServer(admin.NewExecutableSchema(admin.Config{Resolvers: adminResolver}))
-	m2mHandler := handler.NewDefaultServer(m2m.NewExecutableSchema(m2m.Config{Resolvers: m2mResolver}))
+	// Create GraphQL handler with directive
+	apiHandler := handler.NewDefaultServer(api.NewExecutableSchema(api.Config{
+		Resolvers: apiResolver,
+		Directives: api.DirectiveRoot{
+			RequireRole: directives.RequireRole,
+		},
+	}))
 
 	// Set up Gin router
 	if cfg.Server.Environment == "production" {
@@ -72,22 +111,19 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	// User API endpoints
-	router.POST("/graphql/user", middleware.JWTAuth(cfg.JWT), graphqlHandler(userHandler))
-	if cfg.Server.Environment != "production" {
-		router.GET("/graphql/user", gin.WrapH(playground.Handler("User API", "/graphql/user")))
+	// Authentication callback endpoint (no JWT middleware)
+	authHandler := &handlers.AuthHandler{
+		DB:            db,
+		Cfg:           cfg,
+		JWKS:          jwks,
+		MembersClient: membersClient,
 	}
+	router.GET("/callback", authHandler.Callback)
 
-	// Admin API endpoints
-	router.POST("/graphql/admin", middleware.JWTAuth(cfg.JWT), graphqlHandler(adminHandler))
+	// GraphQL API endpoint
+	router.POST("/graphql", middleware.JWTAuth(cfg.JWT), graphqlHandler(apiHandler))
 	if cfg.Server.Environment != "production" {
-		router.GET("/graphql/admin", gin.WrapH(playground.Handler("Admin API", "/graphql/admin")))
-	}
-
-	// M2M API endpoints
-	router.POST("/graphql/m2m", middleware.JWTAuth(cfg.JWT), graphqlHandler(m2mHandler))
-	if cfg.Server.Environment != "production" {
-		router.GET("/graphql/m2m", gin.WrapH(playground.Handler("M2M API", "/graphql/m2m")))
+		router.GET("/graphql", gin.WrapH(playground.Handler("GraphQL API", "/graphql")))
 	}
 
 	// Create HTTP server
@@ -113,9 +149,7 @@ func main() {
 	}()
 
 	slog.Info("Server started successfully",
-		"user_api", fmt.Sprintf("http://%s/graphql/user", addr),
-		"admin_api", fmt.Sprintf("http://%s/graphql/admin", addr),
-		"m2m_api", fmt.Sprintf("http://%s/graphql/m2m", addr),
+		"graphql_api", fmt.Sprintf("http://%s/graphql", addr),
 	)
 
 	// Wait for interrupt signal to gracefully shut down the server
@@ -140,6 +174,21 @@ func main() {
 // graphqlHandler wraps a GraphQL handler for use with Gin
 func graphqlHandler(h *handler.Server) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		h.ServeHTTP(c.Writer, c.Request)
+		// Transfer Gin context values to request context for GraphQL resolvers
+		ctx := c.Request.Context()
+
+		// Transfer user_id if present
+		if userID, exists := c.Get("user_id"); exists {
+			ctx = context.WithValue(ctx, "user_id", userID)
+		}
+
+		// Transfer user_role if present
+		if userRole, exists := c.Get("user_role"); exists {
+			ctx = context.WithValue(ctx, "user_role", userRole)
+		}
+
+		// Create new request with updated context
+		r := c.Request.WithContext(ctx)
+		h.ServeHTTP(c.Writer, r)
 	}
 }

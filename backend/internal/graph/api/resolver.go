@@ -1,4 +1,4 @@
-package user
+package api
 
 import (
 	"github.com/bcc-media/wayfarer/internal/database"

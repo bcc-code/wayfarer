@@ -1,21 +1,21 @@
-# User API GraphQL schema
+# GraphQL API schema
 schema:
   - ../gql/shared.graphqls
-  - ../gql/user.graphqls
+  - ../gql/schema.graphqls
 
 # Generated code locations
 exec:
-  filename: internal/graph/user/generated.go
-  package: user
+  filename: internal/graph/api/generated.go
+  package: api
 
 model:
-  filename: internal/graph/user/model/models_gen.go
+  filename: internal/graph/api/model/models_gen.go
   package: model
 
 resolver:
   layout: follow-schema
-  dir: internal/graph/user
-  package: user
+  dir: internal/graph/api
+  package: api
   filename_template: "{name}.resolvers.go"
 
 # Custom scalar type mappings
@@ -37,9 +37,13 @@ models:
       - github.com/99designs/gqlgen/graphql.Upload
 
 # Autobind - automatically bind Go types to GraphQL types if they match by name
-# This helps reduce manual configuration
 autobind:
-  - github.com/bcc-media/wayfarer/internal/graph/user/model
+  - github.com/bcc-media/wayfarer/internal/graph/api/model
+
+# Directive configuration
+directives:
+  requireRole:
+    skip_runtime: false
 
 # Omit generation of unused types and inputs
 omit_slice_element_pointers: true

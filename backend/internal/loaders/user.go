@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/database"
-	"github.com/bcc-media/wayfarer/internal/graph/user/model"
+	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/graph-gophers/dataloader/v7"
 )
 
@@ -26,12 +26,19 @@ func userByIDBatchFunc(db *database.DB) func(context.Context, []string) []*datal
 		// Create map for O(1) lookup and convert to GraphQL model
 		userMap := make(map[string]*model.User)
 		for _, row := range rows {
+			// Convert birthdate to string pointer
+			var birthdateStr *string
+			if row.Birthdate.Valid {
+				dateStr := row.Birthdate.Time.Format("2006-01-02")
+				birthdateStr = &dateStr
+			}
+
 			userMap[row.ID] = &model.User{
 				ID:        row.ID,
 				MembersID: row.MembersID,
 				Gender:    model.Gender(row.Gender),
 				ChurchID:  row.ChurchID,
-				Age:       int(row.Age),
+				Birthdate: birthdateStr,
 				Email:     row.Email,
 				Name:      row.Name,
 				Image:     row.AvatarUrl,

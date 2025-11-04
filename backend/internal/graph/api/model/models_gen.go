@@ -25,6 +25,12 @@ type Achievement interface {
 	GetHidden() bool
 }
 
+type AchievementFilter struct {
+	ProjectID *string  `json:"projectId,omitempty"`
+	EventID   *string  `json:"eventId,omitempty"`
+	Ids       []string `json:"ids,omitempty"`
+}
+
 type AgeRange struct {
 	Min int `json:"min"`
 	Max int `json:"max"`
@@ -71,6 +77,12 @@ type Challenge struct {
 	PublishedAt     scalars.DateTime  `json:"publishedAt"`
 	EndTime         *scalars.DateTime `json:"endTime,omitempty"`
 	UserCompletedAt *scalars.DateTime `json:"userCompletedAt,omitempty"`
+}
+
+type ChallengeFilter struct {
+	ProjectID *string  `json:"projectId,omitempty"`
+	EventID   *string  `json:"eventId,omitempty"`
+	Ids       []string `json:"ids,omitempty"`
 }
 
 type Church struct {
@@ -266,6 +278,9 @@ func (this ListeningAchievement) GetAchievedAt() *scalars.DateTime { return this
 func (this ListeningAchievement) GetPoints() int                   { return this.Points }
 func (this ListeningAchievement) GetHidden() bool                  { return this.Hidden }
 
+type Mutation struct {
+}
+
 type Project struct {
 	ID           string             `json:"id"`
 	Name         string             `json:"name"`
@@ -280,6 +295,9 @@ type Project struct {
 	MyTeam       *Team              `json:"myTeam"`
 	Achievements []Achievement      `json:"achievements"`
 	Streaks      []Streak           `json:"streaks"`
+}
+
+type Query struct {
 }
 
 type ReadingAchievement struct {
@@ -468,7 +486,8 @@ type User struct {
 	Gender     Gender      `json:"gender"`
 	ChurchID   string      `json:"churchId"`
 	Church     *Church     `json:"church"`
-	Age        int         `json:"age"`
+	Birthdate  *string     `json:"birthdate,omitempty"`
+	Age        *int        `json:"age,omitempty"`
 	Email      string      `json:"email"`
 	Name       string      `json:"name"`
 	Image      *string     `json:"image,omitempty"`
@@ -478,10 +497,15 @@ type User struct {
 	SuperTeams []SuperTeam `json:"superTeams"`
 }
 
-type UserMutationRoot struct {
-}
-
-type UserQueryRoot struct {
+type UserFilter struct {
+	ChurchID  *string  `json:"churchId,omitempty"`
+	Gender    *Gender  `json:"gender,omitempty"`
+	MinAge    *int     `json:"minAge,omitempty"`
+	MaxAge    *int     `json:"maxAge,omitempty"`
+	ProjectID *string  `json:"projectId,omitempty"`
+	EventID   *string  `json:"eventId,omitempty"`
+	TeamID    *string  `json:"teamId,omitempty"`
+	Ids       []string `json:"ids,omitempty"`
 }
 
 type ChurchCategory string

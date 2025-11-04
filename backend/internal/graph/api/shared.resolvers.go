@@ -1,4 +1,4 @@
-package user
+package api
 
 // This file will be automatically regenerated based on the schema, any resolver implementations
 // will be copied through when generating and any unknown code will be moved to the end.
@@ -7,8 +7,9 @@ package user
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"github.com/bcc-media/wayfarer/internal/graph/user/model"
+	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 )
 
 // Project is the resolver for the project field.
@@ -163,23 +164,37 @@ func (r *teamResolver) SuperTeam(ctx context.Context, obj *model.Team) (*model.S
 
 // Church is the resolver for the church field.
 func (r *userResolver) Church(ctx context.Context, obj *model.User) (*model.Church, error) {
-	return r.Loaders.ChurchLoader.Load(ctx, obj.ChurchID)()
+	panic(fmt.Errorf("not implemented: Church - church"))
+}
+
+// Age is the resolver for the age field.
+func (r *userResolver) Age(ctx context.Context, obj *model.User) (*int, error) {
+	// If no birthdate, return nil
+	if obj.Birthdate == nil || *obj.Birthdate == "" {
+		return nil, nil
+	}
+
+	// Parse birthdate (format: YYYY-MM-DD)
+	birthdate, err := time.Parse("2006-01-02", *obj.Birthdate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid birthdate format: %w", err)
+	}
+
+	// Calculate age
+	now := time.Now()
+	age := now.Year() - birthdate.Year()
+
+	// Adjust if birthday hasn't occurred this year yet
+	if now.Month() < birthdate.Month() || (now.Month() == birthdate.Month() && now.Day() < birthdate.Day()) {
+		age--
+	}
+
+	return &age, nil
 }
 
 // Projects is the resolver for the projects field.
 func (r *userResolver) Projects(ctx context.Context, obj *model.User) ([]model.Project, error) {
-	projects, err := r.Loaders.ProjectsByUserLoader.Load(ctx, obj.ID)()
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert []*model.Project to []model.Project
-	result := make([]model.Project, len(projects))
-	for i, project := range projects {
-		result[i] = *project
-	}
-
-	return result, nil
+	panic(fmt.Errorf("not implemented: Projects - projects"))
 }
 
 // Events is the resolver for the events field.

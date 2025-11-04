@@ -2,7 +2,7 @@ package loaders
 
 import (
 	"github.com/bcc-media/wayfarer/internal/database"
-	"github.com/bcc-media/wayfarer/internal/graph/user/model"
+	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/graph-gophers/dataloader/v7"
 )
 

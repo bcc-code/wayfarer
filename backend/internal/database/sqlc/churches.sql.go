@@ -9,17 +9,45 @@ import (
 	"context"
 )
 
+const GetChurchByExternalID = `-- name: GetChurchByExternalID :one
+SELECT id, external_id, name, country, category
+FROM churches
+WHERE external_id = $1
+`
+
+type GetChurchByExternalIDRow struct {
+	ID         string `json:"id"`
+	ExternalID *int32 `json:"external_id"`
+	Name       string `json:"name"`
+	Country    string `json:"country"`
+	Category   string `json:"category"`
+}
+
+func (q *Queries) GetChurchByExternalID(ctx context.Context, externalID *int32) (*GetChurchByExternalIDRow, error) {
+	row := q.db.QueryRow(ctx, GetChurchByExternalID, externalID)
+	var i GetChurchByExternalIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.ExternalID,
+		&i.Name,
+		&i.Country,
+		&i.Category,
+	)
+	return &i, err
+}
+
 const GetChurchByID = `-- name: GetChurchByID :one
-SELECT id, name, country, category
+SELECT id, external_id, name, country, category
 FROM churches
 WHERE id = $1
 `
 
 type GetChurchByIDRow struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Country  string `json:"country"`
-	Category string `json:"category"`
+	ID         string `json:"id"`
+	ExternalID *int32 `json:"external_id"`
+	Name       string `json:"name"`
+	Country    string `json:"country"`
+	Category   string `json:"category"`
 }
 
 func (q *Queries) GetChurchByID(ctx context.Context, id string) (*GetChurchByIDRow, error) {
@@ -27,6 +55,7 @@ func (q *Queries) GetChurchByID(ctx context.Context, id string) (*GetChurchByIDR
 	var i GetChurchByIDRow
 	err := row.Scan(
 		&i.ID,
+		&i.ExternalID,
 		&i.Name,
 		&i.Country,
 		&i.Category,
@@ -35,16 +64,17 @@ func (q *Queries) GetChurchByID(ctx context.Context, id string) (*GetChurchByIDR
 }
 
 const GetChurchesByIDs = `-- name: GetChurchesByIDs :many
-SELECT id, name, country, category
+SELECT id, external_id, name, country, category
 FROM churches
 WHERE id = ANY($1::text[])
 `
 
 type GetChurchesByIDsRow struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Country  string `json:"country"`
-	Category string `json:"category"`
+	ID         string `json:"id"`
+	ExternalID *int32 `json:"external_id"`
+	Name       string `json:"name"`
+	Country    string `json:"country"`
+	Category   string `json:"category"`
 }
 
 func (q *Queries) GetChurchesByIDs(ctx context.Context, ids []string) ([]*GetChurchesByIDsRow, error) {
@@ -58,6 +88,7 @@ func (q *Queries) GetChurchesByIDs(ctx context.Context, ids []string) ([]*GetChu
 		var i GetChurchesByIDsRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.ExternalID,
 			&i.Name,
 			&i.Country,
 			&i.Category,
