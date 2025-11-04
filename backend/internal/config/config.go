@@ -20,9 +20,9 @@ type Config struct {
 
 // ServerConfig holds HTTP server configuration
 type ServerConfig struct {
-	Host        string
-	Port        int
-	Environment string
+	Host         string
+	Port         int
+	Environment  string
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 	IdleTimeout  time.Duration

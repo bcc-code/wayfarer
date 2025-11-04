@@ -9,10 +9,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/bcc-media/wayfarer/cmd/seed/seeders"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/logger"
-	"github.com/bcc-media/wayfarer/cmd/seed/seeders"
 	"github.com/jaswdr/faker"
 )
 
