@@ -22,6 +22,13 @@ export default defineNuxtConfig({
           content: 'width=device-width, initial-scale=1, user-scalable=no',
         },
       ],
+      link: [
+        {
+          rel: 'icon',
+          type: 'image/svg+xml',
+          href: '/favicon.svg',
+        },
+      ],
     },
   },
   runtimeConfig: {
