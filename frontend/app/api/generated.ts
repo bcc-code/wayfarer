@@ -1109,6 +1109,7 @@ export type User = {
   __typename?: 'User';
   age: Scalars['Int']['output'];
   church: Church;
+  churchId: Scalars['ID']['output'];
   email: Scalars['String']['output'];
   events: Array<Event>;
   gender: Gender;
