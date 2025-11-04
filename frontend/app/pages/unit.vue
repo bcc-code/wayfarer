@@ -3,22 +3,20 @@ import { useUnitPageQuery } from '~/api/generated'
 
 gql(`
 query UnitPage {
-  user {
-    currentProject {
+  currentProject {
+    id
+    myTeam {
       id
-      myTeam {
+      name
+      superTeam {
         id
         name
-        superTeam {
-          id
-          name
-        }
-        leaderboard(type: TOTAL) {
-          name
-          description
-          score
-          image
-        }
+      }
+      leaderboard(type: TOTAL) {
+        name
+        description
+        score
+        image
       }
     }
   }
@@ -36,14 +34,14 @@ const { data, error, fetching } = useUnitPageQuery()
     <template v-else-if="data">
       <div class="text-center p-2">
         <h1 class="text-xl font-bold">
-          {{ data.user.currentProject.myTeam.name }}
+          {{ data.currentProject.myTeam.name }}
         </h1>
         <p class="text-sm text-muted">
-          {{ data.user.currentProject.myTeam.superTeam?.name }}
+          {{ data.currentProject.myTeam.superTeam?.name }}
         </p>
       </div>
       <LeaderboardList
-        :leaderboard="data.user.currentProject.myTeam.leaderboard"
+        :leaderboard="data.currentProject.myTeam.leaderboard"
         class="mt-4"
       />
     </template>

@@ -4,20 +4,18 @@ import { useAdminSidebarQuery } from '~/api/generated'
 
 gql(`
   query AdminSidebar {
-    admin {
-      projects {
-        id
-        name
-        endDate
-        startDate
-      }
+    projects {
+      id
+      name
+      endDate
+      startDate
     }
   }
 `)
 
 const { data } = useAdminSidebarQuery()
 const { currentProjects, futureProjects } = useGroupedProjects(
-  () => data.value?.admin.projects,
+  () => data.value?.projects,
 )
 const projectsLinks = computed(() => {
   return [...currentProjects.value, ...futureProjects.value].map((project) => ({

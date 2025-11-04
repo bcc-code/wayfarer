@@ -3,25 +3,23 @@ import { useProfilePageQuery } from '~/api/generated'
 
 gql(`
 query ProfilePage {
-  user {
-    me {
+  me {
+    id
+    name
+    image
+    church {
       id
       name
-      image
-      church {
+    }
+    projects {
+      id
+      achievements {
         id
         name
-      }
-      projects {
-        id
-        achievements {
-          id
-          name
-          image
-          hidden
-          achievedAt
-          points
-        }
+        image
+        hidden
+        achievedAt
+        points
       }
     }
   }
@@ -38,19 +36,19 @@ const { data, error, fetching } = useProfilePageQuery()
     <template v-else-if="data">
       <div class="p-8 text-center flex flex-col items-center gap-2">
         <NuxtImg
-          v-if="data.user.me.image"
-          :src="data.user.me.image"
+          v-if="data.me.image"
+          :src="data.me.image"
           height="64"
           width="64"
           class="rounded-full"
         />
-        <h1 class="text-xl font-bold">{{ data.user.me.name }}</h1>
+        <h1 class="text-xl font-bold">{{ data.me.name }}</h1>
       </div>
 
       <div class="px-2">
         <h2 class="text-lg font-semibold mb-3">Achievements</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div v-for="project in data.user.me.projects" :key="project.id">
+          <div v-for="project in data.me.projects" :key="project.id">
             <UCard>
               <div class="grid grid-cols-4">
                 <div

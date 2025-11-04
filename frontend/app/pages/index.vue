@@ -3,15 +3,13 @@ import { useStandingsPageQuery } from '~/api/generated'
 
 gql(`
 query StandingsPage {
-  user {
-    currentProject {
-      id
-      leaderboard(type: TOTAL) {
-        name
-        description
-        score
-        image
-      }
+  currentProject {
+    id
+    leaderboard(type: TOTAL) {
+      name
+      description
+      score
+      image
     }
   }
 }
@@ -28,7 +26,7 @@ const { data, error, fetching } = useStandingsPageQuery()
     <ErrorState v-else-if="error" :error />
     <LeaderboardList
       v-else-if="data"
-      :leaderboard="data.user.currentProject.leaderboard"
+      :leaderboard="data.currentProject.leaderboard"
     />
   </div>
 </template>

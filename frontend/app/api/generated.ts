@@ -34,379 +34,10 @@ export type Achievement = {
   project: Project;
 };
 
-export type AdminMutationRoot = {
-  __typename?: 'AdminMutationRoot';
-  addTeamMembers: Team;
-  adjustUserScore: Scalars['Boolean']['output'];
-  archiveProject: Scalars['Boolean']['output'];
-  assignChallengeToEvent: Challenge;
-  assignTeamsToSuperTeam: SuperTeam;
-  assignUserToEvent: User;
-  assignUserToProject: User;
-  bulkAssignUsersToTeam: Team;
-  bulkCreateChallenges: Array<Challenge>;
-  bulkPublishChallenges: Array<Challenge>;
-  cloneProject: Project;
-  createChallenge: Challenge;
-  createEvent: Event;
-  createListeningAchievement: ListeningAchievement;
-  createProject: Project;
-  createReadingAchievement: ReadingAchievement;
-  createSimpleAchievement: SimpleAchievement;
-  createStreak: Streak;
-  createStreakAchievement: StreakAchievement;
-  createSuperTeam: SuperTeam;
-  createTeam: Team;
-  deleteAchievement: Scalars['Boolean']['output'];
-  deleteChallenge: Scalars['Boolean']['output'];
-  deleteEvent: Scalars['Boolean']['output'];
-  deleteProject: Scalars['Boolean']['output'];
-  deleteStreak: Scalars['Boolean']['output'];
-  deleteSuperTeam: Scalars['Boolean']['output'];
-  deleteTeam: Scalars['Boolean']['output'];
-  linkAchievementToChallenge: Achievement;
-  moveEvent: Event;
-  publishChallenge: Challenge;
-  removeTeamMembers: Team;
-  removeUserFromProject: User;
-  updateAchievement: Achievement;
-  updateChallenge: Challenge;
-  updateEvent: Event;
-  updateProject: Project;
-  updateStreak: Streak;
-  updateSuperTeam: SuperTeam;
-  updateTeam: Team;
-};
-
-
-export type AdminMutationRootAddTeamMembersArgs = {
-  teamId: Scalars['ID']['input'];
-  userIds: Array<Scalars['ID']['input']>;
-};
-
-
-export type AdminMutationRootAdjustUserScoreArgs = {
-  points: Scalars['Int']['input'];
-  projectId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootArchiveProjectArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootAssignChallengeToEventArgs = {
-  challengeId: Scalars['ID']['input'];
-  eventId: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootAssignTeamsToSuperTeamArgs = {
-  superTeamId: Scalars['ID']['input'];
-  teamIds: Array<Scalars['ID']['input']>;
-};
-
-
-export type AdminMutationRootAssignUserToEventArgs = {
-  eventId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootAssignUserToProjectArgs = {
-  projectId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootBulkAssignUsersToTeamArgs = {
-  teamId: Scalars['ID']['input'];
-  userIds: Array<Scalars['ID']['input']>;
-};
-
-
-export type AdminMutationRootBulkCreateChallengesArgs = {
-  inputs: Array<CreateChallengeInput>;
-};
-
-
-export type AdminMutationRootBulkPublishChallengesArgs = {
-  ids: Array<Scalars['ID']['input']>;
-  publishedAt: Scalars['DateTime']['input'];
-};
-
-
-export type AdminMutationRootCloneProjectArgs = {
-  id: Scalars['ID']['input'];
-  newName: Scalars['String']['input'];
-};
-
-
-export type AdminMutationRootCreateChallengeArgs = {
-  input: CreateChallengeInput;
-};
-
-
-export type AdminMutationRootCreateEventArgs = {
-  input: CreateEventInput;
-  projectId: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootCreateListeningAchievementArgs = {
-  input: CreateListeningAchievementInput;
-};
-
-
-export type AdminMutationRootCreateProjectArgs = {
-  input: CreateProjectInput;
-};
-
-
-export type AdminMutationRootCreateReadingAchievementArgs = {
-  input: CreateReadingAchievementInput;
-};
-
-
-export type AdminMutationRootCreateSimpleAchievementArgs = {
-  input: CreateSimpleAchievementInput;
-};
-
-
-export type AdminMutationRootCreateStreakArgs = {
-  input: CreateStreakInput;
-};
-
-
-export type AdminMutationRootCreateStreakAchievementArgs = {
-  input: CreateStreakAchievementInput;
-};
-
-
-export type AdminMutationRootCreateSuperTeamArgs = {
-  input: CreateSuperTeamInput;
-  projectId: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootCreateTeamArgs = {
-  input: CreateTeamInput;
-  projectId: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootDeleteAchievementArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootDeleteChallengeArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootDeleteEventArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootDeleteProjectArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootDeleteStreakArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootDeleteSuperTeamArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootDeleteTeamArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootLinkAchievementToChallengeArgs = {
-  achievementId: Scalars['ID']['input'];
-  challengeId: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootMoveEventArgs = {
-  id: Scalars['ID']['input'];
-  newProjectId: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootPublishChallengeArgs = {
-  id: Scalars['ID']['input'];
-  publishedAt: Scalars['DateTime']['input'];
-};
-
-
-export type AdminMutationRootRemoveTeamMembersArgs = {
-  teamId: Scalars['ID']['input'];
-  userIds: Array<Scalars['ID']['input']>;
-};
-
-
-export type AdminMutationRootRemoveUserFromProjectArgs = {
-  projectId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-
-export type AdminMutationRootUpdateAchievementArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateAchievementInput;
-};
-
-
-export type AdminMutationRootUpdateChallengeArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateChallengeInput;
-};
-
-
-export type AdminMutationRootUpdateEventArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateEventInput;
-};
-
-
-export type AdminMutationRootUpdateProjectArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateProjectInput;
-};
-
-
-export type AdminMutationRootUpdateStreakArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateStreakInput;
-};
-
-
-export type AdminMutationRootUpdateSuperTeamArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateSuperTeamInput;
-};
-
-
-export type AdminMutationRootUpdateTeamArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateTeamInput;
-};
-
-export type AdminQueryRoot = {
-  __typename?: 'AdminQueryRoot';
-  achievement: Achievement;
-  achievements: Array<Achievement>;
-  challenge: Challenge;
-  challenges: Array<Challenge>;
-  church: Church;
-  churches: Array<Church>;
-  currentEvent: Event;
-  currentProject: Project;
-  event: Event;
-  events: Array<Event>;
-  project: Project;
-  projects: Array<Project>;
-  streak: Streak;
-  streaks: Array<Streak>;
-  superteam: SuperTeam;
-  superteams: Array<SuperTeam>;
-  team: Team;
-  teams: Array<Team>;
-  user: User;
-  users: Array<User>;
-};
-
-
-export type AdminQueryRootAchievementArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminQueryRootAchievementsArgs = {
+export type AchievementFilter = {
   eventId?: InputMaybe<Scalars['ID']['input']>;
-  projectId: Scalars['ID']['input'];
-};
-
-
-export type AdminQueryRootChallengeArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminQueryRootChallengesArgs = {
-  eventId?: InputMaybe<Scalars['ID']['input']>;
-  projectId: Scalars['ID']['input'];
-};
-
-
-export type AdminQueryRootChurchArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminQueryRootEventArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminQueryRootEventsArgs = {
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   projectId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-
-export type AdminQueryRootProjectArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminQueryRootStreakArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminQueryRootStreaksArgs = {
-  projectId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-
-export type AdminQueryRootSuperteamArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminQueryRootSuperteamsArgs = {
-  projectId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-
-export type AdminQueryRootTeamArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminQueryRootTeamsArgs = {
-  projectId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-
-export type AdminQueryRootUserArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type AdminQueryRootUsersArgs = {
-  filter?: InputMaybe<UserFilter>;
 };
 
 export type AgeRange = {
@@ -461,6 +92,12 @@ export type Challenge = {
   userCompletedAt?: Maybe<Scalars['DateTime']['output']>;
 };
 
+export type ChallengeFilter = {
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 export type Church = {
   __typename?: 'Church';
   category: ChurchCategory;
@@ -486,20 +123,6 @@ export type ColorsInput = {
   primary: Scalars['String']['input'];
   secondary: Scalars['String']['input'];
   tertiary: Scalars['String']['input'];
-};
-
-export type CombinedMutation = {
-  __typename?: 'CombinedMutation';
-  admin: AdminMutationRoot;
-  m2m: M2MMutationRoot;
-  user: UserMutationRoot;
-};
-
-export type CombinedQuery = {
-  __typename?: 'CombinedQuery';
-  admin: AdminQueryRoot;
-  m2m: M2MQueryRoot;
-  user: UserQueryRoot;
 };
 
 export type CreateChallengeInput = {
@@ -691,32 +314,81 @@ export type ListeningAchievement = Achievement & {
   userHasListened: Array<Track>;
 };
 
-export type M2MMutationRoot = {
-  __typename?: 'M2MMutationRoot';
+export type Mutation = {
+  __typename?: 'Mutation';
+  addTeamMembers: Team;
   adjustSuperTeamScore: Scalars['Boolean']['output'];
   adjustTeamScore: Scalars['Boolean']['output'];
   adjustUserScore: Scalars['Boolean']['output'];
+  archiveProject: Scalars['Boolean']['output'];
+  assignChallengeToEvent: Challenge;
+  assignTeamsToSuperTeam: SuperTeam;
+  assignUserToEvent: User;
+  assignUserToProject: User;
   awardAchievement: Achievement;
   awardSuperTeamAchievement: Achievement;
   awardTeamAchievement: Achievement;
+  bulkAssignUsersToTeam: Team;
   bulkAwardAchievements: Array<Achievement>;
   bulkAwardSuperTeamAchievements: Array<Achievement>;
   bulkAwardTeamAchievements: Array<Achievement>;
   bulkCompleteChallenges: Array<Challenge>;
+  bulkCreateChallenges: Array<Challenge>;
+  bulkPublishChallenges: Array<Challenge>;
+  cloneProject: Project;
   completeChallenge: Challenge;
+  createChallenge: Challenge;
+  createEvent: Event;
+  createListeningAchievement: ListeningAchievement;
+  createProject: Project;
+  createReadingAchievement: ReadingAchievement;
+  createSimpleAchievement: SimpleAchievement;
+  createStreak: Streak;
+  createStreakAchievement: StreakAchievement;
+  createSuperTeam: SuperTeam;
+  createTeam: Team;
+  deleteAchievement: Scalars['Boolean']['output'];
+  deleteChallenge: Scalars['Boolean']['output'];
+  deleteEvent: Scalars['Boolean']['output'];
+  deleteProject: Scalars['Boolean']['output'];
+  deleteStreak: Scalars['Boolean']['output'];
+  deleteSuperTeam: Scalars['Boolean']['output'];
+  deleteTeam: Scalars['Boolean']['output'];
+  joinEvent: Event;
+  joinProject: Project;
+  joinTeam: Team;
+  linkAchievementToChallenge: Achievement;
   markArticleAsRead: ReadingAchievement;
   markTrackAsListened: ListeningAchievement;
+  moveEvent: Event;
+  publishChallenge: Challenge;
+  recordStreakActivity: StreakAchievement;
+  removeTeamMembers: Team;
+  removeUserFromProject: User;
   revokeAchievement: Scalars['Boolean']['output'];
   revokeSuperTeamAchievement: Scalars['Boolean']['output'];
   revokeTeamAchievement: Scalars['Boolean']['output'];
   uncompleteChallenge: Scalars['Boolean']['output'];
   unmarkArticleAsRead: ReadingAchievement;
   unmarkTrackAsListened: ListeningAchievement;
-  updateStreak: StreakAchievement;
+  updateAchievement: Achievement;
+  updateAvatar: User;
+  updateChallenge: Challenge;
+  updateEvent: Event;
+  updateProject: Project;
+  updateStreak: Streak;
+  updateSuperTeam: SuperTeam;
+  updateTeam: Team;
 };
 
 
-export type M2MMutationRootAdjustSuperTeamScoreArgs = {
+export type MutationAddTeamMembersArgs = {
+  teamId: Scalars['ID']['input'];
+  userIds: Array<Scalars['ID']['input']>;
+};
+
+
+export type MutationAdjustSuperTeamScoreArgs = {
   points: Scalars['Int']['input'];
   projectId: Scalars['ID']['input'];
   reason?: InputMaybe<Scalars['String']['input']>;
@@ -724,7 +396,7 @@ export type M2MMutationRootAdjustSuperTeamScoreArgs = {
 };
 
 
-export type M2MMutationRootAdjustTeamScoreArgs = {
+export type MutationAdjustTeamScoreArgs = {
   points: Scalars['Int']['input'];
   projectId: Scalars['ID']['input'];
   reason?: InputMaybe<Scalars['String']['input']>;
@@ -732,7 +404,7 @@ export type M2MMutationRootAdjustTeamScoreArgs = {
 };
 
 
-export type M2MMutationRootAdjustUserScoreArgs = {
+export type MutationAdjustUserScoreArgs = {
   points: Scalars['Int']['input'];
   projectId: Scalars['ID']['input'];
   reason?: InputMaybe<Scalars['String']['input']>;
@@ -740,178 +412,344 @@ export type M2MMutationRootAdjustUserScoreArgs = {
 };
 
 
-export type M2MMutationRootAwardAchievementArgs = {
+export type MutationArchiveProjectArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationAssignChallengeToEventArgs = {
+  challengeId: Scalars['ID']['input'];
+  eventId: Scalars['ID']['input'];
+};
+
+
+export type MutationAssignTeamsToSuperTeamArgs = {
+  superTeamId: Scalars['ID']['input'];
+  teamIds: Array<Scalars['ID']['input']>;
+};
+
+
+export type MutationAssignUserToEventArgs = {
+  eventId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationAssignUserToProjectArgs = {
+  projectId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationAwardAchievementArgs = {
   achievementId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
 
 
-export type M2MMutationRootAwardSuperTeamAchievementArgs = {
+export type MutationAwardSuperTeamAchievementArgs = {
   achievementId: Scalars['ID']['input'];
   superTeamId: Scalars['ID']['input'];
 };
 
 
-export type M2MMutationRootAwardTeamAchievementArgs = {
+export type MutationAwardTeamAchievementArgs = {
   achievementId: Scalars['ID']['input'];
   teamId: Scalars['ID']['input'];
 };
 
 
-export type M2MMutationRootBulkAwardAchievementsArgs = {
+export type MutationBulkAssignUsersToTeamArgs = {
+  teamId: Scalars['ID']['input'];
+  userIds: Array<Scalars['ID']['input']>;
+};
+
+
+export type MutationBulkAwardAchievementsArgs = {
   achievementId: Scalars['ID']['input'];
   userIds: Array<Scalars['ID']['input']>;
 };
 
 
-export type M2MMutationRootBulkAwardSuperTeamAchievementsArgs = {
+export type MutationBulkAwardSuperTeamAchievementsArgs = {
   achievementId: Scalars['ID']['input'];
   superTeamIds: Array<Scalars['ID']['input']>;
 };
 
 
-export type M2MMutationRootBulkAwardTeamAchievementsArgs = {
+export type MutationBulkAwardTeamAchievementsArgs = {
   achievementId: Scalars['ID']['input'];
   teamIds: Array<Scalars['ID']['input']>;
 };
 
 
-export type M2MMutationRootBulkCompleteChallengesArgs = {
+export type MutationBulkCompleteChallengesArgs = {
   challengeId: Scalars['ID']['input'];
   completedAt?: InputMaybe<Scalars['DateTime']['input']>;
   userIds: Array<Scalars['ID']['input']>;
 };
 
 
-export type M2MMutationRootCompleteChallengeArgs = {
+export type MutationBulkCreateChallengesArgs = {
+  inputs: Array<CreateChallengeInput>;
+};
+
+
+export type MutationBulkPublishChallengesArgs = {
+  ids: Array<Scalars['ID']['input']>;
+  publishedAt: Scalars['DateTime']['input'];
+};
+
+
+export type MutationCloneProjectArgs = {
+  id: Scalars['ID']['input'];
+  newName: Scalars['String']['input'];
+};
+
+
+export type MutationCompleteChallengeArgs = {
   challengeId: Scalars['ID']['input'];
   completedAt?: InputMaybe<Scalars['DateTime']['input']>;
   userId: Scalars['ID']['input'];
 };
 
 
-export type M2MMutationRootMarkArticleAsReadArgs = {
-  achievementId: Scalars['ID']['input'];
-  articleId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
+export type MutationCreateChallengeArgs = {
+  input: CreateChallengeInput;
 };
 
 
-export type M2MMutationRootMarkTrackAsListenedArgs = {
-  achievementId: Scalars['ID']['input'];
-  trackId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
+export type MutationCreateEventArgs = {
+  input: CreateEventInput;
+  projectId: Scalars['ID']['input'];
 };
 
 
-export type M2MMutationRootRevokeAchievementArgs = {
-  achievementId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
+export type MutationCreateListeningAchievementArgs = {
+  input: CreateListeningAchievementInput;
 };
 
 
-export type M2MMutationRootRevokeSuperTeamAchievementArgs = {
-  achievementId: Scalars['ID']['input'];
-  superTeamId: Scalars['ID']['input'];
+export type MutationCreateProjectArgs = {
+  input: CreateProjectInput;
 };
 
 
-export type M2MMutationRootRevokeTeamAchievementArgs = {
-  achievementId: Scalars['ID']['input'];
-  teamId: Scalars['ID']['input'];
+export type MutationCreateReadingAchievementArgs = {
+  input: CreateReadingAchievementInput;
 };
 
 
-export type M2MMutationRootUncompleteChallengeArgs = {
+export type MutationCreateSimpleAchievementArgs = {
+  input: CreateSimpleAchievementInput;
+};
+
+
+export type MutationCreateStreakArgs = {
+  input: CreateStreakInput;
+};
+
+
+export type MutationCreateStreakAchievementArgs = {
+  input: CreateStreakAchievementInput;
+};
+
+
+export type MutationCreateSuperTeamArgs = {
+  input: CreateSuperTeamInput;
+  projectId: Scalars['ID']['input'];
+};
+
+
+export type MutationCreateTeamArgs = {
+  input: CreateTeamInput;
+  projectId: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteAchievementArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteChallengeArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteEventArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteProjectArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteStreakArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteSuperTeamArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteTeamArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationJoinEventArgs = {
+  eventId: Scalars['ID']['input'];
+};
+
+
+export type MutationJoinProjectArgs = {
+  projectId: Scalars['ID']['input'];
+};
+
+
+export type MutationJoinTeamArgs = {
+  code: Scalars['ID']['input'];
+};
+
+
+export type MutationLinkAchievementToChallengeArgs = {
+  achievementId: Scalars['ID']['input'];
   challengeId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
 };
 
 
-export type M2MMutationRootUnmarkArticleAsReadArgs = {
+export type MutationMarkArticleAsReadArgs = {
   achievementId: Scalars['ID']['input'];
   articleId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
 
 
-export type M2MMutationRootUnmarkTrackAsListenedArgs = {
+export type MutationMarkTrackAsListenedArgs = {
   achievementId: Scalars['ID']['input'];
   trackId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
 
 
-export type M2MMutationRootUpdateStreakArgs = {
+export type MutationMoveEventArgs = {
+  id: Scalars['ID']['input'];
+  newProjectId: Scalars['ID']['input'];
+};
+
+
+export type MutationPublishChallengeArgs = {
+  id: Scalars['ID']['input'];
+  publishedAt: Scalars['DateTime']['input'];
+};
+
+
+export type MutationRecordStreakActivityArgs = {
   achievementId: Scalars['ID']['input'];
   currentStreak: Scalars['Int']['input'];
   userId: Scalars['ID']['input'];
 };
 
-export type M2MQueryRoot = {
-  __typename?: 'M2MQueryRoot';
-  achievement: Achievement;
-  achievements: Array<Achievement>;
-  challenge: Challenge;
-  challenges: Array<Challenge>;
-  currentEvent: Event;
-  currentProject: Project;
-  event: Event;
-  project: Project;
-  superteam: SuperTeam;
-  team: Team;
-  user: User;
-  users: Array<User>;
+
+export type MutationRemoveTeamMembersArgs = {
+  teamId: Scalars['ID']['input'];
+  userIds: Array<Scalars['ID']['input']>;
 };
 
 
-export type M2MQueryRootAchievementArgs = {
+export type MutationRemoveUserFromProjectArgs = {
+  projectId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationRevokeAchievementArgs = {
+  achievementId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationRevokeSuperTeamAchievementArgs = {
+  achievementId: Scalars['ID']['input'];
+  superTeamId: Scalars['ID']['input'];
+};
+
+
+export type MutationRevokeTeamAchievementArgs = {
+  achievementId: Scalars['ID']['input'];
+  teamId: Scalars['ID']['input'];
+};
+
+
+export type MutationUncompleteChallengeArgs = {
+  challengeId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationUnmarkArticleAsReadArgs = {
+  achievementId: Scalars['ID']['input'];
+  articleId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationUnmarkTrackAsListenedArgs = {
+  achievementId: Scalars['ID']['input'];
+  trackId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationUpdateAchievementArgs = {
   id: Scalars['ID']['input'];
+  input: UpdateAchievementInput;
 };
 
 
-export type M2MQueryRootAchievementsArgs = {
-  ids: Array<Scalars['ID']['input']>;
+export type MutationUpdateAvatarArgs = {
+  file: Scalars['Upload']['input'];
 };
 
 
-export type M2MQueryRootChallengeArgs = {
+export type MutationUpdateChallengeArgs = {
   id: Scalars['ID']['input'];
+  input: UpdateChallengeInput;
 };
 
 
-export type M2MQueryRootChallengesArgs = {
-  ids: Array<Scalars['ID']['input']>;
-};
-
-
-export type M2MQueryRootEventArgs = {
+export type MutationUpdateEventArgs = {
   id: Scalars['ID']['input'];
+  input: UpdateEventInput;
 };
 
 
-export type M2MQueryRootProjectArgs = {
+export type MutationUpdateProjectArgs = {
   id: Scalars['ID']['input'];
+  input: UpdateProjectInput;
 };
 
 
-export type M2MQueryRootSuperteamArgs = {
+export type MutationUpdateStreakArgs = {
   id: Scalars['ID']['input'];
+  input: UpdateStreakInput;
 };
 
 
-export type M2MQueryRootTeamArgs = {
+export type MutationUpdateSuperTeamArgs = {
   id: Scalars['ID']['input'];
+  input: UpdateSuperTeamInput;
 };
 
 
-export type M2MQueryRootUserArgs = {
+export type MutationUpdateTeamArgs = {
   id: Scalars['ID']['input'];
-};
-
-
-export type M2MQueryRootUsersArgs = {
-  ids: Array<Scalars['ID']['input']>;
+  input: UpdateTeamInput;
 };
 
 export type Project = {
@@ -935,6 +773,120 @@ export type Project = {
 export type ProjectLeaderboardArgs = {
   filter?: InputMaybe<LeaderboardFilter>;
   type: LeaderboardType;
+};
+
+export type Query = {
+  __typename?: 'Query';
+  achievement: Achievement;
+  achievements: Array<Achievement>;
+  challenge: Challenge;
+  challenges: Array<Challenge>;
+  church: Church;
+  churches: Array<Church>;
+  currentEvent: Event;
+  currentProject: Project;
+  event: Event;
+  events: Array<Event>;
+  me: User;
+  myCurrentEvent: Event;
+  myCurrentProject: Project;
+  myEvents: Array<Event>;
+  myProjects: Array<Project>;
+  project: Project;
+  projects: Array<Project>;
+  streak: Streak;
+  streaks: Array<Streak>;
+  superteam: SuperTeam;
+  superteams: Array<SuperTeam>;
+  team: Team;
+  teams: Array<Team>;
+  user: User;
+  users: Array<User>;
+};
+
+
+export type QueryAchievementArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryAchievementsArgs = {
+  filter: AchievementFilter;
+};
+
+
+export type QueryChallengeArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryChallengesArgs = {
+  filter: ChallengeFilter;
+};
+
+
+export type QueryChurchArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryEventArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryEventsArgs = {
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryMyEventsArgs = {
+  project?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryProjectArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryStreakArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryStreaksArgs = {
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QuerySuperteamArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QuerySuperteamsArgs = {
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryTeamArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryTeamsArgs = {
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryUserArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryUsersArgs = {
+  filter?: InputMaybe<UserFilter>;
 };
 
 export type ReadingAchievement = Achievement & {
@@ -1107,7 +1059,8 @@ export type UpdateTeamInput = {
 
 export type User = {
   __typename?: 'User';
-  age: Scalars['Int']['output'];
+  age?: Maybe<Scalars['Int']['output']>;
+  birthdate?: Maybe<Scalars['String']['output']>;
   church: Church;
   churchId: Scalars['ID']['output'];
   email: Scalars['String']['output'];
@@ -1126,121 +1079,78 @@ export type UserFilter = {
   churchId?: InputMaybe<Scalars['ID']['input']>;
   eventId?: InputMaybe<Scalars['ID']['input']>;
   gender?: InputMaybe<Gender>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   maxAge?: InputMaybe<Scalars['Int']['input']>;
   minAge?: InputMaybe<Scalars['Int']['input']>;
   projectId?: InputMaybe<Scalars['ID']['input']>;
   teamId?: InputMaybe<Scalars['ID']['input']>;
 };
 
-export type UserMutationRoot = {
-  __typename?: 'UserMutationRoot';
-  joinEvent: Event;
-  joinProject: Project;
-  joinTeam: Team;
-  updateAvatar: User;
-};
-
-
-export type UserMutationRootJoinEventArgs = {
-  eventId: Scalars['ID']['input'];
-};
-
-
-export type UserMutationRootJoinProjectArgs = {
-  projectId: Scalars['ID']['input'];
-};
-
-
-export type UserMutationRootJoinTeamArgs = {
-  code: Scalars['ID']['input'];
-};
-
-
-export type UserMutationRootUpdateAvatarArgs = {
-  file: Scalars['Upload']['input'];
-};
-
-export type UserQueryRoot = {
-  __typename?: 'UserQueryRoot';
-  currentEvent: Event;
-  currentProject: Project;
-  events: Array<Event>;
-  me: User;
-  projects: Array<Project>;
-};
-
-
-export type UserQueryRootEventsArgs = {
-  project: Scalars['ID']['input'];
-};
-
 export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminSidebarQuery = { __typename?: 'CombinedQuery', admin: { __typename?: 'AdminQueryRoot', projects: Array<{ __typename?: 'Project', id: string, name: string, endDate: any, startDate: any }> } };
+export type AdminSidebarQuery = { __typename?: 'Query', projects: Array<{ __typename?: 'Project', id: string, name: string, endDate: any, startDate: any }> };
 
 export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type CurrentProjectQuery = { __typename?: 'CombinedQuery', user: { __typename?: 'UserQueryRoot', currentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } } };
+export type CurrentProjectQuery = { __typename?: 'Query', currentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } };
 
 export type AdminHomePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminHomePageQuery = { __typename?: 'CombinedQuery', admin: { __typename?: 'AdminQueryRoot', projects: Array<{ __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } }> } };
+export type AdminHomePageQuery = { __typename?: 'Query', projects: Array<{ __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } }> };
 
 export type AdminProjectPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
 
 
-export type AdminProjectPageQuery = { __typename?: 'CombinedQuery', admin: { __typename?: 'AdminQueryRoot', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } }, achievements: Array<
-        | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image: string }
-        | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image: string }
-        | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image: string }
-        | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image: string }
-      >, challenges: Array<{ __typename?: 'Challenge', id: string, name: string, description: any, image: string, url: string, buttonText: string, publishedAt: any, endTime?: any | null }>, events: Array<{ __typename?: 'Event', id: string, name: string, description: string, startDate: any, endDate: any }>, streaks: Array<{ __typename?: 'Streak', id: string, name: string, description: string, relevantDays: Array<{ __typename?: 'DateRange', start: any, end: any }> }> } } };
+export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } }, achievements: Array<
+      | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image: string }
+      | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image: string }
+      | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image: string }
+      | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image: string }
+    >, challenges: Array<{ __typename?: 'Challenge', id: string, name: string, description: any, image: string, url: string, buttonText: string, publishedAt: any, endTime?: any | null }>, events: Array<{ __typename?: 'Event', id: string, name: string, description: string, startDate: any, endDate: any }>, streaks: Array<{ __typename?: 'Streak', id: string, name: string, description: string, relevantDays: Array<{ __typename?: 'DateRange', start: any, end: any }> }> } };
 
 export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminProjectsPageQuery = { __typename?: 'CombinedQuery', admin: { __typename?: 'AdminQueryRoot', projects: Array<{ __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo: string, colors: { __typename?: 'Colors', primary: string } } }> } };
+export type AdminProjectsPageQuery = { __typename?: 'Query', projects: Array<{ __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo: string, colors: { __typename?: 'Colors', primary: string } } }> };
 
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ChallengesPageQuery = { __typename?: 'CombinedQuery', user: { __typename?: 'UserQueryRoot', currentProject: { __typename?: 'Project', challenges: Array<{ __typename?: 'Challenge', id: string, name: string, description: any, userCompletedAt?: any | null, image: string, url: string, buttonText: string, publishedAt: any, endTime?: any | null }> } } };
+export type ChallengesPageQuery = { __typename?: 'Query', currentProject: { __typename?: 'Project', challenges: Array<{ __typename?: 'Challenge', id: string, name: string, description: any, userCompletedAt?: any | null, image: string, url: string, buttonText: string, publishedAt: any, endTime?: any | null }> } };
 
 export type StandingsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type StandingsPageQuery = { __typename?: 'CombinedQuery', user: { __typename?: 'UserQueryRoot', currentProject: { __typename?: 'Project', id: string, leaderboard: Array<{ __typename?: 'LeaderboardEntry', name: string, description?: string | null, score: number, image?: string | null }> } } };
+export type StandingsPageQuery = { __typename?: 'Query', currentProject: { __typename?: 'Project', id: string, leaderboard: Array<{ __typename?: 'LeaderboardEntry', name: string, description?: string | null, score: number, image?: string | null }> } };
 
 export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ProfilePageQuery = { __typename?: 'CombinedQuery', user: { __typename?: 'UserQueryRoot', me: { __typename?: 'User', id: string, name: string, image?: string | null, church: { __typename?: 'Church', id: string, name: string }, projects: Array<{ __typename?: 'Project', id: string, achievements: Array<
-          | { __typename?: 'ListeningAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
-          | { __typename?: 'ReadingAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
-          | { __typename?: 'SimpleAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
-          | { __typename?: 'StreakAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
-        > }> } } };
+export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, image?: string | null, church: { __typename?: 'Church', id: string, name: string }, projects: Array<{ __typename?: 'Project', id: string, achievements: Array<
+        | { __typename?: 'ListeningAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
+        | { __typename?: 'ReadingAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
+        | { __typename?: 'SimpleAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
+        | { __typename?: 'StreakAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
+      > }> } };
 
 export type UnitPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UnitPageQuery = { __typename?: 'CombinedQuery', user: { __typename?: 'UserQueryRoot', currentProject: { __typename?: 'Project', id: string, myTeam: { __typename?: 'Team', id: string, name: string, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null, leaderboard: Array<{ __typename?: 'LeaderboardEntry', name: string, description?: string | null, score: number, image?: string | null }> } } } };
+export type UnitPageQuery = { __typename?: 'Query', currentProject: { __typename?: 'Project', id: string, myTeam: { __typename?: 'Team', id: string, name: string, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null, leaderboard: Array<{ __typename?: 'LeaderboardEntry', name: string, description?: string | null, score: number, image?: string | null }> } } };
 
 
 export const AdminSidebarDocument = gql`
     query AdminSidebar {
-  admin {
-    projects {
-      id
-      name
-      endDate
-      startDate
-    }
+  projects {
+    id
+    name
+    endDate
+    startDate
   }
 }
     `;
@@ -1250,17 +1160,15 @@ export function useAdminSidebarQuery(options?: Omit<Urql.UseQueryArgs<never, Adm
 };
 export const CurrentProjectDocument = gql`
     query CurrentProject {
-  user {
-    currentProject {
-      branding {
-        logo
-        colors {
-          primary
-          secondary
-          tertiary
-        }
-        rounding
+  currentProject {
+    branding {
+      logo
+      colors {
+        primary
+        secondary
+        tertiary
       }
+      rounding
     }
   }
 }
@@ -1271,21 +1179,19 @@ export function useCurrentProjectQuery(options?: Omit<Urql.UseQueryArgs<never, C
 };
 export const AdminHomePageDocument = gql`
     query AdminHomePage {
-  admin {
-    projects {
-      id
-      name
-      description
-      endDate
-      startDate
-      branding {
-        logo
-        rounding
-        colors {
-          primary
-          secondary
-          tertiary
-        }
+  projects {
+    id
+    name
+    description
+    endDate
+    startDate
+    branding {
+      logo
+      rounding
+      colors {
+        primary
+        secondary
+        tertiary
       }
     }
   }
@@ -1297,53 +1203,51 @@ export function useAdminHomePageQuery(options?: Omit<Urql.UseQueryArgs<never, Ad
 };
 export const AdminProjectPageDocument = gql`
     query AdminProjectPage($projectId: ID!) {
-  admin {
-    project(id: $projectId) {
+  project(id: $projectId) {
+    id
+    name
+    description
+    startDate
+    endDate
+    branding {
+      logo
+      rounding
+      colors {
+        primary
+        secondary
+        tertiary
+      }
+    }
+    achievements {
+      id
+      name
+      description
+      image
+    }
+    challenges {
+      id
+      name
+      description
+      image
+      url
+      buttonText
+      publishedAt
+      endTime
+    }
+    events {
       id
       name
       description
       startDate
       endDate
-      branding {
-        logo
-        rounding
-        colors {
-          primary
-          secondary
-          tertiary
-        }
-      }
-      achievements {
-        id
-        name
-        description
-        image
-      }
-      challenges {
-        id
-        name
-        description
-        image
-        url
-        buttonText
-        publishedAt
-        endTime
-      }
-      events {
-        id
-        name
-        description
-        startDate
-        endDate
-      }
-      streaks {
-        id
-        name
-        description
-        relevantDays {
-          start
-          end
-        }
+    }
+    streaks {
+      id
+      name
+      description
+      relevantDays {
+        start
+        end
       }
     }
   }
@@ -1355,18 +1259,16 @@ export function useAdminProjectPageQuery(options?: Omit<Urql.UseQueryArgs<never,
 };
 export const AdminProjectsPageDocument = gql`
     query AdminProjectsPage {
-  admin {
-    projects {
-      id
-      name
-      description
-      endDate
-      startDate
-      branding {
-        logo
-        colors {
-          primary
-        }
+  projects {
+    id
+    name
+    description
+    endDate
+    startDate
+    branding {
+      logo
+      colors {
+        primary
       }
     }
   }
@@ -1378,19 +1280,17 @@ export function useAdminProjectsPageQuery(options?: Omit<Urql.UseQueryArgs<never
 };
 export const ChallengesPageDocument = gql`
     query ChallengesPage {
-  user {
-    currentProject {
-      challenges {
-        id
-        name
-        description
-        userCompletedAt
-        image
-        url
-        buttonText
-        publishedAt
-        endTime
-      }
+  currentProject {
+    challenges {
+      id
+      name
+      description
+      userCompletedAt
+      image
+      url
+      buttonText
+      publishedAt
+      endTime
     }
   }
 }
@@ -1401,15 +1301,13 @@ export function useChallengesPageQuery(options?: Omit<Urql.UseQueryArgs<never, C
 };
 export const StandingsPageDocument = gql`
     query StandingsPage {
-  user {
-    currentProject {
-      id
-      leaderboard(type: TOTAL) {
-        name
-        description
-        score
-        image
-      }
+  currentProject {
+    id
+    leaderboard(type: TOTAL) {
+      name
+      description
+      score
+      image
     }
   }
 }
@@ -1420,25 +1318,23 @@ export function useStandingsPageQuery(options?: Omit<Urql.UseQueryArgs<never, St
 };
 export const ProfilePageDocument = gql`
     query ProfilePage {
-  user {
-    me {
+  me {
+    id
+    name
+    image
+    church {
       id
       name
-      image
-      church {
+    }
+    projects {
+      id
+      achievements {
         id
         name
-      }
-      projects {
-        id
-        achievements {
-          id
-          name
-          image
-          hidden
-          achievedAt
-          points
-        }
+        image
+        hidden
+        achievedAt
+        points
       }
     }
   }
@@ -1450,22 +1346,20 @@ export function useProfilePageQuery(options?: Omit<Urql.UseQueryArgs<never, Prof
 };
 export const UnitPageDocument = gql`
     query UnitPage {
-  user {
-    currentProject {
+  currentProject {
+    id
+    myTeam {
       id
-      myTeam {
+      name
+      superTeam {
         id
         name
-        superTeam {
-          id
-          name
-        }
-        leaderboard(type: TOTAL) {
-          name
-          description
-          score
-          image
-        }
+      }
+      leaderboard(type: TOTAL) {
+        name
+        description
+        score
+        image
       }
     }
   }

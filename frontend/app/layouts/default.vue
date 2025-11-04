@@ -28,17 +28,15 @@ const links = [
 // Current project theme
 gql(`
 query CurrentProject {
-  user {
-    currentProject {
-      branding {
-        logo
-        colors {
-          primary
-          secondary
-          tertiary
-        }
-        rounding
+  currentProject {
+    branding {
+      logo
+      colors {
+        primary
+        secondary
+        tertiary
       }
+      rounding
     }
   }
 }
@@ -53,10 +51,10 @@ watch(data, (newData) => {
   styleElement.innerHTML = `
     /* Current project theme */
     :root {
-      --ui-primary: ${newData.user.currentProject.branding.colors.primary};
-      --ui-secondary: ${newData.user.currentProject.branding.colors.secondary};
-      --ui-tertiary: ${newData.user.currentProject.branding.colors.tertiary};
-      --ui-radius: ${newData.user.currentProject.branding.rounding}px;
+      --ui-primary: ${newData.currentProject.branding.colors.primary};
+      --ui-secondary: ${newData.currentProject.branding.colors.secondary};
+      --ui-tertiary: ${newData.currentProject.branding.colors.tertiary};
+      --ui-radius: ${newData.currentProject.branding.rounding}px;
     }
   `
   document.body.appendChild(styleElement)

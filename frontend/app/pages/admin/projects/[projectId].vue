@@ -9,53 +9,51 @@ const route = useRoute('admin-projects-projectId')
 
 gql(`
   query AdminProjectPage($projectId: ID!) {
-    admin {
-      project(id: $projectId) {
+    project(id: $projectId) {
+      id
+      name
+      description
+      startDate
+      endDate
+      branding {
+        logo
+        rounding
+        colors {
+          primary
+          secondary
+          tertiary
+        }
+      }
+      achievements {
+        id
+        name
+        description
+        image
+      }
+      challenges {
+        id
+        name
+        description
+        image
+        url
+        buttonText
+        publishedAt
+        endTime
+      }
+      events {
         id
         name
         description
         startDate
         endDate
-        branding {
-          logo
-          rounding
-          colors {
-            primary
-            secondary
-            tertiary
-          }
-        }
-        achievements {
-          id
-          name
-          description
-          image
-        }
-        challenges {
-          id
-          name
-          description
-          image
-          url
-          buttonText
-          publishedAt
-          endTime
-        }
-        events {
-          id
-          name
-          description
-          startDate
-          endDate
-        }
-        streaks {
-          id
-          name
-          description
-          relevantDays {
-            start
-            end
-          }
+      }
+      streaks {
+        id
+        name
+        description
+        relevantDays {
+          start
+          end
         }
       }
     }
@@ -82,10 +80,10 @@ const { data, error, fetching } = useAdminProjectPageQuery({
               to: { name: 'admin-projects' },
             },
             {
-              label: data.admin.project.name,
+              label: data.project.name,
               to: {
                 name: 'admin-projects-projectId',
-                params: { projectId: data.admin.project.id },
+                params: { projectId: data.project.id },
               },
             },
           ]"
@@ -93,13 +91,10 @@ const { data, error, fetching } = useAdminProjectPageQuery({
         <div class="flex flex-col gap-6 my-8">
           <div>
             <h1 class="text-3xl mb-2">
-              {{ data.admin.project.name }}
+              {{ data.project.name }}
             </h1>
-            <p
-              v-if="data.admin.project.description"
-              class="text-muted max-w-2xl"
-            >
-              {{ data.admin.project.description }}
+            <p v-if="data.project.description" class="text-muted max-w-2xl">
+              {{ data.project.description }}
             </p>
           </div>
         </div>
@@ -118,25 +113,25 @@ const { data, error, fetching } = useAdminProjectPageQuery({
         <template #branding>
           <div class="flex gap-4 mt-4 flex-col">
             <UFormField label="Logo">
-              <NuxtImg :src="data.admin.project.branding.logo" width="64" />
+              <NuxtImg :src="data.project.branding.logo" width="64" />
             </UFormField>
             <UFormField label="Primary Color">
               <UInput
-                v-model="data.admin.project.branding.colors.primary"
+                v-model="data.project.branding.colors.primary"
                 type="color"
                 class="w-12"
               />
             </UFormField>
             <UFormField label="Secondary Color">
               <UInput
-                v-model="data.admin.project.branding.colors.secondary"
+                v-model="data.project.branding.colors.secondary"
                 type="color"
                 class="w-12"
               />
             </UFormField>
             <UFormField label="Tertiary Color">
               <UInput
-                v-model="data.admin.project.branding.colors.tertiary"
+                v-model="data.project.branding.colors.tertiary"
                 type="color"
                 class="w-12"
               />
@@ -144,17 +139,17 @@ const { data, error, fetching } = useAdminProjectPageQuery({
           </div>
         </template>
         <template #events>
-          <UTable :data="data.admin.project.events" />
+          <UTable :data="data.project.events" />
         </template>
         <template #challenges>
-          <UTable :data="data.admin.project.challenges" />
+          <UTable :data="data.project.challenges" />
         </template>
         <template #streaks>
-          <UTable :data="data.admin.project.streaks" />
+          <UTable :data="data.project.streaks" />
         </template>
         <template #achievements>
           <UTable
-            :data="data.admin.project.achievements"
+            :data="data.project.achievements"
             :columns="[
               { accessorKey: 'image', header: 'Image' },
               { accessorKey: 'name', header: 'Name' },

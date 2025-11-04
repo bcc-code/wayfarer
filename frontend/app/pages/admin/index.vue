@@ -7,21 +7,19 @@ definePageMeta({
 
 gql(`
   query AdminHomePage {
-    admin {
-      projects {
-        id
-        name
-        description
-        endDate
-        startDate
-        branding {
-          logo
-          rounding
-          colors {
-            primary
-            secondary
-            tertiary
-          }
+    projects {
+      id
+      name
+      description
+      endDate
+      startDate
+      branding {
+        logo
+        rounding
+        colors {
+          primary
+          secondary
+          tertiary
         }
       }
     }
@@ -29,7 +27,7 @@ gql(`
 `)
 
 const { data } = useAdminHomePageQuery()
-const { currentProjects } = useGroupedProjects(() => data.value?.admin.projects)
+const { currentProjects } = useGroupedProjects(() => data.value?.projects)
 
 const { user } = useAuth()
 

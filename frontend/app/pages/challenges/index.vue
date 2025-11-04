@@ -3,19 +3,17 @@ import { useChallengesPageQuery } from '~/api/generated'
 
 gql(`
 query ChallengesPage {
-  user {
-    currentProject {
-      challenges {
-        id
-        name
-        description
-        userCompletedAt
-        image
-        url
-        buttonText
-        publishedAt
-        endTime
-      }
+  currentProject {
+    challenges {
+      id
+      name
+      description
+      userCompletedAt
+      image
+      url
+      buttonText
+      publishedAt
+      endTime
     }
   }
 }
@@ -23,7 +21,7 @@ query ChallengesPage {
 
 const { data, fetching, error } = useChallengesPageQuery()
 const relevantChallenges = computed(() => {
-  const notCompleted = data.value?.user.currentProject.challenges.filter(
+  const notCompleted = data.value?.currentProject.challenges.filter(
     (challenge) => !challenge.userCompletedAt,
   )
   const notEnded = notCompleted?.filter(
