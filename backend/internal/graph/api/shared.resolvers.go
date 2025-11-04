@@ -164,7 +164,14 @@ func (r *teamResolver) SuperTeam(ctx context.Context, obj *model.Team) (*model.S
 
 // Church is the resolver for the church field.
 func (r *userResolver) Church(ctx context.Context, obj *model.User) (*model.Church, error) {
-	panic(fmt.Errorf("not implemented: Church - church"))
+	// Use dataloader to fetch church (Load returns a Thunk that must be called)
+	thunk := r.Loaders.ChurchLoader.Load(ctx, obj.ChurchID)
+	church, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load church: %w", err)
+	}
+
+	return church, nil
 }
 
 // Age is the resolver for the age field.
@@ -194,7 +201,20 @@ func (r *userResolver) Age(ctx context.Context, obj *model.User) (*int, error) {
 
 // Projects is the resolver for the projects field.
 func (r *userResolver) Projects(ctx context.Context, obj *model.User) ([]model.Project, error) {
-	panic(fmt.Errorf("not implemented: Projects - projects"))
+	// Use dataloader to fetch projects for this user (Load returns a Thunk that must be called)
+	thunk := r.Loaders.ProjectsByUserLoader.Load(ctx, obj.ID)
+	projects, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load projects: %w", err)
+	}
+
+	// Convert []*model.Project to []model.Project
+	result := make([]model.Project, len(projects))
+	for i, p := range projects {
+		result[i] = *p
+	}
+
+	return result, nil
 }
 
 // Events is the resolver for the events field.

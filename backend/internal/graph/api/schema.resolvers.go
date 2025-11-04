@@ -330,7 +330,20 @@ func (r *mutationResolver) BulkAwardSuperTeamAchievements(ctx context.Context, s
 
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: Me - me"))
+	// Get user_id from context (set by JWT middleware)
+	userID, ok := ctx.Value("user_id").(string)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Use dataloader to fetch user (Load returns a Thunk that must be called)
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, userID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	return user, nil
 }
 
 // MyProjects is the resolver for the myProjects field.
