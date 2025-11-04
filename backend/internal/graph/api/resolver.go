@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/services"
@@ -13,5 +14,6 @@ import (
 type Resolver struct {
 	DB          *database.DB
 	Loaders     *loaders.Loaders
+	Cache       *cache.CacheWithRegistry
 	RoleService *services.RoleService
 }

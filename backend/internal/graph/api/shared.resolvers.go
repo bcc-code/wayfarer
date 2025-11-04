@@ -116,8 +116,14 @@ func (r *roleScopeResolver) Project(ctx context.Context, obj *model.RoleScope) (
 		return nil, nil
 	}
 
-	// TODO: Implement ProjectLoader
-	return nil, fmt.Errorf("project loader not yet implemented")
+	// Use dataloader to fetch project
+	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, obj.ID)
+	project, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load project: %w", err)
+	}
+
+	return project, nil
 }
 
 // Team is the resolver for the team field.

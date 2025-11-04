@@ -17,6 +17,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/bcc-media/wayfarer/internal/auth0"
+	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/graph/api"
@@ -90,8 +91,17 @@ func main() {
 		slog.Warn("Members API client not initialized - missing configuration")
 	}
 
+	// Initialize cache with default configuration
+	cacheInstance, err := cache.NewCacheWithRegistry(cache.DefaultConfig())
+	if err != nil {
+		slog.Error("Failed to initialize cache", "error", err)
+		os.Exit(1)
+	}
+	defer cacheInstance.Close()
+	slog.Info("Cache initialized", "default_ttl", "15m", "max_cost", "100MB")
+
 	// Initialize DataLoaders (shared globally across all requests)
-	dataLoaders := loaders.NewLoaders(db)
+	dataLoaders := loaders.NewLoaders(db, cacheInstance)
 	slog.Info("DataLoaders initialized with global caching")
 
 	// Initialize RoleService
@@ -99,7 +109,12 @@ func main() {
 	slog.Info("RoleService initialized")
 
 	// Initialize GraphQL resolver
-	apiResolver := &api.Resolver{DB: db, Loaders: dataLoaders, RoleService: roleService}
+	apiResolver := &api.Resolver{
+		DB:          db,
+		Loaders:     dataLoaders,
+		Cache:       cacheInstance,
+		RoleService: roleService,
+	}
 
 	apiHandler := handler.New(api.NewExecutableSchema(api.Config{
 		Resolvers: apiResolver,

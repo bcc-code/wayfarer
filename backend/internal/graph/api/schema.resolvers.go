@@ -394,6 +394,14 @@ func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project,
 
 // Projects is the resolver for the projects field.
 func (r *queryResolver) Projects(ctx context.Context) ([]model.Project, error) {
+	// Check cache first
+	cacheKey := "projects:all"
+	if cached, ok := r.Cache.Get(cacheKey); ok {
+		if projects, ok := cached.([]model.Project); ok {
+			return projects, nil
+		}
+	}
+
 	// Fetch all projects from database
 	rows, err := r.DB.Queries.GetAllProjects(ctx)
 	if err != nil {
@@ -420,6 +428,9 @@ func (r *queryResolver) Projects(ctx context.Context) ([]model.Project, error) {
 			},
 		}
 	}
+
+	// Store in cache
+	r.Cache.Set(cacheKey, result)
 
 	return result, nil
 }

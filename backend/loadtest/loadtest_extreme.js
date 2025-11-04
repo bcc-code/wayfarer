@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+import { tokensByUserID } from './tokens.js';
 
 // Extreme load test - simulates event start with thousands of concurrent users
 // This tests system behavior under maximum realistic load
@@ -55,33 +56,63 @@ const userIDs = [
   'US01K8XV6GC1PBVV2BZ72T2QPQSM',
 ];
 
-// Simplified query for extreme load testing
+// GraphQL query for extreme load testing
 const query = `
   query {
+    projects {
+      id
+    }
     me {
+      roles {
+        id
+        assignedBy {
+          name
+        }
+        role
+        assignedAt
+        scope {
+          id
+          type
+          team {
+            name
+            id
+          }
+          project {
+            name
+            id
+            description
+          }
+        }
+        user {
+          id
+        }
+      }
       id
       name
       email
-      age
       church {
         id
         name
+        country
       }
       projects {
         id
         name
+        description
+        branding {
+          logo
+          colors {
+            primary
+            secondary
+            tertiary
+          }
+        }
       }
     }
   }
 `;
 
-const url = 'http://localhost:8080/graphql/user';
-
-// TODO: Generate JWT tokens for each user
-const tokensByUserID = {};
-userIDs.forEach(userID => {
-  tokensByUserID[userID] = 'YOUR_JWT_TOKEN_HERE';
-});
+const url = 'http://localhost:8080/graphql';
 
 export default function () {
   // Each VU picks a user and sticks with it (simulates real user behavior)
@@ -110,6 +141,22 @@ export default function () {
   check(res, {
     'status is 200': (r) => r.status === 200,
     'response received': (r) => r.body && r.body.length > 0,
+    'no errors': (r) => {
+      try {
+        const body = JSON.parse(r.body);
+        return !body.errors;
+      } catch (e) {
+        return false;
+      }
+    },
+    'has user data': (r) => {
+      try {
+        const body = JSON.parse(r.body);
+        return body.data && body.data.me && body.data.me.id;
+      } catch (e) {
+        return false;
+      }
+    },
   });
 
   // Minimal sleep - aggressive load
