@@ -28,9 +28,9 @@ type Config struct {
 // DefaultConfig returns sensible defaults for cache configuration
 func DefaultConfig() Config {
 	return Config{
-		NumCounters: 100_000,      // Track 100k items
-		MaxCost:     100_000_000,  // 100MB max cache size
-		BufferItems: 64,           // 64 keys per buffer
+		NumCounters: 100_000,     // Track 100k items
+		MaxCost:     100_000_000, // 100MB max cache size
+		BufferItems: 64,          // 64 keys per buffer
 		DefaultTTL:  15 * time.Minute,
 	}
 }
@@ -72,14 +72,6 @@ func (c *Cache) SetWithTTL(key string, value interface{}, ttl time.Duration) boo
 // Delete removes a value from the cache
 func (c *Cache) Delete(key string) {
 	c.cache.Del(key)
-}
-
-// DeletePrefix removes all keys with the given prefix (for tag-based invalidation)
-func (c *Cache) DeletePrefix(prefix string) {
-	// Note: ristretto doesn't support prefix deletion directly
-	// This is a placeholder for future implementation using a key registry
-	// For now, we'll rely on TTL expiry
-	// TODO: Implement key registry to track keys by prefix for bulk invalidation
 }
 
 // Clear removes all entries from the cache

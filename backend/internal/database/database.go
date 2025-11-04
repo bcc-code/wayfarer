@@ -9,6 +9,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/tracelog"
 )
 
 //go:embed migrations/*.sql
@@ -32,6 +33,38 @@ func Connect(ctx context.Context, cfg config.DatabaseConfig) (*DB, error) {
 	poolConfig.MinConns = int32(cfg.MaxIdleConns)
 	poolConfig.MaxConnLifetime = cfg.ConnMaxLifetime
 	poolConfig.MaxConnIdleTime = cfg.ConnMaxIdleTime
+
+	// Enable query logging if configured
+	if cfg.LogQueries {
+		poolConfig.ConnConfig.Tracer = &tracelog.TraceLog{
+			Logger: tracelog.LoggerFunc(func(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]interface{}) {
+				// Map tracelog levels to slog levels
+				var slogLevel slog.Level
+				switch level {
+				case tracelog.LogLevelTrace, tracelog.LogLevelDebug:
+					slogLevel = slog.LevelDebug
+				case tracelog.LogLevelInfo:
+					slogLevel = slog.LevelInfo
+				case tracelog.LogLevelWarn:
+					slogLevel = slog.LevelWarn
+				case tracelog.LogLevelError:
+					slogLevel = slog.LevelError
+				default:
+					slogLevel = slog.LevelInfo
+				}
+
+				// Extract query information
+				attrs := []any{"component", "database"}
+				for k, v := range data {
+					attrs = append(attrs, k, v)
+				}
+
+				slog.Log(ctx, slogLevel, msg, attrs...)
+			}),
+			LogLevel: tracelog.LogLevelInfo,
+		}
+		slog.Info("database query logging enabled")
+	}
 
 	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {

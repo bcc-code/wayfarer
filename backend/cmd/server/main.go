@@ -155,6 +155,34 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
+	// Cache metrics endpoint
+	router.GET("/metrics/cache", func(c *gin.Context) {
+		metrics := cacheInstance.Metrics()
+		hits := metrics.Hits()
+		misses := metrics.Misses()
+		total := hits + misses
+
+		var hitRate float64
+		if total > 0 {
+			hitRate = float64(hits) / float64(total)
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"hits":         hits,
+			"misses":       misses,
+			"total":        total,
+			"hit_rate":     hitRate,
+			"hit_rate_pct": hitRate * 100,
+			"cost_added":   metrics.CostAdded(),
+			"cost_evicted": metrics.CostEvicted(),
+			"keys_added":   metrics.KeysAdded(),
+			"keys_updated": metrics.KeysUpdated(),
+			"keys_evicted": metrics.KeysEvicted(),
+			"sets_dropped": metrics.SetsDropped(),
+			"sets_rejected": metrics.SetsRejected(),
+		})
+	})
+
 	// Authentication callback endpoint (no JWT middleware)
 	authHandler := &handlers.AuthHandler{
 		DB:            db,
