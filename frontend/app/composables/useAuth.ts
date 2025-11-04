@@ -29,12 +29,14 @@ export function useAuth() {
   }
 
   const config = useRuntimeConfig()
-  const route = useRoute()
 
   function loginWithRedirect() {
-    return navigateTo(`${config.public.loginUrl}?redirect=${route.path}`, {
-      external: true,
-    })
+    return navigateTo(
+      `${config.public.loginUrl}?redirect=${window.location.pathname}`,
+      {
+        external: true,
+      },
+    )
   }
 
   return {

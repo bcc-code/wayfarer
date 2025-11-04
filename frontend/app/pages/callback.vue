@@ -13,7 +13,7 @@ onBeforeMount(async () => {
   if (token) {
     try {
       const response = await $fetch<{ token: string }>(
-        config.public.callbackUrl,
+        `${config.public.callbackUrl}?token=${token}`,
         { method: 'GET' },
       )
       if (response && response.token) {
