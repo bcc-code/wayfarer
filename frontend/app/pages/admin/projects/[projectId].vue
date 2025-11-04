@@ -68,9 +68,9 @@ const { data, error, fetching } = useAdminProjectPageQuery({
 </script>
 
 <template>
-  <UContainer class="h-[600px]">
+  <UContainer class="py-12">
     <LoadingState v-if="fetching" />
-    <ErrorState v-else-if="error" :error />
+    <ErrorState v-else-if="error" :error class="h-[600px]" />
     <template v-else-if="data">
       <header class="my-12">
         <UBreadcrumb

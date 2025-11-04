@@ -27,6 +27,8 @@ const projectsLinks = computed(() => {
   }))
 })
 
+const route = useRoute()
+
 const links = computed<NavigationMenuItem[]>(() => [
   {
     label: 'Home',
@@ -36,6 +38,7 @@ const links = computed<NavigationMenuItem[]>(() => [
   {
     label: 'Projects',
     icon: 'lucide:layers',
+    active: route.fullPath.includes('/projects'),
     to: '/admin/projects',
   },
 ])
