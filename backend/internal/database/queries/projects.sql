@@ -21,6 +21,11 @@ SELECT id, name, description, start_date, end_date, logo_url, color_primary, col
 FROM projects
 WHERE id = @id;
 
+-- name: GetProjectsByIDs :many
+SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding
+FROM projects
+WHERE id = ANY(@ids::text[]);
+
 -- name: GetAllProjects :many
 SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding
 FROM projects

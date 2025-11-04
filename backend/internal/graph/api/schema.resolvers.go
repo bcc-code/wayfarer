@@ -9,11 +9,9 @@ import (
 	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
-	"github.com/bcc-media/wayfarer/internal/services"
 )
 
 // JoinProject is the resolver for the joinProject field.
@@ -333,104 +331,23 @@ func (r *mutationResolver) BulkAwardSuperTeamAchievements(ctx context.Context, s
 
 // AssignRole is the resolver for the assignRole field.
 func (r *mutationResolver) AssignRole(ctx context.Context, input model.AssignRoleInput) (*model.UserRole, error) {
-	// Get current user ID from context
-	assignerID, ok := ctx.Value(middleware.UserIDKey).(string)
-	if !ok || assignerID == "" {
-		return nil, fmt.Errorf("user not authenticated")
-	}
-
-	// Convert model.RoleType to services.RoleType
-	roleType := services.RoleType(input.Role)
-
-	// Handle scope based on role type
-	var churchID, projectID, teamID *string
-
-	// For CHURCH_ADMIN, automatically use the target user's church
-	if roleType == services.RoleChurchAdmin {
-		// Load the target user to get their church_id
-		user, err := r.DB.Queries.GetUserByID(ctx, input.UserID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get user: %w", err)
-		}
-		churchID = &user.ChurchID
-	} else if input.ScopeType != nil && input.ScopeID != nil {
-		// For other scoped roles, use the provided scope
-		switch *input.ScopeType {
-		case model.ScopeTypeChurch:
-			churchID = input.ScopeID
-		case model.ScopeTypeProject:
-			projectID = input.ScopeID
-		case model.ScopeTypeTeam:
-			teamID = input.ScopeID
-		}
-	}
-
-	// Assign the role
-	userRole, err := r.RoleService.AssignRole(ctx, assignerID, input.UserID, roleType, churchID, projectID, teamID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to assign role: %w", err)
-	}
-
-	// Convert sqlc.UserRole to model.UserRole
-	return &model.UserRole{
-		ID:         userRole.ID,
-		Role:       model.RoleType(userRole.Role),
-		AssignedAt: scalars.DateTime{Time: userRole.AssignedAt.Time},
-	}, nil
+	panic(fmt.Errorf("not implemented: AssignRole - assignRole"))
 }
 
 // RevokeRole is the resolver for the revokeRole field.
 func (r *mutationResolver) RevokeRole(ctx context.Context, input model.RevokeRoleInput) (bool, error) {
-	// Get current user ID from context
-	revokerID, ok := ctx.Value(middleware.UserIDKey).(string)
-	if !ok || revokerID == "" {
-		return false, fmt.Errorf("user not authenticated")
-	}
-
-	// Convert model.RoleType to services.RoleType
-	roleType := services.RoleType(input.Role)
-
-	// Handle scope based on role type
-	var churchID, projectID, teamID *string
-
-	// For CHURCH_ADMIN, automatically use the target user's church
-	if roleType == services.RoleChurchAdmin {
-		// Load the target user to get their church_id
-		user, err := r.DB.Queries.GetUserByID(ctx, input.UserID)
-		if err != nil {
-			return false, fmt.Errorf("failed to get user: %w", err)
-		}
-		churchID = &user.ChurchID
-	} else if input.ScopeType != nil && input.ScopeID != nil {
-		// For other scoped roles, use the provided scope
-		switch *input.ScopeType {
-		case model.ScopeTypeChurch:
-			churchID = input.ScopeID
-		case model.ScopeTypeProject:
-			projectID = input.ScopeID
-		case model.ScopeTypeTeam:
-			teamID = input.ScopeID
-		}
-	}
-
-	// Revoke the role
-	err := r.RoleService.RevokeRole(ctx, revokerID, input.UserID, roleType, churchID, projectID, teamID)
-	if err != nil {
-		return false, fmt.Errorf("failed to revoke role: %w", err)
-	}
-
-	return true, nil
+	panic(fmt.Errorf("not implemented: RevokeRole - revokeRole"))
 }
 
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	// Get user_id from context (set by JWT middleware)
+	// Get user ID from context (set by JWT middleware)
 	userID, ok := ctx.Value(middleware.UserIDKey).(string)
 	if !ok || userID == "" {
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// Use dataloader to fetch user (Load returns a Thunk that must be called)
+	// Use dataloader to fetch user
 	thunk := r.Loaders.UserByIDLoader.Load(ctx, userID)
 	user, err := thunk()
 	if err != nil {
@@ -477,14 +394,16 @@ func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project,
 
 // Projects is the resolver for the projects field.
 func (r *queryResolver) Projects(ctx context.Context) ([]model.Project, error) {
+	// Fetch all projects from database
 	rows, err := r.DB.Queries.GetAllProjects(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch projects: %w", err)
 	}
 
-	projects := make([]model.Project, len(rows))
+	// Convert to GraphQL model
+	result := make([]model.Project, len(rows))
 	for i, row := range rows {
-		projects[i] = model.Project{
+		result[i] = model.Project{
 			ID:          row.ID,
 			Name:        row.Name,
 			Description: row.Description,
@@ -501,7 +420,8 @@ func (r *queryResolver) Projects(ctx context.Context) ([]model.Project, error) {
 			},
 		}
 	}
-	return projects, nil
+
+	return result, nil
 }
 
 // Event is the resolver for the event field.
@@ -586,154 +506,12 @@ func (r *queryResolver) CurrentEvent(ctx context.Context) (*model.Event, error) 
 
 // UserRoles is the resolver for the userRoles field.
 func (r *queryResolver) UserRoles(ctx context.Context, userID string) ([]model.UserRole, error) {
-	// Load all roles for the user
-	userRoles, err := r.RoleService.LoadUserRoles(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load user roles: %w", err)
-	}
-
-	// Convert sqlc.UserRole slice to model.UserRole slice
-	result := make([]model.UserRole, len(userRoles))
-	for i, ur := range userRoles {
-		result[i] = model.UserRole{
-			ID:         ur.ID,
-			Role:       model.RoleType(ur.Role),
-			AssignedAt: scalars.DateTime{Time: ur.AssignedAt.Time},
-		}
-	}
-
-	return result, nil
+	panic(fmt.Errorf("not implemented: UserRoles - userRoles"))
 }
 
 // UsersWithRole is the resolver for the usersWithRole field.
 func (r *queryResolver) UsersWithRole(ctx context.Context, role model.RoleType, scopeType *model.ScopeType, scopeID *string) ([]model.User, error) {
-	// Query users based on role and scope
-	if scopeType == nil || scopeID == nil {
-		// Global role query
-		rows, err := r.DB.Queries.GetUsersWithRole(ctx, string(role))
-		if err != nil {
-			return nil, fmt.Errorf("failed to get users with role: %w", err)
-		}
-
-		// Convert rows to model.User slice
-		result := make([]model.User, len(rows))
-		for i, row := range rows {
-			result[i] = model.User{
-				ID:        row.ID,
-				MembersID: row.MembersID,
-				Gender:    model.Gender(row.Gender),
-				ChurchID:  row.ChurchID,
-				Email:     row.Email,
-				Name:      row.Name,
-			}
-
-			// Handle optional fields
-			if row.Birthdate.Valid {
-				birthdate := row.Birthdate.Time.Format("2006-01-02")
-				result[i].Birthdate = &birthdate
-			}
-			if row.AvatarUrl != nil {
-				result[i].Image = row.AvatarUrl
-			}
-		}
-		return result, nil
-	}
-
-	// Scoped role query
-	switch *scopeType {
-	case model.ScopeTypeChurch:
-		rows, err := r.DB.Queries.GetUsersWithRoleInChurch(ctx, sqlc.GetUsersWithRoleInChurchParams{
-			Role:     string(role),
-			ChurchID: scopeID,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to get users with role in church: %w", err)
-		}
-
-		result := make([]model.User, len(rows))
-		for i, row := range rows {
-			result[i] = model.User{
-				ID:        row.ID,
-				MembersID: row.MembersID,
-				Gender:    model.Gender(row.Gender),
-				ChurchID:  row.ChurchID,
-				Email:     row.Email,
-				Name:      row.Name,
-			}
-
-			if row.Birthdate.Valid {
-				birthdate := row.Birthdate.Time.Format("2006-01-02")
-				result[i].Birthdate = &birthdate
-			}
-			if row.AvatarUrl != nil {
-				result[i].Image = row.AvatarUrl
-			}
-		}
-		return result, nil
-
-	case model.ScopeTypeProject:
-		rows, err := r.DB.Queries.GetUsersWithRoleInProject(ctx, sqlc.GetUsersWithRoleInProjectParams{
-			Role:      string(role),
-			ProjectID: scopeID,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to get users with role in project: %w", err)
-		}
-
-		result := make([]model.User, len(rows))
-		for i, row := range rows {
-			result[i] = model.User{
-				ID:        row.ID,
-				MembersID: row.MembersID,
-				Gender:    model.Gender(row.Gender),
-				ChurchID:  row.ChurchID,
-				Email:     row.Email,
-				Name:      row.Name,
-			}
-
-			if row.Birthdate.Valid {
-				birthdate := row.Birthdate.Time.Format("2006-01-02")
-				result[i].Birthdate = &birthdate
-			}
-			if row.AvatarUrl != nil {
-				result[i].Image = row.AvatarUrl
-			}
-		}
-		return result, nil
-
-	case model.ScopeTypeTeam:
-		rows, err := r.DB.Queries.GetUsersWithRoleInTeam(ctx, sqlc.GetUsersWithRoleInTeamParams{
-			Role:   string(role),
-			TeamID: scopeID,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to get users with role in team: %w", err)
-		}
-
-		result := make([]model.User, len(rows))
-		for i, row := range rows {
-			result[i] = model.User{
-				ID:        row.ID,
-				MembersID: row.MembersID,
-				Gender:    model.Gender(row.Gender),
-				ChurchID:  row.ChurchID,
-				Email:     row.Email,
-				Name:      row.Name,
-			}
-
-			if row.Birthdate.Valid {
-				birthdate := row.Birthdate.Time.Format("2006-01-02")
-				result[i].Birthdate = &birthdate
-			}
-			if row.AvatarUrl != nil {
-				result[i].Image = row.AvatarUrl
-			}
-		}
-		return result, nil
-
-	default:
-		return nil, fmt.Errorf("invalid scope type: %v", *scopeType)
-	}
+	panic(fmt.Errorf("not implemented: UsersWithRole - usersWithRole"))
 }
 
 // Mutation returns MutationResolver implementation.
