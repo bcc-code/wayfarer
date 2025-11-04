@@ -370,7 +370,31 @@ func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project,
 
 // Projects is the resolver for the projects field.
 func (r *queryResolver) Projects(ctx context.Context) ([]model.Project, error) {
-	panic(fmt.Errorf("not implemented: Projects - projects"))
+	rows, err := r.DB.Queries.GetAllProjects(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	projects := make([]model.Project, len(rows))
+	for i, row := range rows {
+		projects[i] = model.Project{
+			ID:          row.ID,
+			Name:        row.Name,
+			Description: row.Description,
+			StartDate:   scalars.DateTime{Time: row.StartDate.Time},
+			EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+			Branding: &model.Branding{
+				Logo: row.LogoUrl,
+				Colors: &model.Colors{
+					Primary:   row.ColorPrimary,
+					Secondary: row.ColorSecondary,
+					Tertiary:  row.ColorTertiary,
+				},
+				Rounding: int(row.Rounding),
+			},
+		}
+	}
+	return projects, nil
 }
 
 // Event is the resolver for the event field.

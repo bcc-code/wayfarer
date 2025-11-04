@@ -41,6 +41,7 @@ CREATE TABLE projects (
     color_primary VARCHAR(50) NOT NULL,
     color_secondary VARCHAR(50) NOT NULL,
     color_tertiary VARCHAR(50) NOT NULL,
+    rounding INT NOT NULL DEFAULT 0,
     archived BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),

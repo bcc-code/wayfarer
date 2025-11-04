@@ -11,6 +11,9 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/lru"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/bcc-media/wayfarer/internal/auth0"
@@ -25,6 +28,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/sony/gobreaker/v2"
+	"github.com/vektah/gqlparser/v2/ast"
 )
 
 func main() {
@@ -91,13 +95,21 @@ func main() {
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{DB: db, Loaders: dataLoaders}
 
-	// Create GraphQL handler with directive
-	apiHandler := handler.NewDefaultServer(api.NewExecutableSchema(api.Config{
+	apiHandler := handler.New(api.NewExecutableSchema(api.Config{
 		Resolvers: apiResolver,
 		Directives: api.DirectiveRoot{
 			RequireRole: directives.RequireRole,
 		},
 	}))
+
+	apiHandler.AddTransport(transport.Options{})
+	apiHandler.AddTransport(transport.GET{})
+	apiHandler.AddTransport(transport.POST{})
+	apiHandler.Use(extension.Introspection{})
+	apiHandler.Use(extension.AutomaticPersistedQuery{
+		Cache: lru.New[string](100),
+	})
+	apiHandler.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 
 	// Set up Gin router
 	if cfg.Server.Environment == "production" {
@@ -107,6 +119,7 @@ func main() {
 	router := gin.Default()
 
 	// Health check endpoint
+	// TODO: Actually check things, like DB connection
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})

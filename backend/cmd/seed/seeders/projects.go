@@ -54,16 +54,29 @@ func (s *Seeder) SeedProjects(stats *Stats) error {
 		VALUES ($1, $2, $3, $4)
 	`
 
-	for _, proj := range projects {
+	for idx, proj := range projects {
 		projectID := ulid.NewProjectID()
 		startDate := time.Now().AddDate(0, 0, proj.startOffset)
 		endDate := time.Now().AddDate(0, 0, proj.endOffset)
 
 		// Generate branding data
-		logoURL := s.Fake.Internet().URL()
-		colorPrimary := "#" + s.Fake.Color().Hex()
-		colorSecondary := "#" + s.Fake.Color().Hex()
-		colorTertiary := "#" + s.Fake.Color().Hex()
+		// Color schemes: background colors with white text for good contrast
+		colorSchemes := []struct{ bg, text string }{
+			{"E53E3E", "FFFFFF"}, // Red background, white text
+			{"3182CE", "FFFFFF"}, // Blue background, white text
+			{"38A169", "FFFFFF"}, // Green background, white text
+			{"805AD5", "FFFFFF"}, // Purple background, white text
+			{"DD6B20", "FFFFFF"}, // Orange background, white text
+			{"319795", "FFFFFF"}, // Teal background, white text
+			{"D53F8C", "FFFFFF"}, // Pink background, white text
+		}
+		scheme := colorSchemes[idx%len(colorSchemes)]
+		firstLetter := string(proj.name[0])
+
+		logoURL := "https://placehold.co/100x100/" + scheme.bg + "/" + scheme.text + "?text=" + firstLetter
+		colorPrimary := s.Fake.Color().Hex()
+		colorSecondary := s.Fake.Color().Hex()
+		colorTertiary := s.Fake.Color().Hex()
 
 		_, err := s.DB.Pool.Exec(s.Ctx, projectQuery,
 			projectID,

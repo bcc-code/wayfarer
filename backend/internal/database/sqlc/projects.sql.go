@@ -11,8 +11,58 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const GetAllProjects = `-- name: GetAllProjects :many
+SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding
+FROM projects
+ORDER BY start_date DESC
+`
+
+type GetAllProjectsRow struct {
+	ID             string             `json:"id"`
+	Name           string             `json:"name"`
+	Description    string             `json:"description"`
+	StartDate      pgtype.Timestamptz `json:"start_date"`
+	EndDate        pgtype.Timestamptz `json:"end_date"`
+	LogoUrl        string             `json:"logo_url"`
+	ColorPrimary   string             `json:"color_primary"`
+	ColorSecondary string             `json:"color_secondary"`
+	ColorTertiary  string             `json:"color_tertiary"`
+	Rounding       int32              `json:"rounding"`
+}
+
+func (q *Queries) GetAllProjects(ctx context.Context) ([]*GetAllProjectsRow, error) {
+	rows, err := q.db.Query(ctx, GetAllProjects)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetAllProjectsRow{}
+	for rows.Next() {
+		var i GetAllProjectsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.StartDate,
+			&i.EndDate,
+			&i.LogoUrl,
+			&i.ColorPrimary,
+			&i.ColorSecondary,
+			&i.ColorTertiary,
+			&i.Rounding,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetProjectByID = `-- name: GetProjectByID :one
-SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary
+SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding
 FROM projects
 WHERE id = $1
 `
@@ -27,6 +77,7 @@ type GetProjectByIDRow struct {
 	ColorPrimary   string             `json:"color_primary"`
 	ColorSecondary string             `json:"color_secondary"`
 	ColorTertiary  string             `json:"color_tertiary"`
+	Rounding       int32              `json:"rounding"`
 }
 
 func (q *Queries) GetProjectByID(ctx context.Context, id string) (*GetProjectByIDRow, error) {
@@ -42,6 +93,7 @@ func (q *Queries) GetProjectByID(ctx context.Context, id string) (*GetProjectByI
 		&i.ColorPrimary,
 		&i.ColorSecondary,
 		&i.ColorTertiary,
+		&i.Rounding,
 	)
 	return &i, err
 }
@@ -57,6 +109,7 @@ SELECT
     p.color_primary,
     p.color_secondary,
     p.color_tertiary,
+    p.rounding,
     up.user_id
 FROM projects p
 JOIN user_projects up ON p.id = up.project_id
@@ -74,6 +127,7 @@ type GetProjectsByUserIDsRow struct {
 	ColorPrimary   string             `json:"color_primary"`
 	ColorSecondary string             `json:"color_secondary"`
 	ColorTertiary  string             `json:"color_tertiary"`
+	Rounding       int32              `json:"rounding"`
 	UserID         string             `json:"user_id"`
 }
 
@@ -96,6 +150,7 @@ func (q *Queries) GetProjectsByUserIDs(ctx context.Context, userIds []string) ([
 			&i.ColorPrimary,
 			&i.ColorSecondary,
 			&i.ColorTertiary,
+			&i.Rounding,
 			&i.UserID,
 		); err != nil {
 			return nil, err

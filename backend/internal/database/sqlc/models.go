@@ -85,6 +85,7 @@ type Project struct {
 	Archived       *bool              `json:"archived"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	Rounding       int32              `json:"rounding"`
 }
 
 type ReadingAchievement struct {

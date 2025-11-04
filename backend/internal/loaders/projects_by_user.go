@@ -38,7 +38,7 @@ func projectsByUserBatchFunc(db *database.DB) func(context.Context, []string) []
 						Secondary: row.ColorSecondary,
 						Tertiary:  row.ColorTertiary,
 					},
-					Rounding: 0, // TODO: Add rounding to database schema
+					Rounding: int(row.Rounding),
 				},
 			}
 			projectsByUser[row.UserID] = append(projectsByUser[row.UserID], project)
