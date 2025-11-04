@@ -70,27 +70,25 @@ onMounted(() => {
 </script>
 
 <template>
-  <UDashboardGroup unit="rem">
-    <UDashboardPanel>
-      <header class="border-b border-default">
-        <UContainer class="flex gap-8 items-center">
-          <NuxtLink to="/admin" class="font-serif text-xl text-primary">
-            Wayfarer
-          </NuxtLink>
-          <UNavigationMenu
-            :items="links"
-            highlight
-            variant="link"
-            orientation="horizontal"
-          />
-          <div class="ml-auto flex gap-2">
-            <UDashboardSearchButton class="bg-transparent ring-default" />
-            <AdminUserMenu />
-          </div>
-        </UContainer>
-      </header>
-      <slot />
-      <UDashboardSearch :groups="groups" />
-    </UDashboardPanel>
-  </UDashboardGroup>
+  <div>
+    <header class="border-b border-default">
+      <UContainer class="flex gap-8 items-center">
+        <NuxtLink to="/admin" class="font-serif text-xl text-primary">
+          Wayfarer
+        </NuxtLink>
+        <UNavigationMenu
+          :items="links"
+          highlight
+          variant="link"
+          orientation="horizontal"
+        />
+        <div class="ml-auto flex gap-2">
+          <UDashboardSearchButton class="bg-transparent ring-default" />
+          <AdminUserMenu />
+        </div>
+      </UContainer>
+    </header>
+    <slot />
+    <UDashboardSearch :groups="groups" />
+  </div>
 </template>
