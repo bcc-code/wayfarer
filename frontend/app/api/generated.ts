@@ -65,6 +65,13 @@ export type ArticleInput = {
   url: Scalars['String']['input'];
 };
 
+export type AssignRoleInput = {
+  role: RoleType;
+  scopeId?: InputMaybe<Scalars['ID']['input']>;
+  scopeType?: InputMaybe<ScopeType>;
+  userId: Scalars['ID']['input'];
+};
+
 export type Branding = {
   __typename?: 'Branding';
   colors: Colors;
@@ -322,6 +329,7 @@ export type Mutation = {
   adjustUserScore: Scalars['Boolean']['output'];
   archiveProject: Scalars['Boolean']['output'];
   assignChallengeToEvent: Challenge;
+  assignRole: UserRole;
   assignTeamsToSuperTeam: SuperTeam;
   assignUserToEvent: User;
   assignUserToProject: User;
@@ -366,6 +374,7 @@ export type Mutation = {
   removeTeamMembers: Team;
   removeUserFromProject: User;
   revokeAchievement: Scalars['Boolean']['output'];
+  revokeRole: Scalars['Boolean']['output'];
   revokeSuperTeamAchievement: Scalars['Boolean']['output'];
   revokeTeamAchievement: Scalars['Boolean']['output'];
   uncompleteChallenge: Scalars['Boolean']['output'];
@@ -420,6 +429,11 @@ export type MutationArchiveProjectArgs = {
 export type MutationAssignChallengeToEventArgs = {
   challengeId: Scalars['ID']['input'];
   eventId: Scalars['ID']['input'];
+};
+
+
+export type MutationAssignRoleArgs = {
+  input: AssignRoleInput;
 };
 
 
@@ -674,6 +688,11 @@ export type MutationRevokeAchievementArgs = {
 };
 
 
+export type MutationRevokeRoleArgs = {
+  input: RevokeRoleInput;
+};
+
+
 export type MutationRevokeSuperTeamAchievementArgs = {
   achievementId: Scalars['ID']['input'];
   superTeamId: Scalars['ID']['input'];
@@ -801,7 +820,9 @@ export type Query = {
   team: Team;
   teams: Array<Team>;
   user: User;
+  userRoles: Array<UserRole>;
   users: Array<User>;
+  usersWithRole: Array<User>;
 };
 
 
@@ -885,8 +906,20 @@ export type QueryUserArgs = {
 };
 
 
+export type QueryUserRolesArgs = {
+  userId: Scalars['ID']['input'];
+};
+
+
 export type QueryUsersArgs = {
   filter?: InputMaybe<UserFilter>;
+};
+
+
+export type QueryUsersWithRoleArgs = {
+  role: RoleType;
+  scopeId?: InputMaybe<Scalars['ID']['input']>;
+  scopeType?: InputMaybe<ScopeType>;
 };
 
 export type ReadingAchievement = Achievement & {
@@ -905,6 +938,38 @@ export type ReadingAchievement = Achievement & {
   project: Project;
   userHasRead: Array<Article>;
 };
+
+export type RevokeRoleInput = {
+  role: RoleType;
+  scopeId?: InputMaybe<Scalars['ID']['input']>;
+  scopeType?: InputMaybe<ScopeType>;
+  userId: Scalars['ID']['input'];
+};
+
+export type RoleScope = {
+  __typename?: 'RoleScope';
+  church?: Maybe<Church>;
+  id: Scalars['ID']['output'];
+  project?: Maybe<Project>;
+  team?: Maybe<Team>;
+  type: ScopeType;
+};
+
+export enum RoleType {
+  Admin = 'ADMIN',
+  ChurchAdmin = 'CHURCH_ADMIN',
+  M2M = 'M2M',
+  ProjectAdmin = 'PROJECT_ADMIN',
+  Superadmin = 'SUPERADMIN',
+  TeamLead = 'TEAM_LEAD',
+  User = 'USER'
+}
+
+export enum ScopeType {
+  Church = 'CHURCH',
+  Project = 'PROJECT',
+  Team = 'TEAM'
+}
 
 export type SimpleAchievement = Achievement & {
   __typename?: 'SimpleAchievement';
@@ -1071,6 +1136,7 @@ export type User = {
   membersId: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   projects: Array<Project>;
+  roles: Array<UserRole>;
   superTeams: Array<SuperTeam>;
   teams: Array<Team>;
 };
@@ -1084,6 +1150,16 @@ export type UserFilter = {
   minAge?: InputMaybe<Scalars['Int']['input']>;
   projectId?: InputMaybe<Scalars['ID']['input']>;
   teamId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type UserRole = {
+  __typename?: 'UserRole';
+  assignedAt: Scalars['DateTime']['output'];
+  assignedBy: User;
+  id: Scalars['ID']['output'];
+  role: RoleType;
+  scope?: Maybe<RoleScope>;
+  user: User;
 };
 
 export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
