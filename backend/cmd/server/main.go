@@ -203,12 +203,12 @@ func graphqlHandler(h *handler.Server) gin.HandlerFunc {
 
 		// Transfer user_id if present
 		if userID, exists := c.Get("user_id"); exists {
-			ctx = context.WithValue(ctx, "user_id", userID)
+			ctx = context.WithValue(ctx, middleware.UserIDKey, userID)
 		}
 
 		// Transfer user_role if present
 		if userRole, exists := c.Get("user_role"); exists {
-			ctx = context.WithValue(ctx, "user_role", userRole)
+			ctx = context.WithValue(ctx, middleware.UserRoleKey, userRole)
 		}
 
 		// Create new request with updated context

@@ -73,29 +73,44 @@ func (h *devHandler) Handle(_ context.Context, r slog.Record) error {
 	resetColor := "\033[0m"
 
 	// Build the log line with colored level
+	var err error
 	if levelColor != "" {
-		fmt.Fprintf(os.Stdout, "[%s] %s%s%s %s", timeStr, levelColor, r.Level, resetColor, r.Message)
+		_, err = fmt.Fprintf(os.Stdout, "[%s] %s%s%s %s", timeStr, levelColor, r.Level, resetColor, r.Message)
 	} else {
-		fmt.Fprintf(os.Stdout, "[%s] %s %s", timeStr, r.Level, r.Message)
+		_, err = fmt.Fprintf(os.Stdout, "[%s] %s %s", timeStr, r.Level, r.Message)
+	}
+	if err != nil {
+		return err
 	}
 
 	// Add attributes
 	if r.NumAttrs() > 0 {
-		fmt.Fprint(os.Stdout, " (")
+		if _, err = fmt.Fprint(os.Stdout, " ("); err != nil {
+			return err
+		}
 		first := true
 		r.Attrs(func(a slog.Attr) bool {
 			if !first {
-				fmt.Fprint(os.Stdout, ", ")
+				if _, err = fmt.Fprint(os.Stdout, ", "); err != nil {
+					return false
+				}
 			}
 			first = false
-			fmt.Fprintf(os.Stdout, "%s=%v", a.Key, a.Value)
+			if _, err = fmt.Fprintf(os.Stdout, "%s=%v", a.Key, a.Value); err != nil {
+				return false
+			}
 			return true
 		})
-		fmt.Fprint(os.Stdout, ")")
+		if err != nil {
+			return err
+		}
+		if _, err = fmt.Fprint(os.Stdout, ")"); err != nil {
+			return err
+		}
 	}
 
-	fmt.Fprintln(os.Stdout)
-	return nil
+	_, err = fmt.Fprintln(os.Stdout)
+	return err
 }
 
 func (h *devHandler) WithAttrs(attrs []slog.Attr) slog.Handler {

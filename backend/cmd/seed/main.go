@@ -38,7 +38,6 @@ func main() {
 	} else {
 		seed = *seedValue
 	}
-	rand.Seed(seed)
 	fake := faker.NewWithSeed(rand.NewSource(seed))
 
 	slog.Info("Starting database seed", "seed", seed)

@@ -11,6 +11,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/middleware"
 )
 
 // JoinProject is the resolver for the joinProject field.
@@ -331,7 +332,7 @@ func (r *mutationResolver) BulkAwardSuperTeamAchievements(ctx context.Context, s
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	// Get user_id from context (set by JWT middleware)
-	userID, ok := ctx.Value("user_id").(string)
+	userID, ok := ctx.Value(middleware.UserIDKey).(string)
 	if !ok || userID == "" {
 		return nil, fmt.Errorf("user not authenticated")
 	}

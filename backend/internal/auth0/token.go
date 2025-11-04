@@ -40,7 +40,9 @@ func sendTokenRequest[t any](ctx context.Context, body t, endpoint string) (getT
 	if err != nil {
 		return getTokenResponse{}, err
 	}
-	defer res.Body.Close()
+	defer func() {
+		_ = res.Body.Close()
+	}()
 
 	result, err := io.ReadAll(res.Body)
 	if err != nil {

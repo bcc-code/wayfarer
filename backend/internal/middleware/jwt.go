@@ -11,6 +11,16 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// Context key types for user information
+type contextKey string
+
+const (
+	// UserIDKey is the context key for user ID
+	UserIDKey contextKey = "user_id"
+	// UserRoleKey is the context key for user role
+	UserRoleKey contextKey = "user_role"
+)
+
 // WayfarerClaims represents the JWT claims issued by Wayfarer
 type WayfarerClaims struct {
 	UserID   string `json:"user_id"`

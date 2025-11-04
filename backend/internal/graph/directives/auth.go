@@ -5,12 +5,13 @@ import (
 	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/bcc-media/wayfarer/internal/middleware"
 )
 
 // RequireRole checks if the user has one of the required roles
 func RequireRole(ctx context.Context, obj any, next graphql.Resolver, roles []string) (any, error) {
 	// Extract user role from context (set by JWT middleware)
-	userRole, ok := ctx.Value("user_role").(string)
+	userRole, ok := ctx.Value(middleware.UserRoleKey).(string)
 	if !ok || userRole == "" {
 		return nil, fmt.Errorf("unauthorized: no role found in context")
 	}
