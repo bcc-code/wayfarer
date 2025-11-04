@@ -8,6 +8,7 @@ export default defineNuxtPlugin((plugin) => {
     urql,
     new Client({
       url: useRuntimeConfig().public.apiUrl,
+      preferGetMethod: false,
       exchanges: [
         // authExchange(async (utils) => {
         //   let token = await getToken()
