@@ -34,6 +34,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiUrl: 'http://localhost:8080/graphql',
+      callbackUrl: 'http://localhost:8080/callback',
+      loginUrl: 'https://app.bcc.media/r/sigve-test',
     },
   },
 })
