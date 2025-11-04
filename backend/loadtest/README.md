@@ -91,36 +91,32 @@ All load tests require valid JWT tokens for authentication.
 
 ### Generating JWT Tokens
 
-You need to generate JWT tokens for each test user. The tokens should contain the user ID in the payload.
+Run the token generation script to create JWT tokens for all test users:
 
-Example token generation (adjust based on your JWT configuration):
-```go
-// In a separate tool or test file
-import (
-	"github.com/golang-jwt/jwt/v5"
-)
-
-func generateTestToken(userID string) (string, error) {
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte("your-secret-key"))
-}
+```bash
+./loadtest/generate_tokens.sh
 ```
 
-### Using Tokens in Load Tests
+This script:
+1. Uses the `cmd/gentoken` tool to generate a JWT token for each test user ID
+2. Creates `loadtest/tokens.js` with a JavaScript object mapping user IDs to tokens
+3. Tokens are valid for 24 hours
 
-Update the load test files with actual tokens:
+The generated `tokens.js` file is automatically imported by all load test files.
 
-```javascript
-// In loadtest_me_realistic.js
-const tokensByUserID = {
-  'US01K8XV6EN42TPEATDT708X51KE': 'eyJhbGc...',
-  'US01K8XV6EPTGRWZPZKV3SZ3MTRP': 'eyJhbGc...',
-  // ... add tokens for all user IDs
-};
+**Note:** Tokens must be regenerated every 24 hours or when they expire.
+
+### Manual Token Generation
+
+To generate a token for a single user:
+
+```bash
+go run cmd/gentoken/main.go <user_id>
+```
+
+Example:
+```bash
+go run cmd/gentoken/main.go US01K8XV6EN42TPEATDT708X51KE
 ```
 
 ## Profiling During Load Tests

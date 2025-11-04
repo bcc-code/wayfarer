@@ -223,6 +223,17 @@ type UserReadingProgress struct {
 	ReadAt        pgtype.Timestamptz `json:"read_at"`
 }
 
+type UserRole struct {
+	ID         string             `json:"id"`
+	UserID     string             `json:"user_id"`
+	Role       string             `json:"role"`
+	ChurchID   *string            `json:"church_id"`
+	ProjectID  *string            `json:"project_id"`
+	TeamID     *string            `json:"team_id"`
+	AssignedBy string             `json:"assigned_by"`
+	AssignedAt pgtype.Timestamptz `json:"assigned_at"`
+}
+
 type UserStreakActivity struct {
 	UserID       string             `json:"user_id"`
 	StreakID     string             `json:"streak_id"`

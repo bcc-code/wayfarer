@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+import { tokensByUserID } from './tokens.js';
 
 // Test configuration designed to analyze cache behavior
 export const options = {
@@ -83,13 +84,7 @@ const query = `
   }
 `;
 
-const url = 'http://localhost:8080/graphql/user';
-
-// TODO: Generate JWT tokens for each user
-const tokensByUserID = {};
-userIDs.forEach(userID => {
-  tokensByUserID[userID] = 'YOUR_JWT_TOKEN_HERE';
-});
+const url = 'http://localhost:8080/graphql';
 
 function makeRequest(userID) {
   const token = tokensByUserID[userID];
@@ -106,7 +101,14 @@ function makeRequest(userID) {
 
   check(res, {
     'status is 200': (r) => r.status === 200,
-    'no errors': (r) => !JSON.parse(r.body).errors,
+    'no errors': (r) => {
+      try {
+        const body = JSON.parse(r.body);
+        return !body.errors;
+      } catch (e) {
+        return false;
+      }
+    },
   });
 }
 

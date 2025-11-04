@@ -37,6 +37,22 @@ enum ExportFormat {
     EXCEL
 }
 
+enum RoleType {
+    SUPERADMIN
+    ADMIN
+    CHURCH_ADMIN
+    PROJECT_ADMIN
+    TEAM_LEAD
+    USER
+    M2M
+}
+
+enum ScopeType {
+    CHURCH
+    PROJECT
+    TEAM
+}
+
 # ==================== Supporting Types ====================
 
 type AgeRange {
@@ -106,6 +122,7 @@ type User {
     events: [Event!]! @goField(forceResolver: true)
     teams: [Team!]! @goField(forceResolver: true)
     superTeams: [SuperTeam!]! @goField(forceResolver: true)
+    roles: [UserRole!]! @goField(forceResolver: true)
 }
 
 type Church {
@@ -501,4 +518,38 @@ input AchievementFilter {
     projectId: ID
     eventId: ID
     ids: [ID!]  # Support bulk ID lookup for M2M API
+}
+
+# ==================== Role Management Types ====================
+
+type RoleScope {
+    type: ScopeType!
+    id: ID!
+    # Resolved fields for convenience
+    church: Church @goField(forceResolver: true)
+    project: Project @goField(forceResolver: true)
+    team: Team @goField(forceResolver: true)
+}
+
+type UserRole {
+    id: ID!
+    user: User! @goField(forceResolver: true)
+    role: RoleType!
+    scope: RoleScope @goField(forceResolver: true)
+    assignedBy: User! @goField(forceResolver: true)
+    assignedAt: DateTime!
+}
+
+input AssignRoleInput {
+    userId: ID!
+    role: RoleType!
+    scopeType: ScopeType
+    scopeId: ID
+}
+
+input RevokeRoleInput {
+    userId: ID!
+    role: RoleType!
+    scopeType: ScopeType
+    scopeId: ID
 }

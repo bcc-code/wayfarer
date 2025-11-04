@@ -329,15 +329,25 @@ func (r *mutationResolver) BulkAwardSuperTeamAchievements(ctx context.Context, s
 	panic(fmt.Errorf("not implemented: BulkAwardSuperTeamAchievements - bulkAwardSuperTeamAchievements"))
 }
 
+// AssignRole is the resolver for the assignRole field.
+func (r *mutationResolver) AssignRole(ctx context.Context, input model.AssignRoleInput) (*model.UserRole, error) {
+	panic(fmt.Errorf("not implemented: AssignRole - assignRole"))
+}
+
+// RevokeRole is the resolver for the revokeRole field.
+func (r *mutationResolver) RevokeRole(ctx context.Context, input model.RevokeRoleInput) (bool, error) {
+	panic(fmt.Errorf("not implemented: RevokeRole - revokeRole"))
+}
+
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	// Get user_id from context (set by JWT middleware)
+	// Get user ID from context (set by JWT middleware)
 	userID, ok := ctx.Value(middleware.UserIDKey).(string)
 	if !ok || userID == "" {
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// Use dataloader to fetch user (Load returns a Thunk that must be called)
+	// Use dataloader to fetch user
 	thunk := r.Loaders.UserByIDLoader.Load(ctx, userID)
 	user, err := thunk()
 	if err != nil {
@@ -384,14 +394,24 @@ func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project,
 
 // Projects is the resolver for the projects field.
 func (r *queryResolver) Projects(ctx context.Context) ([]model.Project, error) {
-	rows, err := r.DB.Queries.GetAllProjects(ctx)
-	if err != nil {
-		return nil, err
+	// Check cache first
+	cacheKey := "projects:all"
+	if cached, ok := r.Cache.Get(cacheKey); ok {
+		if projects, ok := cached.([]model.Project); ok {
+			return projects, nil
+		}
 	}
 
-	projects := make([]model.Project, len(rows))
+	// Fetch all projects from database
+	rows, err := r.DB.Queries.GetAllProjects(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch projects: %w", err)
+	}
+
+	// Convert to GraphQL model
+	result := make([]model.Project, len(rows))
 	for i, row := range rows {
-		projects[i] = model.Project{
+		result[i] = model.Project{
 			ID:          row.ID,
 			Name:        row.Name,
 			Description: row.Description,
@@ -408,7 +428,11 @@ func (r *queryResolver) Projects(ctx context.Context) ([]model.Project, error) {
 			},
 		}
 	}
-	return projects, nil
+
+	// Store in cache
+	r.Cache.Set(cacheKey, result)
+
+	return result, nil
 }
 
 // Event is the resolver for the event field.
@@ -489,6 +513,16 @@ func (r *queryResolver) CurrentProject(ctx context.Context) (*model.Project, err
 // CurrentEvent is the resolver for the currentEvent field.
 func (r *queryResolver) CurrentEvent(ctx context.Context) (*model.Event, error) {
 	panic(fmt.Errorf("not implemented: CurrentEvent - currentEvent"))
+}
+
+// UserRoles is the resolver for the userRoles field.
+func (r *queryResolver) UserRoles(ctx context.Context, userID string) ([]model.UserRole, error) {
+	panic(fmt.Errorf("not implemented: UserRoles - userRoles"))
+}
+
+// UsersWithRole is the resolver for the usersWithRole field.
+func (r *queryResolver) UsersWithRole(ctx context.Context, role model.RoleType, scopeType *model.ScopeType, scopeID *string) ([]model.User, error) {
+	panic(fmt.Errorf("not implemented: UsersWithRole - usersWithRole"))
 }
 
 // Mutation returns MutationResolver implementation.

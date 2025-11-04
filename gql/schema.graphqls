@@ -49,6 +49,10 @@ type Query {
     # Admin's current context (distinct from user's)
     currentProject: Project!
     currentEvent: Event!
+
+    # ==================== Role Management Queries ====================
+    userRoles(userId: ID!): [UserRole!]! @requireRole(roles: ["admin", "superadmin"])
+    usersWithRole(role: RoleType!, scopeType: ScopeType, scopeId: ID): [User!]! @requireRole(roles: ["admin", "superadmin"])
 }
 
 # ==================== Root Mutation ====================
@@ -163,4 +167,8 @@ type Mutation {
     bulkCompleteChallenges(userIds: [ID!]!, challengeId: ID!, completedAt: DateTime): [Challenge!]! @requireRole(roles: ["m2m", "admin"])
     bulkAwardTeamAchievements(teamIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin"])
     bulkAwardSuperTeamAchievements(superTeamIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin"])
+
+    # ==================== Role Management Mutations ====================
+    assignRole(input: AssignRoleInput!): UserRole! @requireRole(roles: ["admin", "superadmin"])
+    revokeRole(input: RevokeRoleInput!): Boolean! @requireRole(roles: ["admin", "superadmin"])
 }

@@ -98,6 +98,56 @@ func (q *Queries) GetProjectByID(ctx context.Context, id string) (*GetProjectByI
 	return &i, err
 }
 
+const GetProjectsByIDs = `-- name: GetProjectsByIDs :many
+SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding
+FROM projects
+WHERE id = ANY($1::text[])
+`
+
+type GetProjectsByIDsRow struct {
+	ID             string             `json:"id"`
+	Name           string             `json:"name"`
+	Description    string             `json:"description"`
+	StartDate      pgtype.Timestamptz `json:"start_date"`
+	EndDate        pgtype.Timestamptz `json:"end_date"`
+	LogoUrl        string             `json:"logo_url"`
+	ColorPrimary   string             `json:"color_primary"`
+	ColorSecondary string             `json:"color_secondary"`
+	ColorTertiary  string             `json:"color_tertiary"`
+	Rounding       int32              `json:"rounding"`
+}
+
+func (q *Queries) GetProjectsByIDs(ctx context.Context, ids []string) ([]*GetProjectsByIDsRow, error) {
+	rows, err := q.db.Query(ctx, GetProjectsByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetProjectsByIDsRow{}
+	for rows.Next() {
+		var i GetProjectsByIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.StartDate,
+			&i.EndDate,
+			&i.LogoUrl,
+			&i.ColorPrimary,
+			&i.ColorSecondary,
+			&i.ColorTertiary,
+			&i.Rounding,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetProjectsByUserIDs = `-- name: GetProjectsByUserIDs :many
 SELECT
     p.id,

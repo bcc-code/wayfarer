@@ -54,6 +54,13 @@ type ArticleInput struct {
 	URL    string `json:"url"`
 }
 
+type AssignRoleInput struct {
+	UserID    string     `json:"userId"`
+	Role      RoleType   `json:"role"`
+	ScopeType *ScopeType `json:"scopeType,omitempty"`
+	ScopeID   *string    `json:"scopeId,omitempty"`
+}
+
 type Branding struct {
 	Logo     string  `json:"logo"`
 	Colors   *Colors `json:"colors"`
@@ -328,6 +335,21 @@ func (this ReadingAchievement) GetAchievedAt() *scalars.DateTime { return this.A
 func (this ReadingAchievement) GetPoints() int                   { return this.Points }
 func (this ReadingAchievement) GetHidden() bool                  { return this.Hidden }
 
+type RevokeRoleInput struct {
+	UserID    string     `json:"userId"`
+	Role      RoleType   `json:"role"`
+	ScopeType *ScopeType `json:"scopeType,omitempty"`
+	ScopeID   *string    `json:"scopeId,omitempty"`
+}
+
+type RoleScope struct {
+	Type    ScopeType `json:"type"`
+	ID      string    `json:"id"`
+	Church  *Church   `json:"church,omitempty"`
+	Project *Project  `json:"project,omitempty"`
+	Team    *Team     `json:"team,omitempty"`
+}
+
 type SimpleAchievement struct {
 	ID          string            `json:"id"`
 	Name        string            `json:"name"`
@@ -495,6 +517,7 @@ type User struct {
 	Events     []Event     `json:"events"`
 	Teams      []Team      `json:"teams"`
 	SuperTeams []SuperTeam `json:"superTeams"`
+	Roles      []UserRole  `json:"roles"`
 }
 
 type UserFilter struct {
@@ -506,6 +529,15 @@ type UserFilter struct {
 	EventID   *string  `json:"eventId,omitempty"`
 	TeamID    *string  `json:"teamId,omitempty"`
 	Ids       []string `json:"ids,omitempty"`
+}
+
+type UserRole struct {
+	ID         string           `json:"id"`
+	User       *User            `json:"user"`
+	Role       RoleType         `json:"role"`
+	Scope      *RoleScope       `json:"scope,omitempty"`
+	AssignedBy *User            `json:"assignedBy"`
+	AssignedAt scalars.DateTime `json:"assignedAt"`
 }
 
 type ChurchCategory string
@@ -729,6 +761,128 @@ func (e *LeaderboardType) UnmarshalJSON(b []byte) error {
 }
 
 func (e LeaderboardType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type RoleType string
+
+const (
+	RoleTypeSuperadmin   RoleType = "SUPERADMIN"
+	RoleTypeAdmin        RoleType = "ADMIN"
+	RoleTypeChurchAdmin  RoleType = "CHURCH_ADMIN"
+	RoleTypeProjectAdmin RoleType = "PROJECT_ADMIN"
+	RoleTypeTeamLead     RoleType = "TEAM_LEAD"
+	RoleTypeUser         RoleType = "USER"
+	RoleTypeM2m          RoleType = "M2M"
+)
+
+var AllRoleType = []RoleType{
+	RoleTypeSuperadmin,
+	RoleTypeAdmin,
+	RoleTypeChurchAdmin,
+	RoleTypeProjectAdmin,
+	RoleTypeTeamLead,
+	RoleTypeUser,
+	RoleTypeM2m,
+}
+
+func (e RoleType) IsValid() bool {
+	switch e {
+	case RoleTypeSuperadmin, RoleTypeAdmin, RoleTypeChurchAdmin, RoleTypeProjectAdmin, RoleTypeTeamLead, RoleTypeUser, RoleTypeM2m:
+		return true
+	}
+	return false
+}
+
+func (e RoleType) String() string {
+	return string(e)
+}
+
+func (e *RoleType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = RoleType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid RoleType", str)
+	}
+	return nil
+}
+
+func (e RoleType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *RoleType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e RoleType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type ScopeType string
+
+const (
+	ScopeTypeChurch  ScopeType = "CHURCH"
+	ScopeTypeProject ScopeType = "PROJECT"
+	ScopeTypeTeam    ScopeType = "TEAM"
+)
+
+var AllScopeType = []ScopeType{
+	ScopeTypeChurch,
+	ScopeTypeProject,
+	ScopeTypeTeam,
+}
+
+func (e ScopeType) IsValid() bool {
+	switch e {
+	case ScopeTypeChurch, ScopeTypeProject, ScopeTypeTeam:
+		return true
+	}
+	return false
+}
+
+func (e ScopeType) String() string {
+	return string(e)
+}
+
+func (e *ScopeType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ScopeType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ScopeType", str)
+	}
+	return nil
+}
+
+func (e ScopeType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ScopeType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ScopeType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

@@ -10,20 +10,22 @@ import (
 
 // RequireRole checks if the user has one of the required roles
 func RequireRole(ctx context.Context, obj any, next graphql.Resolver, roles []string) (any, error) {
-	// Extract user role from context (set by JWT middleware)
-	userRole, ok := ctx.Value(middleware.UserRoleKey).(string)
-	if !ok || userRole == "" {
-		return nil, fmt.Errorf("unauthorized: no role found in context")
+	// Extract user roles from context (set by JWT middleware)
+	userRoles, ok := ctx.Value(middleware.UserRolesKey).([]string)
+	if !ok || len(userRoles) == 0 {
+		return nil, fmt.Errorf("unauthorized: no roles found in context")
 	}
 
-	// Check if user's role matches any of the allowed roles
-	for _, allowedRole := range roles {
-		if userRole == allowedRole {
-			// Role matches, proceed with the resolver
-			return next(ctx)
+	// Check if any of user's roles matches any of the allowed roles
+	for _, userRole := range userRoles {
+		for _, allowedRole := range roles {
+			if userRole == allowedRole {
+				// Role matches, proceed with the resolver
+				return next(ctx)
+			}
 		}
 	}
 
 	// No matching role found
-	return nil, fmt.Errorf("unauthorized: role '%s' is not allowed (required: %v)", userRole, roles)
+	return nil, fmt.Errorf("unauthorized: user roles %v do not match required roles %v", userRoles, roles)
 }

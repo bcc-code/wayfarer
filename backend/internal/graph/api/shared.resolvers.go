@@ -92,6 +92,51 @@ func (r *readingAchievementResolver) Challenge(ctx context.Context, obj *model.R
 	panic(fmt.Errorf("not implemented: Challenge - challenge"))
 }
 
+// Church is the resolver for the church field.
+func (r *roleScopeResolver) Church(ctx context.Context, obj *model.RoleScope) (*model.Church, error) {
+	// Only return church if scope type is CHURCH
+	if obj.Type != model.ScopeTypeChurch {
+		return nil, nil
+	}
+
+	// Use dataloader to fetch church
+	thunk := r.Loaders.ChurchLoader.Load(ctx, obj.ID)
+	church, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load church: %w", err)
+	}
+
+	return church, nil
+}
+
+// Project is the resolver for the project field.
+func (r *roleScopeResolver) Project(ctx context.Context, obj *model.RoleScope) (*model.Project, error) {
+	// Only return project if scope type is PROJECT
+	if obj.Type != model.ScopeTypeProject {
+		return nil, nil
+	}
+
+	// Use dataloader to fetch project
+	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, obj.ID)
+	project, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load project: %w", err)
+	}
+
+	return project, nil
+}
+
+// Team is the resolver for the team field.
+func (r *roleScopeResolver) Team(ctx context.Context, obj *model.RoleScope) (*model.Team, error) {
+	// Only return team if scope type is TEAM
+	if obj.Type != model.ScopeTypeTeam {
+		return nil, nil
+	}
+
+	// TODO: Implement TeamLoader
+	return nil, fmt.Errorf("team loader not yet implemented")
+}
+
 // Project is the resolver for the project field.
 func (r *simpleAchievementResolver) Project(ctx context.Context, obj *model.SimpleAchievement) (*model.Project, error) {
 	panic(fmt.Errorf("not implemented: Project - project"))
@@ -232,6 +277,64 @@ func (r *userResolver) SuperTeams(ctx context.Context, obj *model.User) ([]model
 	panic(fmt.Errorf("not implemented: SuperTeams - superTeams"))
 }
 
+// Roles is the resolver for the roles field.
+func (r *userResolver) Roles(ctx context.Context, obj *model.User) ([]model.UserRole, error) {
+	// Use dataloader to fetch roles for this user
+	thunk := r.Loaders.RolesByUserLoader.Load(ctx, obj.ID)
+	roles, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load roles: %w", err)
+	}
+
+	// Convert []*model.UserRole to []model.UserRole
+	result := make([]model.UserRole, len(roles))
+	for i, role := range roles {
+		result[i] = *role
+	}
+
+	return result, nil
+}
+
+// User is the resolver for the user field.
+func (r *userRoleResolver) User(ctx context.Context, obj *model.UserRole) (*model.User, error) {
+	// The user field contains a partial User object with just the ID
+	// Use the dataloader to fetch the full user data
+	if obj.User == nil {
+		return nil, fmt.Errorf("user ID not set in UserRole")
+	}
+
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.User.ID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	return user, nil
+}
+
+// Scope is the resolver for the scope field.
+func (r *userRoleResolver) Scope(ctx context.Context, obj *model.UserRole) (*model.RoleScope, error) {
+	// The scope is already populated in the dataloader
+	return obj.Scope, nil
+}
+
+// AssignedBy is the resolver for the assignedBy field.
+func (r *userRoleResolver) AssignedBy(ctx context.Context, obj *model.UserRole) (*model.User, error) {
+	// The assignedBy field contains a partial User object with just the ID
+	// Use the dataloader to fetch the full user data
+	if obj.AssignedBy == nil {
+		return nil, fmt.Errorf("assignedBy ID not set in UserRole")
+	}
+
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.AssignedBy.ID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load assignedBy user: %w", err)
+	}
+
+	return user, nil
+}
+
 // Challenge returns ChallengeResolver implementation.
 func (r *Resolver) Challenge() ChallengeResolver { return &challengeResolver{r} }
 
@@ -250,6 +353,9 @@ func (r *Resolver) Project() ProjectResolver { return &projectResolver{r} }
 func (r *Resolver) ReadingAchievement() ReadingAchievementResolver {
 	return &readingAchievementResolver{r}
 }
+
+// RoleScope returns RoleScopeResolver implementation.
+func (r *Resolver) RoleScope() RoleScopeResolver { return &roleScopeResolver{r} }
 
 // SimpleAchievement returns SimpleAchievementResolver implementation.
 func (r *Resolver) SimpleAchievement() SimpleAchievementResolver {
@@ -273,14 +379,19 @@ func (r *Resolver) Team() TeamResolver { return &teamResolver{r} }
 // User returns UserResolver implementation.
 func (r *Resolver) User() UserResolver { return &userResolver{r} }
 
+// UserRole returns UserRoleResolver implementation.
+func (r *Resolver) UserRole() UserRoleResolver { return &userRoleResolver{r} }
+
 type challengeResolver struct{ *Resolver }
 type eventResolver struct{ *Resolver }
 type listeningAchievementResolver struct{ *Resolver }
 type projectResolver struct{ *Resolver }
 type readingAchievementResolver struct{ *Resolver }
+type roleScopeResolver struct{ *Resolver }
 type simpleAchievementResolver struct{ *Resolver }
 type streakResolver struct{ *Resolver }
 type streakAchievementResolver struct{ *Resolver }
 type superTeamResolver struct{ *Resolver }
 type teamResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
+type userRoleResolver struct{ *Resolver }

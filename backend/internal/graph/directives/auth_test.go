@@ -13,7 +13,7 @@ import (
 func TestRequireRole(t *testing.T) {
 	tests := []struct {
 		name           string
-		contextRole    interface{} // Can be string, nil, or other type
+		contextRoles   interface{} // Can be []string, nil, or other type
 		allowedRoles   []string
 		shouldCallNext bool
 		wantErr        bool
@@ -21,95 +21,110 @@ func TestRequireRole(t *testing.T) {
 	}{
 		{
 			name:           "user with matching role",
-			contextRole:    "admin",
+			contextRoles:   []string{"admin"},
 			allowedRoles:   []string{"admin"},
 			shouldCallNext: true,
 			wantErr:        false,
 		},
 		{
 			name:           "user with one of multiple allowed roles",
-			contextRole:    "user",
+			contextRoles:   []string{"user"},
 			allowedRoles:   []string{"admin", "user", "m2m"},
 			shouldCallNext: true,
 			wantErr:        false,
 		},
 		{
 			name:           "user with first allowed role",
-			contextRole:    "admin",
+			contextRoles:   []string{"admin"},
 			allowedRoles:   []string{"admin", "user"},
 			shouldCallNext: true,
 			wantErr:        false,
 		},
 		{
 			name:           "user with last allowed role",
-			contextRole:    "m2m",
+			contextRoles:   []string{"m2m"},
 			allowedRoles:   []string{"admin", "user", "m2m"},
 			shouldCallNext: true,
 			wantErr:        false,
 		},
 		{
+			name:           "user with multiple roles, one matching",
+			contextRoles:   []string{"user", "admin"},
+			allowedRoles:   []string{"admin"},
+			shouldCallNext: true,
+			wantErr:        false,
+		},
+		{
 			name:           "user with mismatched role",
-			contextRole:    "user",
+			contextRoles:   []string{"user"},
 			allowedRoles:   []string{"admin"},
 			shouldCallNext: false,
 			wantErr:        true,
-			expectedError:  "unauthorized: role 'user' is not allowed",
+			expectedError:  "unauthorized: user roles",
 		},
 		{
 			name:           "no role in context",
-			contextRole:    nil,
+			contextRoles:   nil,
 			allowedRoles:   []string{"admin"},
 			shouldCallNext: false,
 			wantErr:        true,
-			expectedError:  "unauthorized: no role found in context",
+			expectedError:  "unauthorized: no roles found in context",
 		},
 		{
-			name:           "empty role string",
-			contextRole:    "",
+			name:           "empty role array",
+			contextRoles:   []string{},
 			allowedRoles:   []string{"admin"},
 			shouldCallNext: false,
 			wantErr:        true,
-			expectedError:  "unauthorized: no role found in context",
+			expectedError:  "unauthorized: no roles found in context",
 		},
 		{
 			name:           "wrong type in context - int",
-			contextRole:    123,
+			contextRoles:   123,
 			allowedRoles:   []string{"admin"},
 			shouldCallNext: false,
 			wantErr:        true,
-			expectedError:  "unauthorized: no role found in context",
+			expectedError:  "unauthorized: no roles found in context",
 		},
 		{
 			name:           "wrong type in context - bool",
-			contextRole:    true,
+			contextRoles:   true,
 			allowedRoles:   []string{"admin"},
 			shouldCallNext: false,
 			wantErr:        true,
-			expectedError:  "unauthorized: no role found in context",
+			expectedError:  "unauthorized: no roles found in context",
+		},
+		{
+			name:           "wrong type in context - string",
+			contextRoles:   "admin",
+			allowedRoles:   []string{"admin"},
+			shouldCallNext: false,
+			wantErr:        true,
+			expectedError:  "unauthorized: no roles found in context",
 		},
 		{
 			name:           "empty allowed roles list",
-			contextRole:    "admin",
+			contextRoles:   []string{"admin"},
 			allowedRoles:   []string{},
 			shouldCallNext: false,
 			wantErr:        true,
-			expectedError:  "unauthorized: role 'admin' is not allowed",
+			expectedError:  "unauthorized: user roles",
 		},
 		{
 			name:           "case sensitive role matching - wrong case",
-			contextRole:    "Admin",
+			contextRoles:   []string{"Admin"},
 			allowedRoles:   []string{"admin"},
 			shouldCallNext: false,
 			wantErr:        true,
-			expectedError:  "unauthorized: role 'Admin' is not allowed",
+			expectedError:  "unauthorized: user roles",
 		},
 		{
 			name:           "case sensitive role matching - uppercase",
-			contextRole:    "ADMIN",
+			contextRoles:   []string{"ADMIN"},
 			allowedRoles:   []string{"admin"},
 			shouldCallNext: false,
 			wantErr:        true,
-			expectedError:  "unauthorized: role 'ADMIN' is not allowed",
+			expectedError:  "unauthorized: user roles",
 		},
 	}
 
@@ -117,8 +132,8 @@ func TestRequireRole(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup context
 			ctx := context.Background()
-			if tt.contextRole != nil {
-				ctx = context.WithValue(ctx, middleware.UserRoleKey, tt.contextRole)
+			if tt.contextRoles != nil {
+				ctx = context.WithValue(ctx, middleware.UserRolesKey, tt.contextRoles)
 			}
 
 			// Track if next was called
@@ -149,7 +164,7 @@ func TestRequireRole(t *testing.T) {
 }
 
 func TestRequireRole_NextResolverError(t *testing.T) {
-	ctx := context.WithValue(context.Background(), middleware.UserRoleKey, "admin")
+	ctx := context.WithValue(context.Background(), middleware.UserRolesKey, []string{"admin"})
 
 	expectedError := fmt.Errorf("resolver error")
 	mockNext := func(ctx context.Context) (interface{}, error) {
@@ -188,7 +203,7 @@ func TestRequireRole_NextResolverReturnsValue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.WithValue(context.Background(), middleware.UserRoleKey, "user")
+			ctx := context.WithValue(context.Background(), middleware.UserRolesKey, []string{"user"})
 
 			mockNext := func(ctx context.Context) (interface{}, error) {
 				return tt.expectedResult, nil
@@ -223,7 +238,7 @@ func TestRequireRole_NextResolverMultipleErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.WithValue(context.Background(), middleware.UserRoleKey, "admin")
+			ctx := context.WithValue(context.Background(), middleware.UserRolesKey, []string{"admin"})
 
 			mockNext := func(ctx context.Context) (interface{}, error) {
 				if tt.resolverError != nil {

@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+import { tokensByUserID } from './tokens.js';
 
 // Test configuration - realistic high-concurrency load
 // Simulates rapid user influx (e.g., youth camp event start)
@@ -57,25 +58,46 @@ const userIDs = [
 // GraphQL query for the me endpoint
 const query = `
   query {
+    projects {
+      id
+    }
     me {
+      roles {
+        id
+        assignedBy {
+          name
+        }
+        role
+        assignedAt
+        scope {
+          id
+          type
+          team {
+            name
+            id
+          }
+          project {
+            name
+            id
+            description
+          }
+        }
+        user {
+          id
+        }
+      }
       id
       name
       email
-      age
-      gender
-      image
       church {
         id
         name
         country
-        category
       }
       projects {
         id
         name
         description
-        startDate
-        endDate
         branding {
           logo
           colors {
@@ -83,21 +105,13 @@ const query = `
             secondary
             tertiary
           }
-          rounding
         }
       }
     }
   }
 `;
 
-const url = 'http://localhost:8080/graphql/user';
-
-// TODO: Generate JWT tokens for each user
-// Map of user ID to JWT token
-const tokensByUserID = {};
-userIDs.forEach(userID => {
-  tokensByUserID[userID] = 'YOUR_JWT_TOKEN_HERE';
-});
+const url = 'http://localhost:8080/graphql';
 
 export default function () {
   // Select a user ID for this virtual user
@@ -126,20 +140,52 @@ export default function () {
   check(res, {
     'status is 200': (r) => r.status === 200,
     'no errors': (r) => {
-      const body = JSON.parse(r.body);
-      return !body.errors;
+      try {
+        const body = JSON.parse(r.body);
+        return !body.errors;
+      } catch (e) {
+        return false;
+      }
     },
     'has user data': (r) => {
-      const body = JSON.parse(r.body);
-      return body.data && body.data.me && body.data.me.id;
+      try {
+        const body = JSON.parse(r.body);
+        return body.data && body.data.me && body.data.me.id;
+      } catch (e) {
+        return false;
+      }
     },
     'has church data': (r) => {
-      const body = JSON.parse(r.body);
-      return body.data && body.data.me && body.data.me.church;
+      try {
+        const body = JSON.parse(r.body);
+        return body.data && body.data.me && body.data.me.church;
+      } catch (e) {
+        return false;
+      }
     },
     'has projects data': (r) => {
-      const body = JSON.parse(r.body);
-      return body.data && body.data.me && Array.isArray(body.data.me.projects);
+      try {
+        const body = JSON.parse(r.body);
+        return body.data && body.data.me && Array.isArray(body.data.me.projects);
+      } catch (e) {
+        return false;
+      }
+    },
+    'has roles data': (r) => {
+      try {
+        const body = JSON.parse(r.body);
+        return body.data && body.data.me && Array.isArray(body.data.me.roles);
+      } catch (e) {
+        return false;
+      }
+    },
+    'has root projects': (r) => {
+      try {
+        const body = JSON.parse(r.body);
+        return body.data && Array.isArray(body.data.projects);
+      } catch (e) {
+        return false;
+      }
     },
   });
 

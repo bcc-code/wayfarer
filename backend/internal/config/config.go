@@ -37,6 +37,7 @@ type DatabaseConfig struct {
 	MaxIdleConns    int
 	ConnMaxLifetime time.Duration
 	ConnMaxIdleTime time.Duration
+	LogQueries      bool // Enable query logging for debugging
 }
 
 // JWTConfig holds JWT authentication configuration
@@ -86,6 +87,7 @@ func Load() (*Config, error) {
 			MaxIdleConns:    getEnvAsInt("DB_MAX_IDLE_CONNS", 5),
 			ConnMaxLifetime: getEnvAsDuration("DB_CONN_MAX_LIFETIME", 5*time.Minute),
 			ConnMaxIdleTime: getEnvAsDuration("DB_CONN_MAX_IDLE_TIME", 5*time.Minute),
+			LogQueries:      getEnvAsBool("DB_LOG_QUERIES", false),
 		},
 		JWT: JWTConfig{
 			Secret:           getEnv("JWT_SECRET", ""),
@@ -142,6 +144,18 @@ func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
 		return defaultValue
 	}
 	value, err := time.ParseDuration(valueStr)
+	if err != nil {
+		return defaultValue
+	}
+	return value
+}
+
+func getEnvAsBool(key string, defaultValue bool) bool {
+	valueStr := os.Getenv(key)
+	if valueStr == "" {
+		return defaultValue
+	}
+	value, err := strconv.ParseBool(valueStr)
 	if err != nil {
 		return defaultValue
 	}

@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+import { tokensByUserID } from './tokens.js';
 
 // Test configuration
 export const options = {
@@ -14,25 +15,46 @@ export const options = {
 // GraphQL query for the me endpoint
 const query = `
   query {
+    projects {
+      id
+    }
     me {
+      roles {
+        id
+        assignedBy {
+          name
+        }
+        role
+        assignedAt
+        scope {
+          id
+          type
+          team {
+            name
+            id
+          }
+          project {
+            name
+            id
+            description
+          }
+        }
+        user {
+          id
+        }
+      }
       id
       name
       email
-      age
-      gender
-      image
       church {
         id
         name
         country
-        category
       }
       projects {
         id
         name
         description
-        startDate
-        endDate
         branding {
           logo
           colors {
@@ -40,19 +62,22 @@ const query = `
             secondary
             tertiary
           }
-          rounding
         }
       }
     }
   }
 `;
 
-const url = 'http://localhost:8080/graphql/user';
+const url = 'http://localhost:8080/graphql';
 
-// TODO: Replace with a valid JWT token for testing
-const token = 'YOUR_JWT_TOKEN_HERE';
+// Get a random user ID for this virtual user
+const userIDs = Object.keys(tokensByUserID);
 
 export default function () {
+  // Select a random user for each request
+  const userID = userIDs[Math.floor(Math.random() * userIDs.length)];
+  const token = tokensByUserID[userID];
+
   const payload = JSON.stringify({
     query: query,
   });
@@ -62,6 +87,9 @@ export default function () {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
+    tags: {
+      user_id: userID,
+    },
   };
 
   const res = http.post(url, payload, params);
@@ -70,20 +98,52 @@ export default function () {
   check(res, {
     'status is 200': (r) => r.status === 200,
     'no errors': (r) => {
-      const body = JSON.parse(r.body);
-      return !body.errors;
+      try {
+        const body = JSON.parse(r.body);
+        return !body.errors;
+      } catch (e) {
+        return false;
+      }
     },
     'has user data': (r) => {
-      const body = JSON.parse(r.body);
-      return body.data && body.data.me && body.data.me.id;
+      try {
+        const body = JSON.parse(r.body);
+        return body.data && body.data.me && body.data.me.id;
+      } catch (e) {
+        return false;
+      }
     },
     'has church data': (r) => {
-      const body = JSON.parse(r.body);
-      return body.data && body.data.me && body.data.me.church;
+      try {
+        const body = JSON.parse(r.body);
+        return body.data && body.data.me && body.data.me.church;
+      } catch (e) {
+        return false;
+      }
     },
     'has projects data': (r) => {
-      const body = JSON.parse(r.body);
-      return body.data && body.data.me && Array.isArray(body.data.me.projects);
+      try {
+        const body = JSON.parse(r.body);
+        return body.data && body.data.me && Array.isArray(body.data.me.projects);
+      } catch (e) {
+        return false;
+      }
+    },
+    'has roles data': (r) => {
+      try {
+        const body = JSON.parse(r.body);
+        return body.data && body.data.me && Array.isArray(body.data.me.roles);
+      } catch (e) {
+        return false;
+      }
+    },
+    'has root projects': (r) => {
+      try {
+        const body = JSON.parse(r.body);
+        return body.data && Array.isArray(body.data.projects);
+      } catch (e) {
+        return false;
+      }
     },
   });
 

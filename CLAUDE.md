@@ -18,6 +18,7 @@ All primary keys use prefixed ULIDs for better readability and debugging:
 
 - `CH` - Churches
 - `US` - Users
+- `UR` - User Roles
 - `PR` - Projects
 - `EV` - Events
 - `ST` - SuperTeams

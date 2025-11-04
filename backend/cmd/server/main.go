@@ -17,6 +17,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/bcc-media/wayfarer/internal/auth0"
+	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/graph/api"
@@ -26,6 +27,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/logger"
 	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/sony/gobreaker/v2"
@@ -89,12 +91,30 @@ func main() {
 		slog.Warn("Members API client not initialized - missing configuration")
 	}
 
+	// Initialize cache with default configuration
+	cacheInstance, err := cache.NewCacheWithRegistry(cache.DefaultConfig())
+	if err != nil {
+		slog.Error("Failed to initialize cache", "error", err)
+		os.Exit(1)
+	}
+	defer cacheInstance.Close()
+	slog.Info("Cache initialized", "default_ttl", "15m", "max_cost", "100MB")
+
 	// Initialize DataLoaders (shared globally across all requests)
-	dataLoaders := loaders.NewLoaders(db)
+	dataLoaders := loaders.NewLoaders(db, cacheInstance)
 	slog.Info("DataLoaders initialized with global caching")
 
+	// Initialize RoleService
+	roleService := services.NewRoleService(db.Queries)
+	slog.Info("RoleService initialized")
+
 	// Initialize GraphQL resolver
-	apiResolver := &api.Resolver{DB: db, Loaders: dataLoaders}
+	apiResolver := &api.Resolver{
+		DB:          db,
+		Loaders:     dataLoaders,
+		Cache:       cacheInstance,
+		RoleService: roleService,
+	}
 
 	apiHandler := handler.New(api.NewExecutableSchema(api.Config{
 		Resolvers: apiResolver,
@@ -135,12 +155,41 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
+	// Cache metrics endpoint
+	router.GET("/metrics/cache", func(c *gin.Context) {
+		metrics := cacheInstance.Metrics()
+		hits := metrics.Hits()
+		misses := metrics.Misses()
+		total := hits + misses
+
+		var hitRate float64
+		if total > 0 {
+			hitRate = float64(hits) / float64(total)
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"hits":         hits,
+			"misses":       misses,
+			"total":        total,
+			"hit_rate":     hitRate,
+			"hit_rate_pct": hitRate * 100,
+			"cost_added":   metrics.CostAdded(),
+			"cost_evicted": metrics.CostEvicted(),
+			"keys_added":   metrics.KeysAdded(),
+			"keys_updated": metrics.KeysUpdated(),
+			"keys_evicted": metrics.KeysEvicted(),
+			"sets_dropped": metrics.SetsDropped(),
+			"sets_rejected": metrics.SetsRejected(),
+		})
+	})
+
 	// Authentication callback endpoint (no JWT middleware)
 	authHandler := &handlers.AuthHandler{
 		DB:            db,
 		Cfg:           cfg,
 		JWKS:          jwks,
 		MembersClient: membersClient,
+		RoleService:   roleService,
 	}
 	router.GET("/callback", authHandler.Callback)
 
@@ -206,9 +255,9 @@ func graphqlHandler(h *handler.Server) gin.HandlerFunc {
 			ctx = context.WithValue(ctx, middleware.UserIDKey, userID)
 		}
 
-		// Transfer user_role if present
-		if userRole, exists := c.Get("user_role"); exists {
-			ctx = context.WithValue(ctx, middleware.UserRoleKey, userRole)
+		// Transfer user_roles if present
+		if userRoles, exists := c.Get("user_roles"); exists {
+			ctx = context.WithValue(ctx, middleware.UserRolesKey, userRoles)
 		}
 
 		// Create new request with updated context
