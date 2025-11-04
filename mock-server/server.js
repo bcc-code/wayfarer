@@ -473,7 +473,7 @@ const yoga = createYoga({
 
 // Create and start the server
 const server = createServer(yoga);
-const port = 4000;
+const port = 8080;
 
 server.listen(port, () => {
   console.log(`🚀 Mock GraphQL server ready at: http://localhost:${port}/graphql`);
