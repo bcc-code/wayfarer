@@ -3,16 +3,31 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
-  const { me, isLoading } = useAuth()
+  const { me, isLoading, token, loginWithRedirect } = useAuth()
 
-  if (isLoading.value) {
-    await new Promise((resolve) => setTimeout(resolve, 10))
+  // If no token, redirect to login
+  if (!token.value) {
+    return loginWithRedirect()
   }
 
-  if (!me.value?.roles.some((role) => role.role === RoleType.Superadmin)) {
+  // Wait for auth to complete (with timeout)
+  let attempts = 0
+  while (isLoading.value && attempts < 100) {
+    // Max 1 second
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    attempts++
+  }
+
+  // If still loading or no user data, something went wrong
+  if (!me.value) {
+    return loginWithRedirect()
+  }
+
+  // Check for superadmin role
+  if (!me.value.roles.some((role) => role.role === RoleType.Superadmin)) {
     return createError({
       statusCode: 403,
-      statusMessage: 'Unauthorized',
+      statusMessage: 'Forbidden',
       message: 'You do not have permission to access this page',
     })
   }
