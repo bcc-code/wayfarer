@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useAdminHomePageQuery } from '~/api/generated'
-
 definePageMeta({
   layout: 'admin',
 })

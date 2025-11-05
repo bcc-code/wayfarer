@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
-import { useCurrentProjectQuery } from '~/api/generated'
 
 const links = [
   {

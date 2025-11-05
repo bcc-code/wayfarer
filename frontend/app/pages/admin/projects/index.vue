@@ -1,26 +1,24 @@
 <script setup lang="ts">
-import { useAdminProjectsPageQuery } from '~/api/generated'
-
 definePageMeta({
   layout: 'admin',
 })
 
 gql(`
-query AdminProjectsPage {
-  projects {
-    id
-    name
-    description
-    endDate
-    startDate
-    branding {
-      logo
-      colors {
-        primary
+  query AdminProjectsPage {
+    projects {
+      id
+      name
+      description
+      endDate
+      startDate
+      branding {
+        logo
+        colors {
+          primary
+        }
       }
     }
   }
-}
 `)
 
 const { data, error, fetching } = useAdminProjectsPageQuery()

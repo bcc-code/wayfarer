@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
-import { useAdminSidebarQuery } from '~/api/generated'
 
 gql(`
   query AdminSidebar {

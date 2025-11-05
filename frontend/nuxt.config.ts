@@ -31,6 +31,9 @@ export default defineNuxtConfig({
       ],
     },
   },
+  imports: {
+    dirs: ['api'],
+  },
   runtimeConfig: {
     public: {
       apiUrl: 'http://localhost:8080/graphql',

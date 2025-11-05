@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import type { AdminProjectsPageQuery } from '~/api/generated'
-
 defineProps<{
-  project: AdminProjectsPageQuery['admin']['projects'][number]
+  project: AdminProjectsPageQuery['projects'][number]
 }>()
 </script>
 

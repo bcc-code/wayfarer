@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useProfilePageQuery } from '~/api/generated'
-
 gql(`
 query ProfilePage {
   me {

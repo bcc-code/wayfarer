@@ -1,5 +1,3 @@
-import { useGetMeQuery, type GetMeQuery } from '~/api/generated'
-
 gql(`
   query GetMe {
     me {

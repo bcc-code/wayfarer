@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useUnitPageQuery } from '~/api/generated'
-
 gql(`
 query UnitPage {
   currentProject {

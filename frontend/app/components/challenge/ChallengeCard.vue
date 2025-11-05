@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import type { ChallengesPageQuery } from '~/api/generated'
-
 defineProps<{
-  challenge: ChallengesPageQuery['user']['currentProject']['challenges'][number]
+  challenge: ChallengesPageQuery['currentProject']['challenges'][number]
 }>()
 </script>
 

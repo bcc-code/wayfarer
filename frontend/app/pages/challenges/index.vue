@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useChallengesPageQuery } from '~/api/generated'
-
 gql(`
 query ChallengesPage {
   currentProject {

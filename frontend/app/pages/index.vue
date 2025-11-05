@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useStandingsPageQuery } from '~/api/generated'
-
 gql(`
 query StandingsPage {
   currentProject {

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useCreateProjectMutation } from '~/api/generated'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import z from 'zod'
 
