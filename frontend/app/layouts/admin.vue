@@ -77,7 +77,7 @@ onMounted(() => {
 <template>
   <div>
     <header class="border-b border-default">
-      <UContainer class="flex gap-8 items-center">
+      <UContainer class="flex gap-6 lg:gap-12 items-center">
         <NuxtLink to="/admin" class="font-serif text-xl text-primary">
           Wayfarer
         </NuxtLink>

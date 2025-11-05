@@ -19,8 +19,8 @@ const items = computed<DropdownMenuItem[][]>(() => [
   ],
   [
     {
-      label: 'Appearance',
-      icon: 'lucide:sun-moon',
+      label: colorMode.value === 'dark' ? 'Dark' : 'Light',
+      icon: colorMode.value === 'dark' ? 'lucide:moon' : 'lucide:sun',
       children: [
         {
           label: 'Light',

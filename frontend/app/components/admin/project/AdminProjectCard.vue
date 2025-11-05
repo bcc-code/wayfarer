@@ -6,12 +6,15 @@ defineProps<{
 
 <template>
   <UCard
-    class="aspect-video shadow"
+    class="aspect-video shadow-md"
     :style="{ '--accent': project.branding.colors.primary }"
     :ui="{
-      root: project.branding.colors.primary && 'ring-(--accent)/25',
+      root:
+        project.branding.colors.primary &&
+        'ring-(--accent)/25 hover:ring-(--accent)/50',
       body: [
-        project.branding.colors.primary && 'bg-(--accent)/5',
+        project.branding.colors.primary &&
+          'bg-(--accent)/5 hover:bg-(--accent)/10',
         'h-full flex gap-2',
       ],
     }"
