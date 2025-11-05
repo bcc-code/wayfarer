@@ -4,6 +4,7 @@ import z from 'zod'
 
 definePageMeta({
   layout: 'admin',
+  middleware: 'admin',
 })
 
 gql(`

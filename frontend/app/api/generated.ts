@@ -1217,7 +1217,7 @@ export type AdminUsersPageQuery = { __typename?: 'Query', users: Array<{ __typen
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ChallengesPageQuery = { __typename?: 'Query', currentProject: { __typename?: 'Project', challenges: Array<{ __typename?: 'Challenge', id: string, name: string, description: any, userCompletedAt?: any | null, image: string, url: string, buttonText: string, publishedAt: any, endTime?: any | null }> } };
+export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', challenges: Array<{ __typename?: 'Challenge', id: string, name: string, description: any, userCompletedAt?: any | null, image: string, url: string, buttonText: string, publishedAt: any, endTime?: any | null }> } };
 
 export type StandingsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1447,7 +1447,7 @@ export function useAdminUsersPageQuery(options?: Omit<Urql.UseQueryArgs<never, A
 };
 export const ChallengesPageDocument = gql`
     query ChallengesPage {
-  currentProject {
+  myCurrentProject {
     challenges {
       id
       name

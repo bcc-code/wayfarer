@@ -37,6 +37,12 @@ const links = computed<NavigationMenuItem[]>(() => [
     active: route.fullPath.includes('/projects'),
     to: '/admin/projects',
   },
+  {
+    label: 'Users',
+    icon: 'lucide:users',
+    active: route.fullPath.includes('/users'),
+    to: '/admin/users',
+  },
 ])
 
 const groups = computed(() => [

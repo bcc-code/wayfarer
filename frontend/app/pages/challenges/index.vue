@@ -1,25 +1,25 @@
 <script setup lang="ts">
 gql(`
-query ChallengesPage {
-  currentProject {
-    challenges {
-      id
-      name
-      description
-      userCompletedAt
-      image
-      url
-      buttonText
-      publishedAt
-      endTime
+  query ChallengesPage {
+    myCurrentProject {
+      challenges {
+        id
+        name
+        description
+        userCompletedAt
+        image
+        url
+        buttonText
+        publishedAt
+        endTime
+      }
     }
   }
-}
 `)
 
 const { data, fetching, error } = useChallengesPageQuery()
 const relevantChallenges = computed(() => {
-  const notCompleted = data.value?.currentProject.challenges.filter(
+  const notCompleted = data.value?.myCurrentProject.challenges.filter(
     (challenge) => !challenge.userCompletedAt,
   )
   const notEnded = notCompleted?.filter(
