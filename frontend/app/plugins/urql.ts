@@ -40,7 +40,6 @@ export default defineNuxtPlugin((plugin) => {
           },
           resolvers: {
             Query: {
-              projects: relayPagination(),
               users: relayPagination(),
             },
           },

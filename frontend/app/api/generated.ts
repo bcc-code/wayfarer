@@ -914,6 +914,8 @@ export type QueryUserRolesArgs = {
 
 export type QueryUsersArgs = {
   filter?: InputMaybe<UserFilter>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -1207,6 +1209,11 @@ export type CreateProjectMutationVariables = Exact<{
 
 export type CreateProjectMutation = { __typename?: 'Mutation', createProject: { __typename?: 'Project', id: string } };
 
+export type AdminUsersPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminUsersPageQuery = { __typename?: 'Query', users: Array<{ __typename?: 'User', id: string, name: string }> };
+
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1425,6 +1432,18 @@ export const CreateProjectDocument = gql`
 
 export function useCreateProjectMutation() {
   return Urql.useMutation<CreateProjectMutation, CreateProjectMutationVariables>(CreateProjectDocument);
+};
+export const AdminUsersPageDocument = gql`
+    query AdminUsersPage {
+  users {
+    id
+    name
+  }
+}
+    `;
+
+export function useAdminUsersPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminUsersPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminUsersPageQuery, AdminUsersPageQueryVariables | undefined>({ query: AdminUsersPageDocument, variables: undefined, ...options });
 };
 export const ChallengesPageDocument = gql`
     query ChallengesPage {
