@@ -6,55 +6,55 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bcc-media/wayfarer/internal/database"
+	"github.com/bcc-media/wayfarer/internal/ulid"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/bcc-media/wayfarer/internal/database"
-	"github.com/bcc-media/wayfarer/internal/ulid"
 )
 
 type roleFormModel struct {
-	db              *database.DB
-	fields          []string
-	cursor          int
-	roles           []string
-	roleIdx         int
-	users           []string
-	allUsers        []string
-	userIdx         int
-	userFilter      string
-	assigners       []string
-	allAssigners    []string
-	assignerIdx     int
-	assignerFilter  string
-	churches        []string
-	churchIdx       int
-	projects        []string
-	projectIdx      int
-	teams           []string
-	teamIdx         int
-	loadingMsg      string
-	scopeHelp       string
+	db             *database.DB
+	fields         []string
+	cursor         int
+	roles          []string
+	roleIdx        int
+	users          []string
+	allUsers       []string
+	userIdx        int
+	userFilter     string
+	assigners      []string
+	allAssigners   []string
+	assignerIdx    int
+	assignerFilter string
+	churches       []string
+	churchIdx      int
+	projects       []string
+	projectIdx     int
+	teams          []string
+	teamIdx        int
+	loadingMsg     string
+	scopeHelp      string
 }
 
 func newRoleForm(db *database.DB) *roleFormModel {
 	form := &roleFormModel{
 		db: db,
 		// Fields in order: role, user, assigner, then scope fields
-		fields:     []string{"role", "user", "assigned_by", "church", "project", "team"},
-		cursor:     0,
-		roles:      []string{"SUPERADMIN", "ADMIN", "CHURCH_ADMIN", "PROJECT_ADMIN", "TEAM_LEAD", "USER", "M2M"},
-		roleIdx:    5, // Default to USER
-		users:      []string{},
-		userIdx:    0,
-		assigners:  []string{},
+		fields:      []string{"role", "user", "assigned_by", "church", "project", "team"},
+		cursor:      0,
+		roles:       []string{"SUPERADMIN", "ADMIN", "CHURCH_ADMIN", "PROJECT_ADMIN", "TEAM_LEAD", "USER", "M2M"},
+		roleIdx:     5, // Default to USER
+		users:       []string{},
+		userIdx:     0,
+		assigners:   []string{},
 		assignerIdx: 0,
-		churches:   []string{"(none)"},
-		churchIdx:  0,
-		projects:   []string{"(none)"},
-		projectIdx: 0,
-		teams:      []string{"(none)"},
-		teamIdx:    0,
+		churches:    []string{"(none)"},
+		churchIdx:   0,
+		projects:    []string{"(none)"},
+		projectIdx:  0,
+		teams:       []string{"(none)"},
+		teamIdx:     0,
 	}
 
 	form.updateScopeHelp()

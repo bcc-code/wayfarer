@@ -7,25 +7,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bcc-media/wayfarer/internal/database"
+	"github.com/bcc-media/wayfarer/internal/ulid"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jaswdr/faker"
-	"github.com/bcc-media/wayfarer/internal/database"
-	"github.com/bcc-media/wayfarer/internal/ulid"
 )
 
 type userFormModel struct {
-	db          *database.DB
-	fields      []string
-	cursor      int
-	values      map[string]string
-	genders     []string
-	genderIdx   int
-	churches    []string
-	churchIdx   int
-	fake        faker.Faker
-	loadingMsg  string
+	db         *database.DB
+	fields     []string
+	cursor     int
+	values     map[string]string
+	genders    []string
+	genderIdx  int
+	churches   []string
+	churchIdx  int
+	fake       faker.Faker
+	loadingMsg string
 }
 
 func newUserForm(db *database.DB) *userFormModel {

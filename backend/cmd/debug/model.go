@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bcc-media/wayfarer/internal/database"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/bcc-media/wayfarer/internal/database"
 )
 
 // Screen represents different screens in the TUI

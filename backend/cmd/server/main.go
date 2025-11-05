@@ -168,17 +168,17 @@ func main() {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"hits":         hits,
-			"misses":       misses,
-			"total":        total,
-			"hit_rate":     hitRate,
-			"hit_rate_pct": hitRate * 100,
-			"cost_added":   metrics.CostAdded(),
-			"cost_evicted": metrics.CostEvicted(),
-			"keys_added":   metrics.KeysAdded(),
-			"keys_updated": metrics.KeysUpdated(),
-			"keys_evicted": metrics.KeysEvicted(),
-			"sets_dropped": metrics.SetsDropped(),
+			"hits":          hits,
+			"misses":        misses,
+			"total":         total,
+			"hit_rate":      hitRate,
+			"hit_rate_pct":  hitRate * 100,
+			"cost_added":    metrics.CostAdded(),
+			"cost_evicted":  metrics.CostEvicted(),
+			"keys_added":    metrics.KeysAdded(),
+			"keys_updated":  metrics.KeysUpdated(),
+			"keys_evicted":  metrics.KeysEvicted(),
+			"sets_dropped":  metrics.SetsDropped(),
 			"sets_rejected": metrics.SetsRejected(),
 		})
 	})

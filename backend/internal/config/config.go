@@ -42,10 +42,10 @@ type DatabaseConfig struct {
 
 // JWTConfig holds JWT authentication configuration
 type JWTConfig struct {
-	Secret           string
-	Issuer           string
+	Secret            string
+	Issuer            string
 	BrunstadTVJWKSURL string
-	BrunstadTVIssuer string
+	BrunstadTVIssuer  string
 }
 
 // LogConfig holds logging configuration
@@ -90,10 +90,10 @@ func Load() (*Config, error) {
 			LogQueries:      getEnvAsBool("DB_LOG_QUERIES", false),
 		},
 		JWT: JWTConfig{
-			Secret:           getEnv("JWT_SECRET", ""),
-			Issuer:           getEnv("JWT_ISSUER", "wayfarer"),
+			Secret:            getEnv("JWT_SECRET", ""),
+			Issuer:            getEnv("JWT_ISSUER", "wayfarer"),
 			BrunstadTVJWKSURL: getEnv("BRUNSTAD_TV_JWKS_URL", "https://api.brunstad.tv/.well-known/jwks.json"),
-			BrunstadTVIssuer: getEnv("BRUNSTAD_TV_JWT_ISSUER", "https://api.brunstad.tv/"),
+			BrunstadTVIssuer:  getEnv("BRUNSTAD_TV_JWT_ISSUER", "https://api.brunstad.tv/"),
 		},
 		Log: LogConfig{
 			Level:  getEnv("LOG_LEVEL", "info"),

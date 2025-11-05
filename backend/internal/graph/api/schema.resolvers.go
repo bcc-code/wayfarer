@@ -401,8 +401,8 @@ func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error
 
 	// Check permissions
 	allowed := false
-	allowed = allowed || currentUserID == id                                                      // User accessing themselves
-	allowed = allowed || isAdmin                                                                  // Admin or SuperAdmin
+	allowed = allowed || currentUserID == id                                                       // User accessing themselves
+	allowed = allowed || isAdmin                                                                   // Admin or SuperAdmin
 	allowed = allowed || r.RoleService.CanManageChurch(ctx, currentUserID, requestedUser.ChurchID) // Church Admin for user's church
 
 	if !allowed {

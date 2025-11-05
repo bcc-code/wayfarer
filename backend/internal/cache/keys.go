@@ -9,15 +9,15 @@ import (
 // These prefixes enable tag-based invalidation by matching prefix patterns
 const (
 	// Core entities
-	PrefixUser       = "user:"
-	PrefixChurch     = "church:"
-	PrefixProject    = "project:"
-	PrefixEvent      = "event:"
-	PrefixTeam       = "team:"
-	PrefixSuperTeam  = "superteam:"
-	PrefixChallenge  = "challenge:"
+	PrefixUser        = "user:"
+	PrefixChurch      = "church:"
+	PrefixProject     = "project:"
+	PrefixEvent       = "event:"
+	PrefixTeam        = "team:"
+	PrefixSuperTeam   = "superteam:"
+	PrefixChallenge   = "challenge:"
 	PrefixAchievement = "achievement:"
-	PrefixStreak     = "streak:"
+	PrefixStreak      = "streak:"
 
 	// Relationship/Junction tables
 	PrefixUserProjects = "userprojects:"

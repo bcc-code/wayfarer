@@ -6,9 +6,9 @@ import (
 	"log"
 	"os"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func main() {

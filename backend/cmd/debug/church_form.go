@@ -6,19 +6,19 @@ import (
 	"math/rand"
 	"strings"
 
+	"github.com/bcc-media/wayfarer/internal/ulid"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/jaswdr/faker"
-	"github.com/bcc-media/wayfarer/internal/ulid"
 )
 
 type churchFormModel struct {
-	fields       []string
-	cursor       int
-	values       map[string]string
-	categories   []string
-	categoryIdx  int
-	fake         faker.Faker
+	fields      []string
+	cursor      int
+	values      map[string]string
+	categories  []string
+	categoryIdx int
+	fake        faker.Faker
 }
 
 func newChurchForm() *churchFormModel {

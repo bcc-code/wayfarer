@@ -27,7 +27,7 @@ func init() {
 // generateTestToken creates a valid test JWT token
 func generateTestToken(userID, userRole string, expiresIn time.Duration) string {
 	claims := WayfarerClaims{
-		UserID:   userID,
+		UserID:    userID,
 		UserRoles: []string{userRole},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    testJWTConfig.Issuer,
@@ -44,7 +44,7 @@ func generateTestToken(userID, userRole string, expiresIn time.Duration) string 
 // generateExpiredToken creates an expired test JWT token
 func generateExpiredToken(userID, userRole string) string {
 	claims := WayfarerClaims{
-		UserID:   userID,
+		UserID:    userID,
 		UserRoles: []string{userRole},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    testJWTConfig.Issuer,
@@ -61,7 +61,7 @@ func generateExpiredToken(userID, userRole string) string {
 // generateTokenWithWrongSecret creates a token signed with wrong secret
 func generateTokenWithWrongSecret(userID, userRole string) string {
 	claims := WayfarerClaims{
-		UserID:   userID,
+		UserID:    userID,
 		UserRoles: []string{userRole},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    testJWTConfig.Issuer,
@@ -78,7 +78,7 @@ func generateTokenWithWrongSecret(userID, userRole string) string {
 // generateTokenWithWrongIssuer creates a token with wrong issuer
 func generateTokenWithWrongIssuer(userID, userRole string) string {
 	claims := WayfarerClaims{
-		UserID:   userID,
+		UserID:    userID,
 		UserRoles: []string{userRole},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "wrong-issuer",
