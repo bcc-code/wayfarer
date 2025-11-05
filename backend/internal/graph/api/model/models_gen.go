@@ -68,8 +68,9 @@ type Branding struct {
 }
 
 type BrandingInput struct {
-	Logo   string       `json:"logo"`
-	Colors *ColorsInput `json:"colors"`
+	Logo     string       `json:"logo"`
+	Colors   *ColorsInput `json:"colors"`
+	Rounding int          `json:"rounding"`
 }
 
 type Challenge struct {
@@ -151,7 +152,7 @@ type CreateListeningAchievementInput struct {
 
 type CreateProjectInput struct {
 	Name        string           `json:"name"`
-	Description string           `json:"description"`
+	Description *string          `json:"description,omitempty"`
 	StartDate   scalars.DateTime `json:"startDate"`
 	EndDate     scalars.DateTime `json:"endDate"`
 	Branding    *BrandingInput   `json:"branding"`

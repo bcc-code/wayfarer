@@ -2954,6 +2954,7 @@ input AgeRangeInput {
 input BrandingInput {
     logo: String!
     colors: ColorsInput!
+    rounding: Int!
 }
 
 input ColorsInput {
@@ -2976,7 +2977,7 @@ input TrackInput {
 
 input CreateProjectInput {
     name: String!
-    description: String!
+    description: String
     startDate: DateTime!
     endDate: DateTime!
     branding: BrandingInput!
@@ -18345,7 +18346,7 @@ func (ec *executionContext) unmarshalInputBrandingInput(ctx context.Context, obj
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"logo", "colors"}
+	fieldsInOrder := [...]string{"logo", "colors", "rounding"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -18366,6 +18367,13 @@ func (ec *executionContext) unmarshalInputBrandingInput(ctx context.Context, obj
 				return it, err
 			}
 			it.Colors = data
+		case "rounding":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rounding"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Rounding = data
 		}
 	}
 
@@ -18725,7 +18733,7 @@ func (ec *executionContext) unmarshalInputCreateProjectInput(ctx context.Context
 			it.Name = data
 		case "description":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
