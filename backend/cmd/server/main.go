@@ -105,8 +105,8 @@ func main() {
 	slog.Info("DataLoaders initialized with global caching")
 
 	// Initialize RoleService
-	roleService := services.NewRoleService(db.Queries)
-	slog.Info("RoleService initialized")
+	roleService := services.NewRoleService(db.Queries, cacheInstance)
+	slog.Info("RoleService initialized with caching")
 
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{

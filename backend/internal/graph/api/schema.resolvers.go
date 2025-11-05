@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
@@ -430,6 +431,18 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, fir
 	// Apply permission-based filters
 	filter = applyPermissionFilters(filter, perms)
 
+	// Build cache key from filter and pagination parameters
+	cacheKeyParams := buildCacheKeyParams(filter, first, after, last, before)
+	cacheKey := cache.UsersFilterKey(cacheKeyParams)
+	countCacheKey := cache.UsersCountKey(cacheKeyParams)
+
+	// Check cache for connection result
+	if cached, ok := r.Cache.Get(cacheKey); ok {
+		if connection, ok := cached.(*model.UserConnection); ok {
+			return connection, nil
+		}
+	}
+
 	// Decode cursors if provided
 	var afterCursor, beforeCursor *string
 	if after != nil && *after != "" {
@@ -459,11 +472,26 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, fir
 		return nil, fmt.Errorf("failed to query users: %w", err)
 	}
 
-	// Query total count
-	countParams := buildCountFilterParams(filter)
-	totalCount, err := r.DB.Queries.CountUsersFiltered(ctx, countParams)
-	if err != nil {
-		return nil, fmt.Errorf("failed to count users: %w", err)
+	// Query total count (check cache first)
+	var totalCount int64
+	countCached := false
+	if cachedCount, ok := r.Cache.Get(countCacheKey); ok {
+		if count, ok := cachedCount.(int64); ok {
+			totalCount = count
+			countCached = true
+		}
+	}
+
+	// If not in cache, query database
+	if !countCached {
+		countParams := buildCountFilterParams(filter)
+		totalCount, err = r.DB.Queries.CountUsersFiltered(ctx, countParams)
+		if err != nil {
+			return nil, fmt.Errorf("failed to count users: %w", err)
+		}
+
+		// Store count in cache
+		r.Cache.Set(countCacheKey, totalCount)
 	}
 
 	// Determine requested limit and check if there are more results
@@ -516,6 +544,9 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, fir
 		TotalCount:      int(totalCount),
 		HasMore:         hasMore,
 	})
+
+	// Store connection in cache
+	r.Cache.Set(cacheKey, connection)
 
 	return connection, nil
 }

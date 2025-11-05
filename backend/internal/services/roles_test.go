@@ -9,13 +9,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/services/mocks"
 )
 
+// newTestCache creates a cache instance for testing
+func newTestCache() *cache.CacheWithRegistry {
+	c, _ := cache.NewCacheWithRegistry(cache.DefaultConfig())
+	return c
+}
+
 func TestCanAssignRole_SuperAdminCanAssignAnything(t *testing.T) {
 	mockQueries := mocks.NewMockRoleQuerier(t)
-	service := NewRoleService(mockQueries)
+	service := NewRoleService(mockQueries, newTestCache())
 
 	ctx := context.Background()
 	assignerID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -39,7 +46,7 @@ func TestCanAssignRole_SuperAdminCanAssignAnything(t *testing.T) {
 
 func TestCanAssignRole_AdminCanAssignLimitedRoles(t *testing.T) {
 	mockQueries := mocks.NewMockRoleQuerier(t)
-	service := NewRoleService(mockQueries)
+	service := NewRoleService(mockQueries, newTestCache())
 
 	ctx := context.Background()
 	assignerID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -76,7 +83,7 @@ func TestCanAssignRole_AdminCanAssignLimitedRoles(t *testing.T) {
 
 func TestCanAssignRole_ChurchAdminCanAssignTeamLead(t *testing.T) {
 	mockQueries := mocks.NewMockRoleQuerier(t)
-	service := NewRoleService(mockQueries)
+	service := NewRoleService(mockQueries, newTestCache())
 
 	ctx := context.Background()
 	assignerID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -118,7 +125,7 @@ func TestCanAssignRole_ChurchAdminCanAssignTeamLead(t *testing.T) {
 
 func TestIsAdmin_ReturnsTrueForSuperAdmin(t *testing.T) {
 	mockQueries := mocks.NewMockRoleQuerier(t)
-	service := NewRoleService(mockQueries)
+	service := NewRoleService(mockQueries, newTestCache())
 
 	ctx := context.Background()
 	userID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -136,7 +143,7 @@ func TestIsAdmin_ReturnsTrueForSuperAdmin(t *testing.T) {
 
 func TestIsAdmin_ReturnsTrueForAdmin(t *testing.T) {
 	mockQueries := mocks.NewMockRoleQuerier(t)
-	service := NewRoleService(mockQueries)
+	service := NewRoleService(mockQueries, newTestCache())
 
 	ctx := context.Background()
 	userID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -160,7 +167,7 @@ func TestIsAdmin_ReturnsTrueForAdmin(t *testing.T) {
 
 func TestCanManageProject_AdminCanManageAnyProject(t *testing.T) {
 	mockQueries := mocks.NewMockRoleQuerier(t)
-	service := NewRoleService(mockQueries)
+	service := NewRoleService(mockQueries, newTestCache())
 
 	ctx := context.Background()
 	userID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -185,7 +192,7 @@ func TestCanManageProject_AdminCanManageAnyProject(t *testing.T) {
 
 func TestCanManageProject_ProjectAdminCanManageTheirProject(t *testing.T) {
 	mockQueries := mocks.NewMockRoleQuerier(t)
-	service := NewRoleService(mockQueries)
+	service := NewRoleService(mockQueries, newTestCache())
 
 	ctx := context.Background()
 	userID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -217,7 +224,7 @@ func TestCanManageProject_ProjectAdminCanManageTheirProject(t *testing.T) {
 
 func TestAssignRole_WithAuthorization(t *testing.T) {
 	mockQueries := mocks.NewMockRoleQuerier(t)
-	service := NewRoleService(mockQueries)
+	service := NewRoleService(mockQueries, newTestCache())
 
 	ctx := context.Background()
 	assignerID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -266,7 +273,7 @@ func TestAssignRole_WithAuthorization(t *testing.T) {
 
 func TestAssignRole_UnauthorizedFails(t *testing.T) {
 	mockQueries := mocks.NewMockRoleQuerier(t)
-	service := NewRoleService(mockQueries)
+	service := NewRoleService(mockQueries, newTestCache())
 
 	ctx := context.Background()
 	assignerID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"

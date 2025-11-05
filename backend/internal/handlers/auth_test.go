@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/services"
@@ -13,6 +14,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// newTestCache creates a cache instance for testing
+func newTestCache() *cache.CacheWithRegistry {
+	c, _ := cache.NewCacheWithRegistry(cache.DefaultConfig())
+	return c
+}
 
 func TestNormalizeGender(t *testing.T) {
 	tests := []struct {
@@ -114,7 +121,7 @@ func TestGenerateWayfarerToken(t *testing.T) {
 	}
 
 	mockQueries := mocks.NewMockRoleQuerier(t)
-	roleService := services.NewRoleService(mockQueries)
+	roleService := services.NewRoleService(mockQueries, newTestCache())
 
 	handler := &AuthHandler{
 		Cfg:         testConfig,
@@ -212,7 +219,7 @@ func TestGenerateWayfarerToken(t *testing.T) {
 
 func TestGenerateWayfarerToken_SigningMethod(t *testing.T) {
 	mockQueries := mocks.NewMockRoleQuerier(t)
-	roleService := services.NewRoleService(mockQueries)
+	roleService := services.NewRoleService(mockQueries, newTestCache())
 
 	handler := &AuthHandler{
 		Cfg: &config.Config{
@@ -241,7 +248,7 @@ func TestGenerateWayfarerToken_SigningMethod(t *testing.T) {
 
 func TestGenerateWayfarerToken_InvalidSignature(t *testing.T) {
 	mockQueries := mocks.NewMockRoleQuerier(t)
-	roleService := services.NewRoleService(mockQueries)
+	roleService := services.NewRoleService(mockQueries, newTestCache())
 
 	handler := &AuthHandler{
 		Cfg: &config.Config{
@@ -271,7 +278,7 @@ func TestGenerateWayfarerToken_InvalidSignature(t *testing.T) {
 
 func TestGenerateWayfarerToken_TokenStructure(t *testing.T) {
 	mockQueries := mocks.NewMockRoleQuerier(t)
-	roleService := services.NewRoleService(mockQueries)
+	roleService := services.NewRoleService(mockQueries, newTestCache())
 
 	handler := &AuthHandler{
 		Cfg: &config.Config{
@@ -297,7 +304,7 @@ func TestGenerateWayfarerToken_TokenStructure(t *testing.T) {
 
 func TestGenerateWayfarerToken_DifferentUsersDifferentTokens(t *testing.T) {
 	mockQueries := mocks.NewMockRoleQuerier(t)
-	roleService := services.NewRoleService(mockQueries)
+	roleService := services.NewRoleService(mockQueries, newTestCache())
 
 	handler := &AuthHandler{
 		Cfg: &config.Config{

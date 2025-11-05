@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 )
@@ -48,12 +49,14 @@ const (
 // RoleService provides role and permission management functionality
 type RoleService struct {
 	queries RoleQuerier
+	cache   *cache.CacheWithRegistry
 }
 
 // NewRoleService creates a new role service
-func NewRoleService(queries RoleQuerier) *RoleService {
+func NewRoleService(queries RoleQuerier, c *cache.CacheWithRegistry) *RoleService {
 	return &RoleService{
 		queries: queries,
+		cache:   c,
 	}
 }
 
@@ -64,6 +67,15 @@ func (s *RoleService) LoadUserRoles(ctx context.Context, userID string) ([]*sqlc
 
 // HasRole checks if a user has a specific global role
 func (s *RoleService) HasRole(ctx context.Context, userID string, role RoleType) bool {
+	// Check cache first
+	cacheKey := cache.HasRoleKey(userID, string(role))
+	if cached, ok := s.cache.Get(cacheKey); ok {
+		if hasRole, ok := cached.(bool); ok {
+			return hasRole
+		}
+	}
+
+	// Query database
 	hasRole, err := s.queries.HasRole(ctx, sqlc.HasRoleParams{
 		UserID: userID,
 		Role:   string(role),
@@ -74,11 +86,23 @@ func (s *RoleService) HasRole(ctx context.Context, userID string, role RoleType)
 		return false
 	}
 
+	// Store in cache
+	s.cache.Set(cacheKey, hasRole)
+
 	return hasRole
 }
 
 // HasRoleInChurch checks if a user has a specific role in a church
 func (s *RoleService) HasRoleInChurch(ctx context.Context, userID string, role RoleType, churchID string) bool {
+	// Check cache first
+	cacheKey := cache.HasRoleInChurchKey(userID, string(role), churchID)
+	if cached, ok := s.cache.Get(cacheKey); ok {
+		if hasRole, ok := cached.(bool); ok {
+			return hasRole
+		}
+	}
+
+	// Query database
 	hasRole, err := s.queries.HasRoleInChurch(ctx, sqlc.HasRoleInChurchParams{
 		UserID:   userID,
 		Role:     string(role),
@@ -90,11 +114,23 @@ func (s *RoleService) HasRoleInChurch(ctx context.Context, userID string, role R
 		return false
 	}
 
+	// Store in cache
+	s.cache.Set(cacheKey, hasRole)
+
 	return hasRole
 }
 
 // HasRoleInProject checks if a user has a specific role in a project
 func (s *RoleService) HasRoleInProject(ctx context.Context, userID string, role RoleType, projectID string) bool {
+	// Check cache first
+	cacheKey := cache.HasRoleInProjectKey(userID, string(role), projectID)
+	if cached, ok := s.cache.Get(cacheKey); ok {
+		if hasRole, ok := cached.(bool); ok {
+			return hasRole
+		}
+	}
+
+	// Query database
 	hasRole, err := s.queries.HasRoleInProject(ctx, sqlc.HasRoleInProjectParams{
 		UserID:    userID,
 		Role:      string(role),
@@ -106,11 +142,23 @@ func (s *RoleService) HasRoleInProject(ctx context.Context, userID string, role 
 		return false
 	}
 
+	// Store in cache
+	s.cache.Set(cacheKey, hasRole)
+
 	return hasRole
 }
 
 // HasRoleInTeam checks if a user has a specific role in a team
 func (s *RoleService) HasRoleInTeam(ctx context.Context, userID string, role RoleType, teamID string) bool {
+	// Check cache first
+	cacheKey := cache.HasRoleInTeamKey(userID, string(role), teamID)
+	if cached, ok := s.cache.Get(cacheKey); ok {
+		if hasRole, ok := cached.(bool); ok {
+			return hasRole
+		}
+	}
+
+	// Query database
 	hasRole, err := s.queries.HasRoleInTeam(ctx, sqlc.HasRoleInTeamParams{
 		UserID: userID,
 		Role:   string(role),
@@ -121,6 +169,9 @@ func (s *RoleService) HasRoleInTeam(ctx context.Context, userID string, role Rol
 		slog.Error("error when checking roles", userID, err)
 		return false
 	}
+
+	// Store in cache
+	s.cache.Set(cacheKey, hasRole)
 
 	return hasRole
 }

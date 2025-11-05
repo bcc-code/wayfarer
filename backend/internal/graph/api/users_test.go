@@ -911,6 +911,207 @@ func TestBuildCountFilterParams(t *testing.T) {
 	}
 }
 
+// TestBuildCacheKeyParams tests the buildCacheKeyParams function
+func TestBuildCacheKeyParams(t *testing.T) {
+	maleGender := model.GenderMale
+	femaleGender := model.GenderFemale
+
+	tests := []struct {
+		name   string
+		filter *model.UserFilter
+		first  *int
+		after  *string
+		last   *int
+		before *string
+		check  func(*testing.T, map[string]string)
+	}{
+		{
+			name: "all parameters populated",
+			filter: &model.UserFilter{
+				ChurchID:  stringPtr("CH123"),
+				Gender:    &maleGender,
+				MinAge:    intPtr(18),
+				MaxAge:    intPtr(30),
+				ProjectID: stringPtr("PR456"),
+				EventID:   stringPtr("EV789"),
+				TeamID:    stringPtr("TM999"),
+				Ids:       []string{"US001", "US002"},
+			},
+			first:  intPtr(10),
+			after:  stringPtr("cursor123"),
+			last:   nil,
+			before: nil,
+			check: func(t *testing.T, params map[string]string) {
+				assert.Equal(t, "CH123", params["churchid"])
+				assert.Equal(t, "MALE", params["gender"])
+				assert.Equal(t, "18", params["minage"])
+				assert.Equal(t, "30", params["maxage"])
+				assert.Equal(t, "PR456", params["projectid"])
+				assert.Equal(t, "EV789", params["eventid"])
+				assert.Equal(t, "TM999", params["teamid"])
+				assert.Contains(t, params["ids"], "US001")
+				assert.Contains(t, params["ids"], "US002")
+				assert.Equal(t, "10", params["first"])
+				assert.Equal(t, "cursor123", params["after"])
+				assert.NotContains(t, params, "last")
+				assert.NotContains(t, params, "before")
+			},
+		},
+		{
+			name: "backward pagination",
+			filter: &model.UserFilter{
+				ChurchID: stringPtr("CH123"),
+				Gender:   &femaleGender,
+			},
+			first:  nil,
+			after:  nil,
+			last:   intPtr(5),
+			before: stringPtr("cursor456"),
+			check: func(t *testing.T, params map[string]string) {
+				assert.Equal(t, "CH123", params["churchid"])
+				assert.Equal(t, "FEMALE", params["gender"])
+				assert.Equal(t, "5", params["last"])
+				assert.Equal(t, "cursor456", params["before"])
+				assert.NotContains(t, params, "first")
+				assert.NotContains(t, params, "after")
+			},
+		},
+		{
+			name:   "nil filter",
+			filter: nil,
+			first:  intPtr(10),
+			after:  nil,
+			last:   nil,
+			before: nil,
+			check: func(t *testing.T, params map[string]string) {
+				assert.Equal(t, "10", params["first"])
+				assert.NotContains(t, params, "churchid")
+				assert.NotContains(t, params, "gender")
+			},
+		},
+		{
+			name:   "empty filter",
+			filter: &model.UserFilter{},
+			first:  intPtr(10),
+			after:  nil,
+			last:   nil,
+			before: nil,
+			check: func(t *testing.T, params map[string]string) {
+				assert.Equal(t, "10", params["first"])
+				assert.NotContains(t, params, "churchid")
+			},
+		},
+		{
+			name: "empty string filters ignored",
+			filter: &model.UserFilter{
+				ChurchID:  stringPtr(""),
+				ProjectID: stringPtr(""),
+				EventID:   stringPtr(""),
+				TeamID:    stringPtr(""),
+			},
+			first:  nil,
+			after:  nil,
+			last:   nil,
+			before: nil,
+			check: func(t *testing.T, params map[string]string) {
+				assert.NotContains(t, params, "churchid")
+				assert.NotContains(t, params, "projectid")
+				assert.NotContains(t, params, "eventid")
+				assert.NotContains(t, params, "teamid")
+			},
+		},
+		{
+			name: "empty string cursors ignored",
+			filter: &model.UserFilter{
+				ChurchID: stringPtr("CH123"),
+			},
+			first:  intPtr(10),
+			after:  stringPtr(""),
+			last:   nil,
+			before: stringPtr(""),
+			check: func(t *testing.T, params map[string]string) {
+				assert.Equal(t, "CH123", params["churchid"])
+				assert.Equal(t, "10", params["first"])
+				assert.NotContains(t, params, "after")
+				assert.NotContains(t, params, "before")
+			},
+		},
+		{
+			name: "empty IDs array ignored",
+			filter: &model.UserFilter{
+				ChurchID: stringPtr("CH123"),
+				Ids:      []string{},
+			},
+			first:  intPtr(10),
+			after:  nil,
+			last:   nil,
+			before: nil,
+			check: func(t *testing.T, params map[string]string) {
+				assert.Equal(t, "CH123", params["churchid"])
+				assert.NotContains(t, params, "ids")
+			},
+		},
+		{
+			name: "only pagination params",
+			filter: &model.UserFilter{},
+			first:  intPtr(20),
+			after:  stringPtr("aftercursor"),
+			last:   nil,
+			before: nil,
+			check: func(t *testing.T, params map[string]string) {
+				assert.Equal(t, "20", params["first"])
+				assert.Equal(t, "aftercursor", params["after"])
+				assert.Equal(t, 2, len(params))
+			},
+		},
+		{
+			name: "age filters only",
+			filter: &model.UserFilter{
+				MinAge: intPtr(18),
+				MaxAge: intPtr(65),
+			},
+			first:  nil,
+			after:  nil,
+			last:   nil,
+			before: nil,
+			check: func(t *testing.T, params map[string]string) {
+				assert.Equal(t, "18", params["minage"])
+				assert.Equal(t, "65", params["maxage"])
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := buildCacheKeyParams(tt.filter, tt.first, tt.after, tt.last, tt.before)
+			tt.check(t, result)
+		})
+	}
+}
+
+func TestBuildCacheKeyParams_Deterministic(t *testing.T) {
+	maleGender := model.GenderMale
+	filter := &model.UserFilter{
+		ChurchID:  stringPtr("CH123"),
+		Gender:    &maleGender,
+		MinAge:    intPtr(18),
+		ProjectID: stringPtr("PR456"),
+	}
+	first := intPtr(10)
+	after := stringPtr("cursor")
+
+	// Generate params multiple times
+	results := make([]map[string]string, 5)
+	for i := 0; i < 5; i++ {
+		results[i] = buildCacheKeyParams(filter, first, after, nil, nil)
+	}
+
+	// All results should be equal
+	for i := 1; i < len(results); i++ {
+		assert.Equal(t, results[0], results[i], "buildCacheKeyParams should be deterministic")
+	}
+}
+
 // Note: Integration tests for the Users resolver with cursor pagination
 // require more complex setup with database mocks for GetUsersFilteredCursor
 // and CountUsersFiltered. The core business logic is tested above.

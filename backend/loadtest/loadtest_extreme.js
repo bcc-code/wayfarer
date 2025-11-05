@@ -7,7 +7,7 @@ import { tokensByUserID } from './tokens.js';
 export const options = {
   stages: [
     { duration: '5s', target: 1000 },  // Quick ramp to 1000
-    { duration: '5s', target: 5000 },  // Extreme spike to 5000 users in 5s
+    { duration: '5s', target: 10000 },  // Extreme spike to 5000 users in 5s
     { duration: '20s', target: 5000 }, // Sustain 5000 users
     { duration: '10s', target: 2000 }, // Drop to 2000
     { duration: '10s', target: 0 },    // Ramp down

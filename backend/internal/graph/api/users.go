@@ -279,3 +279,53 @@ func buildCountFilterParams(filter *model.UserFilter) sqlc.CountUsersFilteredPar
 
 	return params
 }
+
+// buildCacheKeyParams converts filter and pagination parameters to a map for cache key generation
+func buildCacheKeyParams(filter *model.UserFilter, first *int, after *string, last *int, before *string) map[string]string {
+	params := make(map[string]string)
+
+	// Add filter parameters
+	if filter != nil {
+		if filter.ChurchID != nil && *filter.ChurchID != "" {
+			params["churchid"] = *filter.ChurchID
+		}
+		if filter.Gender != nil {
+			params["gender"] = string(*filter.Gender)
+		}
+		if filter.MinAge != nil {
+			params["minage"] = fmt.Sprintf("%d", *filter.MinAge)
+		}
+		if filter.MaxAge != nil {
+			params["maxage"] = fmt.Sprintf("%d", *filter.MaxAge)
+		}
+		if filter.ProjectID != nil && *filter.ProjectID != "" {
+			params["projectid"] = *filter.ProjectID
+		}
+		if filter.EventID != nil && *filter.EventID != "" {
+			params["eventid"] = *filter.EventID
+		}
+		if filter.TeamID != nil && *filter.TeamID != "" {
+			params["teamid"] = *filter.TeamID
+		}
+		if filter.Ids != nil && len(filter.Ids) > 0 {
+			// Join IDs with comma for deterministic key
+			params["ids"] = fmt.Sprintf("%v", filter.Ids)
+		}
+	}
+
+	// Add pagination parameters
+	if first != nil {
+		params["first"] = fmt.Sprintf("%d", *first)
+	}
+	if after != nil && *after != "" {
+		params["after"] = *after
+	}
+	if last != nil {
+		params["last"] = fmt.Sprintf("%d", *last)
+	}
+	if before != nil && *before != "" {
+		params["before"] = *before
+	}
+
+	return params
+}

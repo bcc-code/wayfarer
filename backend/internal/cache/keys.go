@@ -1,7 +1,10 @@
 package cache
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -37,6 +40,16 @@ const (
 	// Computed data (future use)
 	PrefixLeaderboard = "leaderboard:"
 	PrefixScore       = "score:"
+
+	// Query results
+	PrefixUsersFilter = "usersfilter:"
+	PrefixUsersCount  = "userscount:"
+
+	// Permissions/Roles
+	PrefixHasRole          = "hasrole:"
+	PrefixHasRoleInChurch  = "hasroleinchurch:"
+	PrefixHasRoleInProject = "hasroleinproject:"
+	PrefixHasRoleInTeam    = "hasroleinteam:"
 )
 
 // Key builders for different entity types
@@ -181,4 +194,88 @@ func ExtractUserTag(key string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// UsersFilterKey builds a cache key for filtered users query results
+// Takes a map of filter parameters and generates a deterministic hash
+func UsersFilterKey(params map[string]string) string {
+	if len(params) == 0 {
+		return PrefixUsersFilter + "all"
+	}
+
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for a shorter key
+	hash := sha256.Sum256([]byte(builder.String()))
+	hashStr := hex.EncodeToString(hash[:])[:16] // Use first 16 chars of hash
+
+	return PrefixUsersFilter + hashStr
+}
+
+// UsersCountKey builds a cache key for filtered users count query results
+// Takes the same parameters as UsersFilterKey to ensure consistency
+func UsersCountKey(params map[string]string) string {
+	if len(params) == 0 {
+		return PrefixUsersCount + "all"
+	}
+
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for a shorter key
+	hash := sha256.Sum256([]byte(builder.String()))
+	hashStr := hex.EncodeToString(hash[:])[:16] // Use first 16 chars of hash
+
+	return PrefixUsersCount + hashStr
+}
+
+// HasRoleKey builds a cache key for HasRole checks
+func HasRoleKey(userID string, role string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixHasRole, userID, role)
+}
+
+// HasRoleInChurchKey builds a cache key for HasRoleInChurch checks
+func HasRoleInChurchKey(userID string, role string, churchID string) string {
+	return fmt.Sprintf("%s%s:%s:%s", PrefixHasRoleInChurch, userID, role, churchID)
+}
+
+// HasRoleInProjectKey builds a cache key for HasRoleInProject checks
+func HasRoleInProjectKey(userID string, role string, projectID string) string {
+	return fmt.Sprintf("%s%s:%s:%s", PrefixHasRoleInProject, userID, role, projectID)
+}
+
+// HasRoleInTeamKey builds a cache key for HasRoleInTeam checks
+func HasRoleInTeamKey(userID string, role string, teamID string) string {
+	return fmt.Sprintf("%s%s:%s:%s", PrefixHasRoleInTeam, userID, role, teamID)
 }
