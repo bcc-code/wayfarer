@@ -1,12 +1,59 @@
+import { useGetMeQuery, type GetMeQuery } from '~/api/generated'
+
+gql(`
+  query GetMe {
+    me {
+      id
+      name
+      email
+      image
+      membersId
+      church {
+        id
+        name
+        country
+        category
+      }
+      gender
+      birthdate
+      roles {
+        id
+        role
+        scope {
+          id
+          type
+          church {
+            id
+          }
+          team {
+            id
+          }
+          project {
+            id
+          }
+        }
+        assignedBy {
+          id
+        }
+        assignedAt
+      }
+    }
+  }
+`)
+
 export function useAuth() {
   const token = useLocalStorage<string | null>('token', () => null)
   const isLoading = useState('isLoading', () => true)
-  const user = useState('user', () => ({
-    id: 'e52257a2-0240-4e4d-bcf3-9953162e491d',
-    personId: 99999,
-    name: 'Ola Nordmann',
-    image: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Felix',
-  }))
+  const me = useState<GetMeQuery['me'] | null | undefined>('me', () => null)
+  const { data } = useGetMeQuery()
+
+  watch(
+    () => data.value?.me,
+    (newMe) => {
+      me.value = newMe
+      isLoading.value = false
+    },
+  )
 
   const getAccessToken = async () => {
     try {
@@ -45,7 +92,7 @@ export function useAuth() {
     setAccessToken,
     loginWithRedirect,
     isLoading,
-    user,
+    me,
     token,
   }
 }

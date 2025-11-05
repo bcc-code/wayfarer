@@ -1162,6 +1162,11 @@ export type UserRole = {
   user: User;
 };
 
+export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, membersId: string, gender: Gender, birthdate?: string | null, church: { __typename?: 'Church', id: string, name: string, country: string, category: ChurchCategory }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, assignedAt: any, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType, church?: { __typename?: 'Church', id: string } | null, team?: { __typename?: 'Team', id: string } | null, project?: { __typename?: 'Project', id: string } | null } | null, assignedBy: { __typename?: 'User', id: string } }> } };
+
 export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1220,6 +1225,50 @@ export type UnitPageQueryVariables = Exact<{ [key: string]: never; }>;
 export type UnitPageQuery = { __typename?: 'Query', currentProject: { __typename?: 'Project', id: string, myTeam: { __typename?: 'Team', id: string, name: string, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null, leaderboard: Array<{ __typename?: 'LeaderboardEntry', name: string, description?: string | null, score: number, image?: string | null }> } } };
 
 
+export const GetMeDocument = gql`
+    query GetMe {
+  me {
+    id
+    name
+    email
+    image
+    membersId
+    church {
+      id
+      name
+      country
+      category
+    }
+    gender
+    birthdate
+    roles {
+      id
+      role
+      scope {
+        id
+        type
+        church {
+          id
+        }
+        team {
+          id
+        }
+        project {
+          id
+        }
+      }
+      assignedBy {
+        id
+      }
+      assignedAt
+    }
+  }
+}
+    `;
+
+export function useGetMeQuery(options?: Omit<Urql.UseQueryArgs<never, GetMeQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<GetMeQuery, GetMeQueryVariables | undefined>({ query: GetMeDocument, variables: undefined, ...options });
+};
 export const AdminSidebarDocument = gql`
     query AdminSidebar {
   projects {

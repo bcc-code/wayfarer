@@ -32,7 +32,7 @@ const { currentProjects, futureProjects, pastProjects } = useGroupedProjects(
 
 <template>
   <UContainer>
-    <div class="flex gap-6 items-center justify-between my-12">
+    <div class="flex flex-col items-start gap-8 my-12">
       <h1 class="text-3xl">Projects</h1>
       <UButton icon="lucide:plus" :to="{ name: 'admin-projects-new' }">
         New Project
