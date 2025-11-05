@@ -36,6 +36,123 @@ models:
     model:
       - github.com/99designs/gqlgen/graphql.Upload
 
+  # Add ProjectID field to types that have project relationships
+  Challenge:
+    fields:
+      project:
+        resolver: true
+      event:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      EventID:
+        type: "*string"
+
+  Event:
+    fields:
+      parentProject:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+
+  Team:
+    fields:
+      parentProject:
+        resolver: true
+      superTeam:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      SuperTeamID:
+        type: "*string"
+
+  SuperTeam:
+    fields:
+      parentProject:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+
+  Streak:
+    fields:
+      project:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+
+  SimpleAchievement:
+    fields:
+      project:
+        resolver: true
+      event:
+        resolver: true
+      challenge:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      EventID:
+        type: "*string"
+      ChallengeID:
+        type: "*string"
+
+  ReadingAchievement:
+    fields:
+      project:
+        resolver: true
+      event:
+        resolver: true
+      challenge:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      EventID:
+        type: "*string"
+      ChallengeID:
+        type: "*string"
+
+  ListeningAchievement:
+    fields:
+      project:
+        resolver: true
+      event:
+        resolver: true
+      challenge:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      EventID:
+        type: "*string"
+      ChallengeID:
+        type: "*string"
+
+  StreakAchievement:
+    fields:
+      project:
+        resolver: true
+      event:
+        resolver: true
+      challenge:
+        resolver: true
+      streak:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      EventID:
+        type: "*string"
+      ChallengeID:
+        type: "*string"
+      StreakID:
+        type: string
+
 # Autobind - automatically bind Go types to GraphQL types if they match by name
 autobind:
   - github.com/bcc-media/wayfarer/internal/graph/api/model

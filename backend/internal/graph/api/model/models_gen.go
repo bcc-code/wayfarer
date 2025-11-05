@@ -84,6 +84,8 @@ type Challenge struct {
 	PublishedAt     scalars.DateTime  `json:"publishedAt"`
 	EndTime         *scalars.DateTime `json:"endTime,omitempty"`
 	UserCompletedAt *scalars.DateTime `json:"userCompletedAt,omitempty"`
+	EventID         *string           `json:"-"`
+	ProjectID       string            `json:"-"`
 }
 
 type ChallengeFilter struct {
@@ -236,6 +238,7 @@ type Event struct {
 	StartDate     scalars.DateTime   `json:"startDate"`
 	EndDate       scalars.DateTime   `json:"endDate"`
 	ParentProject *Project           `json:"parentProject"`
+	ProjectID     string             `json:"-"`
 }
 
 type LeaderboardEntry struct {
@@ -271,6 +274,9 @@ type ListeningAchievement struct {
 	NextTrack       *Track            `json:"nextTrack"`
 	Points          int               `json:"points"`
 	Hidden          bool              `json:"hidden"`
+	ChallengeID     *string           `json:"-"`
+	EventID         *string           `json:"-"`
+	ProjectID       string            `json:"-"`
 }
 
 func (ListeningAchievement) IsAchievement()                        {}
@@ -321,6 +327,9 @@ type ReadingAchievement struct {
 	NextArticle *Article          `json:"nextArticle"`
 	Points      int               `json:"points"`
 	Hidden      bool              `json:"hidden"`
+	ChallengeID *string           `json:"-"`
+	EventID     *string           `json:"-"`
+	ProjectID   string            `json:"-"`
 }
 
 func (ReadingAchievement) IsAchievement()                        {}
@@ -361,6 +370,9 @@ type SimpleAchievement struct {
 	AchievedAt  *scalars.DateTime `json:"achievedAt,omitempty"`
 	Points      int               `json:"points"`
 	Hidden      bool              `json:"hidden"`
+	ChallengeID *string           `json:"-"`
+	EventID     *string           `json:"-"`
+	ProjectID   string            `json:"-"`
 }
 
 func (SimpleAchievement) IsAchievement()                        {}
@@ -383,6 +395,7 @@ type Streak struct {
 	RelevantDays []DateRange    `json:"relevantDays"`
 	ListenedDays []scalars.Date `json:"listenedDays"`
 	Project      *Project       `json:"project"`
+	ProjectID    string         `json:"-"`
 }
 
 type StreakAchievement struct {
@@ -398,6 +411,10 @@ type StreakAchievement struct {
 	Points       int               `json:"points"`
 	Hidden       bool              `json:"hidden"`
 	Streak       *Streak           `json:"streak"`
+	ChallengeID  *string           `json:"-"`
+	EventID      *string           `json:"-"`
+	ProjectID    string            `json:"-"`
+	StreakID     string            `json:"-"`
 }
 
 func (StreakAchievement) IsAchievement()                        {}
@@ -420,6 +437,7 @@ type SuperTeam struct {
 	Leaderboard   []LeaderboardEntry `json:"leaderboard"`
 	ParentProject *Project           `json:"parentProject"`
 	Teams         []Team             `json:"teams"`
+	ProjectID     string             `json:"-"`
 }
 
 type Team struct {
@@ -430,6 +448,8 @@ type Team struct {
 	Leaderboard   []LeaderboardEntry `json:"leaderboard"`
 	ParentProject *Project           `json:"parentProject"`
 	SuperTeam     *SuperTeam         `json:"superTeam,omitempty"`
+	ProjectID     string             `json:"-"`
+	SuperTeamID   *string            `json:"-"`
 }
 
 type Track struct {

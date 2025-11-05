@@ -342,7 +342,7 @@ func (r *mutationResolver) RevokeRole(ctx context.Context, input model.RevokeRol
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	// Get user ID from context (set by JWT middleware)
-	userID, ok := ctx.Value(middleware.UserIDKey).(string)
+	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
 		return nil, fmt.Errorf("user not authenticated")
 	}
@@ -379,7 +379,37 @@ func (r *queryResolver) MyCurrentEvent(ctx context.Context) (*model.Event, error
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check if current user is admin (needed to determine error message)
+	isAdmin := r.RoleService.IsAdmin(ctx, currentUserID)
+
+	// Load requested user
+	requestedUserThunk := r.Loaders.UserByIDLoader.Load(ctx, id)
+	requestedUser, err := requestedUserThunk()
+	if err != nil {
+		// Only reveal "user not found" to admins, otherwise show permission denied
+		if isAdmin {
+			return nil, fmt.Errorf("failed to load requested user: %w", err)
+		}
+		return nil, fmt.Errorf("permission denied: you do not have access to this user")
+	}
+
+	// Check permissions
+	allowed := false
+	allowed = allowed || currentUserID == id                                                      // User accessing themselves
+	allowed = allowed || isAdmin                                                                  // Admin or SuperAdmin
+	allowed = allowed || r.RoleService.CanManageChurch(ctx, currentUserID, requestedUser.ChurchID) // Church Admin for user's church
+
+	if !allowed {
+		return nil, fmt.Errorf("permission denied: you do not have access to this user")
+	}
+
+	return requestedUser, nil
 }
 
 // Users is the resolver for the users field.

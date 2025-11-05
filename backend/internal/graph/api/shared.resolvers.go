@@ -12,9 +12,19 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 )
 
+// resolveProjectByID is a shared helper that loads a project by ID using the ProjectByIDLoader
+func resolveProjectByID(ctx context.Context, r *Resolver, projectID string) (*model.Project, error) {
+	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
+	project, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load project: %w", err)
+	}
+	return project, nil
+}
+
 // Project is the resolver for the project field.
 func (r *challengeResolver) Project(ctx context.Context, obj *model.Challenge) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: Project - project"))
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
 // Event is the resolver for the event field.
@@ -29,12 +39,12 @@ func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]mod
 
 // ParentProject is the resolver for the parentProject field.
 func (r *eventResolver) ParentProject(ctx context.Context, obj *model.Event) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: ParentProject - parentProject"))
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
 // Project is the resolver for the project field.
 func (r *listeningAchievementResolver) Project(ctx context.Context, obj *model.ListeningAchievement) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: Project - project"))
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
 // Event is the resolver for the event field.
@@ -79,7 +89,7 @@ func (r *projectResolver) Streaks(ctx context.Context, obj *model.Project) ([]mo
 
 // Project is the resolver for the project field.
 func (r *readingAchievementResolver) Project(ctx context.Context, obj *model.ReadingAchievement) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: Project - project"))
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
 // Event is the resolver for the event field.
@@ -139,7 +149,7 @@ func (r *roleScopeResolver) Team(ctx context.Context, obj *model.RoleScope) (*mo
 
 // Project is the resolver for the project field.
 func (r *simpleAchievementResolver) Project(ctx context.Context, obj *model.SimpleAchievement) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: Project - project"))
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
 // Event is the resolver for the event field.
@@ -154,12 +164,12 @@ func (r *simpleAchievementResolver) Challenge(ctx context.Context, obj *model.Si
 
 // Project is the resolver for the project field.
 func (r *streakResolver) Project(ctx context.Context, obj *model.Streak) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: Project - project"))
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
 // Project is the resolver for the project field.
 func (r *streakAchievementResolver) Project(ctx context.Context, obj *model.StreakAchievement) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: Project - project"))
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
 // Event is the resolver for the event field.
@@ -184,7 +194,7 @@ func (r *superTeamResolver) Members(ctx context.Context, obj *model.SuperTeam) (
 
 // ParentProject is the resolver for the parentProject field.
 func (r *superTeamResolver) ParentProject(ctx context.Context, obj *model.SuperTeam) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: ParentProject - parentProject"))
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
 // Teams is the resolver for the teams field.
@@ -199,7 +209,7 @@ func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.Us
 
 // ParentProject is the resolver for the parentProject field.
 func (r *teamResolver) ParentProject(ctx context.Context, obj *model.Team) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: ParentProject - parentProject"))
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
 // SuperTeam is the resolver for the superTeam field.

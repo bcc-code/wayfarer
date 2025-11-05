@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -117,4 +118,19 @@ func validateToken(tokenString string, cfg config.JWTConfig) (*WayfarerClaims, e
 	}
 
 	return claims, nil
+}
+
+// GetUserID retrieves the user ID from the context
+func GetUserID(ctx context.Context) (string, bool) {
+	userID, ok := ctx.Value(UserIDKey).(string)
+	return userID, ok
+}
+
+// GetUserRoles retrieves the user roles from the context
+func GetUserRoles(ctx context.Context) []string {
+	userRoles, ok := ctx.Value(UserRolesKey).([]string)
+	if !ok {
+		return []string{}
+	}
+	return userRoles
 }
