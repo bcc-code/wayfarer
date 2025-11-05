@@ -14,11 +14,8 @@ gql(`
 `)
 
 const { data } = useAdminSidebarQuery()
-const { currentProjects, futureProjects } = useGroupedProjects(
-  () => data.value?.projects,
-)
 const projectsLinks = computed(() => {
-  return [...currentProjects.value, ...futureProjects.value].map((project) => ({
+  return data.value?.projects.map((project) => ({
     label: project.name,
     badge: isWithinRange(new Date(), project.startDate, project.endDate)
       ? 'Current'
@@ -86,7 +83,7 @@ onMounted(() => {
           orientation="horizontal"
         />
         <div class="ml-auto flex gap-2">
-          <UDashboardSearchButton class="bg-transparent ring-default" />
+          <UDashboardSearchButton />
           <AdminUserMenu />
         </div>
       </UContainer>
