@@ -78,9 +78,7 @@ onMounted(() => {
   <div>
     <header class="border-b border-default">
       <UContainer class="flex gap-6 lg:gap-12 items-center">
-        <NuxtLink to="/admin" class="font-serif text-xl text-neutral-50">
-          Wayfarer
-        </NuxtLink>
+        <NuxtLink to="/admin" class="font-serif text-xl">Wayfarer</NuxtLink>
         <UNavigationMenu
           :items="links"
           highlight

@@ -14,7 +14,6 @@
     "@nuxt/image": "^1.11.0",
     "@nuxt/ui": "^4.1.0",
     "@urql/exchange-auth": "^3.0.0",
-    "@urql/exchange-graphcache": "^8.1.0",
     "@urql/vue": "^2.0.0",
     "@vueuse/core": "^14.0.0",
     "@vueuse/nuxt": "14.0.0",

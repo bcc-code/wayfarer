@@ -772,6 +772,14 @@ export type MutationUpdateTeamArgs = {
   input: UpdateTeamInput;
 };
 
+export type PageInfo = {
+  __typename?: 'PageInfo';
+  endCursor?: Maybe<Scalars['String']['output']>;
+  hasNextPage: Scalars['Boolean']['output'];
+  hasPreviousPage: Scalars['Boolean']['output'];
+  startCursor?: Maybe<Scalars['String']['output']>;
+};
+
 export type Project = {
   __typename?: 'Project';
   achievements: Array<Achievement>;
@@ -822,7 +830,7 @@ export type Query = {
   teams: Array<Team>;
   user: User;
   userRoles: Array<UserRole>;
-  users: Array<User>;
+  users: UserConnection;
   usersWithRole: Array<User>;
 };
 
@@ -913,9 +921,11 @@ export type QueryUserRolesArgs = {
 
 
 export type QueryUsersArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
   filter?: InputMaybe<UserFilter>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  offset?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -1128,7 +1138,7 @@ export type UpdateTeamInput = {
 export type User = {
   __typename?: 'User';
   age?: Maybe<Scalars['Int']['output']>;
-  birthdate?: Maybe<Scalars['String']['output']>;
+  birthdate: Scalars['String']['output'];
   church: Church;
   churchId: Scalars['ID']['output'];
   email: Scalars['String']['output'];
@@ -1142,6 +1152,19 @@ export type User = {
   roles: Array<UserRole>;
   superTeams: Array<SuperTeam>;
   teams: Array<Team>;
+};
+
+export type UserConnection = {
+  __typename?: 'UserConnection';
+  edges: Array<UserEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type UserEdge = {
+  __typename?: 'UserEdge';
+  cursor: Scalars['String']['output'];
+  node: User;
 };
 
 export type UserFilter = {
@@ -1168,7 +1191,7 @@ export type UserRole = {
 export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, membersId: string, gender: Gender, birthdate?: string | null, church: { __typename?: 'Church', id: string, name: string, country: string, category: ChurchCategory }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, assignedAt: any, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType, church?: { __typename?: 'Church', id: string } | null, team?: { __typename?: 'Team', id: string } | null, project?: { __typename?: 'Project', id: string } | null } | null, assignedBy: { __typename?: 'User', id: string } }> } };
+export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, membersId: string, gender: Gender, birthdate: string, church: { __typename?: 'Church', id: string, name: string, country: string, category: ChurchCategory }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, assignedAt: any, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType, church?: { __typename?: 'Church', id: string } | null, team?: { __typename?: 'Team', id: string } | null, project?: { __typename?: 'Project', id: string } | null } | null, assignedBy: { __typename?: 'User', id: string } }> } };
 
 export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1212,7 +1235,7 @@ export type CreateProjectMutation = { __typename?: 'Mutation', createProject: { 
 export type AdminUsersPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminUsersPageQuery = { __typename?: 'Query', users: Array<{ __typename?: 'User', id: string, name: string }> };
+export type AdminUsersPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'UserEdge', cursor: string, node: { __typename?: 'User', id: string, name: string, image?: string | null, church: { __typename?: 'Church', name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType }> } }> } };
 
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1436,8 +1459,28 @@ export function useCreateProjectMutation() {
 export const AdminUsersPageDocument = gql`
     query AdminUsersPage {
   users {
-    id
-    name
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        id
+        name
+        image
+        church {
+          name
+        }
+        roles {
+          id
+          role
+        }
+      }
+    }
   }
 }
     `;

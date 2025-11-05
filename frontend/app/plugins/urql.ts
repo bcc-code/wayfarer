@@ -1,7 +1,5 @@
 import { authExchange, type AuthConfig } from '@urql/exchange-auth'
 import urql, { Client, fetchExchange } from '@urql/vue'
-import { cacheExchange } from '@urql/exchange-graphcache'
-import { relayPagination } from '@urql/exchange-graphcache/extras'
 
 export default defineNuxtPlugin((plugin) => {
   plugin.vueApp.use(
@@ -32,17 +30,6 @@ export default defineNuxtPlugin((plugin) => {
               return false
             },
           } as AuthConfig
-        }),
-        cacheExchange({
-          keys: {
-            Branding: () => null,
-            Colors: () => null,
-          },
-          resolvers: {
-            Query: {
-              users: relayPagination(),
-            },
-          },
         }),
         fetchExchange,
       ],
