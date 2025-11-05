@@ -7,4 +7,4 @@
 ░░░╚═╝░░░╚═╝░░╚═╝░░╚═╝░░░╚═╝░░░╚═╝░░░░░╚═╝░░╚═╝╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝
 ```
 /ˈweɪˌfɛːrə/  
-A traveller, often without a specific destination.
+A traveller who roams about without a fixed route or destination.
