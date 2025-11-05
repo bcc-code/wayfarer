@@ -102,3 +102,4 @@ Each project can contain multiple events, which usually is some form of in-perso
 - In queries, use named, not numbered parameters. For example @userid::text.
 - No signatures on commits
 - When creating commits sign with: Assited by [MODEL] via [Tool]
+- Generate unit tests for functions you write. Use the unit tests to verify correctnes. When mocking use mockery, with the config `.mockery.yml`.

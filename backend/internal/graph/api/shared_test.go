@@ -123,15 +123,6 @@ func TestUserResolver_Age(t *testing.T) {
 	}
 }
 
-// Helper functions
-func stringPtr(s string) *string {
-	return &s
-}
-
-func intPtr(i int) *int {
-	return &i
-}
-
 func calculateExpectedAge(birthdateStr string) int {
 	birthdate, _ := time.Parse("2006-01-02", birthdateStr)
 	now := time.Now()

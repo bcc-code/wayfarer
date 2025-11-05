@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
@@ -413,8 +414,139 @@ func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error
 }
 
 // Users is the resolver for the users field.
-func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter) ([]model.User, error) {
-	panic(fmt.Errorf("not implemented: Users - users"))
+func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, limit *int, offset *int) ([]model.User, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check if current user has admin-level permissions
+	isAdmin := r.RoleService.IsAdmin(ctx, currentUserID)
+
+	// Check for other admin roles if not a global admin
+	var isChurchAdmin, isProjectAdmin, isTeamLead bool
+	var churchID, projectID, teamID string
+
+	if !isAdmin {
+		// Load current user to get their church ID
+		currentUserThunk := r.Loaders.UserByIDLoader.Load(ctx, currentUserID)
+		currentUser, err := currentUserThunk()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load current user: %w", err)
+		}
+		churchID = currentUser.ChurchID
+
+		// Check if user has church admin role
+		isChurchAdmin = r.RoleService.CanManageChurch(ctx, currentUserID, churchID)
+
+		// Check if user has project admin role (if projectId filter is provided)
+		if filter != nil && filter.ProjectID != nil {
+			projectID = *filter.ProjectID
+			isProjectAdmin = r.RoleService.CanManageProject(ctx, currentUserID, projectID)
+		}
+
+		// Check if user has team lead role (if teamId filter is provided)
+		if filter != nil && filter.TeamID != nil {
+			teamID = *filter.TeamID
+			isTeamLead = r.RoleService.CanManageTeam(ctx, currentUserID, teamID)
+		}
+	}
+
+	// Only allow admin roles to access this query
+	if !isAdmin && !isChurchAdmin && !isProjectAdmin && !isTeamLead {
+		return nil, fmt.Errorf("permission denied: insufficient privileges to list users")
+	}
+
+	// Initialize filter if nil
+	if filter == nil {
+		filter = &model.UserFilter{}
+	}
+
+	// Apply role-based filter restrictions
+	if !isAdmin {
+		// Church admins can only see users from their church
+		if isChurchAdmin && !isProjectAdmin && !isTeamLead {
+			filter.ChurchID = &churchID
+		}
+
+		// Project admins can only see users from their project
+		if isProjectAdmin && filter.ProjectID == nil {
+			filter.ProjectID = &projectID
+		}
+
+		// Team leads can only see users from their team
+		if isTeamLead && !isProjectAdmin && filter.TeamID == nil {
+			filter.TeamID = &teamID
+		}
+	}
+
+	// Build query parameters
+	params := sqlc.GetUsersFilteredParams{}
+
+	// Apply filters
+	if filter.ChurchID != nil {
+		params.Churchid = *filter.ChurchID
+	}
+	if filter.Gender != nil {
+		params.Gender = string(*filter.Gender)
+	}
+	if filter.MinAge != nil {
+		params.Minage = int32(*filter.MinAge)
+	}
+	if filter.MaxAge != nil {
+		params.Maxage = int32(*filter.MaxAge)
+	}
+	if filter.ProjectID != nil {
+		params.Projectid = *filter.ProjectID
+	}
+	if filter.EventID != nil {
+		params.Eventid = *filter.EventID
+	}
+	if filter.TeamID != nil {
+		params.Teamid = *filter.TeamID
+	}
+	if filter.Ids != nil {
+		params.Ids = filter.Ids
+	}
+
+	// Apply pagination
+	if limit != nil {
+		params.Querylimit = int32(*limit)
+	}
+	if offset != nil {
+		params.Queryoffset = int32(*offset)
+	}
+
+	// Query database
+	rows, err := r.DB.Queries.GetUsersFiltered(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query users: %w", err)
+	}
+
+	// Convert to GraphQL model
+	result := make([]model.User, len(rows))
+	for i, row := range rows {
+		// Convert birthdate to string pointer
+		var birthdateStr *string
+		if row.Birthdate.Valid {
+			dateStr := row.Birthdate.Time.Format("2006-01-02")
+			birthdateStr = &dateStr
+		}
+
+		result[i] = model.User{
+			ID:        row.ID,
+			MembersID: row.MembersID,
+			Email:     row.Email,
+			Name:      row.Name,
+			Gender:    model.Gender(row.Gender),
+			Birthdate: birthdateStr,
+			ChurchID:  row.ChurchID,
+			Image:     row.AvatarUrl,
+		}
+	}
+
+	return result, nil
 }
 
 // Project is the resolver for the project field.

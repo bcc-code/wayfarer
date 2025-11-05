@@ -12,16 +12,6 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 )
 
-// resolveProjectByID is a shared helper that loads a project by ID using the ProjectByIDLoader
-func resolveProjectByID(ctx context.Context, r *Resolver, projectID string) (*model.Project, error) {
-	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
-	project, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load project: %w", err)
-	}
-	return project, nil
-}
-
 // Project is the resolver for the project field.
 func (r *challengeResolver) Project(ctx context.Context, obj *model.Challenge) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)

@@ -175,3 +175,87 @@ func (q *Queries) GetUsersByIDs(ctx context.Context, ids []string) ([]*GetUsersB
 	}
 	return items, nil
 }
+
+const GetUsersFiltered = `-- name: GetUsersFiltered :many
+SELECT DISTINCT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.avatar_url
+FROM users u
+LEFT JOIN user_projects up ON u.id = up.user_id AND $1::text IS NOT NULL
+LEFT JOIN user_events ue ON u.id = ue.user_id AND $2::text IS NOT NULL
+LEFT JOIN team_members tm ON u.id = tm.user_id AND $3::text IS NOT NULL
+WHERE
+    ($4::text IS NULL OR u.church_id = $4::text)
+    AND ($5::text IS NULL OR u.gender = $5::text)
+    AND ($6::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $6::int)
+    AND ($7::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $7::int)
+    AND ($1::text IS NULL OR up.project_id = $1::text)
+    AND ($2::text IS NULL OR ue.event_id = $2::text)
+    AND ($3::text IS NULL OR tm.team_id = $3::text)
+    AND ($8::text[] IS NULL OR u.id = ANY($8::text[]))
+ORDER BY u.id
+LIMIT CASE WHEN $10::int IS NULL THEN NULL ELSE $10::int END
+OFFSET CASE WHEN $9::int IS NULL THEN 0 ELSE $9::int END
+`
+
+type GetUsersFilteredParams struct {
+	Projectid   string   `json:"projectid"`
+	Eventid     string   `json:"eventid"`
+	Teamid      string   `json:"teamid"`
+	Churchid    string   `json:"churchid"`
+	Gender      string   `json:"gender"`
+	Minage      int32    `json:"minage"`
+	Maxage      int32    `json:"maxage"`
+	Ids         []string `json:"ids"`
+	Queryoffset int32    `json:"queryoffset"`
+	Querylimit  int32    `json:"querylimit"`
+}
+
+type GetUsersFilteredRow struct {
+	ID        string      `json:"id"`
+	MembersID string      `json:"members_id"`
+	Gender    string      `json:"gender"`
+	ChurchID  string      `json:"church_id"`
+	Birthdate pgtype.Date `json:"birthdate"`
+	Email     string      `json:"email"`
+	Name      string      `json:"name"`
+	AvatarUrl *string     `json:"avatar_url"`
+}
+
+func (q *Queries) GetUsersFiltered(ctx context.Context, arg GetUsersFilteredParams) ([]*GetUsersFilteredRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersFiltered,
+		arg.Projectid,
+		arg.Eventid,
+		arg.Teamid,
+		arg.Churchid,
+		arg.Gender,
+		arg.Minage,
+		arg.Maxage,
+		arg.Ids,
+		arg.Queryoffset,
+		arg.Querylimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUsersFilteredRow{}
+	for rows.Next() {
+		var i GetUsersFilteredRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MembersID,
+			&i.Gender,
+			&i.ChurchID,
+			&i.Birthdate,
+			&i.Email,
+			&i.Name,
+			&i.AvatarUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

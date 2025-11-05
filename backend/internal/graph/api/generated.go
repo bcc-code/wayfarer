@@ -255,7 +255,7 @@ type ComplexityRoot struct {
 		Teams            func(childComplexity int, projectID *string) int
 		User             func(childComplexity int, id string) int
 		UserRoles        func(childComplexity int, userID string) int
-		Users            func(childComplexity int, filter *model.UserFilter) int
+		Users            func(childComplexity int, filter *model.UserFilter, limit *int, offset *int) int
 		UsersWithRole    func(childComplexity int, role model.RoleType, scopeType *model.ScopeType, scopeID *string) int
 	}
 
@@ -474,7 +474,7 @@ type QueryResolver interface {
 	MyCurrentProject(ctx context.Context) (*model.Project, error)
 	MyCurrentEvent(ctx context.Context) (*model.Event, error)
 	User(ctx context.Context, id string) (*model.User, error)
-	Users(ctx context.Context, filter *model.UserFilter) ([]model.User, error)
+	Users(ctx context.Context, filter *model.UserFilter, limit *int, offset *int) ([]model.User, error)
 	Project(ctx context.Context, id string) (*model.Project, error)
 	Projects(ctx context.Context) ([]model.Project, error)
 	Event(ctx context.Context, id string) (*model.Event, error)
@@ -1954,7 +1954,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Users(childComplexity, args["filter"].(*model.UserFilter)), true
+		return e.complexity.Query.Users(childComplexity, args["filter"].(*model.UserFilter), args["limit"].(*int), args["offset"].(*int)), true
 	case "Query.usersWithRole":
 		if e.complexity.Query.UsersWithRole == nil {
 			break
@@ -3223,7 +3223,7 @@ type Query {
     # ==================== Admin/M2M API Queries ====================
     # System-wide queries with explicit filtering
     user(id: ID!): User!
-    users(filter: UserFilter): [User!]!
+    users(filter: UserFilter, limit: Int, offset: Int): [User!]!
 
     project(id: ID!): Project!
     projects: [Project!]!
@@ -4648,6 +4648,16 @@ func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs 
 		return nil, err
 	}
 	args["filter"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "offset", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg2
 	return args, nil
 }
 
@@ -12168,7 +12178,7 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 		ec.fieldContext_Query_users,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Users(ctx, fc.Args["filter"].(*model.UserFilter))
+			return ec.resolvers.Query().Users(ctx, fc.Args["filter"].(*model.UserFilter), fc.Args["limit"].(*int), fc.Args["offset"].(*int))
 		},
 		nil,
 		ec.marshalNUser2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserᚄ,
