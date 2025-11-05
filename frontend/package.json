@@ -14,6 +14,7 @@
     "@nuxt/image": "^1.11.0",
     "@nuxt/ui": "^4.1.0",
     "@urql/exchange-auth": "^3.0.0",
+    "@urql/exchange-graphcache": "^8.1.0",
     "@urql/vue": "^2.0.0",
     "@vueuse/core": "^14.0.0",
     "@vueuse/nuxt": "14.0.0",
@@ -22,7 +23,8 @@
     "nuxt": "^4.2.0",
     "unplugin-vue-router": "^0.16.1",
     "vue": "^3.5.22",
-    "vue-router": "^4.6.3"
+    "vue-router": "^4.6.3",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^6.0.1",

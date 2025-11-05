@@ -82,6 +82,7 @@ export type Branding = {
 export type BrandingInput = {
   colors: ColorsInput;
   logo: Scalars['String']['input'];
+  rounding: Scalars['Int']['input'];
 };
 
 export type Challenge = {
@@ -170,7 +171,7 @@ export type CreateListeningAchievementInput = {
 
 export type CreateProjectInput = {
   branding: BrandingInput;
-  description: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
   endDate: Scalars['DateTime']['input'];
   name: Scalars['String']['input'];
   startDate: Scalars['DateTime']['input'];
@@ -1199,6 +1200,13 @@ export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type AdminProjectsPageQuery = { __typename?: 'Query', projects: Array<{ __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo: string, colors: { __typename?: 'Colors', primary: string } } }> };
 
+export type CreateProjectMutationVariables = Exact<{
+  input: CreateProjectInput;
+}>;
+
+
+export type CreateProjectMutation = { __typename?: 'Mutation', createProject: { __typename?: 'Project', id: string } };
+
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1405,6 +1413,17 @@ export const AdminProjectsPageDocument = gql`
 
 export function useAdminProjectsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectsPageQuery, AdminProjectsPageQueryVariables | undefined>({ query: AdminProjectsPageDocument, variables: undefined, ...options });
+};
+export const CreateProjectDocument = gql`
+    mutation CreateProject($input: CreateProjectInput!) {
+  createProject(input: $input) {
+    id
+  }
+}
+    `;
+
+export function useCreateProjectMutation() {
+  return Urql.useMutation<CreateProjectMutation, CreateProjectMutationVariables>(CreateProjectDocument);
 };
 export const ChallengesPageDocument = gql`
     query ChallengesPage {

@@ -307,6 +307,7 @@ input AgeRangeInput {
 input BrandingInput {
     logo: String!
     colors: ColorsInput!
+    rounding: Int!
 }
 
 input ColorsInput {
@@ -329,7 +330,7 @@ input TrackInput {
 
 input CreateProjectInput {
     name: String!
-    description: String!
+    description: String
     startDate: DateTime!
     endDate: DateTime!
     branding: BrandingInput!
