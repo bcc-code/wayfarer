@@ -8,6 +8,7 @@ definePageMeta({
 gql(`
   query AdminHomePage {
     me {
+      id
       name
     }
     projects {
