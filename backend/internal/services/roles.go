@@ -280,37 +280,3 @@ func (s *RoleService) CanManageTeam(ctx context.Context, userID, teamID string) 
 
 	return false
 }
-
-// GetPrimaryRole returns the highest priority role for a user
-// Priority order: SUPERADMIN > ADMIN > CHURCH_ADMIN > PROJECT_ADMIN > TEAM_LEAD > USER > M2M
-func (s *RoleService) GetPrimaryRole(ctx context.Context, userID string) (RoleType, error) {
-	roles, err := s.LoadUserRoles(ctx, userID)
-	if err != nil {
-		return "", err
-	}
-
-	if len(roles) == 0 {
-		return RoleUser, nil // Default to USER role
-	}
-
-	// Check in priority order
-	rolePriority := []RoleType{
-		RoleSuperAdmin,
-		RoleAdmin,
-		RoleChurchAdmin,
-		RoleProjectAdmin,
-		RoleTeamLead,
-		RoleUser,
-		RoleM2M,
-	}
-
-	for _, priority := range rolePriority {
-		for _, userRole := range roles {
-			if RoleType(userRole.Role) == priority {
-				return priority, nil
-			}
-		}
-	}
-
-	return RoleUser, nil
-}

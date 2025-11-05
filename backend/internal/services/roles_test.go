@@ -116,57 +116,6 @@ func TestCanAssignRole_ChurchAdminCanAssignTeamLead(t *testing.T) {
 
 }
 
-func TestGetPrimaryRole_ReturnsHighestPriorityRole(t *testing.T) {
-	mockQueries := mocks.NewMockRoleQuerier(t)
-	service := NewRoleService(mockQueries)
-
-	ctx := context.Background()
-	userID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
-
-	// User has multiple roles
-	mockQueries.On("GetUserRoles", ctx, userID).Return([]*sqlc.UserRole{
-		{
-			ID:     "UR01ARZ3NDEKTSV4RRFFQ69G5FAV",
-			UserID: userID,
-			Role:   string(RoleUser),
-		},
-		{
-			ID:     "UR02ARZ3NDEKTSV4RRFFQ69G5FAV",
-			UserID: userID,
-			Role:   string(RoleTeamLead),
-			TeamID: stringPtr("TM01ARZ3NDEKTSV4RRFFQ69G5FAV"),
-		},
-		{
-			ID:     "UR03ARZ3NDEKTSV4RRFFQ69G5FAV",
-			UserID: userID,
-			Role:   string(RoleAdmin),
-		},
-	}, nil)
-
-	// Should return Admin (highest priority)
-	primaryRole, err := service.GetPrimaryRole(ctx, userID)
-	assert.NoError(t, err)
-	assert.Equal(t, RoleAdmin, primaryRole)
-
-}
-
-func TestGetPrimaryRole_DefaultsToUser(t *testing.T) {
-	mockQueries := mocks.NewMockRoleQuerier(t)
-	service := NewRoleService(mockQueries)
-
-	ctx := context.Background()
-	userID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
-
-	// User has no roles
-	mockQueries.On("GetUserRoles", ctx, userID).Return([]*sqlc.UserRole{}, nil)
-
-	// Should default to USER
-	primaryRole, err := service.GetPrimaryRole(ctx, userID)
-	assert.NoError(t, err)
-	assert.Equal(t, RoleUser, primaryRole)
-
-}
-
 func TestIsAdmin_ReturnsTrueForSuperAdmin(t *testing.T) {
 	mockQueries := mocks.NewMockRoleQuerier(t)
 	service := NewRoleService(mockQueries)
