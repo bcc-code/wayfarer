@@ -10,6 +10,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 )
@@ -413,7 +414,7 @@ func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error
 }
 
 // Users is the resolver for the users field.
-func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, limit *int, offset *int) ([]model.User, error) {
+func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, first *int, after *string, last *int, before *string) (*model.UserConnection, error) {
 	// Validate user authentication and get basic info
 	userInfo, err := validateUserAccess(ctx, r.Loaders.UserByIDLoader)
 	if err != nil {
@@ -429,26 +430,71 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, lim
 	// Apply permission-based filters
 	filter = applyPermissionFilters(filter, perms)
 
-	// Build database query parameters
-	params := buildUserFilterParams(filter, limit, offset)
+	// Decode cursors if provided
+	var afterCursor, beforeCursor *string
+	if after != nil && *after != "" {
+		decoded, err := pagination.DecodeCursor(*after)
+		if err != nil {
+			return nil, fmt.Errorf("invalid after cursor: %w", err)
+		}
+		afterCursor = &decoded
+	}
+	if before != nil && *before != "" {
+		decoded, err := pagination.DecodeCursor(*before)
+		if err != nil {
+			return nil, fmt.Errorf("invalid before cursor: %w", err)
+		}
+		beforeCursor = &decoded
+	}
 
-	// Query database
-	rows, err := r.DB.Queries.GetUsersFiltered(ctx, params)
+	// Build database query parameters for cursor pagination
+	params, err := buildUserFilterParamsCursor(filter, first, afterCursor, last, beforeCursor)
+	if err != nil {
+		return nil, err
+	}
+
+	// Query database with cursor pagination
+	rows, err := r.DB.Queries.GetUsersFilteredCursor(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query users: %w", err)
 	}
 
-	// Convert to GraphQL model
-	result := make([]model.User, len(rows))
-	for i, row := range rows {
-		// Convert birthdate to string pointer
-		var birthdateStr *string
-		if row.Birthdate.Valid {
-			dateStr := row.Birthdate.Time.Format("2006-01-02")
-			birthdateStr = &dateStr
-		}
+	// Query total count
+	countParams := buildCountFilterParams(filter)
+	totalCount, err := r.DB.Queries.CountUsersFiltered(ctx, countParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count users: %w", err)
+	}
 
-		result[i] = model.User{
+	// Determine requested limit and check if there are more results
+	requestedLimit := 10 // default
+	if first != nil {
+		requestedLimit = *first
+	} else if last != nil {
+		requestedLimit = *last
+	}
+
+	hasMore := len(rows) > requestedLimit
+	users := rows
+	if hasMore {
+		// Trim the extra record we fetched for hasMore detection
+		users = rows[:requestedLimit]
+	}
+
+	// If backward pagination, reverse the results
+	if last != nil {
+		for i, j := 0, len(users)-1; i < j; i, j = i+1, j-1 {
+			users[i], users[j] = users[j], users[i]
+		}
+	}
+
+	// Convert to GraphQL model
+	modelUsers := make([]model.User, len(users))
+	for i, row := range users {
+		// Convert birthdate to string (always valid since birthdate is required)
+		birthdateStr := row.Birthdate.Time.Format("2006-01-02")
+
+		modelUsers[i] = model.User{
 			ID:        row.ID,
 			MembersID: row.MembersID,
 			Email:     row.Email,
@@ -460,7 +506,18 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, lim
 		}
 	}
 
-	return result, nil
+	// Build the connection
+	connection := pagination.BuildUserConnection(pagination.BuildUserConnectionParams{
+		Users:           modelUsers,
+		RequestedFirst:  first,
+		RequestedLast:   last,
+		RequestedAfter:  after,
+		RequestedBefore: before,
+		TotalCount:      int(totalCount),
+		HasMore:         hasMore,
+	})
+
+	return connection, nil
 }
 
 // Project is the resolver for the project field.

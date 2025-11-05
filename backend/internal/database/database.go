@@ -61,7 +61,7 @@ func Connect(ctx context.Context, cfg config.DatabaseConfig) (*DB, error) {
 
 				slog.Log(ctx, slogLevel, msg, attrs...)
 			}),
-			LogLevel: tracelog.LogLevelInfo,
+			LogLevel: tracelog.LogLevelTrace,
 		}
 		slog.Info("database query logging enabled")
 	}

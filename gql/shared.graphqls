@@ -113,7 +113,7 @@ type User {
     gender: Gender!
     churchId: ID!
     church: Church! @goField(forceResolver: true)
-    birthdate: String
+    birthdate: String!
     age: Int @goField(forceResolver: true)
     email: String!
     name: String!
@@ -553,4 +553,24 @@ input RevokeRoleInput {
     role: RoleType!
     scopeType: ScopeType
     scopeId: ID
+}
+
+# ==================== Relay Pagination ====================
+
+type PageInfo {
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: String
+    endCursor: String
+}
+
+type UserEdge {
+    cursor: String!
+    node: User!
+}
+
+type UserConnection {
+    edges: [UserEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
 }

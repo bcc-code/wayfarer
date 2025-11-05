@@ -170,3 +170,112 @@ func buildUserFilterParams(filter *model.UserFilter, limit *int, offset *int) sq
 
 	return params
 }
+
+// buildUserFilterParamsCursor converts GraphQL filter and cursor pagination params to database query parameters
+func buildUserFilterParamsCursor(filter *model.UserFilter, first *int, after *string, last *int, before *string) (sqlc.GetUsersFilteredCursorParams, error) {
+	params := sqlc.GetUsersFilteredCursorParams{}
+
+	// Apply filters
+	if filter.ChurchID != nil {
+		params.Churchid = *filter.ChurchID
+	}
+
+	if filter.Gender != nil {
+		params.Gender = string(*filter.Gender)
+	}
+
+	if filter.MinAge != nil {
+		params.Minage = int32(*filter.MinAge)
+	}
+
+	if filter.MaxAge != nil {
+		params.Maxage = int32(*filter.MaxAge)
+	} else {
+		params.Maxage = 1000
+	}
+
+	if filter.ProjectID != nil {
+		params.Projectid = *filter.ProjectID
+	}
+
+	if filter.EventID != nil {
+		params.Eventid = *filter.EventID
+	}
+
+	if filter.TeamID != nil {
+		params.Teamid = *filter.TeamID
+	}
+
+	if filter.Ids != nil {
+		params.Ids = filter.Ids
+	}
+
+	// Handle cursor pagination
+	// Determine pagination direction and limits
+	isBackward := false
+	var limit int
+
+	if first != nil && last != nil {
+		return params, fmt.Errorf("cannot specify both first and last")
+	}
+
+	if first != nil {
+		limit = *first + 1 // Fetch one extra to determine hasNextPage
+		isBackward = false
+	} else if last != nil {
+		limit = *last + 1 // Fetch one extra to determine hasPreviousPage
+		isBackward = true
+	} else {
+		// Default page size
+		limit = 11 // 10 items + 1 to check for next page
+		isBackward = false
+	}
+
+	params.Querylimit = int32(limit)
+	params.Isbackward = isBackward
+
+	// Handle cursors
+	if after != nil && *after != "" {
+		params.Aftercursor = *after
+	}
+	if before != nil && *before != "" {
+		params.Beforecursor = *before
+	}
+
+	return params, nil
+}
+
+// buildCountFilterParams converts GraphQL filter to count query parameters
+func buildCountFilterParams(filter *model.UserFilter) sqlc.CountUsersFilteredParams {
+	params := sqlc.CountUsersFilteredParams{}
+
+	// Apply filters
+	if filter.ChurchID != nil {
+		params.Churchid = *filter.ChurchID
+	}
+	if filter.Gender != nil {
+		params.Gender = string(*filter.Gender)
+	}
+	if filter.MinAge != nil {
+		params.Minage = int32(*filter.MinAge)
+	}
+	if filter.MaxAge != nil {
+		params.Maxage = int32(*filter.MaxAge)
+	} else {
+		params.Maxage = 1000
+	}
+	if filter.ProjectID != nil {
+		params.Projectid = *filter.ProjectID
+	}
+	if filter.EventID != nil {
+		params.Eventid = *filter.EventID
+	}
+	if filter.TeamID != nil {
+		params.Teamid = *filter.TeamID
+	}
+	if filter.Ids != nil {
+		params.Ids = filter.Ids
+	}
+
+	return params
+}

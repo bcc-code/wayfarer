@@ -11,6 +11,53 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const CountUsersFiltered = `-- name: CountUsersFiltered :one
+SELECT COUNT(u.id)
+FROM users u
+WHERE
+    ($1::text = '' OR u.church_id = $1::text)
+    AND ($2::text = '' OR u.gender = $2::text)
+    AND ($3::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $3::int)
+    AND ($4::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $4::int)
+    AND ($5::text = '' OR EXISTS (
+        SELECT 1 FROM user_projects up WHERE up.user_id = u.id AND up.project_id = $5::text
+    ))
+    AND ($6::text = '' OR EXISTS (
+        SELECT 1 FROM user_events ue WHERE ue.user_id = u.id AND ue.event_id = $6::text
+    ))
+    AND ($7::text = '' OR EXISTS (
+        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $7::text
+    ))
+    AND ($8::text[] IS NULL OR u.id = ANY($8::text[]))
+`
+
+type CountUsersFilteredParams struct {
+	Churchid  string   `json:"churchid"`
+	Gender    string   `json:"gender"`
+	Minage    int32    `json:"minage"`
+	Maxage    int32    `json:"maxage"`
+	Projectid string   `json:"projectid"`
+	Eventid   string   `json:"eventid"`
+	Teamid    string   `json:"teamid"`
+	Ids       []string `json:"ids"`
+}
+
+func (q *Queries) CountUsersFiltered(ctx context.Context, arg CountUsersFilteredParams) (int64, error) {
+	row := q.db.QueryRow(ctx, CountUsersFiltered,
+		arg.Churchid,
+		arg.Gender,
+		arg.Minage,
+		arg.Maxage,
+		arg.Projectid,
+		arg.Eventid,
+		arg.Teamid,
+		arg.Ids,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const CreateUser = `-- name: CreateUser :one
 INSERT INTO users (id, members_id, email, name, gender, birthdate, church_id, avatar_url)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -240,6 +287,100 @@ func (q *Queries) GetUsersFiltered(ctx context.Context, arg GetUsersFilteredPara
 	items := []*GetUsersFilteredRow{}
 	for rows.Next() {
 		var i GetUsersFilteredRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MembersID,
+			&i.Gender,
+			&i.ChurchID,
+			&i.Birthdate,
+			&i.Email,
+			&i.Name,
+			&i.AvatarUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUsersFilteredCursor = `-- name: GetUsersFilteredCursor :many
+SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.avatar_url
+FROM users u
+WHERE
+    ($1::text = '' OR u.church_id = $1::text)
+    AND ($2::text = '' OR u.gender = $2::text)
+    AND ($3::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $3::int)
+    AND ($4::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $4::int)
+    AND ($5::text = '' OR EXISTS (
+        SELECT 1 FROM user_projects up WHERE up.user_id = u.id AND up.project_id = $5::text
+    ))
+    AND ($6::text = '' OR EXISTS (
+        SELECT 1 FROM user_events ue WHERE ue.user_id = u.id AND ue.event_id = $6::text
+    ))
+    AND ($7::text = '' OR EXISTS (
+        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $7::text
+    ))
+    AND ($8::text[] IS NULL OR u.id = ANY($8::text[]))
+    AND ($9::text = '' OR u.id > $9::text)
+    AND ($10::text = '' OR u.id < $10::text)
+ORDER BY
+    CASE WHEN $11::bool = true THEN u.id END DESC,
+    CASE WHEN $11::bool = false OR $11::bool IS NULL THEN u.id END ASC
+LIMIT CASE WHEN $12::int IS NULL THEN NULL ELSE $12::int END
+`
+
+type GetUsersFilteredCursorParams struct {
+	Churchid     string   `json:"churchid"`
+	Gender       string   `json:"gender"`
+	Minage       int32    `json:"minage"`
+	Maxage       int32    `json:"maxage"`
+	Projectid    string   `json:"projectid"`
+	Eventid      string   `json:"eventid"`
+	Teamid       string   `json:"teamid"`
+	Ids          []string `json:"ids"`
+	Aftercursor  string   `json:"aftercursor"`
+	Beforecursor string   `json:"beforecursor"`
+	Isbackward   bool     `json:"isbackward"`
+	Querylimit   int32    `json:"querylimit"`
+}
+
+type GetUsersFilteredCursorRow struct {
+	ID        string      `json:"id"`
+	MembersID string      `json:"members_id"`
+	Gender    string      `json:"gender"`
+	ChurchID  string      `json:"church_id"`
+	Birthdate pgtype.Date `json:"birthdate"`
+	Email     string      `json:"email"`
+	Name      string      `json:"name"`
+	AvatarUrl *string     `json:"avatar_url"`
+}
+
+func (q *Queries) GetUsersFilteredCursor(ctx context.Context, arg GetUsersFilteredCursorParams) ([]*GetUsersFilteredCursorRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersFilteredCursor,
+		arg.Churchid,
+		arg.Gender,
+		arg.Minage,
+		arg.Maxage,
+		arg.Projectid,
+		arg.Eventid,
+		arg.Teamid,
+		arg.Ids,
+		arg.Aftercursor,
+		arg.Beforecursor,
+		arg.Isbackward,
+		arg.Querylimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUsersFilteredCursorRow{}
+	for rows.Next() {
+		var i GetUsersFilteredCursorRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.MembersID,

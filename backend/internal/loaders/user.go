@@ -42,12 +42,8 @@ func userByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 
 			// Convert to GraphQL model and populate cache
 			for _, row := range rows {
-				// Convert birthdate to string pointer
-				var birthdateStr *string
-				if row.Birthdate.Valid {
-					dateStr := row.Birthdate.Time.Format("2006-01-02")
-					birthdateStr = &dateStr
-				}
+				// Convert birthdate to string (always valid since birthdate is required)
+				birthdateStr := row.Birthdate.Time.Format("2006-01-02")
 
 				user := &model.User{
 					ID:        row.ID,

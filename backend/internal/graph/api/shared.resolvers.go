@@ -221,13 +221,13 @@ func (r *userResolver) Church(ctx context.Context, obj *model.User) (*model.Chur
 
 // Age is the resolver for the age field.
 func (r *userResolver) Age(ctx context.Context, obj *model.User) (*int, error) {
-	// If no birthdate, return nil
-	if obj.Birthdate == nil || *obj.Birthdate == "" {
+	// If birthdate is empty, return nil (shouldn't happen since birthdate is required)
+	if obj.Birthdate == "" {
 		return nil, nil
 	}
 
 	// Parse birthdate (format: YYYY-MM-DD)
-	birthdate, err := time.Parse("2006-01-02", *obj.Birthdate)
+	birthdate, err := time.Parse("2006-01-02", obj.Birthdate)
 	if err != nil {
 		return nil, fmt.Errorf("invalid birthdate format: %w", err)
 	}

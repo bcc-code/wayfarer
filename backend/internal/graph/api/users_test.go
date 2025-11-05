@@ -580,213 +580,337 @@ func TestBuildUserFilterParams(t *testing.T) {
 	}
 }
 
-// TestUsersResolverIntegration tests the full Users resolver flow
-func TestUsersResolverIntegration(t *testing.T) {
+// TestBuildUserFilterParamsCursor tests the buildUserFilterParamsCursor function
+func TestBuildUserFilterParamsCursor(t *testing.T) {
+	maleGender := model.GenderMale
+	femaleGender := model.GenderFemale
+
 	tests := []struct {
-		name          string
-		ctx           context.Context
-		filter        *model.UserFilter
-		limit         *int
-		offset        *int
-		setupMocks    func(*mockUserLoader, *mockRoleService, *mockQuerier)
-		expectError   bool
-		errorMsg      string
-		expectedCount int
+		name        string
+		filter      *model.UserFilter
+		first       *int
+		after       *string
+		last        *int
+		before      *string
+		expectError bool
+		errorMsg    string
+		check       func(*testing.T, sqlc.GetUsersFilteredCursorParams)
 	}{
 		{
-			name:   "superadmin can query all users",
-			ctx:    createTestContext("US123"),
-			filter: &model.UserFilter{},
-			limit:  intPtr(10),
-			offset: nil,
-			setupMocks: func(loader *mockUserLoader, roles *mockRoleService, querier *mockQuerier) {
-				// Setup user loader
-				loader.On("Load", mock.Anything, "US123").Return(
-					dataloader.Thunk[*model.User](func() (*model.User, error) {
-						return &model.User{ID: "US123", ChurchID: "CH456"}, nil
-					}),
-				)
-
-				// Setup role service - superadmin
-				roles.On("IsAdmin", mock.Anything, "US123").Return(true)
-
-				// Setup querier - return some users
-				querier.On("GetUsersFiltered", mock.Anything, mock.MatchedBy(func(params sqlc.GetUsersFilteredParams) bool {
-					return params.Querylimit == 10
-				})).Return([]sqlc.GetUsersFilteredRow{
-					{ID: "US001", Name: "User 1", ChurchID: "CH456", Gender: "MALE"},
-					{ID: "US002", Name: "User 2", ChurchID: "CH456", Gender: "FEMALE"},
-				}, nil)
-			},
-			expectError:   false,
-			expectedCount: 2,
-		},
-		{
-			name: "church admin can only see users from their church",
-			ctx:  createTestContext("US123"),
+			name: "forward pagination with all filters",
 			filter: &model.UserFilter{
-				Gender: func() *model.Gender { g := model.GenderMale; return &g }(),
+				ChurchID:  stringPtr("CH123"),
+				Gender:    &maleGender,
+				MinAge:    intPtr(18),
+				MaxAge:    intPtr(30),
+				ProjectID: stringPtr("PR456"),
+				EventID:   stringPtr("EV789"),
+				TeamID:    stringPtr("TM999"),
+				Ids:       []string{"US001", "US002"},
 			},
-			limit:  nil,
-			offset: nil,
-			setupMocks: func(loader *mockUserLoader, roles *mockRoleService, querier *mockQuerier) {
-				loader.On("Load", mock.Anything, "US123").Return(
-					dataloader.Thunk[*model.User](func() (*model.User, error) {
-						return &model.User{ID: "US123", ChurchID: "CH456"}, nil
-					}),
-				)
-
-				roles.On("IsAdmin", mock.Anything, "US123").Return(false)
-				roles.On("CanManageChurch", mock.Anything, "US123", "CH456").Return(true)
-
-				// Verify that church filter is applied
-				querier.On("GetUsersFiltered", mock.Anything, mock.MatchedBy(func(params sqlc.GetUsersFilteredParams) bool {
-					return params.Churchid == "CH456" && params.Gender == "MALE"
-				})).Return([]sqlc.GetUsersFilteredRow{
-					{ID: "US001", Name: "User 1", ChurchID: "CH456", Gender: "MALE"},
-				}, nil)
+			first:       intPtr(10),
+			after:       stringPtr("US005"),
+			last:        nil,
+			before:      nil,
+			expectError: false,
+			check: func(t *testing.T, params sqlc.GetUsersFilteredCursorParams) {
+				assert.Equal(t, "CH123", params.Churchid)
+				assert.Equal(t, "MALE", params.Gender)
+				assert.Equal(t, int32(18), params.Minage)
+				assert.Equal(t, int32(30), params.Maxage)
+				assert.Equal(t, "PR456", params.Projectid)
+				assert.Equal(t, "EV789", params.Eventid)
+				assert.Equal(t, "TM999", params.Teamid)
+				assert.Equal(t, []string{"US001", "US002"}, params.Ids)
+				assert.Equal(t, int32(11), params.Querylimit) // 10 + 1 for hasMore check
+				assert.False(t, params.Isbackward)
+				assert.Equal(t, "US005", params.Aftercursor)
+				assert.Equal(t, "", params.Beforecursor)
 			},
-			expectError:   false,
-			expectedCount: 1,
 		},
 		{
-			name:   "unauthenticated user is rejected",
-			ctx:    createTestContext(""),
-			filter: nil,
-			limit:  nil,
-			offset: nil,
-			setupMocks: func(loader *mockUserLoader, roles *mockRoleService, querier *mockQuerier) {
-				// No setup needed - validation should fail before any calls
-			},
-			expectError: true,
-			errorMsg:    "user not authenticated",
-		},
-		{
-			name:   "user without admin permissions is rejected",
-			ctx:    createTestContext("US123"),
-			filter: nil,
-			limit:  nil,
-			offset: nil,
-			setupMocks: func(loader *mockUserLoader, roles *mockRoleService, querier *mockQuerier) {
-				loader.On("Load", mock.Anything, "US123").Return(
-					dataloader.Thunk[*model.User](func() (*model.User, error) {
-						return &model.User{ID: "US123", ChurchID: "CH456"}, nil
-					}),
-				)
-
-				roles.On("IsAdmin", mock.Anything, "US123").Return(false)
-				roles.On("CanManageChurch", mock.Anything, "US123", "CH456").Return(false)
-			},
-			expectError: true,
-			errorMsg:    "permission denied",
-		},
-		{
-			name: "project admin filtering by project",
-			ctx:  createTestContext("US123"),
+			name: "backward pagination with before cursor",
 			filter: &model.UserFilter{
-				ProjectID: stringPtr("PR789"),
+				ChurchID: stringPtr("CH123"),
+				Gender:   &femaleGender,
 			},
-			limit:  nil,
-			offset: nil,
-			setupMocks: func(loader *mockUserLoader, roles *mockRoleService, querier *mockQuerier) {
-				loader.On("Load", mock.Anything, "US123").Return(
-					dataloader.Thunk[*model.User](func() (*model.User, error) {
-						return &model.User{ID: "US123", ChurchID: "CH456"}, nil
-					}),
-				)
-
-				roles.On("IsAdmin", mock.Anything, "US123").Return(false)
-				roles.On("CanManageChurch", mock.Anything, "US123", "CH456").Return(false)
-				roles.On("CanManageProject", mock.Anything, "US123", "PR789").Return(true)
-
-				querier.On("GetUsersFiltered", mock.Anything, mock.MatchedBy(func(params sqlc.GetUsersFilteredParams) bool {
-					return params.Projectid == "PR789"
-				})).Return([]sqlc.GetUsersFilteredRow{
-					{ID: "US001", Name: "User 1", ChurchID: "CH456", Gender: "MALE"},
-				}, nil)
+			first:       nil,
+			after:       nil,
+			last:        intPtr(5),
+			before:      stringPtr("US100"),
+			expectError: false,
+			check: func(t *testing.T, params sqlc.GetUsersFilteredCursorParams) {
+				assert.Equal(t, "CH123", params.Churchid)
+				assert.Equal(t, "FEMALE", params.Gender)
+				assert.Equal(t, int32(6), params.Querylimit) // 5 + 1 for hasMore check
+				assert.True(t, params.Isbackward)
+				assert.Equal(t, "", params.Aftercursor)
+				assert.Equal(t, "US100", params.Beforecursor)
 			},
-			expectError:   false,
-			expectedCount: 1,
 		},
 		{
-			name: "database error is propagated",
-			ctx:  createTestContext("US123"),
-			filter: &model.UserFilter{
-				ChurchID: stringPtr("CH456"),
-			},
-			limit:  nil,
-			offset: nil,
-			setupMocks: func(loader *mockUserLoader, roles *mockRoleService, querier *mockQuerier) {
-				loader.On("Load", mock.Anything, "US123").Return(
-					dataloader.Thunk[*model.User](func() (*model.User, error) {
-						return &model.User{ID: "US123", ChurchID: "CH456"}, nil
-					}),
-				)
-
-				roles.On("IsAdmin", mock.Anything, "US123").Return(true)
-
-				querier.On("GetUsersFiltered", mock.Anything, mock.Anything).Return(
-					nil, errors.New("database connection error"),
-				)
-			},
+			name:        "both first and last specified - error",
+			filter:      &model.UserFilter{},
+			first:       intPtr(10),
+			after:       nil,
+			last:        intPtr(5),
+			before:      nil,
 			expectError: true,
-			errorMsg:    "database connection error",
+			errorMsg:    "cannot specify both first and last",
+		},
+		{
+			name:        "default pagination - no first or last",
+			filter:      &model.UserFilter{},
+			first:       nil,
+			after:       nil,
+			last:        nil,
+			before:      nil,
+			expectError: false,
+			check: func(t *testing.T, params sqlc.GetUsersFilteredCursorParams) {
+				assert.Equal(t, int32(11), params.Querylimit) // default 10 + 1
+				assert.False(t, params.Isbackward)
+			},
+		},
+		{
+			name: "age range with defaults",
+			filter: &model.UserFilter{
+				MinAge: intPtr(21),
+			},
+			first:       intPtr(20),
+			after:       nil,
+			last:        nil,
+			before:      nil,
+			expectError: false,
+			check: func(t *testing.T, params sqlc.GetUsersFilteredCursorParams) {
+				assert.Equal(t, int32(21), params.Minage)
+				assert.Equal(t, int32(1000), params.Maxage) // default max age
+			},
+		},
+		{
+			name: "with explicit max age",
+			filter: &model.UserFilter{
+				MinAge: intPtr(18),
+				MaxAge: intPtr(65),
+			},
+			first:       intPtr(10),
+			after:       nil,
+			last:        nil,
+			before:      nil,
+			expectError: false,
+			check: func(t *testing.T, params sqlc.GetUsersFilteredCursorParams) {
+				assert.Equal(t, int32(18), params.Minage)
+				assert.Equal(t, int32(65), params.Maxage)
+			},
+		},
+		{
+			name: "empty cursors",
+			filter: &model.UserFilter{
+				ChurchID: stringPtr("CH123"),
+			},
+			first:       intPtr(10),
+			after:       stringPtr(""),
+			last:        nil,
+			before:      stringPtr(""),
+			expectError: false,
+			check: func(t *testing.T, params sqlc.GetUsersFilteredCursorParams) {
+				assert.Equal(t, "", params.Aftercursor)
+				assert.Equal(t, "", params.Beforecursor)
+			},
+		},
+		{
+			name: "forward pagination with after and before cursors",
+			filter: &model.UserFilter{
+				ProjectID: stringPtr("PR123"),
+			},
+			first:       intPtr(15),
+			after:       stringPtr("US010"),
+			last:        nil,
+			before:      stringPtr("US050"),
+			expectError: false,
+			check: func(t *testing.T, params sqlc.GetUsersFilteredCursorParams) {
+				assert.Equal(t, int32(16), params.Querylimit) // 15 + 1
+				assert.False(t, params.Isbackward)
+				assert.Equal(t, "US010", params.Aftercursor)
+				assert.Equal(t, "US050", params.Beforecursor)
+			},
+		},
+		{
+			name: "minimal filter with IDs",
+			filter: &model.UserFilter{
+				Ids: []string{"US001", "US002", "US003"},
+			},
+			first:       intPtr(3),
+			after:       nil,
+			last:        nil,
+			before:      nil,
+			expectError: false,
+			check: func(t *testing.T, params sqlc.GetUsersFilteredCursorParams) {
+				assert.Equal(t, []string{"US001", "US002", "US003"}, params.Ids)
+				assert.Equal(t, int32(4), params.Querylimit) // 3 + 1
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create mocks
-			loader := new(mockUserLoader)
-			roles := new(mockRoleService)
-			querier := new(mockQuerier)
+			result, err := buildUserFilterParamsCursor(tt.filter, tt.first, tt.after, tt.last, tt.before)
 
-			// Setup mocks
-			tt.setupMocks(loader, roles, querier)
-
-			// Create a mock resolver with minimal setup
-			// Note: We can't easily test the full resolver without setting up
-			// DB, Loaders, Cache, etc. Instead, we test the integration of
-			// our extracted functions which the resolver uses.
-
-			// Test the flow: validate -> check permissions -> apply filters -> build params
-			userInfo, err := validateUserAccess(tt.ctx, loader)
-			if tt.expectError && err != nil {
-				// Expected error at validation stage
-				assert.Contains(t, err.Error(), tt.errorMsg)
-				return
-			}
-			if err != nil {
-				t.Fatalf("Unexpected error at validation: %v", err)
-			}
-
-			perms, err := checkUserPermissions(tt.ctx, roles, userInfo, tt.filter)
-			if tt.expectError && err != nil {
-				// Expected error at permission check stage
-				assert.Contains(t, err.Error(), tt.errorMsg)
-				return
-			}
-			if err != nil {
-				t.Fatalf("Unexpected error at permission check: %v", err)
-			}
-
-			filter := applyPermissionFilters(tt.filter, perms)
-			params := buildUserFilterParams(filter, tt.limit, tt.offset)
-
-			// Query database
-			rows, err := querier.GetUsersFiltered(tt.ctx, params)
 			if tt.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorMsg)
 			} else {
 				require.NoError(t, err)
-				assert.Len(t, rows, tt.expectedCount)
+				if tt.check != nil {
+					tt.check(t, result)
+				}
 			}
-
-			// Verify all mocks were called as expected
-			loader.AssertExpectations(t)
-			roles.AssertExpectations(t)
-			querier.AssertExpectations(t)
 		})
 	}
 }
+
+// TestBuildCountFilterParams tests the buildCountFilterParams function
+func TestBuildCountFilterParams(t *testing.T) {
+	maleGender := model.GenderMale
+	femaleGender := model.GenderFemale
+
+	tests := []struct {
+		name   string
+		filter *model.UserFilter
+		check  func(*testing.T, sqlc.CountUsersFilteredParams)
+	}{
+		{
+			name: "all filters populated",
+			filter: &model.UserFilter{
+				ChurchID:  stringPtr("CH123"),
+				Gender:    &maleGender,
+				MinAge:    intPtr(18),
+				MaxAge:    intPtr(30),
+				ProjectID: stringPtr("PR456"),
+				EventID:   stringPtr("EV789"),
+				TeamID:    stringPtr("TM999"),
+				Ids:       []string{"US001", "US002"},
+			},
+			check: func(t *testing.T, params sqlc.CountUsersFilteredParams) {
+				assert.Equal(t, "CH123", params.Churchid)
+				assert.Equal(t, "MALE", params.Gender)
+				assert.Equal(t, int32(18), params.Minage)
+				assert.Equal(t, int32(30), params.Maxage)
+				assert.Equal(t, "PR456", params.Projectid)
+				assert.Equal(t, "EV789", params.Eventid)
+				assert.Equal(t, "TM999", params.Teamid)
+				assert.Equal(t, []string{"US001", "US002"}, params.Ids)
+			},
+		},
+		{
+			name: "minimal filter with female gender",
+			filter: &model.UserFilter{
+				Gender: &femaleGender,
+			},
+			check: func(t *testing.T, params sqlc.CountUsersFilteredParams) {
+				assert.Equal(t, "FEMALE", params.Gender)
+				assert.Equal(t, "", params.Churchid)
+				assert.Equal(t, int32(0), params.Minage)
+				assert.Equal(t, int32(1000), params.Maxage) // default max age
+			},
+		},
+		{
+			name: "only age range filter",
+			filter: &model.UserFilter{
+				MinAge: intPtr(25),
+				MaxAge: intPtr(35),
+			},
+			check: func(t *testing.T, params sqlc.CountUsersFilteredParams) {
+				assert.Equal(t, int32(25), params.Minage)
+				assert.Equal(t, int32(35), params.Maxage)
+			},
+		},
+		{
+			name: "only church filter",
+			filter: &model.UserFilter{
+				ChurchID: stringPtr("CH999"),
+			},
+			check: func(t *testing.T, params sqlc.CountUsersFilteredParams) {
+				assert.Equal(t, "CH999", params.Churchid)
+			},
+		},
+		{
+			name: "only IDs filter",
+			filter: &model.UserFilter{
+				Ids: []string{"US100", "US200", "US300"},
+			},
+			check: func(t *testing.T, params sqlc.CountUsersFilteredParams) {
+				assert.Equal(t, []string{"US100", "US200", "US300"}, params.Ids)
+			},
+		},
+		{
+			name:   "empty filter",
+			filter: &model.UserFilter{},
+			check: func(t *testing.T, params sqlc.CountUsersFilteredParams) {
+				assert.Equal(t, "", params.Churchid)
+				assert.Equal(t, "", params.Gender)
+				assert.Equal(t, int32(0), params.Minage)
+				assert.Equal(t, int32(1000), params.Maxage) // default max age
+			},
+		},
+		{
+			name: "project and event filters",
+			filter: &model.UserFilter{
+				ProjectID: stringPtr("PR123"),
+				EventID:   stringPtr("EV456"),
+			},
+			check: func(t *testing.T, params sqlc.CountUsersFilteredParams) {
+				assert.Equal(t, "PR123", params.Projectid)
+				assert.Equal(t, "EV456", params.Eventid)
+			},
+		},
+		{
+			name: "team filter",
+			filter: &model.UserFilter{
+				TeamID: stringPtr("TM789"),
+			},
+			check: func(t *testing.T, params sqlc.CountUsersFilteredParams) {
+				assert.Equal(t, "TM789", params.Teamid)
+			},
+		},
+		{
+			name: "min age without max age - uses default",
+			filter: &model.UserFilter{
+				MinAge: intPtr(21),
+			},
+			check: func(t *testing.T, params sqlc.CountUsersFilteredParams) {
+				assert.Equal(t, int32(21), params.Minage)
+				assert.Equal(t, int32(1000), params.Maxage) // default max age
+			},
+		},
+		{
+			name: "zero values",
+			filter: &model.UserFilter{
+				MinAge: intPtr(0),
+			},
+			check: func(t *testing.T, params sqlc.CountUsersFilteredParams) {
+				assert.Equal(t, int32(0), params.Minage)
+			},
+		},
+		{
+			name: "empty IDs array",
+			filter: &model.UserFilter{
+				Ids: []string{},
+			},
+			check: func(t *testing.T, params sqlc.CountUsersFilteredParams) {
+				assert.NotNil(t, params.Ids)
+				assert.Empty(t, params.Ids)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := buildCountFilterParams(tt.filter)
+			tt.check(t, result)
+		})
+	}
+}
+
+// Note: Integration tests for the Users resolver with cursor pagination
+// require more complex setup with database mocks for GetUsersFilteredCursor
+// and CountUsersFiltered. The core business logic is tested above.

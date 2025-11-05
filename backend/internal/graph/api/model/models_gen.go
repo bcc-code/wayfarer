@@ -295,6 +295,13 @@ func (this ListeningAchievement) GetHidden() bool                  { return this
 type Mutation struct {
 }
 
+type PageInfo struct {
+	HasNextPage     bool    `json:"hasNextPage"`
+	HasPreviousPage bool    `json:"hasPreviousPage"`
+	StartCursor     *string `json:"startCursor,omitempty"`
+	EndCursor       *string `json:"endCursor,omitempty"`
+}
+
 type Project struct {
 	ID           string             `json:"id"`
 	Name         string             `json:"name"`
@@ -529,7 +536,7 @@ type User struct {
 	Gender     Gender      `json:"gender"`
 	ChurchID   string      `json:"churchId"`
 	Church     *Church     `json:"church"`
-	Birthdate  *string     `json:"birthdate,omitempty"`
+	Birthdate  string      `json:"birthdate"`
 	Age        *int        `json:"age,omitempty"`
 	Email      string      `json:"email"`
 	Name       string      `json:"name"`
@@ -539,6 +546,17 @@ type User struct {
 	Teams      []Team      `json:"teams"`
 	SuperTeams []SuperTeam `json:"superTeams"`
 	Roles      []UserRole  `json:"roles"`
+}
+
+type UserConnection struct {
+	Edges      []UserEdge `json:"edges"`
+	PageInfo   *PageInfo  `json:"pageInfo"`
+	TotalCount int        `json:"totalCount"`
+}
+
+type UserEdge struct {
+	Cursor string `json:"cursor"`
+	Node   *User  `json:"node"`
 }
 
 type UserFilter struct {

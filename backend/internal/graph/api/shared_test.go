@@ -15,85 +15,79 @@ func TestUserResolver_Age(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		birthdate *string
+		birthdate string
 		wantAge   *int
 		wantErr   bool
 	}{
 		{
-			name:      "nil birthdate returns nil",
-			birthdate: nil,
-			wantAge:   nil,
-			wantErr:   false,
-		},
-		{
 			name:      "empty birthdate returns nil",
-			birthdate: stringPtr(""),
+			birthdate: "",
 			wantAge:   nil,
 			wantErr:   false,
 		},
 		{
 			name:      "invalid date format returns error",
-			birthdate: stringPtr("invalid-date"),
+			birthdate: "invalid-date",
 			wantAge:   nil,
 			wantErr:   true,
 		},
 		{
 			name:      "wrong date format returns error",
-			birthdate: stringPtr("01/15/1990"),
+			birthdate: "01/15/1990",
 			wantAge:   nil,
 			wantErr:   true,
 		},
 		{
 			name:      "valid birthdate calculates correct age",
-			birthdate: stringPtr("1990-06-15"),
+			birthdate: "1990-06-15",
 			wantAge:   intPtr(calculateExpectedAge("1990-06-15")),
 			wantErr:   false,
 		},
 		{
 			name:      "birthday not yet occurred this year",
-			birthdate: stringPtr(time.Now().AddDate(-25, 6, 0).Format("2006-01-02")),
+			birthdate: time.Now().AddDate(-25, 6, 0).Format("2006-01-02"),
 			wantAge:   intPtr(24), // Birthday hasn't happened yet
 			wantErr:   false,
 		},
 		{
 			name:      "birthday already occurred this year",
-			birthdate: stringPtr(time.Now().AddDate(-25, -6, 0).Format("2006-01-02")),
+			birthdate: time.Now().AddDate(-25, -6, 0).Format("2006-01-02"),
 			wantAge:   intPtr(25), // Birthday already happened
 			wantErr:   false,
 		},
 		{
 			name:      "born today",
-			birthdate: stringPtr(time.Now().Format("2006-01-02")),
+			birthdate: time.Now().Format("2006-01-02"),
 			wantAge:   intPtr(0),
 			wantErr:   false,
 		},
 		{
 			name:      "born yesterday",
-			birthdate: stringPtr(time.Now().AddDate(0, 0, -1).Format("2006-01-02")),
+			birthdate: time.Now().AddDate(0, 0, -1).Format("2006-01-02"),
 			wantAge:   intPtr(0),
 			wantErr:   false,
 		},
 		{
 			name:      "born 100 years ago",
-			birthdate: stringPtr(time.Now().AddDate(-100, 0, 0).Format("2006-01-02")),
+			birthdate: time.Now().AddDate(-100, 0, 0).Format("2006-01-02"),
 			wantAge:   intPtr(100),
 			wantErr:   false,
 		},
 		{
 			name:      "leap year birthday (Feb 29, 2000)",
-			birthdate: stringPtr("2000-02-29"),
+			birthdate: "2000-02-29",
 			wantAge:   intPtr(calculateExpectedAge("2000-02-29")),
 			wantErr:   false,
 		},
 		{
 			name:      "born on Jan 1",
-			birthdate: stringPtr("2000-01-01"),
+			birthdate: "2000-01-01",
 			wantAge:   intPtr(calculateExpectedAge("2000-01-01")),
 			wantErr:   false,
 		},
 		{
 			name:      "born on Dec 31",
-			birthdate: stringPtr("2000-12-31"),
+			birthdate: "2000-12-31",
 			wantAge:   intPtr(calculateExpectedAge("2000-12-31")),
 			wantErr:   false,
 		},

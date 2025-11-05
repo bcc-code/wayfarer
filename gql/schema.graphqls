@@ -20,7 +20,7 @@ type Query {
     # ==================== Admin/M2M API Queries ====================
     # System-wide queries with explicit filtering
     user(id: ID!): User!
-    users(filter: UserFilter, limit: Int, offset: Int): [User!]!
+    users(filter: UserFilter, first: Int, after: String, last: Int, before: String): UserConnection!
 
     project(id: ID!): Project!
     projects: [Project!]!
