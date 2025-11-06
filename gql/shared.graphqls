@@ -548,6 +548,15 @@ input TeamFilter {
     maxMembers: Int  # Maximum number of members
 }
 
+input SuperTeamFilter {
+    projectId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    minTeams: Int  # Minimum number of teams
+    maxTeams: Int  # Maximum number of teams
+    minMembers: Int  # Minimum number of members (across all teams)
+    maxMembers: Int  # Maximum number of members (across all teams)
+}
+
 # ==================== Role Management Types ====================
 
 type RoleScope {
@@ -631,6 +640,17 @@ type TeamEdge {
 
 type TeamConnection {
     edges: [TeamEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type SuperTeamEdge {
+    cursor: String!
+    node: SuperTeam!
+}
+
+type SuperTeamConnection {
+    edges: [SuperTeamEdge!]!
     pageInfo: PageInfo!
     totalCount: Int!
 }

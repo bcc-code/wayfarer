@@ -46,10 +46,12 @@ const (
 	PrefixUsersCount     = "userscount:"
 	PrefixProjectsFilter = "projectsfilter:"
 	PrefixProjectsCount  = "projectscount:"
-	PrefixEventsFilter   = "eventsfilter:"
-	PrefixEventsCount    = "eventscount:"
-	PrefixTeamsFilter    = "teamsfilter:"
-	PrefixTeamsCount     = "teamscount:"
+	PrefixEventsFilter      = "eventsfilter:"
+	PrefixEventsCount       = "eventscount:"
+	PrefixTeamsFilter       = "teamsfilter:"
+	PrefixTeamsCount        = "teamscount:"
+	PrefixSuperTeamsFilter  = "superteamsfilter:"
+	PrefixSuperTeamsCount   = "superteamscount:"
 
 	// Permissions/Roles
 	PrefixHasRole          = "hasrole:"
@@ -470,4 +472,66 @@ func TeamsCountKey(params map[string]string) string {
 	hashStr := hex.EncodeToString(hash[:])[:16]
 
 	return PrefixTeamsCount + hashStr
+}
+
+// SuperTeamsFilterKey builds a cache key for filtered super teams query results
+func SuperTeamsFilterKey(params map[string]string) string {
+	if len(params) == 0 {
+		return PrefixSuperTeamsFilter + "all"
+	}
+
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for a shorter key
+	hash := sha256.Sum256([]byte(builder.String()))
+	hashStr := hex.EncodeToString(hash[:])[:16]
+
+	return PrefixSuperTeamsFilter + hashStr
+}
+
+// SuperTeamsCountKey builds a cache key for filtered super teams count query results
+func SuperTeamsCountKey(params map[string]string) string {
+	if len(params) == 0 {
+		return PrefixSuperTeamsCount + "all"
+	}
+
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for a shorter key
+	hash := sha256.Sum256([]byte(builder.String()))
+	hashStr := hex.EncodeToString(hash[:])[:16]
+
+	return PrefixSuperTeamsCount + hashStr
 }

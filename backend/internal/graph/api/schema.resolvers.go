@@ -1003,8 +1003,123 @@ func (r *queryResolver) Superteam(ctx context.Context, id string) (*model.SuperT
 }
 
 // Superteams is the resolver for the superteams field.
-func (r *queryResolver) Superteams(ctx context.Context, projectID *string) ([]model.SuperTeam, error) {
-	panic(fmt.Errorf("not implemented: Superteams - superteams"))
+func (r *queryResolver) Superteams(ctx context.Context, filter *model.SuperTeamFilter, first *int, after *string, last *int, before *string) (*model.SuperTeamConnection, error) {
+	// Build cache key from filter and pagination parameters
+	cacheKeyParams := buildSuperTeamCacheKeyParams(filter, first, after, last, before)
+	cacheKey := cache.SuperTeamsFilterKey(cacheKeyParams)
+	countCacheKey := cache.SuperTeamsCountKey(cacheKeyParams)
+
+	// Check cache for connection result
+	if cached, ok := r.Cache.Get(cacheKey); ok {
+		if connection, ok := cached.(*model.SuperTeamConnection); ok {
+			return connection, nil
+		}
+	}
+
+	// Decode cursors if provided
+	var afterCursor, beforeCursor *string
+	if after != nil && *after != "" {
+		decoded, err := pagination.DecodeCursor(*after)
+		if err != nil {
+			return nil, fmt.Errorf("invalid after cursor: %w", err)
+		}
+		afterCursor = &decoded
+	}
+	if before != nil && *before != "" {
+		decoded, err := pagination.DecodeCursor(*before)
+		if err != nil {
+			return nil, fmt.Errorf("invalid before cursor: %w", err)
+		}
+		beforeCursor = &decoded
+	}
+
+	// Build database query parameters for cursor pagination
+	params, err := buildSuperTeamFilterParamsCursor(filter, first, afterCursor, last, beforeCursor)
+	if err != nil {
+		return nil, err
+	}
+
+	// Query database with cursor pagination
+	rows, err := r.DB.Queries.GetSuperTeamsFilteredCursor(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query super teams: %w", err)
+	}
+
+	// Query total count (check cache first)
+	var totalCount int64
+	countCached := false
+	if cachedCount, ok := r.Cache.Get(countCacheKey); ok {
+		if count, ok := cachedCount.(int64); ok {
+			totalCount = count
+			countCached = true
+		}
+	}
+
+	// If not in cache, query database
+	if !countCached {
+		countParams := buildCountSuperTeamsFilterParams(filter)
+		totalCount, err = r.DB.Queries.CountSuperTeamsFiltered(ctx, countParams)
+		if err != nil {
+			return nil, fmt.Errorf("failed to count super teams: %w", err)
+		}
+
+		// Store count in cache
+		r.Cache.Set(countCacheKey, totalCount)
+	}
+
+	// Determine requested limit and check if there are more results
+	requestedLimit := 10 // default
+	if first != nil {
+		requestedLimit = *first
+	} else if last != nil {
+		requestedLimit = *last
+	}
+
+	hasMore := len(rows) > requestedLimit
+	superTeams := rows
+	if hasMore {
+		// Trim the extra record we fetched for hasMore detection
+		superTeams = rows[:requestedLimit]
+	}
+
+	// If backward pagination, reverse the results
+	if last != nil {
+		for i, j := 0, len(superTeams)-1; i < j; i, j = i+1, j-1 {
+			superTeams[i], superTeams[j] = superTeams[j], superTeams[i]
+		}
+	}
+
+	// Convert to GraphQL model
+	modelSuperTeams := make([]model.SuperTeam, len(superTeams))
+	for i, row := range superTeams {
+		description := ""
+		if row.Description != nil {
+			description = *row.Description
+		}
+
+		modelSuperTeams[i] = model.SuperTeam{
+			ID:          row.ID,
+			ProjectID:   row.ProjectID,
+			Name:        row.Name,
+			Description: description,
+		}
+	}
+
+	// Build connection using pagination helper
+	connection := pagination.BuildSuperTeamConnection(pagination.BuildSuperTeamConnectionParams{
+		SuperTeams:      modelSuperTeams,
+		RequestedFirst:  first,
+		RequestedLast:   last,
+		RequestedAfter:  after,
+		RequestedBefore: before,
+		TotalCount:      int(totalCount),
+		HasMore:         hasMore,
+	})
+
+	// Store in cache
+	r.Cache.Set(cacheKey, connection)
+
+	return connection, nil
 }
 
 // Achievement is the resolver for the achievement field.

@@ -488,6 +488,26 @@ type SuperTeam struct {
 	ProjectID     string             `json:"-"`
 }
 
+type SuperTeamConnection struct {
+	Edges      []SuperTeamEdge `json:"edges"`
+	PageInfo   *PageInfo       `json:"pageInfo"`
+	TotalCount int             `json:"totalCount"`
+}
+
+type SuperTeamEdge struct {
+	Cursor string     `json:"cursor"`
+	Node   *SuperTeam `json:"node"`
+}
+
+type SuperTeamFilter struct {
+	ProjectID  *string  `json:"projectId,omitempty"`
+	Ids        []string `json:"ids,omitempty"`
+	MinTeams   *int     `json:"minTeams,omitempty"`
+	MaxTeams   *int     `json:"maxTeams,omitempty"`
+	MinMembers *int     `json:"minMembers,omitempty"`
+	MaxMembers *int     `json:"maxMembers,omitempty"`
+}
+
 type Team struct {
 	ID            string             `json:"id"`
 	Name          string             `json:"name"`

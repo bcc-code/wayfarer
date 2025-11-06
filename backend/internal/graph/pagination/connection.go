@@ -198,3 +198,71 @@ func buildTeamPageInfo(params BuildTeamConnectionParams, edges []model.TeamEdge)
 
 	return pageInfo
 }
+
+// BuildSuperTeamConnectionParams holds parameters for building a SuperTeamConnection
+type BuildSuperTeamConnectionParams struct {
+	SuperTeams      []model.SuperTeam
+	RequestedFirst  *int
+	RequestedLast   *int
+	RequestedAfter  *string
+	RequestedBefore *string
+	TotalCount      int
+	HasMore         bool
+}
+
+// BuildSuperTeamConnection constructs a Relay-style connection from query results
+func BuildSuperTeamConnection(params BuildSuperTeamConnectionParams) *model.SuperTeamConnection {
+	edges := make([]model.SuperTeamEdge, len(params.SuperTeams))
+	for i, superTeam := range params.SuperTeams {
+		edges[i] = model.SuperTeamEdge{
+			Cursor: EncodeCursor(superTeam.ID),
+			Node:   &superTeam,
+		}
+	}
+
+	pageInfo := buildSuperTeamPageInfo(params, edges)
+
+	return &model.SuperTeamConnection{
+		Edges:      edges,
+		PageInfo:   pageInfo,
+		TotalCount: params.TotalCount,
+	}
+}
+
+// buildSuperTeamPageInfo constructs the PageInfo for super teams
+func buildSuperTeamPageInfo(params BuildSuperTeamConnectionParams, edges []model.SuperTeamEdge) *model.PageInfo {
+	pageInfo := &model.PageInfo{
+		HasNextPage:     false,
+		HasPreviousPage: false,
+		StartCursor:     nil,
+		EndCursor:       nil,
+	}
+
+	if len(edges) == 0 {
+		return pageInfo
+	}
+
+	// Set start and end cursors
+	startCursor := edges[0].Cursor
+	endCursor := edges[len(edges)-1].Cursor
+	pageInfo.StartCursor = &startCursor
+	pageInfo.EndCursor = &endCursor
+
+	// Determine hasNextPage
+	if params.RequestedFirst != nil {
+		pageInfo.HasNextPage = params.HasMore
+	}
+
+	// Determine hasPreviousPage
+	if params.RequestedLast != nil {
+		pageInfo.HasPreviousPage = params.HasMore
+		// If we're paginating backward with a 'before' cursor, there must be a next page
+		if params.RequestedBefore != nil && *params.RequestedBefore != "" {
+			pageInfo.HasNextPage = true
+		}
+	} else if params.RequestedAfter != nil && *params.RequestedAfter != "" {
+		pageInfo.HasPreviousPage = true
+	}
+
+	return pageInfo
+}

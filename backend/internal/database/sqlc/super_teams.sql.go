@@ -9,6 +9,54 @@ import (
 	"context"
 )
 
+const CountSuperTeamsFiltered = `-- name: CountSuperTeamsFiltered :one
+SELECT COUNT(DISTINCT st.id)
+FROM super_teams st
+LEFT JOIN (
+    SELECT super_team_id, COUNT(*) as team_count
+    FROM teams
+    WHERE super_team_id IS NOT NULL
+    GROUP BY super_team_id
+) t ON st.id = t.super_team_id
+LEFT JOIN (
+    SELECT t.super_team_id, COUNT(DISTINCT tm.user_id) as member_count
+    FROM teams t
+    INNER JOIN team_members tm ON t.id = tm.team_id
+    WHERE t.super_team_id IS NOT NULL
+    GROUP BY t.super_team_id
+) m ON st.id = m.super_team_id
+WHERE
+    ($1::text[] IS NULL OR st.id = ANY($1::text[]))
+    AND ($2::text = '' OR st.project_id = $2::text)
+    AND ($3::int <= 0 OR COALESCE(t.team_count, 0) >= $3::int)
+    AND ($4::int <= 0 OR COALESCE(t.team_count, 0) <= $4::int)
+    AND ($5::int <= 0 OR COALESCE(m.member_count, 0) >= $5::int)
+    AND ($6::int <= 0 OR COALESCE(m.member_count, 0) <= $6::int)
+`
+
+type CountSuperTeamsFilteredParams struct {
+	Ids        []string `json:"ids"`
+	Projectid  string   `json:"projectid"`
+	Minteams   int32    `json:"minteams"`
+	Maxteams   int32    `json:"maxteams"`
+	Minmembers int32    `json:"minmembers"`
+	Maxmembers int32    `json:"maxmembers"`
+}
+
+func (q *Queries) CountSuperTeamsFiltered(ctx context.Context, arg CountSuperTeamsFilteredParams) (int64, error) {
+	row := q.db.QueryRow(ctx, CountSuperTeamsFiltered,
+		arg.Ids,
+		arg.Projectid,
+		arg.Minteams,
+		arg.Maxteams,
+		arg.Minmembers,
+		arg.Maxmembers,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const GetSuperTeamsByIDs = `-- name: GetSuperTeamsByIDs :many
 SELECT id, project_id, name, description, created_at, updated_at
 FROM super_teams
@@ -17,6 +65,88 @@ WHERE id = ANY($1::text[])
 
 func (q *Queries) GetSuperTeamsByIDs(ctx context.Context, ids []string) ([]*SuperTeam, error) {
 	rows, err := q.db.Query(ctx, GetSuperTeamsByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*SuperTeam{}
+	for rows.Next() {
+		var i SuperTeam
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Name,
+			&i.Description,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetSuperTeamsFilteredCursor = `-- name: GetSuperTeamsFilteredCursor :many
+SELECT st.id, st.project_id, st.name, st.description, st.created_at, st.updated_at
+FROM super_teams st
+LEFT JOIN (
+    SELECT super_team_id, COUNT(*) as team_count
+    FROM teams
+    WHERE super_team_id IS NOT NULL
+    GROUP BY super_team_id
+) t ON st.id = t.super_team_id
+LEFT JOIN (
+    SELECT t.super_team_id, COUNT(DISTINCT tm.user_id) as member_count
+    FROM teams t
+    INNER JOIN team_members tm ON t.id = tm.team_id
+    WHERE t.super_team_id IS NOT NULL
+    GROUP BY t.super_team_id
+) m ON st.id = m.super_team_id
+WHERE
+    ($1::text[] IS NULL OR st.id = ANY($1::text[]))
+    AND ($2::text = '' OR st.project_id = $2::text)
+    AND ($3::int <= 0 OR COALESCE(t.team_count, 0) >= $3::int)
+    AND ($4::int <= 0 OR COALESCE(t.team_count, 0) <= $4::int)
+    AND ($5::int <= 0 OR COALESCE(m.member_count, 0) >= $5::int)
+    AND ($6::int <= 0 OR COALESCE(m.member_count, 0) <= $6::int)
+    AND ($7::text = '' OR st.id > $7::text)
+    AND ($8::text = '' OR st.id < $8::text)
+ORDER BY
+    CASE WHEN $9::bool = true THEN st.id END DESC,
+    CASE WHEN $9::bool = false OR $9::bool IS NULL THEN st.id END ASC
+LIMIT CASE WHEN $10::int IS NULL THEN NULL ELSE $10::int END
+`
+
+type GetSuperTeamsFilteredCursorParams struct {
+	Ids          []string `json:"ids"`
+	Projectid    string   `json:"projectid"`
+	Minteams     int32    `json:"minteams"`
+	Maxteams     int32    `json:"maxteams"`
+	Minmembers   int32    `json:"minmembers"`
+	Maxmembers   int32    `json:"maxmembers"`
+	Aftercursor  string   `json:"aftercursor"`
+	Beforecursor string   `json:"beforecursor"`
+	Isbackward   bool     `json:"isbackward"`
+	Querylimit   int32    `json:"querylimit"`
+}
+
+func (q *Queries) GetSuperTeamsFilteredCursor(ctx context.Context, arg GetSuperTeamsFilteredCursorParams) ([]*SuperTeam, error) {
+	rows, err := q.db.Query(ctx, GetSuperTeamsFilteredCursor,
+		arg.Ids,
+		arg.Projectid,
+		arg.Minteams,
+		arg.Maxteams,
+		arg.Minmembers,
+		arg.Maxmembers,
+		arg.Aftercursor,
+		arg.Beforecursor,
+		arg.Isbackward,
+		arg.Querylimit,
+	)
 	if err != nil {
 		return nil, err
 	}

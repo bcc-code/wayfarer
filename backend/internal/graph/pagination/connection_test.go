@@ -301,6 +301,299 @@ func TestBuildUserConnection_NoPaginationParams(t *testing.T) {
 	assert.False(t, conn.PageInfo.HasPreviousPage)
 }
 
+func TestBuildSuperTeamConnection_EmptyResults(t *testing.T) {
+	params := BuildSuperTeamConnectionParams{
+		SuperTeams:      []model.SuperTeam{},
+		RequestedFirst:  intPtr(10),
+		RequestedLast:   nil,
+		RequestedAfter:  nil,
+		RequestedBefore: nil,
+		TotalCount:      0,
+		HasMore:         false,
+	}
+
+	conn := BuildSuperTeamConnection(params)
+
+	require.NotNil(t, conn)
+	assert.Empty(t, conn.Edges)
+	assert.Equal(t, 0, conn.TotalCount)
+	require.NotNil(t, conn.PageInfo)
+	assert.False(t, conn.PageInfo.HasNextPage)
+	assert.False(t, conn.PageInfo.HasPreviousPage)
+	assert.Nil(t, conn.PageInfo.StartCursor)
+	assert.Nil(t, conn.PageInfo.EndCursor)
+}
+
+func TestBuildSuperTeamConnection_ForwardPagination(t *testing.T) {
+	superTeams := []model.SuperTeam{
+		{ID: "ST001", Name: "Super Team 1", Description: "Description 1"},
+		{ID: "ST002", Name: "Super Team 2", Description: "Description 2"},
+		{ID: "ST003", Name: "Super Team 3", Description: "Description 3"},
+	}
+
+	tests := []struct {
+		name                string
+		params              BuildSuperTeamConnectionParams
+		expectedEdgeCount   int
+		expectedHasNextPage bool
+		expectedHasPrevPage bool
+	}{
+		{
+			name: "first page with more results",
+			params: BuildSuperTeamConnectionParams{
+				SuperTeams:      superTeams,
+				RequestedFirst:  intPtr(3),
+				RequestedLast:   nil,
+				RequestedAfter:  nil,
+				RequestedBefore: nil,
+				TotalCount:      10,
+				HasMore:         true,
+			},
+			expectedEdgeCount:   3,
+			expectedHasNextPage: true,
+			expectedHasPrevPage: false,
+		},
+		{
+			name: "first page with no more results",
+			params: BuildSuperTeamConnectionParams{
+				SuperTeams:      superTeams,
+				RequestedFirst:  intPtr(3),
+				RequestedLast:   nil,
+				RequestedAfter:  nil,
+				RequestedBefore: nil,
+				TotalCount:      3,
+				HasMore:         false,
+			},
+			expectedEdgeCount:   3,
+			expectedHasNextPage: false,
+			expectedHasPrevPage: false,
+		},
+		{
+			name: "subsequent page with after cursor",
+			params: BuildSuperTeamConnectionParams{
+				SuperTeams:      superTeams,
+				RequestedFirst:  intPtr(3),
+				RequestedLast:   nil,
+				RequestedAfter:  stringPtr("U1QwMDE="),
+				RequestedBefore: nil,
+				TotalCount:      10,
+				HasMore:         true,
+			},
+			expectedEdgeCount:   3,
+			expectedHasNextPage: true,
+			expectedHasPrevPage: true,
+		},
+		{
+			name: "last page with after cursor",
+			params: BuildSuperTeamConnectionParams{
+				SuperTeams:      superTeams,
+				RequestedFirst:  intPtr(3),
+				RequestedLast:   nil,
+				RequestedAfter:  stringPtr("U1QwMDg="),
+				RequestedBefore: nil,
+				TotalCount:      10,
+				HasMore:         false,
+			},
+			expectedEdgeCount:   3,
+			expectedHasNextPage: false,
+			expectedHasPrevPage: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conn := BuildSuperTeamConnection(tt.params)
+
+			require.NotNil(t, conn)
+			assert.Equal(t, tt.expectedEdgeCount, len(conn.Edges))
+			assert.Equal(t, tt.params.TotalCount, conn.TotalCount)
+
+			require.NotNil(t, conn.PageInfo)
+			assert.Equal(t, tt.expectedHasNextPage, conn.PageInfo.HasNextPage)
+			assert.Equal(t, tt.expectedHasPrevPage, conn.PageInfo.HasPreviousPage)
+
+			if len(conn.Edges) > 0 {
+				require.NotNil(t, conn.PageInfo.StartCursor)
+				require.NotNil(t, conn.PageInfo.EndCursor)
+				assert.Equal(t, conn.Edges[0].Cursor, *conn.PageInfo.StartCursor)
+				assert.Equal(t, conn.Edges[len(conn.Edges)-1].Cursor, *conn.PageInfo.EndCursor)
+			}
+		})
+	}
+}
+
+func TestBuildSuperTeamConnection_BackwardPagination(t *testing.T) {
+	superTeams := []model.SuperTeam{
+		{ID: "ST001", Name: "Super Team 1", Description: "Description 1"},
+		{ID: "ST002", Name: "Super Team 2", Description: "Description 2"},
+		{ID: "ST003", Name: "Super Team 3", Description: "Description 3"},
+	}
+
+	tests := []struct {
+		name                string
+		params              BuildSuperTeamConnectionParams
+		expectedEdgeCount   int
+		expectedHasNextPage bool
+		expectedHasPrevPage bool
+	}{
+		{
+			name: "last page with more previous results",
+			params: BuildSuperTeamConnectionParams{
+				SuperTeams:      superTeams,
+				RequestedFirst:  nil,
+				RequestedLast:   intPtr(3),
+				RequestedAfter:  nil,
+				RequestedBefore: nil,
+				TotalCount:      10,
+				HasMore:         true,
+			},
+			expectedEdgeCount:   3,
+			expectedHasNextPage: false,
+			expectedHasPrevPage: true,
+		},
+		{
+			name: "last page with no previous results",
+			params: BuildSuperTeamConnectionParams{
+				SuperTeams:      superTeams,
+				RequestedFirst:  nil,
+				RequestedLast:   intPtr(3),
+				RequestedAfter:  nil,
+				RequestedBefore: nil,
+				TotalCount:      3,
+				HasMore:         false,
+			},
+			expectedEdgeCount:   3,
+			expectedHasNextPage: false,
+			expectedHasPrevPage: false,
+		},
+		{
+			name: "previous page with before cursor",
+			params: BuildSuperTeamConnectionParams{
+				SuperTeams:      superTeams,
+				RequestedFirst:  nil,
+				RequestedLast:   intPtr(3),
+				RequestedAfter:  nil,
+				RequestedBefore: stringPtr("U1QwMTA="),
+				TotalCount:      10,
+				HasMore:         true,
+			},
+			expectedEdgeCount:   3,
+			expectedHasNextPage: true,
+			expectedHasPrevPage: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conn := BuildSuperTeamConnection(tt.params)
+
+			require.NotNil(t, conn)
+			assert.Equal(t, tt.expectedEdgeCount, len(conn.Edges))
+			assert.Equal(t, tt.params.TotalCount, conn.TotalCount)
+
+			require.NotNil(t, conn.PageInfo)
+			assert.Equal(t, tt.expectedHasNextPage, conn.PageInfo.HasNextPage)
+			assert.Equal(t, tt.expectedHasPrevPage, conn.PageInfo.HasPreviousPage)
+
+			if len(conn.Edges) > 0 {
+				require.NotNil(t, conn.PageInfo.StartCursor)
+				require.NotNil(t, conn.PageInfo.EndCursor)
+			}
+		})
+	}
+}
+
+func TestBuildSuperTeamConnection_EdgeContent(t *testing.T) {
+	superTeams := []model.SuperTeam{
+		{ID: "ST001", Name: "Alpha Team", Description: "First super team", ProjectID: "PR001"},
+		{ID: "ST002", Name: "Beta Team", Description: "Second super team", ProjectID: "PR001"},
+		{ID: "ST003", Name: "Gamma Team", Description: "Third super team", ProjectID: "PR002"},
+	}
+
+	params := BuildSuperTeamConnectionParams{
+		SuperTeams:      superTeams,
+		RequestedFirst:  intPtr(3),
+		RequestedLast:   nil,
+		RequestedAfter:  nil,
+		RequestedBefore: nil,
+		TotalCount:      3,
+		HasMore:         false,
+	}
+
+	conn := BuildSuperTeamConnection(params)
+
+	require.NotNil(t, conn)
+	require.Equal(t, 3, len(conn.Edges))
+
+	for i, edge := range conn.Edges {
+		// Verify cursor is correctly encoded
+		assert.Equal(t, EncodeCursor(superTeams[i].ID), edge.Cursor)
+
+		// Verify node points to the correct super team
+		require.NotNil(t, edge.Node)
+		assert.Equal(t, superTeams[i].ID, edge.Node.ID)
+		assert.Equal(t, superTeams[i].Name, edge.Node.Name)
+		assert.Equal(t, superTeams[i].Description, edge.Node.Description)
+		assert.Equal(t, superTeams[i].ProjectID, edge.Node.ProjectID)
+	}
+}
+
+func TestBuildSuperTeamConnection_SingleResult(t *testing.T) {
+	superTeams := []model.SuperTeam{
+		{ID: "ST001", Name: "Single Super Team", Description: "Only one"},
+	}
+
+	params := BuildSuperTeamConnectionParams{
+		SuperTeams:      superTeams,
+		RequestedFirst:  intPtr(1),
+		RequestedLast:   nil,
+		RequestedAfter:  nil,
+		RequestedBefore: nil,
+		TotalCount:      1,
+		HasMore:         false,
+	}
+
+	conn := BuildSuperTeamConnection(params)
+
+	require.NotNil(t, conn)
+	assert.Equal(t, 1, len(conn.Edges))
+	assert.Equal(t, 1, conn.TotalCount)
+
+	require.NotNil(t, conn.PageInfo)
+	assert.False(t, conn.PageInfo.HasNextPage)
+	assert.False(t, conn.PageInfo.HasPreviousPage)
+	require.NotNil(t, conn.PageInfo.StartCursor)
+	require.NotNil(t, conn.PageInfo.EndCursor)
+	assert.Equal(t, *conn.PageInfo.StartCursor, *conn.PageInfo.EndCursor)
+}
+
+func TestBuildSuperTeamConnection_NoPaginationParams(t *testing.T) {
+	superTeams := []model.SuperTeam{
+		{ID: "ST001", Name: "Super Team 1"},
+		{ID: "ST002", Name: "Super Team 2"},
+	}
+
+	params := BuildSuperTeamConnectionParams{
+		SuperTeams:      superTeams,
+		RequestedFirst:  nil,
+		RequestedLast:   nil,
+		RequestedAfter:  nil,
+		RequestedBefore: nil,
+		TotalCount:      2,
+		HasMore:         false,
+	}
+
+	conn := BuildSuperTeamConnection(params)
+
+	require.NotNil(t, conn)
+	assert.Equal(t, 2, len(conn.Edges))
+	assert.Equal(t, 2, conn.TotalCount)
+
+	require.NotNil(t, conn.PageInfo)
+	assert.False(t, conn.PageInfo.HasNextPage)
+	assert.False(t, conn.PageInfo.HasPreviousPage)
+}
+
 // Helper functions
 func intPtr(i int) *int {
 	return &i
