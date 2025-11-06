@@ -1232,6 +1232,13 @@ export type CreateProjectMutationVariables = Exact<{
 
 export type CreateProjectMutation = { __typename?: 'Mutation', createProject: { __typename?: 'Project', id: string } };
 
+export type AdminUserPageQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type AdminUserPageQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, name: string, email: string, membersId: string, gender: Gender, birthdate: string, age?: number | null, image?: string | null, church: { __typename?: 'Church', id: string, name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType } | null }> } };
+
 export type AdminUsersPageQueryVariables = Exact<{
   filter?: InputMaybe<UserFilter>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -1241,7 +1248,7 @@ export type AdminUsersPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminUsersPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'UserEdge', cursor: string, node: { __typename?: 'User', id: string, name: string, image?: string | null, church: { __typename?: 'Church', name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType }> } }> } };
+export type AdminUsersPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'UserEdge', cursor: string, node: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, church: { __typename?: 'Church', name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType }> } }> } };
 
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1462,6 +1469,36 @@ export const CreateProjectDocument = gql`
 export function useCreateProjectMutation() {
   return Urql.useMutation<CreateProjectMutation, CreateProjectMutationVariables>(CreateProjectDocument);
 };
+export const AdminUserPageDocument = gql`
+    query AdminUserPage($id: ID!) {
+  user(id: $id) {
+    id
+    name
+    email
+    membersId
+    gender
+    church {
+      id
+      name
+    }
+    birthdate
+    age
+    image
+    roles {
+      id
+      role
+      scope {
+        id
+        type
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminUserPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminUserPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminUserPageQuery, AdminUserPageQueryVariables | undefined>({ query: AdminUserPageDocument, variables: undefined, ...options });
+};
 export const AdminUsersPageDocument = gql`
     query AdminUsersPage($filter: UserFilter, $first: Int, $after: String, $last: Int, $before: String) {
   users(
@@ -1483,6 +1520,7 @@ export const AdminUsersPageDocument = gql`
       node {
         id
         name
+        email
         image
         church {
           name

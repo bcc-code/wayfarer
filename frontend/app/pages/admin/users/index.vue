@@ -28,6 +28,7 @@ gql(`
         node {
           id
           name
+          email
           image
           church {
             name
@@ -65,6 +66,7 @@ const columns: TableColumn<
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'church.name', header: 'Church' },
   { accessorKey: 'roles', header: 'Roles' },
+  { id: 'actions' },
 ]
 
 const initials = (name: string) => {
@@ -92,11 +94,14 @@ const initials = (name: string) => {
               :text="initials(row.original.name)"
               size="sm"
             />
-            <span>{{ row.original.name }}</span>
+            <div class="flex flex-col">
+              <span>{{ row.original.name }}</span>
+              <span class="text-xs text-dimmed">{{ row.original.email }}</span>
+            </div>
           </div>
         </template>
         <template #roles-cell="{ row }">
-          <div class="flex gap-1">
+          <div class="flex gap-1 flex-wrap">
             <UBadge
               v-for="role in row.original.roles"
               :key="role.id"
@@ -104,6 +109,19 @@ const initials = (name: string) => {
             >
               {{ role.role }}
             </UBadge>
+          </div>
+        </template>
+        <template #actions-cell="{ row }">
+          <div class="flex justify-end">
+            <UButton
+              variant="ghost"
+              :to="{
+                name: 'admin-users-userId',
+                params: { userId: row.original.id },
+              }"
+            >
+              Edit
+            </UButton>
           </div>
         </template>
       </UTable>
