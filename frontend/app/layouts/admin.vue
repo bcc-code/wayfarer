@@ -4,17 +4,21 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 gql(`
   query AdminSidebar {
     projects {
-      id
-      name
-      endDate
-      startDate
+      edges {
+        node {
+          id
+          name
+          endDate
+          startDate
+        }
+      }
     }
   }
 `)
 
 const { data } = useAdminSidebarQuery()
 const projectsLinks = computed(() => {
-  return data.value?.projects.map((project) => ({
+  return data.value?.projects.edges.map(({ node: project }) => ({
     label: project.name,
     badge: isWithinRange(new Date(), project.startDate, project.endDate)
       ? 'Current'

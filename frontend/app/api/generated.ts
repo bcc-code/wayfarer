@@ -803,6 +803,28 @@ export type ProjectLeaderboardArgs = {
   type: LeaderboardType;
 };
 
+export type ProjectConnection = {
+  __typename?: 'ProjectConnection';
+  edges: Array<ProjectEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type ProjectEdge = {
+  __typename?: 'ProjectEdge';
+  cursor: Scalars['String']['output'];
+  node: Project;
+};
+
+export type ProjectFilter = {
+  archived?: InputMaybe<Scalars['Boolean']['input']>;
+  endDateAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  endDateBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  startDateAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  startDateBefore?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
 export type Query = {
   __typename?: 'Query';
   achievement: Achievement;
@@ -821,7 +843,7 @@ export type Query = {
   myEvents: Array<Event>;
   myProjects: Array<Project>;
   project: Project;
-  projects: Array<Project>;
+  projects: ProjectConnection;
   streak: Streak;
   streaks: Array<Streak>;
   superteam: SuperTeam;
@@ -877,6 +899,15 @@ export type QueryMyEventsArgs = {
 
 export type QueryProjectArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryProjectsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<ProjectFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -1196,7 +1227,7 @@ export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: 
 export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminSidebarQuery = { __typename?: 'Query', projects: Array<{ __typename?: 'Project', id: string, name: string, endDate: any, startDate: any }> };
+export type AdminSidebarQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, endDate: any, startDate: any } }> } };
 
 export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1206,7 +1237,7 @@ export type CurrentProjectQuery = { __typename?: 'Query', currentProject: { __ty
 export type AdminHomePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminHomePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, projects: Array<{ __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } }> };
+export type AdminHomePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } }> } };
 
 export type AdminProjectPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -1223,7 +1254,7 @@ export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typenam
 export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminProjectsPageQuery = { __typename?: 'Query', projects: Array<{ __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo: string, colors: { __typename?: 'Colors', primary: string } } }> };
+export type AdminProjectsPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo: string, colors: { __typename?: 'Colors', primary: string } } } }> } };
 
 export type CreateProjectMutationVariables = Exact<{
   input: CreateProjectInput;
@@ -1323,10 +1354,14 @@ export function useGetMeQuery(options?: Omit<Urql.UseQueryArgs<never, GetMeQuery
 export const AdminSidebarDocument = gql`
     query AdminSidebar {
   projects {
-    id
-    name
-    endDate
-    startDate
+    edges {
+      node {
+        id
+        name
+        endDate
+        startDate
+      }
+    }
   }
 }
     `;
@@ -1360,18 +1395,22 @@ export const AdminHomePageDocument = gql`
     name
   }
   projects {
-    id
-    name
-    description
-    endDate
-    startDate
-    branding {
-      logo
-      rounding
-      colors {
-        primary
-        secondary
-        tertiary
+    edges {
+      node {
+        id
+        name
+        description
+        endDate
+        startDate
+        branding {
+          logo
+          rounding
+          colors {
+            primary
+            secondary
+            tertiary
+          }
+        }
       }
     }
   }
@@ -1440,15 +1479,19 @@ export function useAdminProjectPageQuery(options?: Omit<Urql.UseQueryArgs<never,
 export const AdminProjectsPageDocument = gql`
     query AdminProjectsPage {
   projects {
-    id
-    name
-    description
-    endDate
-    startDate
-    branding {
-      logo
-      colors {
-        primary
+    edges {
+      node {
+        id
+        name
+        description
+        endDate
+        startDate
+        branding {
+          logo
+          colors {
+            primary
+          }
+        }
       }
     }
   }
@@ -1477,13 +1520,13 @@ export const AdminUserPageDocument = gql`
     email
     membersId
     gender
+    birthdate
+    age
+    image
     church {
       id
       name
     }
-    birthdate
-    age
-    image
     roles {
       id
       role

@@ -7,15 +7,19 @@ definePageMeta({
 gql(`
   query AdminProjectsPage {
     projects {
-      id
-      name
-      description
-      endDate
-      startDate
-      branding {
-        logo
-        colors {
-          primary
+      edges {
+        node {
+          id
+          name
+          description
+          endDate
+          startDate
+          branding {
+            logo
+            colors {
+              primary
+            }
+          }
         }
       }
     }
@@ -25,7 +29,7 @@ gql(`
 const { data, error, fetching } = useAdminProjectsPageQuery()
 
 const { currentProjects, futureProjects, pastProjects } = useGroupedProjects(
-  () => data.value?.projects,
+  () => data.value?.projects.edges.map((edge) => edge.node),
 )
 </script>
 

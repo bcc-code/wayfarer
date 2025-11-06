@@ -11,18 +11,22 @@ gql(`
       name
     }
     projects {
-      id
-      name
-      description
-      endDate
-      startDate
-      branding {
-        logo
-        rounding
-        colors {
-          primary
-          secondary
-          tertiary
+      edges {
+        node {
+          id
+          name
+          description
+          endDate
+          startDate
+          branding {
+            logo
+            rounding
+            colors {
+              primary
+              secondary
+              tertiary
+            }
+          }
         }
       }
     }
@@ -30,7 +34,9 @@ gql(`
 `)
 
 const { data, fetching, error } = useAdminHomePageQuery()
-const { currentProjects } = useGroupedProjects(() => data.value?.projects)
+const { currentProjects } = useGroupedProjects(() =>
+  data.value?.projects.edges.map((edge) => edge.node),
+)
 
 const greeting = computed(() => {
   const hour = new Date().getHours()
