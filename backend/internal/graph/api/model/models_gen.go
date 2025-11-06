@@ -242,6 +242,26 @@ type Event struct {
 	ProjectID     string             `json:"-"`
 }
 
+type EventConnection struct {
+	Edges      []EventEdge `json:"edges"`
+	PageInfo   *PageInfo   `json:"pageInfo"`
+	TotalCount int         `json:"totalCount"`
+}
+
+type EventEdge struct {
+	Cursor string `json:"cursor"`
+	Node   *Event `json:"node"`
+}
+
+type EventFilter struct {
+	ProjectID       *string           `json:"projectId,omitempty"`
+	Ids             []string          `json:"ids,omitempty"`
+	StartDateAfter  *scalars.DateTime `json:"startDateAfter,omitempty"`
+	StartDateBefore *scalars.DateTime `json:"startDateBefore,omitempty"`
+	EndDateAfter    *scalars.DateTime `json:"endDateAfter,omitempty"`
+	EndDateBefore   *scalars.DateTime `json:"endDateBefore,omitempty"`
+}
+
 type LeaderboardEntry struct {
 	Name        string  `json:"name"`
 	Score       int     `json:"score"`

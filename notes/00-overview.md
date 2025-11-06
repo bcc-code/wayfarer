@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-Wayfarer is a gamification system backend built with Go, GraphQL (gqlgen), and CockroachDB. It provides three separate GraphQL APIs for different consumers: end users, administrators, and machine-to-machine integrations.
+Wayfarer is a gamification system backend built with Go, GraphQL (gqlgen), and CockroachDB. It provides a unified GraphQL API with role-based access control for different consumers: end users, administrators, and machine-to-machine integrations.
 
 ## Architecture Decisions
 
@@ -63,12 +63,14 @@ backend/
 - **Distribution**: Pass config subsections to components via dependency injection
 - **Rule**: NO direct environment variable access anywhere except `main()`
 
-#### 2. Three Separate GraphQL APIs
-- **User API** (`/graphql/user`): For mobile/web apps, end-user operations
-- **Admin API** (`/graphql/admin`): For administrative operations, full CRUD
-- **M2M API** (`/graphql/m2m`): For external systems to notify Wayfarer
-
-Each API has its own schema file, resolvers, and potentially different middleware.
+#### 2. Unified GraphQL API
+- **Single Endpoint**: All consumers use the same GraphQL endpoint
+- **Role-Based Access**: Operations protected by `@requireRole` directive
+- **Schema Files**:
+  - `gql/shared.graphqls` - Types, enums, inputs, interfaces
+  - `gql/schema.graphqls` - Query and Mutation root types
+- **Roles**: `user`, `admin`, `m2m`, `superadmin`
+- **Authentication**: JWT tokens determine which role(s) the client has access to
 
 #### 3. Authentication Strategy (Phase 1)
 - **Current**: JWT middleware that logs Authorization header, accepts all tokens
@@ -91,9 +93,9 @@ Each API has its own schema file, resolvers, and potentially different middlewar
 - **Patterns**: Table-driven tests, test helpers, fixture data in testdata/
 - **Seeding**: Can seed test database for manual testing
 
-## Three APIs in Detail
+## API Roles in Detail
 
-### User API
+### User Role (`@requireRole(roles: ["user"])`)
 **Purpose**: End-user operations from mobile/web apps
 
 **Key Operations**:
@@ -103,7 +105,7 @@ Each API has its own schema file, resolvers, and potentially different middlewar
 - View leaderboards
 - Update profile
 
-### Admin API
+### Admin Role (`@requireRole(roles: ["admin"])`)
 **Purpose**: Administrative operations
 
 **Key Operations**:
@@ -114,7 +116,7 @@ Each API has its own schema file, resolvers, and potentially different middlewar
 - Score adjustments
 - User management
 
-### M2M API
+### M2M Role (`@requireRole(roles: ["m2m"])`)
 **Purpose**: External systems notify Wayfarer
 
 **Key Operations**:
@@ -123,6 +125,12 @@ Each API has its own schema file, resolvers, and potentially different middlewar
 - Notify streak activity
 - Award achievements
 - Record challenge completions
+
+### Superadmin Role (`@requireRole(roles: ["superadmin"])`)
+**Purpose**: System-level operations
+
+**Key Operations**:
+- All admin operations plus system management
 
 ## Development Workflow
 

@@ -122,6 +122,17 @@ type ComplexityRoot struct {
 		StartDate     func(childComplexity int) int
 	}
 
+	EventConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	EventEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	LeaderboardEntry struct {
 		Description func(childComplexity int) int
 		Image       func(childComplexity int) int
@@ -257,7 +268,7 @@ type ComplexityRoot struct {
 		CurrentEvent     func(childComplexity int) int
 		CurrentProject   func(childComplexity int) int
 		Event            func(childComplexity int, id string) int
-		Events           func(childComplexity int, projectID *string) int
+		Events           func(childComplexity int, filter *model.EventFilter, first *int, after *string, last *int, before *string) int
 		Me               func(childComplexity int) int
 		MyCurrentEvent   func(childComplexity int) int
 		MyCurrentProject func(childComplexity int) int
@@ -507,7 +518,7 @@ type QueryResolver interface {
 	Project(ctx context.Context, id string) (*model.Project, error)
 	Projects(ctx context.Context, filter *model.ProjectFilter, first *int, after *string, last *int, before *string) (*model.ProjectConnection, error)
 	Event(ctx context.Context, id string) (*model.Event, error)
-	Events(ctx context.Context, projectID *string) ([]model.Event, error)
+	Events(ctx context.Context, filter *model.EventFilter, first *int, after *string, last *int, before *string) (*model.EventConnection, error)
 	Team(ctx context.Context, id string) (*model.Team, error)
 	Teams(ctx context.Context, projectID *string) ([]model.Team, error)
 	Superteam(ctx context.Context, id string) (*model.SuperTeam, error)
@@ -833,6 +844,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Event.StartDate(childComplexity), true
+
+	case "EventConnection.edges":
+		if e.complexity.EventConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.EventConnection.Edges(childComplexity), true
+	case "EventConnection.pageInfo":
+		if e.complexity.EventConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.EventConnection.PageInfo(childComplexity), true
+	case "EventConnection.totalCount":
+		if e.complexity.EventConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.EventConnection.TotalCount(childComplexity), true
+
+	case "EventEdge.cursor":
+		if e.complexity.EventEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.EventEdge.Cursor(childComplexity), true
+	case "EventEdge.node":
+		if e.complexity.EventEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.EventEdge.Node(childComplexity), true
 
 	case "LeaderboardEntry.description":
 		if e.complexity.LeaderboardEntry.Description == nil {
@@ -1889,7 +1932,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Events(childComplexity, args["projectId"].(*string)), true
+		return e.complexity.Query.Events(childComplexity, args["filter"].(*model.EventFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
 	case "Query.me":
 		if e.complexity.Query.Me == nil {
 			break
@@ -2659,6 +2702,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateTeamInput,
 		ec.unmarshalInputCreateUserInput,
 		ec.unmarshalInputDateRangeInput,
+		ec.unmarshalInputEventFilter,
 		ec.unmarshalInputLeaderboardFilter,
 		ec.unmarshalInputProjectFilter,
 		ec.unmarshalInputRevokeRoleInput,
@@ -3295,6 +3339,15 @@ input ChallengeFilter {
     ids: [ID!]  # Support bulk ID lookup for M2M API
 }
 
+input EventFilter {
+    projectId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    startDateAfter: DateTime  # Filter events starting after this date
+    startDateBefore: DateTime  # Filter events starting before this date
+    endDateAfter: DateTime  # Filter events ending after this date
+    endDateBefore: DateTime  # Filter events ending before this date
+}
+
 input AchievementFilter {
     projectId: ID
     eventId: ID
@@ -3365,6 +3418,17 @@ type ProjectConnection {
     pageInfo: PageInfo!
     totalCount: Int!
 }
+
+type EventEdge {
+    cursor: String!
+    node: Event!
+}
+
+type EventConnection {
+    edges: [EventEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema.graphqls", Input: `# GraphQL Schema
 # Imports shared types from shared.graphqls
@@ -3394,7 +3458,7 @@ type Query {
     projects(filter: ProjectFilter, first: Int, after: String, last: Int, before: String): ProjectConnection!
 
     event(id: ID!): Event!
-    events(projectId: ID): [Event!]!
+    events(filter: EventFilter, first: Int, after: String, last: Int, before: String): EventConnection!
 
     team(id: ID!): Team!
     teams(projectId: ID): [Team!]!
@@ -4666,11 +4730,31 @@ func (ec *executionContext) field_Query_event_args(ctx context.Context, rawArgs 
 func (ec *executionContext) field_Query_events_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "projectId", ec.unmarshalOID2ᚖstring)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOEventFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEventFilter)
 	if err != nil {
 		return nil, err
 	}
-	args["projectId"] = arg0
+	args["filter"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg4
 	return args, nil
 }
 
@@ -6157,6 +6241,185 @@ func (ec *executionContext) fieldContext_Event_parentProject(_ context.Context, 
 				return ec.fieldContext_Project_streaks(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.EventConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_EventConnection_edges,
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		ec.marshalNEventEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEventEdgeᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_EventConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "cursor":
+				return ec.fieldContext_EventEdge_cursor(ctx, field)
+			case "node":
+				return ec.fieldContext_EventEdge_node(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type EventEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.EventConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_EventConnection_pageInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		ec.marshalNPageInfo2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPageInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_EventConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.EventConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_EventConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_EventConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.EventEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_EventEdge_cursor,
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_EventEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.EventEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_EventEdge_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalNEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEvent,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_EventEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Event_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Event_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Event_description(ctx, field)
+			case "challenges":
+				return ec.fieldContext_Event_challenges(ctx, field)
+			case "leaderboard":
+				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "startDate":
+				return ec.fieldContext_Event_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_Event_endDate(ctx, field)
+			case "parentProject":
+				return ec.fieldContext_Event_parentProject(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
 	}
 	return fc, nil
@@ -12915,10 +13178,10 @@ func (ec *executionContext) _Query_events(ctx context.Context, field graphql.Col
 		ec.fieldContext_Query_events,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Events(ctx, fc.Args["projectId"].(*string))
+			return ec.resolvers.Query().Events(ctx, fc.Args["filter"].(*model.EventFilter), fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
 		},
 		nil,
-		ec.marshalNEvent2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEventᚄ,
+		ec.marshalNEventConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEventConnection,
 		true,
 		true,
 	)
@@ -12932,24 +13195,14 @@ func (ec *executionContext) fieldContext_Query_events(ctx context.Context, field
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Event_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Event_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Event_description(ctx, field)
-			case "challenges":
-				return ec.fieldContext_Event_challenges(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Event_leaderboard(ctx, field)
-			case "startDate":
-				return ec.fieldContext_Event_startDate(ctx, field)
-			case "endDate":
-				return ec.fieldContext_Event_endDate(ctx, field)
-			case "parentProject":
-				return ec.fieldContext_Event_parentProject(ctx, field)
+			case "edges":
+				return ec.fieldContext_EventConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_EventConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_EventConnection_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type EventConnection", field.Name)
 		},
 	}
 	defer func() {
@@ -19897,6 +20150,68 @@ func (ec *executionContext) unmarshalInputDateRangeInput(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputEventFilter(ctx context.Context, obj any) (model.EventFilter, error) {
+	var it model.EventFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"projectId", "ids", "startDateAfter", "startDateBefore", "endDateAfter", "endDateBefore"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "projectId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectID = data
+		case "ids":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ids"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Ids = data
+		case "startDateAfter":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startDateAfter"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StartDateAfter = data
+		case "startDateBefore":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startDateBefore"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StartDateBefore = data
+		case "endDateAfter":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endDateAfter"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EndDateAfter = data
+		case "endDateBefore":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endDateBefore"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EndDateBefore = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputLeaderboardFilter(ctx context.Context, obj any) (model.LeaderboardFilter, error) {
 	var it model.LeaderboardFilter
 	asMap := map[string]any{}
@@ -21192,6 +21507,99 @@ func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, ob
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var eventConnectionImplementors = []string{"EventConnection"}
+
+func (ec *executionContext) _EventConnection(ctx context.Context, sel ast.SelectionSet, obj *model.EventConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, eventConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("EventConnection")
+		case "edges":
+			out.Values[i] = ec._EventConnection_edges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._EventConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._EventConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var eventEdgeImplementors = []string{"EventEdge"}
+
+func (ec *executionContext) _EventEdge(ctx context.Context, sel ast.SelectionSet, obj *model.EventEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, eventEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("EventEdge")
+		case "cursor":
+			out.Values[i] = ec._EventEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "node":
+			out.Values[i] = ec._EventEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -25653,6 +26061,68 @@ func (ec *executionContext) marshalNEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfar
 	return ec._Event(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNEventConnection2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEventConnection(ctx context.Context, sel ast.SelectionSet, v model.EventConnection) graphql.Marshaler {
+	return ec._EventConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNEventConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEventConnection(ctx context.Context, sel ast.SelectionSet, v *model.EventConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._EventConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNEventEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEventEdge(ctx context.Context, sel ast.SelectionSet, v model.EventEdge) graphql.Marshaler {
+	return ec._EventEdge(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNEventEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEventEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.EventEdge) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNEventEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEventEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNGender2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐGender(ctx context.Context, v any) (model.Gender, error) {
 	var res model.Gender
 	err := res.UnmarshalGQL(v)
@@ -26899,6 +27369,14 @@ func (ec *executionContext) marshalOEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfar
 		return graphql.Null
 	}
 	return ec._Event(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOEventFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEventFilter(ctx context.Context, v any) (*model.EventFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputEventFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOGender2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐGender(ctx context.Context, v any) (*model.Gender, error) {

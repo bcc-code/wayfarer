@@ -186,7 +186,7 @@ func TestBuildUserConnection_BackwardPagination(t *testing.T) {
 				HasMore:         true,
 			},
 			expectedEdgeCount:   3,
-			expectedHasNextPage: false,
+			expectedHasNextPage: true, // true because we have a before cursor (can navigate forward again)
 			expectedHasPrevPage: true,
 		},
 	}

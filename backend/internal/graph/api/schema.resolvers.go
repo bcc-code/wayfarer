@@ -701,8 +701,155 @@ func (r *queryResolver) Event(ctx context.Context, id string) (*model.Event, err
 }
 
 // Events is the resolver for the events field.
-func (r *queryResolver) Events(ctx context.Context, projectID *string) ([]model.Event, error) {
-	panic(fmt.Errorf("not implemented: Events - events"))
+func (r *queryResolver) Events(ctx context.Context, filter *model.EventFilter, first *int, after *string, last *int, before *string) (*model.EventConnection, error) {
+	// Build cache key from filter and pagination parameters
+	cacheKeyParams := buildEventCacheKeyParams(filter, first, after, last, before)
+	cacheKey := cache.EventsFilterKey(cacheKeyParams)
+	countCacheKey := cache.EventsCountKey(cacheKeyParams)
+
+	// Check cache for connection result
+	if cached, ok := r.Cache.Get(cacheKey); ok {
+		if connection, ok := cached.(*model.EventConnection); ok {
+			return connection, nil
+		}
+	}
+
+	// Decode cursors if provided
+	var afterCursor, beforeCursor *string
+	if after != nil && *after != "" {
+		decoded, err := pagination.DecodeCursor(*after)
+		if err != nil {
+			return nil, fmt.Errorf("invalid after cursor: %w", err)
+		}
+		afterCursor = &decoded
+	}
+	if before != nil && *before != "" {
+		decoded, err := pagination.DecodeCursor(*before)
+		if err != nil {
+			return nil, fmt.Errorf("invalid before cursor: %w", err)
+		}
+		beforeCursor = &decoded
+	}
+
+	// Build database query parameters for cursor pagination
+	params, err := buildEventFilterParamsCursor(filter, first, afterCursor, last, beforeCursor)
+	if err != nil {
+		return nil, err
+	}
+
+	// Query database with cursor pagination
+	rows, err := r.DB.Queries.GetEventsFilteredCursor(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query events: %w", err)
+	}
+
+	// Query total count (check cache first)
+	var totalCount int64
+	countCached := false
+	if cachedCount, ok := r.Cache.Get(countCacheKey); ok {
+		if count, ok := cachedCount.(int64); ok {
+			totalCount = count
+			countCached = true
+		}
+	}
+
+	// If not in cache, query database
+	if !countCached {
+		countParams := buildCountEventsFilterParams(filter)
+		totalCount, err = r.DB.Queries.CountEventsFiltered(ctx, countParams)
+		if err != nil {
+			return nil, fmt.Errorf("failed to count events: %w", err)
+		}
+
+		// Store count in cache
+		r.Cache.Set(countCacheKey, totalCount)
+	}
+
+	// Determine requested limit and check if there are more results
+	requestedLimit := 10 // default
+	if first != nil {
+		requestedLimit = *first
+	} else if last != nil {
+		requestedLimit = *last
+	}
+
+	hasMore := len(rows) > requestedLimit
+	events := rows
+	if hasMore {
+		// Trim the extra record we fetched for hasMore detection
+		events = rows[:requestedLimit]
+	}
+
+	// If backward pagination, reverse the results
+	if last != nil {
+		for i, j := 0, len(events)-1; i < j; i, j = i+1, j-1 {
+			events[i], events[j] = events[j], events[i]
+		}
+	}
+
+	// Convert to GraphQL model
+	modelEvents := make([]model.Event, len(events))
+	for i, row := range events {
+		modelEvents[i] = model.Event{
+			ID:          row.ID,
+			ProjectID:   row.ProjectID,
+			Name:        row.Name,
+			Description: row.Description,
+			StartDate:   scalars.DateTime{Time: row.StartDate.Time},
+			EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+		}
+	}
+
+	// Build edges with cursors
+	edges := make([]model.EventEdge, len(modelEvents))
+	for i := range modelEvents {
+		edges[i] = model.EventEdge{
+			Cursor: pagination.EncodeCursor(modelEvents[i].ID),
+			Node:   &modelEvents[i],
+		}
+	}
+
+	// Determine pagination info
+	var startCursor, endCursor *string
+	if len(edges) > 0 {
+		start := edges[0].Cursor
+		end := edges[len(edges)-1].Cursor
+		startCursor = &start
+		endCursor = &end
+	}
+
+	hasNextPage := false
+	hasPreviousPage := false
+
+	if first != nil {
+		// Forward pagination
+		hasNextPage = hasMore
+		// Has previous page if we're not at the beginning
+		hasPreviousPage = after != nil && *after != ""
+	} else if last != nil {
+		// Backward pagination
+		hasPreviousPage = hasMore
+		// Has next page if we're not at the end
+		hasNextPage = before != nil && *before != ""
+	}
+
+	pageInfo := &model.PageInfo{
+		HasNextPage:     hasNextPage,
+		HasPreviousPage: hasPreviousPage,
+		StartCursor:     startCursor,
+		EndCursor:       endCursor,
+	}
+
+	connection := &model.EventConnection{
+		Edges:      edges,
+		PageInfo:   pageInfo,
+		TotalCount: int(totalCount),
+	}
+
+	// Store in cache
+	r.Cache.Set(cacheKey, connection)
+
+	return connection, nil
 }
 
 // Team is the resolver for the team field.

@@ -7,7 +7,44 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const CountEventsFiltered = `-- name: CountEventsFiltered :one
+SELECT COUNT(id)
+FROM events
+WHERE
+    ($1::text[] IS NULL OR id = ANY($1::text[]))
+    AND ($2::text = '' OR project_id = $2::text)
+    AND ($3::timestamptz IS NULL OR start_date >= $3::timestamptz)
+    AND ($4::timestamptz IS NULL OR start_date <= $4::timestamptz)
+    AND ($5::timestamptz IS NULL OR end_date >= $5::timestamptz)
+    AND ($6::timestamptz IS NULL OR end_date <= $6::timestamptz)
+`
+
+type CountEventsFilteredParams struct {
+	Ids             []string           `json:"ids"`
+	Projectid       string             `json:"projectid"`
+	Startdateafter  pgtype.Timestamptz `json:"startdateafter"`
+	Startdatebefore pgtype.Timestamptz `json:"startdatebefore"`
+	Enddateafter    pgtype.Timestamptz `json:"enddateafter"`
+	Enddatebefore   pgtype.Timestamptz `json:"enddatebefore"`
+}
+
+func (q *Queries) CountEventsFiltered(ctx context.Context, arg CountEventsFilteredParams) (int64, error) {
+	row := q.db.QueryRow(ctx, CountEventsFiltered,
+		arg.Ids,
+		arg.Projectid,
+		arg.Startdateafter,
+		arg.Startdatebefore,
+		arg.Enddateafter,
+		arg.Enddatebefore,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
 
 const GetEventByID = `-- name: GetEventByID :one
 SELECT id, project_id, name, description, start_date, end_date, created_at, updated_at
@@ -75,6 +112,77 @@ ORDER BY start_date DESC
 
 func (q *Queries) GetEventsByProjectID(ctx context.Context, projectID string) ([]*Event, error) {
 	rows, err := q.db.Query(ctx, GetEventsByProjectID, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Event{}
+	for rows.Next() {
+		var i Event
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Name,
+			&i.Description,
+			&i.StartDate,
+			&i.EndDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetEventsFilteredCursor = `-- name: GetEventsFilteredCursor :many
+SELECT id, project_id, name, description, start_date, end_date, created_at, updated_at
+FROM events
+WHERE
+    ($1::text[] IS NULL OR id = ANY($1::text[]))
+    AND ($2::text = '' OR project_id = $2::text)
+    AND ($3::timestamptz IS NULL OR start_date >= $3::timestamptz)
+    AND ($4::timestamptz IS NULL OR start_date <= $4::timestamptz)
+    AND ($5::timestamptz IS NULL OR end_date >= $5::timestamptz)
+    AND ($6::timestamptz IS NULL OR end_date <= $6::timestamptz)
+    AND ($7::text = '' OR id > $7::text)
+    AND ($8::text = '' OR id < $8::text)
+ORDER BY
+    CASE WHEN $9::bool = true THEN id END DESC,
+    CASE WHEN $9::bool = false OR $9::bool IS NULL THEN id END ASC
+LIMIT CASE WHEN $10::int IS NULL THEN NULL ELSE $10::int END
+`
+
+type GetEventsFilteredCursorParams struct {
+	Ids             []string           `json:"ids"`
+	Projectid       string             `json:"projectid"`
+	Startdateafter  pgtype.Timestamptz `json:"startdateafter"`
+	Startdatebefore pgtype.Timestamptz `json:"startdatebefore"`
+	Enddateafter    pgtype.Timestamptz `json:"enddateafter"`
+	Enddatebefore   pgtype.Timestamptz `json:"enddatebefore"`
+	Aftercursor     string             `json:"aftercursor"`
+	Beforecursor    string             `json:"beforecursor"`
+	Isbackward      bool               `json:"isbackward"`
+	Querylimit      int32              `json:"querylimit"`
+}
+
+func (q *Queries) GetEventsFilteredCursor(ctx context.Context, arg GetEventsFilteredCursorParams) ([]*Event, error) {
+	rows, err := q.db.Query(ctx, GetEventsFilteredCursor,
+		arg.Ids,
+		arg.Projectid,
+		arg.Startdateafter,
+		arg.Startdatebefore,
+		arg.Enddateafter,
+		arg.Enddatebefore,
+		arg.Aftercursor,
+		arg.Beforecursor,
+		arg.Isbackward,
+		arg.Querylimit,
+	)
 	if err != nil {
 		return nil, err
 	}

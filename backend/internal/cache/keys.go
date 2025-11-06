@@ -46,6 +46,8 @@ const (
 	PrefixUsersCount     = "userscount:"
 	PrefixProjectsFilter = "projectsfilter:"
 	PrefixProjectsCount  = "projectscount:"
+	PrefixEventsFilter   = "eventsfilter:"
+	PrefixEventsCount    = "eventscount:"
 
 	// Permissions/Roles
 	PrefixHasRole          = "hasrole:"
@@ -342,4 +344,66 @@ func ProjectsCountKey(params map[string]string) string {
 	hashStr := hex.EncodeToString(hash[:])[:16]
 
 	return PrefixProjectsCount + hashStr
+}
+
+// EventsFilterKey builds a cache key for filtered events query results
+func EventsFilterKey(params map[string]string) string {
+	if len(params) == 0 {
+		return PrefixEventsFilter + "all"
+	}
+
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for a shorter key
+	hash := sha256.Sum256([]byte(builder.String()))
+	hashStr := hex.EncodeToString(hash[:])[:16]
+
+	return PrefixEventsFilter + hashStr
+}
+
+// EventsCountKey builds a cache key for filtered events count query results
+func EventsCountKey(params map[string]string) string {
+	if len(params) == 0 {
+		return PrefixEventsCount + "all"
+	}
+
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for a shorter key
+	hash := sha256.Sum256([]byte(builder.String()))
+	hashStr := hex.EncodeToString(hash[:])[:16]
+
+	return PrefixEventsCount + hashStr
 }

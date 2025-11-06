@@ -79,12 +79,16 @@ Scores are calculated on-demand from achievements and score adjustments. There a
 
 Score adjustments are logged in `score_adjustments` for audit purposes, tracking manual point changes for users, teams, or super teams.
 
-### GraphQL APIs
+### GraphQL API
 
-The system exposes three separate GraphQL APIs defined in the `gql/` directory:
-- **User API** (`user.graphqls`) - For end users (mobile/web apps)
-- **Admin API** (`admin.graphqls`) - For system administrators
-- **M2M API** (`m2m.graphqls`) - For external systems to notify Wayfarer about events
+The system exposes a unified GraphQL API defined in the `gql/` directory:
+- **Schema Files**:
+  - `shared.graphqls` - Type definitions, enums, inputs, interfaces
+  - `schema.graphqls` - Query and Mutation root types
+- **Access Control**: Role-based authorization using `@requireRole` directive
+- **Roles**: `user`, `admin`, `m2m`, `superadmin`
+
+Different consumers (end users, administrators, external systems) access the same endpoint with different authentication tokens that grant appropriate role-based permissions.
 
 ## Concepts
 
