@@ -23,38 +23,6 @@ gql(`
           tertiary
         }
       }
-      achievements {
-        id
-        name
-        description
-        image
-      }
-      challenges {
-        id
-        name
-        description
-        image
-        url
-        buttonText
-        publishedAt
-        endTime
-      }
-      events {
-        id
-        name
-        description
-        startDate
-        endDate
-      }
-      streaks {
-        id
-        name
-        description
-        relevantDays {
-          start
-          end
-        }
-      }
     }
   }
 `)
@@ -63,6 +31,32 @@ const { data, error, fetching } = useAdminProjectPageQuery({
   variables: {
     projectId: route.params.projectId,
   },
+})
+
+const state = reactive({
+  name: '',
+  description: '',
+  startDate: '',
+  endDate: '',
+  branding: {
+    logo: '',
+    colors: {
+      primary: '',
+      secondary: '',
+      tertiary: '',
+    },
+    rounding: 0,
+  },
+})
+
+watch(data, () => {
+  if (data.value) {
+    state.name = data.value.project.name
+    state.description = data.value.project.description
+    state.startDate = data.value.project.startDate
+    state.endDate = data.value.project.endDate
+    state.branding = data.value.project.branding
+  }
 })
 </script>
 
@@ -95,10 +89,10 @@ const { data, error, fetching } = useAdminProjectPageQuery({
           <div class="flex flex-col gap-6 my-8">
             <div>
               <h1 class="text-3xl mb-2">
-                {{ data.project.name }}
+                {{ state.name }}
               </h1>
-              <p v-if="data.project.description" class="text-muted max-w-2xl">
-                {{ data.project.description }}
+              <p v-if="state.description" class="text-muted max-w-2xl">
+                {{ state.description }}
               </p>
             </div>
           </div>
@@ -116,43 +110,31 @@ const { data, error, fetching } = useAdminProjectPageQuery({
           <template #branding>
             <div class="flex gap-4 mt-4 flex-col">
               <UFormField label="Logo">
-                <NuxtImg :src="data.project.branding.logo" width="64" />
+                <NuxtImg :src="state.branding.logo" width="64" />
               </UFormField>
               <UFormField label="Primary Color">
-                <UInput
-                  v-model="data.project.branding.colors.primary"
-                  type="color"
-                  class="w-12"
-                />
+                <ColorPickerField v-model="state.branding.colors.primary" />
               </UFormField>
               <UFormField label="Secondary Color">
-                <UInput
-                  v-model="data.project.branding.colors.secondary"
-                  type="color"
-                  class="w-12"
-                />
+                <ColorPickerField v-model="state.branding.colors.secondary" />
               </UFormField>
               <UFormField label="Tertiary Color">
-                <UInput
-                  v-model="data.project.branding.colors.tertiary"
-                  type="color"
-                  class="w-12"
-                />
+                <ColorPickerField v-model="state.branding.colors.tertiary" />
               </UFormField>
             </div>
           </template>
-          <template #events>
-            <UTable :data="data.project.events" />
+          <!-- <template #events>
+            <UTable :data="state.events" />
           </template>
           <template #challenges>
-            <UTable :data="data.project.challenges" />
+            <UTable :data="state.challenges" />
           </template>
           <template #streaks>
-            <UTable :data="data.project.streaks" />
+            <UTable :data="state.streaks" />
           </template>
           <template #achievements>
             <UTable
-              :data="data.project.achievements"
+              :data="state.achievements"
               :columns="[
                 { accessorKey: 'image', header: 'Image' },
                 { accessorKey: 'name', header: 'Name' },
@@ -168,7 +150,7 @@ const { data, error, fetching } = useAdminProjectPageQuery({
                 />
               </template>
             </UTable>
-          </template>
+          </template> -->
         </UTabs>
       </template>
     </UContainer>

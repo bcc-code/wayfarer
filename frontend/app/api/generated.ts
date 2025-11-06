@@ -268,6 +268,28 @@ export type EventLeaderboardArgs = {
   type: LeaderboardType;
 };
 
+export type EventConnection = {
+  __typename?: 'EventConnection';
+  edges: Array<EventEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type EventEdge = {
+  __typename?: 'EventEdge';
+  cursor: Scalars['String']['output'];
+  node: Event;
+};
+
+export type EventFilter = {
+  endDateAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  endDateBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+  startDateAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  startDateBefore?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
 export enum ExportFormat {
   Csv = 'CSV',
   Excel = 'EXCEL',
@@ -836,7 +858,7 @@ export type Query = {
   currentEvent: Event;
   currentProject: Project;
   event: Event;
-  events: Array<Event>;
+  events: EventConnection;
   me: User;
   myCurrentEvent: Event;
   myCurrentProject: Project;
@@ -849,7 +871,7 @@ export type Query = {
   superteam: SuperTeam;
   superteams: Array<SuperTeam>;
   team: Team;
-  teams: Array<Team>;
+  teams: TeamConnection;
   user: User;
   userRoles: Array<UserRole>;
   users: UserConnection;
@@ -888,7 +910,11 @@ export type QueryEventArgs = {
 
 
 export type QueryEventsArgs = {
-  projectId?: InputMaybe<Scalars['ID']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<EventFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -937,7 +963,11 @@ export type QueryTeamArgs = {
 
 
 export type QueryTeamsArgs = {
-  projectId?: InputMaybe<Scalars['ID']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<TeamFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -1095,6 +1125,28 @@ export type TeamLeaderboardArgs = {
   type: LeaderboardType;
 };
 
+export type TeamConnection = {
+  __typename?: 'TeamConnection';
+  edges: Array<TeamEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type TeamEdge = {
+  __typename?: 'TeamEdge';
+  cursor: Scalars['String']['output'];
+  node: Team;
+};
+
+export type TeamFilter = {
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  maxMembers?: InputMaybe<Scalars['Int']['input']>;
+  minMembers?: InputMaybe<Scalars['Int']['input']>;
+  noSuperTeam?: InputMaybe<Scalars['Boolean']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+  superTeamId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 export type Track = {
   __typename?: 'Track';
   description: Scalars['String']['output'];
@@ -1244,12 +1296,7 @@ export type AdminProjectPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } }, achievements: Array<
-      | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image: string }
-      | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image: string }
-      | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image: string }
-      | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image: string }
-    >, challenges: Array<{ __typename?: 'Challenge', id: string, name: string, description: any, image: string, url: string, buttonText: string, publishedAt: any, endTime?: any | null }>, events: Array<{ __typename?: 'Event', id: string, name: string, description: string, startDate: any, endDate: any }>, streaks: Array<{ __typename?: 'Streak', id: string, name: string, description: string, relevantDays: Array<{ __typename?: 'DateRange', start: any, end: any }> }> } };
+export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } };
 
 export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1435,38 +1482,6 @@ export const AdminProjectPageDocument = gql`
         primary
         secondary
         tertiary
-      }
-    }
-    achievements {
-      id
-      name
-      description
-      image
-    }
-    challenges {
-      id
-      name
-      description
-      image
-      url
-      buttonText
-      publishedAt
-      endTime
-    }
-    events {
-      id
-      name
-      description
-      startDate
-      endDate
-    }
-    streaks {
-      id
-      name
-      description
-      relevantDays {
-        start
-        end
       }
     }
   }
