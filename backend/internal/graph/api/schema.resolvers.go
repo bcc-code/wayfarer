@@ -992,7 +992,14 @@ func (r *queryResolver) Teams(ctx context.Context, filter *model.TeamFilter, fir
 
 // Superteam is the resolver for the superteam field.
 func (r *queryResolver) Superteam(ctx context.Context, id string) (*model.SuperTeam, error) {
-	panic(fmt.Errorf("not implemented: Superteam - superteam"))
+	// Use dataloader to fetch super team
+	thunk := r.Loaders.SuperTeamByIDLoader.Load(ctx, id)
+	superTeam, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load super team: %w", err)
+	}
+
+	return superTeam, nil
 }
 
 // Superteams is the resolver for the superteams field.
