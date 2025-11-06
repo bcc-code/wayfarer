@@ -48,6 +48,10 @@ const { data, fetching, error } = useAdminUsersPageQuery({
   variables: pagination.variables,
 })
 
+watch(pagination.variables, () => {
+  console.log('pagination', unref(pagination))
+})
+
 // Update pagination state when data changes
 watch(
   () => data.value?.users,
@@ -74,8 +78,10 @@ const columns: TableColumn<
     <ErrorState v-if="error" :error />
     <LoadingState v-else-if="fetching" />
     <div v-else-if="users" class="space-y-4">
+      <div class="flex justify-end">
+        <RelayPagination v-model:pagination="pagination" />
+      </div>
       <UTable :data="users" :loading="fetching" :columns />
-      <RelayPagination v-model:pagination="pagination" />
     </div>
   </UContainer>
 </template>
