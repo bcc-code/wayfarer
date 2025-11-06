@@ -553,7 +553,14 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, fir
 
 // Project is the resolver for the project field.
 func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: Project - project"))
+	// Use dataloader to fetch project
+	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, id)
+	project, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load project: %w", err)
+	}
+
+	return project, nil
 }
 
 // Projects is the resolver for the projects field.

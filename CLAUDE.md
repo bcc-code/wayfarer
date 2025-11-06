@@ -103,3 +103,4 @@ Each project can contain multiple events, which usually is some form of in-perso
 - No signatures on commits
 - When creating commits sign with: Assited by [MODEL] via [Tool]
 - Generate unit tests for functions you write. Use the unit tests to verify correctnes. When mocking use mockery, with the config `.mockery.yml`.
+- Put notes into notes folder. Before doing a big investigation check if we already have notes on the system.
