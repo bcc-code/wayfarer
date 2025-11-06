@@ -7,8 +7,14 @@ definePageMeta({
 })
 
 gql(`
-	query AdminUsersPage {
-    users {
+	query AdminUsersPage($filter: UserFilter, $first: Int, $after: String, $last: Int, $before: String) {
+    users(
+      filter: $filter
+      first: $first
+      after: $after
+      last: $last
+      before: $before
+    ) {
       totalCount
       pageInfo {
         hasNextPage
@@ -35,7 +41,21 @@ gql(`
   }
 `)
 
-const { data, fetching, error } = useAdminUsersPageQuery()
+const pagination = usePagination({
+  defaultPageSize: 20,
+})
+const { data, fetching, error } = useAdminUsersPageQuery({
+  variables: pagination.variables,
+})
+
+// Update pagination state when data changes
+watch(
+  () => data.value?.users,
+  (connection) => {
+    pagination.updateConnection(connection)
+  },
+)
+
 const users = computed(() => data.value?.users.edges.map((edge) => edge.node))
 
 const columns: TableColumn<
@@ -53,6 +73,9 @@ const columns: TableColumn<
     <h1 class="text-3xl">Users</h1>
     <ErrorState v-if="error" :error />
     <LoadingState v-else-if="fetching" />
-    <UTable v-else-if="users" :data="users" :loading="fetching" :columns />
+    <div v-else-if="users" class="space-y-4">
+      <UTable :data="users" :loading="fetching" :columns />
+      <RelayPagination v-model:pagination="pagination" />
+    </div>
   </UContainer>
 </template>
