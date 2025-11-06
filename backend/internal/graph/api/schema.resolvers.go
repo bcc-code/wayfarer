@@ -854,7 +854,14 @@ func (r *queryResolver) Events(ctx context.Context, filter *model.EventFilter, f
 
 // Team is the resolver for the team field.
 func (r *queryResolver) Team(ctx context.Context, id string) (*model.Team, error) {
-	panic(fmt.Errorf("not implemented: Team - team"))
+	// Use dataloader to fetch team
+	thunk := r.Loaders.TeamByIDLoader.Load(ctx, id)
+	team, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load team: %w", err)
+	}
+
+	return team, nil
 }
 
 // Teams is the resolver for the teams field.
