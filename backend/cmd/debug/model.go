@@ -17,6 +17,7 @@ const (
 	ScreenAddChurch
 	ScreenAddUser
 	ScreenAssignRole
+	ScreenSearchUserToken
 )
 
 // Model holds the application state
@@ -28,6 +29,7 @@ type model struct {
 	churchForm   *churchFormModel
 	userForm     *userFormModel
 	roleForm     *roleFormModel
+	tokenForm    *tokenFormModel
 	message      string
 	messageStyle lipgloss.Style
 	popup        *TablePopup
@@ -44,6 +46,7 @@ func initialModel(db *database.DB) model {
 			"Add Church",
 			"Add User",
 			"Assign User Role",
+			"Search User & Generate Token",
 			"Quit",
 		},
 		messageStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("10")),
@@ -83,6 +86,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateUserForm(msg)
 		case ScreenAssignRole:
 			return m.updateRoleForm(msg)
+		case ScreenSearchUserToken:
+			return m.updateTokenForm(msg)
 		}
 
 	case successMsg:
@@ -93,6 +98,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case errorMsg:
 		m.message = string(msg)
 		m.messageStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
+		return m, nil
+
+	case showPopupMsg:
+		m.popup = NewTablePopup(msg.title, msg.headers, msg.rows)
+		m.popupActive = true
 		return m, nil
 	}
 
@@ -111,6 +121,12 @@ func (m model) handlePopupSelection(selected *TableRow) (model, tea.Cmd) {
 					break
 				}
 			}
+		}
+	case ScreenSearchUserToken:
+		if m.tokenForm != nil {
+			m.tokenForm.selectedUserID = selected.ID
+			m.tokenForm.selectedUserName = selected.Columns[0]
+			return m, m.generateToken()
 		}
 	case ScreenAssignRole:
 		if m.roleForm != nil {
@@ -191,7 +207,11 @@ func (m model) updateMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.screen = ScreenAssignRole
 			m.roleForm = newRoleForm(m.db)
 			m.message = ""
-		case 3: // Quit
+		case 3: // Search User & Generate Token
+			m.screen = ScreenSearchUserToken
+			m.tokenForm = newTokenForm(m.db)
+			m.message = ""
+		case 4: // Quit
 			return m, tea.Quit
 		}
 	}
@@ -230,6 +250,8 @@ func (m model) View() string {
 		s.WriteString(m.viewUserForm())
 	case ScreenAssignRole:
 		s.WriteString(m.viewRoleForm())
+	case ScreenSearchUserToken:
+		s.WriteString(m.viewTokenForm())
 	}
 
 	return s.String()
