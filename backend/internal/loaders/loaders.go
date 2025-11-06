@@ -10,14 +10,15 @@ import (
 // Loaders holds all dataloader instances for batching database queries
 // These are shared globally across all requests and use built-in caching
 type Loaders struct {
-	UserByIDLoader       *dataloader.Loader[string, *model.User]
-	ChurchLoader         *dataloader.Loader[string, *model.Church]
-	ProjectsByUserLoader *dataloader.Loader[string, []*model.Project]
-	RolesByUserLoader    *dataloader.Loader[string, []*model.UserRole]
-	ProjectByIDLoader    *dataloader.Loader[string, *model.Project]
-	EventByIDLoader      *dataloader.Loader[string, *model.Event]
-	TeamByIDLoader       *dataloader.Loader[string, *model.Team]
-	SuperTeamByIDLoader  *dataloader.Loader[string, *model.SuperTeam]
+	UserByIDLoader        *dataloader.Loader[string, *model.User]
+	ChurchLoader          *dataloader.Loader[string, *model.Church]
+	ProjectsByUserLoader  *dataloader.Loader[string, []*model.Project]
+	RolesByUserLoader     *dataloader.Loader[string, []*model.UserRole]
+	ProjectByIDLoader     *dataloader.Loader[string, *model.Project]
+	EventByIDLoader       *dataloader.Loader[string, *model.Event]
+	TeamByIDLoader        *dataloader.Loader[string, *model.Team]
+	SuperTeamByIDLoader   *dataloader.Loader[string, *model.SuperTeam]
+	AchievementByIDLoader *dataloader.Loader[string, model.Achievement]
 }
 
 // NewLoaders creates all dataloaders with batch functions and default caching
@@ -55,6 +56,10 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		SuperTeamByIDLoader: dataloader.NewBatchedLoader(
 			superTeamByIDBatchFunc(db, cache),
 			dataloader.WithBatchCapacity[string, *model.SuperTeam](100),
+		),
+		AchievementByIDLoader: dataloader.NewBatchedLoader(
+			achievementByIDBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, model.Achievement](100),
 		),
 	}
 }

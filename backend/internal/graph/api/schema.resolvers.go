@@ -1124,7 +1124,14 @@ func (r *queryResolver) Superteams(ctx context.Context, filter *model.SuperTeamF
 
 // Achievement is the resolver for the achievement field.
 func (r *queryResolver) Achievement(ctx context.Context, id string) (model.Achievement, error) {
-	panic(fmt.Errorf("not implemented: Achievement - achievement"))
+	// Use dataloader to fetch achievement
+	thunk := r.Loaders.AchievementByIDLoader.Load(ctx, id)
+	achievement, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	return achievement, nil
 }
 
 // Achievements is the resolver for the achievements field.
