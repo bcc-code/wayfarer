@@ -8,7 +8,10 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "codegen": "graphql-codegen --config codegen.ts"
+    "codegen": "graphql-codegen --config codegen.ts",
+    "test": "vitest",
+    "test:unit": "vitest run --project=unit",
+    "test:watch": "vitest --project=unit"
   },
   "dependencies": {
     "@nuxt/image": "^1.11.0",

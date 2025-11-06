@@ -38,27 +38,6 @@ const { data, fetching, error } = useAdminUserPageQuery({
     id: route.params.userId,
   },
 })
-
-const initials = (name: string) => {
-  const splitNames = name.split(' ')
-  return splitNames
-    .filter(Boolean)
-    .map((name) => name[0])
-    .join('')
-}
-
-const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-}
-
-const capitalizeFirst = (str: string) => {
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
-}
 </script>
 
 <template>
@@ -87,7 +66,7 @@ const capitalizeFirst = (str: string) => {
         <div class="flex items-center gap-6">
           <UAvatar
             :src="data.user.image ?? ''"
-            :text="initials(data.user.name)"
+            :text="getInitials(data.user.name)"
             size="2xl"
           />
           <div>

@@ -68,14 +68,6 @@ const columns: TableColumn<
   { accessorKey: 'roles', header: 'Roles' },
   { id: 'actions' },
 ]
-
-const initials = (name: string) => {
-  const splitNames = name.split(' ')
-  return splitNames
-    .filter(Boolean)
-    .map((name) => name[0])
-    .join('')
-}
 </script>
 
 <template>
@@ -91,7 +83,7 @@ const initials = (name: string) => {
           <div class="flex items-center gap-3">
             <UAvatar
               :src="row.original.image ?? ''"
-              :text="initials(row.original.name)"
+              :text="getInitials(row.original.name)"
               size="sm"
             />
             <div class="flex flex-col">
