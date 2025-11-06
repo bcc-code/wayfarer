@@ -48,7 +48,7 @@ const { data, fetching, error } = useAdminUserPageQuery({
           :items="[
             { label: 'Users', to: { name: 'admin-users' } },
             {
-              label: 'User',
+              label: data?.user.name ?? route.params.userId,
               to: {
                 name: 'admin-users-userId',
                 params: { userId: route.params.userId },
