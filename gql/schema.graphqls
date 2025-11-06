@@ -29,7 +29,7 @@ type Query {
     events(filter: EventFilter, first: Int, after: String, last: Int, before: String): EventConnection!
 
     team(id: ID!): Team!
-    teams(projectId: ID): [Team!]!
+    teams(filter: TeamFilter, first: Int, after: String, last: Int, before: String): TeamConnection! @requireRole(roles: ["user"])
 
     superteam(id: ID!): SuperTeam!
     superteams(projectId: ID): [SuperTeam!]!

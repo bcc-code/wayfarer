@@ -539,6 +539,15 @@ input AchievementFilter {
     ids: [ID!]  # Support bulk ID lookup for M2M API
 }
 
+input TeamFilter {
+    projectId: ID
+    superTeamId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    noSuperTeam: Boolean  # Filter teams without a super team
+    minMembers: Int  # Minimum number of members
+    maxMembers: Int  # Maximum number of members
+}
+
 # ==================== Role Management Types ====================
 
 type RoleScope {
@@ -611,6 +620,17 @@ type EventEdge {
 
 type EventConnection {
     edges: [EventEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type TeamEdge {
+    cursor: String!
+    node: Team!
+}
+
+type TeamConnection {
+    edges: [TeamEdge!]!
     pageInfo: PageInfo!
     totalCount: Int!
 }

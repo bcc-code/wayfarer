@@ -281,7 +281,7 @@ type ComplexityRoot struct {
 		Superteam        func(childComplexity int, id string) int
 		Superteams       func(childComplexity int, projectID *string) int
 		Team             func(childComplexity int, id string) int
-		Teams            func(childComplexity int, projectID *string) int
+		Teams            func(childComplexity int, filter *model.TeamFilter, first *int, after *string, last *int, before *string) int
 		User             func(childComplexity int, id string) int
 		UserRoles        func(childComplexity int, userID string) int
 		Users            func(childComplexity int, filter *model.UserFilter, first *int, after *string, last *int, before *string) int
@@ -368,6 +368,17 @@ type ComplexityRoot struct {
 		Name          func(childComplexity int) int
 		ParentProject func(childComplexity int) int
 		SuperTeam     func(childComplexity int) int
+	}
+
+	TeamConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	TeamEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
 	}
 
 	Track struct {
@@ -520,7 +531,7 @@ type QueryResolver interface {
 	Event(ctx context.Context, id string) (*model.Event, error)
 	Events(ctx context.Context, filter *model.EventFilter, first *int, after *string, last *int, before *string) (*model.EventConnection, error)
 	Team(ctx context.Context, id string) (*model.Team, error)
-	Teams(ctx context.Context, projectID *string) ([]model.Team, error)
+	Teams(ctx context.Context, filter *model.TeamFilter, first *int, after *string, last *int, before *string) (*model.TeamConnection, error)
 	Superteam(ctx context.Context, id string) (*model.SuperTeam, error)
 	Superteams(ctx context.Context, projectID *string) ([]model.SuperTeam, error)
 	Achievement(ctx context.Context, id string) (model.Achievement, error)
@@ -2055,7 +2066,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Teams(childComplexity, args["projectId"].(*string)), true
+		return e.complexity.Query.Teams(childComplexity, args["filter"].(*model.TeamFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
 	case "Query.user":
 		if e.complexity.Query.User == nil {
 			break
@@ -2489,6 +2500,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Team.SuperTeam(childComplexity), true
 
+	case "TeamConnection.edges":
+		if e.complexity.TeamConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.TeamConnection.Edges(childComplexity), true
+	case "TeamConnection.pageInfo":
+		if e.complexity.TeamConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.TeamConnection.PageInfo(childComplexity), true
+	case "TeamConnection.totalCount":
+		if e.complexity.TeamConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.TeamConnection.TotalCount(childComplexity), true
+
+	case "TeamEdge.cursor":
+		if e.complexity.TeamEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.TeamEdge.Cursor(childComplexity), true
+	case "TeamEdge.node":
+		if e.complexity.TeamEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.TeamEdge.Node(childComplexity), true
+
 	case "Track.description":
 		if e.complexity.Track.Description == nil {
 			break
@@ -2706,6 +2749,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputLeaderboardFilter,
 		ec.unmarshalInputProjectFilter,
 		ec.unmarshalInputRevokeRoleInput,
+		ec.unmarshalInputTeamFilter,
 		ec.unmarshalInputTrackInput,
 		ec.unmarshalInputUpdateAchievementInput,
 		ec.unmarshalInputUpdateChallengeInput,
@@ -3354,6 +3398,15 @@ input AchievementFilter {
     ids: [ID!]  # Support bulk ID lookup for M2M API
 }
 
+input TeamFilter {
+    projectId: ID
+    superTeamId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    noSuperTeam: Boolean  # Filter teams without a super team
+    minMembers: Int  # Minimum number of members
+    maxMembers: Int  # Maximum number of members
+}
+
 # ==================== Role Management Types ====================
 
 type RoleScope {
@@ -3429,6 +3482,17 @@ type EventConnection {
     pageInfo: PageInfo!
     totalCount: Int!
 }
+
+type TeamEdge {
+    cursor: String!
+    node: Team!
+}
+
+type TeamConnection {
+    edges: [TeamEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema.graphqls", Input: `# GraphQL Schema
 # Imports shared types from shared.graphqls
@@ -3461,7 +3525,7 @@ type Query {
     events(filter: EventFilter, first: Int, after: String, last: Int, before: String): EventConnection!
 
     team(id: ID!): Team!
-    teams(projectId: ID): [Team!]!
+    teams(filter: TeamFilter, first: Int, after: String, last: Int, before: String): TeamConnection! @requireRole(roles: ["user"])
 
     superteam(id: ID!): SuperTeam!
     superteams(projectId: ID): [SuperTeam!]!
@@ -4869,11 +4933,31 @@ func (ec *executionContext) field_Query_team_args(ctx context.Context, rawArgs m
 func (ec *executionContext) field_Query_teams_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "projectId", ec.unmarshalOID2ᚖstring)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOTeamFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamFilter)
 	if err != nil {
 		return nil, err
 	}
-	args["projectId"] = arg0
+	args["filter"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg4
 	return args, nil
 }
 
@@ -13284,10 +13368,28 @@ func (ec *executionContext) _Query_teams(ctx context.Context, field graphql.Coll
 		ec.fieldContext_Query_teams,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Teams(ctx, fc.Args["projectId"].(*string))
+			return ec.resolvers.Query().Teams(ctx, fc.Args["filter"].(*model.TeamFilter), fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
 		},
-		nil,
-		ec.marshalNTeam2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamᚄ,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
+				if err != nil {
+					var zeroVal *model.TeamConnection
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.TeamConnection
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNTeamConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamConnection,
 		true,
 		true,
 	)
@@ -13301,22 +13403,14 @@ func (ec *executionContext) fieldContext_Query_teams(ctx context.Context, field 
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Team_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Team_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Team_description(ctx, field)
-			case "members":
-				return ec.fieldContext_Team_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Team_leaderboard(ctx, field)
-			case "parentProject":
-				return ec.fieldContext_Team_parentProject(ctx, field)
-			case "superTeam":
-				return ec.fieldContext_Team_superTeam(ctx, field)
+			case "edges":
+				return ec.fieldContext_TeamConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_TeamConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_TeamConnection_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Team", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type TeamConnection", field.Name)
 		},
 	}
 	defer func() {
@@ -16552,6 +16646,183 @@ func (ec *executionContext) fieldContext_Team_superTeam(_ context.Context, field
 				return ec.fieldContext_SuperTeam_teams(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SuperTeam", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TeamConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.TeamConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TeamConnection_edges,
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		ec.marshalNTeamEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamEdgeᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TeamConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TeamConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "cursor":
+				return ec.fieldContext_TeamEdge_cursor(ctx, field)
+			case "node":
+				return ec.fieldContext_TeamEdge_node(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TeamEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TeamConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.TeamConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TeamConnection_pageInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		ec.marshalNPageInfo2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPageInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TeamConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TeamConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TeamConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.TeamConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TeamConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TeamConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TeamConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TeamEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.TeamEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TeamEdge_cursor,
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TeamEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TeamEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TeamEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.TeamEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TeamEdge_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalNTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeam,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TeamEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TeamEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Team_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Team_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Team_description(ctx, field)
+			case "members":
+				return ec.fieldContext_Team_members(ctx, field)
+			case "leaderboard":
+				return ec.fieldContext_Team_leaderboard(ctx, field)
+			case "parentProject":
+				return ec.fieldContext_Team_parentProject(ctx, field)
+			case "superTeam":
+				return ec.fieldContext_Team_superTeam(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Team", field.Name)
 		},
 	}
 	return fc, nil
@@ -20399,6 +20670,68 @@ func (ec *executionContext) unmarshalInputRevokeRoleInput(ctx context.Context, o
 				return it, err
 			}
 			it.ScopeID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTeamFilter(ctx context.Context, obj any) (model.TeamFilter, error) {
+	var it model.TeamFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"projectId", "superTeamId", "ids", "noSuperTeam", "minMembers", "maxMembers"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "projectId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectID = data
+		case "superTeamId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("superTeamId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SuperTeamID = data
+		case "ids":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ids"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Ids = data
+		case "noSuperTeam":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("noSuperTeam"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NoSuperTeam = data
+		case "minMembers":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minMembers"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MinMembers = data
+		case "maxMembers":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxMembers"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxMembers = data
 		}
 	}
 
@@ -24545,6 +24878,99 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
+var teamConnectionImplementors = []string{"TeamConnection"}
+
+func (ec *executionContext) _TeamConnection(ctx context.Context, sel ast.SelectionSet, obj *model.TeamConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, teamConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TeamConnection")
+		case "edges":
+			out.Values[i] = ec._TeamConnection_edges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._TeamConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._TeamConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var teamEdgeImplementors = []string{"TeamEdge"}
+
+func (ec *executionContext) _TeamEdge(ctx context.Context, sel ast.SelectionSet, obj *model.TeamEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, teamEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TeamEdge")
+		case "cursor":
+			out.Values[i] = ec._TeamEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "node":
+			out.Values[i] = ec._TeamEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var trackImplementors = []string{"Track"}
 
 func (ec *executionContext) _Track(ctx context.Context, sel ast.SelectionSet, obj *model.Track) graphql.Marshaler {
@@ -26694,6 +27120,68 @@ func (ec *executionContext) marshalNTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfare
 	return ec._Team(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNTeamConnection2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamConnection(ctx context.Context, sel ast.SelectionSet, v model.TeamConnection) graphql.Marshaler {
+	return ec._TeamConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTeamConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamConnection(ctx context.Context, sel ast.SelectionSet, v *model.TeamConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TeamConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTeamEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamEdge(ctx context.Context, sel ast.SelectionSet, v model.TeamEdge) graphql.Marshaler {
+	return ec._TeamEdge(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTeamEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.TeamEdge) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTeamEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNTrack2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTrack(ctx context.Context, sel ast.SelectionSet, v model.Track) graphql.Marshaler {
 	return ec._Track(ctx, sel, &v)
 }
@@ -27559,6 +28047,14 @@ func (ec *executionContext) marshalOTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfare
 		return graphql.Null
 	}
 	return ec._Team(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOTeamFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamFilter(ctx context.Context, v any) (*model.TeamFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputTeamFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOUserFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserFilter(ctx context.Context, v any) (*model.UserFilter, error) {

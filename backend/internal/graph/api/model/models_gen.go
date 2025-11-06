@@ -500,6 +500,26 @@ type Team struct {
 	SuperTeamID   *string            `json:"-"`
 }
 
+type TeamConnection struct {
+	Edges      []TeamEdge `json:"edges"`
+	PageInfo   *PageInfo  `json:"pageInfo"`
+	TotalCount int        `json:"totalCount"`
+}
+
+type TeamEdge struct {
+	Cursor string `json:"cursor"`
+	Node   *Team  `json:"node"`
+}
+
+type TeamFilter struct {
+	ProjectID   *string  `json:"projectId,omitempty"`
+	SuperTeamID *string  `json:"superTeamId,omitempty"`
+	Ids         []string `json:"ids,omitempty"`
+	NoSuperTeam *bool    `json:"noSuperTeam,omitempty"`
+	MinMembers  *int     `json:"minMembers,omitempty"`
+	MaxMembers  *int     `json:"maxMembers,omitempty"`
+}
+
 type Track struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`

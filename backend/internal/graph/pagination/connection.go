@@ -134,3 +134,67 @@ func buildProjectPageInfo(params BuildProjectConnectionParams, edges []model.Pro
 
 	return pageInfo
 }
+
+// BuildTeamConnectionParams holds parameters for building a TeamConnection
+type BuildTeamConnectionParams struct {
+	Teams           []model.Team
+	RequestedFirst  *int
+	RequestedLast   *int
+	RequestedAfter  *string
+	RequestedBefore *string
+	TotalCount      int
+	HasMore         bool
+}
+
+// BuildTeamConnection constructs a Relay-style connection from query results
+func BuildTeamConnection(params BuildTeamConnectionParams) *model.TeamConnection {
+	edges := make([]model.TeamEdge, len(params.Teams))
+	for i, team := range params.Teams {
+		edges[i] = model.TeamEdge{
+			Cursor: EncodeCursor(team.ID),
+			Node:   &team,
+		}
+	}
+
+	pageInfo := buildTeamPageInfo(params, edges)
+
+	return &model.TeamConnection{
+		Edges:      edges,
+		PageInfo:   pageInfo,
+		TotalCount: params.TotalCount,
+	}
+}
+
+// buildTeamPageInfo constructs the PageInfo for teams
+func buildTeamPageInfo(params BuildTeamConnectionParams, edges []model.TeamEdge) *model.PageInfo {
+	pageInfo := &model.PageInfo{
+		HasNextPage:     false,
+		HasPreviousPage: false,
+		StartCursor:     nil,
+		EndCursor:       nil,
+	}
+
+	if len(edges) == 0 {
+		return pageInfo
+	}
+
+	// Set start and end cursors
+	startCursor := edges[0].Cursor
+	endCursor := edges[len(edges)-1].Cursor
+	pageInfo.StartCursor = &startCursor
+	pageInfo.EndCursor = &endCursor
+
+	// Determine hasNextPage
+	if params.RequestedFirst != nil {
+		pageInfo.HasNextPage = params.HasMore
+	}
+
+	// Determine hasPreviousPage
+	if params.RequestedLast != nil {
+		pageInfo.HasPreviousPage = params.HasMore
+	} else if params.RequestedAfter != nil && *params.RequestedAfter != "" {
+		pageInfo.HasPreviousPage = true
+	}
+
+	return pageInfo
+}
