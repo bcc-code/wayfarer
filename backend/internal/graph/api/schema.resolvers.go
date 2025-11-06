@@ -690,7 +690,14 @@ func (r *queryResolver) Projects(ctx context.Context, filter *model.ProjectFilte
 
 // Event is the resolver for the event field.
 func (r *queryResolver) Event(ctx context.Context, id string) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: Event - event"))
+	// Use dataloader to fetch event
+	thunk := r.Loaders.EventByIDLoader.Load(ctx, id)
+	event, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load event: %w", err)
+	}
+
+	return event, nil
 }
 
 // Events is the resolver for the events field.

@@ -15,6 +15,7 @@ type Loaders struct {
 	ProjectsByUserLoader *dataloader.Loader[string, []*model.Project]
 	RolesByUserLoader    *dataloader.Loader[string, []*model.UserRole]
 	ProjectByIDLoader    *dataloader.Loader[string, *model.Project]
+	EventByIDLoader      *dataloader.Loader[string, *model.Event]
 }
 
 // NewLoaders creates all dataloaders with batch functions and default caching
@@ -40,6 +41,10 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		ProjectByIDLoader: dataloader.NewBatchedLoader(
 			projectByIDBatchFunc(db, cache),
 			dataloader.WithBatchCapacity[string, *model.Project](100),
+		),
+		EventByIDLoader: dataloader.NewBatchedLoader(
+			eventByIDBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, *model.Event](100),
 		),
 	}
 }
