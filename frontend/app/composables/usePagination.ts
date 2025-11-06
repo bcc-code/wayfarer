@@ -1,6 +1,6 @@
 import { ref, computed, type Ref } from 'vue'
 
-export interface PageInfo {
+export interface PaginationPageInfo {
   hasNextPage: boolean
   hasPreviousPage: boolean
   startCursor?: string | null
@@ -36,7 +36,7 @@ export interface UsePaginationReturn {
   /** Current pagination variables for GraphQL query */
   variables: Ref<PaginationVariables>
   /** Current page info from the last query result */
-  pageInfo: Ref<PageInfo | null>
+  pageInfo: Ref<PaginationPageInfo | null>
   /** Total count of items across all pages */
   totalCount: Ref<number | null>
   /** Current page size being used */
@@ -89,7 +89,7 @@ export function usePagination(
 
   // Reactive state
   const pageSize = ref(defaultPageSize)
-  const pageInfo = ref<PageInfo | null>(null)
+  const pageInfo = ref<PaginationPageInfo | null>(null)
   const totalCount = ref<number | null>(null)
   const variables = ref<PaginationVariables>({
     first: defaultPageSize,

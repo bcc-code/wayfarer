@@ -32,9 +32,13 @@
     "@iconify-json/lucide": "^1.2.72",
     "@nuxt/eslint": "^1.10.0",
     "@nuxt/test-utils": "^3.20.1",
+    "@vue/test-utils": "^2.4.6",
     "eslint": "^9.39.1",
+    "happy-dom": "^20.0.10",
+    "playwright-core": "^1.56.1",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.16",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.7"
   }
 }
