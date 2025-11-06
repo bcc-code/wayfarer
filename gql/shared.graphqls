@@ -509,6 +509,15 @@ input UserFilter {
     ids: [ID!]  # Support bulk ID lookup for M2M API
 }
 
+input ProjectFilter {
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    archived: Boolean  # Filter by archived status
+    startDateAfter: DateTime  # Filter projects starting after this date
+    startDateBefore: DateTime  # Filter projects starting before this date
+    endDateAfter: DateTime  # Filter projects ending after this date
+    endDateBefore: DateTime  # Filter projects ending before this date
+}
+
 input ChallengeFilter {
     projectId: ID
     eventId: ID
@@ -571,6 +580,17 @@ type UserEdge {
 
 type UserConnection {
     edges: [UserEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type ProjectEdge {
+    cursor: String!
+    node: Project!
+}
+
+type ProjectConnection {
+    edges: [ProjectEdge!]!
     pageInfo: PageInfo!
     totalCount: Int!
 }

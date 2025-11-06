@@ -23,7 +23,7 @@ type Query {
     users(filter: UserFilter, first: Int, after: String, last: Int, before: String): UserConnection!
 
     project(id: ID!): Project!
-    projects: [Project!]!
+    projects(filter: ProjectFilter, first: Int, after: String, last: Int, before: String): ProjectConnection!
 
     event(id: ID!): Event!
     events(projectId: ID): [Event!]!

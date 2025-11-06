@@ -30,3 +30,31 @@ WHERE id = ANY(@ids::text[]);
 SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding
 FROM projects
 ORDER BY start_date DESC;
+
+-- name: GetProjectsFilteredCursor :many
+SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived
+FROM projects
+WHERE
+    (@ids::text[] IS NULL OR id = ANY(@ids::text[]))
+    AND (@archived::boolean IS NULL OR archived = @archived::boolean)
+    AND (@startdateafter::timestamptz IS NULL OR start_date >= @startdateafter::timestamptz)
+    AND (@startdatebefore::timestamptz IS NULL OR start_date <= @startdatebefore::timestamptz)
+    AND (@enddateafter::timestamptz IS NULL OR end_date >= @enddateafter::timestamptz)
+    AND (@enddatebefore::timestamptz IS NULL OR end_date <= @enddatebefore::timestamptz)
+    AND (@aftercursor::text = '' OR id > @aftercursor::text)
+    AND (@beforecursor::text = '' OR id < @beforecursor::text)
+ORDER BY
+    CASE WHEN @isbackward::bool = true THEN id END DESC,
+    CASE WHEN @isbackward::bool = false OR @isbackward::bool IS NULL THEN id END ASC
+LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END;
+
+-- name: CountProjectsFiltered :one
+SELECT COUNT(id)
+FROM projects
+WHERE
+    (@ids::text[] IS NULL OR id = ANY(@ids::text[]))
+    AND (@archived::boolean IS NULL OR archived = @archived::boolean)
+    AND (@startdateafter::timestamptz IS NULL OR start_date >= @startdateafter::timestamptz)
+    AND (@startdatebefore::timestamptz IS NULL OR start_date <= @startdatebefore::timestamptz)
+    AND (@enddateafter::timestamptz IS NULL OR end_date >= @enddateafter::timestamptz)
+    AND (@enddatebefore::timestamptz IS NULL OR end_date <= @enddatebefore::timestamptz);

@@ -318,6 +318,26 @@ type Project struct {
 	Streaks      []Streak           `json:"streaks"`
 }
 
+type ProjectConnection struct {
+	Edges      []ProjectEdge `json:"edges"`
+	PageInfo   *PageInfo     `json:"pageInfo"`
+	TotalCount int           `json:"totalCount"`
+}
+
+type ProjectEdge struct {
+	Cursor string   `json:"cursor"`
+	Node   *Project `json:"node"`
+}
+
+type ProjectFilter struct {
+	Ids             []string          `json:"ids,omitempty"`
+	Archived        *bool             `json:"archived,omitempty"`
+	StartDateAfter  *scalars.DateTime `json:"startDateAfter,omitempty"`
+	StartDateBefore *scalars.DateTime `json:"startDateBefore,omitempty"`
+	EndDateAfter    *scalars.DateTime `json:"endDateAfter,omitempty"`
+	EndDateBefore   *scalars.DateTime `json:"endDateBefore,omitempty"`
+}
+
 type Query struct {
 }
 

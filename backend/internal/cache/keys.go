@@ -42,8 +42,10 @@ const (
 	PrefixScore       = "score:"
 
 	// Query results
-	PrefixUsersFilter = "usersfilter:"
-	PrefixUsersCount  = "userscount:"
+	PrefixUsersFilter    = "usersfilter:"
+	PrefixUsersCount     = "userscount:"
+	PrefixProjectsFilter = "projectsfilter:"
+	PrefixProjectsCount  = "projectscount:"
 
 	// Permissions/Roles
 	PrefixHasRole          = "hasrole:"
@@ -278,4 +280,66 @@ func HasRoleInProjectKey(userID string, role string, projectID string) string {
 // HasRoleInTeamKey builds a cache key for HasRoleInTeam checks
 func HasRoleInTeamKey(userID string, role string, teamID string) string {
 	return fmt.Sprintf("%s%s:%s:%s", PrefixHasRoleInTeam, userID, role, teamID)
+}
+
+// ProjectsFilterKey builds a cache key for filtered projects query results
+func ProjectsFilterKey(params map[string]string) string {
+	if len(params) == 0 {
+		return PrefixProjectsFilter + "all"
+	}
+
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for a shorter key
+	hash := sha256.Sum256([]byte(builder.String()))
+	hashStr := hex.EncodeToString(hash[:])[:16]
+
+	return PrefixProjectsFilter + hashStr
+}
+
+// ProjectsCountKey builds a cache key for filtered projects count query results
+func ProjectsCountKey(params map[string]string) string {
+	if len(params) == 0 {
+		return PrefixProjectsCount + "all"
+	}
+
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for a shorter key
+	hash := sha256.Sum256([]byte(builder.String()))
+	hashStr := hex.EncodeToString(hash[:])[:16]
+
+	return PrefixProjectsCount + hashStr
 }

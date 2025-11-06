@@ -70,3 +70,67 @@ func buildPageInfo(params BuildUserConnectionParams, edges []model.UserEdge) *mo
 
 	return pageInfo
 }
+
+// BuildProjectConnectionParams holds parameters for building a ProjectConnection
+type BuildProjectConnectionParams struct {
+	Projects        []model.Project
+	RequestedFirst  *int
+	RequestedLast   *int
+	RequestedAfter  *string
+	RequestedBefore *string
+	TotalCount      int
+	HasMore         bool
+}
+
+// BuildProjectConnection constructs a Relay-style connection from query results
+func BuildProjectConnection(params BuildProjectConnectionParams) *model.ProjectConnection {
+	edges := make([]model.ProjectEdge, len(params.Projects))
+	for i, project := range params.Projects {
+		edges[i] = model.ProjectEdge{
+			Cursor: EncodeCursor(project.ID),
+			Node:   &project,
+		}
+	}
+
+	pageInfo := buildProjectPageInfo(params, edges)
+
+	return &model.ProjectConnection{
+		Edges:      edges,
+		PageInfo:   pageInfo,
+		TotalCount: params.TotalCount,
+	}
+}
+
+// buildProjectPageInfo constructs the PageInfo for projects
+func buildProjectPageInfo(params BuildProjectConnectionParams, edges []model.ProjectEdge) *model.PageInfo {
+	pageInfo := &model.PageInfo{
+		HasNextPage:     false,
+		HasPreviousPage: false,
+		StartCursor:     nil,
+		EndCursor:       nil,
+	}
+
+	if len(edges) == 0 {
+		return pageInfo
+	}
+
+	// Set start and end cursors
+	startCursor := edges[0].Cursor
+	endCursor := edges[len(edges)-1].Cursor
+	pageInfo.StartCursor = &startCursor
+	pageInfo.EndCursor = &endCursor
+
+	// Determine hasNextPage
+	if params.RequestedFirst != nil {
+		pageInfo.HasNextPage = params.HasMore
+	}
+
+	// Determine hasPreviousPage
+	if params.RequestedLast != nil {
+		pageInfo.HasPreviousPage = params.HasMore
+	} else if params.RequestedAfter != nil && *params.RequestedAfter != "" {
+		pageInfo.HasPreviousPage = true
+	}
+
+	return pageInfo
+}

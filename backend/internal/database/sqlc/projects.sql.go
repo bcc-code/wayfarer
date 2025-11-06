@@ -11,6 +11,41 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const CountProjectsFiltered = `-- name: CountProjectsFiltered :one
+SELECT COUNT(id)
+FROM projects
+WHERE
+    ($1::text[] IS NULL OR id = ANY($1::text[]))
+    AND ($2::boolean IS NULL OR archived = $2::boolean)
+    AND ($3::timestamptz IS NULL OR start_date >= $3::timestamptz)
+    AND ($4::timestamptz IS NULL OR start_date <= $4::timestamptz)
+    AND ($5::timestamptz IS NULL OR end_date >= $5::timestamptz)
+    AND ($6::timestamptz IS NULL OR end_date <= $6::timestamptz)
+`
+
+type CountProjectsFilteredParams struct {
+	Ids             []string           `json:"ids"`
+	Archived        bool               `json:"archived"`
+	Startdateafter  pgtype.Timestamptz `json:"startdateafter"`
+	Startdatebefore pgtype.Timestamptz `json:"startdatebefore"`
+	Enddateafter    pgtype.Timestamptz `json:"enddateafter"`
+	Enddatebefore   pgtype.Timestamptz `json:"enddatebefore"`
+}
+
+func (q *Queries) CountProjectsFiltered(ctx context.Context, arg CountProjectsFilteredParams) (int64, error) {
+	row := q.db.QueryRow(ctx, CountProjectsFiltered,
+		arg.Ids,
+		arg.Archived,
+		arg.Startdateafter,
+		arg.Startdatebefore,
+		arg.Enddateafter,
+		arg.Enddatebefore,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const GetAllProjects = `-- name: GetAllProjects :many
 SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding
 FROM projects
@@ -202,6 +237,94 @@ func (q *Queries) GetProjectsByUserIDs(ctx context.Context, userIds []string) ([
 			&i.ColorTertiary,
 			&i.Rounding,
 			&i.UserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetProjectsFilteredCursor = `-- name: GetProjectsFilteredCursor :many
+SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived
+FROM projects
+WHERE
+    ($1::text[] IS NULL OR id = ANY($1::text[]))
+    AND ($2::boolean IS NULL OR archived = $2::boolean)
+    AND ($3::timestamptz IS NULL OR start_date >= $3::timestamptz)
+    AND ($4::timestamptz IS NULL OR start_date <= $4::timestamptz)
+    AND ($5::timestamptz IS NULL OR end_date >= $5::timestamptz)
+    AND ($6::timestamptz IS NULL OR end_date <= $6::timestamptz)
+    AND ($7::text = '' OR id > $7::text)
+    AND ($8::text = '' OR id < $8::text)
+ORDER BY
+    CASE WHEN $9::bool = true THEN id END DESC,
+    CASE WHEN $9::bool = false OR $9::bool IS NULL THEN id END ASC
+LIMIT CASE WHEN $10::int IS NULL THEN NULL ELSE $10::int END
+`
+
+type GetProjectsFilteredCursorParams struct {
+	Ids             []string           `json:"ids"`
+	Archived        bool               `json:"archived"`
+	Startdateafter  pgtype.Timestamptz `json:"startdateafter"`
+	Startdatebefore pgtype.Timestamptz `json:"startdatebefore"`
+	Enddateafter    pgtype.Timestamptz `json:"enddateafter"`
+	Enddatebefore   pgtype.Timestamptz `json:"enddatebefore"`
+	Aftercursor     string             `json:"aftercursor"`
+	Beforecursor    string             `json:"beforecursor"`
+	Isbackward      bool               `json:"isbackward"`
+	Querylimit      int32              `json:"querylimit"`
+}
+
+type GetProjectsFilteredCursorRow struct {
+	ID             string             `json:"id"`
+	Name           string             `json:"name"`
+	Description    string             `json:"description"`
+	StartDate      pgtype.Timestamptz `json:"start_date"`
+	EndDate        pgtype.Timestamptz `json:"end_date"`
+	LogoUrl        string             `json:"logo_url"`
+	ColorPrimary   string             `json:"color_primary"`
+	ColorSecondary string             `json:"color_secondary"`
+	ColorTertiary  string             `json:"color_tertiary"`
+	Rounding       int32              `json:"rounding"`
+	Archived       *bool              `json:"archived"`
+}
+
+func (q *Queries) GetProjectsFilteredCursor(ctx context.Context, arg GetProjectsFilteredCursorParams) ([]*GetProjectsFilteredCursorRow, error) {
+	rows, err := q.db.Query(ctx, GetProjectsFilteredCursor,
+		arg.Ids,
+		arg.Archived,
+		arg.Startdateafter,
+		arg.Startdatebefore,
+		arg.Enddateafter,
+		arg.Enddatebefore,
+		arg.Aftercursor,
+		arg.Beforecursor,
+		arg.Isbackward,
+		arg.Querylimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetProjectsFilteredCursorRow{}
+	for rows.Next() {
+		var i GetProjectsFilteredCursorRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.StartDate,
+			&i.EndDate,
+			&i.LogoUrl,
+			&i.ColorPrimary,
+			&i.ColorSecondary,
+			&i.ColorTertiary,
+			&i.Rounding,
+			&i.Archived,
 		); err != nil {
 			return nil, err
 		}

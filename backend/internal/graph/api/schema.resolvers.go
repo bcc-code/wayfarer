@@ -564,25 +564,96 @@ func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project,
 }
 
 // Projects is the resolver for the projects field.
-func (r *queryResolver) Projects(ctx context.Context) ([]model.Project, error) {
-	// Check cache first
-	cacheKey := "projects:all"
+func (r *queryResolver) Projects(ctx context.Context, filter *model.ProjectFilter, first *int, after *string, last *int, before *string) (*model.ProjectConnection, error) {
+	// Build cache key from filter and pagination parameters
+	cacheKeyParams := buildProjectCacheKeyParams(filter, first, after, last, before)
+	cacheKey := cache.ProjectsFilterKey(cacheKeyParams)
+	countCacheKey := cache.ProjectsCountKey(cacheKeyParams)
+
+	// Check cache for connection result
 	if cached, ok := r.Cache.Get(cacheKey); ok {
-		if projects, ok := cached.([]model.Project); ok {
-			return projects, nil
+		if connection, ok := cached.(*model.ProjectConnection); ok {
+			return connection, nil
 		}
 	}
 
-	// Fetch all projects from database
-	rows, err := r.DB.Queries.GetAllProjects(ctx)
+	// Decode cursors if provided
+	var afterCursor, beforeCursor *string
+	if after != nil && *after != "" {
+		decoded, err := pagination.DecodeCursor(*after)
+		if err != nil {
+			return nil, fmt.Errorf("invalid after cursor: %w", err)
+		}
+		afterCursor = &decoded
+	}
+	if before != nil && *before != "" {
+		decoded, err := pagination.DecodeCursor(*before)
+		if err != nil {
+			return nil, fmt.Errorf("invalid before cursor: %w", err)
+		}
+		beforeCursor = &decoded
+	}
+
+	// Build database query parameters for cursor pagination
+	params, err := buildProjectFilterParamsCursor(filter, first, afterCursor, last, beforeCursor)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch projects: %w", err)
+		return nil, err
+	}
+
+	// Query database with cursor pagination
+	rows, err := r.DB.Queries.GetProjectsFilteredCursor(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query projects: %w", err)
+	}
+
+	// Query total count (check cache first)
+	var totalCount int64
+	countCached := false
+	if cachedCount, ok := r.Cache.Get(countCacheKey); ok {
+		if count, ok := cachedCount.(int64); ok {
+			totalCount = count
+			countCached = true
+		}
+	}
+
+	// If not in cache, query database
+	if !countCached {
+		countParams := buildCountProjectsFilterParams(filter)
+		totalCount, err = r.DB.Queries.CountProjectsFiltered(ctx, countParams)
+		if err != nil {
+			return nil, fmt.Errorf("failed to count projects: %w", err)
+		}
+
+		// Store count in cache
+		r.Cache.Set(countCacheKey, totalCount)
+	}
+
+	// Determine requested limit and check if there are more results
+	requestedLimit := 10 // default
+	if first != nil {
+		requestedLimit = *first
+	} else if last != nil {
+		requestedLimit = *last
+	}
+
+	hasMore := len(rows) > requestedLimit
+	projects := rows
+	if hasMore {
+		// Trim the extra record we fetched for hasMore detection
+		projects = rows[:requestedLimit]
+	}
+
+	// If backward pagination, reverse the results
+	if last != nil {
+		for i, j := 0, len(projects)-1; i < j; i, j = i+1, j-1 {
+			projects[i], projects[j] = projects[j], projects[i]
+		}
 	}
 
 	// Convert to GraphQL model
-	result := make([]model.Project, len(rows))
-	for i, row := range rows {
-		result[i] = model.Project{
+	modelProjects := make([]model.Project, len(projects))
+	for i, row := range projects {
+		modelProjects[i] = model.Project{
 			ID:          row.ID,
 			Name:        row.Name,
 			Description: row.Description,
@@ -600,10 +671,21 @@ func (r *queryResolver) Projects(ctx context.Context) ([]model.Project, error) {
 		}
 	}
 
-	// Store in cache
-	r.Cache.Set(cacheKey, result)
+	// Build the connection
+	connection := pagination.BuildProjectConnection(pagination.BuildProjectConnectionParams{
+		Projects:        modelProjects,
+		RequestedFirst:  first,
+		RequestedLast:   last,
+		RequestedAfter:  after,
+		RequestedBefore: before,
+		TotalCount:      int(totalCount),
+		HasMore:         hasMore,
+	})
 
-	return result, nil
+	// Store connection in cache
+	r.Cache.Set(cacheKey, connection)
+
+	return connection, nil
 }
 
 // Event is the resolver for the event field.
