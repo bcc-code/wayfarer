@@ -34,7 +34,7 @@ const shouldShowPagination = computed(() => {
 </script>
 
 <template>
-  <div v-if="shouldShowPagination" class="flex items-center gap-2">
+  <UFieldGroup v-if="shouldShowPagination">
     <UButton
       :disabled="!canGoToPrevious"
       variant="soft"
@@ -51,5 +51,5 @@ const shouldShowPagination = computed(() => {
       square
       @click="goToNext"
     />
-  </div>
+  </UFieldGroup>
 </template>

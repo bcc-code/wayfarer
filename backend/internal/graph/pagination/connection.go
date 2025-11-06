@@ -51,19 +51,21 @@ func buildPageInfo(params BuildUserConnectionParams, edges []model.UserEdge) *mo
 	pageInfo.StartCursor = &startCursor
 	pageInfo.EndCursor = &endCursor
 
-	// Determine hasNextPage
+	// Determine hasNextPage and hasPreviousPage based on pagination direction
 	if params.RequestedFirst != nil {
-		// Forward pagination: if we fetched more records than requested, there's a next page
+		// Forward pagination
 		pageInfo.HasNextPage = params.HasMore
-	}
-
-	// Determine hasPreviousPage
-	if params.RequestedLast != nil {
-		// Backward pagination: if we fetched more records than requested, there's a previous page
-		pageInfo.HasPreviousPage = params.HasMore
-	} else if params.RequestedAfter != nil && *params.RequestedAfter != "" {
 		// If we're paginating forward with an 'after' cursor, there must be a previous page
-		pageInfo.HasPreviousPage = true
+		if params.RequestedAfter != nil && *params.RequestedAfter != "" {
+			pageInfo.HasPreviousPage = true
+		}
+	} else if params.RequestedLast != nil {
+		// Backward pagination
+		pageInfo.HasPreviousPage = params.HasMore
+		// If we're paginating backward with a 'before' cursor, there must be a next page
+		if params.RequestedBefore != nil && *params.RequestedBefore != "" {
+			pageInfo.HasNextPage = true
+		}
 	}
 
 	return pageInfo
