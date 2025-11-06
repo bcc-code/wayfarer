@@ -25,6 +25,17 @@ type Achievement interface {
 	GetHidden() bool
 }
 
+type AchievementConnection struct {
+	Edges      []AchievementEdge `json:"edges"`
+	PageInfo   *PageInfo         `json:"pageInfo"`
+	TotalCount int               `json:"totalCount"`
+}
+
+type AchievementEdge struct {
+	Cursor string      `json:"cursor"`
+	Node   Achievement `json:"node"`
+}
+
 type AchievementFilter struct {
 	ProjectID *string  `json:"projectId,omitempty"`
 	EventID   *string  `json:"eventId,omitempty"`

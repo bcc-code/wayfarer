@@ -1135,8 +1135,117 @@ func (r *queryResolver) Achievement(ctx context.Context, id string) (model.Achie
 }
 
 // Achievements is the resolver for the achievements field.
-func (r *queryResolver) Achievements(ctx context.Context, filter model.AchievementFilter) ([]model.Achievement, error) {
-	panic(fmt.Errorf("not implemented: Achievements - achievements"))
+func (r *queryResolver) Achievements(ctx context.Context, filter model.AchievementFilter, first *int, after *string, last *int, before *string) (*model.AchievementConnection, error) {
+	// Build cache key from filter and pagination parameters
+	cacheKeyParams := buildAchievementCacheKeyParams(&filter, first, after, last, before)
+	cacheKey := cache.AchievementsFilterKey(cacheKeyParams)
+	countCacheKey := cache.AchievementsCountKey(cacheKeyParams)
+
+	// Check cache for connection result
+	if cached, ok := r.Cache.Get(cacheKey); ok {
+		if connection, ok := cached.(*model.AchievementConnection); ok {
+			return connection, nil
+		}
+	}
+
+	// Decode cursors if provided
+	var afterCursor, beforeCursor *string
+	if after != nil && *after != "" {
+		decoded, err := pagination.DecodeCursor(*after)
+		if err != nil {
+			return nil, fmt.Errorf("invalid after cursor: %w", err)
+		}
+		afterCursor = &decoded
+	}
+	if before != nil && *before != "" {
+		decoded, err := pagination.DecodeCursor(*before)
+		if err != nil {
+			return nil, fmt.Errorf("invalid before cursor: %w", err)
+		}
+		beforeCursor = &decoded
+	}
+
+	// Build database query parameters for cursor pagination
+	params, err := buildAchievementFilterParamsCursor(&filter, first, afterCursor, last, beforeCursor)
+	if err != nil {
+		return nil, err
+	}
+
+	// Query database with cursor pagination
+	rows, err := r.DB.Queries.GetAchievementsFilteredCursor(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query achievements: %w", err)
+	}
+
+	// Query total count (check cache first)
+	var totalCount int64
+	countCached := false
+	if cachedCount, ok := r.Cache.Get(countCacheKey); ok {
+		if count, ok := cachedCount.(int64); ok {
+			totalCount = count
+			countCached = true
+		}
+	}
+
+	// If not in cache, query database
+	if !countCached {
+		countParams := buildCountAchievementsFilterParams(&filter)
+		totalCount, err = r.DB.Queries.CountAchievementsFiltered(ctx, countParams)
+		if err != nil {
+			return nil, fmt.Errorf("failed to count achievements: %w", err)
+		}
+
+		// Store count in cache
+		r.Cache.Set(countCacheKey, totalCount)
+	}
+
+	// Determine requested limit and check if there are more results
+	requestedLimit := 10 // default
+	if first != nil {
+		requestedLimit = *first
+	} else if last != nil {
+		requestedLimit = *last
+	}
+
+	hasMore := len(rows) > requestedLimit
+	achievementRows := rows
+	if hasMore {
+		// Trim the extra record we fetched for hasMore detection
+		achievementRows = rows[:requestedLimit]
+	}
+
+	// If backward pagination, reverse the results
+	if last != nil {
+		for i, j := 0, len(achievementRows)-1; i < j; i, j = i+1, j-1 {
+			achievementRows[i], achievementRows[j] = achievementRows[j], achievementRows[i]
+		}
+	}
+
+	// Convert to GraphQL model
+	modelAchievements := make([]model.Achievement, len(achievementRows))
+	for i, row := range achievementRows {
+		achievement, err := convertRowToAchievement(row)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert achievement: %w", err)
+		}
+		modelAchievements[i] = achievement
+	}
+
+	// Build connection using pagination helper
+	connection := pagination.BuildAchievementConnection(pagination.BuildAchievementConnectionParams{
+		Achievements:    modelAchievements,
+		RequestedFirst:  first,
+		RequestedLast:   last,
+		RequestedAfter:  after,
+		RequestedBefore: before,
+		TotalCount:      int(totalCount),
+		HasMore:         hasMore,
+	})
+
+	// Store in cache
+	r.Cache.Set(cacheKey, connection)
+
+	return connection, nil
 }
 
 // Challenge is the resolver for the challenge field.

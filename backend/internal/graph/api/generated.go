@@ -61,6 +61,17 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AchievementConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	AchievementEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	AgeRange struct {
 		Max func(childComplexity int) int
 		Min func(childComplexity int) int
@@ -260,7 +271,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Achievement      func(childComplexity int, id string) int
-		Achievements     func(childComplexity int, filter model.AchievementFilter) int
+		Achievements     func(childComplexity int, filter model.AchievementFilter, first *int, after *string, last *int, before *string) int
 		Challenge        func(childComplexity int, id string) int
 		Challenges       func(childComplexity int, filter model.ChallengeFilter) int
 		Church           func(childComplexity int, id string) int
@@ -546,7 +557,7 @@ type QueryResolver interface {
 	Superteam(ctx context.Context, id string) (*model.SuperTeam, error)
 	Superteams(ctx context.Context, filter *model.SuperTeamFilter, first *int, after *string, last *int, before *string) (*model.SuperTeamConnection, error)
 	Achievement(ctx context.Context, id string) (model.Achievement, error)
-	Achievements(ctx context.Context, filter model.AchievementFilter) ([]model.Achievement, error)
+	Achievements(ctx context.Context, filter model.AchievementFilter, first *int, after *string, last *int, before *string) (*model.AchievementConnection, error)
 	Challenge(ctx context.Context, id string) (*model.Challenge, error)
 	Challenges(ctx context.Context, filter model.ChallengeFilter) ([]model.Challenge, error)
 	Church(ctx context.Context, id string) (*model.Church, error)
@@ -631,6 +642,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AchievementConnection.edges":
+		if e.complexity.AchievementConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.AchievementConnection.Edges(childComplexity), true
+	case "AchievementConnection.pageInfo":
+		if e.complexity.AchievementConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.AchievementConnection.PageInfo(childComplexity), true
+	case "AchievementConnection.totalCount":
+		if e.complexity.AchievementConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.AchievementConnection.TotalCount(childComplexity), true
+
+	case "AchievementEdge.cursor":
+		if e.complexity.AchievementEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.AchievementEdge.Cursor(childComplexity), true
+	case "AchievementEdge.node":
+		if e.complexity.AchievementEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.AchievementEdge.Node(childComplexity), true
 
 	case "AgeRange.max":
 		if e.complexity.AgeRange.Max == nil {
@@ -1881,7 +1924,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Achievements(childComplexity, args["filter"].(model.AchievementFilter)), true
+		return e.complexity.Query.Achievements(childComplexity, args["filter"].(model.AchievementFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
 	case "Query.challenge":
 		if e.complexity.Query.Challenge == nil {
 			break
@@ -3557,6 +3600,17 @@ type SuperTeamConnection {
     pageInfo: PageInfo!
     totalCount: Int!
 }
+
+type AchievementEdge {
+    cursor: String!
+    node: Achievement!
+}
+
+type AchievementConnection {
+    edges: [AchievementEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema.graphqls", Input: `# GraphQL Schema
 # Imports shared types from shared.graphqls
@@ -3595,7 +3649,7 @@ type Query {
     superteams(filter: SuperTeamFilter, first: Int, after: String, last: Int, before: String): SuperTeamConnection! @requireRole(roles: ["user"])
 
     achievement(id: ID!): Achievement!
-    achievements(filter: AchievementFilter!): [Achievement!]!
+    achievements(filter: AchievementFilter!, first: Int, after: String, last: Int, before: String): AchievementConnection!
 
     challenge(id: ID!): Challenge!
     challenges(filter: ChallengeFilter!): [Challenge!]!
@@ -4808,6 +4862,26 @@ func (ec *executionContext) field_Query_achievements_args(ctx context.Context, r
 		return nil, err
 	}
 	args["filter"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg4
 	return args, nil
 }
 
@@ -5213,6 +5287,167 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AchievementConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.AchievementConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AchievementConnection_edges,
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		ec.marshalNAchievementEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievementEdgeᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AchievementConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AchievementConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "cursor":
+				return ec.fieldContext_AchievementEdge_cursor(ctx, field)
+			case "node":
+				return ec.fieldContext_AchievementEdge_node(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AchievementEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AchievementConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.AchievementConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AchievementConnection_pageInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		ec.marshalNPageInfo2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPageInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AchievementConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AchievementConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AchievementConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.AchievementConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AchievementConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AchievementConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AchievementConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AchievementEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.AchievementEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AchievementEdge_cursor,
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AchievementEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AchievementEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AchievementEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.AchievementEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AchievementEdge_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalNAchievement2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievement,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AchievementEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AchievementEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _AgeRange_min(ctx context.Context, field graphql.CollectedField, obj *model.AgeRange) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
@@ -13684,10 +13919,10 @@ func (ec *executionContext) _Query_achievements(ctx context.Context, field graph
 		ec.fieldContext_Query_achievements,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Achievements(ctx, fc.Args["filter"].(model.AchievementFilter))
+			return ec.resolvers.Query().Achievements(ctx, fc.Args["filter"].(model.AchievementFilter), fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
 		},
 		nil,
-		ec.marshalNAchievement2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievementᚄ,
+		ec.marshalNAchievementConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievementConnection,
 		true,
 		true,
 	)
@@ -13700,7 +13935,15 @@ func (ec *executionContext) fieldContext_Query_achievements(ctx context.Context,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_AchievementConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_AchievementConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_AchievementConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AchievementConnection", field.Name)
 		},
 	}
 	defer func() {
@@ -21624,6 +21867,99 @@ func (ec *executionContext) _Achievement(ctx context.Context, sel ast.SelectionS
 
 // region    **************************** object.gotpl ****************************
 
+var achievementConnectionImplementors = []string{"AchievementConnection"}
+
+func (ec *executionContext) _AchievementConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AchievementConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, achievementConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AchievementConnection")
+		case "edges":
+			out.Values[i] = ec._AchievementConnection_edges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._AchievementConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._AchievementConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var achievementEdgeImplementors = []string{"AchievementEdge"}
+
+func (ec *executionContext) _AchievementEdge(ctx context.Context, sel ast.SelectionSet, obj *model.AchievementEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, achievementEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AchievementEdge")
+		case "cursor":
+			out.Values[i] = ec._AchievementEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "node":
+			out.Values[i] = ec._AchievementEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var ageRangeImplementors = []string{"AgeRange"}
 
 func (ec *executionContext) _AgeRange(ctx context.Context, sel ast.SelectionSet, obj *model.AgeRange) graphql.Marshaler {
@@ -26388,6 +26724,68 @@ func (ec *executionContext) marshalNAchievement2ᚕgithubᚗcomᚋbccᚑmediaᚋ
 				defer wg.Done()
 			}
 			ret[i] = ec.marshalNAchievement2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievement(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAchievementConnection2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievementConnection(ctx context.Context, sel ast.SelectionSet, v model.AchievementConnection) graphql.Marshaler {
+	return ec._AchievementConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAchievementConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievementConnection(ctx context.Context, sel ast.SelectionSet, v *model.AchievementConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AchievementConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAchievementEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievementEdge(ctx context.Context, sel ast.SelectionSet, v model.AchievementEdge) graphql.Marshaler {
+	return ec._AchievementEdge(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAchievementEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievementEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AchievementEdge) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAchievementEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievementEdge(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)

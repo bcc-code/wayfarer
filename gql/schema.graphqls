@@ -35,7 +35,7 @@ type Query {
     superteams(filter: SuperTeamFilter, first: Int, after: String, last: Int, before: String): SuperTeamConnection! @requireRole(roles: ["user"])
 
     achievement(id: ID!): Achievement!
-    achievements(filter: AchievementFilter!): [Achievement!]!
+    achievements(filter: AchievementFilter!, first: Int, after: String, last: Int, before: String): AchievementConnection!
 
     challenge(id: ID!): Challenge!
     challenges(filter: ChallengeFilter!): [Challenge!]!

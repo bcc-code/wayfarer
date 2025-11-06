@@ -654,3 +654,14 @@ type SuperTeamConnection {
     pageInfo: PageInfo!
     totalCount: Int!
 }
+
+type AchievementEdge {
+    cursor: String!
+    node: Achievement!
+}
+
+type AchievementConnection {
+    edges: [AchievementEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}

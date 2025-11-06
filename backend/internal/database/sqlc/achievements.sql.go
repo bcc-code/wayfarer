@@ -11,6 +11,28 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const CountAchievementsFiltered = `-- name: CountAchievementsFiltered :one
+SELECT COUNT(DISTINCT a.id)
+FROM achievements a
+WHERE
+    ($1::text[] IS NULL OR a.id = ANY($1::text[]))
+    AND ($2::text = '' OR a.project_id = $2::text)
+    AND ($3::text = '' OR a.event_id = $3::text)
+`
+
+type CountAchievementsFilteredParams struct {
+	Ids       []string `json:"ids"`
+	Projectid string   `json:"projectid"`
+	Eventid   string   `json:"eventid"`
+}
+
+func (q *Queries) CountAchievementsFiltered(ctx context.Context, arg CountAchievementsFilteredParams) (int64, error) {
+	row := q.db.QueryRow(ctx, CountAchievementsFiltered, arg.Ids, arg.Projectid, arg.Eventid)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const GetAchievementsByIDs = `-- name: GetAchievementsByIDs :many
 SELECT
     a.id,
@@ -97,6 +119,149 @@ func (q *Queries) GetAchievementsByIDs(ctx context.Context, ids []string) ([]*Ge
 	items := []*GetAchievementsByIDsRow{}
 	for rows.Next() {
 		var i GetAchievementsByIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AchievementType,
+			&i.ProjectID,
+			&i.EventID,
+			&i.ChallengeID,
+			&i.Name,
+			&i.Description,
+			&i.ImageUrl,
+			&i.Points,
+			&i.Hidden,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ReadingAchievementID,
+			&i.ReadingArticles,
+			&i.ListeningAchievementID,
+			&i.ListeningTracks,
+			&i.StreakID,
+			&i.NeededStreak,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetAchievementsFilteredCursor = `-- name: GetAchievementsFilteredCursor :many
+SELECT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description,
+    a.image_url,
+    a.points,
+    a.hidden,
+    a.created_at,
+    a.updated_at,
+    -- Reading achievement data
+    ra.achievement_id AS reading_achievement_id,
+    COALESCE(
+        (SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', raa.id,
+                'article_id', raa.article_id,
+                'title', raa.title,
+                'author', raa.author,
+                'url', raa.url
+            )
+        )
+        FROM reading_achievement_articles raa
+        WHERE raa.achievement_id = a.id),
+        '[]'::jsonb
+    ) AS reading_articles,
+    -- Listening achievement data
+    la.achievement_id AS listening_achievement_id,
+    COALESCE(
+        (SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', lat.id,
+                'track_id', lat.track_id,
+                'name', lat.name,
+                'description', lat.description,
+                'image_url', lat.image_url
+            )
+        )
+        FROM listening_achievement_tracks lat
+        WHERE lat.achievement_id = a.id),
+        '[]'::jsonb
+    ) AS listening_tracks,
+    -- Streak achievement data
+    sa.streak_id,
+    sa.needed_streak
+FROM achievements a
+LEFT JOIN reading_achievements ra ON a.id = ra.achievement_id
+LEFT JOIN listening_achievements la ON a.id = la.achievement_id
+LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+WHERE
+    ($1::text[] IS NULL OR a.id = ANY($1::text[]))
+    AND ($2::text = '' OR a.project_id = $2::text)
+    AND ($3::text = '' OR a.event_id = $3::text)
+    AND ($4::text = '' OR a.id > $4::text)
+    AND ($5::text = '' OR a.id < $5::text)
+ORDER BY
+    CASE WHEN $6::bool = true THEN a.id END DESC,
+    CASE WHEN $6::bool = false OR $6::bool IS NULL THEN a.id END ASC
+LIMIT CASE WHEN $7::int IS NULL THEN NULL ELSE $7::int END
+`
+
+type GetAchievementsFilteredCursorParams struct {
+	Ids          []string `json:"ids"`
+	Projectid    string   `json:"projectid"`
+	Eventid      string   `json:"eventid"`
+	Aftercursor  string   `json:"aftercursor"`
+	Beforecursor string   `json:"beforecursor"`
+	Isbackward   bool     `json:"isbackward"`
+	Querylimit   int32    `json:"querylimit"`
+}
+
+type GetAchievementsFilteredCursorRow struct {
+	ID                     string             `json:"id"`
+	AchievementType        string             `json:"achievement_type"`
+	ProjectID              string             `json:"project_id"`
+	EventID                *string            `json:"event_id"`
+	ChallengeID            *string            `json:"challenge_id"`
+	Name                   string             `json:"name"`
+	Description            string             `json:"description"`
+	ImageUrl               string             `json:"image_url"`
+	Points                 int32              `json:"points"`
+	Hidden                 *bool              `json:"hidden"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	ReadingAchievementID   *string            `json:"reading_achievement_id"`
+	ReadingArticles        interface{}        `json:"reading_articles"`
+	ListeningAchievementID *string            `json:"listening_achievement_id"`
+	ListeningTracks        interface{}        `json:"listening_tracks"`
+	StreakID               *string            `json:"streak_id"`
+	NeededStreak           *int32             `json:"needed_streak"`
+}
+
+func (q *Queries) GetAchievementsFilteredCursor(ctx context.Context, arg GetAchievementsFilteredCursorParams) ([]*GetAchievementsFilteredCursorRow, error) {
+	rows, err := q.db.Query(ctx, GetAchievementsFilteredCursor,
+		arg.Ids,
+		arg.Projectid,
+		arg.Eventid,
+		arg.Aftercursor,
+		arg.Beforecursor,
+		arg.Isbackward,
+		arg.Querylimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetAchievementsFilteredCursorRow{}
+	for rows.Next() {
+		var i GetAchievementsFilteredCursorRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.AchievementType,

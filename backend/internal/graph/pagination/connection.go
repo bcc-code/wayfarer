@@ -266,3 +266,71 @@ func buildSuperTeamPageInfo(params BuildSuperTeamConnectionParams, edges []model
 
 	return pageInfo
 }
+
+// BuildAchievementConnectionParams holds parameters for building an AchievementConnection
+type BuildAchievementConnectionParams struct {
+	Achievements    []model.Achievement
+	RequestedFirst  *int
+	RequestedLast   *int
+	RequestedAfter  *string
+	RequestedBefore *string
+	TotalCount      int
+	HasMore         bool
+}
+
+// BuildAchievementConnection constructs a Relay-style connection from query results
+func BuildAchievementConnection(params BuildAchievementConnectionParams) *model.AchievementConnection {
+	edges := make([]model.AchievementEdge, len(params.Achievements))
+	for i, achievement := range params.Achievements {
+		edges[i] = model.AchievementEdge{
+			Cursor: EncodeCursor(achievement.GetID()),
+			Node:   achievement,
+		}
+	}
+
+	pageInfo := buildAchievementPageInfo(params, edges)
+
+	return &model.AchievementConnection{
+		Edges:      edges,
+		PageInfo:   pageInfo,
+		TotalCount: params.TotalCount,
+	}
+}
+
+// buildAchievementPageInfo constructs the PageInfo for achievements
+func buildAchievementPageInfo(params BuildAchievementConnectionParams, edges []model.AchievementEdge) *model.PageInfo {
+	pageInfo := &model.PageInfo{
+		HasNextPage:     false,
+		HasPreviousPage: false,
+		StartCursor:     nil,
+		EndCursor:       nil,
+	}
+
+	if len(edges) == 0 {
+		return pageInfo
+	}
+
+	// Set start and end cursors
+	startCursor := edges[0].Cursor
+	endCursor := edges[len(edges)-1].Cursor
+	pageInfo.StartCursor = &startCursor
+	pageInfo.EndCursor = &endCursor
+
+	// Determine hasNextPage
+	if params.RequestedFirst != nil {
+		pageInfo.HasNextPage = params.HasMore
+	}
+
+	// Determine hasPreviousPage
+	if params.RequestedLast != nil {
+		pageInfo.HasPreviousPage = params.HasMore
+		// If we're paginating backward with a 'before' cursor, there must be a next page
+		if params.RequestedBefore != nil && *params.RequestedBefore != "" {
+			pageInfo.HasNextPage = true
+		}
+	} else if params.RequestedAfter != nil && *params.RequestedAfter != "" {
+		pageInfo.HasPreviousPage = true
+	}
+
+	return pageInfo
+}

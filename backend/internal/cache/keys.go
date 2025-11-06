@@ -42,16 +42,18 @@ const (
 	PrefixScore       = "score:"
 
 	// Query results
-	PrefixUsersFilter    = "usersfilter:"
-	PrefixUsersCount     = "userscount:"
-	PrefixProjectsFilter = "projectsfilter:"
-	PrefixProjectsCount  = "projectscount:"
-	PrefixEventsFilter      = "eventsfilter:"
-	PrefixEventsCount       = "eventscount:"
-	PrefixTeamsFilter       = "teamsfilter:"
-	PrefixTeamsCount        = "teamscount:"
-	PrefixSuperTeamsFilter  = "superteamsfilter:"
-	PrefixSuperTeamsCount   = "superteamscount:"
+	PrefixUsersFilter        = "usersfilter:"
+	PrefixUsersCount         = "userscount:"
+	PrefixProjectsFilter     = "projectsfilter:"
+	PrefixProjectsCount      = "projectscount:"
+	PrefixEventsFilter       = "eventsfilter:"
+	PrefixEventsCount        = "eventscount:"
+	PrefixTeamsFilter        = "teamsfilter:"
+	PrefixTeamsCount         = "teamscount:"
+	PrefixSuperTeamsFilter   = "superteamsfilter:"
+	PrefixSuperTeamsCount    = "superteamscount:"
+	PrefixAchievementsFilter = "achievementsfilter:"
+	PrefixAchievementsCount  = "achievementscount:"
 
 	// Permissions/Roles
 	PrefixHasRole          = "hasrole:"
@@ -534,4 +536,66 @@ func SuperTeamsCountKey(params map[string]string) string {
 	hashStr := hex.EncodeToString(hash[:])[:16]
 
 	return PrefixSuperTeamsCount + hashStr
+}
+
+// AchievementsFilterKey builds a cache key for filtered achievements query results
+func AchievementsFilterKey(params map[string]string) string {
+	if len(params) == 0 {
+		return PrefixAchievementsFilter + "all"
+	}
+
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for a shorter key
+	hash := sha256.Sum256([]byte(builder.String()))
+	hashStr := hex.EncodeToString(hash[:])[:16]
+
+	return PrefixAchievementsFilter + hashStr
+}
+
+// AchievementsCountKey builds a cache key for filtered achievements count query results
+func AchievementsCountKey(params map[string]string) string {
+	if len(params) == 0 {
+		return PrefixAchievementsCount + "all"
+	}
+
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for a shorter key
+	hash := sha256.Sum256([]byte(builder.String()))
+	hashStr := hex.EncodeToString(hash[:])[:16]
+
+	return PrefixAchievementsCount + hashStr
 }
