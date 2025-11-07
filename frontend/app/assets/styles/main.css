@@ -81,21 +81,15 @@
   --font-weight-tiny: 500;
 }
 
-:root {
-  --ui-radius: 0.3rem;
-}
-
 /* Modern browsers: dynamic colors based on accent */
 @supports (color: oklch(from white l c h)) {
   @theme {
     --color-accent-contrast: oklch(
       from var(--color-accent-base) calc(l * 0.7) c h
     );
-    --color-on-accent: oklch(
-      from var(--color-accent-base) 0.2 calc(c * 0.3) h
-    );
+    --color-on-accent: oklch(from var(--color-accent-base) 0.2 calc(c * 0.3) h);
     --color-background-default: oklch(
-      from var(--color-accent-base) 0.96 calc(c * 0.15) h
+      from var(--color-accent-base) 0.96 calc(c * 0.1) h
     );
     --color-background-indent: oklch(
       from var(--color-accent-base) 0.5 c h / 0.05
@@ -132,6 +126,10 @@
     font-weight: var(--font-weight-tiny);
     letter-spacing: var(--letter-spacing-tiny);
   }
+}
+
+:root {
+  --ui-radius: 0.3rem;
 }
 
 html,

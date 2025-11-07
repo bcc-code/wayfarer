@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 
+useHead({
+  title: 'Wayfarer Admin',
+})
+
 gql(`
   query AdminSidebar {
     projects {
