@@ -64,6 +64,21 @@ watch(data, (newData) => {
   `
   document.body.appendChild(styleElement)
 })
+
+const route = useRoute()
+const activeMenuItem = ref()
+
+watch(
+  () => route.path,
+  () => {
+    nextTick(() => {
+      activeMenuItem.value = document.querySelector(`[aria-current="page"]`)
+    })
+  },
+  { immediate: true },
+)
+
+const { left, height, width } = useElementBounding(activeMenuItem)
 </script>
 
 <template>
@@ -75,18 +90,26 @@ watch(data, (newData) => {
       class="p-navigation-outside from-shadow-blank/0 to-shadow-default fixed inset-x-0 bottom-0 bg-linear-to-b"
     >
       <ul
-        class="bg-background-raised shadow-large rounded-navigation p-navigation-inset grid grid-cols-4"
+        class="bg-background-raised shadow-large rounded-navigation p-navigation-inset relative grid grid-cols-4"
       >
         <li v-for="link in links" :key="link.label" class="grow">
           <NuxtLink
             :to="link.to"
-            class="px-default rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5"
-            active-class="bg-background-indent text-accent-contrast"
+            class="px-default rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5 transition-all duration-150 ease-out"
+            active-class="text-accent-contrast"
           >
             <UIcon :name="link.icon" class="shrink-0" />
             <span class="text-xs">{{ link.label }}</span>
           </NuxtLink>
         </li>
+        <div
+          class="m-navigation-inset rounded-navigation-inset bg-background-indent absolute aspect-square transition-all duration-150 ease-out"
+          :style="{
+            left: `calc(${left}px - var(--spacing-default))`,
+            height: height + 'px',
+            width: width + 'px',
+          }"
+        />
       </ul>
     </div>
   </div>
