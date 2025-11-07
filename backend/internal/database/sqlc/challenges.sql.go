@@ -7,7 +7,41 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const CountChallengesFiltered = `-- name: CountChallengesFiltered :one
+SELECT COUNT(DISTINCT id)
+FROM challenges
+WHERE
+    ($1::text[] IS NULL OR id = ANY($1::text[]))
+    AND ($2::text = '' OR project_id = $2::text)
+    AND ($3::text = '' OR event_id = $3::text)
+    AND ($4::timestamptz IS NULL OR published_at >= $4::timestamptz)
+    AND ($5::timestamptz IS NULL OR published_at <= $5::timestamptz)
+`
+
+type CountChallengesFilteredParams struct {
+	Ids             []string           `json:"ids"`
+	Projectid       string             `json:"projectid"`
+	Eventid         string             `json:"eventid"`
+	Publishedafter  pgtype.Timestamptz `json:"publishedafter"`
+	Publishedbefore pgtype.Timestamptz `json:"publishedbefore"`
+}
+
+func (q *Queries) CountChallengesFiltered(ctx context.Context, arg CountChallengesFilteredParams) (int64, error) {
+	row := q.db.QueryRow(ctx, CountChallengesFiltered,
+		arg.Ids,
+		arg.Projectid,
+		arg.Eventid,
+		arg.Publishedafter,
+		arg.Publishedbefore,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
 
 const GetChallengesByIDs = `-- name: GetChallengesByIDs :many
 SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
@@ -17,6 +51,78 @@ WHERE id = ANY($1::text[])
 
 func (q *Queries) GetChallengesByIDs(ctx context.Context, ids []string) ([]*Challenge, error) {
 	rows, err := q.db.Query(ctx, GetChallengesByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Challenge{}
+	for rows.Next() {
+		var i Challenge
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.EventID,
+			&i.Name,
+			&i.Description,
+			&i.ImageUrl,
+			&i.Url,
+			&i.ButtonText,
+			&i.PublishedAt,
+			&i.EndTime,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetChallengesFilteredCursor = `-- name: GetChallengesFilteredCursor :many
+SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+FROM challenges
+WHERE
+    ($1::text[] IS NULL OR id = ANY($1::text[]))
+    AND ($2::text = '' OR project_id = $2::text)
+    AND ($3::text = '' OR event_id = $3::text)
+    AND ($4::timestamptz IS NULL OR published_at >= $4::timestamptz)
+    AND ($5::timestamptz IS NULL OR published_at <= $5::timestamptz)
+    AND ($6::text = '' OR id > $6::text)
+    AND ($7::text = '' OR id < $7::text)
+ORDER BY
+    CASE WHEN $8::bool = true THEN id END DESC,
+    CASE WHEN $8::bool = false OR $8::bool IS NULL THEN id END ASC
+LIMIT CASE WHEN $9::int IS NULL THEN NULL ELSE $9::int END
+`
+
+type GetChallengesFilteredCursorParams struct {
+	Ids             []string           `json:"ids"`
+	Projectid       string             `json:"projectid"`
+	Eventid         string             `json:"eventid"`
+	Publishedafter  pgtype.Timestamptz `json:"publishedafter"`
+	Publishedbefore pgtype.Timestamptz `json:"publishedbefore"`
+	Aftercursor     string             `json:"aftercursor"`
+	Beforecursor    string             `json:"beforecursor"`
+	Isbackward      bool               `json:"isbackward"`
+	Querylimit      int32              `json:"querylimit"`
+}
+
+func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChallengesFilteredCursorParams) ([]*Challenge, error) {
+	rows, err := q.db.Query(ctx, GetChallengesFilteredCursor,
+		arg.Ids,
+		arg.Projectid,
+		arg.Eventid,
+		arg.Publishedafter,
+		arg.Publishedbefore,
+		arg.Aftercursor,
+		arg.Beforecursor,
+		arg.Isbackward,
+		arg.Querylimit,
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -100,10 +100,23 @@ type Challenge struct {
 	ProjectID       string            `json:"-"`
 }
 
+type ChallengeConnection struct {
+	Edges      []ChallengeEdge `json:"edges"`
+	PageInfo   *PageInfo       `json:"pageInfo"`
+	TotalCount int             `json:"totalCount"`
+}
+
+type ChallengeEdge struct {
+	Cursor string     `json:"cursor"`
+	Node   *Challenge `json:"node"`
+}
+
 type ChallengeFilter struct {
-	ProjectID *string  `json:"projectId,omitempty"`
-	EventID   *string  `json:"eventId,omitempty"`
-	Ids       []string `json:"ids,omitempty"`
+	ProjectID       *string           `json:"projectId,omitempty"`
+	EventID         *string           `json:"eventId,omitempty"`
+	Ids             []string          `json:"ids,omitempty"`
+	PublishedAfter  *scalars.DateTime `json:"publishedAfter,omitempty"`
+	PublishedBefore *scalars.DateTime `json:"publishedBefore,omitempty"`
 }
 
 type Church struct {

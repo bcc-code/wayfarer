@@ -38,7 +38,7 @@ type Query {
     achievements(filter: AchievementFilter!, first: Int, after: String, last: Int, before: String): AchievementConnection!
 
     challenge(id: ID!): Challenge!
-    challenges(filter: ChallengeFilter!): [Challenge!]!
+    challenges(filter: ChallengeFilter, first: Int, after: String, last: Int, before: String): ChallengeConnection!
 
     church(id: ID!): Church!
     churches: [Church!]!

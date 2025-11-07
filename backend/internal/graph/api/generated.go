@@ -104,6 +104,17 @@ type ComplexityRoot struct {
 		UserCompletedAt func(childComplexity int) int
 	}
 
+	ChallengeConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	ChallengeEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	Church struct {
 		Category func(childComplexity int) int
 		Country  func(childComplexity int) int
@@ -273,7 +284,7 @@ type ComplexityRoot struct {
 		Achievement      func(childComplexity int, id string) int
 		Achievements     func(childComplexity int, filter model.AchievementFilter, first *int, after *string, last *int, before *string) int
 		Challenge        func(childComplexity int, id string) int
-		Challenges       func(childComplexity int, filter model.ChallengeFilter) int
+		Challenges       func(childComplexity int, filter *model.ChallengeFilter, first *int, after *string, last *int, before *string) int
 		Church           func(childComplexity int, id string) int
 		Churches         func(childComplexity int) int
 		CurrentEvent     func(childComplexity int) int
@@ -559,7 +570,7 @@ type QueryResolver interface {
 	Achievement(ctx context.Context, id string) (model.Achievement, error)
 	Achievements(ctx context.Context, filter model.AchievementFilter, first *int, after *string, last *int, before *string) (*model.AchievementConnection, error)
 	Challenge(ctx context.Context, id string) (*model.Challenge, error)
-	Challenges(ctx context.Context, filter model.ChallengeFilter) ([]model.Challenge, error)
+	Challenges(ctx context.Context, filter *model.ChallengeFilter, first *int, after *string, last *int, before *string) (*model.ChallengeConnection, error)
 	Church(ctx context.Context, id string) (*model.Church, error)
 	Churches(ctx context.Context) ([]model.Church, error)
 	Streak(ctx context.Context, id string) (*model.Streak, error)
@@ -798,6 +809,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Challenge.UserCompletedAt(childComplexity), true
+
+	case "ChallengeConnection.edges":
+		if e.complexity.ChallengeConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.ChallengeConnection.Edges(childComplexity), true
+	case "ChallengeConnection.pageInfo":
+		if e.complexity.ChallengeConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.ChallengeConnection.PageInfo(childComplexity), true
+	case "ChallengeConnection.totalCount":
+		if e.complexity.ChallengeConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.ChallengeConnection.TotalCount(childComplexity), true
+
+	case "ChallengeEdge.cursor":
+		if e.complexity.ChallengeEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.ChallengeEdge.Cursor(childComplexity), true
+	case "ChallengeEdge.node":
+		if e.complexity.ChallengeEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.ChallengeEdge.Node(childComplexity), true
 
 	case "Church.category":
 		if e.complexity.Church.Category == nil {
@@ -1946,7 +1989,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Challenges(childComplexity, args["filter"].(model.ChallengeFilter)), true
+		return e.complexity.Query.Challenges(childComplexity, args["filter"].(*model.ChallengeFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
 	case "Query.church":
 		if e.complexity.Query.Church == nil {
 			break
@@ -3468,6 +3511,8 @@ input ChallengeFilter {
     projectId: ID
     eventId: ID
     ids: [ID!]  # Support bulk ID lookup for M2M API
+    publishedAfter: DateTime
+    publishedBefore: DateTime
 }
 
 input EventFilter {
@@ -3611,6 +3656,17 @@ type AchievementConnection {
     pageInfo: PageInfo!
     totalCount: Int!
 }
+
+type ChallengeEdge {
+    cursor: String!
+    node: Challenge!
+}
+
+type ChallengeConnection {
+    edges: [ChallengeEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema.graphqls", Input: `# GraphQL Schema
 # Imports shared types from shared.graphqls
@@ -3652,7 +3708,7 @@ type Query {
     achievements(filter: AchievementFilter!, first: Int, after: String, last: Int, before: String): AchievementConnection!
 
     challenge(id: ID!): Challenge!
-    challenges(filter: ChallengeFilter!): [Challenge!]!
+    challenges(filter: ChallengeFilter, first: Int, after: String, last: Int, before: String): ChallengeConnection!
 
     church(id: ID!): Church!
     churches: [Church!]!
@@ -4899,11 +4955,31 @@ func (ec *executionContext) field_Query_challenge_args(ctx context.Context, rawA
 func (ec *executionContext) field_Query_challenges_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalNChallengeFilter2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeFilter)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOChallengeFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeFilter)
 	if err != nil {
 		return nil, err
 	}
 	args["filter"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg4
 	return args, nil
 }
 
@@ -6078,6 +6154,191 @@ func (ec *executionContext) fieldContext_Challenge_userCompletedAt(_ context.Con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChallengeConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.ChallengeConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChallengeConnection_edges,
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		ec.marshalNChallengeEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeEdgeᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChallengeConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChallengeConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "cursor":
+				return ec.fieldContext_ChallengeEdge_cursor(ctx, field)
+			case "node":
+				return ec.fieldContext_ChallengeEdge_node(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ChallengeEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChallengeConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.ChallengeConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChallengeConnection_pageInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		ec.marshalNPageInfo2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPageInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChallengeConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChallengeConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChallengeConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.ChallengeConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChallengeConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChallengeConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChallengeConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChallengeEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.ChallengeEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChallengeEdge_cursor,
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChallengeEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChallengeEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChallengeEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.ChallengeEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChallengeEdge_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChallengeEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChallengeEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Challenge_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Challenge_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Challenge_description(ctx, field)
+			case "image":
+				return ec.fieldContext_Challenge_image(ctx, field)
+			case "project":
+				return ec.fieldContext_Challenge_project(ctx, field)
+			case "event":
+				return ec.fieldContext_Challenge_event(ctx, field)
+			case "url":
+				return ec.fieldContext_Challenge_url(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_Challenge_buttonText(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_Challenge_publishedAt(ctx, field)
+			case "endTime":
+				return ec.fieldContext_Challenge_endTime(ctx, field)
+			case "userCompletedAt":
+				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
 		},
 	}
 	return fc, nil
@@ -14033,10 +14294,10 @@ func (ec *executionContext) _Query_challenges(ctx context.Context, field graphql
 		ec.fieldContext_Query_challenges,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Challenges(ctx, fc.Args["filter"].(model.ChallengeFilter))
+			return ec.resolvers.Query().Challenges(ctx, fc.Args["filter"].(*model.ChallengeFilter), fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
 		},
 		nil,
-		ec.marshalNChallenge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeᚄ,
+		ec.marshalNChallengeConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeConnection,
 		true,
 		true,
 	)
@@ -14050,30 +14311,14 @@ func (ec *executionContext) fieldContext_Query_challenges(ctx context.Context, f
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
+			case "edges":
+				return ec.fieldContext_ChallengeConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_ChallengeConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_ChallengeConnection_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ChallengeConnection", field.Name)
 		},
 	}
 	defer func() {
@@ -20096,7 +20341,7 @@ func (ec *executionContext) unmarshalInputChallengeFilter(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"projectId", "eventId", "ids"}
+	fieldsInOrder := [...]string{"projectId", "eventId", "ids", "publishedAfter", "publishedBefore"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -20124,6 +20369,20 @@ func (ec *executionContext) unmarshalInputChallengeFilter(ctx context.Context, o
 				return it, err
 			}
 			it.Ids = data
+		case "publishedAfter":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedAfter"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PublishedAfter = data
+		case "publishedBefore":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedBefore"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PublishedBefore = data
 		}
 	}
 
@@ -22226,6 +22485,99 @@ func (ec *executionContext) _Challenge(ctx context.Context, sel ast.SelectionSet
 			out.Values[i] = ec._Challenge_endTime(ctx, field, obj)
 		case "userCompletedAt":
 			out.Values[i] = ec._Challenge_userCompletedAt(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var challengeConnectionImplementors = []string{"ChallengeConnection"}
+
+func (ec *executionContext) _ChallengeConnection(ctx context.Context, sel ast.SelectionSet, obj *model.ChallengeConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, challengeConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChallengeConnection")
+		case "edges":
+			out.Values[i] = ec._ChallengeConnection_edges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._ChallengeConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._ChallengeConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var challengeEdgeImplementors = []string{"ChallengeEdge"}
+
+func (ec *executionContext) _ChallengeEdge(ctx context.Context, sel ast.SelectionSet, obj *model.ChallengeEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, challengeEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChallengeEdge")
+		case "cursor":
+			out.Values[i] = ec._ChallengeEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "node":
+			out.Values[i] = ec._ChallengeEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -26982,9 +27334,66 @@ func (ec *executionContext) marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwa
 	return ec._Challenge(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNChallengeFilter2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeFilter(ctx context.Context, v any) (model.ChallengeFilter, error) {
-	res, err := ec.unmarshalInputChallengeFilter(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
+func (ec *executionContext) marshalNChallengeConnection2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeConnection(ctx context.Context, sel ast.SelectionSet, v model.ChallengeConnection) graphql.Marshaler {
+	return ec._ChallengeConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNChallengeConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeConnection(ctx context.Context, sel ast.SelectionSet, v *model.ChallengeConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ChallengeConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNChallengeEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeEdge(ctx context.Context, sel ast.SelectionSet, v model.ChallengeEdge) graphql.Marshaler {
+	return ec._ChallengeEdge(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNChallengeEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.ChallengeEdge) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNChallengeEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNChurch2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurch(ctx context.Context, sel ast.SelectionSet, v model.Church) graphql.Marshaler {
@@ -28679,6 +29088,14 @@ func (ec *executionContext) marshalOChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwa
 		return graphql.Null
 	}
 	return ec._Challenge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOChallengeFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeFilter(ctx context.Context, v any) (*model.ChallengeFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputChallengeFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOChurch2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurch(ctx context.Context, sel ast.SelectionSet, v *model.Church) graphql.Marshaler {

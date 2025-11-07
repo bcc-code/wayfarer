@@ -1261,8 +1261,114 @@ func (r *queryResolver) Challenge(ctx context.Context, id string) (*model.Challe
 }
 
 // Challenges is the resolver for the challenges field.
-func (r *queryResolver) Challenges(ctx context.Context, filter model.ChallengeFilter) ([]model.Challenge, error) {
-	panic(fmt.Errorf("not implemented: Challenges - challenges"))
+func (r *queryResolver) Challenges(ctx context.Context, filter *model.ChallengeFilter, first *int, after *string, last *int, before *string) (*model.ChallengeConnection, error) {
+	// Build cache key from filter and pagination parameters
+	cacheKeyParams := buildChallengeCacheKeyParams(filter, first, after, last, before)
+	cacheKey := cache.ChallengesFilterKey(cacheKeyParams)
+	countCacheKey := cache.ChallengesCountKey(cacheKeyParams)
+
+	// Check cache for connection result
+	if cached, ok := r.Cache.Get(cacheKey); ok {
+		if connection, ok := cached.(*model.ChallengeConnection); ok {
+			return connection, nil
+		}
+	}
+
+	// Decode cursors if provided
+	var afterCursor, beforeCursor *string
+	if after != nil && *after != "" {
+		decoded, err := pagination.DecodeCursor(*after)
+		if err != nil {
+			return nil, fmt.Errorf("invalid after cursor: %w", err)
+		}
+		afterCursor = &decoded
+	}
+	if before != nil && *before != "" {
+		decoded, err := pagination.DecodeCursor(*before)
+		if err != nil {
+			return nil, fmt.Errorf("invalid before cursor: %w", err)
+		}
+		beforeCursor = &decoded
+	}
+
+	// Build database query parameters for cursor pagination
+	params, err := buildChallengeFilterParamsCursor(filter, first, afterCursor, last, beforeCursor)
+	if err != nil {
+		return nil, err
+	}
+
+	// Query database with cursor pagination
+	rows, err := r.DB.Queries.GetChallengesFilteredCursor(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query challenges: %w", err)
+	}
+
+	// Query total count (check cache first)
+	var totalCount int64
+	countCached := false
+	if cachedCount, ok := r.Cache.Get(countCacheKey); ok {
+		if count, ok := cachedCount.(int64); ok {
+			totalCount = count
+			countCached = true
+		}
+	}
+
+	// If not in cache, query database
+	if !countCached {
+		countParams := buildCountChallengesFilterParams(filter)
+		totalCount, err = r.DB.Queries.CountChallengesFiltered(ctx, countParams)
+		if err != nil {
+			return nil, fmt.Errorf("failed to count challenges: %w", err)
+		}
+
+		// Store count in cache
+		r.Cache.Set(countCacheKey, totalCount)
+	}
+
+	// Determine requested limit and check if there are more results
+	requestedLimit := 10 // default
+	if first != nil {
+		requestedLimit = *first
+	} else if last != nil {
+		requestedLimit = *last
+	}
+
+	hasMore := len(rows) > requestedLimit
+	challengeRows := rows
+	if hasMore {
+		// Trim the extra record we fetched for hasMore detection
+		challengeRows = rows[:requestedLimit]
+	}
+
+	// If backward pagination, reverse the results
+	if last != nil {
+		for i, j := 0, len(challengeRows)-1; i < j; i, j = i+1, j-1 {
+			challengeRows[i], challengeRows[j] = challengeRows[j], challengeRows[i]
+		}
+	}
+
+	// Convert to GraphQL model
+	modelChallenges := make([]model.Challenge, len(challengeRows))
+	for i, row := range challengeRows {
+		challenge := convertRowToChallenge(row)
+		modelChallenges[i] = *challenge
+	}
+
+	// Build connection using pagination helper
+	connection := pagination.BuildChallengeConnection(pagination.BuildChallengeConnectionParams{
+		Challenges:      modelChallenges,
+		RequestedFirst:  first,
+		RequestedLast:   last,
+		RequestedAfter:  after,
+		RequestedBefore: before,
+		TotalCount:      int(totalCount),
+		HasMore:         hasMore,
+	})
+
+	// Store in cache
+	r.Cache.Set(cacheKey, connection)
+
+	return connection, nil
 }
 
 // Church is the resolver for the church field.

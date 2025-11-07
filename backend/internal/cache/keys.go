@@ -54,6 +54,8 @@ const (
 	PrefixSuperTeamsCount    = "superteamscount:"
 	PrefixAchievementsFilter = "achievementsfilter:"
 	PrefixAchievementsCount  = "achievementscount:"
+	PrefixChallengesFilter   = "challengesfilter:"
+	PrefixChallengesCount    = "challengescount:"
 
 	// Permissions/Roles
 	PrefixHasRole          = "hasrole:"
@@ -598,4 +600,64 @@ func AchievementsCountKey(params map[string]string) string {
 	hashStr := hex.EncodeToString(hash[:])[:16]
 
 	return PrefixAchievementsCount + hashStr
+}
+
+func ChallengesFilterKey(params map[string]string) string {
+	if len(params) == 0 {
+		return PrefixChallengesFilter + "all"
+	}
+
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for a shorter key
+	hash := sha256.Sum256([]byte(builder.String()))
+	hashStr := hex.EncodeToString(hash[:])[:16]
+
+	return PrefixChallengesFilter + hashStr
+}
+
+func ChallengesCountKey(params map[string]string) string {
+	if len(params) == 0 {
+		return PrefixChallengesCount + "all"
+	}
+
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for a shorter key
+	hash := sha256.Sum256([]byte(builder.String()))
+	hashStr := hex.EncodeToString(hash[:])[:16]
+
+	return PrefixChallengesCount + hashStr
 }

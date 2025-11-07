@@ -334,3 +334,71 @@ func buildAchievementPageInfo(params BuildAchievementConnectionParams, edges []m
 
 	return pageInfo
 }
+
+// BuildChallengeConnectionParams holds parameters for building a ChallengeConnection
+type BuildChallengeConnectionParams struct {
+	Challenges      []model.Challenge
+	RequestedFirst  *int
+	RequestedLast   *int
+	RequestedAfter  *string
+	RequestedBefore *string
+	TotalCount      int
+	HasMore         bool
+}
+
+// BuildChallengeConnection constructs a Relay-style connection from query results
+func BuildChallengeConnection(params BuildChallengeConnectionParams) *model.ChallengeConnection {
+	edges := make([]model.ChallengeEdge, len(params.Challenges))
+	for i, challenge := range params.Challenges {
+		edges[i] = model.ChallengeEdge{
+			Cursor: EncodeCursor(challenge.ID),
+			Node:   &challenge,
+		}
+	}
+
+	pageInfo := buildChallengePageInfo(params, edges)
+
+	return &model.ChallengeConnection{
+		Edges:      edges,
+		PageInfo:   pageInfo,
+		TotalCount: params.TotalCount,
+	}
+}
+
+// buildChallengePageInfo constructs the PageInfo for challenges
+func buildChallengePageInfo(params BuildChallengeConnectionParams, edges []model.ChallengeEdge) *model.PageInfo {
+	pageInfo := &model.PageInfo{
+		HasNextPage:     false,
+		HasPreviousPage: false,
+		StartCursor:     nil,
+		EndCursor:       nil,
+	}
+
+	if len(edges) == 0 {
+		return pageInfo
+	}
+
+	// Set start and end cursors
+	startCursor := edges[0].Cursor
+	endCursor := edges[len(edges)-1].Cursor
+	pageInfo.StartCursor = &startCursor
+	pageInfo.EndCursor = &endCursor
+
+	// Determine hasNextPage
+	if params.RequestedFirst != nil {
+		pageInfo.HasNextPage = params.HasMore
+	}
+
+	// Determine hasPreviousPage
+	if params.RequestedLast != nil {
+		pageInfo.HasPreviousPage = params.HasMore
+		// If we're paginating backward with a 'before' cursor, there must be a next page
+		if params.RequestedBefore != nil && *params.RequestedBefore != "" {
+			pageInfo.HasNextPage = true
+		}
+	} else if params.RequestedAfter != nil && *params.RequestedAfter != "" {
+		pageInfo.HasPreviousPage = true
+	}
+
+	return pageInfo
+}
