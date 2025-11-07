@@ -19,12 +19,73 @@ import (
 
 // JoinProject is the resolver for the joinProject field.
 func (r *mutationResolver) JoinProject(ctx context.Context, projectID string) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: JoinProject - joinProject"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load the project to verify it exists and get its details
+	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
+	project, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load project: %w", err)
+	}
+
+	// Validate that the project is not archived
+	if project.ArchivedAt != nil && *project.ArchivedAt {
+		return nil, fmt.Errorf("cannot join archived project")
+	}
+
+	// Insert user into the project (idempotent due to ON CONFLICT DO NOTHING)
+	err = r.DB.Queries.JoinProject(ctx, sqlc.JoinProjectParams{
+		Userid:    userID,
+		Projectid: projectID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to join project: %w", err)
+	}
+
+	return project, nil
 }
 
 // JoinEvent is the resolver for the joinEvent field.
 func (r *mutationResolver) JoinEvent(ctx context.Context, eventID string) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: JoinEvent - joinEvent"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load the event to verify it exists and get its details
+	thunk := r.Loaders.EventByIDLoader.Load(ctx, eventID)
+	event, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load event: %w", err)
+	}
+
+	// Load the parent project to check if it's archived
+	projectThunk := r.Loaders.ProjectByIDLoader.Load(ctx, event.ProjectID)
+	project, err := projectThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load event's project: %w", err)
+	}
+
+	// Validate that the project is not archived
+	if project.ArchivedAt != nil && *project.ArchivedAt {
+		return nil, fmt.Errorf("cannot join event from archived project")
+	}
+
+	// Insert user into the event (idempotent due to ON CONFLICT DO NOTHING)
+	err = r.DB.Queries.JoinEvent(ctx, sqlc.JoinEventParams{
+		Userid:  userID,
+		Eventid: eventID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to join event: %w", err)
+	}
+
+	return event, nil
 }
 
 // JoinTeam is the resolver for the joinTeam field.

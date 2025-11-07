@@ -377,6 +377,7 @@ type Project struct {
 	MyTeam       *Team              `json:"myTeam,omitempty"`
 	Achievements []Achievement      `json:"achievements"`
 	Streaks      []Streak           `json:"streaks"`
+	ArchivedAt   *bool              `json:"archivedAt,omitempty"`
 }
 
 type ProjectConnection struct {

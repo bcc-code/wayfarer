@@ -58,6 +58,7 @@ func projectByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(cont
 						},
 						Rounding: int(row.Rounding),
 					},
+					ArchivedAt: row.Archived,
 				}
 
 				projectMap[row.ID] = project

@@ -47,7 +47,7 @@ func (q *Queries) CountProjectsFiltered(ctx context.Context, arg CountProjectsFi
 }
 
 const GetAllProjects = `-- name: GetAllProjects :many
-SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding
+SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived
 FROM projects
 ORDER BY start_date DESC
 `
@@ -63,6 +63,7 @@ type GetAllProjectsRow struct {
 	ColorSecondary string             `json:"color_secondary"`
 	ColorTertiary  string             `json:"color_tertiary"`
 	Rounding       int32              `json:"rounding"`
+	Archived       *bool              `json:"archived"`
 }
 
 func (q *Queries) GetAllProjects(ctx context.Context) ([]*GetAllProjectsRow, error) {
@@ -85,6 +86,7 @@ func (q *Queries) GetAllProjects(ctx context.Context) ([]*GetAllProjectsRow, err
 			&i.ColorSecondary,
 			&i.ColorTertiary,
 			&i.Rounding,
+			&i.Archived,
 		); err != nil {
 			return nil, err
 		}
@@ -97,7 +99,7 @@ func (q *Queries) GetAllProjects(ctx context.Context) ([]*GetAllProjectsRow, err
 }
 
 const GetProjectByID = `-- name: GetProjectByID :one
-SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding
+SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived
 FROM projects
 WHERE id = $1
 `
@@ -113,6 +115,7 @@ type GetProjectByIDRow struct {
 	ColorSecondary string             `json:"color_secondary"`
 	ColorTertiary  string             `json:"color_tertiary"`
 	Rounding       int32              `json:"rounding"`
+	Archived       *bool              `json:"archived"`
 }
 
 func (q *Queries) GetProjectByID(ctx context.Context, id string) (*GetProjectByIDRow, error) {
@@ -129,12 +132,13 @@ func (q *Queries) GetProjectByID(ctx context.Context, id string) (*GetProjectByI
 		&i.ColorSecondary,
 		&i.ColorTertiary,
 		&i.Rounding,
+		&i.Archived,
 	)
 	return &i, err
 }
 
 const GetProjectsByIDs = `-- name: GetProjectsByIDs :many
-SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding
+SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived
 FROM projects
 WHERE id = ANY($1::text[])
 `
@@ -150,6 +154,7 @@ type GetProjectsByIDsRow struct {
 	ColorSecondary string             `json:"color_secondary"`
 	ColorTertiary  string             `json:"color_tertiary"`
 	Rounding       int32              `json:"rounding"`
+	Archived       *bool              `json:"archived"`
 }
 
 func (q *Queries) GetProjectsByIDs(ctx context.Context, ids []string) ([]*GetProjectsByIDsRow, error) {
@@ -172,6 +177,7 @@ func (q *Queries) GetProjectsByIDs(ctx context.Context, ids []string) ([]*GetPro
 			&i.ColorSecondary,
 			&i.ColorTertiary,
 			&i.Rounding,
+			&i.Archived,
 		); err != nil {
 			return nil, err
 		}
@@ -195,6 +201,7 @@ SELECT
     p.color_secondary,
     p.color_tertiary,
     p.rounding,
+    p.archived,
     up.user_id
 FROM projects p
 JOIN user_projects up ON p.id = up.project_id
@@ -213,6 +220,7 @@ type GetProjectsByUserIDsRow struct {
 	ColorSecondary string             `json:"color_secondary"`
 	ColorTertiary  string             `json:"color_tertiary"`
 	Rounding       int32              `json:"rounding"`
+	Archived       *bool              `json:"archived"`
 	UserID         string             `json:"user_id"`
 }
 
@@ -236,6 +244,7 @@ func (q *Queries) GetProjectsByUserIDs(ctx context.Context, userIds []string) ([
 			&i.ColorSecondary,
 			&i.ColorTertiary,
 			&i.Rounding,
+			&i.Archived,
 			&i.UserID,
 		); err != nil {
 			return nil, err

@@ -149,6 +149,7 @@ type Project {
     myTeam: Team @goField(forceResolver: true)
     achievements: [Achievement!]! @goField(forceResolver: true)
     streaks: [Streak!]! @goField(forceResolver: true)
+    archivedAt: Boolean
 }
 
 type Streak {

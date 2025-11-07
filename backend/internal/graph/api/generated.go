@@ -266,6 +266,7 @@ type ComplexityRoot struct {
 
 	Project struct {
 		Achievements func(childComplexity int) int
+		ArchivedAt   func(childComplexity int) int
 		Branding     func(childComplexity int) int
 		Challenges   func(childComplexity int) int
 		Description  func(childComplexity int) int
@@ -1899,6 +1900,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Project.Achievements(childComplexity), true
+	case "Project.archivedAt":
+		if e.complexity.Project.ArchivedAt == nil {
+			break
+		}
+
+		return e.complexity.Project.ArchivedAt(childComplexity), true
 	case "Project.branding":
 		if e.complexity.Project.Branding == nil {
 			break
@@ -3246,6 +3253,7 @@ type Project {
     myTeam: Team @goField(forceResolver: true)
     achievements: [Achievement!]! @goField(forceResolver: true)
     streaks: [Streak!]! @goField(forceResolver: true)
+    archivedAt: Boolean
 }
 
 type Streak {
@@ -3865,8 +3873,8 @@ type Query {
     currentEvent: Event!
 
     # ==================== Role Management Queries ====================
-    userRoles(userId: ID!): [UserRole!]! @requireRole(roles: ["admin", "superadmin"])
-    usersWithRole(role: RoleType!, scopeType: ScopeType, scopeId: ID): [User!]! @requireRole(roles: ["admin", "superadmin"])
+    userRoles(userId: ID!): [UserRole!]!
+    usersWithRole(role: RoleType!, scopeType: ScopeType, scopeId: ID): [User!]!
 }
 
 # ==================== Root Mutation ====================
@@ -6181,6 +6189,8 @@ func (ec *executionContext) fieldContext_Challenge_project(_ context.Context, fi
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -7295,6 +7305,8 @@ func (ec *executionContext) fieldContext_Event_parentProject(_ context.Context, 
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -7763,6 +7775,8 @@ func (ec *executionContext) fieldContext_ListeningAchievement_project(_ context.
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -8143,6 +8157,8 @@ func (ec *executionContext) fieldContext_Mutation_joinProject(ctx context.Contex
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -8473,6 +8489,8 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -8560,6 +8578,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -8706,6 +8726,8 @@ func (ec *executionContext) fieldContext_Mutation_cloneProject(ctx context.Conte
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -13453,6 +13475,35 @@ func (ec *executionContext) fieldContext_Project_streaks(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Project_archivedAt(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_archivedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.ArchivedAt, nil
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_archivedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ProjectConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.ProjectConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -13635,6 +13686,8 @@ func (ec *executionContext) fieldContext_ProjectEdge_node(_ context.Context, fie
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -13753,6 +13806,8 @@ func (ec *executionContext) fieldContext_Query_myProjects(_ context.Context, fie
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -13869,6 +13924,8 @@ func (ec *executionContext) fieldContext_Query_myCurrentProject(_ context.Contex
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -14096,6 +14153,8 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -14979,6 +15038,8 @@ func (ec *executionContext) fieldContext_Query_currentProject(_ context.Context,
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -15043,25 +15104,7 @@ func (ec *executionContext) _Query_userRoles(ctx context.Context, field graphql.
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Query().UserRoles(ctx, fc.Args["userId"].(string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
-				if err != nil {
-					var zeroVal []model.UserRole
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal []model.UserRole
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNUserRole2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserRoleᚄ,
 		true,
 		true,
@@ -15112,25 +15155,7 @@ func (ec *executionContext) _Query_usersWithRole(ctx context.Context, field grap
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Query().UsersWithRole(ctx, fc.Args["role"].(model.RoleType), fc.Args["scopeType"].(*model.ScopeType), fc.Args["scopeId"].(*string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
-				if err != nil {
-					var zeroVal []model.User
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal []model.User
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNUser2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserᚄ,
 		true,
 		true,
@@ -15467,6 +15492,8 @@ func (ec *executionContext) fieldContext_ReadingAchievement_project(_ context.Co
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -15925,6 +15952,8 @@ func (ec *executionContext) fieldContext_RoleScope_project(_ context.Context, fi
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -16143,6 +16172,8 @@ func (ec *executionContext) fieldContext_SimpleAchievement_project(_ context.Con
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -16585,6 +16616,8 @@ func (ec *executionContext) fieldContext_Streak_project(_ context.Context, field
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -16758,6 +16791,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_project(_ context.Con
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -17497,6 +17532,8 @@ func (ec *executionContext) fieldContext_SuperTeam_parentProject(_ context.Conte
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -17974,6 +18011,8 @@ func (ec *executionContext) fieldContext_Team_parentProject(_ context.Context, f
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -18669,6 +18708,8 @@ func (ec *executionContext) fieldContext_User_projects(_ context.Context, field 
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -24733,6 +24774,8 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "archivedAt":
+			out.Values[i] = ec._Project_archivedAt(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

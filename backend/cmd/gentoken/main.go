@@ -9,8 +9,8 @@ import (
 )
 
 type WayfarerClaims struct {
-	UserID   string `json:"user_id"`
-	UserRole string `json:"user_role"`
+	UserID    string   `json:"user_id"`
+	UserRoles []string `json:"user_roles"`
 	jwt.RegisteredClaims
 }
 
@@ -25,8 +25,8 @@ func main() {
 
 	now := time.Now()
 	claims := WayfarerClaims{
-		UserID:   userID,
-		UserRole: "user",
+		UserID:    userID,
+		UserRoles: []string{"user"},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "wayfarer",
 			IssuedAt:  jwt.NewNumericDate(now),

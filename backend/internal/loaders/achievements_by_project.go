@@ -109,9 +109,9 @@ func convertRowToAchievement(row *sqlc.GetAchievementsByProjectIDsRow) (model.Ac
 			ProjectID:   row.ProjectID,
 			EventID:     row.EventID,
 			ChallengeID: row.ChallengeID,
-			Articles:    []model.Article{},    // Will be populated by resolver if needed
-			UserHasRead: []model.Article{},    // Will be populated by resolver if needed
-			NextArticle: nil,                  // Will be populated by resolver if needed
+			Articles:    []model.Article{}, // Will be populated by resolver if needed
+			UserHasRead: []model.Article{}, // Will be populated by resolver if needed
+			NextArticle: nil,               // Will be populated by resolver if needed
 		}, nil
 
 	case "LISTENING":
