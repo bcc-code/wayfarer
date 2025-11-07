@@ -20,6 +20,7 @@ type Loaders struct {
 	SuperTeamByIDLoader   *dataloader.Loader[string, *model.SuperTeam]
 	AchievementByIDLoader *dataloader.Loader[string, model.Achievement]
 	ChallengeByIDLoader   *dataloader.Loader[string, *model.Challenge]
+	StreakByIDLoader      *dataloader.Loader[string, *model.Streak]
 }
 
 // NewLoaders creates all dataloaders with batch functions and default caching
@@ -65,6 +66,10 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		ChallengeByIDLoader: dataloader.NewBatchedLoader(
 			challengeByIDBatchFunc(db, cache),
 			dataloader.WithBatchCapacity[string, *model.Challenge](100),
+		),
+		StreakByIDLoader: dataloader.NewBatchedLoader(
+			streakByIDBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, *model.Streak](100),
 		),
 	}
 }

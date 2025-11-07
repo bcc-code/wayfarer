@@ -1500,7 +1500,14 @@ func (r *queryResolver) Churches(ctx context.Context, filter *model.ChurchFilter
 
 // Streak is the resolver for the streak field.
 func (r *queryResolver) Streak(ctx context.Context, id string) (*model.Streak, error) {
-	panic(fmt.Errorf("not implemented: Streak - streak"))
+	// Use dataloader to fetch streak
+	thunk := r.Loaders.StreakByIDLoader.Load(ctx, id)
+	streak, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load streak: %w", err)
+	}
+
+	return streak, nil
 }
 
 // Streaks is the resolver for the streaks field.
