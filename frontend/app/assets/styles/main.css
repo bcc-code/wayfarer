@@ -6,16 +6,20 @@
   --font-sans: 'Inter', sans-serif;
   --font-serif: 'Noto Serif', serif;
 
-  /* Colors */
-  --color-accent: #fda634;
+  /* Colors - Accent (change this to theme the app) */
+  --color-accent-base: #fda634;
+  --color-accent: var(--color-accent-base);
+
+  /* Fallback colors for older browsers */
   --color-accent-contrast: #b97113;
   --color-on-accent: #2c1e08;
+  --color-background-default: #f3ede5;
+  --color-background-indent: rgb(99 56 1 / 0.05);
+
   --color-text-default: #282521;
   --color-text-muted: rgb(40 37 33 / 0.65);
   --color-text-on-default: rgb(40 37 33 / 0.4);
-  --color-background-default: #f3ede5;
   --color-background-raised: #ffffff;
-  --color-background-indent: rgb(99 56 1 / 0.05);
   --color-shadow-default: rgb(40 37 33 / 0.1);
   --color-shadow-blank: rgb(40 37 33 / 0);
   --color-border-default: rgb(40 37 33 / 0.15);
@@ -79,6 +83,24 @@
 
 :root {
   --ui-radius: 0.3rem;
+}
+
+/* Modern browsers: dynamic colors based on accent */
+@supports (color: oklch(from white l c h)) {
+  @theme {
+    --color-accent-contrast: oklch(
+      from var(--color-accent-base) calc(l * 0.7) c h
+    );
+    --color-on-accent: oklch(
+      from var(--color-accent-base) 0.2 calc(c * 0.3) h
+    );
+    --color-background-default: oklch(
+      from var(--color-accent-base) 0.96 calc(c * 0.15) h
+    );
+    --color-background-indent: oklch(
+      from var(--color-accent-base) 0.5 c h / 0.05
+    );
+  }
 }
 
 /* Semantic Typography Classes */

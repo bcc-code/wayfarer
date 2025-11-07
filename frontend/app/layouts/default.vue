@@ -54,8 +54,7 @@ watch(data, (newData) => {
   styleElement.innerHTML = `
     /* Current project theme */
     :root {
-      --ui-primary: ${newData.myCurrentProject.branding.colors.primary};
-      --ui-radius: ${newData.myCurrentProject.branding.rounding}px;
+      --color-accent-base: ${newData.myCurrentProject.branding.colors.primary};
       --ui-text: var(--color-text-default);
     }
 
