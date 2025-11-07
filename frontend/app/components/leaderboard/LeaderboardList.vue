@@ -10,26 +10,28 @@ defineProps<{
 </script>
 
 <template>
-  <ul class="space-y-2">
+  <ul class="space-y-list-section-gap p-list-outside">
     <li
-      v-for="entry in leaderboard"
-      :key="entry.name"
-      class="border-default flex items-center gap-4 rounded-xl border px-4 py-3"
+      v-for="(entry, index) in leaderboard"
+      :key="index"
+      class="bg-background-raised rounded-list p-list-section-inset shadow-small"
     >
-      <NuxtImg
-        v-if="entry.image"
-        :src="entry.image"
-        height="32"
-        width="32"
-        class="rounded-full"
-      />
-      <div class="grow">
-        <p>{{ entry.name }}</p>
-        <p v-if="entry.description" class="text-dimmed text-sm">
-          {{ entry.description }}
-        </p>
+      <div class="flex items-center gap-2.5 px-3 py-2">
+        <NuxtImg
+          v-if="entry.image"
+          :src="entry.image"
+          height="40"
+          width="40"
+          class="bg-accent shrink-0 rounded-full"
+        />
+        <div class="grow">
+          <p class="text-label">{{ entry.name }}</p>
+          <p v-if="entry.description" class="text-caption text-muted">
+            {{ entry.description }}
+          </p>
+        </div>
+        <p class="text-label text-accent tabular-nums">{{ entry.score }}</p>
       </div>
-      <p class="font-bold tabular-nums">{{ entry.score }}</p>
     </li>
   </ul>
 </template>

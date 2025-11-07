@@ -32,15 +32,17 @@ const { data, error, fetching } = useProfilePageQuery()
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <template v-else-if="data">
-      <div class="flex flex-col items-center gap-2 p-8 text-center">
-        <NuxtImg
-          v-if="data.me.image"
-          :src="data.me.image"
-          height="64"
-          width="64"
-          class="rounded-full"
-        />
-        <h1 class="text-xl font-bold">{{ data.me.name }}</h1>
+      <div v-if="data.me.image" class="flex items-center justify-center p-4">
+        <div
+          class="shadow-large bg-background-raised p-list-section-inset aspect-square size-42 rounded-full"
+        >
+          <NuxtImg
+            :src="data.me.image"
+            height="160"
+            width="160"
+            class="bg-background-default text-accent-contrast rounded-full"
+          />
+        </div>
       </div>
 
       <div class="px-2">

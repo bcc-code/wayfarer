@@ -56,6 +56,7 @@ watch(data, (newData) => {
     :root {
       --ui-primary: ${newData.myCurrentProject.branding.colors.primary};
       --ui-radius: ${newData.myCurrentProject.branding.rounding}px;
+      --ui-text: var(--color-text-default);
     }
 
     body {
