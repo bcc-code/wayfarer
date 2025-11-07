@@ -48,7 +48,7 @@ const greeting = computed(() => {
 
 <template>
   <UContainer>
-    <h1 v-if="data?.me" class="text-3xl my-12 text-balance">
+    <h1 v-if="data?.me" class="my-12 text-3xl text-balance">
       {{ greeting }}, {{ data.me.name }}
     </h1>
 
@@ -56,7 +56,7 @@ const greeting = computed(() => {
     <ErrorState v-else-if="error" :error />
 
     <section v-else-if="data">
-      <div class="flex items-baseline gap-4 mb-3">
+      <div class="mb-3 flex items-baseline gap-4">
         <h2>Current Projects</h2>
         <UButton
           v-if="currentProjects.length"

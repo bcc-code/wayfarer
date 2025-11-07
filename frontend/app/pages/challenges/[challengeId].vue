@@ -9,7 +9,7 @@ const { data: challenge, status } = useFetch(
 <template>
   <div>
     <template v-if="status == 'success' && challenge">
-      <h1 class="text-xl font-bold mb-4">{{ challenge.name }}</h1>
+      <h1 class="mb-4 text-xl font-bold">{{ challenge.name }}</h1>
       <ChallengeCard :challenge="challenge" />
     </template>
   </div>

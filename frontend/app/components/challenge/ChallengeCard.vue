@@ -10,12 +10,12 @@ defineProps<{
       <NuxtImg
         v-if="challenge.image"
         :src="challenge.image"
-        class="w-full aspect-video object-cover"
+        class="aspect-video w-full object-cover"
       />
     </template>
     <template #default>
       <h3 class="mb-1 font-bold">{{ challenge.name }}</h3>
-      <div class="text-sm text-muted mb-4" v-html="challenge.description" />
+      <div class="text-muted mb-4 text-sm" v-html="challenge.description" />
       <UButton
         :to="
           challenge.url ?? {

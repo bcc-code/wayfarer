@@ -70,7 +70,7 @@ async function createProject(event: FormSubmitEvent<Schema>) {
 
 <template>
   <div>
-    <div class="py-2 border-b border-default">
+    <div class="border-default border-b py-2">
       <UContainer>
         <UBreadcrumb
           :items="[
@@ -86,7 +86,7 @@ async function createProject(event: FormSubmitEvent<Schema>) {
       <UForm
         :state
         :schema="schema"
-        class="py-12 space-y-6"
+        class="space-y-6 py-12"
         @submit.prevent="createProject"
       >
         <UFormField name="name" label="Name" required>
@@ -102,7 +102,7 @@ async function createProject(event: FormSubmitEvent<Schema>) {
         <UFormField name="description" label="Description">
           <UTextarea v-model="state.description" class="w-sm" autoresize />
         </UFormField>
-        <div class="gap-4 flex">
+        <div class="flex gap-4">
           <UFormField name="startDate" label="Starts at" required>
             <UInput v-model="state.startDate" type="datetime-local" required />
           </UFormField>

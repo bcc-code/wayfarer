@@ -1,5 +1,5 @@
 <template>
-  <div class="size-full grow p-8 grid place-items-center text-2xl">
+  <div class="grid size-full grow place-items-center p-8 text-2xl">
     <UIcon name="svg-spinners:bars-rotate-fade" />
   </div>
 </template>

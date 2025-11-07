@@ -90,7 +90,7 @@ watch(data, () => {
 
 <template>
   <div>
-    <div class="py-2 border-b border-default">
+    <div class="border-default border-b py-2">
       <UContainer>
         <UBreadcrumb
           :items="[
@@ -114,9 +114,9 @@ watch(data, () => {
       <ErrorState v-else-if="error" :error class="h-[600px]" />
       <template v-else-if="data">
         <header class="my-12">
-          <div class="flex flex-col gap-6 my-8">
+          <div class="my-8 flex flex-col gap-6">
             <div>
-              <h1 class="text-3xl mb-2">
+              <h1 class="mb-2 text-3xl">
                 {{ state.name }}
               </h1>
               <p v-if="state.description" class="text-muted max-w-2xl">
@@ -136,7 +136,7 @@ watch(data, () => {
           variant="link"
         >
           <template #branding>
-            <div class="flex gap-4 mt-4 flex-col">
+            <div class="mt-4 flex flex-col gap-4">
               <UFormField label="Logo">
                 <NuxtImg :src="state.branding.logo" width="64" />
               </UFormField>

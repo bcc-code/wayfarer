@@ -42,7 +42,7 @@ const { data, fetching, error } = useAdminUserPageQuery({
 
 <template>
   <div>
-    <div class="py-2 border-b border-default">
+    <div class="border-default border-b py-2">
       <UContainer>
         <UBreadcrumb
           :items="[
@@ -71,12 +71,12 @@ const { data, fetching, error } = useAdminUserPageQuery({
           />
           <div>
             <h1 class="text-3xl font-bold">{{ data.user.name }}</h1>
-            <p class="text-lg text-dimmed">{{ data.user.email }}</p>
+            <p class="text-dimmed text-lg">{{ data.user.email }}</p>
           </div>
         </div>
 
         <!-- User Info Below Here -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
           <!-- Personal Information Card -->
           <UCard>
             <template #header>
@@ -85,23 +85,23 @@ const { data, fetching, error } = useAdminUserPageQuery({
 
             <dl class="space-y-4">
               <div>
-                <dt class="text-sm text-dimmed">Members ID</dt>
+                <dt class="text-dimmed text-sm">Members ID</dt>
                 <dd class="text-base font-medium">{{ data.user.membersId }}</dd>
               </div>
               <div>
-                <dt class="text-sm text-dimmed">Gender</dt>
+                <dt class="text-dimmed text-sm">Gender</dt>
                 <dd class="text-base font-medium">
                   {{ capitalizeFirst(data.user.gender) }}
                 </dd>
               </div>
               <div>
-                <dt class="text-sm text-dimmed">Birthdate</dt>
+                <dt class="text-dimmed text-sm">Birthdate</dt>
                 <dd class="text-base font-medium">
                   {{ formatDate(data.user.birthdate) }}
                 </dd>
               </div>
               <div>
-                <dt class="text-sm text-dimmed">Age</dt>
+                <dt class="text-dimmed text-sm">Age</dt>
                 <dd class="text-base font-medium">{{ data.user.age }} years</dd>
               </div>
             </dl>
@@ -115,13 +115,13 @@ const { data, fetching, error } = useAdminUserPageQuery({
 
             <dl class="space-y-4">
               <div>
-                <dt class="text-sm text-dimmed">Church Name</dt>
+                <dt class="text-dimmed text-sm">Church Name</dt>
                 <dd class="font-medium">
                   {{ data.user.church.name }}
                 </dd>
               </div>
               <div>
-                <dt class="text-sm text-dimmed">Church ID</dt>
+                <dt class="text-dimmed text-sm">Church ID</dt>
                 <dd class="font-mono text-sm">
                   {{ data.user.church.id }}
                 </dd>
@@ -139,18 +139,18 @@ const { data, fetching, error } = useAdminUserPageQuery({
               <div
                 v-for="role in data.user.roles"
                 :key="role.id"
-                class="flex items-center justify-between p-3 border border-default rounded-md"
+                class="border-default flex items-center justify-between rounded-md border p-3"
               >
                 <div class="flex items-center gap-3">
                   <UBadge variant="soft" size="lg">
                     {{ role.role }}
                   </UBadge>
                   <div v-if="role.scope">
-                    <span class="text-sm text-dimmed">Scope: </span>
+                    <span class="text-dimmed text-sm">Scope: </span>
                     <span class="text-sm font-medium">
                       {{ capitalizeFirst(role.scope.type) }}
                     </span>
-                    <span class="text-xs text-dimmed ml-2">
+                    <span class="text-dimmed ml-2 text-xs">
                       ({{ role.scope.id }})
                     </span>
                   </div>

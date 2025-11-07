@@ -14,7 +14,7 @@ defineProps<{
     <li
       v-for="entry in leaderboard"
       :key="entry.name"
-      class="px-4 py-3 border border-default items-center flex gap-4 rounded-xl"
+      class="border-default flex items-center gap-4 rounded-xl border px-4 py-3"
     >
       <NuxtImg
         v-if="entry.image"
@@ -25,11 +25,11 @@ defineProps<{
       />
       <div class="grow">
         <p>{{ entry.name }}</p>
-        <p v-if="entry.description" class="text-sm text-dimmed">
+        <p v-if="entry.description" class="text-dimmed text-sm">
           {{ entry.description }}
         </p>
       </div>
-      <p class="tabular-nums font-bold">{{ entry.score }}</p>
+      <p class="font-bold tabular-nums">{{ entry.score }}</p>
     </li>
   </ul>
 </template>

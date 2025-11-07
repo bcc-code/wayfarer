@@ -72,10 +72,10 @@ const columns: TableColumn<
 
 <template>
   <UContainer class="py-12">
-    <h1 class="text-3xl mb-6">Users</h1>
+    <h1 class="mb-6 text-3xl">Users</h1>
     <ErrorState v-if="error" :error />
     <div v-else class="space-y-4">
-      <div class="flex justify-end items-center gap-2">
+      <div class="flex items-center justify-end gap-2">
         <RelayPagination v-model:pagination="pagination" />
       </div>
       <UTable :data="users" :loading="fetching" :columns>
@@ -88,12 +88,12 @@ const columns: TableColumn<
             />
             <div class="flex flex-col">
               <span>{{ row.original.name }}</span>
-              <span class="text-xs text-dimmed">{{ row.original.email }}</span>
+              <span class="text-dimmed text-xs">{{ row.original.email }}</span>
             </div>
           </div>
         </template>
         <template #roles-cell="{ row }">
-          <div class="flex gap-1 flex-wrap">
+          <div class="flex flex-wrap gap-1">
             <UBadge
               v-for="role in row.original.roles"
               :key="role.id"

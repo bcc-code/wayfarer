@@ -35,7 +35,7 @@ const { currentProjects, futureProjects, pastProjects } = useGroupedProjects(
 
 <template>
   <UContainer>
-    <div class="flex flex-col items-start gap-8 my-12">
+    <div class="my-12 flex flex-col items-start gap-8">
       <h1 class="text-3xl">Projects</h1>
       <UButton icon="lucide:plus" :to="{ name: 'admin-projects-new' }">
         New Project
@@ -46,7 +46,7 @@ const { currentProjects, futureProjects, pastProjects } = useGroupedProjects(
     <div v-else-if="data" class="space-y-12">
       <section v-if="currentProjects.length > 0">
         <h2 class="mb-4">Current Projects</h2>
-        <ul class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        <ul class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           <li v-for="project in currentProjects" :key="project.id">
             <NuxtLink
               :to="{
@@ -61,7 +61,7 @@ const { currentProjects, futureProjects, pastProjects } = useGroupedProjects(
       </section>
       <section v-if="futureProjects.length > 0">
         <h2 class="mb-4">Upcoming Projects</h2>
-        <ul class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        <ul class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           <li v-for="project in futureProjects" :key="project.id">
             <NuxtLink
               :to="{
@@ -76,11 +76,11 @@ const { currentProjects, futureProjects, pastProjects } = useGroupedProjects(
       </section>
       <section v-if="pastProjects.length > 0">
         <h2 class="mb-4">Past Projects</h2>
-        <ul class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        <ul class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           <li
             v-for="project in pastProjects"
             :key="project.id"
-            class="opacity-50 hover:opacity-100 transition-opacity"
+            class="opacity-50 transition-opacity hover:opacity-100"
           >
             <NuxtLink
               :to="{

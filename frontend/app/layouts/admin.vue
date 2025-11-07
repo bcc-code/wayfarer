@@ -80,8 +80,8 @@ onMounted(() => {
 
 <template>
   <div>
-    <header class="border-b border-default">
-      <UContainer class="flex gap-6 lg:gap-12 items-center">
+    <header class="border-default border-b">
+      <UContainer class="flex items-center gap-6 lg:gap-12">
         <NuxtLink to="/admin" class="font-serif text-xl">Wayfarer</NuxtLink>
         <UNavigationMenu
           :items="links"
