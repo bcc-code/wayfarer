@@ -51,10 +51,65 @@
     0 4px 24px 0 var(--color-shadow-default);
   --shadow-medium: 0 4px 16px 0 var(--color-shadow-default);
   --shadow-small: 0 1px 2px 0 var(--color-shadow-default);
+
+  /* Typography - Font Sizes */
+  --font-size-heading: 30px;
+  --font-size-label: 16px;
+  --font-size-caption: 14px;
+  --font-size-tiny: 11px;
+
+  /* Typography - Line Heights */
+  --line-height-heading: 36px;
+  --line-height-label: 20px;
+  --line-height-caption: 20px;
+  --line-height-tiny: 12px;
+
+  /* Typography - Letter Spacing */
+  --letter-spacing-heading: -0.9px;
+  --letter-spacing-label: -0.48px;
+  --letter-spacing-caption: -0.42px;
+  --letter-spacing-tiny: -0.33px;
+
+  /* Typography - Font Weights */
+  --font-weight-heading: 600;
+  --font-weight-label: 500;
+  --font-weight-caption: 500;
+  --font-weight-tiny: 500;
 }
 
 :root {
   --ui-radius: 0.3rem;
+}
+
+/* Semantic Typography Classes */
+@layer utilities {
+  .text-heading {
+    font-size: var(--font-size-heading);
+    line-height: var(--line-height-heading);
+    font-weight: var(--font-weight-heading);
+    letter-spacing: var(--letter-spacing-heading);
+  }
+
+  .text-label {
+    font-size: var(--font-size-label);
+    line-height: var(--line-height-label);
+    font-weight: var(--font-weight-label);
+    letter-spacing: var(--letter-spacing-label);
+  }
+
+  .text-caption {
+    font-size: var(--font-size-caption);
+    line-height: var(--line-height-caption);
+    font-weight: var(--font-weight-caption);
+    letter-spacing: var(--letter-spacing-caption);
+  }
+
+  .text-tiny {
+    font-size: var(--font-size-tiny);
+    line-height: var(--line-height-tiny);
+    font-weight: var(--font-weight-tiny);
+    letter-spacing: var(--letter-spacing-tiny);
+  }
 }
 
 html,

@@ -6,7 +6,7 @@ export default defineNuxtConfig({
     '@nuxt/image',
     '@vueuse/nuxt',
   ],
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   ssr: false,
   css: ['~/assets/styles/main.css'],
   compatibilityDate: '2025-07-15',

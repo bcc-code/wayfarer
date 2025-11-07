@@ -28,11 +28,11 @@ const { data, error, fetching } = useProfilePageQuery()
 </script>
 
 <template>
-  <div class="h-full">
+  <PageLayout title="Your profile">
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <template v-else-if="data">
-      <div class="p-8 text-center flex flex-col items-center gap-2">
+      <div class="flex flex-col items-center gap-2 p-8 text-center">
         <NuxtImg
           v-if="data.me.image"
           :src="data.me.image"
@@ -44,8 +44,8 @@ const { data, error, fetching } = useProfilePageQuery()
       </div>
 
       <div class="px-2">
-        <h2 class="text-lg font-semibold mb-3">Achievements</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <h2 class="mb-3 text-lg font-semibold">Achievements</h2>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div v-for="project in data.me.projects" :key="project.id">
             <UCard>
               <div class="grid grid-cols-4">
@@ -64,7 +64,7 @@ const { data, error, fetching } = useProfilePageQuery()
                   />
                   <div
                     v-else-if="!achievement.achievedAt"
-                    class="size-16 rounded bg-accented grid place-items-center"
+                    class="bg-accented grid size-16 place-items-center rounded"
                   >
                     ?
                   </div>
@@ -75,5 +75,5 @@ const { data, error, fetching } = useProfilePageQuery()
         </div>
       </div>
     </template>
-  </div>
+  </PageLayout>
 </template>

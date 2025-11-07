@@ -1186,7 +1186,7 @@ export type SuperTeam = {
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   leaderboard: Array<LeaderboardEntry>;
-  members: Array<User>;
+  members: UserConnection;
   name: Scalars['String']['output'];
   parentProject: Project;
   teams: Array<Team>;
@@ -1196,6 +1196,14 @@ export type SuperTeam = {
 export type SuperTeamLeaderboardArgs = {
   filter?: InputMaybe<LeaderboardFilter>;
   type: LeaderboardType;
+};
+
+
+export type SuperTeamMembersArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type SuperTeamConnection = {
@@ -1375,8 +1383,6 @@ export type UserFilter = {
 
 export type UserRole = {
   __typename?: 'UserRole';
-  assignedAt: Scalars['DateTime']['output'];
-  assignedBy: User;
   id: Scalars['ID']['output'];
   role: RoleType;
   scope?: Maybe<RoleScope>;
@@ -1386,7 +1392,7 @@ export type UserRole = {
 export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, membersId: string, gender: Gender, birthdate: string, church: { __typename?: 'Church', id: string, name: string, country: string, category: ChurchCategory }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, assignedAt: any, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType, church?: { __typename?: 'Church', id: string } | null, team?: { __typename?: 'Team', id: string } | null, project?: { __typename?: 'Project', id: string } | null } | null, assignedBy: { __typename?: 'User', id: string } }> } };
+export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, membersId: string, gender: Gender, birthdate: string, church: { __typename?: 'Church', id: string, name: string, country: string, category: ChurchCategory }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType, church?: { __typename?: 'Church', id: string } | null, team?: { __typename?: 'Team', id: string } | null, project?: { __typename?: 'Project', id: string } | null } | null }> } };
 
 export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1503,10 +1509,6 @@ export const GetMeDocument = gql`
           id
         }
       }
-      assignedBy {
-        id
-      }
-      assignedAt
     }
   }
 }

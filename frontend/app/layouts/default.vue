@@ -57,24 +57,30 @@ watch(data, (newData) => {
       --ui-primary: ${newData.myCurrentProject.branding.colors.primary};
       --ui-radius: ${newData.myCurrentProject.branding.rounding}px;
     }
+
+    body {
+      background-color: var(--color-background-default);
+    }
   `
   document.body.appendChild(styleElement)
 })
 </script>
 
 <template>
-  <UContainer class="relative h-full">
-    <div class="py-4 h-full">
+  <div class="text-default relative h-full">
+    <div class="h-full">
       <slot />
     </div>
-    <div class="fixed inset-x-0 bottom-0 p-navigation-outside">
+    <div
+      class="p-navigation-outside from-shadow-blank/0 to-shadow-default fixed inset-x-0 bottom-0 bg-linear-to-b"
+    >
       <ul
-        class="bg-background-raised shadow-large h-16 grid grid-cols-4 text-default rounded-navigation p-navigation-inset"
+        class="bg-background-raised shadow-large rounded-navigation p-navigation-inset grid grid-cols-4"
       >
         <li v-for="link in links" :key="link.label" class="grow">
           <NuxtLink
             :to="link.to"
-            class="flex flex-col items-center justify-center h-full gap-0.5 px-default py-small rounded-navigation-inset"
+            class="px-default rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5"
             active-class="bg-background-indent text-accent-contrast"
           >
             <UIcon :name="link.icon" class="shrink-0" />
@@ -83,5 +89,5 @@ watch(data, (newData) => {
         </li>
       </ul>
     </div>
-  </UContainer>
+  </div>
 </template>

@@ -31,9 +31,7 @@ const relevantChallenges = computed(() => {
 </script>
 
 <template>
-  <div class="h-full">
-    <h1 class="text-xl font-bold mb-4">Challenges</h1>
-
+  <PageLayout title="Challenges">
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <div v-else-if="data" class="space-y-4">
@@ -43,5 +41,5 @@ const relevantChallenges = computed(() => {
         :challenge
       />
     </div>
-  </div>
+  </PageLayout>
 </template>

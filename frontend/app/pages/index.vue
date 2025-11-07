@@ -17,14 +17,12 @@ const { data, error, fetching } = useStandingsPageQuery()
 </script>
 
 <template>
-  <div class="h-full">
-    <h1 class="text-xl font-bold mb-4">Standings</h1>
-
+  <PageLayout title="Standings">
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <LeaderboardList
       v-else-if="data"
       :leaderboard="data.myCurrentProject.leaderboard"
     />
-  </div>
+  </PageLayout>
 </template>

@@ -30,10 +30,6 @@ gql(`
             id
           }
         }
-        assignedBy {
-          id
-        }
-        assignedAt
       }
     }
   }

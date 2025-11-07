@@ -11,7 +11,9 @@
     "codegen": "graphql-codegen --config codegen.ts",
     "test": "vitest",
     "test:unit": "vitest run --project=unit",
-    "test:watch": "vitest --project=unit"
+    "test:watch": "vitest --project=unit",
+    "format": "prettier --write .",
+    "lint": "eslint . --fix"
   },
   "dependencies": {
     "@nuxt/image": "^1.11.0",
@@ -40,6 +42,7 @@
     "happy-dom": "^20.0.10",
     "playwright-core": "^1.56.1",
     "prettier": "^3.6.2",
+    "prettier-plugin-tailwindcss": "^0.7.1",
     "tailwindcss": "^4.1.16",
     "typescript": "^5.9.3",
     "vitest": "^4.0.7"

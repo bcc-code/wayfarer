@@ -25,7 +25,7 @@ const { data, error, fetching } = useUnitPageQuery()
 </script>
 
 <template>
-  <div class="h-full">
+  <PageLayout title="Your unit">
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <template v-else-if="data">
@@ -42,5 +42,5 @@ const { data, error, fetching } = useUnitPageQuery()
         class="mt-4"
       />
     </template>
-  </div>
+  </PageLayout>
 </template>
