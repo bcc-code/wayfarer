@@ -470,7 +470,7 @@ func TestBuildEventCacheKeyParams(t *testing.T) {
 			},
 		},
 		{
-			name: "only pagination params",
+			name:   "only pagination params",
 			filter: &model.EventFilter{},
 			first:  intPtr(20),
 			after:  stringPtr("aftercursor"),

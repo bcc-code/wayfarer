@@ -25,9 +25,9 @@ type WayfarerClaims struct {
 }
 
 type TestCase struct {
-	FilePath string
-	UserID   string
-	Query    string
+	FilePath  string
+	UserID    string
+	Query     string
 	Variables map[string]interface{}
 	Expected  map[string]interface{}
 }

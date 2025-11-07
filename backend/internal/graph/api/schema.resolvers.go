@@ -361,22 +361,62 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 
 // MyProjects is the resolver for the myProjects field.
 func (r *queryResolver) MyProjects(ctx context.Context) ([]model.Project, error) {
-	panic(fmt.Errorf("not implemented: MyProjects - myProjects"))
+	// Hardcoded project ID for now
+	projectID := "PR01K9DGS50S1RZSE5HGN8JQ1XDC"
+
+	// Use dataloader to fetch project
+	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
+	project, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load projects: %w", err)
+	}
+
+	return []model.Project{*project}, nil
 }
 
 // MyEvents is the resolver for the myEvents field.
 func (r *queryResolver) MyEvents(ctx context.Context, project *string) ([]model.Event, error) {
-	panic(fmt.Errorf("not implemented: MyEvents - myEvents"))
+	// Hardcoded event ID for now
+	eventID := "EV01K9DGS5B8BSHYQ3CZD42D976F"
+
+	// Use dataloader to fetch event
+	thunk := r.Loaders.EventByIDLoader.Load(ctx, eventID)
+	event, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load events: %w", err)
+	}
+
+	return []model.Event{*event}, nil
 }
 
 // MyCurrentProject is the resolver for the myCurrentProject field.
 func (r *queryResolver) MyCurrentProject(ctx context.Context) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: MyCurrentProject - myCurrentProject"))
+	// Hardcoded project ID for now
+	projectID := "PR01K9DGS50S1RZSE5HGN8JQ1XDC"
+
+	// Use dataloader to fetch project
+	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
+	project, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load current project: %w", err)
+	}
+
+	return project, nil
 }
 
 // MyCurrentEvent is the resolver for the myCurrentEvent field.
 func (r *queryResolver) MyCurrentEvent(ctx context.Context) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: MyCurrentEvent - myCurrentEvent"))
+	// Hardcoded event ID for now
+	eventID := "EV01K9DGS5B8BSHYQ3CZD42D976F"
+
+	// Use dataloader to fetch event
+	thunk := r.Loaders.EventByIDLoader.Load(ctx, eventID)
+	event, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load current event: %w", err)
+	}
+
+	return event, nil
 }
 
 // User is the resolver for the user field.
@@ -1627,12 +1667,32 @@ func (r *queryResolver) Streaks(ctx context.Context, filter *model.StreakFilter,
 
 // CurrentProject is the resolver for the currentProject field.
 func (r *queryResolver) CurrentProject(ctx context.Context) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: CurrentProject - currentProject"))
+	// Hardcoded project ID for now
+	projectID := "PR01K9DGS50S1RZSE5HGN8JQ1XDC"
+
+	// Use dataloader to fetch project
+	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
+	project, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load current project: %w", err)
+	}
+
+	return project, nil
 }
 
 // CurrentEvent is the resolver for the currentEvent field.
 func (r *queryResolver) CurrentEvent(ctx context.Context) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: CurrentEvent - currentEvent"))
+	// Hardcoded event ID for now
+	eventID := "EV01K9DGS5B8BSHYQ3CZD42D976F"
+
+	// Use dataloader to fetch event
+	thunk := r.Loaders.EventByIDLoader.Load(ctx, eventID)
+	event, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load current event: %w", err)
+	}
+
+	return event, nil
 }
 
 // UserRoles is the resolver for the userRoles field.

@@ -88,7 +88,7 @@ query {
         "hasPreviousPage": false,
         "startCursor": "Q0gwMUs5REdTMFYxQkJSR1lKWkRYUFpRM1hZWg=="
       },
-      "totalCount": 8
+      "totalCount": 9
     }
   }
 }

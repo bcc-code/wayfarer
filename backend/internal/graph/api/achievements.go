@@ -188,7 +188,7 @@ func convertRowToReadingAchievement(row *sqlc.GetAchievementsFilteredCursorRow, 
 		ChallengeID: row.ChallengeID,
 		Articles:    articles,
 		UserHasRead: []model.Article{}, // Will be populated by resolver if needed
-		NextArticle: nil,                // Will be populated by resolver if needed
+		NextArticle: nil,               // Will be populated by resolver if needed
 	}, nil
 }
 
@@ -237,7 +237,7 @@ func convertRowToListeningAchievement(row *sqlc.GetAchievementsFilteredCursorRow
 		ChallengeID:     row.ChallengeID,
 		Tracks:          tracks,
 		UserHasListened: []model.Track{}, // Will be populated by resolver if needed
-		NextTrack:       nil,              // Will be populated by resolver if needed
+		NextTrack:       nil,             // Will be populated by resolver if needed
 	}, nil
 }
 
