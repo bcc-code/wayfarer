@@ -149,6 +149,90 @@ func (q *Queries) GetAchievementsByIDs(ctx context.Context, ids []string) ([]*Ge
 	return items, nil
 }
 
+const GetAchievementsByProjectIDs = `-- name: GetAchievementsByProjectIDs :many
+SELECT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description,
+    a.image_url,
+    a.points,
+    a.hidden,
+    a.created_at,
+    a.updated_at,
+    -- Type-specific fields needed for model construction
+    ra.achievement_id AS reading_achievement_id,
+    la.achievement_id AS listening_achievement_id,
+    sa.streak_id,
+    sa.needed_streak
+FROM achievements a
+LEFT JOIN reading_achievements ra ON a.id = ra.achievement_id
+LEFT JOIN listening_achievements la ON a.id = la.achievement_id
+LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+WHERE a.project_id = ANY($1::text[])
+    AND a.hidden = false
+ORDER BY a.project_id, a.created_at DESC
+`
+
+type GetAchievementsByProjectIDsRow struct {
+	ID                     string             `json:"id"`
+	AchievementType        string             `json:"achievement_type"`
+	ProjectID              string             `json:"project_id"`
+	EventID                *string            `json:"event_id"`
+	ChallengeID            *string            `json:"challenge_id"`
+	Name                   string             `json:"name"`
+	Description            string             `json:"description"`
+	ImageUrl               string             `json:"image_url"`
+	Points                 int32              `json:"points"`
+	Hidden                 *bool              `json:"hidden"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	ReadingAchievementID   *string            `json:"reading_achievement_id"`
+	ListeningAchievementID *string            `json:"listening_achievement_id"`
+	StreakID               *string            `json:"streak_id"`
+	NeededStreak           *int32             `json:"needed_streak"`
+}
+
+func (q *Queries) GetAchievementsByProjectIDs(ctx context.Context, projectIds []string) ([]*GetAchievementsByProjectIDsRow, error) {
+	rows, err := q.db.Query(ctx, GetAchievementsByProjectIDs, projectIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetAchievementsByProjectIDsRow{}
+	for rows.Next() {
+		var i GetAchievementsByProjectIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AchievementType,
+			&i.ProjectID,
+			&i.EventID,
+			&i.ChallengeID,
+			&i.Name,
+			&i.Description,
+			&i.ImageUrl,
+			&i.Points,
+			&i.Hidden,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ReadingAchievementID,
+			&i.ListeningAchievementID,
+			&i.StreakID,
+			&i.NeededStreak,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetAchievementsFilteredCursor = `-- name: GetAchievementsFilteredCursor :many
 SELECT
     a.id,
@@ -281,6 +365,74 @@ func (q *Queries) GetAchievementsFilteredCursor(ctx context.Context, arg GetAchi
 			&i.ListeningTracks,
 			&i.StreakID,
 			&i.NeededStreak,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetArticlesByAchievementIDs = `-- name: GetArticlesByAchievementIDs :many
+SELECT id, achievement_id, article_id, title, author, url
+FROM reading_achievement_articles
+WHERE achievement_id = ANY($1::text[])
+ORDER BY achievement_id
+`
+
+func (q *Queries) GetArticlesByAchievementIDs(ctx context.Context, achievementIds []string) ([]*ReadingAchievementArticle, error) {
+	rows, err := q.db.Query(ctx, GetArticlesByAchievementIDs, achievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*ReadingAchievementArticle{}
+	for rows.Next() {
+		var i ReadingAchievementArticle
+		if err := rows.Scan(
+			&i.ID,
+			&i.AchievementID,
+			&i.ArticleID,
+			&i.Title,
+			&i.Author,
+			&i.Url,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetTracksByAchievementIDs = `-- name: GetTracksByAchievementIDs :many
+SELECT id, achievement_id, track_id, name, description, image_url
+FROM listening_achievement_tracks
+WHERE achievement_id = ANY($1::text[])
+ORDER BY achievement_id
+`
+
+func (q *Queries) GetTracksByAchievementIDs(ctx context.Context, achievementIds []string) ([]*ListeningAchievementTrack, error) {
+	rows, err := q.db.Query(ctx, GetTracksByAchievementIDs, achievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*ListeningAchievementTrack{}
+	for rows.Next() {
+		var i ListeningAchievementTrack
+		if err := rows.Scan(
+			&i.ID,
+			&i.AchievementID,
+			&i.TrackID,
+			&i.Name,
+			&i.Description,
+			&i.ImageUrl,
 		); err != nil {
 			return nil, err
 		}

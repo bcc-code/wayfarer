@@ -165,6 +165,16 @@ func AchievementsByProjectKey(projectID string) string {
 	return fmt.Sprintf("%s:project:%s", PrefixAchievement, projectID)
 }
 
+// ArticlesByAchievementKey builds a cache key for articles by achievement ID
+func ArticlesByAchievementKey(achievementID string) string {
+	return fmt.Sprintf("%s:articles:%s", PrefixAchievement, achievementID)
+}
+
+// TracksByAchievementKey builds a cache key for tracks by achievement ID
+func TracksByAchievementKey(achievementID string) string {
+	return fmt.Sprintf("%s:tracks:%s", PrefixAchievement, achievementID)
+}
+
 // StreakKey builds a cache key for a streak by ID
 func StreakKey(streakID string) string {
 	return PrefixStreak + streakID

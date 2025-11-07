@@ -32,7 +32,19 @@ func (r *challengeResolver) Event(ctx context.Context, obj *model.Challenge) (*m
 
 // Challenges is the resolver for the challenges field.
 func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]model.Challenge, error) {
-	panic(fmt.Errorf("not implemented: Challenges - challenges"))
+	thunk := r.Loaders.ChallengesByEventLoader.Load(ctx, obj.ID)
+	challengePointers, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert []*model.Challenge to []model.Challenge
+	challenges := make([]model.Challenge, len(challengePointers))
+	for i, cp := range challengePointers {
+		challenges[i] = *cp
+	}
+
+	return challenges, nil
 }
 
 // ParentProject is the resolver for the parentProject field.
@@ -47,12 +59,22 @@ func (r *listeningAchievementResolver) Project(ctx context.Context, obj *model.L
 
 // Event is the resolver for the event field.
 func (r *listeningAchievementResolver) Event(ctx context.Context, obj *model.ListeningAchievement) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: Event - event"))
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
 }
 
 // Challenge is the resolver for the challenge field.
 func (r *listeningAchievementResolver) Challenge(ctx context.Context, obj *model.ListeningAchievement) (*model.Challenge, error) {
-	panic(fmt.Errorf("not implemented: Challenge - challenge"))
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// Tracks is the resolver for the tracks field.
+func (r *listeningAchievementResolver) Tracks(ctx context.Context, obj *model.ListeningAchievement) ([]model.Track, error) {
+	thunk := r.Loaders.TracksByAchievementLoader.Load(ctx, obj.ID)
+	tracks, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load tracks: %w", err)
+	}
+	return tracks, nil
 }
 
 // Challenges is the resolver for the challenges field.
@@ -145,7 +167,13 @@ func (r *projectResolver) MyTeam(ctx context.Context, obj *model.Project) (*mode
 
 // Achievements is the resolver for the achievements field.
 func (r *projectResolver) Achievements(ctx context.Context, obj *model.Project) ([]model.Achievement, error) {
-	panic(fmt.Errorf("not implemented: Achievements - achievements"))
+	thunk := r.Loaders.AchievementsByProjectLoader.Load(ctx, obj.ID)
+	achievements, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievements: %w", err)
+	}
+
+	return achievements, nil
 }
 
 // Streaks is the resolver for the streaks field.
@@ -171,12 +199,22 @@ func (r *readingAchievementResolver) Project(ctx context.Context, obj *model.Rea
 
 // Event is the resolver for the event field.
 func (r *readingAchievementResolver) Event(ctx context.Context, obj *model.ReadingAchievement) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: Event - event"))
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
 }
 
 // Challenge is the resolver for the challenge field.
 func (r *readingAchievementResolver) Challenge(ctx context.Context, obj *model.ReadingAchievement) (*model.Challenge, error) {
-	panic(fmt.Errorf("not implemented: Challenge - challenge"))
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// Articles is the resolver for the articles field.
+func (r *readingAchievementResolver) Articles(ctx context.Context, obj *model.ReadingAchievement) ([]model.Article, error) {
+	thunk := r.Loaders.ArticlesByAchievementLoader.Load(ctx, obj.ID)
+	articles, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load articles: %w", err)
+	}
+	return articles, nil
 }
 
 // Church is the resolver for the church field.
@@ -231,12 +269,12 @@ func (r *simpleAchievementResolver) Project(ctx context.Context, obj *model.Simp
 
 // Event is the resolver for the event field.
 func (r *simpleAchievementResolver) Event(ctx context.Context, obj *model.SimpleAchievement) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: Event - event"))
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
 }
 
 // Challenge is the resolver for the challenge field.
 func (r *simpleAchievementResolver) Challenge(ctx context.Context, obj *model.SimpleAchievement) (*model.Challenge, error) {
-	panic(fmt.Errorf("not implemented: Challenge - challenge"))
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
 }
 
 // Status is the resolver for the status field.
@@ -413,17 +451,22 @@ func (r *streakAchievementResolver) Project(ctx context.Context, obj *model.Stre
 
 // Event is the resolver for the event field.
 func (r *streakAchievementResolver) Event(ctx context.Context, obj *model.StreakAchievement) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: Event - event"))
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
 }
 
 // Challenge is the resolver for the challenge field.
 func (r *streakAchievementResolver) Challenge(ctx context.Context, obj *model.StreakAchievement) (*model.Challenge, error) {
-	panic(fmt.Errorf("not implemented: Challenge - challenge"))
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
 }
 
 // Streak is the resolver for the streak field.
 func (r *streakAchievementResolver) Streak(ctx context.Context, obj *model.StreakAchievement) (*model.Streak, error) {
-	panic(fmt.Errorf("not implemented: Streak - streak"))
+	thunk := r.Loaders.StreakByIDLoader.Load(ctx, obj.StreakID)
+	streak, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load streak: %w", err)
+	}
+	return streak, nil
 }
 
 // Members is the resolver for the members field.

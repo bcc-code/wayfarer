@@ -264,7 +264,7 @@ type ReadingAchievement implements Achievement {
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime
-    articles: [Article!]!
+    articles: [Article!]! @goField(forceResolver: true)
     userHasRead: [Article!]!
     nextArticle: Article!
     points: Int!
@@ -280,7 +280,7 @@ type ListeningAchievement implements Achievement {
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime
-    tracks: [Track!]!
+    tracks: [Track!]! @goField(forceResolver: true)
     userHasListened: [Track!]!
     nextTrack: Track!
     points: Int!

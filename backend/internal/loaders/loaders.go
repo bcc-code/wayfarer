@@ -26,9 +26,13 @@ type Loaders struct {
 	EventByIDLoader           *dataloader.Loader[string, *model.Event]
 	TeamByIDLoader            *dataloader.Loader[string, *model.Team]
 	SuperTeamByIDLoader       *dataloader.Loader[string, *model.SuperTeam]
-	AchievementByIDLoader     *dataloader.Loader[string, model.Achievement]
-	ChallengeByIDLoader        *dataloader.Loader[string, *model.Challenge]
-	ChallengesByProjectLoader  *dataloader.Loader[string, []*model.Challenge]
+	AchievementByIDLoader       *dataloader.Loader[string, model.Achievement]
+	AchievementsByProjectLoader *dataloader.Loader[string, []model.Achievement]
+	ArticlesByAchievementLoader *dataloader.Loader[string, []model.Article]
+	TracksByAchievementLoader   *dataloader.Loader[string, []model.Track]
+	ChallengeByIDLoader         *dataloader.Loader[string, *model.Challenge]
+	ChallengesByProjectLoader   *dataloader.Loader[string, []*model.Challenge]
+	ChallengesByEventLoader     *dataloader.Loader[string, []*model.Challenge]
 	StreakByIDLoader           *dataloader.Loader[string, *model.Streak]
 	StreaksByProjectLoader     *dataloader.Loader[string, []*model.Streak]
 	RelevantDaysByStreakLoader *dataloader.Loader[string, []model.DateRange]
@@ -103,12 +107,28 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 			achievementByIDBatchFunc(db, cache),
 			dataloader.WithBatchCapacity[string, model.Achievement](100),
 		),
+		AchievementsByProjectLoader: dataloader.NewBatchedLoader(
+			achievementsByProjectBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, []model.Achievement](100),
+		),
+		ArticlesByAchievementLoader: dataloader.NewBatchedLoader(
+			articlesByAchievementBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, []model.Article](100),
+		),
+		TracksByAchievementLoader: dataloader.NewBatchedLoader(
+			tracksByAchievementBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, []model.Track](100),
+		),
 		ChallengeByIDLoader: dataloader.NewBatchedLoader(
 			challengeByIDBatchFunc(db, cache),
 			dataloader.WithBatchCapacity[string, *model.Challenge](100),
 		),
 		ChallengesByProjectLoader: dataloader.NewBatchedLoader(
 			challengesByProjectBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, []*model.Challenge](100),
+		),
+		ChallengesByEventLoader: dataloader.NewBatchedLoader(
+			challengesByEventBatchFunc(db, cache),
 			dataloader.WithBatchCapacity[string, []*model.Challenge](100),
 		),
 		StreakByIDLoader: dataloader.NewBatchedLoader(

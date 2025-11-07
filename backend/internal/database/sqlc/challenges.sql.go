@@ -43,6 +43,48 @@ func (q *Queries) CountChallengesFiltered(ctx context.Context, arg CountChalleng
 	return count, err
 }
 
+const GetChallengesByEventIDs = `-- name: GetChallengesByEventIDs :many
+SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+FROM challenges
+WHERE event_id = ANY($1::text[])
+    AND published_at IS NOT NULL
+    AND published_at <= NOW()
+ORDER BY event_id, published_at DESC
+`
+
+func (q *Queries) GetChallengesByEventIDs(ctx context.Context, eventIds []string) ([]*Challenge, error) {
+	rows, err := q.db.Query(ctx, GetChallengesByEventIDs, eventIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Challenge{}
+	for rows.Next() {
+		var i Challenge
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.EventID,
+			&i.Name,
+			&i.Description,
+			&i.ImageUrl,
+			&i.Url,
+			&i.ButtonText,
+			&i.PublishedAt,
+			&i.EndTime,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetChallengesByIDs = `-- name: GetChallengesByIDs :many
 SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
 FROM challenges

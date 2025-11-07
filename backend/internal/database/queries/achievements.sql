@@ -53,6 +53,33 @@ LEFT JOIN listening_achievements la ON a.id = la.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 WHERE a.id = ANY(@ids::text[]);
 
+-- name: GetAchievementsByProjectIDs :many
+SELECT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description,
+    a.image_url,
+    a.points,
+    a.hidden,
+    a.created_at,
+    a.updated_at,
+    -- Type-specific fields needed for model construction
+    ra.achievement_id AS reading_achievement_id,
+    la.achievement_id AS listening_achievement_id,
+    sa.streak_id,
+    sa.needed_streak
+FROM achievements a
+LEFT JOIN reading_achievements ra ON a.id = ra.achievement_id
+LEFT JOIN listening_achievements la ON a.id = la.achievement_id
+LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+WHERE a.project_id = ANY(@project_ids::text[])
+    AND a.hidden = false
+ORDER BY a.project_id, a.created_at DESC;
+
 -- name: GetAchievementsFilteredCursor :many
 SELECT
     a.id,
@@ -124,3 +151,15 @@ WHERE
     (@ids::text[] IS NULL OR a.id = ANY(@ids::text[]))
     AND (@projectid::text = '' OR a.project_id = @projectid::text)
     AND (@eventid::text = '' OR a.event_id = @eventid::text);
+
+-- name: GetArticlesByAchievementIDs :many
+SELECT id, achievement_id, article_id, title, author, url
+FROM reading_achievement_articles
+WHERE achievement_id = ANY(@achievement_ids::text[])
+ORDER BY achievement_id;
+
+-- name: GetTracksByAchievementIDs :many
+SELECT id, achievement_id, track_id, name, description, image_url
+FROM listening_achievement_tracks
+WHERE achievement_id = ANY(@achievement_ids::text[])
+ORDER BY achievement_id;
