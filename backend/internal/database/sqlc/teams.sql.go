@@ -86,6 +86,42 @@ func (q *Queries) GetTeamsByIDs(ctx context.Context, ids []string) ([]*Team, err
 	return items, nil
 }
 
+const GetTeamsBySuperTeamIDs = `-- name: GetTeamsBySuperTeamIDs :many
+SELECT id, project_id, name, description, join_code, super_team_id, created_at, updated_at
+FROM teams
+WHERE super_team_id = ANY($1::text[])
+ORDER BY name ASC
+`
+
+func (q *Queries) GetTeamsBySuperTeamIDs(ctx context.Context, superteamids []string) ([]*Team, error) {
+	rows, err := q.db.Query(ctx, GetTeamsBySuperTeamIDs, superteamids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Team{}
+	for rows.Next() {
+		var i Team
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Name,
+			&i.Description,
+			&i.JoinCode,
+			&i.SuperTeamID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetTeamsByUserIDs = `-- name: GetTeamsByUserIDs :many
 SELECT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.created_at, t.updated_at, tm.user_id
 FROM teams t

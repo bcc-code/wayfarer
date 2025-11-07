@@ -538,7 +538,7 @@ type SuperTeam struct {
 	ID            string             `json:"id"`
 	Name          string             `json:"name"`
 	Description   string             `json:"description"`
-	Members       []User             `json:"members"`
+	Members       *UserConnection    `json:"members"`
 	Leaderboard   []LeaderboardEntry `json:"leaderboard"`
 	ParentProject *Project           `json:"parentProject"`
 	Teams         []Team             `json:"teams"`

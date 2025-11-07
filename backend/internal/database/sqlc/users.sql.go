@@ -11,6 +11,21 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const CountUsersBySuperTeamID = `-- name: CountUsersBySuperTeamID :one
+SELECT COUNT(DISTINCT u.id)
+FROM users u
+INNER JOIN team_members tm ON u.id = tm.user_id
+INNER JOIN teams t ON tm.team_id = t.id
+WHERE t.super_team_id = $1::text
+`
+
+func (q *Queries) CountUsersBySuperTeamID(ctx context.Context, superteamid string) (int64, error) {
+	row := q.db.QueryRow(ctx, CountUsersBySuperTeamID, superteamid)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const CountUsersFiltered = `-- name: CountUsersFiltered :one
 SELECT COUNT(u.id)
 FROM users u
@@ -212,6 +227,131 @@ func (q *Queries) GetUsersByIDs(ctx context.Context, ids []string) ([]*GetUsersB
 			&i.Email,
 			&i.Name,
 			&i.AvatarUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUsersBySuperTeamIDCursor = `-- name: GetUsersBySuperTeamIDCursor :many
+WITH distinct_user_ids AS (
+    SELECT DISTINCT u.id
+    FROM users u
+    INNER JOIN team_members tm ON u.id = tm.user_id
+    INNER JOIN teams t ON tm.team_id = t.id
+    WHERE t.super_team_id = $5::text
+)
+SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.avatar_url
+FROM distinct_user_ids du
+INNER JOIN users u ON du.id = u.id
+WHERE ($1::text = '' OR u.id > $1::text)
+    AND ($2::text = '' OR u.id < $2::text)
+ORDER BY
+    CASE WHEN $3::bool = true THEN u.id END DESC,
+    CASE WHEN $3::bool = false OR $3::bool IS NULL THEN u.id END ASC
+LIMIT CASE WHEN $4::int IS NULL THEN NULL ELSE $4::int END
+`
+
+type GetUsersBySuperTeamIDCursorParams struct {
+	Aftercursor  string `json:"aftercursor"`
+	Beforecursor string `json:"beforecursor"`
+	Isbackward   bool   `json:"isbackward"`
+	Querylimit   int32  `json:"querylimit"`
+	Superteamid  string `json:"superteamid"`
+}
+
+type GetUsersBySuperTeamIDCursorRow struct {
+	ID        string      `json:"id"`
+	MembersID string      `json:"members_id"`
+	Gender    string      `json:"gender"`
+	ChurchID  string      `json:"church_id"`
+	Birthdate pgtype.Date `json:"birthdate"`
+	Email     string      `json:"email"`
+	Name      string      `json:"name"`
+	AvatarUrl *string     `json:"avatar_url"`
+}
+
+func (q *Queries) GetUsersBySuperTeamIDCursor(ctx context.Context, arg GetUsersBySuperTeamIDCursorParams) ([]*GetUsersBySuperTeamIDCursorRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersBySuperTeamIDCursor,
+		arg.Aftercursor,
+		arg.Beforecursor,
+		arg.Isbackward,
+		arg.Querylimit,
+		arg.Superteamid,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUsersBySuperTeamIDCursorRow{}
+	for rows.Next() {
+		var i GetUsersBySuperTeamIDCursorRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MembersID,
+			&i.Gender,
+			&i.ChurchID,
+			&i.Birthdate,
+			&i.Email,
+			&i.Name,
+			&i.AvatarUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUsersByTeamIDs = `-- name: GetUsersByTeamIDs :many
+SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.avatar_url, tm.team_id, tm.joined_at
+FROM users u
+INNER JOIN team_members tm ON u.id = tm.user_id
+WHERE tm.team_id = ANY($1::text[])
+ORDER BY tm.team_id, tm.joined_at
+`
+
+type GetUsersByTeamIDsRow struct {
+	ID        string             `json:"id"`
+	MembersID string             `json:"members_id"`
+	Gender    string             `json:"gender"`
+	ChurchID  string             `json:"church_id"`
+	Birthdate pgtype.Date        `json:"birthdate"`
+	Email     string             `json:"email"`
+	Name      string             `json:"name"`
+	AvatarUrl *string            `json:"avatar_url"`
+	TeamID    string             `json:"team_id"`
+	JoinedAt  pgtype.Timestamptz `json:"joined_at"`
+}
+
+func (q *Queries) GetUsersByTeamIDs(ctx context.Context, teamids []string) ([]*GetUsersByTeamIDsRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersByTeamIDs, teamids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUsersByTeamIDsRow{}
+	for rows.Next() {
+		var i GetUsersByTeamIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MembersID,
+			&i.Gender,
+			&i.ChurchID,
+			&i.Birthdate,
+			&i.Email,
+			&i.Name,
+			&i.AvatarUrl,
+			&i.TeamID,
+			&i.JoinedAt,
 		); err != nil {
 			return nil, err
 		}

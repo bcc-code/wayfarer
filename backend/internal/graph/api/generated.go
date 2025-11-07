@@ -398,7 +398,7 @@ type ComplexityRoot struct {
 		Description   func(childComplexity int) int
 		ID            func(childComplexity int) int
 		Leaderboard   func(childComplexity int, typeArg model.LeaderboardType, filter *model.LeaderboardFilter) int
-		Members       func(childComplexity int) int
+		Members       func(childComplexity int, first *int, after *string, last *int, before *string) int
 		Name          func(childComplexity int) int
 		ParentProject func(childComplexity int) int
 		Teams         func(childComplexity int) int
@@ -626,7 +626,7 @@ type StreakAchievementResolver interface {
 	Streak(ctx context.Context, obj *model.StreakAchievement) (*model.Streak, error)
 }
 type SuperTeamResolver interface {
-	Members(ctx context.Context, obj *model.SuperTeam) ([]model.User, error)
+	Members(ctx context.Context, obj *model.SuperTeam, first *int, after *string, last *int, before *string) (*model.UserConnection, error)
 
 	ParentProject(ctx context.Context, obj *model.SuperTeam) (*model.Project, error)
 	Teams(ctx context.Context, obj *model.SuperTeam) ([]model.Team, error)
@@ -2617,7 +2617,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		return e.complexity.SuperTeam.Members(childComplexity), true
+		args, err := ec.field_SuperTeam_members_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.SuperTeam.Members(childComplexity, args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
 	case "SuperTeam.name":
 		if e.complexity.SuperTeam.Name == nil {
 			break
@@ -3264,7 +3269,7 @@ type SuperTeam {
     id: ID!
     name: String!
     description: String!
-    members: [User!]! @goField(forceResolver: true)
+    members(first: Int, after: String, last: Int, before: String): UserConnection! @goField(forceResolver: true)
     leaderboard(
         type: LeaderboardType!
         filter: LeaderboardFilter
@@ -5453,6 +5458,32 @@ func (ec *executionContext) field_SuperTeam_leaderboard_args(ctx context.Context
 		return nil, err
 	}
 	args["filter"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_SuperTeam_members_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg3
 	return args, nil
 }
 
@@ -17229,16 +17260,17 @@ func (ec *executionContext) _SuperTeam_members(ctx context.Context, field graphq
 		field,
 		ec.fieldContext_SuperTeam_members,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.SuperTeam().Members(ctx, obj)
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.SuperTeam().Members(ctx, obj, fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
 		},
 		nil,
-		ec.marshalNUser2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserᚄ,
+		ec.marshalNUserConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConnection,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_SuperTeam_members(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SuperTeam_members(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SuperTeam",
 		Field:      field,
@@ -17246,39 +17278,26 @@ func (ec *executionContext) fieldContext_SuperTeam_members(_ context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
-			case "membersId":
-				return ec.fieldContext_User_membersId(ctx, field)
-			case "gender":
-				return ec.fieldContext_User_gender(ctx, field)
-			case "churchId":
-				return ec.fieldContext_User_churchId(ctx, field)
-			case "church":
-				return ec.fieldContext_User_church(ctx, field)
-			case "birthdate":
-				return ec.fieldContext_User_birthdate(ctx, field)
-			case "age":
-				return ec.fieldContext_User_age(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
-			case "name":
-				return ec.fieldContext_User_name(ctx, field)
-			case "image":
-				return ec.fieldContext_User_image(ctx, field)
-			case "projects":
-				return ec.fieldContext_User_projects(ctx, field)
-			case "events":
-				return ec.fieldContext_User_events(ctx, field)
-			case "teams":
-				return ec.fieldContext_User_teams(ctx, field)
-			case "superTeams":
-				return ec.fieldContext_User_superTeams(ctx, field)
-			case "roles":
-				return ec.fieldContext_User_roles(ctx, field)
+			case "edges":
+				return ec.fieldContext_UserConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_UserConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_UserConnection_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type UserConnection", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_SuperTeam_members_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }

@@ -47,3 +47,9 @@ FROM teams t
 INNER JOIN team_members tm ON t.id = tm.team_id
 WHERE tm.user_id = ANY(@userids::text[])
 ORDER BY t.name ASC;
+
+-- name: GetTeamsBySuperTeamIDs :many
+SELECT id, project_id, name, description, join_code, super_team_id, created_at, updated_at
+FROM teams
+WHERE super_team_id = ANY(@superteamids::text[])
+ORDER BY name ASC;

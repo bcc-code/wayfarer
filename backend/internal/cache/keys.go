@@ -100,6 +100,11 @@ func TeamsByUserKey(userID string) string {
 	return PrefixTeamMembers + userID
 }
 
+// TeamsBySuperTeamKey builds a cache key for teams associated with a super team
+func TeamsBySuperTeamKey(superTeamID string) string {
+	return fmt.Sprintf("%s:superteam:%s", PrefixTeam, superTeamID)
+}
+
 // SuperTeamsByUserKey builds a cache key for super teams associated with a user
 func SuperTeamsByUserKey(userID string) string {
 	return fmt.Sprintf("%s%s", PrefixSuperTeam, userID)
@@ -173,6 +178,11 @@ func StreaksByProjectKey(projectID string) string {
 // TeamMembersByTeamKey builds a cache key for team members
 func TeamMembersByTeamKey(teamID string) string {
 	return PrefixTeamMembers + teamID
+}
+
+// UsersByTeamKey builds a cache key for users in a team
+func UsersByTeamKey(teamID string) string {
+	return fmt.Sprintf("%s:team:%s", PrefixUser, teamID)
 }
 
 // UserRolesKey builds a cache key for user roles

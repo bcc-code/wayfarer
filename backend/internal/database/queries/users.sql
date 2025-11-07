@@ -80,3 +80,35 @@ WHERE
         SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = @teamid::text
     ))
     AND (@ids::text[] IS NULL OR u.id = ANY(@ids::text[]));
+
+-- name: GetUsersByTeamIDs :many
+SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.avatar_url, tm.team_id, tm.joined_at
+FROM users u
+INNER JOIN team_members tm ON u.id = tm.user_id
+WHERE tm.team_id = ANY(@teamids::text[])
+ORDER BY tm.team_id, tm.joined_at;
+
+-- name: GetUsersBySuperTeamIDCursor :many
+WITH distinct_user_ids AS (
+    SELECT DISTINCT u.id
+    FROM users u
+    INNER JOIN team_members tm ON u.id = tm.user_id
+    INNER JOIN teams t ON tm.team_id = t.id
+    WHERE t.super_team_id = @superteamid::text
+)
+SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.avatar_url
+FROM distinct_user_ids du
+INNER JOIN users u ON du.id = u.id
+WHERE (@aftercursor::text = '' OR u.id > @aftercursor::text)
+    AND (@beforecursor::text = '' OR u.id < @beforecursor::text)
+ORDER BY
+    CASE WHEN @isbackward::bool = true THEN u.id END DESC,
+    CASE WHEN @isbackward::bool = false OR @isbackward::bool IS NULL THEN u.id END ASC
+LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END;
+
+-- name: CountUsersBySuperTeamID :one
+SELECT COUNT(DISTINCT u.id)
+FROM users u
+INNER JOIN team_members tm ON u.id = tm.user_id
+INNER JOIN teams t ON tm.team_id = t.id
+WHERE t.super_team_id = @superteamid::text;

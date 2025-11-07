@@ -10,20 +10,22 @@ import (
 // Loaders holds all dataloader instances for batching database queries
 // These are shared globally across all requests and use built-in caching
 type Loaders struct {
-	UserByIDLoader        *dataloader.Loader[string, *model.User]
-	ChurchLoader          *dataloader.Loader[string, *model.Church]
-	ProjectsByUserLoader  *dataloader.Loader[string, []*model.Project]
-	EventsByUserLoader    *dataloader.Loader[string, []*model.Event]
-	TeamsByUserLoader     *dataloader.Loader[string, []*model.Team]
+	UserByIDLoader         *dataloader.Loader[string, *model.User]
+	ChurchLoader           *dataloader.Loader[string, *model.Church]
+	ProjectsByUserLoader   *dataloader.Loader[string, []*model.Project]
+	EventsByUserLoader     *dataloader.Loader[string, []*model.Event]
+	TeamsByUserLoader      *dataloader.Loader[string, []*model.Team]
+	TeamsBySuperTeamLoader *dataloader.Loader[string, []*model.Team]
 	SuperTeamsByUserLoader *dataloader.Loader[string, []*model.SuperTeam]
-	RolesByUserLoader     *dataloader.Loader[string, []*model.UserRole]
-	ProjectByIDLoader     *dataloader.Loader[string, *model.Project]
-	EventByIDLoader       *dataloader.Loader[string, *model.Event]
-	TeamByIDLoader        *dataloader.Loader[string, *model.Team]
-	SuperTeamByIDLoader   *dataloader.Loader[string, *model.SuperTeam]
-	AchievementByIDLoader *dataloader.Loader[string, model.Achievement]
-	ChallengeByIDLoader   *dataloader.Loader[string, *model.Challenge]
-	StreakByIDLoader      *dataloader.Loader[string, *model.Streak]
+	RolesByUserLoader      *dataloader.Loader[string, []*model.UserRole]
+	UsersByTeamLoader      *dataloader.Loader[string, []*model.User]
+	ProjectByIDLoader      *dataloader.Loader[string, *model.Project]
+	EventByIDLoader        *dataloader.Loader[string, *model.Event]
+	TeamByIDLoader         *dataloader.Loader[string, *model.Team]
+	SuperTeamByIDLoader    *dataloader.Loader[string, *model.SuperTeam]
+	AchievementByIDLoader  *dataloader.Loader[string, model.Achievement]
+	ChallengeByIDLoader    *dataloader.Loader[string, *model.Challenge]
+	StreakByIDLoader       *dataloader.Loader[string, *model.Streak]
 }
 
 // NewLoaders creates all dataloaders with batch functions and default caching
@@ -50,6 +52,10 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 			teamsByUserBatchFunc(db, cache),
 			dataloader.WithBatchCapacity[string, []*model.Team](100),
 		),
+		TeamsBySuperTeamLoader: dataloader.NewBatchedLoader(
+			teamsBySuperTeamBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, []*model.Team](100),
+		),
 		SuperTeamsByUserLoader: dataloader.NewBatchedLoader(
 			superTeamsByUserBatchFunc(db, cache),
 			dataloader.WithBatchCapacity[string, []*model.SuperTeam](100),
@@ -57,6 +63,10 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		RolesByUserLoader: dataloader.NewBatchedLoader(
 			rolesByUserBatchFunc(db, cache),
 			dataloader.WithBatchCapacity[string, []*model.UserRole](100),
+		),
+		UsersByTeamLoader: dataloader.NewBatchedLoader(
+			usersByTeamBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, []*model.User](100),
 		),
 		ProjectByIDLoader: dataloader.NewBatchedLoader(
 			projectByIDBatchFunc(db, cache),

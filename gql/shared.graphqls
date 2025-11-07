@@ -197,7 +197,7 @@ type SuperTeam {
     id: ID!
     name: String!
     description: String!
-    members: [User!]! @goField(forceResolver: true)
+    members(first: Int, after: String, last: Int, before: String): UserConnection! @goField(forceResolver: true)
     leaderboard(
         type: LeaderboardType!
         filter: LeaderboardFilter

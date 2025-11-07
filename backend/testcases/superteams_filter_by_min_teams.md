@@ -48,6 +48,14 @@ query GetSuperTeamsByMinTeams($minTeams: Int!, $first: Int!) {
     "superteams": {
       "edges": [
         {
+          "cursor": "U1QwMUs5REdTNjZYQ1dOMTM1VjZLUjc1MDhCNw==",
+          "node": {
+            "description": "tempore id minus nihil omnis doloremque dolores ut.",
+            "id": "ST01K9DGS66XCWN135V6KR7508B7",
+            "name": "Koelpin and Sons Alliance"
+          }
+        },
+        {
           "cursor": "U1QwMUs5REdTNjhEMjYwRjZaRDFBVkY0REhRMw==",
           "node": {
             "description": "voluptas molestiae consequuntur autem totam et sed impedit.",
@@ -68,9 +76,9 @@ query GetSuperTeamsByMinTeams($minTeams: Int!, $first: Int!) {
         "endCursor": "U1QwMUs5REdTRlg5M1haOUVHSlQ2TlgxOVNUVw==",
         "hasNextPage": false,
         "hasPreviousPage": false,
-        "startCursor": "U1QwMUs5REdTNjhEMjYwRjZaRDFBVkY0REhRMw=="
+        "startCursor": "U1QwMUs5REdTNjZYQ1dOMTM1VjZLUjc1MDhCNw=="
       },
-      "totalCount": 2
+      "totalCount": 3
     }
   }
 }
