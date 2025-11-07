@@ -139,6 +139,56 @@ func (q *Queries) GetEventsByProjectID(ctx context.Context, projectID string) ([
 	return items, nil
 }
 
+const GetEventsByUserIDs = `-- name: GetEventsByUserIDs :many
+SELECT e.id, e.project_id, e.name, e.description, e.start_date, e.end_date, e.created_at, e.updated_at, ue.user_id
+FROM events e
+INNER JOIN user_events ue ON e.id = ue.event_id
+WHERE ue.user_id = ANY($1::text[])
+ORDER BY e.start_date DESC
+`
+
+type GetEventsByUserIDsRow struct {
+	ID          string             `json:"id"`
+	ProjectID   string             `json:"project_id"`
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	StartDate   pgtype.Timestamptz `json:"start_date"`
+	EndDate     pgtype.Timestamptz `json:"end_date"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	UserID      string             `json:"user_id"`
+}
+
+func (q *Queries) GetEventsByUserIDs(ctx context.Context, userids []string) ([]*GetEventsByUserIDsRow, error) {
+	rows, err := q.db.Query(ctx, GetEventsByUserIDs, userids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetEventsByUserIDsRow{}
+	for rows.Next() {
+		var i GetEventsByUserIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Name,
+			&i.Description,
+			&i.StartDate,
+			&i.EndDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.UserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetEventsFilteredCursor = `-- name: GetEventsFilteredCursor :many
 SELECT id, project_id, name, description, start_date, end_date, created_at, updated_at
 FROM events

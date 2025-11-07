@@ -473,12 +473,10 @@ type ComplexityRoot struct {
 	}
 
 	UserRole struct {
-		AssignedAt func(childComplexity int) int
-		AssignedBy func(childComplexity int) int
-		ID         func(childComplexity int) int
-		Role       func(childComplexity int) int
-		Scope      func(childComplexity int) int
-		User       func(childComplexity int) int
+		ID    func(childComplexity int) int
+		Role  func(childComplexity int) int
+		Scope func(childComplexity int) int
+		User  func(childComplexity int) int
 	}
 }
 
@@ -654,7 +652,6 @@ type UserRoleResolver interface {
 	User(ctx context.Context, obj *model.UserRole) (*model.User, error)
 
 	Scope(ctx context.Context, obj *model.UserRole) (*model.RoleScope, error)
-	AssignedBy(ctx context.Context, obj *model.UserRole) (*model.User, error)
 }
 
 type executableSchema struct {
@@ -2900,18 +2897,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UserEdge.Node(childComplexity), true
 
-	case "UserRole.assignedAt":
-		if e.complexity.UserRole.AssignedAt == nil {
-			break
-		}
-
-		return e.complexity.UserRole.AssignedAt(childComplexity), true
-	case "UserRole.assignedBy":
-		if e.complexity.UserRole.AssignedBy == nil {
-			break
-		}
-
-		return e.complexity.UserRole.AssignedBy(childComplexity), true
 	case "UserRole.id":
 		if e.complexity.UserRole.ID == nil {
 			break
@@ -3668,8 +3653,6 @@ type UserRole {
     user: User! @goField(forceResolver: true)
     role: RoleType!
     scope: RoleScope @goField(forceResolver: true)
-    assignedBy: User! @goField(forceResolver: true)
-    assignedAt: DateTime!
 }
 
 input AssignRoleInput {
@@ -12720,10 +12703,6 @@ func (ec *executionContext) fieldContext_Mutation_assignRole(ctx context.Context
 				return ec.fieldContext_UserRole_role(ctx, field)
 			case "scope":
 				return ec.fieldContext_UserRole_scope(ctx, field)
-			case "assignedBy":
-				return ec.fieldContext_UserRole_assignedBy(ctx, field)
-			case "assignedAt":
-				return ec.fieldContext_UserRole_assignedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserRole", field.Name)
 		},
@@ -15044,10 +15023,6 @@ func (ec *executionContext) fieldContext_Query_userRoles(ctx context.Context, fi
 				return ec.fieldContext_UserRole_role(ctx, field)
 			case "scope":
 				return ec.fieldContext_UserRole_scope(ctx, field)
-			case "assignedBy":
-				return ec.fieldContext_UserRole_assignedBy(ctx, field)
-			case "assignedAt":
-				return ec.fieldContext_UserRole_assignedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserRole", field.Name)
 		},
@@ -18756,10 +18731,6 @@ func (ec *executionContext) fieldContext_User_roles(_ context.Context, field gra
 				return ec.fieldContext_UserRole_role(ctx, field)
 			case "scope":
 				return ec.fieldContext_UserRole_scope(ctx, field)
-			case "assignedBy":
-				return ec.fieldContext_UserRole_assignedBy(ctx, field)
-			case "assignedAt":
-				return ec.fieldContext_UserRole_assignedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserRole", field.Name)
 		},
@@ -19115,96 +19086,6 @@ func (ec *executionContext) fieldContext_UserRole_scope(_ context.Context, field
 				return ec.fieldContext_RoleScope_team(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type RoleScope", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _UserRole_assignedBy(ctx context.Context, field graphql.CollectedField, obj *model.UserRole) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_UserRole_assignedBy,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.UserRole().AssignedBy(ctx, obj)
-		},
-		nil,
-		ec.marshalNUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUser,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_UserRole_assignedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "UserRole",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
-			case "membersId":
-				return ec.fieldContext_User_membersId(ctx, field)
-			case "gender":
-				return ec.fieldContext_User_gender(ctx, field)
-			case "churchId":
-				return ec.fieldContext_User_churchId(ctx, field)
-			case "church":
-				return ec.fieldContext_User_church(ctx, field)
-			case "birthdate":
-				return ec.fieldContext_User_birthdate(ctx, field)
-			case "age":
-				return ec.fieldContext_User_age(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
-			case "name":
-				return ec.fieldContext_User_name(ctx, field)
-			case "image":
-				return ec.fieldContext_User_image(ctx, field)
-			case "projects":
-				return ec.fieldContext_User_projects(ctx, field)
-			case "events":
-				return ec.fieldContext_User_events(ctx, field)
-			case "teams":
-				return ec.fieldContext_User_teams(ctx, field)
-			case "superTeams":
-				return ec.fieldContext_User_superTeams(ctx, field)
-			case "roles":
-				return ec.fieldContext_User_roles(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _UserRole_assignedAt(ctx context.Context, field graphql.CollectedField, obj *model.UserRole) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_UserRole_assignedAt,
-		func(ctx context.Context) (any, error) {
-			return obj.AssignedAt, nil
-		},
-		nil,
-		ec.marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_UserRole_assignedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "UserRole",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DateTime does not have child fields")
 		},
 	}
 	return fc, nil
@@ -27430,47 +27311,6 @@ func (ec *executionContext) _UserRole(ctx context.Context, sel ast.SelectionSet,
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "assignedBy":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._UserRole_assignedBy(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "assignedAt":
-			out.Values[i] = ec._UserRole_assignedAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

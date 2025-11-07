@@ -708,12 +708,10 @@ type UserFilter struct {
 }
 
 type UserRole struct {
-	ID         string           `json:"id"`
-	User       *User            `json:"user"`
-	Role       RoleType         `json:"role"`
-	Scope      *RoleScope       `json:"scope,omitempty"`
-	AssignedBy *User            `json:"assignedBy"`
-	AssignedAt scalars.DateTime `json:"assignedAt"`
+	ID    string     `json:"id"`
+	User  *User      `json:"user"`
+	Role  RoleType   `json:"role"`
+	Scope *RoleScope `json:"scope,omitempty"`
 }
 
 type ChurchCategory string

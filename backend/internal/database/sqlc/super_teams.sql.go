@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const CountSuperTeamsFiltered = `-- name: CountSuperTeamsFiltered :one
@@ -79,6 +81,53 @@ func (q *Queries) GetSuperTeamsByIDs(ctx context.Context, ids []string) ([]*Supe
 			&i.Description,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetSuperTeamsByUserIDs = `-- name: GetSuperTeamsByUserIDs :many
+SELECT DISTINCT st.id, st.project_id, st.name, st.description, st.created_at, st.updated_at, tm.user_id
+FROM super_teams st
+INNER JOIN teams t ON st.id = t.super_team_id
+INNER JOIN team_members tm ON t.id = tm.team_id
+WHERE tm.user_id = ANY($1::text[])
+ORDER BY st.name ASC
+`
+
+type GetSuperTeamsByUserIDsRow struct {
+	ID          string             `json:"id"`
+	ProjectID   string             `json:"project_id"`
+	Name        string             `json:"name"`
+	Description *string            `json:"description"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	UserID      string             `json:"user_id"`
+}
+
+func (q *Queries) GetSuperTeamsByUserIDs(ctx context.Context, userids []string) ([]*GetSuperTeamsByUserIDsRow, error) {
+	rows, err := q.db.Query(ctx, GetSuperTeamsByUserIDs, userids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetSuperTeamsByUserIDsRow{}
+	for rows.Next() {
+		var i GetSuperTeamsByUserIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Name,
+			&i.Description,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.UserID,
 		); err != nil {
 			return nil, err
 		}

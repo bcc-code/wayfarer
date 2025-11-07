@@ -90,6 +90,21 @@ func ProjectsByUserKey(userID string) string {
 	return PrefixUserProjects + userID
 }
 
+// EventsByUserKey builds a cache key for events associated with a user
+func EventsByUserKey(userID string) string {
+	return PrefixUserEvents + userID
+}
+
+// TeamsByUserKey builds a cache key for teams associated with a user
+func TeamsByUserKey(userID string) string {
+	return PrefixTeamMembers + userID
+}
+
+// SuperTeamsByUserKey builds a cache key for super teams associated with a user
+func SuperTeamsByUserKey(userID string) string {
+	return fmt.Sprintf("%s%s", PrefixSuperTeam, userID)
+}
+
 // EventKey builds a cache key for an event by ID
 func EventKey(eventID string) string {
 	return PrefixEvent + eventID

@@ -13,6 +13,9 @@ type Loaders struct {
 	UserByIDLoader        *dataloader.Loader[string, *model.User]
 	ChurchLoader          *dataloader.Loader[string, *model.Church]
 	ProjectsByUserLoader  *dataloader.Loader[string, []*model.Project]
+	EventsByUserLoader    *dataloader.Loader[string, []*model.Event]
+	TeamsByUserLoader     *dataloader.Loader[string, []*model.Team]
+	SuperTeamsByUserLoader *dataloader.Loader[string, []*model.SuperTeam]
 	RolesByUserLoader     *dataloader.Loader[string, []*model.UserRole]
 	ProjectByIDLoader     *dataloader.Loader[string, *model.Project]
 	EventByIDLoader       *dataloader.Loader[string, *model.Event]
@@ -38,6 +41,18 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		ProjectsByUserLoader: dataloader.NewBatchedLoader(
 			projectsByUserBatchFunc(db, cache),
 			dataloader.WithBatchCapacity[string, []*model.Project](100),
+		),
+		EventsByUserLoader: dataloader.NewBatchedLoader(
+			eventsByUserBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, []*model.Event](100),
+		),
+		TeamsByUserLoader: dataloader.NewBatchedLoader(
+			teamsByUserBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, []*model.Team](100),
+		),
+		SuperTeamsByUserLoader: dataloader.NewBatchedLoader(
+			superTeamsByUserBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, []*model.SuperTeam](100),
 		),
 		RolesByUserLoader: dataloader.NewBatchedLoader(
 			rolesByUserBatchFunc(db, cache),

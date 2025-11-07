@@ -56,3 +56,11 @@ WHERE
     AND (@maxteams::int <= 0 OR COALESCE(t.team_count, 0) <= @maxteams::int)
     AND (@minmembers::int <= 0 OR COALESCE(m.member_count, 0) >= @minmembers::int)
     AND (@maxmembers::int <= 0 OR COALESCE(m.member_count, 0) <= @maxmembers::int);
+
+-- name: GetSuperTeamsByUserIDs :many
+SELECT DISTINCT st.id, st.project_id, st.name, st.description, st.created_at, st.updated_at, tm.user_id
+FROM super_teams st
+INNER JOIN teams t ON st.id = t.super_team_id
+INNER JOIN team_members tm ON t.id = tm.team_id
+WHERE tm.user_id = ANY(@userids::text[])
+ORDER BY st.name ASC;

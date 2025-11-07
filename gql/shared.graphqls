@@ -586,8 +586,6 @@ type UserRole {
     user: User! @goField(forceResolver: true)
     role: RoleType!
     scope: RoleScope @goField(forceResolver: true)
-    assignedBy: User! @goField(forceResolver: true)
-    assignedAt: DateTime!
 }
 
 input AssignRoleInput {

@@ -41,3 +41,10 @@ WHERE
     AND (@startdatebefore::timestamptz IS NULL OR start_date <= @startdatebefore::timestamptz)
     AND (@enddateafter::timestamptz IS NULL OR end_date >= @enddateafter::timestamptz)
     AND (@enddatebefore::timestamptz IS NULL OR end_date <= @enddatebefore::timestamptz);
+
+-- name: GetEventsByUserIDs :many
+SELECT e.id, e.project_id, e.name, e.description, e.start_date, e.end_date, e.created_at, e.updated_at, ue.user_id
+FROM events e
+INNER JOIN user_events ue ON e.id = ue.event_id
+WHERE ue.user_id = ANY(@userids::text[])
+ORDER BY e.start_date DESC;

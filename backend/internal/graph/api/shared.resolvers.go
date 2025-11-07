@@ -264,17 +264,56 @@ func (r *userResolver) Projects(ctx context.Context, obj *model.User) ([]model.P
 
 // Events is the resolver for the events field.
 func (r *userResolver) Events(ctx context.Context, obj *model.User) ([]model.Event, error) {
-	panic(fmt.Errorf("not implemented: Events - events"))
+	// Use dataloader to fetch events for this user
+	thunk := r.Loaders.EventsByUserLoader.Load(ctx, obj.ID)
+	events, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load events: %w", err)
+	}
+
+	// Convert []*model.Event to []model.Event
+	result := make([]model.Event, len(events))
+	for i, e := range events {
+		result[i] = *e
+	}
+
+	return result, nil
 }
 
 // Teams is the resolver for the teams field.
 func (r *userResolver) Teams(ctx context.Context, obj *model.User) ([]model.Team, error) {
-	panic(fmt.Errorf("not implemented: Teams - teams"))
+	// Use dataloader to fetch teams for this user
+	thunk := r.Loaders.TeamsByUserLoader.Load(ctx, obj.ID)
+	teams, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load teams: %w", err)
+	}
+
+	// Convert []*model.Team to []model.Team
+	result := make([]model.Team, len(teams))
+	for i, t := range teams {
+		result[i] = *t
+	}
+
+	return result, nil
 }
 
 // SuperTeams is the resolver for the superTeams field.
 func (r *userResolver) SuperTeams(ctx context.Context, obj *model.User) ([]model.SuperTeam, error) {
-	panic(fmt.Errorf("not implemented: SuperTeams - superTeams"))
+	// Use dataloader to fetch super teams for this user
+	thunk := r.Loaders.SuperTeamsByUserLoader.Load(ctx, obj.ID)
+	superTeams, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load super teams: %w", err)
+	}
+
+	// Convert []*model.SuperTeam to []model.SuperTeam
+	result := make([]model.SuperTeam, len(superTeams))
+	for i, st := range superTeams {
+		result[i] = *st
+	}
+
+	return result, nil
 }
 
 // Roles is the resolver for the roles field.
@@ -316,23 +355,6 @@ func (r *userRoleResolver) User(ctx context.Context, obj *model.UserRole) (*mode
 func (r *userRoleResolver) Scope(ctx context.Context, obj *model.UserRole) (*model.RoleScope, error) {
 	// The scope is already populated in the dataloader
 	return obj.Scope, nil
-}
-
-// AssignedBy is the resolver for the assignedBy field.
-func (r *userRoleResolver) AssignedBy(ctx context.Context, obj *model.UserRole) (*model.User, error) {
-	// The assignedBy field contains a partial User object with just the ID
-	// Use the dataloader to fetch the full user data
-	if obj.AssignedBy == nil {
-		return nil, fmt.Errorf("assignedBy ID not set in UserRole")
-	}
-
-	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.AssignedBy.ID)
-	user, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load assignedBy user: %w", err)
-	}
-
-	return user, nil
 }
 
 // Challenge returns ChallengeResolver implementation.
@@ -395,3 +417,27 @@ type superTeamResolver struct{ *Resolver }
 type teamResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
 type userRoleResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *userRoleResolver) AssignedBy(ctx context.Context, obj *model.UserRole) (*model.User, error) {
+	// The assignedBy field contains a partial User object with just the ID
+	// Use the dataloader to fetch the full user data
+	if obj.AssignedBy == nil {
+		return nil, fmt.Errorf("assignedBy ID not set in UserRole")
+	}
+
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.AssignedBy.ID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load assignedBy user: %w", err)
+	}
+
+	return user, nil
+}
+*/

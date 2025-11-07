@@ -6,7 +6,6 @@ import (
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
-	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/graph-gophers/dataloader/v7"
 )
 
@@ -64,10 +63,8 @@ func rolesByUserBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(cont
 					ID:   row.ID,
 					Role: model.RoleType(row.Role),
 					// Store partial User objects with just IDs - resolvers will load full data
-					User:       &model.User{ID: row.UserID},
-					Scope:      scope,
-					AssignedBy: &model.User{ID: row.AssignedBy},
-					AssignedAt: scalars.DateTime{Time: row.AssignedAt.Time},
+					User:  &model.User{ID: row.UserID},
+					Scope: scope,
 				}
 				rolesByUser[row.UserID] = append(rolesByUser[row.UserID], role)
 			}
