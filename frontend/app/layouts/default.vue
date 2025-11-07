@@ -83,7 +83,7 @@ const { left, height, width } = useElementBounding(activeMenuItem)
 
 <template>
   <div class="text-default relative h-full">
-    <div class="h-full">
+    <div class="p-list-outside h-full">
       <slot />
     </div>
     <div

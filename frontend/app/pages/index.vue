@@ -23,6 +23,7 @@ const { data, error, fetching } = useStandingsPageQuery()
     <LeaderboardList
       v-else-if="data"
       :leaderboard="data.myCurrentProject.leaderboard"
+      variant="expanded"
     />
   </PageLayout>
 </template>

@@ -22,6 +22,7 @@
     "@urql/vue": "^2.0.0",
     "@vueuse/core": "^14.0.0",
     "@vueuse/nuxt": "14.0.0",
+    "cva": "npm:class-variance-authority@^0.7.1",
     "graphql": "^16.12.0",
     "graphql-tag": "^2.12.6",
     "nuxt": "^4.2.0",

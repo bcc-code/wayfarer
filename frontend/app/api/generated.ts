@@ -859,7 +859,7 @@ export type Project = {
   events: Array<Event>;
   id: Scalars['ID']['output'];
   leaderboard: Array<LeaderboardEntry>;
-  myTeam: Team;
+  myTeam?: Maybe<Team>;
   name: Scalars['String']['output'];
   startDate: Scalars['DateTime']['output'];
   streaks: Array<Streak>;
@@ -1135,7 +1135,7 @@ export type Streak = {
   __typename?: 'Streak';
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
-  listenedDays: Array<Scalars['Date']['output']>;
+  listenedDays: Array<StreakDay>;
   name: Scalars['String']['output'];
   project: Project;
   relevantDays: Array<DateRange>;
@@ -1168,6 +1168,12 @@ export type StreakConnection = {
   edges: Array<StreakEdge>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
+};
+
+export type StreakDay = {
+  __typename?: 'StreakDay';
+  active: Scalars['Boolean']['output'];
+  date: Scalars['Date']['output'];
 };
 
 export type StreakEdge = {
@@ -1474,7 +1480,7 @@ export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User'
 export type UnitPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UnitPageQuery = { __typename?: 'Query', currentProject: { __typename?: 'Project', id: string, myTeam: { __typename?: 'Team', id: string, name: string, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null, leaderboard: Array<{ __typename?: 'LeaderboardEntry', name: string, description?: string | null, score: number, image?: string | null }> } } };
+export type UnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, myTeam?: { __typename?: 'Team', id: string, name: string, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null, leaderboard: Array<{ __typename?: 'LeaderboardEntry', name: string, description?: string | null, score: number, image?: string | null }> } | null } };
 
 
 export const GetMeDocument = gql`
@@ -1811,7 +1817,7 @@ export function useProfilePageQuery(options?: Omit<Urql.UseQueryArgs<never, Prof
 };
 export const UnitPageDocument = gql`
     query UnitPage {
-  currentProject {
+  myCurrentProject {
     id
     myTeam {
       id
