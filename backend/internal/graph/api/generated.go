@@ -310,7 +310,7 @@ type ComplexityRoot struct {
 		Project          func(childComplexity int, id string) int
 		Projects         func(childComplexity int, filter *model.ProjectFilter, first *int, after *string, last *int, before *string) int
 		Streak           func(childComplexity int, id string) int
-		Streaks          func(childComplexity int, projectID *string) int
+		Streaks          func(childComplexity int, filter *model.StreakFilter, first *int, after *string, last *int, before *string) int
 		Superteam        func(childComplexity int, id string) int
 		Superteams       func(childComplexity int, filter *model.SuperTeamFilter, first *int, after *string, last *int, before *string) int
 		Team             func(childComplexity int, id string) int
@@ -381,6 +381,17 @@ type ComplexityRoot struct {
 		Points       func(childComplexity int) int
 		Project      func(childComplexity int) int
 		Streak       func(childComplexity int) int
+	}
+
+	StreakConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	StreakEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
 	}
 
 	SuperTeam struct {
@@ -585,7 +596,7 @@ type QueryResolver interface {
 	Church(ctx context.Context, id string) (*model.Church, error)
 	Churches(ctx context.Context, filter *model.ChurchFilter, first *int, after *string, last *int, before *string) (*model.ChurchConnection, error)
 	Streak(ctx context.Context, id string) (*model.Streak, error)
-	Streaks(ctx context.Context, projectID *string) ([]model.Streak, error)
+	Streaks(ctx context.Context, filter *model.StreakFilter, first *int, after *string, last *int, before *string) (*model.StreakConnection, error)
 	CurrentProject(ctx context.Context) (*model.Project, error)
 	CurrentEvent(ctx context.Context) (*model.Event, error)
 	UserRoles(ctx context.Context, userID string) ([]model.UserRole, error)
@@ -2167,7 +2178,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Streaks(childComplexity, args["projectId"].(*string)), true
+		return e.complexity.Query.Streaks(childComplexity, args["filter"].(*model.StreakFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
 	case "Query.superteam":
 		if e.complexity.Query.Superteam == nil {
 			break
@@ -2549,6 +2560,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.StreakAchievement.Streak(childComplexity), true
 
+	case "StreakConnection.edges":
+		if e.complexity.StreakConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.StreakConnection.Edges(childComplexity), true
+	case "StreakConnection.pageInfo":
+		if e.complexity.StreakConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.StreakConnection.PageInfo(childComplexity), true
+	case "StreakConnection.totalCount":
+		if e.complexity.StreakConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.StreakConnection.TotalCount(childComplexity), true
+
+	case "StreakEdge.cursor":
+		if e.complexity.StreakEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.StreakEdge.Cursor(childComplexity), true
+	case "StreakEdge.node":
+		if e.complexity.StreakEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.StreakEdge.Node(childComplexity), true
+
 	case "SuperTeam.description":
 		if e.complexity.SuperTeam.Description == nil {
 			break
@@ -2927,6 +2970,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputLeaderboardFilter,
 		ec.unmarshalInputProjectFilter,
 		ec.unmarshalInputRevokeRoleInput,
+		ec.unmarshalInputStreakFilter,
 		ec.unmarshalInputSuperTeamFilter,
 		ec.unmarshalInputTeamFilter,
 		ec.unmarshalInputTrackInput,
@@ -3603,6 +3647,11 @@ input ChurchFilter {
     category: ChurchCategory  # Filter by church category (S, L, XL)
 }
 
+input StreakFilter {
+    projectId: ID  # Filter by project
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+}
+
 # ==================== Role Management Types ====================
 
 type RoleScope {
@@ -3733,6 +3782,17 @@ type ChurchConnection {
     pageInfo: PageInfo!
     totalCount: Int!
 }
+
+type StreakEdge {
+    cursor: String!
+    node: Streak!
+}
+
+type StreakConnection {
+    edges: [StreakEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema.graphqls", Input: `# GraphQL Schema
 # Imports shared types from shared.graphqls
@@ -3780,7 +3840,7 @@ type Query {
     churches(filter: ChurchFilter, first: Int, after: String, last: Int, before: String): ChurchConnection!
 
     streak(id: ID!): Streak!
-    streaks(projectId: ID): [Streak!]!
+    streaks(filter: StreakFilter, first: Int, after: String, last: Int, before: String): StreakConnection!
 
     # Admin's current context (distinct from user's)
     currentProject: Project!
@@ -5200,11 +5260,31 @@ func (ec *executionContext) field_Query_streak_args(ctx context.Context, rawArgs
 func (ec *executionContext) field_Query_streaks_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "projectId", ec.unmarshalOID2ᚖstring)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOStreakFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakFilter)
 	if err != nil {
 		return nil, err
 	}
-	args["projectId"] = arg0
+	args["filter"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg4
 	return args, nil
 }
 
@@ -14768,10 +14848,10 @@ func (ec *executionContext) _Query_streaks(ctx context.Context, field graphql.Co
 		ec.fieldContext_Query_streaks,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Streaks(ctx, fc.Args["projectId"].(*string))
+			return ec.resolvers.Query().Streaks(ctx, fc.Args["filter"].(*model.StreakFilter), fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
 		},
 		nil,
-		ec.marshalNStreak2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakᚄ,
+		ec.marshalNStreakConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakConnection,
 		true,
 		true,
 	)
@@ -14785,22 +14865,14 @@ func (ec *executionContext) fieldContext_Query_streaks(ctx context.Context, fiel
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Streak_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Streak_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Streak_description(ctx, field)
-			case "status":
-				return ec.fieldContext_Streak_status(ctx, field)
-			case "relevantDays":
-				return ec.fieldContext_Streak_relevantDays(ctx, field)
-			case "listenedDays":
-				return ec.fieldContext_Streak_listenedDays(ctx, field)
-			case "project":
-				return ec.fieldContext_Streak_project(ctx, field)
+			case "edges":
+				return ec.fieldContext_StreakConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_StreakConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_StreakConnection_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Streak", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type StreakConnection", field.Name)
 		},
 	}
 	defer func() {
@@ -16888,6 +16960,183 @@ func (ec *executionContext) fieldContext_StreakAchievement_streak(_ context.Cont
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Streak_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Streak_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Streak_description(ctx, field)
+			case "status":
+				return ec.fieldContext_Streak_status(ctx, field)
+			case "relevantDays":
+				return ec.fieldContext_Streak_relevantDays(ctx, field)
+			case "listenedDays":
+				return ec.fieldContext_Streak_listenedDays(ctx, field)
+			case "project":
+				return ec.fieldContext_Streak_project(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Streak", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StreakConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.StreakConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakConnection_edges,
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		ec.marshalNStreakEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakEdgeᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "cursor":
+				return ec.fieldContext_StreakEdge_cursor(ctx, field)
+			case "node":
+				return ec.fieldContext_StreakEdge_node(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StreakEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StreakConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.StreakConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakConnection_pageInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		ec.marshalNPageInfo2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPageInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StreakConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.StreakConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StreakEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.StreakEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakEdge_cursor,
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StreakEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.StreakEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakEdge_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalNStreak2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreak,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -21768,6 +22017,40 @@ func (ec *executionContext) unmarshalInputRevokeRoleInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputStreakFilter(ctx context.Context, obj any) (model.StreakFilter, error) {
+	var it model.StreakFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"projectId", "ids"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "projectId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectID = data
+		case "ids":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ids"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Ids = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSuperTeamFilter(ctx context.Context, obj any) (model.SuperTeamFilter, error) {
 	var it model.SuperTeamFilter
 	asMap := map[string]any{}
@@ -25990,6 +26273,99 @@ func (ec *executionContext) _StreakAchievement(ctx context.Context, sel ast.Sele
 	return out
 }
 
+var streakConnectionImplementors = []string{"StreakConnection"}
+
+func (ec *executionContext) _StreakConnection(ctx context.Context, sel ast.SelectionSet, obj *model.StreakConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, streakConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("StreakConnection")
+		case "edges":
+			out.Values[i] = ec._StreakConnection_edges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._StreakConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._StreakConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var streakEdgeImplementors = []string{"StreakEdge"}
+
+func (ec *executionContext) _StreakEdge(ctx context.Context, sel ast.SelectionSet, obj *model.StreakEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, streakEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("StreakEdge")
+		case "cursor":
+			out.Values[i] = ec._StreakEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "node":
+			out.Values[i] = ec._StreakEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var superTeamImplementors = []string{"SuperTeam"}
 
 func (ec *executionContext) _SuperTeam(ctx context.Context, sel ast.SelectionSet, obj *model.SuperTeam) graphql.Marshaler {
@@ -28621,6 +28997,68 @@ func (ec *executionContext) marshalNStreakAchievement2ᚖgithubᚗcomᚋbccᚑme
 	return ec._StreakAchievement(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNStreakConnection2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakConnection(ctx context.Context, sel ast.SelectionSet, v model.StreakConnection) graphql.Marshaler {
+	return ec._StreakConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNStreakConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakConnection(ctx context.Context, sel ast.SelectionSet, v *model.StreakConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._StreakConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNStreakEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakEdge(ctx context.Context, sel ast.SelectionSet, v model.StreakEdge) graphql.Marshaler {
+	return ec._StreakEdge(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNStreakEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.StreakEdge) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNStreakEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -29756,6 +30194,14 @@ func (ec *executionContext) marshalOScopeType2ᚖgithubᚗcomᚋbccᚑmediaᚋwa
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) unmarshalOStreakFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakFilter(ctx context.Context, v any) (*model.StreakFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputStreakFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

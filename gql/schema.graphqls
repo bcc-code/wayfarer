@@ -44,7 +44,7 @@ type Query {
     churches(filter: ChurchFilter, first: Int, after: String, last: Int, before: String): ChurchConnection!
 
     streak(id: ID!): Streak!
-    streaks(projectId: ID): [Streak!]!
+    streaks(filter: StreakFilter, first: Int, after: String, last: Int, before: String): StreakConnection!
 
     # Admin's current context (distinct from user's)
     currentProject: Project!

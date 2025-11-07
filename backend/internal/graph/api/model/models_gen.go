@@ -518,6 +518,22 @@ func (this StreakAchievement) GetAchievedAt() *scalars.DateTime { return this.Ac
 func (this StreakAchievement) GetPoints() int                   { return this.Points }
 func (this StreakAchievement) GetHidden() bool                  { return this.Hidden }
 
+type StreakConnection struct {
+	Edges      []StreakEdge `json:"edges"`
+	PageInfo   *PageInfo    `json:"pageInfo"`
+	TotalCount int          `json:"totalCount"`
+}
+
+type StreakEdge struct {
+	Cursor string  `json:"cursor"`
+	Node   *Streak `json:"node"`
+}
+
+type StreakFilter struct {
+	ProjectID *string  `json:"projectId,omitempty"`
+	Ids       []string `json:"ids,omitempty"`
+}
+
 type SuperTeam struct {
 	ID            string             `json:"id"`
 	Name          string             `json:"name"`

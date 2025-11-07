@@ -9,6 +9,26 @@ import (
 	"context"
 )
 
+const CountStreaksFiltered = `-- name: CountStreaksFiltered :one
+SELECT COUNT(DISTINCT id)
+FROM streaks
+WHERE
+    ($1::text[] IS NULL OR id = ANY($1::text[]))
+    AND ($2::text = '' OR project_id = $2::text)
+`
+
+type CountStreaksFilteredParams struct {
+	Ids       []string `json:"ids"`
+	Projectid string   `json:"projectid"`
+}
+
+func (q *Queries) CountStreaksFiltered(ctx context.Context, arg CountStreaksFilteredParams) (int64, error) {
+	row := q.db.QueryRow(ctx, CountStreaksFiltered, arg.Ids, arg.Projectid)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const GetStreaksByIDs = `-- name: GetStreaksByIDs :many
 SELECT id, project_id, name, description, created_at, updated_at
 FROM streaks
@@ -17,6 +37,63 @@ WHERE id = ANY($1::text[])
 
 func (q *Queries) GetStreaksByIDs(ctx context.Context, ids []string) ([]*Streak, error) {
 	rows, err := q.db.Query(ctx, GetStreaksByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Streak{}
+	for rows.Next() {
+		var i Streak
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Name,
+			&i.Description,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetStreaksFilteredCursor = `-- name: GetStreaksFilteredCursor :many
+SELECT id, project_id, name, description, created_at, updated_at
+FROM streaks
+WHERE
+    ($1::text[] IS NULL OR id = ANY($1::text[]))
+    AND ($2::text = '' OR project_id = $2::text)
+    AND ($3::text = '' OR id > $3::text)
+    AND ($4::text = '' OR id < $4::text)
+ORDER BY
+    CASE WHEN $5::bool = true THEN id END DESC,
+    CASE WHEN $5::bool = false OR $5::bool IS NULL THEN id END ASC
+LIMIT CASE WHEN $6::int IS NULL THEN NULL ELSE $6::int END
+`
+
+type GetStreaksFilteredCursorParams struct {
+	Ids          []string `json:"ids"`
+	Projectid    string   `json:"projectid"`
+	Aftercursor  string   `json:"aftercursor"`
+	Beforecursor string   `json:"beforecursor"`
+	Isbackward   bool     `json:"isbackward"`
+	Querylimit   int32    `json:"querylimit"`
+}
+
+func (q *Queries) GetStreaksFilteredCursor(ctx context.Context, arg GetStreaksFilteredCursorParams) ([]*Streak, error) {
+	rows, err := q.db.Query(ctx, GetStreaksFilteredCursor,
+		arg.Ids,
+		arg.Projectid,
+		arg.Aftercursor,
+		arg.Beforecursor,
+		arg.Isbackward,
+		arg.Querylimit,
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -565,6 +565,11 @@ input ChurchFilter {
     category: ChurchCategory  # Filter by church category (S, L, XL)
 }
 
+input StreakFilter {
+    projectId: ID  # Filter by project
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+}
+
 # ==================== Role Management Types ====================
 
 type RoleScope {
@@ -692,6 +697,17 @@ type ChurchEdge {
 
 type ChurchConnection {
     edges: [ChurchEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type StreakEdge {
+    cursor: String!
+    node: Streak!
+}
+
+type StreakConnection {
+    edges: [StreakEdge!]!
     pageInfo: PageInfo!
     totalCount: Int!
 }

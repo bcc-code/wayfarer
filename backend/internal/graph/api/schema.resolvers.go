@@ -1511,8 +1511,118 @@ func (r *queryResolver) Streak(ctx context.Context, id string) (*model.Streak, e
 }
 
 // Streaks is the resolver for the streaks field.
-func (r *queryResolver) Streaks(ctx context.Context, projectID *string) ([]model.Streak, error) {
-	panic(fmt.Errorf("not implemented: Streaks - streaks"))
+func (r *queryResolver) Streaks(ctx context.Context, filter *model.StreakFilter, first *int, after *string, last *int, before *string) (*model.StreakConnection, error) {
+	// Build cache key from filter and pagination parameters
+	cacheKeyParams := buildStreakCacheKeyParams(filter, first, after, last, before)
+	cacheKey := cache.StreaksFilterKey(cacheKeyParams)
+	countCacheKey := cache.StreaksCountKey(cacheKeyParams)
+
+	// Check cache for connection result
+	if cached, ok := r.Cache.Get(cacheKey); ok {
+		if connection, ok := cached.(*model.StreakConnection); ok {
+			return connection, nil
+		}
+	}
+
+	// Decode cursors if provided
+	var afterCursor, beforeCursor *string
+	if after != nil && *after != "" {
+		decoded, err := pagination.DecodeCursor(*after)
+		if err != nil {
+			return nil, fmt.Errorf("invalid after cursor: %w", err)
+		}
+		afterCursor = &decoded
+	}
+	if before != nil && *before != "" {
+		decoded, err := pagination.DecodeCursor(*before)
+		if err != nil {
+			return nil, fmt.Errorf("invalid before cursor: %w", err)
+		}
+		beforeCursor = &decoded
+	}
+
+	// Build database query parameters for cursor pagination
+	params, err := buildStreakFilterParamsCursor(filter, first, afterCursor, last, beforeCursor)
+	if err != nil {
+		return nil, err
+	}
+
+	// Query database with cursor pagination
+	rows, err := r.DB.Queries.GetStreaksFilteredCursor(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query streaks: %w", err)
+	}
+
+	// Query total count (check cache first)
+	var totalCount int64
+	countCached := false
+	if cachedCount, ok := r.Cache.Get(countCacheKey); ok {
+		if count, ok := cachedCount.(int64); ok {
+			totalCount = count
+			countCached = true
+		}
+	}
+
+	// If not in cache, query database
+	if !countCached {
+		countParams := buildCountStreaksFilterParams(filter)
+		totalCount, err = r.DB.Queries.CountStreaksFiltered(ctx, countParams)
+		if err != nil {
+			return nil, fmt.Errorf("failed to count streaks: %w", err)
+		}
+
+		// Store count in cache
+		r.Cache.Set(countCacheKey, totalCount)
+	}
+
+	// Determine requested limit and check if there are more results
+	requestedLimit := 10 // default
+	if first != nil {
+		requestedLimit = *first
+	} else if last != nil {
+		requestedLimit = *last
+	}
+
+	hasMore := len(rows) > requestedLimit
+	streaks := rows
+	if hasMore {
+		// Trim the extra record we fetched for hasMore detection
+		streaks = rows[:requestedLimit]
+	}
+
+	// If backward pagination, reverse the results
+	if last != nil {
+		for i, j := 0, len(streaks)-1; i < j; i, j = i+1, j-1 {
+			streaks[i], streaks[j] = streaks[j], streaks[i]
+		}
+	}
+
+	// Convert to GraphQL model
+	modelStreaks := make([]model.Streak, len(streaks))
+	for i, row := range streaks {
+		modelStreaks[i] = model.Streak{
+			ID:          row.ID,
+			Name:        row.Name,
+			Description: row.Description,
+			ProjectID:   row.ProjectID,
+		}
+	}
+
+	// Build the connection
+	connection := pagination.BuildStreakConnection(pagination.BuildStreakConnectionParams{
+		Streaks:         modelStreaks,
+		RequestedFirst:  first,
+		RequestedLast:   last,
+		RequestedAfter:  after,
+		RequestedBefore: before,
+		TotalCount:      int(totalCount),
+		HasMore:         hasMore,
+	})
+
+	// Store connection in cache
+	r.Cache.Set(cacheKey, connection)
+
+	return connection, nil
 }
 
 // CurrentProject is the resolver for the currentProject field.
