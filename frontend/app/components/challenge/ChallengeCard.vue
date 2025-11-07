@@ -16,8 +16,8 @@ defineProps<{
         <h3 class="text-heading">{{ challenge.name }}</h3>
         <div class="text-label" v-html="challenge.description" />
       </div>
-      <div class="gap-small mt-auto grid grid-cols-2">
-        <DesignButton size="large" variant="secondary"> Decline </DesignButton>
+      <div class="gap-small mt-auto grid">
+        <!-- <DesignButton size="large" variant="secondary"> Decline </DesignButton> -->
         <NuxtLink
           :to="
             challenge.url ?? {
@@ -27,7 +27,9 @@ defineProps<{
           "
           class="contents"
         >
-          <DesignButton size="large">Accept</DesignButton>
+          <DesignButton size="large">
+            {{ challenge.buttonText }}
+          </DesignButton>
         </NuxtLink>
       </div>
     </div>
