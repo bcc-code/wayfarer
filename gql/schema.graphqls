@@ -51,8 +51,8 @@ type Query {
     currentEvent: Event!
 
     # ==================== Role Management Queries ====================
-    userRoles(userId: ID!): [UserRole!]! @requireRole(roles: ["admin", "superadmin"])
-    usersWithRole(role: RoleType!, scopeType: ScopeType, scopeId: ID): [User!]! @requireRole(roles: ["admin", "superadmin"])
+    userRoles(userId: ID!): [UserRole!]!
+    usersWithRole(role: RoleType!, scopeType: ScopeType, scopeId: ID): [User!]!
 }
 
 # ==================== Root Mutation ====================

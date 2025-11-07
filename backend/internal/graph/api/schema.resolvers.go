@@ -10,6 +10,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/bcc-media/wayfarer/internal/cache"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
@@ -1697,12 +1698,148 @@ func (r *queryResolver) CurrentEvent(ctx context.Context) (*model.Event, error) 
 
 // UserRoles is the resolver for the userRoles field.
 func (r *queryResolver) UserRoles(ctx context.Context, userID string) ([]model.UserRole, error) {
-	panic(fmt.Errorf("not implemented: UserRoles - userRoles"))
+	// Check admin authorization
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	if !r.RoleService.IsAdmin(ctx, currentUserID) {
+		return nil, fmt.Errorf("permission denied: admin role required")
+	}
+
+	// Load roles using dataloader (handles caching and batching)
+	rolesThunk := r.Loaders.RolesByUserLoader.Load(ctx, userID)
+	rolePointers, err := rolesThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user roles: %w", err)
+	}
+
+	// Convert []*model.UserRole to []model.UserRole
+	roles := make([]model.UserRole, len(rolePointers))
+	for i, role := range rolePointers {
+		roles[i] = *role
+	}
+
+	return roles, nil
 }
 
 // UsersWithRole is the resolver for the usersWithRole field.
 func (r *queryResolver) UsersWithRole(ctx context.Context, role model.RoleType, scopeType *model.ScopeType, scopeID *string) ([]model.User, error) {
-	panic(fmt.Errorf("not implemented: UsersWithRole - usersWithRole"))
+	// Check admin authorization
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	if !r.RoleService.IsAdmin(ctx, currentUserID) {
+		return nil, fmt.Errorf("permission denied: admin role required")
+	}
+
+	var users []model.User
+
+	// Determine which query to use based on scope type
+	if scopeType == nil {
+		// Global role - no scope
+		rows, err := r.DB.Queries.GetUsersWithRole(ctx, string(role))
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch users with global role: %w", err)
+		}
+
+		users = make([]model.User, len(rows))
+		for i, row := range rows {
+			birthdateStr := row.Birthdate.Time.Format("2006-01-02")
+			users[i] = model.User{
+				ID:        row.ID,
+				MembersID: row.MembersID,
+				Email:     row.Email,
+				Name:      row.Name,
+				Gender:    model.Gender(row.Gender),
+				Birthdate: birthdateStr,
+				ChurchID:  row.ChurchID,
+				Image:     row.AvatarUrl,
+			}
+		}
+	} else {
+		switch *scopeType {
+		case model.ScopeTypeChurch:
+			rows, err := r.DB.Queries.GetUsersWithRoleInChurch(ctx, sqlc.GetUsersWithRoleInChurchParams{
+				Role:     string(role),
+				ChurchID: scopeID,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to fetch users with church role: %w", err)
+			}
+
+			users = make([]model.User, len(rows))
+			for i, row := range rows {
+				birthdateStr := row.Birthdate.Time.Format("2006-01-02")
+				users[i] = model.User{
+					ID:        row.ID,
+					MembersID: row.MembersID,
+					Email:     row.Email,
+					Name:      row.Name,
+					Gender:    model.Gender(row.Gender),
+					Birthdate: birthdateStr,
+					ChurchID:  row.ChurchID,
+					Image:     row.AvatarUrl,
+				}
+			}
+
+		case model.ScopeTypeProject:
+			rows, err := r.DB.Queries.GetUsersWithRoleInProject(ctx, sqlc.GetUsersWithRoleInProjectParams{
+				Role:      string(role),
+				ProjectID: scopeID,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to fetch users with project role: %w", err)
+			}
+
+			users = make([]model.User, len(rows))
+			for i, row := range rows {
+				birthdateStr := row.Birthdate.Time.Format("2006-01-02")
+				users[i] = model.User{
+					ID:        row.ID,
+					MembersID: row.MembersID,
+					Email:     row.Email,
+					Name:      row.Name,
+					Gender:    model.Gender(row.Gender),
+					Birthdate: birthdateStr,
+					ChurchID:  row.ChurchID,
+					Image:     row.AvatarUrl,
+				}
+			}
+
+		case model.ScopeTypeTeam:
+			rows, err := r.DB.Queries.GetUsersWithRoleInTeam(ctx, sqlc.GetUsersWithRoleInTeamParams{
+				Role:   string(role),
+				TeamID: scopeID,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to fetch users with team role: %w", err)
+			}
+
+			users = make([]model.User, len(rows))
+			for i, row := range rows {
+				birthdateStr := row.Birthdate.Time.Format("2006-01-02")
+				users[i] = model.User{
+					ID:        row.ID,
+					MembersID: row.MembersID,
+					Email:     row.Email,
+					Name:      row.Name,
+					Gender:    model.Gender(row.Gender),
+					Birthdate: birthdateStr,
+					ChurchID:  row.ChurchID,
+					Image:     row.AvatarUrl,
+				}
+			}
+
+		default:
+			return nil, fmt.Errorf("invalid scope type: %s", *scopeType)
+		}
+	}
+
+	return users, nil
 }
 
 // Mutation returns MutationResolver implementation.

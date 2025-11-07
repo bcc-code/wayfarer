@@ -27,7 +27,7 @@ func (r *challengeResolver) Project(ctx context.Context, obj *model.Challenge) (
 
 // Event is the resolver for the event field.
 func (r *challengeResolver) Event(ctx context.Context, obj *model.Challenge) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: Event - event"))
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
 }
 
 // Challenges is the resolver for the challenges field.
