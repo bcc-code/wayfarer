@@ -24,7 +24,7 @@ func (s *Seeder) SeedChallenges(stats *Stats) error {
 			description := s.Fake.Lorem().Sentence(12)
 			imageURL := fmt.Sprintf("https://placecats.com/%d/%d", 400+rand.Intn(100), 300+rand.Intn(100))
 			url := s.Fake.Internet().URL()
-			buttonText := "Complete Challenge"
+			buttonText := "Accept"
 
 			// 30% chance to be linked to an event
 			var eventID *string

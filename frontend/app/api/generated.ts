@@ -852,6 +852,7 @@ export type PageInfo = {
 export type Project = {
   __typename?: 'Project';
   achievements: Array<Achievement>;
+  archivedAt?: Maybe<Scalars['Boolean']['output']>;
   branding: Branding;
   challenges: Array<Challenge>;
   description: Scalars['String']['output'];
