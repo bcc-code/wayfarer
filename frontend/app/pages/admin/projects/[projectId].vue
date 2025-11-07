@@ -141,7 +141,7 @@ watch(data, () => {
                 <NuxtImg :src="state.branding.logo" width="64" />
               </UFormField>
               <UFormField label="Accent Color">
-                <ColorPickerField v-model="state.branding.colors.primary" />
+                <ColorPickerInput v-model="state.branding.colors.primary" />
               </UFormField>
             </div>
           </template>
