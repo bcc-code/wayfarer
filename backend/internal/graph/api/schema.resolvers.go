@@ -1373,7 +1373,14 @@ func (r *queryResolver) Challenges(ctx context.Context, filter *model.ChallengeF
 
 // Church is the resolver for the church field.
 func (r *queryResolver) Church(ctx context.Context, id string) (*model.Church, error) {
-	panic(fmt.Errorf("not implemented: Church - church"))
+	// Use dataloader to fetch church
+	thunk := r.Loaders.ChurchLoader.Load(ctx, id)
+	church, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load church: %w", err)
+	}
+
+	return church, nil
 }
 
 // Churches is the resolver for the churches field.
