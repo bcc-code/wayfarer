@@ -1,4 +1,4 @@
-# UserID: US01ARZ3NDEKTSV4RRFFQ69G5FAV
+# UserID: US01K9DGS18D92WBMV3X7ETHNPMN
 
 ## Description
 
@@ -35,7 +35,7 @@ query GetSuperTeamsByProject($projectId: ID!, $first: Int!) {
 
 ```json
 {
-  "projectId": "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
+  "projectId": "PR01K9DGS50S1RZSE5HGN8JQ1XDC",
   "first": 10
 }
 ```
@@ -48,35 +48,35 @@ query GetSuperTeamsByProject($projectId: ID!, $first: Int!) {
     "superteams": {
       "edges": [
         {
-          "cursor": "U1QwMUs4WFY2S0VQNkpRTUFLVlI1OFhBRlcwVA==",
+          "cursor": "U1QwMUs5REdTNjNaU0MzUk4yMFIyOE1QTVhBNg==",
           "node": {
-            "id": "ST01K8XV6KEP6JQMAKVR58XAFW0T",
-            "name": "Pfeffer-Pfeffer Alliance",
-            "description": "enim repudiandae perferendis veniam adipisci sint facilis velit."
+            "description": "et tenetur ad et repellat omnis expedita aperiam.",
+            "id": "ST01K9DGS63ZSC3RN20R28MPMXA6",
+            "name": "Mertz, Mertz and Mertz Alliance"
           }
         },
         {
-          "cursor": "U1QwMUs4WFY2S0hTMThEMEtZQVM1NjE4UTE5SA==",
+          "cursor": "U1QwMUs5REdTNjZYQ1dOMTM1VjZLUjc1MDhCNw==",
           "node": {
-            "id": "ST01K8XV6KHS18D0KYAS5618Q19H",
-            "name": "Cassin PLC Alliance",
-            "description": "et ut nihil quia dignissimos temporibus ad voluptates."
+            "description": "tempore id minus nihil omnis doloremque dolores ut.",
+            "id": "ST01K9DGS66XCWN135V6KR7508B7",
+            "name": "Koelpin and Sons Alliance"
           }
         },
         {
-          "cursor": "U1QwMUs4WFY2S0tFUUJZUDBEOTg2UEY5NURDVg==",
+          "cursor": "U1QwMUs5REdTNjhEMjYwRjZaRDFBVkY0REhRMw==",
           "node": {
-            "id": "ST01K8XV6KKEQBYP0D986PF95DCV",
-            "name": "Bartoletti, Bartoletti and Bartoletti Alliance",
-            "description": "et iste placeat aut sequi et quas voluptatibus."
+            "description": "voluptas molestiae consequuntur autem totam et sed impedit.",
+            "id": "ST01K9DGS68D260F6ZD1AVF4DHQ3",
+            "name": "Hills-Hills Alliance"
           }
         }
       ],
       "pageInfo": {
+        "endCursor": "U1QwMUs5REdTNjhEMjYwRjZaRDFBVkY0REhRMw==",
         "hasNextPage": false,
         "hasPreviousPage": false,
-        "startCursor": "U1QwMUs4WFY2S0VQNkpRTUFLVlI1OFhBRlcwVA==",
-        "endCursor": "U1QwMUs4WFY2S0tFUUJZUDBEOTg2UEY5NURDVg=="
+        "startCursor": "U1QwMUs5REdTNjNaU0MzUk4yMFIyOE1QTVhBNg=="
       },
       "totalCount": 3
     }

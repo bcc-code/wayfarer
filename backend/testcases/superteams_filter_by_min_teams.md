@@ -1,4 +1,4 @@
-# UserID: US01ARZ3NDEKTSV4RRFFQ69G5FAV
+# UserID: US01K9DGS18D92WBMV3X7ETHNPMN
 
 ## Description
 
@@ -48,27 +48,27 @@ query GetSuperTeamsByMinTeams($minTeams: Int!, $first: Int!) {
     "superteams": {
       "edges": [
         {
-          "cursor": "U1QwMUs4WFY2S0hTMThEMEtZQVM1NjE4UTE5SA==",
+          "cursor": "U1QwMUs5REdTNjhEMjYwRjZaRDFBVkY0REhRMw==",
           "node": {
-            "id": "ST01K8XV6KHS18D0KYAS5618Q19H",
-            "name": "Cassin PLC Alliance",
-            "description": "et ut nihil quia dignissimos temporibus ad voluptates."
+            "description": "voluptas molestiae consequuntur autem totam et sed impedit.",
+            "id": "ST01K9DGS68D260F6ZD1AVF4DHQ3",
+            "name": "Hills-Hills Alliance"
           }
         },
         {
-          "cursor": "U1QwMUs4WFY3QUpKV1ZINjkzTUFZV1gzMUpZMA==",
+          "cursor": "U1QwMUs5REdTRlg5M1haOUVHSlQ2TlgxOVNUVw==",
           "node": {
-            "id": "ST01K8XV7AJJWVH693MAYWX31JY0",
-            "name": "Friesen-Friesen Alliance",
-            "description": "ut voluptate quos magnam libero ullam voluptates eaque."
+            "description": "quis exercitationem enim unde ut occaecati pariatur non.",
+            "id": "ST01K9DGSFX93XZ9EGJT6NX19STW",
+            "name": "Brakus, Brakus and Brakus Alliance"
           }
         }
       ],
       "pageInfo": {
+        "endCursor": "U1QwMUs5REdTRlg5M1haOUVHSlQ2TlgxOVNUVw==",
         "hasNextPage": false,
         "hasPreviousPage": false,
-        "startCursor": "U1QwMUs4WFY2S0hTMThEMEtZQVM1NjE4UTE5SA==",
-        "endCursor": "U1QwMUs4WFY3QUpKV1ZINjkzTUFZV1gzMUpZMA=="
+        "startCursor": "U1QwMUs5REdTNjhEMjYwRjZaRDFBVkY0REhRMw=="
       },
       "totalCount": 2
     }

@@ -38,6 +38,10 @@ gqltest: ## Run GraphQL tests in parallel
 	@echo "Running GraphQL tests..."
 	@go run ./cmd/gqltest --parallel testcases/
 
+gqltest-update: ## Update GraphQL test snapshots
+	@echo "Updating GraphQL test snapshots..."
+	@go run ./cmd/gqltest-update testcases/
+
 build: ## Build all binaries
 	@echo "Building binaries..."
 	@go build -o bin/migrate ./cmd/migrate

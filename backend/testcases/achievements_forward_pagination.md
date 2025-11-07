@@ -1,4 +1,4 @@
-# UserID: US01ARZ3NDEKTSV4RRFFQ69G5FAV
+# UserID: US01K9DGS18D92WBMV3X7ETHNPMN
 
 ## Description
 
@@ -54,10 +54,10 @@ query GetAchievementsPage($filter: AchievementFilter!, $first: Int, $after: Stri
     "achievements": {
       "edges": [],
       "pageInfo": {
+        "endCursor": null,
         "hasNextPage": false,
         "hasPreviousPage": false,
-        "startCursor": null,
-        "endCursor": null
+        "startCursor": null
       },
       "totalCount": 0
     }

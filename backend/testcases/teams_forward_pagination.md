@@ -1,4 +1,4 @@
-# UserID: US01ARZ3NDEKTSV4RRFFQ69G5FAV
+# UserID: US01K9DGS18D92WBMV3X7ETHNPMN
 
 ## Description
 
@@ -47,27 +47,27 @@ query GetTeamsPage($first: Int!, $after: String) {
     "teams": {
       "edges": [
         {
-          "cursor": "VE0wMUs4WFY2S04yRkMxUjhZUTI4M1pUUFRZSA==",
+          "cursor": "VE0wMUs5REdTNjlYVFlUREU5Tlc1Q1oyMjJXQg==",
           "node": {
-            "id": "TM01K8XV6KN2FC1R8YQ283ZTPTYH",
-            "name": "Claims Adjuster Team",
-            "description": "aut nihil officiis eaque vel animi quia adipisci est quasi."
+            "description": "vel voluptas commodi non qui consequatur voluptate libero illo asperiores.",
+            "id": "TM01K9DGS69XTYTDE9NW5CZ222WB",
+            "name": "Coremaking Machine Operator Team"
           }
         },
         {
-          "cursor": "VE0wMUs4WFY2TVM0QUI1M1haSEVHQlNLRzFEQg==",
+          "cursor": "VE0wMUs5REdTNzhXNzhRWDhZQTVEVFRQNkdKVw==",
           "node": {
-            "id": "TM01K8XV6MS4AB53XZHEGBSKG1DB",
-            "name": "Project Manager Team",
-            "description": "quibusdam voluptas quia officia voluptatum est qui rerum ducimus ut."
+            "description": "omnis sit tempore quis eligendi aut minima omnis tenetur qui.",
+            "id": "TM01K9DGS78W78QX8YA5DTTP6GJW",
+            "name": "Accountant Team"
           }
         }
       ],
       "pageInfo": {
+        "endCursor": "VE0wMUs5REdTNzhXNzhRWDhZQTVEVFRQNkdKVw==",
         "hasNextPage": true,
         "hasPreviousPage": false,
-        "startCursor": "VE0wMUs4WFY2S04yRkMxUjhZUTI4M1pUUFRZSA==",
-        "endCursor": "VE0wMUs4WFY2TVM0QUI1M1haSEVHQlNLRzFEQg=="
+        "startCursor": "VE0wMUs5REdTNjlYVFlUREU5Tlc1Q1oyMjJXQg=="
       },
       "totalCount": 31
     }

@@ -1250,7 +1250,14 @@ func (r *queryResolver) Achievements(ctx context.Context, filter model.Achieveme
 
 // Challenge is the resolver for the challenge field.
 func (r *queryResolver) Challenge(ctx context.Context, id string) (*model.Challenge, error) {
-	panic(fmt.Errorf("not implemented: Challenge - challenge"))
+	// Use dataloader to fetch challenge
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, id)
+	challenge, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load challenge: %w", err)
+	}
+
+	return challenge, nil
 }
 
 // Challenges is the resolver for the challenges field.

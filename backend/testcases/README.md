@@ -40,7 +40,7 @@ go build -o bin/gqltest ./cmd/gqltest
 Test cases are markdown files with specific sections. Here's the structure:
 
 ```markdown
-# UserID: US01ARZ3NDEKTSV4RRFFQ69G5FAV
+# UserID: US01K9DGS18D92WBMV3X7ETHNPMN
 
 ## Description
 Optional description or notes about this test case.
@@ -68,7 +68,7 @@ query {
 {
   "data": {
     "me": {
-      "id": "US01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "id": "US01K9DGS18D92WBMV3X7ETHNPMN",
       "name": "Test User"
     }
   }
@@ -85,7 +85,7 @@ The tool only looks for: UserID header, Query, Variables, and Expected sections.
 1. **UserID Header** (required)
    - First line: `# UserID: <user-id>`
    - The test tool generates a JWT token for this user
-   - Example: `# UserID: US01ARZ3NDEKTSV4RRFFQ69G5FAV`
+   - Example: `# UserID: US01K9DGS18D92WBMV3X7ETHNPMN`
 
 2. **Query Section** (required)
    - Section header: `## Query`

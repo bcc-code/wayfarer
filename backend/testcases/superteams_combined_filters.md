@@ -1,4 +1,4 @@
-# UserID: US01ARZ3NDEKTSV4RRFFQ69G5FAV
+# UserID: US01K9DGS18D92WBMV3X7ETHNPMN
 
 ## Description
 
@@ -47,7 +47,7 @@ query GetSuperTeamsWithCombinedFilters(
 
 ```json
 {
-  "projectId": "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
+  "projectId": "PR01K9DGS50S1RZSE5HGN8JQ1XDC",
   "minTeams": 2,
   "maxMembers": 50,
   "first": 10
@@ -62,21 +62,29 @@ query GetSuperTeamsWithCombinedFilters(
     "superteams": {
       "edges": [
         {
-          "cursor": "U1QwMUs4WFY2S0hTMThEMEtZQVM1NjE4UTE5SA==",
+          "cursor": "U1QwMUs5REdTNjZYQ1dOMTM1VjZLUjc1MDhCNw==",
           "node": {
-            "id": "ST01K8XV6KHS18D0KYAS5618Q19H",
-            "name": "Cassin PLC Alliance",
-            "description": "et ut nihil quia dignissimos temporibus ad voluptates."
+            "description": "tempore id minus nihil omnis doloremque dolores ut.",
+            "id": "ST01K9DGS66XCWN135V6KR7508B7",
+            "name": "Koelpin and Sons Alliance"
+          }
+        },
+        {
+          "cursor": "U1QwMUs5REdTNjhEMjYwRjZaRDFBVkY0REhRMw==",
+          "node": {
+            "description": "voluptas molestiae consequuntur autem totam et sed impedit.",
+            "id": "ST01K9DGS68D260F6ZD1AVF4DHQ3",
+            "name": "Hills-Hills Alliance"
           }
         }
       ],
       "pageInfo": {
+        "endCursor": "U1QwMUs5REdTNjhEMjYwRjZaRDFBVkY0REhRMw==",
         "hasNextPage": false,
         "hasPreviousPage": false,
-        "startCursor": "U1QwMUs4WFY2S0hTMThEMEtZQVM1NjE4UTE5SA==",
-        "endCursor": "U1QwMUs4WFY2S0hTMThEMEtZQVM1NjE4UTE5SA=="
+        "startCursor": "U1QwMUs5REdTNjZYQ1dOMTM1VjZLUjc1MDhCNw=="
       },
-      "totalCount": 1
+      "totalCount": 2
     }
   }
 }

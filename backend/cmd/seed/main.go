@@ -17,6 +17,7 @@ import (
 )
 
 func main() {
+	panic("NO SEEDING")
 	// Parse command line flags
 	seedValue := flag.Int64("seed", 0, "Seed value for reproducible data (0 = random)")
 	flag.Parse()

@@ -1,4 +1,4 @@
-# UserID: US01ARZ3NDEKTSV4RRFFQ69G5FAV
+# UserID: US01K9DGS18D92WBMV3X7ETHNPMN
 
 ## Description
 
@@ -11,7 +11,7 @@ Test for querying a specific superteam using superteam(id). This tests:
 
 ```graphql
 query {
-  superteam(id: "ST01K8XV6KHS18D0KYAS5618Q19H") {
+  superteam(id: "ST01K9DGS63ZSC3RN20R28MPMXA6") {
     id
     name
     description
@@ -29,11 +29,11 @@ query {
 {
   "data": {
     "superteam": {
-      "id": "ST01K8XV6KHS18D0KYAS5618Q19H",
-      "name": "Cassin PLC Alliance",
-      "description": "et ut nihil quia dignissimos temporibus ad voluptates.",
+      "description": "et tenetur ad et repellat omnis expedita aperiam.",
+      "id": "ST01K9DGS63ZSC3RN20R28MPMXA6",
+      "name": "Mertz, Mertz and Mertz Alliance",
       "parentProject": {
-        "id": "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
+        "id": "PR01K9DGS50S1RZSE5HGN8JQ1XDC",
         "name": "Summer Bible Camp 2025"
       }
     }

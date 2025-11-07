@@ -1,4 +1,4 @@
-# UserID: US01ARZ3NDEKTSV4RRFFQ69G5FAV
+# UserID: US01K9DGS18D92WBMV3X7ETHNPMN
 
 ## Description
 
@@ -25,7 +25,7 @@ query GetProject($id: ID!) {
 
 ```json
 {
-  "id": "PR01K8XV6J9H7BAEV49ZFVYS8R1K"
+  "id": "PR01K9DGS50S1RZSE5HGN8JQ1XDC"
 }
 ```
 
@@ -35,11 +35,11 @@ query GetProject($id: ID!) {
 {
   "data": {
     "project": {
-      "id": "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-      "name": "Summer Bible Camp 2025",
       "description": "Join us for an amazing summer adventure exploring God's word!",
-      "startDate": "2025-10-01T20:16:36+02:00",
-      "endDate": "2025-12-30T20:16:36+01:00"
+      "endDate": "2026-01-05T22:22:22+01:00",
+      "id": "PR01K9DGS50S1RZSE5HGN8JQ1XDC",
+      "name": "Summer Bible Camp 2025",
+      "startDate": "2025-10-07T22:22:22+02:00"
     }
   }
 }
