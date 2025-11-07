@@ -19,8 +19,38 @@ gql(`
         rounding
         colors {
           primary
-          secondary
-          tertiary
+        }
+      }
+    }
+    achievements(filter: { projectId: $projectId }) {
+      edges {
+        node {
+          id
+          name
+        }
+      }
+    }
+    events(filter: { projectId: $projectId }) {
+      edges {
+        node {
+          id
+          name
+        }
+      }
+    }
+    challenges(filter: { projectId: $projectId }) {
+      edges {
+        node {
+          id
+          name
+        }
+      }
+    }
+    streaks(filter: { projectId: $projectId }) {
+      edges {
+        node {
+          id
+          name
         }
       }
     }
@@ -42,8 +72,6 @@ const state = reactive({
     logo: '',
     colors: {
       primary: '',
-      secondary: '',
-      tertiary: '',
     },
     rounding: 0,
   },
@@ -112,45 +140,23 @@ watch(data, () => {
               <UFormField label="Logo">
                 <NuxtImg :src="state.branding.logo" width="64" />
               </UFormField>
-              <UFormField label="Primary Color">
+              <UFormField label="Accent Color">
                 <ColorPickerField v-model="state.branding.colors.primary" />
-              </UFormField>
-              <UFormField label="Secondary Color">
-                <ColorPickerField v-model="state.branding.colors.secondary" />
-              </UFormField>
-              <UFormField label="Tertiary Color">
-                <ColorPickerField v-model="state.branding.colors.tertiary" />
               </UFormField>
             </div>
           </template>
-          <!-- <template #events>
-            <UTable :data="state.events" />
+          <template #events>
+            <UTable :data="data.events.edges.map((e) => e.node)" />
           </template>
           <template #challenges>
-            <UTable :data="state.challenges" />
+            <UTable :data="data.challenges.edges.map((e) => e.node)" />
           </template>
           <template #streaks>
-            <UTable :data="state.streaks" />
+            <UTable :data="data.streaks.edges.map((e) => e.node)" />
           </template>
           <template #achievements>
-            <UTable
-              :data="state.achievements"
-              :columns="[
-                { accessorKey: 'image', header: 'Image' },
-                { accessorKey: 'name', header: 'Name' },
-                { accessorKey: 'description', header: 'Description' },
-              ]"
-            >
-              <template #image-cell="{ row }">
-                <NuxtImg
-                  :src="row.getValue('image')"
-                  height="64"
-                  width="64"
-                  class="shrink-0 overflow-hidden rounded size-10"
-                />
-              </template>
-            </UTable>
-          </template> -->
+            <UTable :data="data.achievements.edges.map((e) => e.node)" />
+          </template>
         </UTabs>
       </template>
     </UContainer>

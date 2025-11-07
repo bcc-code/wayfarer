@@ -34,6 +34,19 @@ export type Achievement = {
   project: Project;
 };
 
+export type AchievementConnection = {
+  __typename?: 'AchievementConnection';
+  edges: Array<AchievementEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type AchievementEdge = {
+  __typename?: 'AchievementEdge';
+  cursor: Scalars['String']['output'];
+  node: Achievement;
+};
+
 export type AchievementFilter = {
   eventId?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -100,10 +113,25 @@ export type Challenge = {
   userCompletedAt?: Maybe<Scalars['DateTime']['output']>;
 };
 
+export type ChallengeConnection = {
+  __typename?: 'ChallengeConnection';
+  edges: Array<ChallengeEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type ChallengeEdge = {
+  __typename?: 'ChallengeEdge';
+  cursor: Scalars['String']['output'];
+  node: Challenge;
+};
+
 export type ChallengeFilter = {
   eventId?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   projectId?: InputMaybe<Scalars['ID']['input']>;
+  publishedAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  publishedBefore?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
 export type Church = {
@@ -119,6 +147,25 @@ export enum ChurchCategory {
   S = 'S',
   Xl = 'XL'
 }
+
+export type ChurchConnection = {
+  __typename?: 'ChurchConnection';
+  edges: Array<ChurchEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type ChurchEdge = {
+  __typename?: 'ChurchEdge';
+  cursor: Scalars['String']['output'];
+  node: Church;
+};
+
+export type ChurchFilter = {
+  category?: InputMaybe<ChurchCategory>;
+  country?: InputMaybe<Scalars['String']['input']>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
 
 export type Colors = {
   __typename?: 'Colors';
@@ -850,11 +897,11 @@ export type ProjectFilter = {
 export type Query = {
   __typename?: 'Query';
   achievement: Achievement;
-  achievements: Array<Achievement>;
+  achievements: AchievementConnection;
   challenge: Challenge;
-  challenges: Array<Challenge>;
+  challenges: ChallengeConnection;
   church: Church;
-  churches: Array<Church>;
+  churches: ChurchConnection;
   currentEvent: Event;
   currentProject: Project;
   event: Event;
@@ -867,9 +914,9 @@ export type Query = {
   project: Project;
   projects: ProjectConnection;
   streak: Streak;
-  streaks: Array<Streak>;
+  streaks: StreakConnection;
   superteam: SuperTeam;
-  superteams: Array<SuperTeam>;
+  superteams: SuperTeamConnection;
   team: Team;
   teams: TeamConnection;
   user: User;
@@ -885,7 +932,11 @@ export type QueryAchievementArgs = {
 
 
 export type QueryAchievementsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
   filter: AchievementFilter;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -895,12 +946,25 @@ export type QueryChallengeArgs = {
 
 
 export type QueryChallengesArgs = {
-  filter: ChallengeFilter;
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<ChallengeFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
 export type QueryChurchArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryChurchesArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<ChurchFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -943,7 +1007,11 @@ export type QueryStreakArgs = {
 
 
 export type QueryStreaksArgs = {
-  projectId?: InputMaybe<Scalars['ID']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<StreakFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -953,7 +1021,11 @@ export type QuerySuperteamArgs = {
 
 
 export type QuerySuperteamsArgs = {
-  projectId?: InputMaybe<Scalars['ID']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<SuperTeamFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -1091,6 +1163,24 @@ export type StreakAchievement = Achievement & {
   streak: Streak;
 };
 
+export type StreakConnection = {
+  __typename?: 'StreakConnection';
+  edges: Array<StreakEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type StreakEdge = {
+  __typename?: 'StreakEdge';
+  cursor: Scalars['String']['output'];
+  node: Streak;
+};
+
+export type StreakFilter = {
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 export type SuperTeam = {
   __typename?: 'SuperTeam';
   description: Scalars['String']['output'];
@@ -1106,6 +1196,28 @@ export type SuperTeam = {
 export type SuperTeamLeaderboardArgs = {
   filter?: InputMaybe<LeaderboardFilter>;
   type: LeaderboardType;
+};
+
+export type SuperTeamConnection = {
+  __typename?: 'SuperTeamConnection';
+  edges: Array<SuperTeamEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type SuperTeamEdge = {
+  __typename?: 'SuperTeamEdge';
+  cursor: Scalars['String']['output'];
+  node: SuperTeam;
+};
+
+export type SuperTeamFilter = {
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  maxMembers?: InputMaybe<Scalars['Int']['input']>;
+  maxTeams?: InputMaybe<Scalars['Int']['input']>;
+  minMembers?: InputMaybe<Scalars['Int']['input']>;
+  minTeams?: InputMaybe<Scalars['Int']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type Team = {
@@ -1284,7 +1396,7 @@ export type AdminSidebarQuery = { __typename?: 'Query', projects: { __typename?:
 export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type CurrentProjectQuery = { __typename?: 'Query', currentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } };
+export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string } } } };
 
 export type AdminHomePageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1296,7 +1408,12 @@ export type AdminProjectPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } };
+export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logo: string, rounding: number, colors: { __typename?: 'Colors', primary: string } } }, achievements: { __typename?: 'AchievementConnection', edges: Array<{ __typename?: 'AchievementEdge', node:
+        | { __typename?: 'ListeningAchievement', id: string, name: string }
+        | { __typename?: 'ReadingAchievement', id: string, name: string }
+        | { __typename?: 'SimpleAchievement', id: string, name: string }
+        | { __typename?: 'StreakAchievement', id: string, name: string }
+       }> }, events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string } }> }, challenges: { __typename?: 'ChallengeConnection', edges: Array<{ __typename?: 'ChallengeEdge', node: { __typename?: 'Challenge', id: string, name: string } }> }, streaks: { __typename?: 'StreakConnection', edges: Array<{ __typename?: 'StreakEdge', node: { __typename?: 'Streak', id: string, name: string } }> } };
 
 export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1336,7 +1453,7 @@ export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __
 export type StandingsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type StandingsPageQuery = { __typename?: 'Query', currentProject: { __typename?: 'Project', id: string, leaderboard: Array<{ __typename?: 'LeaderboardEntry', name: string, description?: string | null, score: number, image?: string | null }> } };
+export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: Array<{ __typename?: 'LeaderboardEntry', name: string, description?: string | null, score: number, image?: string | null }> } };
 
 export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1418,13 +1535,11 @@ export function useAdminSidebarQuery(options?: Omit<Urql.UseQueryArgs<never, Adm
 };
 export const CurrentProjectDocument = gql`
     query CurrentProject {
-  currentProject {
+  myCurrentProject {
     branding {
       logo
       colors {
         primary
-        secondary
-        tertiary
       }
       rounding
     }
@@ -1480,8 +1595,38 @@ export const AdminProjectPageDocument = gql`
       rounding
       colors {
         primary
-        secondary
-        tertiary
+      }
+    }
+  }
+  achievements(filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+  events(filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+  challenges(filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+  streaks(filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
       }
     }
   }
@@ -1619,7 +1764,7 @@ export function useChallengesPageQuery(options?: Omit<Urql.UseQueryArgs<never, C
 };
 export const StandingsPageDocument = gql`
     query StandingsPage {
-  currentProject {
+  myCurrentProject {
     id
     leaderboard(type: TOTAL) {
       name

@@ -1,25 +1,24 @@
 <script setup lang="ts">
 gql(`
-query UnitPage {
-  currentProject {
-    id
-    myTeam {
+  query UnitPage {
+    currentProject {
       id
-      name
-      superTeam {
+      myTeam {
         id
         name
-      }
-      leaderboard(type: TOTAL) {
-        name
-        description
-        score
-        image
+        superTeam {
+          id
+          name
+        }
+        leaderboard(type: TOTAL) {
+          name
+          description
+          score
+          image
+        }
       }
     }
   }
-}
-
 `)
 
 const { data, error, fetching } = useUnitPageQuery()

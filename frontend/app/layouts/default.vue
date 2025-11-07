@@ -26,20 +26,24 @@ const links = [
 
 // Current project theme
 gql(`
-query CurrentProject {
-  currentProject {
-    branding {
-      logo
-      colors {
-        primary
-        secondary
-        tertiary
+  query CurrentProject {
+    myCurrentProject {
+      branding {
+        logo
+        colors {
+          primary
+        }
+        rounding
       }
-      rounding
     }
   }
-}
 `)
+
+// Force light theme for now
+onBeforeMount(() => {
+  document.documentElement.classList.remove('dark')
+  document.documentElement.classList.add('light')
+})
 
 const { data } = useCurrentProjectQuery()
 
@@ -50,10 +54,8 @@ watch(data, (newData) => {
   styleElement.innerHTML = `
     /* Current project theme */
     :root {
-      --ui-primary: ${newData.currentProject.branding.colors.primary};
-      --ui-secondary: ${newData.currentProject.branding.colors.secondary};
-      --ui-tertiary: ${newData.currentProject.branding.colors.tertiary};
-      --ui-radius: ${newData.currentProject.branding.rounding}px;
+      --ui-primary: ${newData.myCurrentProject.branding.colors.primary};
+      --ui-radius: ${newData.myCurrentProject.branding.rounding}px;
     }
   `
   document.body.appendChild(styleElement)

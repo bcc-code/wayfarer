@@ -1,16 +1,16 @@
 <script setup lang="ts">
 gql(`
-query StandingsPage {
-  currentProject {
-    id
-    leaderboard(type: TOTAL) {
-      name
-      description
-      score
-      image
+  query StandingsPage {
+    myCurrentProject {
+      id
+      leaderboard(type: TOTAL) {
+        name
+        description
+        score
+        image
+      }
     }
   }
-}
 `)
 
 const { data, error, fetching } = useStandingsPageQuery()
@@ -24,7 +24,7 @@ const { data, error, fetching } = useStandingsPageQuery()
     <ErrorState v-else-if="error" :error />
     <LeaderboardList
       v-else-if="data"
-      :leaderboard="data.currentProject.leaderboard"
+      :leaderboard="data.myCurrentProject.leaderboard"
     />
   </div>
 </template>
