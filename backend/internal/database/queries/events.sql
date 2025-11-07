@@ -14,6 +14,12 @@ FROM events
 WHERE project_id = @project_id
 ORDER BY start_date DESC;
 
+-- name: GetEventsByProjectIDs :many
+SELECT id, project_id, name, description, start_date, end_date, created_at, updated_at
+FROM events
+WHERE project_id = ANY(@project_ids::text[])
+ORDER BY project_id, start_date DESC;
+
 -- name: GetEventsFilteredCursor :many
 SELECT id, project_id, name, description, start_date, end_date, created_at, updated_at
 FROM events

@@ -139,6 +139,42 @@ func (q *Queries) GetEventsByProjectID(ctx context.Context, projectID string) ([
 	return items, nil
 }
 
+const GetEventsByProjectIDs = `-- name: GetEventsByProjectIDs :many
+SELECT id, project_id, name, description, start_date, end_date, created_at, updated_at
+FROM events
+WHERE project_id = ANY($1::text[])
+ORDER BY project_id, start_date DESC
+`
+
+func (q *Queries) GetEventsByProjectIDs(ctx context.Context, projectIds []string) ([]*Event, error) {
+	rows, err := q.db.Query(ctx, GetEventsByProjectIDs, projectIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Event{}
+	for rows.Next() {
+		var i Event
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Name,
+			&i.Description,
+			&i.StartDate,
+			&i.EndDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetEventsByUserIDs = `-- name: GetEventsByUserIDs :many
 SELECT e.id, e.project_id, e.name, e.description, e.start_date, e.end_date, e.created_at, e.updated_at, ue.user_id
 FROM events e

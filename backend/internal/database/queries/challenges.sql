@@ -3,6 +3,14 @@ SELECT id, project_id, event_id, name, description, image_url, url, button_text,
 FROM challenges
 WHERE id = ANY(@ids::text[]);
 
+-- name: GetChallengesByProjectIDs :many
+SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+FROM challenges
+WHERE project_id = ANY(@project_ids::text[])
+    AND published_at IS NOT NULL
+    AND published_at <= NOW()
+ORDER BY project_id, published_at DESC;
+
 -- name: GetChallengesFilteredCursor :many
 SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
 FROM challenges

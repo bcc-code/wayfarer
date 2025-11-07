@@ -53,3 +53,17 @@ SELECT id, project_id, name, description, join_code, super_team_id, created_at, 
 FROM teams
 WHERE super_team_id = ANY(@superteamids::text[])
 ORDER BY name ASC;
+
+-- name: GetTeamsByProjectIDs :many
+SELECT id, project_id, name, description, join_code, super_team_id, created_at, updated_at
+FROM teams
+WHERE project_id = ANY(@project_ids::text[])
+ORDER BY project_id, created_at DESC;
+
+-- name: GetUserTeamByProjectID :one
+SELECT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.created_at, t.updated_at
+FROM teams t
+INNER JOIN team_members tm ON t.id = tm.team_id
+WHERE tm.user_id = @userid::text
+  AND t.project_id = @projectid::text
+LIMIT 1;

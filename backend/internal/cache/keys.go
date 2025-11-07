@@ -175,6 +175,16 @@ func StreaksByProjectKey(projectID string) string {
 	return fmt.Sprintf("%s:project:%s", PrefixStreak, projectID)
 }
 
+// RelevantDaysByStreakKey builds a cache key for relevant days by streak
+func RelevantDaysByStreakKey(streakID string) string {
+	return fmt.Sprintf("%s:relevant_days:%s", PrefixStreak, streakID)
+}
+
+// UserStreakActivityKey builds a cache key for user streak activity
+func UserStreakActivityKey(userID string, streakID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserStreakActivity, userID, streakID)
+}
+
 // TeamMembersByTeamKey builds a cache key for team members
 func TeamMembersByTeamKey(teamID string) string {
 	return PrefixTeamMembers + teamID

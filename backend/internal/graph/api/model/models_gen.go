@@ -374,7 +374,7 @@ type Project struct {
 	EndDate      scalars.DateTime   `json:"endDate"`
 	Branding     *Branding          `json:"branding"`
 	Teams        []Team             `json:"teams"`
-	MyTeam       *Team              `json:"myTeam"`
+	MyTeam       *Team              `json:"myTeam,omitempty"`
 	Achievements []Achievement      `json:"achievements"`
 	Streaks      []Streak           `json:"streaks"`
 }
@@ -477,14 +477,14 @@ func (this SimpleAchievement) GetPoints() int                   { return this.Po
 func (this SimpleAchievement) GetHidden() bool                  { return this.Hidden }
 
 type Streak struct {
-	ID           string         `json:"id"`
-	Name         string         `json:"name"`
-	Description  string         `json:"description"`
-	Status       int            `json:"status"`
-	RelevantDays []DateRange    `json:"relevantDays"`
-	ListenedDays []scalars.Date `json:"listenedDays"`
-	Project      *Project       `json:"project"`
-	ProjectID    string         `json:"-"`
+	ID           string      `json:"id"`
+	Name         string      `json:"name"`
+	Description  string      `json:"description"`
+	Status       int         `json:"status"`
+	RelevantDays []DateRange `json:"relevantDays"`
+	ListenedDays []StreakDay `json:"listenedDays"`
+	Project      *Project    `json:"project"`
+	ProjectID    string      `json:"-"`
 }
 
 type StreakAchievement struct {
@@ -522,6 +522,11 @@ type StreakConnection struct {
 	Edges      []StreakEdge `json:"edges"`
 	PageInfo   *PageInfo    `json:"pageInfo"`
 	TotalCount int          `json:"totalCount"`
+}
+
+type StreakDay struct {
+	Date   scalars.Date `json:"date"`
+	Active bool         `json:"active"`
 }
 
 type StreakEdge struct {

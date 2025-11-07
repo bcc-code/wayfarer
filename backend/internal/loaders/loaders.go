@@ -3,6 +3,7 @@ package loaders
 import (
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/graph-gophers/dataloader/v7"
 )
@@ -10,22 +11,28 @@ import (
 // Loaders holds all dataloader instances for batching database queries
 // These are shared globally across all requests and use built-in caching
 type Loaders struct {
-	UserByIDLoader         *dataloader.Loader[string, *model.User]
-	ChurchLoader           *dataloader.Loader[string, *model.Church]
-	ProjectsByUserLoader   *dataloader.Loader[string, []*model.Project]
-	EventsByUserLoader     *dataloader.Loader[string, []*model.Event]
-	TeamsByUserLoader      *dataloader.Loader[string, []*model.Team]
-	TeamsBySuperTeamLoader *dataloader.Loader[string, []*model.Team]
-	SuperTeamsByUserLoader *dataloader.Loader[string, []*model.SuperTeam]
-	RolesByUserLoader      *dataloader.Loader[string, []*model.UserRole]
-	UsersByTeamLoader      *dataloader.Loader[string, []*model.User]
-	ProjectByIDLoader      *dataloader.Loader[string, *model.Project]
-	EventByIDLoader        *dataloader.Loader[string, *model.Event]
-	TeamByIDLoader         *dataloader.Loader[string, *model.Team]
-	SuperTeamByIDLoader    *dataloader.Loader[string, *model.SuperTeam]
-	AchievementByIDLoader  *dataloader.Loader[string, model.Achievement]
-	ChallengeByIDLoader    *dataloader.Loader[string, *model.Challenge]
-	StreakByIDLoader       *dataloader.Loader[string, *model.Streak]
+	UserByIDLoader            *dataloader.Loader[string, *model.User]
+	ChurchLoader              *dataloader.Loader[string, *model.Church]
+	ProjectsByUserLoader      *dataloader.Loader[string, []*model.Project]
+	EventsByUserLoader        *dataloader.Loader[string, []*model.Event]
+	EventsByProjectLoader     *dataloader.Loader[string, []*model.Event]
+	TeamsByUserLoader         *dataloader.Loader[string, []*model.Team]
+	TeamsByProjectLoader      *dataloader.Loader[string, []*model.Team]
+	TeamsBySuperTeamLoader    *dataloader.Loader[string, []*model.Team]
+	SuperTeamsByUserLoader    *dataloader.Loader[string, []*model.SuperTeam]
+	RolesByUserLoader         *dataloader.Loader[string, []*model.UserRole]
+	UsersByTeamLoader         *dataloader.Loader[string, []*model.User]
+	ProjectByIDLoader         *dataloader.Loader[string, *model.Project]
+	EventByIDLoader           *dataloader.Loader[string, *model.Event]
+	TeamByIDLoader            *dataloader.Loader[string, *model.Team]
+	SuperTeamByIDLoader       *dataloader.Loader[string, *model.SuperTeam]
+	AchievementByIDLoader     *dataloader.Loader[string, model.Achievement]
+	ChallengeByIDLoader        *dataloader.Loader[string, *model.Challenge]
+	ChallengesByProjectLoader  *dataloader.Loader[string, []*model.Challenge]
+	StreakByIDLoader           *dataloader.Loader[string, *model.Streak]
+	StreaksByProjectLoader     *dataloader.Loader[string, []*model.Streak]
+	RelevantDaysByStreakLoader *dataloader.Loader[string, []model.DateRange]
+	UserStreakActivityLoader   *dataloader.Loader[UserStreakActivityKey, []*sqlc.UserStreakActivity]
 }
 
 // NewLoaders creates all dataloaders with batch functions and default caching
@@ -48,8 +55,16 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 			eventsByUserBatchFunc(db, cache),
 			dataloader.WithBatchCapacity[string, []*model.Event](100),
 		),
+		EventsByProjectLoader: dataloader.NewBatchedLoader(
+			eventsByProjectBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, []*model.Event](100),
+		),
 		TeamsByUserLoader: dataloader.NewBatchedLoader(
 			teamsByUserBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, []*model.Team](100),
+		),
+		TeamsByProjectLoader: dataloader.NewBatchedLoader(
+			teamsByProjectBatchFunc(db, cache),
 			dataloader.WithBatchCapacity[string, []*model.Team](100),
 		),
 		TeamsBySuperTeamLoader: dataloader.NewBatchedLoader(
@@ -92,9 +107,25 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 			challengeByIDBatchFunc(db, cache),
 			dataloader.WithBatchCapacity[string, *model.Challenge](100),
 		),
+		ChallengesByProjectLoader: dataloader.NewBatchedLoader(
+			challengesByProjectBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, []*model.Challenge](100),
+		),
 		StreakByIDLoader: dataloader.NewBatchedLoader(
 			streakByIDBatchFunc(db, cache),
 			dataloader.WithBatchCapacity[string, *model.Streak](100),
+		),
+		StreaksByProjectLoader: dataloader.NewBatchedLoader(
+			streaksByProjectBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, []*model.Streak](100),
+		),
+		RelevantDaysByStreakLoader: dataloader.NewBatchedLoader(
+			relevantDaysByStreakBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[string, []model.DateRange](100),
+		),
+		UserStreakActivityLoader: dataloader.NewBatchedLoader(
+			userStreakActivityBatchFunc(db, cache),
+			dataloader.WithBatchCapacity[UserStreakActivityKey, []*sqlc.UserStreakActivity](100),
 		),
 	}
 }

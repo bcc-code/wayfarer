@@ -86,6 +86,42 @@ func (q *Queries) GetTeamsByIDs(ctx context.Context, ids []string) ([]*Team, err
 	return items, nil
 }
 
+const GetTeamsByProjectIDs = `-- name: GetTeamsByProjectIDs :many
+SELECT id, project_id, name, description, join_code, super_team_id, created_at, updated_at
+FROM teams
+WHERE project_id = ANY($1::text[])
+ORDER BY project_id, created_at DESC
+`
+
+func (q *Queries) GetTeamsByProjectIDs(ctx context.Context, projectIds []string) ([]*Team, error) {
+	rows, err := q.db.Query(ctx, GetTeamsByProjectIDs, projectIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Team{}
+	for rows.Next() {
+		var i Team
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Name,
+			&i.Description,
+			&i.JoinCode,
+			&i.SuperTeamID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetTeamsBySuperTeamIDs = `-- name: GetTeamsBySuperTeamIDs :many
 SELECT id, project_id, name, description, join_code, super_team_id, created_at, updated_at
 FROM teams
@@ -246,4 +282,34 @@ func (q *Queries) GetTeamsFilteredCursor(ctx context.Context, arg GetTeamsFilter
 		return nil, err
 	}
 	return items, nil
+}
+
+const GetUserTeamByProjectID = `-- name: GetUserTeamByProjectID :one
+SELECT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.created_at, t.updated_at
+FROM teams t
+INNER JOIN team_members tm ON t.id = tm.team_id
+WHERE tm.user_id = $1::text
+  AND t.project_id = $2::text
+LIMIT 1
+`
+
+type GetUserTeamByProjectIDParams struct {
+	Userid    string `json:"userid"`
+	Projectid string `json:"projectid"`
+}
+
+func (q *Queries) GetUserTeamByProjectID(ctx context.Context, arg GetUserTeamByProjectIDParams) (*Team, error) {
+	row := q.db.QueryRow(ctx, GetUserTeamByProjectID, arg.Userid, arg.Projectid)
+	var i Team
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.JoinCode,
+		&i.SuperTeamID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
 }

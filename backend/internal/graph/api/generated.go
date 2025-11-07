@@ -389,6 +389,11 @@ type ComplexityRoot struct {
 		TotalCount func(childComplexity int) int
 	}
 
+	StreakDay struct {
+		Active func(childComplexity int) int
+		Date   func(childComplexity int) int
+	}
+
 	StreakEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
@@ -616,6 +621,9 @@ type SimpleAchievementResolver interface {
 	Challenge(ctx context.Context, obj *model.SimpleAchievement) (*model.Challenge, error)
 }
 type StreakResolver interface {
+	Status(ctx context.Context, obj *model.Streak) (int, error)
+	RelevantDays(ctx context.Context, obj *model.Streak) ([]model.DateRange, error)
+	ListenedDays(ctx context.Context, obj *model.Streak, last int) ([]model.StreakDay, error)
 	Project(ctx context.Context, obj *model.Streak) (*model.Project, error)
 }
 type StreakAchievementResolver interface {
@@ -2576,6 +2584,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.StreakConnection.TotalCount(childComplexity), true
 
+	case "StreakDay.active":
+		if e.complexity.StreakDay.Active == nil {
+			break
+		}
+
+		return e.complexity.StreakDay.Active(childComplexity), true
+	case "StreakDay.date":
+		if e.complexity.StreakDay.Date == nil {
+			break
+		}
+
+		return e.complexity.StreakDay.Date(childComplexity), true
+
 	case "StreakEdge.cursor":
 		if e.complexity.StreakEdge.Cursor == nil {
 			break
@@ -3218,7 +3239,7 @@ type Project {
     endDate: DateTime!
     branding: Branding!
     teams: [Team!]! @goField(forceResolver: true)
-    myTeam: Team! @goField(forceResolver: true)
+    myTeam: Team @goField(forceResolver: true)
     achievements: [Achievement!]! @goField(forceResolver: true)
     streaks: [Streak!]! @goField(forceResolver: true)
 }
@@ -3227,10 +3248,15 @@ type Streak {
     id: ID!
     name: String!
     description: String!
-    status: Int!
-    relevantDays: [DateRange!]!
-    listenedDays(last: Int!): [Date!]!
+    status: Int! @goField(forceResolver: true)
+    relevantDays: [DateRange!]! @goField(forceResolver: true)
+    listenedDays(last: Int!): [StreakDay!]! @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
+}
+
+type StreakDay {
+    date: Date!
+    active: Boolean!
 }
 
 type DateRange {
@@ -13314,9 +13340,9 @@ func (ec *executionContext) _Project_myTeam(ctx context.Context, field graphql.C
 			return ec.resolvers.Project().MyTeam(ctx, obj)
 		},
 		nil,
-		ec.marshalNTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeam,
+		ec.marshalOTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeam,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -16401,7 +16427,7 @@ func (ec *executionContext) _Streak_status(ctx context.Context, field graphql.Co
 		field,
 		ec.fieldContext_Streak_status,
 		func(ctx context.Context) (any, error) {
-			return obj.Status, nil
+			return ec.resolvers.Streak().Status(ctx, obj)
 		},
 		nil,
 		ec.marshalNInt2int,
@@ -16414,8 +16440,8 @@ func (ec *executionContext) fieldContext_Streak_status(_ context.Context, field 
 	fc = &graphql.FieldContext{
 		Object:     "Streak",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
 		},
@@ -16430,7 +16456,7 @@ func (ec *executionContext) _Streak_relevantDays(ctx context.Context, field grap
 		field,
 		ec.fieldContext_Streak_relevantDays,
 		func(ctx context.Context) (any, error) {
-			return obj.RelevantDays, nil
+			return ec.resolvers.Streak().RelevantDays(ctx, obj)
 		},
 		nil,
 		ec.marshalNDateRange2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDateRangeᚄ,
@@ -16443,8 +16469,8 @@ func (ec *executionContext) fieldContext_Streak_relevantDays(_ context.Context, 
 	fc = &graphql.FieldContext{
 		Object:     "Streak",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "start":
@@ -16465,10 +16491,11 @@ func (ec *executionContext) _Streak_listenedDays(ctx context.Context, field grap
 		field,
 		ec.fieldContext_Streak_listenedDays,
 		func(ctx context.Context) (any, error) {
-			return obj.ListenedDays, nil
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Streak().ListenedDays(ctx, obj, fc.Args["last"].(int))
 		},
 		nil,
-		ec.marshalNDate2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateᚄ,
+		ec.marshalNStreakDay2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakDayᚄ,
 		true,
 		true,
 	)
@@ -16478,10 +16505,16 @@ func (ec *executionContext) fieldContext_Streak_listenedDays(ctx context.Context
 	fc = &graphql.FieldContext{
 		Object:     "Streak",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Date does not have child fields")
+			switch field.Name {
+			case "date":
+				return ec.fieldContext_StreakDay_date(ctx, field)
+			case "active":
+				return ec.fieldContext_StreakDay_active(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StreakDay", field.Name)
 		},
 	}
 	defer func() {
@@ -17087,6 +17120,64 @@ func (ec *executionContext) fieldContext_StreakConnection_totalCount(_ context.C
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StreakDay_date(ctx context.Context, field graphql.CollectedField, obj *model.StreakDay) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakDay_date,
+		func(ctx context.Context) (any, error) {
+			return obj.Date, nil
+		},
+		nil,
+		ec.marshalNDate2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDate,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakDay_date(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakDay",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Date does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StreakDay_active(ctx context.Context, field graphql.CollectedField, obj *model.StreakDay) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakDay_active,
+		func(ctx context.Context) (any, error) {
+			return obj.Active, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakDay_active(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakDay",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -24505,16 +24596,13 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 		case "myTeam":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._Project_myTeam(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
 				return res
 			}
 
@@ -25891,20 +25979,113 @@ func (ec *executionContext) _Streak(ctx context.Context, sel ast.SelectionSet, o
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "status":
-			out.Values[i] = ec._Streak_status(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Streak_status(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "relevantDays":
-			out.Values[i] = ec._Streak_relevantDays(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Streak_relevantDays(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "listenedDays":
-			out.Values[i] = ec._Streak_listenedDays(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Streak_listenedDays(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "project":
 			field := field
 
@@ -26196,6 +26377,50 @@ func (ec *executionContext) _StreakConnection(ctx context.Context, sel ast.Selec
 			}
 		case "totalCount":
 			out.Values[i] = ec._StreakConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var streakDayImplementors = []string{"StreakDay"}
+
+func (ec *executionContext) _StreakDay(ctx context.Context, sel ast.SelectionSet, obj *model.StreakDay) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, streakDayImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("StreakDay")
+		case "date":
+			out.Values[i] = ec._StreakDay_date(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "active":
+			out.Values[i] = ec._StreakDay_active(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -28219,36 +28444,6 @@ func (ec *executionContext) marshalNDate2githubᚗcomᚋbccᚑmediaᚋwayfarer�
 	return v
 }
 
-func (ec *executionContext) unmarshalNDate2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateᚄ(ctx context.Context, v any) ([]scalars.Date, error) {
-	var vSlice []any
-	vSlice = graphql.CoerceList(v)
-	var err error
-	res := make([]scalars.Date, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNDate2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDate(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) marshalNDate2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateᚄ(ctx context.Context, sel ast.SelectionSet, v []scalars.Date) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	for i := range v {
-		ret[i] = ec.marshalNDate2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDate(ctx, sel, v[i])
-	}
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
 func (ec *executionContext) marshalNDateRange2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDateRange(ctx context.Context, sel ast.SelectionSet, v model.DateRange) graphql.Marshaler {
 	return ec._DateRange(ctx, sel, &v)
 }
@@ -28868,6 +29063,54 @@ func (ec *executionContext) marshalNStreakConnection2ᚖgithubᚗcomᚋbccᚑmed
 		return graphql.Null
 	}
 	return ec._StreakConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNStreakDay2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakDay(ctx context.Context, sel ast.SelectionSet, v model.StreakDay) graphql.Marshaler {
+	return ec._StreakDay(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNStreakDay2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakDayᚄ(ctx context.Context, sel ast.SelectionSet, v []model.StreakDay) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNStreakDay2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakDay(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNStreakEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakEdge(ctx context.Context, sel ast.SelectionSet, v model.StreakEdge) graphql.Marshaler {

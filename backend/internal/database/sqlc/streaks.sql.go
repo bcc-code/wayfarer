@@ -29,6 +29,38 @@ func (q *Queries) CountStreaksFiltered(ctx context.Context, arg CountStreaksFilt
 	return count, err
 }
 
+const GetRelevantDaysByStreakIDs = `-- name: GetRelevantDaysByStreakIDs :many
+SELECT id, streak_id, start_date, end_date
+FROM streak_relevant_days
+WHERE streak_id = ANY($1::text[])
+ORDER BY streak_id, start_date ASC
+`
+
+func (q *Queries) GetRelevantDaysByStreakIDs(ctx context.Context, streakIds []string) ([]*StreakRelevantDay, error) {
+	rows, err := q.db.Query(ctx, GetRelevantDaysByStreakIDs, streakIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*StreakRelevantDay{}
+	for rows.Next() {
+		var i StreakRelevantDay
+		if err := rows.Scan(
+			&i.ID,
+			&i.StreakID,
+			&i.StartDate,
+			&i.EndDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetStreaksByIDs = `-- name: GetStreaksByIDs :many
 SELECT id, project_id, name, description, created_at, updated_at
 FROM streaks
@@ -37,6 +69,40 @@ WHERE id = ANY($1::text[])
 
 func (q *Queries) GetStreaksByIDs(ctx context.Context, ids []string) ([]*Streak, error) {
 	rows, err := q.db.Query(ctx, GetStreaksByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Streak{}
+	for rows.Next() {
+		var i Streak
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Name,
+			&i.Description,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetStreaksByProjectIDs = `-- name: GetStreaksByProjectIDs :many
+SELECT id, project_id, name, description, created_at, updated_at
+FROM streaks
+WHERE project_id = ANY($1::text[])
+ORDER BY project_id, created_at DESC
+`
+
+func (q *Queries) GetStreaksByProjectIDs(ctx context.Context, projectIds []string) ([]*Streak, error) {
+	rows, err := q.db.Query(ctx, GetStreaksByProjectIDs, projectIds)
 	if err != nil {
 		return nil, err
 	}

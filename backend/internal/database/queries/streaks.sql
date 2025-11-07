@@ -3,6 +3,12 @@ SELECT id, project_id, name, description, created_at, updated_at
 FROM streaks
 WHERE id = ANY(@ids::text[]);
 
+-- name: GetStreaksByProjectIDs :many
+SELECT id, project_id, name, description, created_at, updated_at
+FROM streaks
+WHERE project_id = ANY(@project_ids::text[])
+ORDER BY project_id, created_at DESC;
+
 -- name: GetStreaksFilteredCursor :many
 SELECT id, project_id, name, description, created_at, updated_at
 FROM streaks
@@ -22,3 +28,9 @@ FROM streaks
 WHERE
     (@ids::text[] IS NULL OR id = ANY(@ids::text[]))
     AND (@projectid::text = '' OR project_id = @projectid::text);
+
+-- name: GetRelevantDaysByStreakIDs :many
+SELECT id, streak_id, start_date, end_date
+FROM streak_relevant_days
+WHERE streak_id = ANY(@streak_ids::text[])
+ORDER BY streak_id, start_date ASC;

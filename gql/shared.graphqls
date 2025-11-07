@@ -146,7 +146,7 @@ type Project {
     endDate: DateTime!
     branding: Branding!
     teams: [Team!]! @goField(forceResolver: true)
-    myTeam: Team! @goField(forceResolver: true)
+    myTeam: Team @goField(forceResolver: true)
     achievements: [Achievement!]! @goField(forceResolver: true)
     streaks: [Streak!]! @goField(forceResolver: true)
 }
@@ -155,10 +155,15 @@ type Streak {
     id: ID!
     name: String!
     description: String!
-    status: Int!
-    relevantDays: [DateRange!]!
-    listenedDays(last: Int!): [Date!]!
+    status: Int! @goField(forceResolver: true)
+    relevantDays: [DateRange!]! @goField(forceResolver: true)
+    listenedDays(last: Int!): [StreakDay!]! @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
+}
+
+type StreakDay {
+    date: Date!
+    active: Boolean!
 }
 
 type DateRange {
