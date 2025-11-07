@@ -1,12 +1,12 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
 
-:root {
-  --font-sans: 'Archivo', sans-serif;
+@theme {
+  /* Font families */
+  --font-sans: 'Inter', sans-serif;
   --font-serif: 'Noto Serif', serif;
-  --ui-radius: 0.3rem;
 
-  /* Color */
+  /* Colors */
   --color-accent: #fda634;
   --color-accent-contrast: #b97113;
   --color-on-accent: #2c1e08;
@@ -16,9 +16,9 @@
   --color-background-default: #f3ede5;
   --color-background-raised: #ffffff;
   --color-background-indent: rgb(99 56 1 / 0.05);
-  --color-shadow-default: rgba(40 37 33 / 0.1);
-  --color-shadow-blank: rgba(40 37 33 / 0);
-  --color-border-default: rgba(40 37 33 / 0.15);
+  --color-shadow-default: rgb(40 37 33 / 0.1);
+  --color-shadow-blank: rgb(40 37 33 / 0);
+  --color-border-default: rgb(40 37 33 / 0.15);
 
   /* Border radius */
   --radius-list: 24px;
@@ -30,20 +30,31 @@
   --radius-button-medium: 22px;
   --radius-button-small: 18px;
 
-  /* Padding */
-  --padding-default: 20px;
-  --padding-small: 8px;
-  --padding-list-section-inset: 4px;
-  --padding-list-section-gap: 8px;
-  --padding-list-outside: 8px;
-  --padding-navigation-inset: 4px;
-  --padding-navigation-outside: 16px;
-  --padding-button-large-horizontal: 24px;
-  --padding-button-large-vertical: 16px;
-  --padding-button-medium-horizontal: 20px;
-  --padding-button-medium-vertical: 12px;
-  --padding-button-small-horizontal: 16px;
-  --padding-button-small-vertical: 8px;
+  /* Spacing */
+  --spacing-default: 20px;
+  --spacing-small: 8px;
+  --spacing-list-section-inset: 4px;
+  --spacing-list-section-gap: 8px;
+  --spacing-list-outside: 8px;
+  --spacing-navigation-inset: 4px;
+  --spacing-navigation-outside: 16px;
+  --spacing-button-large-horizontal: 24px;
+  --spacing-button-large-vertical: 16px;
+  --spacing-button-medium-horizontal: 20px;
+  --spacing-button-medium-vertical: 12px;
+  --spacing-button-small-horizontal: 16px;
+  --spacing-button-small-vertical: 8px;
+
+  /* Shadows */
+  --shadow-large:
+    0 1px 4px 0 var(--color-shadow-default),
+    0 4px 24px 0 var(--color-shadow-default);
+  --shadow-medium: 0 4px 16px 0 var(--color-shadow-default);
+  --shadow-small: 0 1px 2px 0 var(--color-shadow-default);
+}
+
+:root {
+  --ui-radius: 0.3rem;
 }
 
 html,

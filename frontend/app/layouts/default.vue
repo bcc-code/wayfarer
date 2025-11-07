@@ -67,19 +67,21 @@ watch(data, (newData) => {
     <div class="py-4 h-full">
       <slot />
     </div>
-    <ul
-      class="fixed bottom-0 right-0 left-0 bg-default border-t border-default grid grid-cols-4"
-    >
-      <li v-for="link in links" :key="link.label" class="grow">
-        <NuxtLink
-          :to="link.to"
-          class="flex flex-col items-center justify-center h-full gap-2 p-4"
-          active-class="bg-primary/5 text-primary"
-        >
-          <UIcon :name="link.icon" class="shrink-0" />
-          <span class="text-xs">{{ link.label }}</span>
-        </NuxtLink>
-      </li>
-    </ul>
+    <div class="fixed inset-x-0 bottom-0 p-navigation-outside">
+      <ul
+        class="bg-background-raised shadow-large h-16 grid grid-cols-4 text-default rounded-navigation p-navigation-inset"
+      >
+        <li v-for="link in links" :key="link.label" class="grow">
+          <NuxtLink
+            :to="link.to"
+            class="flex flex-col items-center justify-center h-full gap-0.5 px-default py-small rounded-navigation-inset"
+            active-class="bg-background-indent text-accent-contrast"
+          >
+            <UIcon :name="link.icon" class="shrink-0" />
+            <span class="text-xs">{{ link.label }}</span>
+          </NuxtLink>
+        </li>
+      </ul>
+    </div>
   </UContainer>
 </template>
