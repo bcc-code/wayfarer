@@ -122,6 +122,17 @@ type ComplexityRoot struct {
 		Name     func(childComplexity int) int
 	}
 
+	ChurchConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	ChurchEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	Colors struct {
 		Primary   func(childComplexity int) int
 		Secondary func(childComplexity int) int
@@ -286,7 +297,7 @@ type ComplexityRoot struct {
 		Challenge        func(childComplexity int, id string) int
 		Challenges       func(childComplexity int, filter *model.ChallengeFilter, first *int, after *string, last *int, before *string) int
 		Church           func(childComplexity int, id string) int
-		Churches         func(childComplexity int) int
+		Churches         func(childComplexity int, filter *model.ChurchFilter, first *int, after *string, last *int, before *string) int
 		CurrentEvent     func(childComplexity int) int
 		CurrentProject   func(childComplexity int) int
 		Event            func(childComplexity int, id string) int
@@ -572,7 +583,7 @@ type QueryResolver interface {
 	Challenge(ctx context.Context, id string) (*model.Challenge, error)
 	Challenges(ctx context.Context, filter *model.ChallengeFilter, first *int, after *string, last *int, before *string) (*model.ChallengeConnection, error)
 	Church(ctx context.Context, id string) (*model.Church, error)
-	Churches(ctx context.Context) ([]model.Church, error)
+	Churches(ctx context.Context, filter *model.ChurchFilter, first *int, after *string, last *int, before *string) (*model.ChurchConnection, error)
 	Streak(ctx context.Context, id string) (*model.Streak, error)
 	Streaks(ctx context.Context, projectID *string) ([]model.Streak, error)
 	CurrentProject(ctx context.Context) (*model.Project, error)
@@ -866,6 +877,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Church.Name(childComplexity), true
+
+	case "ChurchConnection.edges":
+		if e.complexity.ChurchConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.ChurchConnection.Edges(childComplexity), true
+	case "ChurchConnection.pageInfo":
+		if e.complexity.ChurchConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.ChurchConnection.PageInfo(childComplexity), true
+	case "ChurchConnection.totalCount":
+		if e.complexity.ChurchConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.ChurchConnection.TotalCount(childComplexity), true
+
+	case "ChurchEdge.cursor":
+		if e.complexity.ChurchEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.ChurchEdge.Cursor(childComplexity), true
+	case "ChurchEdge.node":
+		if e.complexity.ChurchEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.ChurchEdge.Node(childComplexity), true
 
 	case "Colors.primary":
 		if e.complexity.Colors.Primary == nil {
@@ -2006,7 +2049,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		return e.complexity.Query.Churches(childComplexity), true
+		args, err := ec.field_Query_churches_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Churches(childComplexity, args["filter"].(*model.ChurchFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
 	case "Query.currentEvent":
 		if e.complexity.Query.CurrentEvent == nil {
 			break
@@ -2860,6 +2908,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAssignRoleInput,
 		ec.unmarshalInputBrandingInput,
 		ec.unmarshalInputChallengeFilter,
+		ec.unmarshalInputChurchFilter,
 		ec.unmarshalInputColorsInput,
 		ec.unmarshalInputCreateChallengeInput,
 		ec.unmarshalInputCreateChurchInput,
@@ -3548,6 +3597,12 @@ input SuperTeamFilter {
     maxMembers: Int  # Maximum number of members (across all teams)
 }
 
+input ChurchFilter {
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    country: String  # Filter by country
+    category: ChurchCategory  # Filter by church category (S, L, XL)
+}
+
 # ==================== Role Management Types ====================
 
 type RoleScope {
@@ -3667,6 +3722,17 @@ type ChallengeConnection {
     pageInfo: PageInfo!
     totalCount: Int!
 }
+
+type ChurchEdge {
+    cursor: String!
+    node: Church!
+}
+
+type ChurchConnection {
+    edges: [ChurchEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema.graphqls", Input: `# GraphQL Schema
 # Imports shared types from shared.graphqls
@@ -3711,7 +3777,7 @@ type Query {
     challenges(filter: ChallengeFilter, first: Int, after: String, last: Int, before: String): ChallengeConnection!
 
     church(id: ID!): Church!
-    churches: [Church!]!
+    churches(filter: ChurchFilter, first: Int, after: String, last: Int, before: String): ChurchConnection!
 
     streak(id: ID!): Streak!
     streaks(projectId: ID): [Streak!]!
@@ -4991,6 +5057,37 @@ func (ec *executionContext) field_Query_church_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_churches_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOChurchFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchFilter)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg4
 	return args, nil
 }
 
@@ -6455,6 +6552,177 @@ func (ec *executionContext) fieldContext_Church_category(_ context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ChurchCategory does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChurchConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.ChurchConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChurchConnection_edges,
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		ec.marshalNChurchEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchEdgeᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChurchConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChurchConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "cursor":
+				return ec.fieldContext_ChurchEdge_cursor(ctx, field)
+			case "node":
+				return ec.fieldContext_ChurchEdge_node(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ChurchEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChurchConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.ChurchConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChurchConnection_pageInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		ec.marshalNPageInfo2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPageInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChurchConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChurchConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChurchConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.ChurchConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChurchConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChurchConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChurchConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChurchEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.ChurchEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChurchEdge_cursor,
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChurchEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChurchEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChurchEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.ChurchEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChurchEdge_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalNChurch2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurch,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChurchEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChurchEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Church_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Church_name(ctx, field)
+			case "country":
+				return ec.fieldContext_Church_country(ctx, field)
+			case "category":
+				return ec.fieldContext_Church_category(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Church", field.Name)
 		},
 	}
 	return fc, nil
@@ -14393,16 +14661,17 @@ func (ec *executionContext) _Query_churches(ctx context.Context, field graphql.C
 		field,
 		ec.fieldContext_Query_churches,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Query().Churches(ctx)
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().Churches(ctx, fc.Args["filter"].(*model.ChurchFilter), fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
 		},
 		nil,
-		ec.marshalNChurch2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchᚄ,
+		ec.marshalNChurchConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchConnection,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_churches(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_churches(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -14410,17 +14679,26 @@ func (ec *executionContext) fieldContext_Query_churches(_ context.Context, field
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Church_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Church_name(ctx, field)
-			case "country":
-				return ec.fieldContext_Church_country(ctx, field)
-			case "category":
-				return ec.fieldContext_Church_category(ctx, field)
+			case "edges":
+				return ec.fieldContext_ChurchConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_ChurchConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_ChurchConnection_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Church", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ChurchConnection", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_churches_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -20389,6 +20667,47 @@ func (ec *executionContext) unmarshalInputChallengeFilter(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputChurchFilter(ctx context.Context, obj any) (model.ChurchFilter, error) {
+	var it model.ChurchFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"ids", "country", "category"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "ids":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ids"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Ids = data
+		case "country":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("country"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Country = data
+		case "category":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("category"))
+			data, err := ec.unmarshalOChurchCategory2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchCategory(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Category = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputColorsInput(ctx context.Context, obj any) (model.ColorsInput, error) {
 	var it model.ColorsInput
 	asMap := map[string]any{}
@@ -22629,6 +22948,99 @@ func (ec *executionContext) _Church(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "category":
 			out.Values[i] = ec._Church_category(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var churchConnectionImplementors = []string{"ChurchConnection"}
+
+func (ec *executionContext) _ChurchConnection(ctx context.Context, sel ast.SelectionSet, obj *model.ChurchConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, churchConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChurchConnection")
+		case "edges":
+			out.Values[i] = ec._ChurchConnection_edges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._ChurchConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._ChurchConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var churchEdgeImplementors = []string{"ChurchEdge"}
+
+func (ec *executionContext) _ChurchEdge(ctx context.Context, sel ast.SelectionSet, obj *model.ChurchEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, churchEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChurchEdge")
+		case "cursor":
+			out.Values[i] = ec._ChurchEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "node":
+			out.Values[i] = ec._ChurchEdge_node(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -27400,7 +27812,45 @@ func (ec *executionContext) marshalNChurch2githubᚗcomᚋbccᚑmediaᚋwayfarer
 	return ec._Church(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNChurch2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Church) graphql.Marshaler {
+func (ec *executionContext) marshalNChurch2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurch(ctx context.Context, sel ast.SelectionSet, v *model.Church) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Church(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNChurchCategory2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchCategory(ctx context.Context, v any) (model.ChurchCategory, error) {
+	var res model.ChurchCategory
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNChurchCategory2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchCategory(ctx context.Context, sel ast.SelectionSet, v model.ChurchCategory) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNChurchConnection2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchConnection(ctx context.Context, sel ast.SelectionSet, v model.ChurchConnection) graphql.Marshaler {
+	return ec._ChurchConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNChurchConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchConnection(ctx context.Context, sel ast.SelectionSet, v *model.ChurchConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ChurchConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNChurchEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchEdge(ctx context.Context, sel ast.SelectionSet, v model.ChurchEdge) graphql.Marshaler {
+	return ec._ChurchEdge(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNChurchEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.ChurchEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -27424,7 +27874,7 @@ func (ec *executionContext) marshalNChurch2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfa
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNChurch2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurch(ctx, sel, v[i])
+			ret[i] = ec.marshalNChurchEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchEdge(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -27442,26 +27892,6 @@ func (ec *executionContext) marshalNChurch2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfa
 	}
 
 	return ret
-}
-
-func (ec *executionContext) marshalNChurch2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurch(ctx context.Context, sel ast.SelectionSet, v *model.Church) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._Church(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNChurchCategory2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchCategory(ctx context.Context, v any) (model.ChurchCategory, error) {
-	var res model.ChurchCategory
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNChurchCategory2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchCategory(ctx context.Context, sel ast.SelectionSet, v model.ChurchCategory) graphql.Marshaler {
-	return v
 }
 
 func (ec *executionContext) marshalNColors2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColors(ctx context.Context, sel ast.SelectionSet, v *model.Colors) graphql.Marshaler {
@@ -29119,6 +29549,14 @@ func (ec *executionContext) marshalOChurchCategory2ᚖgithubᚗcomᚋbccᚑmedia
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) unmarshalOChurchFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchFilter(ctx context.Context, v any) (*model.ChurchFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputChurchFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalODateRangeInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDateRangeInputᚄ(ctx context.Context, v any) ([]model.DateRangeInput, error) {

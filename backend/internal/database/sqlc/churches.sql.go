@@ -9,6 +9,28 @@ import (
 	"context"
 )
 
+const CountChurchesFiltered = `-- name: CountChurchesFiltered :one
+SELECT COUNT(*)
+FROM churches
+WHERE
+    ($1::text[] IS NULL OR id = ANY($1::text[]))
+    AND ($2::text = '' OR country = $2::text)
+    AND ($3::text = '' OR category = $3::text)
+`
+
+type CountChurchesFilteredParams struct {
+	Ids      []string `json:"ids"`
+	Country  string   `json:"country"`
+	Category string   `json:"category"`
+}
+
+func (q *Queries) CountChurchesFiltered(ctx context.Context, arg CountChurchesFilteredParams) (int64, error) {
+	row := q.db.QueryRow(ctx, CountChurchesFiltered, arg.Ids, arg.Country, arg.Category)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const GetChurchByExternalID = `-- name: GetChurchByExternalID :one
 SELECT id, external_id, name, country, category
 FROM churches
@@ -86,6 +108,73 @@ func (q *Queries) GetChurchesByIDs(ctx context.Context, ids []string) ([]*GetChu
 	items := []*GetChurchesByIDsRow{}
 	for rows.Next() {
 		var i GetChurchesByIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ExternalID,
+			&i.Name,
+			&i.Country,
+			&i.Category,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetChurchesFilteredCursor = `-- name: GetChurchesFilteredCursor :many
+SELECT id, external_id, name, country, category
+FROM churches
+WHERE
+    ($1::text[] IS NULL OR id = ANY($1::text[]))
+    AND ($2::text = '' OR country = $2::text)
+    AND ($3::text = '' OR category = $3::text)
+    AND ($4::text = '' OR id > $4::text)
+    AND ($5::text = '' OR id < $5::text)
+ORDER BY
+    CASE WHEN $6::bool = true THEN id END DESC,
+    CASE WHEN $6::bool = false OR $6::bool IS NULL THEN id END ASC
+LIMIT CASE WHEN $7::int IS NULL THEN NULL ELSE $7::int END
+`
+
+type GetChurchesFilteredCursorParams struct {
+	Ids          []string `json:"ids"`
+	Country      string   `json:"country"`
+	Category     string   `json:"category"`
+	Aftercursor  string   `json:"aftercursor"`
+	Beforecursor string   `json:"beforecursor"`
+	Isbackward   bool     `json:"isbackward"`
+	Querylimit   int32    `json:"querylimit"`
+}
+
+type GetChurchesFilteredCursorRow struct {
+	ID         string `json:"id"`
+	ExternalID *int32 `json:"external_id"`
+	Name       string `json:"name"`
+	Country    string `json:"country"`
+	Category   string `json:"category"`
+}
+
+func (q *Queries) GetChurchesFilteredCursor(ctx context.Context, arg GetChurchesFilteredCursorParams) ([]*GetChurchesFilteredCursorRow, error) {
+	rows, err := q.db.Query(ctx, GetChurchesFilteredCursor,
+		arg.Ids,
+		arg.Country,
+		arg.Category,
+		arg.Aftercursor,
+		arg.Beforecursor,
+		arg.Isbackward,
+		arg.Querylimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetChurchesFilteredCursorRow{}
+	for rows.Next() {
+		var i GetChurchesFilteredCursorRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ExternalID,

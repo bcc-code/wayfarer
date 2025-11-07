@@ -41,7 +41,7 @@ type Query {
     challenges(filter: ChallengeFilter, first: Int, after: String, last: Int, before: String): ChallengeConnection!
 
     church(id: ID!): Church!
-    churches: [Church!]!
+    churches(filter: ChurchFilter, first: Int, after: String, last: Int, before: String): ChurchConnection!
 
     streak(id: ID!): Streak!
     streaks(projectId: ID): [Streak!]!

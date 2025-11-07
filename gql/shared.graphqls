@@ -559,6 +559,12 @@ input SuperTeamFilter {
     maxMembers: Int  # Maximum number of members (across all teams)
 }
 
+input ChurchFilter {
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    country: String  # Filter by country
+    category: ChurchCategory  # Filter by church category (S, L, XL)
+}
+
 # ==================== Role Management Types ====================
 
 type RoleScope {
@@ -675,6 +681,17 @@ type ChallengeEdge {
 
 type ChallengeConnection {
     edges: [ChallengeEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type ChurchEdge {
+    cursor: String!
+    node: Church!
+}
+
+type ChurchConnection {
+    edges: [ChurchEdge!]!
     pageInfo: PageInfo!
     totalCount: Int!
 }

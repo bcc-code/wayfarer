@@ -126,6 +126,23 @@ type Church struct {
 	Category ChurchCategory `json:"category"`
 }
 
+type ChurchConnection struct {
+	Edges      []ChurchEdge `json:"edges"`
+	PageInfo   *PageInfo    `json:"pageInfo"`
+	TotalCount int          `json:"totalCount"`
+}
+
+type ChurchEdge struct {
+	Cursor string  `json:"cursor"`
+	Node   *Church `json:"node"`
+}
+
+type ChurchFilter struct {
+	Ids      []string        `json:"ids,omitempty"`
+	Country  *string         `json:"country,omitempty"`
+	Category *ChurchCategory `json:"category,omitempty"`
+}
+
 type Colors struct {
 	Primary   string `json:"primary"`
 	Secondary string `json:"secondary"`

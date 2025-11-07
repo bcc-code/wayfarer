@@ -402,3 +402,71 @@ func buildChallengePageInfo(params BuildChallengeConnectionParams, edges []model
 
 	return pageInfo
 }
+
+// BuildChurchConnectionParams holds parameters for building a church connection
+type BuildChurchConnectionParams struct {
+	Churches        []model.Church
+	RequestedFirst  *int
+	RequestedLast   *int
+	RequestedAfter  *string
+	RequestedBefore *string
+	TotalCount      int
+	HasMore         bool
+}
+
+// BuildChurchConnection builds a GraphQL Church connection with edges and page info
+func BuildChurchConnection(params BuildChurchConnectionParams) *model.ChurchConnection {
+	edges := make([]model.ChurchEdge, len(params.Churches))
+	for i, church := range params.Churches {
+		edges[i] = model.ChurchEdge{
+			Cursor: EncodeCursor(church.ID),
+			Node:   &church,
+		}
+	}
+
+	pageInfo := buildChurchPageInfo(params, edges)
+
+	return &model.ChurchConnection{
+		Edges:      edges,
+		PageInfo:   pageInfo,
+		TotalCount: params.TotalCount,
+	}
+}
+
+// buildChurchPageInfo constructs the PageInfo for churches
+func buildChurchPageInfo(params BuildChurchConnectionParams, edges []model.ChurchEdge) *model.PageInfo {
+	pageInfo := &model.PageInfo{
+		HasNextPage:     false,
+		HasPreviousPage: false,
+		StartCursor:     nil,
+		EndCursor:       nil,
+	}
+
+	if len(edges) == 0 {
+		return pageInfo
+	}
+
+	// Set start and end cursors
+	startCursor := edges[0].Cursor
+	endCursor := edges[len(edges)-1].Cursor
+	pageInfo.StartCursor = &startCursor
+	pageInfo.EndCursor = &endCursor
+
+	// Determine hasNextPage
+	if params.RequestedFirst != nil {
+		pageInfo.HasNextPage = params.HasMore
+	}
+
+	// Determine hasPreviousPage
+	if params.RequestedLast != nil {
+		pageInfo.HasPreviousPage = params.HasMore
+		// If we're paginating backward with a 'before' cursor, there must be a next page
+		if params.RequestedBefore != nil && *params.RequestedBefore != "" {
+			pageInfo.HasNextPage = true
+		}
+	} else if params.RequestedAfter != nil && *params.RequestedAfter != "" {
+		pageInfo.HasPreviousPage = true
+	}
+
+	return pageInfo
+}
