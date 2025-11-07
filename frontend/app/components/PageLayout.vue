@@ -9,6 +9,8 @@ defineProps<{
     <header class="px-6 pt-12 pb-3">
       <h1 class="text-heading">{{ title }}</h1>
     </header>
-    <slot />
+    <div class="p-list-outside">
+      <slot />
+    </div>
   </div>
 </template>

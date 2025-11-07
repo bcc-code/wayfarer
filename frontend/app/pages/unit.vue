@@ -28,12 +28,11 @@ const { data, error, fetching } = useUnitPageQuery()
   <PageLayout title="Your unit">
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
-    <template v-else-if="data">
-      <LeaderboardList
-        v-if="data.myCurrentProject.myTeam"
-        :leaderboard="data.myCurrentProject.myTeam.leaderboard"
-        variant="expanded"
-      />
-    </template>
+    <LeaderboardList
+      v-else-if="data?.myCurrentProject.myTeam?.leaderboard.length"
+      :leaderboard="data.myCurrentProject.myTeam.leaderboard"
+      variant="expanded"
+    />
+    <EmptyState v-else />
   </PageLayout>
 </template>

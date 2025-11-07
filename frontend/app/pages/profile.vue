@@ -25,13 +25,40 @@ query ProfilePage {
 `)
 
 const { data, error, fetching } = useProfilePageQuery()
+
+const leaderboard = [
+  {
+    name: 'Name Nameson',
+    description: 'Local Church',
+    score: 4321,
+    image: 'https://placehold.co/32',
+  },
+  {
+    name: 'Name Nameson',
+    description: 'Local Church',
+    score: 4321,
+    image: 'https://placehold.co/32',
+  },
+  {
+    name: 'Name Nameson',
+    description: 'Local Church',
+    score: 4321,
+    image: 'https://placehold.co/32',
+  },
+  {
+    name: 'Name Nameson',
+    description: 'Local Church',
+    score: 4321,
+    image: 'https://placehold.co/32',
+  },
+]
 </script>
 
 <template>
   <PageLayout title="Your profile">
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
-    <template v-else-if="data">
+    <div v-else-if="data" class="space-y-list-section-gap">
       <div v-if="data.me.image" class="flex items-center justify-center p-4">
         <div
           class="shadow-large bg-background-raised p-list-section-inset aspect-square size-42 rounded-full"
@@ -44,38 +71,7 @@ const { data, error, fetching } = useProfilePageQuery()
           />
         </div>
       </div>
-
-      <div class="px-2">
-        <h2 class="mb-3 text-lg font-semibold">Achievements</h2>
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div v-for="project in data.me.projects" :key="project.id">
-            <UCard>
-              <div class="grid grid-cols-4">
-                <div
-                  v-for="achievement in project.achievements.filter(
-                    (a) => !a.hidden,
-                  )"
-                  :key="achievement.id"
-                >
-                  <NuxtImg
-                    v-if="achievement.image && achievement.achievedAt"
-                    :src="achievement.image"
-                    height="64"
-                    width="64"
-                    class="shrink-0 overflow-hidden rounded"
-                  />
-                  <div
-                    v-else-if="!achievement.achievedAt"
-                    class="bg-accented grid size-16 place-items-center rounded"
-                  >
-                    ?
-                  </div>
-                </div>
-              </div>
-            </UCard>
-          </div>
-        </div>
-      </div>
-    </template>
+      <LeaderboardList variant="compact" :leaderboard />
+    </div>
   </PageLayout>
 </template>

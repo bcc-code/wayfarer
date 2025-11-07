@@ -21,9 +21,10 @@ const { data, error, fetching } = useStandingsPageQuery()
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <LeaderboardList
-      v-else-if="data"
+      v-else-if="data?.myCurrentProject.leaderboard.length"
       :leaderboard="data.myCurrentProject.leaderboard"
       variant="expanded"
     />
+    <EmptyState v-else />
   </PageLayout>
 </template>

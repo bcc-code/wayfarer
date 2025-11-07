@@ -34,12 +34,16 @@ const relevantChallenges = computed(() => {
   <PageLayout title="Challenges">
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
-    <div v-else-if="data" class="space-y-4">
+    <div
+      v-else-if="relevantChallenges?.length"
+      class="space-y-list-section-gap"
+    >
       <ChallengeCard
         v-for="challenge in relevantChallenges"
         :key="challenge.id"
         :challenge
       />
     </div>
+    <EmptyState v-else />
   </PageLayout>
 </template>
