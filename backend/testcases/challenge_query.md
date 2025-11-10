@@ -34,7 +34,7 @@ query {
 {
   "data": {
     "challenge": {
-      "buttonText": "Complete Challenge",
+      "buttonText": "Accept",
       "description": "voluptatum rem excepturi et enim voluptates nemo amet consectetur voluptatem ut fuga.",
       "endTime": null,
       "id": "CL01K9DGT73BTRFRZ1JQCQ8CX8XS",

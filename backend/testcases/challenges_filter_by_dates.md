@@ -58,7 +58,7 @@ query GetChallengesByDates($filter: ChallengeFilter, $first: Int) {
         {
           "cursor": "Q0wwMUs5REdUODJXMVhBVDc5MkdNMU5CSkVBUA==",
           "node": {
-            "buttonText": "Complete Challenge",
+            "buttonText": "Accept",
             "description": "voluptas expedita nostrum ab sit architecto quis ea odit totam quos modi.",
             "endTime": null,
             "id": "CL01K9DGT82W1XAT792GM1NBJEAP",

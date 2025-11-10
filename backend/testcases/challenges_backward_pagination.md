@@ -56,7 +56,7 @@ query GetChallengesPageBackward($filter: ChallengeFilter, $last: Int, $before: S
         {
           "cursor": "Q0wwMUs5REdUODJXMVhBVDc5MkdNMU5CSkVBUA==",
           "node": {
-            "buttonText": "Complete Challenge",
+            "buttonText": "Accept",
             "description": "voluptas expedita nostrum ab sit architecto quis ea odit totam quos modi.",
             "id": "CL01K9DGT82W1XAT792GM1NBJEAP",
             "name": "provident Challenge",
