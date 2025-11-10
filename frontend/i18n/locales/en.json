@@ -1,0 +1,15 @@
+{
+  "pages": {
+    "standings": "Standings",
+    "unit": "Your unit",
+    "profile": "Your profile",
+    "challenges": "Challenges"
+  },
+  "navigation": {
+    "standings": "Standings",
+    "profile": "Profile",
+    "unit": "Unit",
+    "challenges": "Challenges"
+  },
+  "emptyState": "Nothing to see here"
+}

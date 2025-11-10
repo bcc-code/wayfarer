@@ -5,6 +5,7 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxt/image',
     '@vueuse/nuxt',
+    '@nuxtjs/i18n',
   ],
   devtools: { enabled: false },
   ssr: false,
@@ -48,5 +49,22 @@ export default defineNuxtConfig({
       callbackUrl: 'http://localhost:8080/callback',
       loginUrl: 'https://app.bcc.media/r/sigve-test',
     },
+  },
+
+  i18n: {
+    defaultLocale: 'en',
+    locales: [
+      {
+        name: 'English',
+        code: 'en',
+        file: 'en.json',
+      },
+      {
+        name: 'Norsk',
+        code: 'nb',
+        file: 'nb.json',
+      },
+    ],
+    strategy: 'no_prefix',
   },
 })

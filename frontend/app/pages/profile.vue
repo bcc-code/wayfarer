@@ -55,7 +55,7 @@ const leaderboard = [
 </script>
 
 <template>
-  <PageLayout title="Your profile">
+  <PageLayout :title="$t('pages.profile')">
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <div v-else-if="data" class="space-y-list-section-gap">
@@ -71,6 +71,7 @@ const leaderboard = [
           />
         </div>
       </div>
+      <LocaleSelector />
       <LeaderboardList variant="compact" :leaderboard />
     </div>
   </PageLayout>

@@ -25,7 +25,7 @@ const { data, error, fetching } = useUnitPageQuery()
 </script>
 
 <template>
-  <PageLayout title="Your unit">
+  <PageLayout :title="$t('pages.unit')">
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <LeaderboardList

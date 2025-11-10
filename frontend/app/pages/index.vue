@@ -17,7 +17,7 @@ const { data, error, fetching } = useStandingsPageQuery()
 </script>
 
 <template>
-  <PageLayout title="Standings">
+  <PageLayout :title="$t('pages.standings')">
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <LeaderboardList

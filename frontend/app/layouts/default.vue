@@ -1,28 +1,30 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 
-const links = [
+const { t } = useI18n()
+
+const links = computed<NavigationMenuItem[]>(() => [
   {
-    label: 'Standings',
+    label: t('navigation.standings'),
     icon: 'lucide:list',
     to: { name: 'index' },
   },
   {
-    label: 'Challenges',
+    label: t('navigation.challenges'),
     icon: 'lucide:medal',
     to: { name: 'challenges' },
   },
   {
-    label: 'Unit',
+    label: t('navigation.unit'),
     icon: 'lucide:users',
     to: { name: 'unit' },
   },
   {
-    label: 'Profile',
+    label: t('navigation.profile'),
     icon: 'lucide:user',
     to: { name: 'profile' },
   },
-] satisfies NavigationMenuItem[]
+])
 
 // Current project theme
 gql(`
@@ -99,7 +101,11 @@ const { left, height, width } = useElementBounding(activeMenuItem)
               class="px-default rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5 transition-all duration-150 ease-out"
               active-class="text-accent-contrast"
             >
-              <UIcon :name="link.icon" class="size-4 shrink-0" />
+              <UIcon
+                v-if="link.icon"
+                :name="link.icon"
+                class="size-4 shrink-0"
+              />
               <span class="text-xs">{{ link.label }}</span>
             </NuxtLink>
           </li>

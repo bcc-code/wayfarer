@@ -31,7 +31,7 @@ const relevantChallenges = computed(() => {
 </script>
 
 <template>
-  <PageLayout title="Challenges">
+  <PageLayout :title="$t('pages.challenges')">
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <div

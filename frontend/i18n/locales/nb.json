@@ -1,0 +1,15 @@
+{
+  "pages": {
+    "standings": "Ledertavle",
+    "unit": "Din unit",
+    "profile": "Din profil",
+    "challenges": "Oppgaver"
+  },
+  "navigation": {
+    "standings": "Ledertavle",
+    "profile": "Profil",
+    "unit": "Unit",
+    "challenges": "Oppgaver"
+  },
+  "emptyState": "Ingenting å se her"
+}
