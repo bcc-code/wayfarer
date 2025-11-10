@@ -80,11 +80,11 @@ watch(
   { immediate: true },
 )
 
-const { left, height, width } = useElementBounding(activeMenuItem)
+const { left, height, width, top } = useElementBounding(activeMenuItem)
 </script>
 
 <template>
-  <div class="text-default relative h-full">
+  <div class="text-default relative mx-auto h-full w-full max-w-xl">
     <div class="h-full">
       <slot />
     </div>
@@ -93,7 +93,7 @@ const { left, height, width } = useElementBounding(activeMenuItem)
         class="p-navigation-outside from-shadow-blank/0 to-shadow-default bg-linear-to-b"
       >
         <ul
-          class="bg-background-raised shadow-large rounded-navigation p-navigation-inset relative grid grid-cols-4"
+          class="bg-background-raised shadow-large rounded-navigation p-navigation-inset relative mx-auto grid w-full max-w-xl grid-cols-4"
         >
           <li v-for="link in links" :key="link.label" class="grow">
             <NuxtLink
@@ -110,9 +110,10 @@ const { left, height, width } = useElementBounding(activeMenuItem)
             </NuxtLink>
           </li>
           <div
-            class="m-navigation-inset rounded-navigation-inset bg-background-indent absolute aspect-square transition-all duration-150 ease-out"
+            class="rounded-navigation-inset bg-background-indent fixed aspect-square transition-all duration-150 ease-out"
             :style="{
-              left: `calc(${left}px - var(--spacing-default))`,
+              left: left + 'px',
+              top: top + 'px',
               height: height + 'px',
               width: width + 'px',
             }"
