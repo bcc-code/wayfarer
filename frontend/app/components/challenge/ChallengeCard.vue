@@ -9,6 +9,8 @@ defineProps<{
     <NuxtImg
       v-if="challenge.image"
       :src="challenge.image"
+      loading="lazy"
+      placeholder
       class="bg-accent aspect-[1.25] w-full object-cover"
     />
     <div class="bg-background-raised p-default gap-default space-y-default">

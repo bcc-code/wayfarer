@@ -87,7 +87,9 @@
     --color-accent-contrast: oklch(
       from var(--color-accent-base) calc(l * 0.7) c h
     );
-    --color-on-accent: oklch(from var(--color-accent-base) 0.2 calc(c * 0.3) h);
+    --color-on-accent: oklch(
+      from var(--color-accent-base) calc((1 - l) * 1.25) calc(c * 0.3) h
+    );
     --color-background-default: oklch(
       from var(--color-accent-base) 0.96 calc(c * 0.1) h
     );

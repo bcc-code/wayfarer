@@ -1,12 +1,19 @@
 import { authExchange, type AuthConfig } from '@urql/exchange-auth'
 import urql, { Client, fetchExchange } from '@urql/vue'
 
-export default defineNuxtPlugin((plugin) => {
-  plugin.vueApp.use(
+export default defineNuxtPlugin((nuxtApp) => {
+  nuxtApp.vueApp.use(
     urql,
     new Client({
       url: useRuntimeConfig().public.apiUrl,
       preferGetMethod: false,
+      fetchOptions() {
+        return {
+          headers: {
+            'Accept-Language': nuxtApp.$i18n?.locale?.value || 'en',
+          },
+        }
+      },
       exchanges: [
         authExchange(async (utils) => {
           // Defer getting the token until the auth exchange is actually used
