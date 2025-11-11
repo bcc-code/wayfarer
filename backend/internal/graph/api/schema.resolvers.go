@@ -424,7 +424,7 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 // MyProjects is the resolver for the myProjects field.
 func (r *queryResolver) MyProjects(ctx context.Context) ([]model.Project, error) {
 	// Hardcoded project ID for now
-	projectID := "PR01K9DGS50S1RZSE5HGN8JQ1XDC"
+	projectID := "PR01K9Q3TSVQ05C0E9GJ6QPXHFXP"
 
 	// Use dataloader to fetch project
 	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
@@ -439,7 +439,7 @@ func (r *queryResolver) MyProjects(ctx context.Context) ([]model.Project, error)
 // MyEvents is the resolver for the myEvents field.
 func (r *queryResolver) MyEvents(ctx context.Context, project *string) ([]model.Event, error) {
 	// Hardcoded event ID for now
-	eventID := "EV01K9DGS5B8BSHYQ3CZD42D976F"
+	eventID := "EV01K9Q3TSXDMF2FX52XCGAAFDE5"
 
 	// Use dataloader to fetch event
 	thunk := r.Loaders.EventByIDLoader.Load(ctx, eventID)
@@ -454,7 +454,7 @@ func (r *queryResolver) MyEvents(ctx context.Context, project *string) ([]model.
 // MyCurrentProject is the resolver for the myCurrentProject field.
 func (r *queryResolver) MyCurrentProject(ctx context.Context) (*model.Project, error) {
 	// Hardcoded project ID for now
-	projectID := "PR01K9DGS50S1RZSE5HGN8JQ1XDC"
+	projectID := "PR01K9Q3TSVQ05C0E9GJ6QPXHFXP"
 
 	// Use dataloader to fetch project
 	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
