@@ -3,7 +3,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
-  const { me, isLoading, token, loginWithRedirect } = useAuth()
+  const { me, isLoading, token, loginWithRedirect, isAdmin, isSuperAdmin } =
+    useAuth()
 
   // If no token, redirect to login
   if (!token.value) {
@@ -24,7 +25,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   // Check for superadmin role
-  if (!me.value.roles.some((role) => role.role === RoleType.Superadmin)) {
+  if (!isSuperAdmin.value && !isAdmin.value) {
     return createError({
       statusCode: 403,
       statusMessage: 'Forbidden',

@@ -80,6 +80,26 @@ export function useAuth() {
     )
   }
 
+  // Authorization
+  const isSuperAdmin = computed(() => {
+    return me.value?.roles.some((role) => role.role === RoleType.Superadmin)
+  })
+  const isAdmin = computed(() => {
+    return me.value?.roles.some((role) => role.role === RoleType.Admin)
+  })
+  const isChurchAdmin = computed(() => {
+    return me.value?.roles.some((role) => role.role === RoleType.ChurchAdmin)
+  })
+  const isProjectAdmin = computed(() => {
+    return me.value?.roles.some((role) => role.role === RoleType.ProjectAdmin)
+  })
+  const isTeamLead = computed(() => {
+    return me.value?.roles.some((role) => role.role === RoleType.TeamLead)
+  })
+  const isM2M = computed(() => {
+    return me.value?.roles.some((role) => role.role === RoleType.M2M)
+  })
+
   return {
     getAccessTokenSilently,
     getAccessToken,
@@ -88,5 +108,11 @@ export function useAuth() {
     isLoading,
     me,
     token,
+    isProjectAdmin,
+    isTeamLead,
+    isM2M,
+    isSuperAdmin,
+    isAdmin,
+    isChurchAdmin,
   }
 }
