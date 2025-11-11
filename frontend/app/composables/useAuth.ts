@@ -36,7 +36,7 @@ gql(`
 `)
 
 export function useAuth() {
-  const token = useLocalStorage<string | null>('token', () => null)
+  const token = useCookie('token')
   const isLoading = useState('isLoading', () => true)
   const me = useState<GetMeQuery['me'] | null | undefined>('me', () => null)
   const { data } = useGetMeQuery()

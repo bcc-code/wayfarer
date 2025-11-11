@@ -17,7 +17,8 @@ export default defineNuxtPlugin((nuxtApp) => {
       exchanges: [
         authExchange(async (utils) => {
           // Defer getting the token until the auth exchange is actually used
-          const token = useLocalStorage<string | null>('token', () => null)
+          const token = useCookie('token')
+          let isRedirecting = false
 
           return {
             addAuthToOperation(operation) {
@@ -27,11 +28,33 @@ export default defineNuxtPlugin((nuxtApp) => {
               }
               return utils.appendHeaders(operation, headers)
             },
-            didAuthError() {
-              return false
+            didAuthError(error) {
+              // Don't check for auth errors if we're already redirecting
+              if (isRedirecting) return false
+
+              // Check for authentication errors
+              return (
+                error.response?.status === 401 ||
+                error.graphQLErrors?.some(
+                  (e) =>
+                    e.extensions?.code === 'UNAUTHENTICATED' ||
+                    e.extensions?.code === 'UNAUTHORIZED',
+                ) ||
+                false
+              )
             },
             async refreshAuth() {
-              // Token is reactive, so it will automatically update
+              // Prevent multiple redirects
+              if (isRedirecting) return
+              isRedirecting = true
+
+              // Clear token and redirect to login
+              token.value = null
+              const loginUrl =
+                useRuntimeConfig().public.loginUrl +
+                '?redirect=' +
+                encodeURIComponent(window.location.pathname)
+              window.location.href = loginUrl
             },
             willAuthError() {
               return false
