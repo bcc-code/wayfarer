@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-Wayfarer is a gamification system backend built with Go, GraphQL (gqlgen), and CockroachDB. It provides a unified GraphQL API with role-based access control for different consumers: end users, administrators, and machine-to-machine integrations.
+Wayfarer is a gamification system backend built with Go, GraphQL (gqlgen), and PostgreSQL. It provides a unified GraphQL API with role-based access control for different consumers: end users, administrators, and machine-to-machine integrations.
 
 ## Architecture Decisions
 
@@ -13,7 +13,7 @@ Wayfarer is a gamification system backend built with Go, GraphQL (gqlgen), and C
 - **Language**: Go 1.21+
 - **Web Framework**: Gin (lightweight, fast HTTP router)
 - **GraphQL**: gqlgen (type-safe code generation from schemas)
-- **Database**: CockroachDB (PostgreSQL-compatible distributed SQL)
+- **Database**: PostgreSQL
 - **SQL Access**: sqlc (generates type-safe Go from SQL queries)
 - **Migrations**: goose (embedded into binary)
 - **Logging**: slog (structured logging, standard library)
@@ -155,7 +155,7 @@ Each major implementation phase has its own note file:
 
 ## External Dependencies
 
-- CockroachDB test instance: `postgresql://wayfarer:bPf3oJVyEwIlMqunqCg8_g@bccm-wayfarer-17762.j77.aws-eu-west-1.cockroachlabs.cloud:26257/wayfarer-test?sslmode=verify-full`
+- PostgreSQL test database (connection string in .env file)
 
 ## Next Steps
 

@@ -4,11 +4,11 @@
 
 ## Overview
 
-Database layer using CockroachDB (PostgreSQL-compatible) with connection pooling and embedded migrations.
+Database layer using PostgreSQL with connection pooling and embedded migrations.
 
 ## Technology Stack
 
-- **Driver**: pgx/v5 (native Go PostgreSQL driver, best performance for CockroachDB)
+- **Driver**: pgx/v5 (native Go PostgreSQL driver)
 - **Migrations**: Goose v3 (embedded in binary)
 - **Connection Pooling**: pgxpool (from pgx/v5)
 

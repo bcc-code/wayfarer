@@ -4,7 +4,7 @@ Wayfarer is a gamification system used as the core for a multitude of projects, 
 
 ## Database
 
-The database schema is defined in `schema.sql` and uses CockroachDB.
+The database schema is defined in `schema.sql` and uses PostgreSQL.
 
 ### ID Format
 

@@ -4,7 +4,7 @@ This document explains how to run the Wayfarer GraphQL server.
 
 ## Prerequisites
 
-1. **Database**: Ensure you have access to a CockroachDB instance
+1. **Database**: Ensure you have access to a PostgreSQL instance
 2. **Environment Variables**: Set up your environment variables (see Configuration below)
 3. **Migrations**: Run database migrations before starting the server
 
@@ -222,7 +222,7 @@ The server handles `SIGINT` (Ctrl+C) and `SIGTERM` signals gracefully:
 
 ### "Failed to connect to database"
 
-**Issue**: Cannot connect to CockroachDB
+**Issue**: Cannot connect to PostgreSQL
 
 **Solutions**:
 - Verify `DATABASE_URL` is set correctly

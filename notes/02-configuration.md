@@ -27,7 +27,7 @@ type Config struct {
 - `SERVER_IDLE_TIMEOUT` - Keep-alive timeout (default: 120s)
 
 ### Database Configuration
-- `DATABASE_URL` - PostgreSQL/CockroachDB connection string (required)
+- `DATABASE_URL` - PostgreSQL connection string (required)
 - `DB_MAX_OPEN_CONNS` - Max open connections (default: 25)
 - `DB_MAX_IDLE_CONNS` - Max idle connections (default: 5)
 - `DB_CONN_MAX_LIFETIME` - Connection max lifetime (default: 5m)

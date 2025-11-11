@@ -15,9 +15,9 @@
    - Fast performance, minimal overhead
    - Good middleware ecosystem
 
-2. **github.com/jackc/pgx/v5** - PostgreSQL/CockroachDB driver
+2. **github.com/jackc/pgx/v5** - PostgreSQL driver
    - Native Go PostgreSQL driver
-   - Best performance for CockroachDB
+   - High performance
    - Supports connection pooling
 
 3. **github.com/99designs/gqlgen** - GraphQL code generation
@@ -33,7 +33,7 @@
 5. **github.com/pressly/goose/v3** - Database migrations
    - Simple, reliable migration tool
    - Supports embedding migrations
-   - Good CockroachDB support
+   - PostgreSQL support
 
 6. **github.com/oklog/ulid/v2** - ULID generation
    - Lexicographically sortable IDs
