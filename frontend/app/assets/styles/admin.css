@@ -9,6 +9,7 @@
 
 :root {
   --ui-primary: black;
+  --ui-radius: 0.3rem;
 }
 
 .dark {

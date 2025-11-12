@@ -130,10 +130,6 @@
   }
 }
 
-:root {
-  --ui-radius: 0.3rem;
-}
-
 html,
 body,
 #__nuxt {
