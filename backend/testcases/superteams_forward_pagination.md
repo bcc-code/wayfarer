@@ -47,27 +47,27 @@ query GetSuperTeamsPage($first: Int!, $after: String) {
     "superteams": {
       "edges": [
         {
-          "cursor": "U1QwMUs5REdTNjNaU0MzUk4yMFIyOE1QTVhBNg==",
+          "cursor": "U1QwMUs5UTNUVEZWVFlFTTVXQkZaTTk4RzM0OQ==",
           "node": {
-            "description": "et tenetur ad et repellat omnis expedita aperiam.",
-            "id": "ST01K9DGS63ZSC3RN20R28MPMXA6",
-            "name": "Mertz, Mertz and Mertz Alliance"
+            "description": "doloremque totam optio et saepe sed omnis voluptas.",
+            "id": "ST01K9Q3TTFVTYEM5WBFZM98G349",
+            "name": "Kuvalis, Kuvalis and Kuvalis Alliance"
           }
         },
         {
-          "cursor": "U1QwMUs5REdTNjZYQ1dOMTM1VjZLUjc1MDhCNw==",
+          "cursor": "U1QwMUs5UTNUVEhIV1pYSldQU1hWQlE5TUVNUA==",
           "node": {
-            "description": "tempore id minus nihil omnis doloremque dolores ut.",
-            "id": "ST01K9DGS66XCWN135V6KR7508B7",
-            "name": "Koelpin and Sons Alliance"
+            "description": "quae aliquid sequi fugiat est sequi voluptas ab.",
+            "id": "ST01K9Q3TTHHWZXJWPSXVBQ9MEMP",
+            "name": "DuBuque, DuBuque and DuBuque Alliance"
           }
         }
       ],
       "pageInfo": {
-        "endCursor": "U1QwMUs5REdTNjZYQ1dOMTM1VjZLUjc1MDhCNw==",
+        "endCursor": "U1QwMUs5UTNUVEhIV1pYSldQU1hWQlE5TUVNUA==",
         "hasNextPage": true,
         "hasPreviousPage": false,
-        "startCursor": "U1QwMUs5REdTNjNaU0MzUk4yMFIyOE1QTVhBNg=="
+        "startCursor": "U1QwMUs5UTNUVEZWVFlFTTVXQkZaTTk4RzM0OQ=="
       },
       "totalCount": 8
     }

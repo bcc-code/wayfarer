@@ -25,10 +25,11 @@ enum ChurchCategory {
     XL
 }
 
-enum LeaderboardType {
-    TOTAL
-    WEEKLY
-    MONTHLY
+enum LeaderboardEntityType {
+    PERSONS
+    TEAMS
+    SUPERTEAMS
+    CHURCHES
 }
 
 enum ExportFormat {
@@ -87,10 +88,24 @@ type Colors {
 }
 
 type LeaderboardEntry {
+    id: ID!
     name: String!
     score: Int!
-    description: String
+    rank: Int!
+    isMe: Boolean!
     image: String
+}
+
+type LeaderboardEdge {
+    cursor: String!
+    node: LeaderboardEntry!
+}
+
+type LeaderboardConnection {
+    edges: [LeaderboardEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+    me: LeaderboardEntry
 }
 
 input LeaderboardFilter {
@@ -138,9 +153,13 @@ type Project {
     description: String!
     challenges: [Challenge!]! @goField(forceResolver: true)
     leaderboard(
-        type: LeaderboardType!
+        entityType: LeaderboardEntityType!
         filter: LeaderboardFilter
-    ): [LeaderboardEntry!]!
+        first: Int
+        after: String
+        last: Int
+        before: String
+    ): LeaderboardConnection! @goField(forceResolver: true)
     events: [Event!]! @goField(forceResolver: true)
     startDate: DateTime!
     endDate: DateTime!
@@ -178,9 +197,13 @@ type Event {
     description: String!
     challenges: [Challenge!]! @goField(forceResolver: true)
     leaderboard(
-        type: LeaderboardType!
+        entityType: LeaderboardEntityType!
         filter: LeaderboardFilter
-    ): [LeaderboardEntry!]!
+        first: Int
+        after: String
+        last: Int
+        before: String
+    ): LeaderboardConnection! @goField(forceResolver: true)
     startDate: DateTime!
     endDate: DateTime!
     parentProject: Project! @goField(forceResolver: true)
@@ -191,10 +214,6 @@ type Team {
     name: String!
     description: String!
     members: [User!]! @goField(forceResolver: true)
-    leaderboard(
-        type: LeaderboardType!
-        filter: LeaderboardFilter
-    ): [LeaderboardEntry!]!
     parentProject: Project! @goField(forceResolver: true)
     superTeam: SuperTeam @goField(forceResolver: true)
 }
@@ -204,10 +223,6 @@ type SuperTeam {
     name: String!
     description: String!
     members(first: Int, after: String, last: Int, before: String): UserConnection! @goField(forceResolver: true)
-    leaderboard(
-        type: LeaderboardType!
-        filter: LeaderboardFilter
-    ): [LeaderboardEntry!]!
     parentProject: Project! @goField(forceResolver: true)
     teams: [Team!]! @goField(forceResolver: true)
 }

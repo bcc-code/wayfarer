@@ -33,7 +33,7 @@ query {
           "node": {
             "category": "XL",
             "country": "Sweden",
-            "id": "CH01K9DGS10Y2KXG2CNWT4DR1ZCG",
+            "id": "CH01K9Q3TQRC1J62YC015VVD9TQP",
             "name": "Stockholm Evangelical Church"
           }
         },
@@ -41,7 +41,7 @@ query {
           "node": {
             "category": "L",
             "country": "Sweden",
-            "id": "CH01K9DGS12D87K30Q6XEXVZ19JC",
+            "id": "CH01K9Q3TQS8YGY9XH68QH8AVS40",
             "name": "Göteborg Christian Center"
           }
         }

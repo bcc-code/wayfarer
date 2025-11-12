@@ -55,33 +55,33 @@ query GetEventsPageBackward($last: Int!, $before: String) {
     "events": {
       "edges": [
         {
-          "cursor": "RVYwMUs5REdTNVo4Njg0RDU5MzZCUzlHRDFNQQ==",
+          "cursor": "RVYwMUs5UTNUVENFUDNBQkU0Qk1UTUJFTjc0MQ==",
           "node": {
-            "description": "velit voluptas sint voluptatibus et est et maiores dolorem atque.",
-            "endDate": "2025-04-30T22:22:23+02:00",
-            "id": "EV01K9DGS5Z8684D5936BS9GD1MA",
-            "name": "repellat Event",
-            "startDate": "2025-04-27T22:22:23+02:00"
+            "description": "quas hic fugit qui ad ad veritatis ex quis repellendus.",
+            "endDate": "2025-05-11T15:48:29+02:00",
+            "id": "EV01K9Q3TTCEP3ABE4BMTMBEN741",
+            "name": "nesciunt Event",
+            "startDate": "2025-05-08T15:48:29+02:00"
           }
         },
         {
-          "cursor": "RVYwMUs5REdTNjBXR1g2WkcyUzVCMkU1VkVIMA==",
+          "cursor": "RVYwMUs5UTNUVEQ5WkVDTUpLUzZGSFNIWkZWVg==",
           "node": {
-            "description": "quod possimus accusamus non alias praesentium ut odio nesciunt est.",
-            "endDate": "2025-05-07T22:22:23+02:00",
-            "id": "EV01K9DGS60WGX6ZG2S5B2E5VEH0",
-            "name": "eum Event",
-            "startDate": "2025-05-04T22:22:23+02:00"
+            "description": "tenetur aspernatur sed ullam facere est odit et officia est.",
+            "endDate": "2025-05-18T15:48:29+02:00",
+            "id": "EV01K9Q3TTD9ZECMJKS6FHSHZFVV",
+            "name": "architecto Event",
+            "startDate": "2025-05-15T15:48:29+02:00"
           }
         }
       ],
       "pageInfo": {
-        "endCursor": "RVYwMUs5REdTNjBXR1g2WkcyUzVCMkU1VkVIMA==",
+        "endCursor": "RVYwMUs5UTNUVEQ5WkVDTUpLUzZGSFNIWkZWVg==",
         "hasNextPage": false,
         "hasPreviousPage": true,
-        "startCursor": "RVYwMUs5REdTNVo4Njg0RDU5MzZCUzlHRDFNQQ=="
+        "startCursor": "RVYwMUs5UTNUVENFUDNBQkU0Qk1UTUJFTjc0MQ=="
       },
-      "totalCount": 12
+      "totalCount": 13
     }
   }
 }

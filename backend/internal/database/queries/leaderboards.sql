@@ -1,0 +1,820 @@
+-- ==================== Project Person Leaderboard ====================
+
+-- name: GetProjectPersonLeaderboard :many
+WITH person_scores AS (
+    SELECT
+        u.id AS entity_id,
+        u.name,
+        u.avatar_url AS image,
+        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+    FROM users u
+    INNER JOIN user_projects up ON u.id = up.user_id
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = @projectid::text
+    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = u.id AND sa.project_id = @projectid::text
+    WHERE
+        up.project_id = @projectid::text
+        AND (@churchid::text = '' OR u.church_id = @churchid::text)
+        AND (@country::text = '' OR EXISTS (
+            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.country = @country::text
+        ))
+        AND (@churchcategory::text = '' OR EXISTS (
+            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.category = @churchcategory::text
+        ))
+        AND (@gender::text = '' OR u.gender = @gender::text)
+        AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
+        AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)
+        AND (@teamid::text = '' OR EXISTS (
+            SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = @teamid::text
+        ))
+        AND (@superteamid::text = '' OR EXISTS (
+            SELECT 1 FROM team_members tm
+            INNER JOIN teams t ON tm.team_id = t.id
+            WHERE tm.user_id = u.id AND t.super_team_id = @superteamid::text
+        ))
+    GROUP BY u.id, u.name, u.avatar_url
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM person_scores
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+WHERE
+    score >= 1
+    AND (@minscore::int IS NULL OR score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR score <= @maxscore::int)
+    AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
+    AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
+ORDER BY rank ASC
+LIMIT @querylimit::int;
+
+-- name: FindMyProjectPersonPosition :one
+WITH person_scores AS (
+    SELECT
+        u.id AS entity_id,
+        u.name,
+        u.avatar_url AS image,
+        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+    FROM users u
+    INNER JOIN user_projects up ON u.id = up.user_id
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = @projectid::text
+    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = u.id AND sa.project_id = @projectid::text
+    WHERE
+        up.project_id = @projectid::text
+        AND (@churchid::text = '' OR u.church_id = @churchid::text)
+        AND (@country::text = '' OR EXISTS (
+            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.country = @country::text
+        ))
+        AND (@churchcategory::text = '' OR EXISTS (
+            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.category = @churchcategory::text
+        ))
+        AND (@gender::text = '' OR u.gender = @gender::text)
+        AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
+        AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)
+        AND (@teamid::text = '' OR EXISTS (
+            SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = @teamid::text
+        ))
+        AND (@superteamid::text = '' OR EXISTS (
+            SELECT 1 FROM team_members tm
+            INNER JOIN teams t ON tm.team_id = t.id
+            WHERE tm.user_id = u.id AND t.super_team_id = @superteamid::text
+        ))
+    GROUP BY u.id, u.name, u.avatar_url
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM person_scores
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+WHERE
+    entity_id = @userid::text
+    AND score >= 1
+    AND (@minscore::int IS NULL OR score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR score <= @maxscore::int);
+
+-- name: CountProjectPersonLeaderboard :one
+SELECT COUNT(DISTINCT u.id)::bigint AS total
+FROM users u
+INNER JOIN user_projects up ON u.id = up.user_id
+WHERE
+    up.project_id = @projectid::text
+    AND (@churchid::text = '' OR u.church_id = @churchid::text)
+    AND (@country::text = '' OR EXISTS (
+        SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.country = @country::text
+    ))
+    AND (@churchcategory::text = '' OR EXISTS (
+        SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.category = @churchcategory::text
+    ))
+    AND (@gender::text = '' OR u.gender = @gender::text)
+    AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
+    AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)
+    AND (@teamid::text = '' OR EXISTS (
+        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = @teamid::text
+    ))
+    AND (@superteamid::text = '' OR EXISTS (
+        SELECT 1 FROM team_members tm
+        INNER JOIN teams t ON tm.team_id = t.id
+        WHERE tm.user_id = u.id AND t.super_team_id = @superteamid::text
+    ));
+
+-- ==================== Project Team Leaderboard ====================
+
+-- name: GetProjectTeamLeaderboard :many
+WITH team_scores AS (
+    SELECT
+        t.id AS entity_id,
+        t.name,
+        NULL::text AS image,
+        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+    FROM teams t
+    INNER JOIN team_members tm ON t.id = tm.team_id
+    INNER JOIN users u ON tm.user_id = u.id
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = @projectid::text
+    LEFT JOIN team_achievements ta ON t.id = ta.team_id
+    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.project_id = @projectid::text
+    LEFT JOIN score_adjustments sa ON sa.entity_type = 'TEAM' AND sa.entity_id = t.id AND sa.project_id = @projectid::text
+    WHERE
+        t.project_id = @projectid::text
+        AND (@superteamid::text = '' OR t.super_team_id = @superteamid::text)
+    GROUP BY t.id, t.name
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM team_scores
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+WHERE
+    score >= 1
+    AND (@minscore::int IS NULL OR score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR score <= @maxscore::int)
+    AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
+    AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
+ORDER BY rank ASC
+LIMIT @querylimit::int;
+
+-- name: FindMyProjectTeamPosition :one
+WITH team_scores AS (
+    SELECT
+        t.id AS entity_id,
+        t.name,
+        NULL::text AS image,
+        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+    FROM teams t
+    INNER JOIN team_members tm ON t.id = tm.team_id
+    INNER JOIN users u ON tm.user_id = u.id
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = @projectid::text
+    LEFT JOIN team_achievements ta ON t.id = ta.team_id
+    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.project_id = @projectid::text
+    LEFT JOIN score_adjustments sa ON sa.entity_type = 'TEAM' AND sa.entity_id = t.id AND sa.project_id = @projectid::text
+    WHERE
+        t.project_id = @projectid::text
+        AND (@superteamid::text = '' OR t.super_team_id = @superteamid::text)
+    GROUP BY t.id, t.name
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM team_scores
+),
+user_team AS (
+    SELECT team_id
+    FROM team_members
+    WHERE user_id = @userid::text
+      AND team_id IN (SELECT id FROM teams WHERE project_id = @projectid::text)
+    LIMIT 1
+)
+SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank
+FROM ranked_scores rs
+INNER JOIN user_team ut ON rs.entity_id = ut.team_id
+WHERE
+    rs.score >= 1
+    AND (@minscore::int IS NULL OR rs.score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR rs.score <= @maxscore::int);
+
+-- name: CountProjectTeamLeaderboard :one
+SELECT COUNT(DISTINCT t.id)::bigint AS total
+FROM teams t
+WHERE
+    t.project_id = @projectid::text
+    AND (@superteamid::text = '' OR t.super_team_id = @superteamid::text);
+
+-- ==================== Project SuperTeam Leaderboard ====================
+
+-- name: GetProjectSuperTeamLeaderboard :many
+WITH superteam_scores AS (
+    SELECT
+        st.id AS entity_id,
+        st.name,
+        NULL::text AS image,
+        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+    FROM super_teams st
+    INNER JOIN teams t ON t.super_team_id = st.id
+    INNER JOIN team_members tm ON t.id = tm.team_id
+    INNER JOIN users u ON tm.user_id = u.id
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = @projectid::text
+    LEFT JOIN team_achievements ta ON t.id = ta.team_id
+    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.project_id = @projectid::text
+    LEFT JOIN super_team_achievements sta ON st.id = sta.super_team_id
+    LEFT JOIN achievements sta_ach ON sta.achievement_id = sta_ach.id AND sta_ach.project_id = @projectid::text
+    LEFT JOIN score_adjustments sa ON sa.entity_type = 'SUPER_TEAM' AND sa.entity_id = st.id AND sa.project_id = @projectid::text
+    WHERE
+        st.project_id = @projectid::text
+    GROUP BY st.id, st.name
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM superteam_scores
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+WHERE
+    score >= 1
+    AND (@minscore::int IS NULL OR score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR score <= @maxscore::int)
+    AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
+    AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
+ORDER BY rank ASC
+LIMIT @querylimit::int;
+
+-- name: FindMyProjectSuperTeamPosition :one
+WITH superteam_scores AS (
+    SELECT
+        st.id AS entity_id,
+        st.name,
+        NULL::text AS image,
+        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+    FROM super_teams st
+    INNER JOIN teams t ON t.super_team_id = st.id
+    INNER JOIN team_members tm ON t.id = tm.team_id
+    INNER JOIN users u ON tm.user_id = u.id
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = @projectid::text
+    LEFT JOIN team_achievements ta ON t.id = ta.team_id
+    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.project_id = @projectid::text
+    LEFT JOIN super_team_achievements sta ON st.id = sta.super_team_id
+    LEFT JOIN achievements sta_ach ON sta.achievement_id = sta_ach.id AND sta_ach.project_id = @projectid::text
+    LEFT JOIN score_adjustments sa ON sa.entity_type = 'SUPER_TEAM' AND sa.entity_id = st.id AND sa.project_id = @projectid::text
+    WHERE
+        st.project_id = @projectid::text
+    GROUP BY st.id, st.name
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM superteam_scores
+),
+user_superteam AS (
+    SELECT t.super_team_id
+    FROM team_members tm
+    INNER JOIN teams t ON tm.team_id = t.id
+    WHERE tm.user_id = @userid::text
+      AND t.super_team_id IS NOT NULL
+      AND t.project_id = @projectid::text
+    LIMIT 1
+)
+SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank
+FROM ranked_scores rs
+INNER JOIN user_superteam ust ON rs.entity_id = ust.super_team_id
+WHERE
+    rs.score >= 1
+    AND (@minscore::int IS NULL OR rs.score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR rs.score <= @maxscore::int);
+
+-- name: CountProjectSuperTeamLeaderboard :one
+SELECT COUNT(DISTINCT st.id)::bigint AS total
+FROM super_teams st
+WHERE st.project_id = @projectid::text;
+
+-- ==================== Project Church Leaderboard ====================
+
+-- name: GetProjectChurchLeaderboard :many
+WITH church_scores AS (
+    SELECT
+        c.id AS entity_id,
+        c.name,
+        NULL::text AS image,
+        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+    FROM churches c
+    INNER JOIN users u ON c.id = u.church_id
+    INNER JOIN user_projects up ON u.id = up.user_id
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = @projectid::text
+    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = u.id AND sa.project_id = @projectid::text
+    WHERE
+        up.project_id = @projectid::text
+        AND (@country::text = '' OR c.country = @country::text)
+        AND (@churchcategory::text = '' OR c.category = @churchcategory::text)
+    GROUP BY c.id, c.name
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM church_scores
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+WHERE
+    score >= 1
+    AND (@minscore::int IS NULL OR score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR score <= @maxscore::int)
+    AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
+    AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
+ORDER BY rank ASC
+LIMIT @querylimit::int;
+
+-- name: FindMyProjectChurchPosition :one
+WITH church_scores AS (
+    SELECT
+        c.id AS entity_id,
+        c.name,
+        NULL::text AS image,
+        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+    FROM churches c
+    INNER JOIN users u ON c.id = u.church_id
+    INNER JOIN user_projects up ON u.id = up.user_id
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = @projectid::text
+    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = u.id AND sa.project_id = @projectid::text
+    WHERE
+        up.project_id = @projectid::text
+        AND (@country::text = '' OR c.country = @country::text)
+        AND (@churchcategory::text = '' OR c.category = @churchcategory::text)
+    GROUP BY c.id, c.name
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM church_scores
+),
+user_church AS (
+    SELECT church_id
+    FROM users
+    WHERE id = @userid::text
+)
+SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank
+FROM ranked_scores rs
+INNER JOIN user_church uc ON rs.entity_id = uc.church_id
+WHERE
+    rs.score >= 1
+    AND (@minscore::int IS NULL OR rs.score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR rs.score <= @maxscore::int);
+
+-- name: CountProjectChurchLeaderboard :one
+SELECT COUNT(DISTINCT c.id)::bigint AS total
+FROM churches c
+INNER JOIN users u ON c.id = u.church_id
+INNER JOIN user_projects up ON u.id = up.user_id
+WHERE
+    up.project_id = @projectid::text
+    AND (@country::text = '' OR c.country = @country::text)
+    AND (@churchcategory::text = '' OR c.category = @churchcategory::text);
+
+-- ==================== Event Person Leaderboard ====================
+
+-- name: GetEventPersonLeaderboard :many
+WITH person_scores AS (
+    SELECT
+        u.id AS entity_id,
+        u.name,
+        u.avatar_url AS image,
+        COALESCE(SUM(a.points), 0) AS score
+    FROM users u
+    INNER JOIN user_events ue ON u.id = ue.user_id
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = @eventid::text
+    WHERE
+        ue.event_id = @eventid::text
+        AND (@churchid::text = '' OR u.church_id = @churchid::text)
+        AND (@country::text = '' OR EXISTS (
+            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.country = @country::text
+        ))
+        AND (@churchcategory::text = '' OR EXISTS (
+            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.category = @churchcategory::text
+        ))
+        AND (@gender::text = '' OR u.gender = @gender::text)
+        AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
+        AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)
+    GROUP BY u.id, u.name, u.avatar_url
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM person_scores
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+WHERE
+    score >= 1
+    AND (@minscore::int IS NULL OR score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR score <= @maxscore::int)
+    AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
+    AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
+ORDER BY rank ASC
+LIMIT @querylimit::int;
+
+-- name: FindMyEventPersonPosition :one
+WITH person_scores AS (
+    SELECT
+        u.id AS entity_id,
+        u.name,
+        u.avatar_url AS image,
+        COALESCE(SUM(a.points), 0) AS score
+    FROM users u
+    INNER JOIN user_events ue ON u.id = ue.user_id
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = @eventid::text
+    WHERE
+        ue.event_id = @eventid::text
+        AND (@churchid::text = '' OR u.church_id = @churchid::text)
+        AND (@country::text = '' OR EXISTS (
+            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.country = @country::text
+        ))
+        AND (@churchcategory::text = '' OR EXISTS (
+            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.category = @churchcategory::text
+        ))
+        AND (@gender::text = '' OR u.gender = @gender::text)
+        AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
+        AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)
+    GROUP BY u.id, u.name, u.avatar_url
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM person_scores
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+WHERE
+    entity_id = @userid::text
+    AND score >= 1
+    AND (@minscore::int IS NULL OR score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR score <= @maxscore::int);
+
+-- name: CountEventPersonLeaderboard :one
+SELECT COUNT(DISTINCT u.id)::bigint AS total
+FROM users u
+INNER JOIN user_events ue ON u.id = ue.user_id
+WHERE
+    ue.event_id = @eventid::text
+    AND (@churchid::text = '' OR u.church_id = @churchid::text)
+    AND (@country::text = '' OR EXISTS (
+        SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.country = @country::text
+    ))
+    AND (@churchcategory::text = '' OR EXISTS (
+        SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.category = @churchcategory::text
+    ))
+    AND (@gender::text = '' OR u.gender = @gender::text)
+    AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
+    AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int);
+
+-- ==================== Event Team Leaderboard ====================
+
+-- name: GetEventTeamLeaderboard :many
+WITH event_project AS (
+    SELECT project_id FROM events WHERE id = @eventid::text
+),
+team_scores AS (
+    SELECT
+        t.id AS entity_id,
+        t.name,
+        NULL::text AS image,
+        COALESCE(SUM(a.points), 0) AS score
+    FROM teams t
+    CROSS JOIN event_project ep
+    INNER JOIN team_members tm ON t.id = tm.team_id
+    INNER JOIN users u ON tm.user_id = u.id
+    INNER JOIN user_events ue ON u.id = ue.user_id AND ue.event_id = @eventid::text
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = @eventid::text
+    LEFT JOIN team_achievements ta ON t.id = ta.team_id
+    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.event_id = @eventid::text
+    WHERE
+        t.project_id = ep.project_id
+    GROUP BY t.id, t.name
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM team_scores
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+WHERE
+    score >= 1
+    AND (@minscore::int IS NULL OR score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR score <= @maxscore::int)
+    AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
+    AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
+ORDER BY rank ASC
+LIMIT @querylimit::int;
+
+-- name: FindMyEventTeamPosition :one
+WITH event_project AS (
+    SELECT project_id FROM events WHERE id = @eventid::text
+),
+team_scores AS (
+    SELECT
+        t.id AS entity_id,
+        t.name,
+        NULL::text AS image,
+        COALESCE(SUM(a.points), 0) AS score
+    FROM teams t
+    CROSS JOIN event_project ep
+    INNER JOIN team_members tm ON t.id = tm.team_id
+    INNER JOIN users u ON tm.user_id = u.id
+    INNER JOIN user_events ue ON u.id = ue.user_id AND ue.event_id = @eventid::text
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = @eventid::text
+    LEFT JOIN team_achievements ta ON t.id = ta.team_id
+    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.event_id = @eventid::text
+    WHERE
+        t.project_id = ep.project_id
+    GROUP BY t.id, t.name
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM team_scores
+),
+user_team AS (
+    SELECT tm.team_id
+    FROM team_members tm
+    INNER JOIN teams t ON tm.team_id = t.id
+    INNER JOIN events e ON t.project_id = e.project_id AND e.id = @eventid::text
+    WHERE tm.user_id = @userid::text
+    LIMIT 1
+)
+SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank
+FROM ranked_scores rs
+INNER JOIN user_team ut ON rs.entity_id = ut.team_id
+WHERE
+    rs.score >= 1
+    AND (@minscore::int IS NULL OR rs.score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR rs.score <= @maxscore::int);
+
+-- name: CountEventTeamLeaderboard :one
+WITH event_project AS (
+    SELECT project_id FROM events WHERE id = @eventid::text
+)
+SELECT COUNT(DISTINCT t.id)::bigint AS total
+FROM teams t
+CROSS JOIN event_project ep
+WHERE t.project_id = ep.project_id;
+
+-- ==================== Event SuperTeam Leaderboard ====================
+
+-- name: GetEventSuperTeamLeaderboard :many
+WITH event_project AS (
+    SELECT project_id FROM events WHERE id = @eventid::text
+),
+superteam_scores AS (
+    SELECT
+        st.id AS entity_id,
+        st.name,
+        NULL::text AS image,
+        COALESCE(SUM(a.points), 0) AS score
+    FROM super_teams st
+    CROSS JOIN event_project ep
+    INNER JOIN teams t ON t.super_team_id = st.id
+    INNER JOIN team_members tm ON t.id = tm.team_id
+    INNER JOIN users u ON tm.user_id = u.id
+    INNER JOIN user_events ue ON u.id = ue.user_id AND ue.event_id = @eventid::text
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = @eventid::text
+    LEFT JOIN team_achievements ta ON t.id = ta.team_id
+    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.event_id = @eventid::text
+    LEFT JOIN super_team_achievements sta ON st.id = sta.super_team_id
+    LEFT JOIN achievements sta_ach ON sta.achievement_id = sta_ach.id AND sta_ach.event_id = @eventid::text
+    WHERE
+        st.project_id = ep.project_id
+    GROUP BY st.id, st.name
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM superteam_scores
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+WHERE
+    score >= 1
+    AND (@minscore::int IS NULL OR score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR score <= @maxscore::int)
+    AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
+    AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
+ORDER BY rank ASC
+LIMIT @querylimit::int;
+
+-- name: FindMyEventSuperTeamPosition :one
+WITH event_project AS (
+    SELECT project_id FROM events WHERE id = @eventid::text
+),
+superteam_scores AS (
+    SELECT
+        st.id AS entity_id,
+        st.name,
+        NULL::text AS image,
+        COALESCE(SUM(a.points), 0) AS score
+    FROM super_teams st
+    CROSS JOIN event_project ep
+    INNER JOIN teams t ON t.super_team_id = st.id
+    INNER JOIN team_members tm ON t.id = tm.team_id
+    INNER JOIN users u ON tm.user_id = u.id
+    INNER JOIN user_events ue ON u.id = ue.user_id AND ue.event_id = @eventid::text
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = @eventid::text
+    LEFT JOIN team_achievements ta ON t.id = ta.team_id
+    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.event_id = @eventid::text
+    LEFT JOIN super_team_achievements sta ON st.id = sta.super_team_id
+    LEFT JOIN achievements sta_ach ON sta.achievement_id = sta_ach.id AND sta_ach.event_id = @eventid::text
+    WHERE
+        st.project_id = ep.project_id
+    GROUP BY st.id, st.name
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM superteam_scores
+),
+user_superteam AS (
+    SELECT t.super_team_id
+    FROM team_members tm
+    INNER JOIN teams t ON tm.team_id = t.id
+    INNER JOIN events e ON t.project_id = e.project_id AND e.id = @eventid::text
+    WHERE tm.user_id = @userid::text
+      AND t.super_team_id IS NOT NULL
+    LIMIT 1
+)
+SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank
+FROM ranked_scores rs
+INNER JOIN user_superteam ust ON rs.entity_id = ust.super_team_id
+WHERE
+    rs.score >= 1
+    AND (@minscore::int IS NULL OR rs.score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR rs.score <= @maxscore::int);
+
+-- name: CountEventSuperTeamLeaderboard :one
+WITH event_project AS (
+    SELECT project_id FROM events WHERE id = @eventid::text
+)
+SELECT COUNT(DISTINCT st.id)::bigint AS total
+FROM super_teams st
+CROSS JOIN event_project ep
+WHERE st.project_id = ep.project_id;
+
+-- ==================== Event Church Leaderboard ====================
+
+-- name: GetEventChurchLeaderboard :many
+WITH church_scores AS (
+    SELECT
+        c.id AS entity_id,
+        c.name,
+        NULL::text AS image,
+        COALESCE(SUM(a.points), 0) AS score
+    FROM churches c
+    INNER JOIN users u ON c.id = u.church_id
+    INNER JOIN user_events ue ON u.id = ue.user_id
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = @eventid::text
+    WHERE
+        ue.event_id = @eventid::text
+        AND (@country::text = '' OR c.country = @country::text)
+        AND (@churchcategory::text = '' OR c.category = @churchcategory::text)
+    GROUP BY c.id, c.name
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM church_scores
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+WHERE
+    score >= 1
+    AND (@minscore::int IS NULL OR score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR score <= @maxscore::int)
+    AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
+    AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
+ORDER BY rank ASC
+LIMIT @querylimit::int;
+
+-- name: FindMyEventChurchPosition :one
+WITH church_scores AS (
+    SELECT
+        c.id AS entity_id,
+        c.name,
+        NULL::text AS image,
+        COALESCE(SUM(a.points), 0) AS score
+    FROM churches c
+    INNER JOIN users u ON c.id = u.church_id
+    INNER JOIN user_events ue ON u.id = ue.user_id
+    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = @eventid::text
+    WHERE
+        ue.event_id = @eventid::text
+        AND (@country::text = '' OR c.country = @country::text)
+        AND (@churchcategory::text = '' OR c.category = @churchcategory::text)
+    GROUP BY c.id, c.name
+),
+ranked_scores AS (
+    SELECT
+        entity_id,
+        name,
+        image,
+        score,
+        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+    FROM church_scores
+),
+user_church AS (
+    SELECT church_id
+    FROM users
+    WHERE id = @userid::text
+)
+SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank
+FROM ranked_scores rs
+INNER JOIN user_church uc ON rs.entity_id = uc.church_id
+WHERE
+    rs.score >= 1
+    AND (@minscore::int IS NULL OR rs.score >= @minscore::int)
+    AND (@maxscore::int IS NULL OR rs.score <= @maxscore::int);
+
+-- name: CountEventChurchLeaderboard :one
+SELECT COUNT(DISTINCT c.id)::bigint AS total
+FROM churches c
+INNER JOIN users u ON c.id = u.church_id
+INNER JOIN user_events ue ON u.id = ue.user_id
+WHERE
+    ue.event_id = @eventid::text
+    AND (@country::text = '' OR c.country = @country::text)
+    AND (@churchcategory::text = '' OR c.category = @churchcategory::text);

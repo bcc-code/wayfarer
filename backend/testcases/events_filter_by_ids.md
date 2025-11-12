@@ -50,23 +50,12 @@ query GetEventsByIds($ids: [ID!]!, $first: Int!) {
 {
   "data": {
     "events": {
-      "edges": [
-        {
-          "cursor": "RVYwMUs5REdTNTg0QU1ZWVk0RzJEMTMwRldWQw==",
-          "node": {
-            "description": "sed nostrum odit tempore illum molestias est est ut voluptas.",
-            "endDate": "2025-10-24T22:22:22+02:00",
-            "id": "EV01K9DGS584AMYYY4G2D130FWVC",
-            "name": "esse Event",
-            "startDate": "2025-10-21T22:22:22+02:00"
-          }
-        }
-      ],
+      "edges": [],
       "pageInfo": {
         "hasNextPage": false,
         "hasPreviousPage": false
       },
-      "totalCount": 1
+      "totalCount": 0
     }
   }
 }

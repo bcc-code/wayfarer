@@ -1,4 +1,4 @@
-# UserID: US01K9DGS18D92WBMV3X7ETHNPMN
+# UserID: US01K9Q3TQYGR8W5JHW4GMVPWS44
 
 ## Description
 
@@ -10,7 +10,7 @@ Test for querying a team by ID using the team(id) query. This tests:
 
 ```graphql
 query {
-  team(id: "TM01K9DGS69XTYTDE9NW5CZ222WB") {
+  team(id: "TM01K9Q3TTK5X2NPW8ABQWRGM9VK") {
     id
     name
     description
@@ -28,11 +28,11 @@ query {
 {
   "data": {
     "team": {
-      "description": "vel voluptas commodi non qui consequatur voluptate libero illo asperiores.",
-      "id": "TM01K9DGS69XTYTDE9NW5CZ222WB",
-      "name": "Coremaking Machine Operator Team",
+      "description": "amet sint ab molestiae velit ex aut impedit doloribus ea.",
+      "id": "TM01K9Q3TTK5X2NPW8ABQWRGM9VK",
+      "name": "Signal Repairer OR Track Switch Repairer Team",
       "parentProject": {
-        "id": "PR01K9DGS50S1RZSE5HGN8JQ1XDC",
+        "id": "PR01K9Q3TSVQ05C0E9GJ6QPXHFXP",
         "name": "Summer Bible Camp 2025"
       }
     }

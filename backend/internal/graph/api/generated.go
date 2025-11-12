@@ -149,7 +149,7 @@ type ComplexityRoot struct {
 		Description   func(childComplexity int) int
 		EndDate       func(childComplexity int) int
 		ID            func(childComplexity int) int
-		Leaderboard   func(childComplexity int, typeArg model.LeaderboardType, filter *model.LeaderboardFilter) int
+		Leaderboard   func(childComplexity int, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) int
 		Name          func(childComplexity int) int
 		ParentProject func(childComplexity int) int
 		StartDate     func(childComplexity int) int
@@ -166,11 +166,25 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	LeaderboardConnection struct {
+		Edges      func(childComplexity int) int
+		Me         func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	LeaderboardEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	LeaderboardEntry struct {
-		Description func(childComplexity int) int
-		Image       func(childComplexity int) int
-		Name        func(childComplexity int) int
-		Score       func(childComplexity int) int
+		ID    func(childComplexity int) int
+		Image func(childComplexity int) int
+		IsMe  func(childComplexity int) int
+		Name  func(childComplexity int) int
+		Rank  func(childComplexity int) int
+		Score func(childComplexity int) int
 	}
 
 	ListeningAchievement struct {
@@ -273,7 +287,7 @@ type ComplexityRoot struct {
 		EndDate      func(childComplexity int) int
 		Events       func(childComplexity int) int
 		ID           func(childComplexity int) int
-		Leaderboard  func(childComplexity int, typeArg model.LeaderboardType, filter *model.LeaderboardFilter) int
+		Leaderboard  func(childComplexity int, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) int
 		MyTeam       func(childComplexity int) int
 		Name         func(childComplexity int) int
 		StartDate    func(childComplexity int) int
@@ -403,7 +417,6 @@ type ComplexityRoot struct {
 	SuperTeam struct {
 		Description   func(childComplexity int) int
 		ID            func(childComplexity int) int
-		Leaderboard   func(childComplexity int, typeArg model.LeaderboardType, filter *model.LeaderboardFilter) int
 		Members       func(childComplexity int, first *int, after *string, last *int, before *string) int
 		Name          func(childComplexity int) int
 		ParentProject func(childComplexity int) int
@@ -424,7 +437,6 @@ type ComplexityRoot struct {
 	Team struct {
 		Description   func(childComplexity int) int
 		ID            func(childComplexity int) int
-		Leaderboard   func(childComplexity int, typeArg model.LeaderboardType, filter *model.LeaderboardFilter) int
 		Members       func(childComplexity int) int
 		Name          func(childComplexity int) int
 		ParentProject func(childComplexity int) int
@@ -492,6 +504,7 @@ type ChallengeResolver interface {
 }
 type EventResolver interface {
 	Challenges(ctx context.Context, obj *model.Event) ([]model.Challenge, error)
+	Leaderboard(ctx context.Context, obj *model.Event, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) (*model.LeaderboardConnection, error)
 
 	ParentProject(ctx context.Context, obj *model.Event) (*model.Project, error)
 }
@@ -571,7 +584,7 @@ type MutationResolver interface {
 }
 type ProjectResolver interface {
 	Challenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error)
-
+	Leaderboard(ctx context.Context, obj *model.Project, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) (*model.LeaderboardConnection, error)
 	Events(ctx context.Context, obj *model.Project) ([]model.Event, error)
 
 	Teams(ctx context.Context, obj *model.Project) ([]model.Team, error)
@@ -640,13 +653,11 @@ type StreakAchievementResolver interface {
 }
 type SuperTeamResolver interface {
 	Members(ctx context.Context, obj *model.SuperTeam, first *int, after *string, last *int, before *string) (*model.UserConnection, error)
-
 	ParentProject(ctx context.Context, obj *model.SuperTeam) (*model.Project, error)
 	Teams(ctx context.Context, obj *model.SuperTeam) ([]model.Team, error)
 }
 type TeamResolver interface {
 	Members(ctx context.Context, obj *model.Team) ([]model.User, error)
-
 	ParentProject(ctx context.Context, obj *model.Team) (*model.Project, error)
 	SuperTeam(ctx context.Context, obj *model.Team) (*model.SuperTeam, error)
 }
@@ -997,7 +1008,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Event.Leaderboard(childComplexity, args["type"].(model.LeaderboardType), args["filter"].(*model.LeaderboardFilter)), true
+		return e.complexity.Event.Leaderboard(childComplexity, args["entityType"].(model.LeaderboardEntityType), args["filter"].(*model.LeaderboardFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
 	case "Event.name":
 		if e.complexity.Event.Name == nil {
 			break
@@ -1049,24 +1060,74 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.EventEdge.Node(childComplexity), true
 
-	case "LeaderboardEntry.description":
-		if e.complexity.LeaderboardEntry.Description == nil {
+	case "LeaderboardConnection.edges":
+		if e.complexity.LeaderboardConnection.Edges == nil {
 			break
 		}
 
-		return e.complexity.LeaderboardEntry.Description(childComplexity), true
+		return e.complexity.LeaderboardConnection.Edges(childComplexity), true
+	case "LeaderboardConnection.me":
+		if e.complexity.LeaderboardConnection.Me == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardConnection.Me(childComplexity), true
+	case "LeaderboardConnection.pageInfo":
+		if e.complexity.LeaderboardConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardConnection.PageInfo(childComplexity), true
+	case "LeaderboardConnection.totalCount":
+		if e.complexity.LeaderboardConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardConnection.TotalCount(childComplexity), true
+
+	case "LeaderboardEdge.cursor":
+		if e.complexity.LeaderboardEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardEdge.Cursor(childComplexity), true
+	case "LeaderboardEdge.node":
+		if e.complexity.LeaderboardEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardEdge.Node(childComplexity), true
+
+	case "LeaderboardEntry.id":
+		if e.complexity.LeaderboardEntry.ID == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardEntry.ID(childComplexity), true
 	case "LeaderboardEntry.image":
 		if e.complexity.LeaderboardEntry.Image == nil {
 			break
 		}
 
 		return e.complexity.LeaderboardEntry.Image(childComplexity), true
+	case "LeaderboardEntry.isMe":
+		if e.complexity.LeaderboardEntry.IsMe == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardEntry.IsMe(childComplexity), true
 	case "LeaderboardEntry.name":
 		if e.complexity.LeaderboardEntry.Name == nil {
 			break
 		}
 
 		return e.complexity.LeaderboardEntry.Name(childComplexity), true
+	case "LeaderboardEntry.rank":
+		if e.complexity.LeaderboardEntry.Rank == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardEntry.Rank(childComplexity), true
 	case "LeaderboardEntry.score":
 		if e.complexity.LeaderboardEntry.Score == nil {
 			break
@@ -1952,7 +2013,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Project.Leaderboard(childComplexity, args["type"].(model.LeaderboardType), args["filter"].(*model.LeaderboardFilter)), true
+		return e.complexity.Project.Leaderboard(childComplexity, args["entityType"].(model.LeaderboardEntityType), args["filter"].(*model.LeaderboardFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
 	case "Project.myTeam":
 		if e.complexity.Project.MyTeam == nil {
 			break
@@ -2633,17 +2694,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SuperTeam.ID(childComplexity), true
-	case "SuperTeam.leaderboard":
-		if e.complexity.SuperTeam.Leaderboard == nil {
-			break
-		}
-
-		args, err := ec.field_SuperTeam_leaderboard_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.SuperTeam.Leaderboard(childComplexity, args["type"].(model.LeaderboardType), args["filter"].(*model.LeaderboardFilter)), true
 	case "SuperTeam.members":
 		if e.complexity.SuperTeam.Members == nil {
 			break
@@ -2718,17 +2768,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Team.ID(childComplexity), true
-	case "Team.leaderboard":
-		if e.complexity.Team.Leaderboard == nil {
-			break
-		}
-
-		args, err := ec.field_Team_leaderboard_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Team.Leaderboard(childComplexity, args["type"].(model.LeaderboardType), args["filter"].(*model.LeaderboardFilter)), true
 	case "Team.members":
 		if e.complexity.Team.Members == nil {
 			break
@@ -3129,10 +3168,11 @@ enum ChurchCategory {
     XL
 }
 
-enum LeaderboardType {
-    TOTAL
-    WEEKLY
-    MONTHLY
+enum LeaderboardEntityType {
+    PERSONS
+    TEAMS
+    SUPERTEAMS
+    CHURCHES
 }
 
 enum ExportFormat {
@@ -3191,10 +3231,24 @@ type Colors {
 }
 
 type LeaderboardEntry {
+    id: ID!
     name: String!
     score: Int!
-    description: String
+    rank: Int!
+    isMe: Boolean!
     image: String
+}
+
+type LeaderboardEdge {
+    cursor: String!
+    node: LeaderboardEntry!
+}
+
+type LeaderboardConnection {
+    edges: [LeaderboardEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+    me: LeaderboardEntry
 }
 
 input LeaderboardFilter {
@@ -3242,9 +3296,13 @@ type Project {
     description: String!
     challenges: [Challenge!]! @goField(forceResolver: true)
     leaderboard(
-        type: LeaderboardType!
+        entityType: LeaderboardEntityType!
         filter: LeaderboardFilter
-    ): [LeaderboardEntry!]!
+        first: Int
+        after: String
+        last: Int
+        before: String
+    ): LeaderboardConnection! @goField(forceResolver: true)
     events: [Event!]! @goField(forceResolver: true)
     startDate: DateTime!
     endDate: DateTime!
@@ -3282,9 +3340,13 @@ type Event {
     description: String!
     challenges: [Challenge!]! @goField(forceResolver: true)
     leaderboard(
-        type: LeaderboardType!
+        entityType: LeaderboardEntityType!
         filter: LeaderboardFilter
-    ): [LeaderboardEntry!]!
+        first: Int
+        after: String
+        last: Int
+        before: String
+    ): LeaderboardConnection! @goField(forceResolver: true)
     startDate: DateTime!
     endDate: DateTime!
     parentProject: Project! @goField(forceResolver: true)
@@ -3295,10 +3357,6 @@ type Team {
     name: String!
     description: String!
     members: [User!]! @goField(forceResolver: true)
-    leaderboard(
-        type: LeaderboardType!
-        filter: LeaderboardFilter
-    ): [LeaderboardEntry!]!
     parentProject: Project! @goField(forceResolver: true)
     superTeam: SuperTeam @goField(forceResolver: true)
 }
@@ -3308,10 +3366,6 @@ type SuperTeam {
     name: String!
     description: String!
     members(first: Int, after: String, last: Int, before: String): UserConnection! @goField(forceResolver: true)
-    leaderboard(
-        type: LeaderboardType!
-        filter: LeaderboardFilter
-    ): [LeaderboardEntry!]!
     parentProject: Project! @goField(forceResolver: true)
     teams: [Team!]! @goField(forceResolver: true)
 }
@@ -4016,16 +4070,36 @@ func (ec *executionContext) dir_requireRole_args(ctx context.Context, rawArgs ma
 func (ec *executionContext) field_Event_leaderboard_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "type", ec.unmarshalNLeaderboardType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardType)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "entityType", ec.unmarshalNLeaderboardEntityType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntityType)
 	if err != nil {
 		return nil, err
 	}
-	args["type"] = arg0
+	args["entityType"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOLeaderboardFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardFilter)
 	if err != nil {
 		return nil, err
 	}
 	args["filter"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg5
 	return args, nil
 }
 
@@ -5027,16 +5101,36 @@ func (ec *executionContext) field_Mutation_updateTeam_args(ctx context.Context, 
 func (ec *executionContext) field_Project_leaderboard_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "type", ec.unmarshalNLeaderboardType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardType)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "entityType", ec.unmarshalNLeaderboardEntityType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntityType)
 	if err != nil {
 		return nil, err
 	}
-	args["type"] = arg0
+	args["entityType"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOLeaderboardFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardFilter)
 	if err != nil {
 		return nil, err
 	}
 	args["filter"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg5
 	return args, nil
 }
 
@@ -5483,22 +5577,6 @@ func (ec *executionContext) field_Streak_listenedDays_args(ctx context.Context, 
 	return args, nil
 }
 
-func (ec *executionContext) field_SuperTeam_leaderboard_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "type", ec.unmarshalNLeaderboardType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardType)
-	if err != nil {
-		return nil, err
-	}
-	args["type"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOLeaderboardFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardFilter)
-	if err != nil {
-		return nil, err
-	}
-	args["filter"] = arg1
-	return args, nil
-}
-
 func (ec *executionContext) field_SuperTeam_members_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -5522,22 +5600,6 @@ func (ec *executionContext) field_SuperTeam_members_args(ctx context.Context, ra
 		return nil, err
 	}
 	args["before"] = arg3
-	return args, nil
-}
-
-func (ec *executionContext) field_Team_leaderboard_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "type", ec.unmarshalNLeaderboardType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardType)
-	if err != nil {
-		return nil, err
-	}
-	args["type"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOLeaderboardFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardFilter)
-	if err != nil {
-		return nil, err
-	}
-	args["filter"] = arg1
 	return args, nil
 }
 
@@ -7154,10 +7216,11 @@ func (ec *executionContext) _Event_leaderboard(ctx context.Context, field graphq
 		field,
 		ec.fieldContext_Event_leaderboard,
 		func(ctx context.Context) (any, error) {
-			return obj.Leaderboard, nil
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Event().Leaderboard(ctx, obj, fc.Args["entityType"].(model.LeaderboardEntityType), fc.Args["filter"].(*model.LeaderboardFilter), fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
 		},
 		nil,
-		ec.marshalNLeaderboardEntry2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntryᚄ,
+		ec.marshalNLeaderboardConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardConnection,
 		true,
 		true,
 	)
@@ -7167,20 +7230,20 @@ func (ec *executionContext) fieldContext_Event_leaderboard(ctx context.Context, 
 	fc = &graphql.FieldContext{
 		Object:     "Event",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "name":
-				return ec.fieldContext_LeaderboardEntry_name(ctx, field)
-			case "score":
-				return ec.fieldContext_LeaderboardEntry_score(ctx, field)
-			case "description":
-				return ec.fieldContext_LeaderboardEntry_description(ctx, field)
-			case "image":
-				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
+			case "edges":
+				return ec.fieldContext_LeaderboardConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_LeaderboardConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_LeaderboardConnection_totalCount(ctx, field)
+			case "me":
+				return ec.fieldContext_LeaderboardConnection_me(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type LeaderboardEntry", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type LeaderboardConnection", field.Name)
 		},
 	}
 	defer func() {
@@ -7493,6 +7556,253 @@ func (ec *executionContext) fieldContext_EventEdge_node(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _LeaderboardConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardConnection_edges,
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		ec.marshalNLeaderboardEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEdgeᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "cursor":
+				return ec.fieldContext_LeaderboardEdge_cursor(ctx, field)
+			case "node":
+				return ec.fieldContext_LeaderboardEdge_node(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LeaderboardEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardConnection_pageInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		ec.marshalNPageInfo2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPageInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardConnection_me(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardConnection_me,
+		func(ctx context.Context) (any, error) {
+			return obj.Me, nil
+		},
+		nil,
+		ec.marshalOLeaderboardEntry2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntry,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardConnection_me(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_LeaderboardEntry_id(ctx, field)
+			case "name":
+				return ec.fieldContext_LeaderboardEntry_name(ctx, field)
+			case "score":
+				return ec.fieldContext_LeaderboardEntry_score(ctx, field)
+			case "rank":
+				return ec.fieldContext_LeaderboardEntry_rank(ctx, field)
+			case "isMe":
+				return ec.fieldContext_LeaderboardEntry_isMe(ctx, field)
+			case "image":
+				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LeaderboardEntry", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardEdge_cursor,
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardEdge_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalNLeaderboardEntry2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntry,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_LeaderboardEntry_id(ctx, field)
+			case "name":
+				return ec.fieldContext_LeaderboardEntry_name(ctx, field)
+			case "score":
+				return ec.fieldContext_LeaderboardEntry_score(ctx, field)
+			case "rank":
+				return ec.fieldContext_LeaderboardEntry_rank(ctx, field)
+			case "isMe":
+				return ec.fieldContext_LeaderboardEntry_isMe(ctx, field)
+			case "image":
+				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LeaderboardEntry", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardEntry_id(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardEntry_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardEntry_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _LeaderboardEntry_name(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardEntry) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7551,30 +7861,59 @@ func (ec *executionContext) fieldContext_LeaderboardEntry_score(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _LeaderboardEntry_description(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardEntry) (ret graphql.Marshaler) {
+func (ec *executionContext) _LeaderboardEntry_rank(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardEntry) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_LeaderboardEntry_description,
+		ec.fieldContext_LeaderboardEntry_rank,
 		func(ctx context.Context) (any, error) {
-			return obj.Description, nil
+			return obj.Rank, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		ec.marshalNInt2int,
 		true,
-		false,
+		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_LeaderboardEntry_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_LeaderboardEntry_rank(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "LeaderboardEntry",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardEntry_isMe(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardEntry_isMe,
+		func(ctx context.Context) (any, error) {
+			return obj.IsMe, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardEntry_isMe(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -8305,8 +8644,6 @@ func (ec *executionContext) fieldContext_Mutation_joinTeam(ctx context.Context, 
 				return ec.fieldContext_Team_description(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Team_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -10220,8 +10557,6 @@ func (ec *executionContext) fieldContext_Mutation_createTeam(ctx context.Context
 				return ec.fieldContext_Team_description(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Team_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -10295,8 +10630,6 @@ func (ec *executionContext) fieldContext_Mutation_updateTeam(ctx context.Context
 				return ec.fieldContext_Team_description(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Team_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -10429,8 +10762,6 @@ func (ec *executionContext) fieldContext_Mutation_addTeamMembers(ctx context.Con
 				return ec.fieldContext_Team_description(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Team_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -10504,8 +10835,6 @@ func (ec *executionContext) fieldContext_Mutation_removeTeamMembers(ctx context.
 				return ec.fieldContext_Team_description(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Team_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -10579,8 +10908,6 @@ func (ec *executionContext) fieldContext_Mutation_bulkAssignUsersToTeam(ctx cont
 				return ec.fieldContext_Team_description(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Team_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -10654,8 +10981,6 @@ func (ec *executionContext) fieldContext_Mutation_createSuperTeam(ctx context.Co
 				return ec.fieldContext_SuperTeam_description(ctx, field)
 			case "members":
 				return ec.fieldContext_SuperTeam_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_SuperTeam_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_SuperTeam_parentProject(ctx, field)
 			case "teams":
@@ -10729,8 +11054,6 @@ func (ec *executionContext) fieldContext_Mutation_updateSuperTeam(ctx context.Co
 				return ec.fieldContext_SuperTeam_description(ctx, field)
 			case "members":
 				return ec.fieldContext_SuperTeam_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_SuperTeam_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_SuperTeam_parentProject(ctx, field)
 			case "teams":
@@ -10863,8 +11186,6 @@ func (ec *executionContext) fieldContext_Mutation_assignTeamsToSuperTeam(ctx con
 				return ec.fieldContext_SuperTeam_description(ctx, field)
 			case "members":
 				return ec.fieldContext_SuperTeam_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_SuperTeam_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_SuperTeam_parentProject(ctx, field)
 			case "teams":
@@ -13126,10 +13447,11 @@ func (ec *executionContext) _Project_leaderboard(ctx context.Context, field grap
 		field,
 		ec.fieldContext_Project_leaderboard,
 		func(ctx context.Context) (any, error) {
-			return obj.Leaderboard, nil
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Project().Leaderboard(ctx, obj, fc.Args["entityType"].(model.LeaderboardEntityType), fc.Args["filter"].(*model.LeaderboardFilter), fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
 		},
 		nil,
-		ec.marshalNLeaderboardEntry2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntryᚄ,
+		ec.marshalNLeaderboardConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardConnection,
 		true,
 		true,
 	)
@@ -13139,20 +13461,20 @@ func (ec *executionContext) fieldContext_Project_leaderboard(ctx context.Context
 	fc = &graphql.FieldContext{
 		Object:     "Project",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "name":
-				return ec.fieldContext_LeaderboardEntry_name(ctx, field)
-			case "score":
-				return ec.fieldContext_LeaderboardEntry_score(ctx, field)
-			case "description":
-				return ec.fieldContext_LeaderboardEntry_description(ctx, field)
-			case "image":
-				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
+			case "edges":
+				return ec.fieldContext_LeaderboardConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_LeaderboardConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_LeaderboardConnection_totalCount(ctx, field)
+			case "me":
+				return ec.fieldContext_LeaderboardConnection_me(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type LeaderboardEntry", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type LeaderboardConnection", field.Name)
 		},
 	}
 	defer func() {
@@ -13343,8 +13665,6 @@ func (ec *executionContext) fieldContext_Project_teams(_ context.Context, field 
 				return ec.fieldContext_Team_description(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Team_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -13388,8 +13708,6 @@ func (ec *executionContext) fieldContext_Project_myTeam(_ context.Context, field
 				return ec.fieldContext_Team_description(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Team_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -14363,8 +14681,6 @@ func (ec *executionContext) fieldContext_Query_team(ctx context.Context, field g
 				return ec.fieldContext_Team_description(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Team_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -14487,8 +14803,6 @@ func (ec *executionContext) fieldContext_Query_superteam(ctx context.Context, fi
 				return ec.fieldContext_SuperTeam_description(ctx, field)
 			case "members":
 				return ec.fieldContext_SuperTeam_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_SuperTeam_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_SuperTeam_parentProject(ctx, field)
 			case "teams":
@@ -15993,8 +16307,6 @@ func (ec *executionContext) fieldContext_RoleScope_team(_ context.Context, field
 				return ec.fieldContext_Team_description(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Team_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -17432,56 +17744,6 @@ func (ec *executionContext) fieldContext_SuperTeam_members(ctx context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _SuperTeam_leaderboard(ctx context.Context, field graphql.CollectedField, obj *model.SuperTeam) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_SuperTeam_leaderboard,
-		func(ctx context.Context) (any, error) {
-			return obj.Leaderboard, nil
-		},
-		nil,
-		ec.marshalNLeaderboardEntry2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntryᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_SuperTeam_leaderboard(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SuperTeam",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "name":
-				return ec.fieldContext_LeaderboardEntry_name(ctx, field)
-			case "score":
-				return ec.fieldContext_LeaderboardEntry_score(ctx, field)
-			case "description":
-				return ec.fieldContext_LeaderboardEntry_description(ctx, field)
-			case "image":
-				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type LeaderboardEntry", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_SuperTeam_leaderboard_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _SuperTeam_parentProject(ctx context.Context, field graphql.CollectedField, obj *model.SuperTeam) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -17573,8 +17835,6 @@ func (ec *executionContext) fieldContext_SuperTeam_teams(_ context.Context, fiel
 				return ec.fieldContext_Team_description(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Team_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -17750,8 +18010,6 @@ func (ec *executionContext) fieldContext_SuperTeamEdge_node(_ context.Context, f
 				return ec.fieldContext_SuperTeam_description(ctx, field)
 			case "members":
 				return ec.fieldContext_SuperTeam_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_SuperTeam_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_SuperTeam_parentProject(ctx, field)
 			case "teams":
@@ -17911,56 +18169,6 @@ func (ec *executionContext) fieldContext_Team_members(_ context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Team_leaderboard(ctx context.Context, field graphql.CollectedField, obj *model.Team) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Team_leaderboard,
-		func(ctx context.Context) (any, error) {
-			return obj.Leaderboard, nil
-		},
-		nil,
-		ec.marshalNLeaderboardEntry2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntryᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Team_leaderboard(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Team",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "name":
-				return ec.fieldContext_LeaderboardEntry_name(ctx, field)
-			case "score":
-				return ec.fieldContext_LeaderboardEntry_score(ctx, field)
-			case "description":
-				return ec.fieldContext_LeaderboardEntry_description(ctx, field)
-			case "image":
-				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type LeaderboardEntry", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Team_leaderboard_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Team_parentProject(ctx context.Context, field graphql.CollectedField, obj *model.Team) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -18052,8 +18260,6 @@ func (ec *executionContext) fieldContext_Team_superTeam(_ context.Context, field
 				return ec.fieldContext_SuperTeam_description(ctx, field)
 			case "members":
 				return ec.fieldContext_SuperTeam_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_SuperTeam_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_SuperTeam_parentProject(ctx, field)
 			case "teams":
@@ -18229,8 +18435,6 @@ func (ec *executionContext) fieldContext_TeamEdge_node(_ context.Context, field 
 				return ec.fieldContext_Team_description(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Team_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -18796,8 +19000,6 @@ func (ec *executionContext) fieldContext_User_teams(_ context.Context, field gra
 				return ec.fieldContext_Team_description(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Team_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -18841,8 +19043,6 @@ func (ec *executionContext) fieldContext_User_superTeams(_ context.Context, fiel
 				return ec.fieldContext_SuperTeam_description(ctx, field)
 			case "members":
 				return ec.fieldContext_SuperTeam_members(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_SuperTeam_leaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_SuperTeam_parentProject(ctx, field)
 			case "teams":
@@ -23542,10 +23742,41 @@ func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, ob
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "leaderboard":
-			out.Values[i] = ec._Event_leaderboard(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Event_leaderboard(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "startDate":
 			out.Values[i] = ec._Event_startDate(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -23708,6 +23939,101 @@ func (ec *executionContext) _EventEdge(ctx context.Context, sel ast.SelectionSet
 	return out
 }
 
+var leaderboardConnectionImplementors = []string{"LeaderboardConnection"}
+
+func (ec *executionContext) _LeaderboardConnection(ctx context.Context, sel ast.SelectionSet, obj *model.LeaderboardConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, leaderboardConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LeaderboardConnection")
+		case "edges":
+			out.Values[i] = ec._LeaderboardConnection_edges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._LeaderboardConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._LeaderboardConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "me":
+			out.Values[i] = ec._LeaderboardConnection_me(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var leaderboardEdgeImplementors = []string{"LeaderboardEdge"}
+
+func (ec *executionContext) _LeaderboardEdge(ctx context.Context, sel ast.SelectionSet, obj *model.LeaderboardEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, leaderboardEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LeaderboardEdge")
+		case "cursor":
+			out.Values[i] = ec._LeaderboardEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "node":
+			out.Values[i] = ec._LeaderboardEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var leaderboardEntryImplementors = []string{"LeaderboardEntry"}
 
 func (ec *executionContext) _LeaderboardEntry(ctx context.Context, sel ast.SelectionSet, obj *model.LeaderboardEntry) graphql.Marshaler {
@@ -23719,6 +24045,11 @@ func (ec *executionContext) _LeaderboardEntry(ctx context.Context, sel ast.Selec
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("LeaderboardEntry")
+		case "id":
+			out.Values[i] = ec._LeaderboardEntry_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "name":
 			out.Values[i] = ec._LeaderboardEntry_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -23729,8 +24060,16 @@ func (ec *executionContext) _LeaderboardEntry(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "description":
-			out.Values[i] = ec._LeaderboardEntry_description(ctx, field, obj)
+		case "rank":
+			out.Values[i] = ec._LeaderboardEntry_rank(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "isMe":
+			out.Values[i] = ec._LeaderboardEntry_isMe(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "image":
 			out.Values[i] = ec._LeaderboardEntry_image(ctx, field, obj)
 		default:
@@ -24578,10 +24917,41 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "leaderboard":
-			out.Values[i] = ec._Project_leaderboard(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_leaderboard(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "events":
 			field := field
 
@@ -26662,11 +27032,6 @@ func (ec *executionContext) _SuperTeam(ctx context.Context, sel ast.SelectionSet
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "leaderboard":
-			out.Values[i] = ec._SuperTeam_leaderboard(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "parentProject":
 			field := field
 
@@ -26917,11 +27282,6 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "leaderboard":
-			out.Values[i] = ec._Team_leaderboard(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "parentProject":
 			field := field
 
@@ -28833,11 +29193,25 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
-func (ec *executionContext) marshalNLeaderboardEntry2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntry(ctx context.Context, sel ast.SelectionSet, v model.LeaderboardEntry) graphql.Marshaler {
-	return ec._LeaderboardEntry(ctx, sel, &v)
+func (ec *executionContext) marshalNLeaderboardConnection2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardConnection(ctx context.Context, sel ast.SelectionSet, v model.LeaderboardConnection) graphql.Marshaler {
+	return ec._LeaderboardConnection(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNLeaderboardEntry2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []model.LeaderboardEntry) graphql.Marshaler {
+func (ec *executionContext) marshalNLeaderboardConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardConnection(ctx context.Context, sel ast.SelectionSet, v *model.LeaderboardConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._LeaderboardConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNLeaderboardEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEdge(ctx context.Context, sel ast.SelectionSet, v model.LeaderboardEdge) graphql.Marshaler {
+	return ec._LeaderboardEdge(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNLeaderboardEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.LeaderboardEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -28861,7 +29235,7 @@ func (ec *executionContext) marshalNLeaderboardEntry2ᚕgithubᚗcomᚋbccᚑmed
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNLeaderboardEntry2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntry(ctx, sel, v[i])
+			ret[i] = ec.marshalNLeaderboardEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEdge(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -28881,14 +29255,24 @@ func (ec *executionContext) marshalNLeaderboardEntry2ᚕgithubᚗcomᚋbccᚑmed
 	return ret
 }
 
-func (ec *executionContext) unmarshalNLeaderboardType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardType(ctx context.Context, v any) (model.LeaderboardType, error) {
-	var res model.LeaderboardType
+func (ec *executionContext) unmarshalNLeaderboardEntityType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntityType(ctx context.Context, v any) (model.LeaderboardEntityType, error) {
+	var res model.LeaderboardEntityType
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNLeaderboardType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardType(ctx context.Context, sel ast.SelectionSet, v model.LeaderboardType) graphql.Marshaler {
+func (ec *executionContext) marshalNLeaderboardEntityType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntityType(ctx context.Context, sel ast.SelectionSet, v model.LeaderboardEntityType) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) marshalNLeaderboardEntry2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntry(ctx context.Context, sel ast.SelectionSet, v *model.LeaderboardEntry) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._LeaderboardEntry(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNListeningAchievement2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐListeningAchievement(ctx context.Context, sel ast.SelectionSet, v model.ListeningAchievement) graphql.Marshaler {
@@ -30359,6 +30743,13 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	_ = ctx
 	res := graphql.MarshalInt(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOLeaderboardEntry2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntry(ctx context.Context, sel ast.SelectionSet, v *model.LeaderboardEntry) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._LeaderboardEntry(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOLeaderboardFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardFilter(ctx context.Context, v any) (*model.LeaderboardFilter, error) {

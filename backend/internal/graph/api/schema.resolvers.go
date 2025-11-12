@@ -469,7 +469,7 @@ func (r *queryResolver) MyCurrentProject(ctx context.Context) (*model.Project, e
 // MyCurrentEvent is the resolver for the myCurrentEvent field.
 func (r *queryResolver) MyCurrentEvent(ctx context.Context) (*model.Event, error) {
 	// Hardcoded event ID for now
-	eventID := "EV01K9DGS5B8BSHYQ3CZD42D976F"
+	eventID := "EV01K9Q3TSXDMF2FX52XCGAAFDE5"
 
 	// Use dataloader to fetch event
 	thunk := r.Loaders.EventByIDLoader.Load(ctx, eventID)
@@ -1730,7 +1730,7 @@ func (r *queryResolver) Streaks(ctx context.Context, filter *model.StreakFilter,
 // CurrentProject is the resolver for the currentProject field.
 func (r *queryResolver) CurrentProject(ctx context.Context) (*model.Project, error) {
 	// Hardcoded project ID for now
-	projectID := "PR01K9DGS50S1RZSE5HGN8JQ1XDC"
+	projectID := "PR01K9Q3TSVQ05C0E9GJ6QPXHFXP"
 
 	// Use dataloader to fetch project
 	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
@@ -1745,7 +1745,7 @@ func (r *queryResolver) CurrentProject(ctx context.Context) (*model.Project, err
 // CurrentEvent is the resolver for the currentEvent field.
 func (r *queryResolver) CurrentEvent(ctx context.Context) (*model.Event, error) {
 	// Hardcoded event ID for now
-	eventID := "EV01K9DGS5B8BSHYQ3CZD42D976F"
+	eventID := "EV01K9Q3TSXDMF2FX52XCGAAFDE5"
 
 	// Use dataloader to fetch event
 	thunk := r.Loaders.EventByIDLoader.Load(ctx, eventID)

@@ -54,27 +54,14 @@ query GetChallengesByDates($filter: ChallengeFilter, $first: Int) {
 {
   "data": {
     "challenges": {
-      "edges": [
-        {
-          "cursor": "Q0wwMUs5REdUODJXMVhBVDc5MkdNMU5CSkVBUA==",
-          "node": {
-            "buttonText": "Accept",
-            "description": "voluptas expedita nostrum ab sit architecto quis ea odit totam quos modi.",
-            "endTime": null,
-            "id": "CL01K9DGT82W1XAT792GM1NBJEAP",
-            "name": "provident Challenge",
-            "publishedAt": "2025-10-22T22:22:58+02:00",
-            "url": "http://qsh.com/qlij-jz.html"
-          }
-        }
-      ],
+      "edges": [],
       "pageInfo": {
-        "endCursor": "Q0wwMUs5REdUODJXMVhBVDc5MkdNMU5CSkVBUA==",
+        "endCursor": null,
         "hasNextPage": false,
         "hasPreviousPage": false,
-        "startCursor": "Q0wwMUs5REdUODJXMVhBVDc5MkdNMU5CSkVBUA=="
+        "startCursor": null
       },
-      "totalCount": 1
+      "totalCount": 0
     }
   }
 }

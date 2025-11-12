@@ -47,6 +47,38 @@ func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]mod
 	return challenges, nil
 }
 
+// Leaderboard is the resolver for the leaderboard field.
+func (r *eventResolver) Leaderboard(ctx context.Context, obj *model.Event, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) (*model.LeaderboardConnection, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Build params for leaderboard service
+	params := services.LeaderboardParams{
+		ContextID:  obj.ID,
+		EntityType: entityType,
+		Filter:     filter,
+		First:      first,
+		After:      after,
+		Last:       last,
+		Before:     before,
+		UserID:     currentUserID,
+	}
+
+	// Get leaderboard from service
+	entries, meEntry, totalCount, err := r.LeaderboardService.GetEventLeaderboard(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get event leaderboard: %w", err)
+	}
+
+	// Build connection
+	connection := buildLeaderboardConnection(entries, meEntry, totalCount, currentUserID, first, last, after, before)
+
+	return connection, nil
+}
+
 // ParentProject is the resolver for the parentProject field.
 func (r *eventResolver) ParentProject(ctx context.Context, obj *model.Event) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
@@ -91,6 +123,38 @@ func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([
 	}
 
 	return result, nil
+}
+
+// Leaderboard is the resolver for the leaderboard field.
+func (r *projectResolver) Leaderboard(ctx context.Context, obj *model.Project, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) (*model.LeaderboardConnection, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Build params for leaderboard service
+	params := services.LeaderboardParams{
+		ContextID:  obj.ID,
+		EntityType: entityType,
+		Filter:     filter,
+		First:      first,
+		After:      after,
+		Last:       last,
+		Before:     before,
+		UserID:     currentUserID,
+	}
+
+	// Get leaderboard from service
+	entries, meEntry, totalCount, err := r.LeaderboardService.GetProjectLeaderboard(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project leaderboard: %w", err)
+	}
+
+	// Build connection
+	connection := buildLeaderboardConnection(entries, meEntry, totalCount, currentUserID, first, last, after, before)
+
+	return connection, nil
 }
 
 // Events is the resolver for the events field.
@@ -858,6 +922,89 @@ func (r *userRoleResolver) User(ctx context.Context, obj *model.UserRole) (*mode
 func (r *userRoleResolver) Scope(ctx context.Context, obj *model.UserRole) (*model.RoleScope, error) {
 	// The scope is already populated in the dataloader
 	return obj.Scope, nil
+}
+
+// buildLeaderboardConnection builds a GraphQL connection from service layer results
+func buildLeaderboardConnection(
+	entries []services.LeaderboardEntry,
+	meEntry *services.LeaderboardEntry,
+	totalCount int,
+	currentUserID string,
+	first *int,
+	last *int,
+	after *string,
+	before *string,
+) *model.LeaderboardConnection {
+	// Determine if there are more entries
+	hasMore := false
+	requestedLimit := 10
+	if first != nil {
+		requestedLimit = *first
+		hasMore = len(entries) > requestedLimit
+	} else if last != nil {
+		requestedLimit = *last
+		hasMore = len(entries) > requestedLimit
+	}
+
+	// Trim to requested limit
+	if hasMore {
+		entries = entries[:requestedLimit]
+	}
+
+	// Build edges
+	edges := make([]model.LeaderboardEdge, len(entries))
+	for i, entry := range entries {
+		// Set isMe flag based on entity ID matching current user's entity
+		isMe := (meEntry != nil && entry.EntityID == meEntry.EntityID)
+
+		edges[i] = model.LeaderboardEdge{
+			Cursor: fmt.Sprintf("%d", entry.Rank),
+			Node: &model.LeaderboardEntry{
+				ID:    entry.EntityID,
+				Name:  entry.Name,
+				Score: entry.Score,
+				Rank:  int(entry.Rank),
+				IsMe:  isMe,
+				Image: entry.Image,
+			},
+		}
+	}
+
+	// Build page info
+	var startCursor, endCursor *string
+	if len(edges) > 0 {
+		s := edges[0].Cursor
+		startCursor = &s
+		e := edges[len(edges)-1].Cursor
+		endCursor = &e
+	}
+
+	pageInfo := &model.PageInfo{
+		HasNextPage:     hasMore && last == nil,
+		HasPreviousPage: hasMore && first == nil,
+		StartCursor:     startCursor,
+		EndCursor:       endCursor,
+	}
+
+	// Build "me" entry
+	var me *model.LeaderboardEntry
+	if meEntry != nil {
+		me = &model.LeaderboardEntry{
+			ID:    meEntry.EntityID,
+			Name:  meEntry.Name,
+			Score: meEntry.Score,
+			Rank:  int(meEntry.Rank),
+			IsMe:  true,
+			Image: meEntry.Image,
+		}
+	}
+
+	return &model.LeaderboardConnection{
+		Edges:      edges,
+		PageInfo:   pageInfo,
+		TotalCount: totalCount,
+		Me:         me,
+	}
 }
 
 // Challenge returns ChallengeResolver implementation.

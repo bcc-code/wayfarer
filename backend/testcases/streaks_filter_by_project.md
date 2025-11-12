@@ -32,29 +32,8 @@ query {
 {
   "data": {
     "streaks": {
-      "edges": [
-        {
-          "node": {
-            "id": "SK01K9DGS5S4CEFDC3XQC2HQ7HGW",
-            "name": "similique Streak",
-            "project": {
-              "id": "PR01K9DGS5HA9SWE7T8FCJ975JZT",
-              "name": "Youth Winter Retreat 2024"
-            }
-          }
-        },
-        {
-          "node": {
-            "id": "SK01K9DGS5TP6WWQGZ3CVMAY5WDQ",
-            "name": "accusantium Streak",
-            "project": {
-              "id": "PR01K9DGS5HA9SWE7T8FCJ975JZT",
-              "name": "Youth Winter Retreat 2024"
-            }
-          }
-        }
-      ],
-      "totalCount": 2
+      "edges": [],
+      "totalCount": 0
     }
   }
 }

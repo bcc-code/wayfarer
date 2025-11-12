@@ -40,27 +40,27 @@ query {
     "streaks": {
       "edges": [
         {
-          "cursor": "U0swMUs5REdTNUNTRTBTU0MwSFM1OTMyNVhQTg==",
+          "cursor": "U0swMUs5UTNUVDJHMVYzU042NDdYN1FHSjdEOQ==",
           "node": {
-            "id": "SK01K9DGS5CSE0SSC0HS59325XPN",
-            "name": "nulla Streak",
-            "description": "Maintain your streak by completing activities daily!"
+            "description": "Maintain your streak by completing activities daily!",
+            "id": "SK01K9Q3TT2G1V3SN647X7QGJ7D9",
+            "name": "voluptas Streak"
           }
         },
         {
-          "cursor": "U0swMUs5REdTNUZUNllEOUpUSlAxSFFYOUNHMg==",
+          "cursor": "U0swMUs5UTNUVDQ2VzU3RFg5NkFSVFBFVEVBQg==",
           "node": {
-            "id": "SK01K9DGS5FT6YD9JTJP1HQX9CG2",
-            "name": "dolorum Streak",
-            "description": "Maintain your streak by completing activities daily!"
+            "description": "Maintain your streak by completing activities daily!",
+            "id": "SK01K9Q3TT46W57DX96ARTPETEAB",
+            "name": "et Streak"
           }
         }
       ],
       "pageInfo": {
+        "endCursor": "U0swMUs5UTNUVDQ2VzU3RFg5NkFSVFBFVEVBQg==",
         "hasNextPage": true,
         "hasPreviousPage": false,
-        "startCursor": "U0swMUs5REdTNUNTRTBTU0MwSFM1OTMyNVhQTg==",
-        "endCursor": "U0swMUs5REdTNUZUNllEOUpUSlAxSFFYOUNHMg=="
+        "startCursor": "U0swMUs5UTNUVDJHMVYzU042NDdYN1FHSjdEOQ=="
       },
       "totalCount": 5
     }

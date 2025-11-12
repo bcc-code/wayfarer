@@ -48,35 +48,35 @@ query GetSuperTeamsByMinTeams($minTeams: Int!, $first: Int!) {
     "superteams": {
       "edges": [
         {
-          "cursor": "U1QwMUs5REdTNjZYQ1dOMTM1VjZLUjc1MDhCNw==",
+          "cursor": "U1QwMUs5UTNUVEpCR0RTSDlUUE5FRUgzM05TSg==",
           "node": {
-            "description": "tempore id minus nihil omnis doloremque dolores ut.",
-            "id": "ST01K9DGS66XCWN135V6KR7508B7",
-            "name": "Koelpin and Sons Alliance"
+            "description": "vero fuga et inventore ullam qui optio odit.",
+            "id": "ST01K9Q3TTJBGDSH9TPNEEH33NSJ",
+            "name": "Kovacek Group Alliance"
           }
         },
         {
-          "cursor": "U1QwMUs5REdTNjhEMjYwRjZaRDFBVkY0REhRMw==",
+          "cursor": "U1QwMUs5UTNWMEpUSjhGMEI0M1QyQVdXRUNGUw==",
           "node": {
-            "description": "voluptas molestiae consequuntur autem totam et sed impedit.",
-            "id": "ST01K9DGS68D260F6ZD1AVF4DHQ3",
-            "name": "Hills-Hills Alliance"
+            "description": "ut eaque cum eligendi et aut corrupti ea.",
+            "id": "ST01K9Q3V0JTJ8F0B43T2AWWECFS",
+            "name": "Ernser and Sons Alliance"
           }
         },
         {
-          "cursor": "U1QwMUs5REdTRlg5M1haOUVHSlQ2TlgxOVNUVw==",
+          "cursor": "U1QwMUs5UTNWNjk4RTNFNlczWjdYWTNCMVBSQg==",
           "node": {
-            "description": "quis exercitationem enim unde ut occaecati pariatur non.",
-            "id": "ST01K9DGSFX93XZ9EGJT6NX19STW",
-            "name": "Brakus, Brakus and Brakus Alliance"
+            "description": "illo ut voluptates dignissimos voluptates nemo nihil rerum.",
+            "id": "ST01K9Q3V698E3E6W3Z7XY3B1PRB",
+            "name": "Gulgowski-Gulgowski Alliance"
           }
         }
       ],
       "pageInfo": {
-        "endCursor": "U1QwMUs5REdTRlg5M1haOUVHSlQ2TlgxOVNUVw==",
+        "endCursor": "U1QwMUs5UTNWNjk4RTNFNlczWjdYWTNCMVBSQg==",
         "hasNextPage": false,
         "hasPreviousPage": false,
-        "startCursor": "U1QwMUs5REdTNjZYQ1dOMTM1VjZLUjc1MDhCNw=="
+        "startCursor": "U1QwMUs5UTNUVEpCR0RTSDlUUE5FRUgzM05TSg=="
       },
       "totalCount": 3
     }

@@ -37,9 +37,11 @@ const (
 	PrefixUserListeningProgress    = "userlistening:"
 	PrefixUserStreakActivity       = "userstreak:"
 
-	// Computed data (future use)
-	PrefixLeaderboard = "leaderboard:"
-	PrefixScore       = "score:"
+	// Computed data
+	PrefixLeaderboard         = "leaderboard:"
+	PrefixLeaderboardPosition = "leaderboard:position:"
+	PrefixLeaderboardCount    = "leaderboard:count:"
+	PrefixScore               = "score:"
 
 	// Query results
 	PrefixUsersFilter        = "usersfilter:"
@@ -833,4 +835,114 @@ func StreaksCountKey(params map[string]string) string {
 	hashStr := hex.EncodeToString(hash[:])[:16]
 
 	return PrefixStreaksCount + hashStr
+}
+
+// LeaderboardKey builds a cache key for leaderboard query results (user-agnostic)
+// context: "project" or "event"
+// contextID: project ID or event ID
+// entityType: "persons", "teams", "superteams", or "churches"
+// params: filter parameters
+// page: pagination cursor/offset identifier
+func LeaderboardKey(context, contextID, entityType string, params map[string]string, page string) string {
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for shorter key
+	paramsHash := ""
+	if builder.Len() > 0 {
+		hash := sha256.Sum256([]byte(builder.String()))
+		paramsHash = hex.EncodeToString(hash[:])[:16]
+	} else {
+		paramsHash = "all"
+	}
+
+	return fmt.Sprintf("%s%s:%s:%s:%s:%s", PrefixLeaderboard, context, contextID, entityType, paramsHash, page)
+}
+
+// LeaderboardPositionKey builds a cache key for user-specific leaderboard position
+// context: "project" or "event"
+// contextID: project ID or event ID
+// entityType: "persons", "teams", "superteams", or "churches"
+// params: filter parameters
+// userID: current user's ID
+func LeaderboardPositionKey(context, contextID, entityType string, params map[string]string, userID string) string {
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for shorter key
+	paramsHash := ""
+	if builder.Len() > 0 {
+		hash := sha256.Sum256([]byte(builder.String()))
+		paramsHash = hex.EncodeToString(hash[:])[:16]
+	} else {
+		paramsHash = "all"
+	}
+
+	return fmt.Sprintf("%s%s:%s:%s:%s:%s", PrefixLeaderboardPosition, context, contextID, entityType, paramsHash, userID)
+}
+
+// LeaderboardCountKey builds a cache key for leaderboard total count (user-agnostic)
+// context: "project" or "event"
+// contextID: project ID or event ID
+// entityType: "persons", "teams", "superteams", or "churches"
+// params: filter parameters
+func LeaderboardCountKey(context, contextID, entityType string, params map[string]string) string {
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for shorter key
+	paramsHash := ""
+	if builder.Len() > 0 {
+		hash := sha256.Sum256([]byte(builder.String()))
+		paramsHash = hex.EncodeToString(hash[:])[:16]
+	} else {
+		paramsHash = "all"
+	}
+
+	return fmt.Sprintf("%s%s:%s:%s:%s", PrefixLeaderboardCount, context, contextID, entityType, paramsHash)
 }

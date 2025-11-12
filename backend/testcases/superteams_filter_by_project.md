@@ -46,39 +46,14 @@ query GetSuperTeamsByProject($projectId: ID!, $first: Int!) {
 {
   "data": {
     "superteams": {
-      "edges": [
-        {
-          "cursor": "U1QwMUs5REdTNjNaU0MzUk4yMFIyOE1QTVhBNg==",
-          "node": {
-            "description": "et tenetur ad et repellat omnis expedita aperiam.",
-            "id": "ST01K9DGS63ZSC3RN20R28MPMXA6",
-            "name": "Mertz, Mertz and Mertz Alliance"
-          }
-        },
-        {
-          "cursor": "U1QwMUs5REdTNjZYQ1dOMTM1VjZLUjc1MDhCNw==",
-          "node": {
-            "description": "tempore id minus nihil omnis doloremque dolores ut.",
-            "id": "ST01K9DGS66XCWN135V6KR7508B7",
-            "name": "Koelpin and Sons Alliance"
-          }
-        },
-        {
-          "cursor": "U1QwMUs5REdTNjhEMjYwRjZaRDFBVkY0REhRMw==",
-          "node": {
-            "description": "voluptas molestiae consequuntur autem totam et sed impedit.",
-            "id": "ST01K9DGS68D260F6ZD1AVF4DHQ3",
-            "name": "Hills-Hills Alliance"
-          }
-        }
-      ],
+      "edges": [],
       "pageInfo": {
-        "endCursor": "U1QwMUs5REdTNjhEMjYwRjZaRDFBVkY0REhRMw==",
+        "endCursor": null,
         "hasNextPage": false,
         "hasPreviousPage": false,
-        "startCursor": "U1QwMUs5REdTNjNaU0MzUk4yMFIyOE1QTVhBNg=="
+        "startCursor": null
       },
-      "totalCount": 3
+      "totalCount": 0
     }
   }
 }

@@ -108,12 +108,17 @@ func main() {
 	roleService := services.NewRoleService(db.Queries, cacheInstance)
 	slog.Info("RoleService initialized with caching")
 
+	// Initialize LeaderboardService
+	leaderboardService := services.NewLeaderboardService(db.Queries, cacheInstance.Cache)
+	slog.Info("LeaderboardService initialized with caching")
+
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{
-		DB:          db,
-		Loaders:     dataLoaders,
-		Cache:       cacheInstance,
-		RoleService: roleService,
+		DB:                 db,
+		Loaders:            dataLoaders,
+		Cache:              cacheInstance,
+		RoleService:        roleService,
+		LeaderboardService: leaderboardService,
 	}
 
 	apiHandler := handler.New(api.NewExecutableSchema(api.Config{

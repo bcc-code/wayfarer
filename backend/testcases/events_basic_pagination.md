@@ -41,63 +41,63 @@ query {
     "events": {
       "edges": [
         {
-          "cursor": "RVYwMUs5REdTNTNOSEhGQVFaNjBDOE1HOU44TQ==",
+          "cursor": "RVYwMUs5UTNUU1hETUYyRlg1MlhDR0FBRkRFNQ==",
           "node": {
-            "description": "rerum eveniet id et ducimus est et aliquid ducimus nesciunt.",
-            "endDate": "2025-10-10T22:22:22+02:00",
-            "id": "EV01K9DGS53NHHFAQZ60C8MG9N8M",
-            "name": "dolorem Event",
-            "startDate": "2025-10-07T22:22:22+02:00"
+            "description": "accusantium modi neque ex itaque est eligendi deleniti a dolore.",
+            "endDate": "2025-10-14T15:48:29+02:00",
+            "id": "EV01K9Q3TSXDMF2FX52XCGAAFDE5",
+            "name": "eius Event",
+            "startDate": "2025-10-11T15:48:29+02:00"
           }
         },
         {
-          "cursor": "RVYwMUs5REdTNTZLQjNCSFMzU1kzRU1OM1EzWA==",
+          "cursor": "RVYwMUs5UTNUU1ozSDY0M1FSMzJXQkpON0pLUw==",
           "node": {
-            "description": "in autem corporis aliquid at ut aut autem et tempore.",
-            "endDate": "2025-10-17T22:22:22+02:00",
-            "id": "EV01K9DGS56KB3BHS3SY3EMN3Q3X",
-            "name": "molestias Event",
-            "startDate": "2025-10-14T22:22:22+02:00"
+            "description": "temporibus qui maiores et atque ipsum sunt ea maxime omnis.",
+            "endDate": "2025-10-21T15:48:29+02:00",
+            "id": "EV01K9Q3TSZ3H643QR32WBJN7JKS",
+            "name": "animi Event",
+            "startDate": "2025-10-18T15:48:29+02:00"
           }
         },
         {
-          "cursor": "RVYwMUs5REdTNTg0QU1ZWVk0RzJEMTMwRldWQw==",
+          "cursor": "RVYwMUs5UTNUU1pYUzRWTk5OTVE0V0pZUFhHVg==",
           "node": {
-            "description": "sed nostrum odit tempore illum molestias est est ut voluptas.",
-            "endDate": "2025-10-24T22:22:22+02:00",
-            "id": "EV01K9DGS584AMYYY4G2D130FWVC",
-            "name": "esse Event",
-            "startDate": "2025-10-21T22:22:22+02:00"
+            "description": "est consectetur asperiores harum et quia quia provident fuga animi.",
+            "endDate": "2025-10-28T15:48:29+01:00",
+            "id": "EV01K9Q3TSZXS4VNNNMQ4WJYPXGV",
+            "name": "quos Event",
+            "startDate": "2025-10-25T15:48:29+02:00"
           }
         },
         {
-          "cursor": "RVYwMUs5REdTNTlQU1IyM1pSVlhQSzRORVJROA==",
+          "cursor": "RVYwMUs5UTNUVDBROU1aQUZYOUc0WFo4R05SQw==",
           "node": {
-            "description": "suscipit impedit cupiditate quia aut aut autem necessitatibus numquam qui.",
-            "endDate": "2025-10-31T22:22:22+01:00",
-            "id": "EV01K9DGS59PSR23ZRVXPK4NERQ8",
-            "name": "omnis Event",
-            "startDate": "2025-10-28T22:22:22+01:00"
+            "description": "magni quaerat officiis sunt est modi nesciunt sed minima quidem.",
+            "endDate": "2025-11-04T15:48:29+01:00",
+            "id": "EV01K9Q3TT0Q9MZAFX9G4XZ8GNRC",
+            "name": "id Event",
+            "startDate": "2025-11-01T15:48:29+01:00"
           }
         },
         {
-          "cursor": "RVYwMUs5REdTNUI4QlNIWVEzQ1pENDJEOTc2Rg==",
+          "cursor": "RVYwMUs5UTNUVDFOWVpWSk4wWlBKRFZTVDFFTQ==",
           "node": {
-            "description": "harum non accusamus doloremque ea at ut voluptas et debitis.",
-            "endDate": "2025-11-07T22:22:22+01:00",
-            "id": "EV01K9DGS5B8BSHYQ3CZD42D976F",
-            "name": "rerum Event",
-            "startDate": "2025-11-04T22:22:22+01:00"
+            "description": "debitis impedit explicabo velit rerum facilis quia hic cupiditate eius.",
+            "endDate": "2025-11-11T15:48:29+01:00",
+            "id": "EV01K9Q3TT1NYZVJN0ZPJDVST1EM",
+            "name": "nihil Event",
+            "startDate": "2025-11-08T15:48:29+01:00"
           }
         }
       ],
       "pageInfo": {
-        "endCursor": "RVYwMUs5REdTNUI4QlNIWVEzQ1pENDJEOTc2Rg==",
+        "endCursor": "RVYwMUs5UTNUVDFOWVpWSk4wWlBKRFZTVDFFTQ==",
         "hasNextPage": true,
         "hasPreviousPage": false,
-        "startCursor": "RVYwMUs5REdTNTNOSEhGQVFaNjBDOE1HOU44TQ=="
+        "startCursor": "RVYwMUs5UTNUU1hETUYyRlg1MlhDR0FBRkRFNQ=="
       },
-      "totalCount": 12
+      "totalCount": 13
     }
   }
 }

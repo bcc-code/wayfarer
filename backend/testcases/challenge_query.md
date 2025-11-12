@@ -11,7 +11,7 @@ Test for querying a challenge by ID using the challenge(id) query. This tests:
 
 ```graphql
 query {
-  challenge(id: "CL01K9DGT73BTRFRZ1JQCQ8CX8XS") {
+  challenge(id: "CL01K9Q3VD3ZSAN16YFGKWDNEH8D") {
     id
     name
     description
@@ -35,17 +35,17 @@ query {
   "data": {
     "challenge": {
       "buttonText": "Accept",
-      "description": "voluptatum rem excepturi et enim voluptates nemo amet consectetur voluptatem ut fuga.",
-      "endTime": null,
-      "id": "CL01K9DGT73BTRFRZ1JQCQ8CX8XS",
-      "image": "https://placecats.com/499/319",
-      "name": "corporis Challenge",
+      "description": "sed ut qui harum tenetur necessitatibus odio consequuntur deserunt velit quas id.",
+      "endTime": "2026-01-07T15:48:49+01:00",
+      "id": "CL01K9Q3VD3ZSAN16YFGKWDNEH8D",
+      "image": "https://placecats.com/412/330",
+      "name": "assumenda Challenge",
       "project": {
-        "id": "PR01K9DGS50S1RZSE5HGN8JQ1XDC",
+        "id": "PR01K9Q3TSVQ05C0E9GJ6QPXHFXP",
         "name": "Summer Bible Camp 2025"
       },
-      "publishedAt": "2025-10-20T22:22:57+02:00",
-      "url": "http://wgd.com/elwlx-l"
+      "publishedAt": "2025-11-04T15:48:49+01:00",
+      "url": "http://www.kdj.com/"
     }
   }
 }

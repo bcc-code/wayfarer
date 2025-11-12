@@ -39,51 +39,51 @@ query {
     "superteams": {
       "edges": [
         {
-          "cursor": "U1QwMUs5REdTNjNaU0MzUk4yMFIyOE1QTVhBNg==",
+          "cursor": "U1QwMUs5UTNUVEZWVFlFTTVXQkZaTTk4RzM0OQ==",
           "node": {
-            "description": "et tenetur ad et repellat omnis expedita aperiam.",
-            "id": "ST01K9DGS63ZSC3RN20R28MPMXA6",
-            "name": "Mertz, Mertz and Mertz Alliance"
+            "description": "doloremque totam optio et saepe sed omnis voluptas.",
+            "id": "ST01K9Q3TTFVTYEM5WBFZM98G349",
+            "name": "Kuvalis, Kuvalis and Kuvalis Alliance"
           }
         },
         {
-          "cursor": "U1QwMUs5REdTNjZYQ1dOMTM1VjZLUjc1MDhCNw==",
+          "cursor": "U1QwMUs5UTNUVEhIV1pYSldQU1hWQlE5TUVNUA==",
           "node": {
-            "description": "tempore id minus nihil omnis doloremque dolores ut.",
-            "id": "ST01K9DGS66XCWN135V6KR7508B7",
-            "name": "Koelpin and Sons Alliance"
+            "description": "quae aliquid sequi fugiat est sequi voluptas ab.",
+            "id": "ST01K9Q3TTHHWZXJWPSXVBQ9MEMP",
+            "name": "DuBuque, DuBuque and DuBuque Alliance"
           }
         },
         {
-          "cursor": "U1QwMUs5REdTNjhEMjYwRjZaRDFBVkY0REhRMw==",
+          "cursor": "U1QwMUs5UTNUVEpCR0RTSDlUUE5FRUgzM05TSg==",
           "node": {
-            "description": "voluptas molestiae consequuntur autem totam et sed impedit.",
-            "id": "ST01K9DGS68D260F6ZD1AVF4DHQ3",
-            "name": "Hills-Hills Alliance"
+            "description": "vero fuga et inventore ullam qui optio odit.",
+            "id": "ST01K9Q3TTJBGDSH9TPNEEH33NSJ",
+            "name": "Kovacek Group Alliance"
           }
         },
         {
-          "cursor": "U1QwMUs5REdTRlg5M1haOUVHSlQ2TlgxOVNUVw==",
+          "cursor": "U1QwMUs5UTNWMEpUSjhGMEI0M1QyQVdXRUNGUw==",
           "node": {
-            "description": "quis exercitationem enim unde ut occaecati pariatur non.",
-            "id": "ST01K9DGSFX93XZ9EGJT6NX19STW",
-            "name": "Brakus, Brakus and Brakus Alliance"
+            "description": "ut eaque cum eligendi et aut corrupti ea.",
+            "id": "ST01K9Q3V0JTJ8F0B43T2AWWECFS",
+            "name": "Ernser and Sons Alliance"
           }
         },
         {
-          "cursor": "U1QwMUs5REdTRllSUEJSWUdQWEc3S0hHR0E2SA==",
+          "cursor": "U1QwMUs5UTNWMEtLRFpIVFJWODdDOVJCV1oxUg==",
           "node": {
-            "description": "nam iste et modi ducimus iusto qui molestias.",
-            "id": "ST01K9DGSFYRPBRYGPXG7KHGGA6H",
-            "name": "Miller, Miller and Miller Alliance"
+            "description": "non cupiditate consectetur perspiciatis dolores quibusdam dicta ea.",
+            "id": "ST01K9Q3V0KKDZHTRV87C9RBWZ1R",
+            "name": "Cole, Cole and Cole Alliance"
           }
         }
       ],
       "pageInfo": {
-        "endCursor": "U1QwMUs5REdTRllSUEJSWUdQWEc3S0hHR0E2SA==",
+        "endCursor": "U1QwMUs5UTNWMEtLRFpIVFJWODdDOVJCV1oxUg==",
         "hasNextPage": true,
         "hasPreviousPage": false,
-        "startCursor": "U1QwMUs5REdTNjNaU0MzUk4yMFIyOE1QTVhBNg=="
+        "startCursor": "U1QwMUs5UTNUVEZWVFlFTTVXQkZaTTk4RzM0OQ=="
       },
       "totalCount": 8
     }

@@ -51,29 +51,29 @@ query GetEventsPage($first: Int!, $after: String) {
     "events": {
       "edges": [
         {
-          "cursor": "RVYwMUs5REdTNTNOSEhGQVFaNjBDOE1HOU44TQ==",
+          "cursor": "RVYwMUs5UTNUU1hETUYyRlg1MlhDR0FBRkRFNQ==",
           "node": {
-            "description": "rerum eveniet id et ducimus est et aliquid ducimus nesciunt.",
-            "id": "EV01K9DGS53NHHFAQZ60C8MG9N8M",
-            "name": "dolorem Event"
+            "description": "accusantium modi neque ex itaque est eligendi deleniti a dolore.",
+            "id": "EV01K9Q3TSXDMF2FX52XCGAAFDE5",
+            "name": "eius Event"
           }
         },
         {
-          "cursor": "RVYwMUs5REdTNTZLQjNCSFMzU1kzRU1OM1EzWA==",
+          "cursor": "RVYwMUs5UTNUU1ozSDY0M1FSMzJXQkpON0pLUw==",
           "node": {
-            "description": "in autem corporis aliquid at ut aut autem et tempore.",
-            "id": "EV01K9DGS56KB3BHS3SY3EMN3Q3X",
-            "name": "molestias Event"
+            "description": "temporibus qui maiores et atque ipsum sunt ea maxime omnis.",
+            "id": "EV01K9Q3TSZ3H643QR32WBJN7JKS",
+            "name": "animi Event"
           }
         }
       ],
       "pageInfo": {
-        "endCursor": "RVYwMUs5REdTNTZLQjNCSFMzU1kzRU1OM1EzWA==",
+        "endCursor": "RVYwMUs5UTNUU1ozSDY0M1FSMzJXQkpON0pLUw==",
         "hasNextPage": true,
         "hasPreviousPage": false,
-        "startCursor": "RVYwMUs5REdTNTNOSEhGQVFaNjBDOE1HOU44TQ=="
+        "startCursor": "RVYwMUs5UTNUU1hETUYyRlg1MlhDR0FBRkRFNQ=="
       },
-      "totalCount": 12
+      "totalCount": 13
     }
   }
 }

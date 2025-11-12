@@ -272,15 +272,15 @@ type DateRangeInput struct {
 }
 
 type Event struct {
-	ID            string             `json:"id"`
-	Name          string             `json:"name"`
-	Description   string             `json:"description"`
-	Challenges    []Challenge        `json:"challenges"`
-	Leaderboard   []LeaderboardEntry `json:"leaderboard"`
-	StartDate     scalars.DateTime   `json:"startDate"`
-	EndDate       scalars.DateTime   `json:"endDate"`
-	ParentProject *Project           `json:"parentProject"`
-	ProjectID     string             `json:"-"`
+	ID            string                 `json:"id"`
+	Name          string                 `json:"name"`
+	Description   string                 `json:"description"`
+	Challenges    []Challenge            `json:"challenges"`
+	Leaderboard   *LeaderboardConnection `json:"leaderboard"`
+	StartDate     scalars.DateTime       `json:"startDate"`
+	EndDate       scalars.DateTime       `json:"endDate"`
+	ParentProject *Project               `json:"parentProject"`
+	ProjectID     string                 `json:"-"`
 }
 
 type EventConnection struct {
@@ -303,11 +303,25 @@ type EventFilter struct {
 	EndDateBefore   *scalars.DateTime `json:"endDateBefore,omitempty"`
 }
 
+type LeaderboardConnection struct {
+	Edges      []LeaderboardEdge `json:"edges"`
+	PageInfo   *PageInfo         `json:"pageInfo"`
+	TotalCount int               `json:"totalCount"`
+	Me         *LeaderboardEntry `json:"me,omitempty"`
+}
+
+type LeaderboardEdge struct {
+	Cursor string            `json:"cursor"`
+	Node   *LeaderboardEntry `json:"node"`
+}
+
 type LeaderboardEntry struct {
-	Name        string  `json:"name"`
-	Score       int     `json:"score"`
-	Description *string `json:"description,omitempty"`
-	Image       *string `json:"image,omitempty"`
+	ID    string  `json:"id"`
+	Name  string  `json:"name"`
+	Score int     `json:"score"`
+	Rank  int     `json:"rank"`
+	IsMe  bool    `json:"isMe"`
+	Image *string `json:"image,omitempty"`
 }
 
 type LeaderboardFilter struct {
@@ -364,20 +378,20 @@ type PageInfo struct {
 }
 
 type Project struct {
-	ID           string             `json:"id"`
-	Name         string             `json:"name"`
-	Description  string             `json:"description"`
-	Challenges   []Challenge        `json:"challenges"`
-	Leaderboard  []LeaderboardEntry `json:"leaderboard"`
-	Events       []Event            `json:"events"`
-	StartDate    scalars.DateTime   `json:"startDate"`
-	EndDate      scalars.DateTime   `json:"endDate"`
-	Branding     *Branding          `json:"branding"`
-	Teams        []Team             `json:"teams"`
-	MyTeam       *Team              `json:"myTeam,omitempty"`
-	Achievements []Achievement      `json:"achievements"`
-	Streaks      []Streak           `json:"streaks"`
-	ArchivedAt   *bool              `json:"archivedAt,omitempty"`
+	ID           string                 `json:"id"`
+	Name         string                 `json:"name"`
+	Description  string                 `json:"description"`
+	Challenges   []Challenge            `json:"challenges"`
+	Leaderboard  *LeaderboardConnection `json:"leaderboard"`
+	Events       []Event                `json:"events"`
+	StartDate    scalars.DateTime       `json:"startDate"`
+	EndDate      scalars.DateTime       `json:"endDate"`
+	Branding     *Branding              `json:"branding"`
+	Teams        []Team                 `json:"teams"`
+	MyTeam       *Team                  `json:"myTeam,omitempty"`
+	Achievements []Achievement          `json:"achievements"`
+	Streaks      []Streak               `json:"streaks"`
+	ArchivedAt   *bool                  `json:"archivedAt,omitempty"`
 }
 
 type ProjectConnection struct {
@@ -541,14 +555,13 @@ type StreakFilter struct {
 }
 
 type SuperTeam struct {
-	ID            string             `json:"id"`
-	Name          string             `json:"name"`
-	Description   string             `json:"description"`
-	Members       *UserConnection    `json:"members"`
-	Leaderboard   []LeaderboardEntry `json:"leaderboard"`
-	ParentProject *Project           `json:"parentProject"`
-	Teams         []Team             `json:"teams"`
-	ProjectID     string             `json:"-"`
+	ID            string          `json:"id"`
+	Name          string          `json:"name"`
+	Description   string          `json:"description"`
+	Members       *UserConnection `json:"members"`
+	ParentProject *Project        `json:"parentProject"`
+	Teams         []Team          `json:"teams"`
+	ProjectID     string          `json:"-"`
 }
 
 type SuperTeamConnection struct {
@@ -572,15 +585,14 @@ type SuperTeamFilter struct {
 }
 
 type Team struct {
-	ID            string             `json:"id"`
-	Name          string             `json:"name"`
-	Description   string             `json:"description"`
-	Members       []User             `json:"members"`
-	Leaderboard   []LeaderboardEntry `json:"leaderboard"`
-	ParentProject *Project           `json:"parentProject"`
-	SuperTeam     *SuperTeam         `json:"superTeam,omitempty"`
-	ProjectID     string             `json:"-"`
-	SuperTeamID   *string            `json:"-"`
+	ID            string     `json:"id"`
+	Name          string     `json:"name"`
+	Description   string     `json:"description"`
+	Members       []User     `json:"members"`
+	ParentProject *Project   `json:"parentProject"`
+	SuperTeam     *SuperTeam `json:"superTeam,omitempty"`
+	ProjectID     string     `json:"-"`
+	SuperTeamID   *string    `json:"-"`
 }
 
 type TeamConnection struct {
@@ -889,50 +901,52 @@ func (e Gender) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type LeaderboardType string
+type LeaderboardEntityType string
 
 const (
-	LeaderboardTypeTotal   LeaderboardType = "TOTAL"
-	LeaderboardTypeWeekly  LeaderboardType = "WEEKLY"
-	LeaderboardTypeMonthly LeaderboardType = "MONTHLY"
+	LeaderboardEntityTypePersons    LeaderboardEntityType = "PERSONS"
+	LeaderboardEntityTypeTeams      LeaderboardEntityType = "TEAMS"
+	LeaderboardEntityTypeSuperteams LeaderboardEntityType = "SUPERTEAMS"
+	LeaderboardEntityTypeChurches   LeaderboardEntityType = "CHURCHES"
 )
 
-var AllLeaderboardType = []LeaderboardType{
-	LeaderboardTypeTotal,
-	LeaderboardTypeWeekly,
-	LeaderboardTypeMonthly,
+var AllLeaderboardEntityType = []LeaderboardEntityType{
+	LeaderboardEntityTypePersons,
+	LeaderboardEntityTypeTeams,
+	LeaderboardEntityTypeSuperteams,
+	LeaderboardEntityTypeChurches,
 }
 
-func (e LeaderboardType) IsValid() bool {
+func (e LeaderboardEntityType) IsValid() bool {
 	switch e {
-	case LeaderboardTypeTotal, LeaderboardTypeWeekly, LeaderboardTypeMonthly:
+	case LeaderboardEntityTypePersons, LeaderboardEntityTypeTeams, LeaderboardEntityTypeSuperteams, LeaderboardEntityTypeChurches:
 		return true
 	}
 	return false
 }
 
-func (e LeaderboardType) String() string {
+func (e LeaderboardEntityType) String() string {
 	return string(e)
 }
 
-func (e *LeaderboardType) UnmarshalGQL(v any) error {
+func (e *LeaderboardEntityType) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
 	}
 
-	*e = LeaderboardType(str)
+	*e = LeaderboardEntityType(str)
 	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid LeaderboardType", str)
+		return fmt.Errorf("%s is not a valid LeaderboardEntityType", str)
 	}
 	return nil
 }
 
-func (e LeaderboardType) MarshalGQL(w io.Writer) {
+func (e LeaderboardEntityType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
-func (e *LeaderboardType) UnmarshalJSON(b []byte) error {
+func (e *LeaderboardEntityType) UnmarshalJSON(b []byte) error {
 	s, err := strconv.Unquote(string(b))
 	if err != nil {
 		return err
@@ -940,7 +954,7 @@ func (e *LeaderboardType) UnmarshalJSON(b []byte) error {
 	return e.UnmarshalGQL(s)
 }
 
-func (e LeaderboardType) MarshalJSON() ([]byte, error) {
+func (e LeaderboardEntityType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

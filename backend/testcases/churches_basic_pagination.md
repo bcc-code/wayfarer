@@ -37,58 +37,58 @@ query {
     "churches": {
       "edges": [
         {
-          "cursor": "Q0gwMUs5REdTMFYxQkJSR1lKWkRYUFpRM1hZWg==",
+          "cursor": "Q0gwMUs5UTNUUU4xNjk5RzQ1MUdQNEcwV1FQRw==",
           "node": {
             "category": "L",
             "country": "Norway",
-            "id": "CH01K9DGS0V1BBRGYJZDXPZQ3XYZ",
+            "id": "CH01K9Q3TQN1699G451GP4G0WQPG",
             "name": "Oslo Community Church"
           }
         },
         {
-          "cursor": "Q0gwMUs5REdTMFhaUVFRQlFaUDNHMzVOMTlWMQ==",
+          "cursor": "Q0gwMUs5UTNUUVBSNTI4VEJLNEdGRTNCUTNBWQ==",
           "node": {
             "category": "S",
             "country": "Norway",
-            "id": "CH01K9DGS0XZQQQBQZP3G35N19V1",
+            "id": "CH01K9Q3TQPR528TBK4GFE3BQ3AY",
             "name": "Bergen Fellowship"
           }
         },
         {
-          "cursor": "Q0gwMUs5REdTMFpEMU02VzBHUDVRWUVKNUVSQQ==",
+          "cursor": "Q0gwMUs5UTNUUVFKU1hENjJENUtaM1hZTUFCNA==",
           "node": {
             "category": "S",
             "country": "Norway",
-            "id": "CH01K9DGS0ZD1M6W0GP5QYEJ5ERA",
+            "id": "CH01K9Q3TQQJSXD62D5KZ3XYMAB4",
             "name": "Stavanger Baptist Church"
           }
         },
         {
-          "cursor": "Q0gwMUs5REdTMTBZMktYRzJDTldUNERSMVpDRw==",
+          "cursor": "Q0gwMUs5UTNUUVJDMUo2MllDMDE1VlZEOVRRUA==",
           "node": {
             "category": "XL",
             "country": "Sweden",
-            "id": "CH01K9DGS10Y2KXG2CNWT4DR1ZCG",
+            "id": "CH01K9Q3TQRC1J62YC015VVD9TQP",
             "name": "Stockholm Evangelical Church"
           }
         },
         {
-          "cursor": "Q0gwMUs5REdTMTJEODdLMzBRNlhFWFZaMTlKQw==",
+          "cursor": "Q0gwMUs5UTNUUVM4WUdZOVhINjhRSDhBVlM0MA==",
           "node": {
             "category": "L",
             "country": "Sweden",
-            "id": "CH01K9DGS12D87K30Q6XEXVZ19JC",
+            "id": "CH01K9Q3TQS8YGY9XH68QH8AVS40",
             "name": "Göteborg Christian Center"
           }
         }
       ],
       "pageInfo": {
-        "endCursor": "Q0gwMUs5REdTMTJEODdLMzBRNlhFWFZaMTlKQw==",
+        "endCursor": "Q0gwMUs5UTNUUVM4WUdZOVhINjhRSDhBVlM0MA==",
         "hasNextPage": true,
         "hasPreviousPage": false,
-        "startCursor": "Q0gwMUs5REdTMFYxQkJSR1lKWkRYUFpRM1hZWg=="
+        "startCursor": "Q0gwMUs5UTNUUU4xNjk5RzQ1MUdQNEcwV1FQRw=="
       },
-      "totalCount": 9
+      "totalCount": 8
     }
   }
 }

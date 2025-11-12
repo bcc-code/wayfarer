@@ -63,34 +63,26 @@ query GetEventsByDateRange(
       "edges": [
         {
           "node": {
-            "endDate": "2025-10-10T22:22:22+02:00",
-            "id": "EV01K9DGS53NHHFAQZ60C8MG9N8M",
-            "name": "dolorem Event",
-            "startDate": "2025-10-07T22:22:22+02:00"
+            "endDate": "2025-10-14T15:48:29+02:00",
+            "id": "EV01K9Q3TSXDMF2FX52XCGAAFDE5",
+            "name": "eius Event",
+            "startDate": "2025-10-11T15:48:29+02:00"
           }
         },
         {
           "node": {
-            "endDate": "2025-10-17T22:22:22+02:00",
-            "id": "EV01K9DGS56KB3BHS3SY3EMN3Q3X",
-            "name": "molestias Event",
-            "startDate": "2025-10-14T22:22:22+02:00"
+            "endDate": "2025-10-21T15:48:29+02:00",
+            "id": "EV01K9Q3TSZ3H643QR32WBJN7JKS",
+            "name": "animi Event",
+            "startDate": "2025-10-18T15:48:29+02:00"
           }
         },
         {
           "node": {
-            "endDate": "2025-10-24T22:22:22+02:00",
-            "id": "EV01K9DGS584AMYYY4G2D130FWVC",
-            "name": "esse Event",
-            "startDate": "2025-10-21T22:22:22+02:00"
-          }
-        },
-        {
-          "node": {
-            "endDate": "2025-10-31T22:22:22+01:00",
-            "id": "EV01K9DGS59PSR23ZRVXPK4NERQ8",
-            "name": "omnis Event",
-            "startDate": "2025-10-28T22:22:22+01:00"
+            "endDate": "2025-10-28T15:48:29+01:00",
+            "id": "EV01K9Q3TSZXS4VNNNMQ4WJYPXGV",
+            "name": "quos Event",
+            "startDate": "2025-10-25T15:48:29+02:00"
           }
         }
       ],
@@ -98,7 +90,7 @@ query GetEventsByDateRange(
         "hasNextPage": false,
         "hasPreviousPage": false
       },
-      "totalCount": 4
+      "totalCount": 3
     }
   }
 }

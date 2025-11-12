@@ -26,6 +26,7 @@ type TestCase struct {
 	FilePath  string
 	Content   string
 	UserID    string
+	Roles     []string
 	Query     string
 	Variables map[string]interface{}
 }

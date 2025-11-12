@@ -1,4 +1,4 @@
-# UserID: US01K9DGS4RXAJ40NF3XJNP7M9VQ
+# UserID: US01K9Q3TQYGR8W5JHW4GMVPWS44
 
 ## Description
 
@@ -75,179 +75,173 @@ query userDetails {
 ```json
 {
   "data": {
-    "me": {
-      "id": "US01K9DGS4RXAJ40NF3XJNP7M9VQ",
-      "name": "Alphonso Shields",
-      "projects": [
-        {
-          "myTeam": {
-            "name": "Coremaking Machine Operator Team"
-          }
-        },
-        {
-          "myTeam": {
-            "name": "Ship Captain Team"
-          }
-        }
-      ]
-    },
     "currentProject": {
-      "id": "PR01K9DGS50S1RZSE5HGN8JQ1XDC",
-      "name": "Summer Bible Camp 2025",
-      "description": "Join us for an amazing summer adventure exploring God's word!",
-      "challenges": [
-        {
-          "name": "explicabo Challenge"
-        },
-        {
-          "name": "impedit Challenge"
-        },
-        {
-          "name": "eveniet Challenge"
-        },
-        {
-          "name": "minima Challenge"
-        },
-        {
-          "name": "nemo Challenge"
-        },
-        {
-          "name": "nesciunt Challenge"
-        },
-        {
-          "name": "praesentium Challenge"
-        },
-        {
-          "name": "corporis Challenge"
-        },
-        {
-          "name": "itaque Challenge"
-        },
-        {
-          "name": "dolore Challenge"
-        },
-        {
-          "name": "unde Challenge"
-        },
-        {
-          "name": "rerum Challenge"
-        },
-        {
-          "name": "hic Challenge"
-        },
-        {
-          "name": "omnis Challenge"
-        }
-      ],
-      "events": [
-        {
-          "name": "rerum Event"
-        },
-        {
-          "name": "omnis Event"
-        },
-        {
-          "name": "esse Event"
-        },
-        {
-          "name": "molestias Event"
-        },
-        {
-          "name": "dolorem Event"
-        }
-      ],
-      "startDate": "2025-10-07T22:22:22+02:00",
-      "endDate": "2026-01-05T22:22:22+01:00",
       "branding": {
         "colors": {
-          "secondary": "#87B534"
+          "secondary": "#FFF1EB"
         }
       },
-      "teams": [
+      "challenges": [
         {
-          "name": "Buffing and Polishing Operator Team",
-          "superTeam": null
+          "name": "nam Challenge"
         },
         {
-          "name": "Metal Fabricator Team",
-          "superTeam": {
-            "name": "Hills-Hills Alliance"
-          }
+          "name": "non Challenge"
         },
         {
-          "name": "Home Team",
-          "superTeam": null
+          "name": "alias Challenge"
         },
         {
-          "name": "Telecommunications Line Installer Team",
-          "superTeam": null
+          "name": "fugiat Challenge"
         },
         {
-          "name": "Plating Operator OR Coating Machine Operator Team",
-          "superTeam": {
-            "name": "Hills-Hills Alliance"
-          }
+          "name": "aut Challenge"
         },
         {
-          "name": "Home Appliance Repairer Team",
-          "superTeam": {
-            "name": "Hills-Hills Alliance"
-          }
+          "name": "aperiam Challenge"
         },
         {
-          "name": "Job Printer Team",
-          "superTeam": {
-            "name": "Koelpin and Sons Alliance"
-          }
+          "name": "assumenda Challenge"
         },
         {
-          "name": "Accountant Team",
-          "superTeam": {
-            "name": "Koelpin and Sons Alliance"
-          }
+          "name": "perferendis Challenge"
         },
         {
-          "name": "Coremaking Machine Operator Team",
-          "superTeam": null
+          "name": "accusantium Challenge"
+        },
+        {
+          "name": "ut Challenge"
+        },
+        {
+          "name": "inventore Challenge"
+        },
+        {
+          "name": "veniam Challenge"
+        },
+        {
+          "name": "earum Challenge"
+        },
+        {
+          "name": "sint Challenge"
+        },
+        {
+          "name": "nisi Challenge"
+        },
+        {
+          "name": "blanditiis Challenge"
+        },
+        {
+          "name": "suscipit Challenge"
         }
       ],
+      "description": "Join us for an amazing summer adventure exploring God's word!",
+      "endDate": "2026-01-09T15:48:29+01:00",
+      "events": [
+        {
+          "name": "nihil Event"
+        },
+        {
+          "name": "id Event"
+        },
+        {
+          "name": "quos Event"
+        },
+        {
+          "name": "animi Event"
+        },
+        {
+          "name": "eius Event"
+        }
+      ],
+      "id": "PR01K9Q3TSVQ05C0E9GJ6QPXHFXP",
       "myTeam": {
-        "name": "Coremaking Machine Operator Team"
+        "name": "Semiconductor Processor Team"
       },
+      "name": "Summer Bible Camp 2025",
+      "startDate": "2025-10-11T15:48:29+02:00",
       "streaks": [
         {
-          "name": "dolorum Streak",
-          "id": "SK01K9DGS5FT6YD9JTJP1HQX9CG2",
-          "relevantDays": [],
+          "id": "SK01K9Q3TT46W57DX96ARTPETEAB",
           "listenedDays": [],
+          "name": "et Streak",
           "project": {
             "name": "Summer Bible Camp 2025"
           },
+          "relevantDays": [],
           "status": 0
         },
         {
-          "name": "nulla Streak",
-          "id": "SK01K9DGS5CSE0SSC0HS59325XPN",
-          "relevantDays": [
-            {
-              "start": "2025-11-06",
-              "end": "2025-11-09"
-            }
-          ],
-          "listenedDays": [
-            {
-              "date": "2025-11-07",
-              "active": true
-            },
-            {
-              "date": "2025-11-06",
-              "active": false
-            }
-          ],
+          "id": "SK01K9Q3TT2G1V3SN647X7QGJ7D9",
+          "listenedDays": [],
+          "name": "voluptas Streak",
           "project": {
             "name": "Summer Bible Camp 2025"
           },
-          "status": 1
+          "relevantDays": [],
+          "status": 0
+        }
+      ],
+      "teams": [
+        {
+          "name": "Parts Salesperson Team",
+          "superTeam": {
+            "name": "Kovacek Group Alliance"
+          }
+        },
+        {
+          "name": "Park Naturalist Team",
+          "superTeam": null
+        },
+        {
+          "name": "Hand Trimmer Team",
+          "superTeam": null
+        },
+        {
+          "name": "Fish Game Warden Team",
+          "superTeam": null
+        },
+        {
+          "name": "Semiconductor Processor Team",
+          "superTeam": null
+        },
+        {
+          "name": "Electrician Team",
+          "superTeam": {
+            "name": "Kovacek Group Alliance"
+          }
+        },
+        {
+          "name": "Forester Team",
+          "superTeam": {
+            "name": "Kovacek Group Alliance"
+          }
+        },
+        {
+          "name": "Communication Equipment Repairer Team",
+          "superTeam": null
+        },
+        {
+          "name": "Well and Core Drill Operator Team",
+          "superTeam": null
+        },
+        {
+          "name": "Hand Presser Team",
+          "superTeam": null
+        },
+        {
+          "name": "Signal Repairer OR Track Switch Repairer Team",
+          "superTeam": null
+        }
+      ]
+    },
+    "me": {
+      "id": "US01K9Q3TQYGR8W5JHW4GMVPWS44",
+      "name": "Art Fritsch",
+      "projects": [
+        {
+          "myTeam": {
+            "name": "Semiconductor Processor Team"
+          }
         }
       ]
     }

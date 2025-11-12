@@ -8,7 +8,7 @@ Test for the `church(id)` query. This should return a church by its ID.
 
 ```graphql
 query {
-  church(id: "CH01K9DGS10Y2KXG2CNWT4DR1ZCG") {
+  church(id: "CH01K9Q3TQQJSXD62D5KZ3XYMAB4") {
     id
     name
     country
@@ -23,10 +23,10 @@ query {
 {
   "data": {
     "church": {
-      "id": "CH01K9DGS10Y2KXG2CNWT4DR1ZCG",
-      "name": "Stockholm Evangelical Church",
-      "country": "Sweden",
-      "category": "XL"
+      "category": "S",
+      "country": "Norway",
+      "id": "CH01K9Q3TQQJSXD62D5KZ3XYMAB4",
+      "name": "Stavanger Baptist Church"
     }
   }
 }
