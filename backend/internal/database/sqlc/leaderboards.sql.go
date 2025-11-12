@@ -135,52 +135,59 @@ func (q *Queries) CountProjectChurchLeaderboard(ctx context.Context, arg CountPr
 }
 
 const CountProjectPersonLeaderboard = `-- name: CountProjectPersonLeaderboard :one
-SELECT COUNT(DISTINCT u.id)::bigint AS total
-FROM users u
-INNER JOIN user_projects up ON u.id = up.user_id
-WHERE
-    up.project_id = $1::text
-    AND ($2::text = '' OR u.church_id = $2::text)
-    AND ($3::text = '' OR EXISTS (
-        SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.country = $3::text
-    ))
-    AND ($4::text = '' OR EXISTS (
-        SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.category = $4::text
-    ))
-    AND ($5::text = '' OR u.gender = $5::text)
-    AND ($6::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $6::int)
-    AND ($7::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $7::int)
-    AND ($8::text = '' OR EXISTS (
-        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $8::text
-    ))
-    AND ($9::text = '' OR EXISTS (
-        SELECT 1 FROM team_members tm
-        INNER JOIN teams t ON tm.team_id = t.id
-        WHERE tm.user_id = u.id AND t.super_team_id = $9::text
-    ))
+WITH project_users AS MATERIALIZED (
+    -- Start with users in THIS project
+    SELECT DISTINCT u.id, u.birthdate, u.church_id, u.gender
+    FROM user_projects up
+    INNER JOIN users u ON up.user_id = u.id
+    WHERE up.project_id = $5::text
+      AND ($6::text = '' OR u.church_id = $6::text)
+      AND ($7::text = '' OR u.gender = $7::text)
+      AND ($8::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          WHERE tm.user_id = u.id AND tm.team_id = $8::text
+      ))
+      AND ($9::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN teams t ON tm.team_id = t.id
+          WHERE tm.user_id = u.id AND t.super_team_id = $9::text
+      ))
+)
+SELECT COUNT(*)::bigint AS total
+FROM project_users pu
+WHERE ($1::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) >= $1::int)
+  AND ($2::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) <= $2::int)
+  AND ($3::text = '' OR EXISTS (
+      SELECT 1 FROM churches c
+      WHERE c.id = pu.church_id AND c.country = $3::text
+  ))
+  AND ($4::text = '' OR EXISTS (
+      SELECT 1 FROM churches c
+      WHERE c.id = pu.church_id AND c.category = $4::text
+  ))
 `
 
 type CountProjectPersonLeaderboardParams struct {
-	Projectid      string `json:"projectid"`
-	Churchid       string `json:"churchid"`
-	Country        string `json:"country"`
-	Churchcategory string `json:"churchcategory"`
-	Gender         string `json:"gender"`
 	Minage         int32  `json:"minage"`
 	Maxage         int32  `json:"maxage"`
+	Country        string `json:"country"`
+	Churchcategory string `json:"churchcategory"`
+	Projectid      string `json:"projectid"`
+	Churchid       string `json:"churchid"`
+	Gender         string `json:"gender"`
 	Teamid         string `json:"teamid"`
 	Superteamid    string `json:"superteamid"`
 }
 
 func (q *Queries) CountProjectPersonLeaderboard(ctx context.Context, arg CountProjectPersonLeaderboardParams) (int64, error) {
 	row := q.db.QueryRow(ctx, CountProjectPersonLeaderboard,
-		arg.Projectid,
-		arg.Churchid,
-		arg.Country,
-		arg.Churchcategory,
-		arg.Gender,
 		arg.Minage,
 		arg.Maxage,
+		arg.Country,
+		arg.Churchcategory,
+		arg.Projectid,
+		arg.Churchid,
+		arg.Gender,
 		arg.Teamid,
 		arg.Superteamid,
 	)
@@ -636,38 +643,51 @@ func (q *Queries) FindMyProjectChurchPosition(ctx context.Context, arg FindMyPro
 }
 
 const FindMyProjectPersonPosition = `-- name: FindMyProjectPersonPosition :one
-WITH person_scores AS (
+WITH project_users AS MATERIALIZED (
+    -- Start with users in THIS project
+    SELECT DISTINCT u.id, u.name, u.avatar_url, u.birthdate, u.church_id, u.gender
+    FROM user_projects up
+    INNER JOIN users u ON up.user_id = u.id
+    WHERE up.project_id = $4::text
+      AND ($5::text = '' OR u.church_id = $5::text)
+      AND ($6::text = '' OR u.gender = $6::text)
+      AND ($7::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          WHERE tm.user_id = u.id AND tm.team_id = $7::text
+      ))
+      AND ($8::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN teams t ON tm.team_id = t.id
+          WHERE tm.user_id = u.id AND t.super_team_id = $8::text
+      ))
+),
+filtered_users AS MATERIALIZED (
+    -- Apply age and church filters
+    SELECT pu.id, pu.name, pu.avatar_url
+    FROM project_users pu
+    WHERE ($9::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) >= $9::int)
+      AND ($10::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) <= $10::int)
+      AND ($11::text = '' OR EXISTS (
+          SELECT 1 FROM churches c
+          WHERE c.id = pu.church_id AND c.country = $11::text
+      ))
+      AND ($12::text = '' OR EXISTS (
+          SELECT 1 FROM churches c
+          WHERE c.id = pu.church_id AND c.category = $12::text
+      ))
+),
+person_scores AS (
     SELECT
-        u.id AS entity_id,
-        u.name,
-        u.avatar_url AS image,
+        fu.id AS entity_id,
+        fu.name,
+        fu.avatar_url AS image,
         COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
-    FROM users u
-    INNER JOIN user_projects up ON u.id = up.user_id
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    FROM filtered_users fu
+    LEFT JOIN user_achievements ua ON fu.id = ua.user_id
     LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = $4::text
-    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = u.id AND sa.project_id = $4::text
-    WHERE
-        up.project_id = $4::text
-        AND ($5::text = '' OR u.church_id = $5::text)
-        AND ($6::text = '' OR EXISTS (
-            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.country = $6::text
-        ))
-        AND ($7::text = '' OR EXISTS (
-            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.category = $7::text
-        ))
-        AND ($8::text = '' OR u.gender = $8::text)
-        AND ($9::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $9::int)
-        AND ($10::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $10::int)
-        AND ($11::text = '' OR EXISTS (
-            SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $11::text
-        ))
-        AND ($12::text = '' OR EXISTS (
-            SELECT 1 FROM team_members tm
-            INNER JOIN teams t ON tm.team_id = t.id
-            WHERE tm.user_id = u.id AND t.super_team_id = $12::text
-        ))
-    GROUP BY u.id, u.name, u.avatar_url
+    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = fu.id AND sa.project_id = $4::text
+    GROUP BY fu.id, fu.name, fu.avatar_url
+    HAVING COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) >= 1
 ),
 ranked_scores AS (
     SELECT
@@ -682,7 +702,6 @@ SELECT entity_id, name, image, score, rank
 FROM ranked_scores
 WHERE
     entity_id = $1::text
-    AND score >= 1
     AND ($2::int IS NULL OR score >= $2::int)
     AND ($3::int IS NULL OR score <= $3::int)
 `
@@ -693,13 +712,13 @@ type FindMyProjectPersonPositionParams struct {
 	Maxscore       int32  `json:"maxscore"`
 	Projectid      string `json:"projectid"`
 	Churchid       string `json:"churchid"`
-	Country        string `json:"country"`
-	Churchcategory string `json:"churchcategory"`
 	Gender         string `json:"gender"`
-	Minage         int32  `json:"minage"`
-	Maxage         int32  `json:"maxage"`
 	Teamid         string `json:"teamid"`
 	Superteamid    string `json:"superteamid"`
+	Minage         int32  `json:"minage"`
+	Maxage         int32  `json:"maxage"`
+	Country        string `json:"country"`
+	Churchcategory string `json:"churchcategory"`
 }
 
 type FindMyProjectPersonPositionRow struct {
@@ -717,13 +736,13 @@ func (q *Queries) FindMyProjectPersonPosition(ctx context.Context, arg FindMyPro
 		arg.Maxscore,
 		arg.Projectid,
 		arg.Churchid,
-		arg.Country,
-		arg.Churchcategory,
 		arg.Gender,
-		arg.Minage,
-		arg.Maxage,
 		arg.Teamid,
 		arg.Superteamid,
+		arg.Minage,
+		arg.Maxage,
+		arg.Country,
+		arg.Churchcategory,
 	)
 	var i FindMyProjectPersonPositionRow
 	err := row.Scan(
@@ -1396,38 +1415,52 @@ func (q *Queries) GetProjectChurchLeaderboard(ctx context.Context, arg GetProjec
 
 const GetProjectPersonLeaderboard = `-- name: GetProjectPersonLeaderboard :many
 
-WITH person_scores AS (
+WITH project_users AS MATERIALIZED (
+    -- Start with users in THIS project (huge performance win)
+    -- MATERIALIZED forces execution order to avoid scanning all users
+    SELECT DISTINCT u.id, u.name, u.avatar_url, u.birthdate, u.church_id, u.gender
+    FROM user_projects up
+    INNER JOIN users u ON up.user_id = u.id
+    WHERE up.project_id = $6::text
+      AND ($7::text = '' OR u.church_id = $7::text)
+      AND ($8::text = '' OR u.gender = $8::text)
+      AND ($9::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          WHERE tm.user_id = u.id AND tm.team_id = $9::text
+      ))
+      AND ($10::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN teams t ON tm.team_id = t.id
+          WHERE tm.user_id = u.id AND t.super_team_id = $10::text
+      ))
+),
+filtered_users AS MATERIALIZED (
+    -- Apply age and church filters
+    SELECT pu.id, pu.name, pu.avatar_url
+    FROM project_users pu
+    WHERE ($11::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) >= $11::int)
+      AND ($12::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) <= $12::int)
+      AND ($13::text = '' OR EXISTS (
+          SELECT 1 FROM churches c
+          WHERE c.id = pu.church_id AND c.country = $13::text
+      ))
+      AND ($14::text = '' OR EXISTS (
+          SELECT 1 FROM churches c
+          WHERE c.id = pu.church_id AND c.category = $14::text
+      ))
+),
+person_scores AS (
     SELECT
-        u.id AS entity_id,
-        u.name,
-        u.avatar_url AS image,
+        fu.id AS entity_id,
+        fu.name,
+        fu.avatar_url AS image,
         COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
-    FROM users u
-    INNER JOIN user_projects up ON u.id = up.user_id
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    FROM filtered_users fu
+    LEFT JOIN user_achievements ua ON fu.id = ua.user_id
     LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = $6::text
-    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = u.id AND sa.project_id = $6::text
-    WHERE
-        up.project_id = $6::text
-        AND ($7::text = '' OR u.church_id = $7::text)
-        AND ($8::text = '' OR EXISTS (
-            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.country = $8::text
-        ))
-        AND ($9::text = '' OR EXISTS (
-            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.category = $9::text
-        ))
-        AND ($10::text = '' OR u.gender = $10::text)
-        AND ($11::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $11::int)
-        AND ($12::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $12::int)
-        AND ($13::text = '' OR EXISTS (
-            SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $13::text
-        ))
-        AND ($14::text = '' OR EXISTS (
-            SELECT 1 FROM team_members tm
-            INNER JOIN teams t ON tm.team_id = t.id
-            WHERE tm.user_id = u.id AND t.super_team_id = $14::text
-        ))
-    GROUP BY u.id, u.name, u.avatar_url
+    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = fu.id AND sa.project_id = $6::text
+    GROUP BY fu.id, fu.name, fu.avatar_url
+    HAVING COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) >= 1
 ),
 ranked_scores AS (
     SELECT
@@ -1441,8 +1474,7 @@ ranked_scores AS (
 SELECT entity_id, name, image, score, rank
 FROM ranked_scores
 WHERE
-    score >= 1
-    AND ($1::int IS NULL OR score >= $1::int)
+    ($1::int IS NULL OR score >= $1::int)
     AND ($2::int IS NULL OR score <= $2::int)
     AND ($3::bigint IS NULL OR rank > $3::bigint)
     AND ($4::bigint IS NULL OR rank < $4::bigint)
@@ -1458,13 +1490,13 @@ type GetProjectPersonLeaderboardParams struct {
 	Querylimit     int32  `json:"querylimit"`
 	Projectid      string `json:"projectid"`
 	Churchid       string `json:"churchid"`
-	Country        string `json:"country"`
-	Churchcategory string `json:"churchcategory"`
 	Gender         string `json:"gender"`
-	Minage         int32  `json:"minage"`
-	Maxage         int32  `json:"maxage"`
 	Teamid         string `json:"teamid"`
 	Superteamid    string `json:"superteamid"`
+	Minage         int32  `json:"minage"`
+	Maxage         int32  `json:"maxage"`
+	Country        string `json:"country"`
+	Churchcategory string `json:"churchcategory"`
 }
 
 type GetProjectPersonLeaderboardRow struct {
@@ -1485,13 +1517,13 @@ func (q *Queries) GetProjectPersonLeaderboard(ctx context.Context, arg GetProjec
 		arg.Querylimit,
 		arg.Projectid,
 		arg.Churchid,
-		arg.Country,
-		arg.Churchcategory,
 		arg.Gender,
-		arg.Minage,
-		arg.Maxage,
 		arg.Teamid,
 		arg.Superteamid,
+		arg.Minage,
+		arg.Maxage,
+		arg.Country,
+		arg.Churchcategory,
 	)
 	if err != nil {
 		return nil, err

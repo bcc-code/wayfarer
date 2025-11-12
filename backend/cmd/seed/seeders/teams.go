@@ -1,12 +1,14 @@
 package seeders
 
 import (
+	"log/slog"
 	"math/rand"
 
 	"github.com/bcc-media/wayfarer/internal/ulid"
+	"github.com/jackc/pgx/v5"
 )
 
-// SeedTeams creates super teams, teams, and assigns users
+// SeedTeams creates super teams, teams, and assigns users based on configured participation rate
 func (s *Seeder) SeedTeams(stats *Stats) error {
 	superTeamQuery := `
 		INSERT INTO super_teams (id, project_id, name, description)
@@ -18,22 +20,37 @@ func (s *Seeder) SeedTeams(stats *Stats) error {
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 
-	memberQuery := `
-		INSERT INTO team_members (team_id, user_id)
-		VALUES ($1, $2)
-	`
+	// First, assign users to projects based on participation rate
+	userProjectRows := [][]interface{}{}
+	for _, projectID := range s.Data.ProjectIDs {
+		for _, userID := range s.Data.UserIDs {
+			if rand.Float64() < s.Config.ProjectParticipationRate {
+				userProjectRows = append(userProjectRows, []interface{}{userID, projectID})
+			}
+		}
+	}
 
-	userProjectQuery := `
-		INSERT INTO user_projects (user_id, project_id)
-		VALUES ($1, $2)
-		ON CONFLICT DO NOTHING
-	`
+	// Batch insert user_projects
+	if len(userProjectRows) > 0 {
+		_, err := s.DB.Pool.CopyFrom(
+			s.Ctx,
+			pgx.Identifier{"user_projects"},
+			[]string{"user_id", "project_id"},
+			pgx.CopyFromRows(userProjectRows),
+		)
+		if err != nil {
+			return err
+		}
+		slog.Info("User project assignments", "count", len(userProjectRows))
+	}
 
 	// For each project, create super teams and teams
+	projectCount := 0
 	for _, projectID := range s.Data.ProjectIDs {
-		// Create 2-3 SuperTeams per project
-		numSuperTeams := 2 + rand.Intn(2)
-		for i := 0; i < numSuperTeams; i++ {
+		projectCount++
+
+		// Create configured number of SuperTeams per project
+		for i := 0; i < s.Config.NumSuperTeams; i++ {
 			superTeamID := ulid.NewSuperTeamID()
 			name := s.Fake.Company().Name() + " Alliance"
 			description := s.Fake.Lorem().Sentence(8)
@@ -52,8 +69,17 @@ func (s *Seeder) SeedTeams(stats *Stats) error {
 			stats.SuperTeams++
 		}
 
-		// Create 8-12 teams per project
-		numTeams := 8 + rand.Intn(5)
+		// Calculate expected users in this project
+		expectedUsersInProject := int(float64(len(s.Data.UserIDs)) * s.Config.ProjectParticipationRate)
+
+		// Calculate number of teams needed to have ~TeamSize members each
+		numTeams := expectedUsersInProject / s.Config.TeamSize
+		if numTeams < 1 {
+			numTeams = 1
+		}
+
+		// Create teams
+		teamMemberRows := [][]interface{}{}
 		for i := 0; i < numTeams; i++ {
 			teamID := ulid.NewTeamID()
 			name := s.Fake.Company().JobTitle() + " Team"
@@ -84,8 +110,8 @@ func (s *Seeder) SeedTeams(stats *Stats) error {
 			s.Data.TeamIDs[projectID] = append(s.Data.TeamIDs[projectID], teamID)
 			stats.Teams++
 
-			// Assign 5-15 random users to this team
-			numMembers := 5 + rand.Intn(11)
+			// Assign approximately TeamSize random users to this team
+			numMembers := s.Config.TeamSize + rand.Intn(3) - 1 // TeamSize ± 1
 			assignedUsers := make(map[string]bool)
 
 			for j := 0; j < numMembers && j < len(s.Data.UserIDs); j++ {
@@ -99,23 +125,29 @@ func (s *Seeder) SeedTeams(stats *Stats) error {
 				}
 
 				if assignedUsers[userID] {
-					continue // Skip if we couldn't find a unique user
+					continue
 				}
 
 				assignedUsers[userID] = true
-
-				// Add user to project
-				_, err := s.DB.Pool.Exec(s.Ctx, userProjectQuery, userID, projectID)
-				if err != nil {
-					return err
-				}
-
-				// Add user to team
-				_, err = s.DB.Pool.Exec(s.Ctx, memberQuery, teamID, userID)
-				if err != nil {
-					return err
-				}
+				teamMemberRows = append(teamMemberRows, []interface{}{teamID, userID})
 			}
+		}
+
+		// Batch insert team members for this project
+		if len(teamMemberRows) > 0 {
+			_, err := s.DB.Pool.CopyFrom(
+				s.Ctx,
+				pgx.Identifier{"team_members"},
+				[]string{"team_id", "user_id"},
+				pgx.CopyFromRows(teamMemberRows),
+			)
+			if err != nil {
+				return err
+			}
+		}
+
+		if projectCount%10 == 0 {
+			slog.Info("Teams progress", "projects_completed", projectCount, "total_projects", len(s.Data.ProjectIDs), "teams_created", stats.Teams, "superteams_created", stats.SuperTeams)
 		}
 	}
 

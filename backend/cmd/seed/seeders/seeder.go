@@ -7,12 +7,25 @@ import (
 	"github.com/jaswdr/faker"
 )
 
+// SeedConfig holds configuration for the seeding process
+type SeedConfig struct {
+	NumUsers                  int
+	NumProjects               int
+	NumChurches               int
+	NumSuperTeams             int
+	NumAchievements           int
+	TeamSize                  int
+	ProjectParticipationRate  float64
+	AchievementCompletionRate float64
+}
+
 // Seeder holds the database connection and faker instance
 type Seeder struct {
-	DB   *database.DB
-	Fake faker.Faker
-	Ctx  context.Context
-	Data *SeededData
+	DB     *database.DB
+	Fake   faker.Faker
+	Ctx    context.Context
+	Data   *SeededData
+	Config SeedConfig
 }
 
 // Stats tracks how many records were seeded

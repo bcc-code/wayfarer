@@ -1,38 +1,52 @@
 -- ==================== Project Person Leaderboard ====================
 
 -- name: GetProjectPersonLeaderboard :many
-WITH person_scores AS (
+WITH project_users AS MATERIALIZED (
+    -- Start with users in THIS project (huge performance win)
+    -- MATERIALIZED forces execution order to avoid scanning all users
+    SELECT DISTINCT u.id, u.name, u.avatar_url, u.birthdate, u.church_id, u.gender
+    FROM user_projects up
+    INNER JOIN users u ON up.user_id = u.id
+    WHERE up.project_id = @projectid::text
+      AND (@churchid::text = '' OR u.church_id = @churchid::text)
+      AND (@gender::text = '' OR u.gender = @gender::text)
+      AND (@teamid::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          WHERE tm.user_id = u.id AND tm.team_id = @teamid::text
+      ))
+      AND (@superteamid::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN teams t ON tm.team_id = t.id
+          WHERE tm.user_id = u.id AND t.super_team_id = @superteamid::text
+      ))
+),
+filtered_users AS MATERIALIZED (
+    -- Apply age and church filters
+    SELECT pu.id, pu.name, pu.avatar_url
+    FROM project_users pu
+    WHERE (@minage::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) >= @minage::int)
+      AND (@maxage::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) <= @maxage::int)
+      AND (@country::text = '' OR EXISTS (
+          SELECT 1 FROM churches c
+          WHERE c.id = pu.church_id AND c.country = @country::text
+      ))
+      AND (@churchcategory::text = '' OR EXISTS (
+          SELECT 1 FROM churches c
+          WHERE c.id = pu.church_id AND c.category = @churchcategory::text
+      ))
+),
+person_scores AS (
     SELECT
-        u.id AS entity_id,
-        u.name,
-        u.avatar_url AS image,
+        fu.id AS entity_id,
+        fu.name,
+        fu.avatar_url AS image,
         COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
-    FROM users u
-    INNER JOIN user_projects up ON u.id = up.user_id
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    FROM filtered_users fu
+    LEFT JOIN user_achievements ua ON fu.id = ua.user_id
     LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = @projectid::text
-    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = u.id AND sa.project_id = @projectid::text
-    WHERE
-        up.project_id = @projectid::text
-        AND (@churchid::text = '' OR u.church_id = @churchid::text)
-        AND (@country::text = '' OR EXISTS (
-            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.country = @country::text
-        ))
-        AND (@churchcategory::text = '' OR EXISTS (
-            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.category = @churchcategory::text
-        ))
-        AND (@gender::text = '' OR u.gender = @gender::text)
-        AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
-        AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)
-        AND (@teamid::text = '' OR EXISTS (
-            SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = @teamid::text
-        ))
-        AND (@superteamid::text = '' OR EXISTS (
-            SELECT 1 FROM team_members tm
-            INNER JOIN teams t ON tm.team_id = t.id
-            WHERE tm.user_id = u.id AND t.super_team_id = @superteamid::text
-        ))
-    GROUP BY u.id, u.name, u.avatar_url
+    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = fu.id AND sa.project_id = @projectid::text
+    GROUP BY fu.id, fu.name, fu.avatar_url
+    HAVING COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) >= 1
 ),
 ranked_scores AS (
     SELECT
@@ -46,8 +60,7 @@ ranked_scores AS (
 SELECT entity_id, name, image, score, rank
 FROM ranked_scores
 WHERE
-    score >= 1
-    AND (@minscore::int IS NULL OR score >= @minscore::int)
+    (@minscore::int IS NULL OR score >= @minscore::int)
     AND (@maxscore::int IS NULL OR score <= @maxscore::int)
     AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
     AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
@@ -55,38 +68,51 @@ ORDER BY rank ASC
 LIMIT @querylimit::int;
 
 -- name: FindMyProjectPersonPosition :one
-WITH person_scores AS (
+WITH project_users AS MATERIALIZED (
+    -- Start with users in THIS project
+    SELECT DISTINCT u.id, u.name, u.avatar_url, u.birthdate, u.church_id, u.gender
+    FROM user_projects up
+    INNER JOIN users u ON up.user_id = u.id
+    WHERE up.project_id = @projectid::text
+      AND (@churchid::text = '' OR u.church_id = @churchid::text)
+      AND (@gender::text = '' OR u.gender = @gender::text)
+      AND (@teamid::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          WHERE tm.user_id = u.id AND tm.team_id = @teamid::text
+      ))
+      AND (@superteamid::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN teams t ON tm.team_id = t.id
+          WHERE tm.user_id = u.id AND t.super_team_id = @superteamid::text
+      ))
+),
+filtered_users AS MATERIALIZED (
+    -- Apply age and church filters
+    SELECT pu.id, pu.name, pu.avatar_url
+    FROM project_users pu
+    WHERE (@minage::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) >= @minage::int)
+      AND (@maxage::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) <= @maxage::int)
+      AND (@country::text = '' OR EXISTS (
+          SELECT 1 FROM churches c
+          WHERE c.id = pu.church_id AND c.country = @country::text
+      ))
+      AND (@churchcategory::text = '' OR EXISTS (
+          SELECT 1 FROM churches c
+          WHERE c.id = pu.church_id AND c.category = @churchcategory::text
+      ))
+),
+person_scores AS (
     SELECT
-        u.id AS entity_id,
-        u.name,
-        u.avatar_url AS image,
+        fu.id AS entity_id,
+        fu.name,
+        fu.avatar_url AS image,
         COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
-    FROM users u
-    INNER JOIN user_projects up ON u.id = up.user_id
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
+    FROM filtered_users fu
+    LEFT JOIN user_achievements ua ON fu.id = ua.user_id
     LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = @projectid::text
-    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = u.id AND sa.project_id = @projectid::text
-    WHERE
-        up.project_id = @projectid::text
-        AND (@churchid::text = '' OR u.church_id = @churchid::text)
-        AND (@country::text = '' OR EXISTS (
-            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.country = @country::text
-        ))
-        AND (@churchcategory::text = '' OR EXISTS (
-            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.category = @churchcategory::text
-        ))
-        AND (@gender::text = '' OR u.gender = @gender::text)
-        AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
-        AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)
-        AND (@teamid::text = '' OR EXISTS (
-            SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = @teamid::text
-        ))
-        AND (@superteamid::text = '' OR EXISTS (
-            SELECT 1 FROM team_members tm
-            INNER JOIN teams t ON tm.team_id = t.id
-            WHERE tm.user_id = u.id AND t.super_team_id = @superteamid::text
-        ))
-    GROUP BY u.id, u.name, u.avatar_url
+    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = fu.id AND sa.project_id = @projectid::text
+    GROUP BY fu.id, fu.name, fu.avatar_url
+    HAVING COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) >= 1
 ),
 ranked_scores AS (
     SELECT
@@ -101,34 +127,40 @@ SELECT entity_id, name, image, score, rank
 FROM ranked_scores
 WHERE
     entity_id = @userid::text
-    AND score >= 1
     AND (@minscore::int IS NULL OR score >= @minscore::int)
     AND (@maxscore::int IS NULL OR score <= @maxscore::int);
 
 -- name: CountProjectPersonLeaderboard :one
-SELECT COUNT(DISTINCT u.id)::bigint AS total
-FROM users u
-INNER JOIN user_projects up ON u.id = up.user_id
-WHERE
-    up.project_id = @projectid::text
-    AND (@churchid::text = '' OR u.church_id = @churchid::text)
-    AND (@country::text = '' OR EXISTS (
-        SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.country = @country::text
-    ))
-    AND (@churchcategory::text = '' OR EXISTS (
-        SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.category = @churchcategory::text
-    ))
-    AND (@gender::text = '' OR u.gender = @gender::text)
-    AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
-    AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)
-    AND (@teamid::text = '' OR EXISTS (
-        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = @teamid::text
-    ))
-    AND (@superteamid::text = '' OR EXISTS (
-        SELECT 1 FROM team_members tm
-        INNER JOIN teams t ON tm.team_id = t.id
-        WHERE tm.user_id = u.id AND t.super_team_id = @superteamid::text
-    ));
+WITH project_users AS MATERIALIZED (
+    -- Start with users in THIS project
+    SELECT DISTINCT u.id, u.birthdate, u.church_id, u.gender
+    FROM user_projects up
+    INNER JOIN users u ON up.user_id = u.id
+    WHERE up.project_id = @projectid::text
+      AND (@churchid::text = '' OR u.church_id = @churchid::text)
+      AND (@gender::text = '' OR u.gender = @gender::text)
+      AND (@teamid::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          WHERE tm.user_id = u.id AND tm.team_id = @teamid::text
+      ))
+      AND (@superteamid::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN teams t ON tm.team_id = t.id
+          WHERE tm.user_id = u.id AND t.super_team_id = @superteamid::text
+      ))
+)
+SELECT COUNT(*)::bigint AS total
+FROM project_users pu
+WHERE (@minage::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) >= @minage::int)
+  AND (@maxage::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) <= @maxage::int)
+  AND (@country::text = '' OR EXISTS (
+      SELECT 1 FROM churches c
+      WHERE c.id = pu.church_id AND c.country = @country::text
+  ))
+  AND (@churchcategory::text = '' OR EXISTS (
+      SELECT 1 FROM churches c
+      WHERE c.id = pu.church_id AND c.category = @churchcategory::text
+  ));
 
 -- ==================== Project Team Leaderboard ====================
 

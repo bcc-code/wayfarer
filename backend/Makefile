@@ -19,6 +19,10 @@ migrate-status: ## Check migration status
 	@echo "Checking migration status..."
 	@go run ./cmd/migrate -direction status
 
+clear-db: ## Clear all database tables
+	@echo "Clearing database..."
+	@go run ./cmd/clear
+
 seed: ## Seed database with test data
 	@echo "Seeding database..."
 	@go run ./cmd/seed
@@ -26,6 +30,10 @@ seed: ## Seed database with test data
 seed-reproducible: ## Seed database with reproducible data (seed=42)
 	@echo "Seeding database with seed 42..."
 	@go run ./cmd/seed -seed 42
+
+seed-large: ## Seed database with large dataset for performance testing
+	@echo "Seeding database with large dataset (10k users, 50 projects)..."
+	@go run ./cmd/seed -users 10000 -projects 50 -churches 100 -superteams 5 -achievements 50 -team-size 8
 
 test: ## Run all tests
 	@echo "Running tests..."
@@ -47,6 +55,7 @@ build: ## Build all binaries
 	@go build -o bin/migrate ./cmd/migrate
 	@go build -o bin/server ./cmd/server
 	@go build -o bin/seed ./cmd/seed
+	@go build -o bin/clear ./cmd/clear
 	@go build -o bin/debug ./cmd/debug
 
 clean: ## Remove build artifacts

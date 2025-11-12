@@ -17,9 +17,16 @@ import (
 )
 
 func main() {
-	panic("NO SEEDING")
 	// Parse command line flags
 	seedValue := flag.Int64("seed", 0, "Seed value for reproducible data (0 = random)")
+	numUsers := flag.Int("users", 75, "Number of users to generate")
+	numProjects := flag.Int("projects", 3, "Number of projects to generate")
+	numChurches := flag.Int("churches", 8, "Number of churches to generate")
+	numSuperTeams := flag.Int("superteams", 5, "Number of superteams per project")
+	numAchievements := flag.Int("achievements", 50, "Number of achievements per project")
+	teamSize := flag.Int("team-size", 8, "Average team size")
+	projectParticipationRate := flag.Float64("project-participation", 0.9, "Probability a user joins a project (0.0-1.0)")
+	achievementCompletionRate := flag.Float64("achievement-completion", 0.7, "Probability a user completes an achievement (0.0-1.0)")
 	flag.Parse()
 
 	// Load configuration
@@ -52,19 +59,22 @@ func main() {
 	}
 	defer db.Close()
 
-	// Clear existing data
-	slog.Info("Clearing existing data")
-	if err := clearDatabase(ctx, db); err != nil {
-		slog.Error("Failed to clear database", "error", err)
-		os.Exit(1)
-	}
-
-	// Initialize seeder context
+	// Initialize seeder context with configuration
 	seeder := &seeders.Seeder{
 		DB:   db,
 		Fake: fake,
 		Ctx:  ctx,
 		Data: seeders.NewSeededData(),
+		Config: seeders.SeedConfig{
+			NumUsers:                  *numUsers,
+			NumProjects:               *numProjects,
+			NumChurches:               *numChurches,
+			NumSuperTeams:             *numSuperTeams,
+			NumAchievements:           *numAchievements,
+			TeamSize:                  *teamSize,
+			ProjectParticipationRate:  *projectParticipationRate,
+			AchievementCompletionRate: *achievementCompletionRate,
+		},
 	}
 
 	// Run seeders in order
@@ -124,45 +134,4 @@ func main() {
 		"challenges", stats.Challenges,
 		"achievements", stats.Achievements,
 	)
-}
-
-// clearDatabase truncates all tables in reverse dependency order
-func clearDatabase(ctx context.Context, db *database.DB) error {
-	tables := []string{
-		"user_streak_activity",
-		"user_listening_progress",
-		"user_reading_progress",
-		"user_challenge_completions",
-		"super_team_achievements",
-		"team_achievements",
-		"user_achievements",
-		"team_members",
-		"user_events",
-		"user_projects",
-		"score_adjustments",
-		"streak_achievements",
-		"listening_achievement_tracks",
-		"listening_achievements",
-		"reading_achievement_articles",
-		"reading_achievements",
-		"achievements",
-		"challenges",
-		"streak_relevant_days",
-		"streaks",
-		"teams",
-		"super_teams",
-		"events",
-		"projects",
-		"users",
-		"churches",
-	}
-
-	for _, table := range tables {
-		_, err := db.Pool.Exec(ctx, "TRUNCATE TABLE "+table+" CASCADE")
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }

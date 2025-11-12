@@ -2,32 +2,44 @@ package seeders
 
 import (
 	"fmt"
+	"log/slog"
 	"math/rand"
 
 	"github.com/bcc-media/wayfarer/internal/ulid"
 )
 
-// SeedAchievements creates all 4 types of achievements
+// SeedAchievements creates all 4 types of achievements based on configuration
 func (s *Seeder) SeedAchievements(stats *Stats) error {
+	projectCount := 0
 	for _, projectID := range s.Data.ProjectIDs {
-		// Create 5-8 simple achievements
-		if err := s.seedSimpleAchievements(projectID, 5+rand.Intn(4), stats); err != nil {
+		projectCount++
+
+		// Split achievements across types
+		// 60% simple, 20% reading, 15% listening, 5% streak
+		numSimple := int(float64(s.Config.NumAchievements) * 0.6)
+		numReading := int(float64(s.Config.NumAchievements) * 0.2)
+		numListening := int(float64(s.Config.NumAchievements) * 0.15)
+		// Remaining will be streak achievements
+
+		if err := s.seedSimpleAchievements(projectID, numSimple, stats); err != nil {
 			return err
 		}
 
-		// Create 2-4 reading achievements
-		if err := s.seedReadingAchievements(projectID, 2+rand.Intn(3), stats); err != nil {
+		if err := s.seedReadingAchievements(projectID, numReading, stats); err != nil {
 			return err
 		}
 
-		// Create 2-4 listening achievements
-		if err := s.seedListeningAchievements(projectID, 2+rand.Intn(3), stats); err != nil {
+		if err := s.seedListeningAchievements(projectID, numListening, stats); err != nil {
 			return err
 		}
 
-		// Create 1-2 streak achievements (one per streak)
+		// Create streak achievements (one per streak, up to remaining count)
 		if err := s.seedStreakAchievements(projectID, stats); err != nil {
 			return err
+		}
+
+		if projectCount%10 == 0 {
+			slog.Info("Achievements progress", "projects_completed", projectCount, "total_projects", len(s.Data.ProjectIDs), "achievements_created", stats.Achievements)
 		}
 	}
 
