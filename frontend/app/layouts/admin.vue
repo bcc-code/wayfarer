@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import '~/assets/styles/admin.css'
 
 useHead({
   title: 'Wayfarer Admin',
@@ -65,21 +66,6 @@ const groups = computed(() => [
     items: projectsLinks.value,
   },
 ])
-
-// Black and white theme
-onMounted(() => {
-  const styleElement = document.createElement('style')
-  styleElement.innerHTML = `
-    /* Admin theme */
-    :root {
-      --ui-primary: black;
-    }
-    .dark {
-      --ui-primary: white;
-    }
-  `
-  document.body.appendChild(styleElement)
-})
 </script>
 
 <template>

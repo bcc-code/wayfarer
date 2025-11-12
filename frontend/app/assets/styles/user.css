@@ -1,0 +1,19 @@
+/**
+ * User Layout Theme
+ *
+ * This stylesheet contains the base theme styles for the user-facing interface.
+ * It sets up default text colors and background colors based on the design system.
+ *
+ * Note: Dynamic project-specific colors (like --color-accent-base) are set
+ * programmatically in the layout based on the current project's branding.
+ *
+ * Used by: frontend/app/layouts/default.vue
+ */
+
+:root {
+  --ui-text: var(--color-text-default);
+}
+
+body {
+  background-color: var(--color-background-default);
+}

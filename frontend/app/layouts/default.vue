@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import '~/assets/styles/user.css'
 
 const { t } = useI18n()
 
@@ -52,19 +53,11 @@ const { data } = useCurrentProjectQuery()
 watch(data, (newData) => {
   if (!newData) return
 
-  const styleElement = document.createElement('style')
-  styleElement.innerHTML = `
-    /* Current project theme */
-    :root {
-      --color-accent-base: ${newData.myCurrentProject.branding.colors.primary};
-      --ui-text: var(--color-text-default);
-    }
-
-    body {
-      background-color: var(--color-background-default);
-    }
-  `
-  document.body.appendChild(styleElement)
+  // Set dynamic project theme color
+  document.documentElement.style.setProperty(
+    '--color-accent-base',
+    newData.myCurrentProject.branding.colors.primary,
+  )
 })
 
 const route = useRoute()

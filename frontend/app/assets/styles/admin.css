@@ -1,0 +1,16 @@
+/**
+ * Admin Layout Theme
+ *
+ * This stylesheet contains the theme overrides for the admin interface.
+ * It provides a minimal black and white color scheme for the admin pages.
+ *
+ * Used by: frontend/app/layouts/admin.vue
+ */
+
+:root {
+  --ui-primary: black;
+}
+
+.dark {
+  --ui-primary: white;
+}
