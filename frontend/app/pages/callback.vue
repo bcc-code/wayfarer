@@ -3,6 +3,7 @@ const route = useRoute('callback')
 
 definePageMeta({
   layout: false,
+  middleware: [],
 })
 
 const config = useRuntimeConfig()

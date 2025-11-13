@@ -1,6 +1,6 @@
 export default defineNuxtRouteMiddleware(async (to) => {
   // Skip auth check for callback page
-  if (to.path === '/callback') {
+  if (to.path.includes('/callback')) {
     return
   }
 
