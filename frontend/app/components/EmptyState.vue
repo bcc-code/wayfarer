@@ -14,7 +14,7 @@ defineProps<{
       class="bg-background-indent flex size-16 items-center justify-center rounded-full"
     >
       <UIcon
-        :name="icon || 'lucide:inbox'"
+        :name="icon || 'lucide:square-dashed-mouse-pointer'"
         class="text-accent-contrast size-8"
       />
     </div>

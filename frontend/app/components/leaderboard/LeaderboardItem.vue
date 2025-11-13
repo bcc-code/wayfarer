@@ -9,10 +9,15 @@ defineProps<{
   <div
     :class="[
       'rounded-list-inset hover:bg-background-indent active:bg-background-indent flex items-center gap-2.5 px-3 py-2',
-      item.isMe ?? 'border-accent border',
+      { 'bg-accent! text-on-accent!': item.isMe },
     ]"
   >
-    <span v-if="item.rank" class="text-dimmed text-end">{{ item.rank }}</span>
+    <span
+      v-if="item.rank"
+      :class="['text-dimmed text-end', { 'text-on-accent': item.isMe }]"
+    >
+      {{ item.rank }}
+    </span>
     <NuxtImg
       v-if="item.image && !hideImage"
       :src="item.image"
@@ -22,10 +27,14 @@ defineProps<{
     />
     <div class="grow">
       <p class="text-label">{{ item.name }}</p>
-      <!-- <p v-if="item.description" class="text-caption text-muted">
-        {{ item.description }}
-      </p> -->
     </div>
-    <p class="text-label text-accent-contrast tabular-nums">{{ item.score }}</p>
+    <p
+      :class="[
+        'text-label text-accent-contrast tabular-nums',
+        { 'text-on-accent': item.isMe },
+      ]"
+    >
+      {{ item.score }}
+    </p>
   </div>
 </template>

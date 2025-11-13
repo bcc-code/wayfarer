@@ -42,7 +42,7 @@ const open = ref(false)
               {{ achievement.name }}
             </h3>
             <p class="text-caption text-muted">{{ achievement.description }}</p>
-            <DesignBadge icon="lucide:trophy" class="mt-4">
+            <DesignBadge icon="lucide:plus" class="mt-4">
               {{ achievement.points }}
             </DesignBadge>
           </div>
