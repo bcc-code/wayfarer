@@ -2,18 +2,52 @@
 defineProps<{
   achievement: Partial<Achievement>
 }>()
+
+const open = ref(false)
 </script>
 
 <template>
-  <div
-    class="bg-background-indent grid aspect-square place-items-center overflow-hidden rounded-full"
-    v-bind="achievement"
-  >
-    <NuxtImg
-      v-if="!achievement.hidden"
-      :src="achievement.image"
-      class="size-full object-cover"
-    />
-    <span v-else>?</span>
+  <div>
+    <button
+      class="bg-background-indent grid aspect-square place-items-center overflow-hidden rounded-full"
+      @click="open = true"
+    >
+      <NuxtImg
+        v-if="!achievement.hidden"
+        :src="achievement.image"
+        class="size-full object-cover"
+      />
+      <span v-else>?</span>
+    </button>
+    <UDrawer
+      v-model:open="open"
+      :ui="{ overlay: 'bg-black/50' }"
+      modal
+      class="rounded-t-card! min-h-1/2"
+    >
+      <template #body>
+        <div class="flex flex-col items-center gap-4 pt-4">
+          <div
+            class="bg-background-indent grid aspect-square size-40 place-items-center overflow-hidden rounded-full"
+          >
+            <NuxtImg
+              v-if="!achievement.hidden"
+              :src="achievement.image"
+              class="size-full object-cover"
+            />
+            <span v-else>?</span>
+          </div>
+          <div class="flex flex-col items-center text-center">
+            <h3 class="text-label">
+              {{ achievement.name }}
+            </h3>
+            <p class="text-caption text-muted">{{ achievement.description }}</p>
+            <DesignBadge icon="lucide:trophy" class="mt-4">
+              {{ achievement.points }}
+            </DesignBadge>
+          </div>
+        </div>
+      </template>
+    </UDrawer>
   </div>
 </template>
