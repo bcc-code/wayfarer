@@ -11,5 +11,9 @@
     "unit": "Unit",
     "challenges": "Oppgaver"
   },
-  "emptyState": "Ingenting å se her"
+  "emptyState": "Ingenting å se her",
+  "achievements": {
+    "completed": "Mine achievements",
+    "notCompleted": "Ikke fullført"
+  }
 }

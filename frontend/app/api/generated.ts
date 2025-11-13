@@ -1482,11 +1482,11 @@ export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __t
 export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, image?: string | null, church: { __typename?: 'Church', id: string, name: string }, projects: Array<{ __typename?: 'Project', id: string, achievements: Array<
-        | { __typename?: 'ListeningAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
-        | { __typename?: 'ReadingAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
-        | { __typename?: 'SimpleAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
-        | { __typename?: 'StreakAchievement', id: string, name: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
+export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, image?: string | null, projects: Array<{ __typename?: 'Project', id: string, achievements: Array<
+        | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
+        | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
+        | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
+        | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
       > }> } };
 
 export type UnitPageQueryVariables = Exact<{ [key: string]: never; }>;
@@ -1819,15 +1819,12 @@ export const ProfilePageDocument = gql`
     id
     name
     image
-    church {
-      id
-      name
-    }
     projects {
       id
       achievements {
         id
         name
+        description
         image
         hidden
         achievedAt

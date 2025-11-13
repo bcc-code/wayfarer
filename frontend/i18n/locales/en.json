@@ -11,5 +11,9 @@
     "unit": "Unit",
     "challenges": "Challenges"
   },
-  "emptyState": "Nothing to see here"
+  "emptyState": "Nothing to see here",
+  "achievements": {
+    "completed": "My Achievements",
+    "notCompleted": "Not Completed"
+  }
 }

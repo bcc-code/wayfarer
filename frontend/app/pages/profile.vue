@@ -1,30 +1,37 @@
 <script setup lang="ts">
 gql(`
-query ProfilePage {
-  me {
-    id
-    name
-    image
-    church {
+  query ProfilePage {
+    me {
       id
       name
-    }
-    projects {
-      id
-      achievements {
+      image
+      projects {
         id
-        name
-        image
-        hidden
-        achievedAt
-        points
+        achievements {
+          id
+          name
+          description
+          image
+          hidden
+          achievedAt
+          points
+        }
       }
     }
   }
-}
 `)
 
 const { data, error, fetching } = useProfilePageQuery()
+
+const achievements = computed(() => {
+  return data.value?.me.projects.flatMap((project) => project.achievements)
+})
+const completedAchievements = computed(() => {
+  return achievements.value?.filter((achievement) => achievement.achievedAt)
+})
+const notCompletedAchievements = computed(() => {
+  return achievements.value?.filter((achievement) => !achievement.achievedAt)
+})
 </script>
 
 <template>
@@ -45,6 +52,31 @@ const { data, error, fetching } = useProfilePageQuery()
         </div>
       </div>
       <LocaleSelector />
+
+      <template v-if="completedAchievements?.length">
+        <h3 class="text-label mt-6 mb-2">
+          {{ $t('achievements.completed') }}
+        </h3>
+        <div class="gap-list-section-gap grid grid-cols-5">
+          <AchievementBadge
+            v-for="achievement in completedAchievements"
+            :key="achievement.id"
+            :achievement
+          />
+        </div>
+      </template>
+      <template v-if="notCompletedAchievements?.length">
+        <h3 class="text-label mt-6 mb-2">
+          {{ $t('achievements.notCompleted') }}
+        </h3>
+        <div class="gap-list-section-gap grid grid-cols-5">
+          <AchievementBadge
+            v-for="achievement in notCompletedAchievements"
+            :key="achievement.id"
+            :achievement
+          />
+        </div>
+      </template>
     </div>
   </PageLayout>
 </template>
