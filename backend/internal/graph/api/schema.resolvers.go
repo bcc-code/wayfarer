@@ -424,7 +424,7 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 // MyProjects is the resolver for the myProjects field.
 func (r *queryResolver) MyProjects(ctx context.Context) ([]model.Project, error) {
 	// Hardcoded project ID for now
-	projectID := "PR01K9Q3TSVQ05C0E9GJ6QPXHFXP"
+	projectID := "PR01K9VZ8684DP9R4W3ZEV526E5X"
 
 	// Use dataloader to fetch project
 	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
@@ -454,7 +454,7 @@ func (r *queryResolver) MyEvents(ctx context.Context, project *string) ([]model.
 // MyCurrentProject is the resolver for the myCurrentProject field.
 func (r *queryResolver) MyCurrentProject(ctx context.Context) (*model.Project, error) {
 	// Hardcoded project ID for now
-	projectID := "PR01K9Q3TSVQ05C0E9GJ6QPXHFXP"
+	projectID := "PR01K9VZ8684DP9R4W3ZEV526E5X"
 
 	// Use dataloader to fetch project
 	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
@@ -1730,7 +1730,7 @@ func (r *queryResolver) Streaks(ctx context.Context, filter *model.StreakFilter,
 // CurrentProject is the resolver for the currentProject field.
 func (r *queryResolver) CurrentProject(ctx context.Context) (*model.Project, error) {
 	// Hardcoded project ID for now
-	projectID := "PR01K9Q3TSVQ05C0E9GJ6QPXHFXP"
+	projectID := "PR01K9VZ8684DP9R4W3ZEV526E5X"
 
 	// Use dataloader to fetch project
 	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
