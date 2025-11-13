@@ -1,9 +1,9 @@
 <script setup lang="ts">
 gql(`
-  query StandingsPage {
+  query StandingsPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter) {
     myCurrentProject {
       id
-      leaderboard(entityType: PERSONS) {
+      leaderboard(entityType: $entityType, filter: $filter) {
         edges {
           node {
             id
@@ -27,7 +27,11 @@ gql(`
   }
 `)
 
-const { data, error, fetching } = useStandingsPageQuery()
+const { data, error, fetching } = useStandingsPageQuery({
+  variables: {
+    entityType: LeaderboardEntityType.Persons,
+  },
+})
 
 const leaderboard = computed<LeaderboardEntry[]>(() => {
   if (!data.value) return []
@@ -37,10 +41,10 @@ const leaderboard = computed<LeaderboardEntry[]>(() => {
     ...data.value.myCurrentProject.leaderboard.edges.map((edge) => edge.node),
   )
   const me = data.value?.myCurrentProject.leaderboard.me
-  if (me) {
+  if (me && !result.find((entry) => entry.id === me.id)) {
     result.push(me)
   }
-  return [...new Set(result)]
+  return result
 })
 </script>
 

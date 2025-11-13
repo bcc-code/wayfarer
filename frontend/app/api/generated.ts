@@ -1474,7 +1474,10 @@ export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', challenges: Array<{ __typename?: 'Challenge', id: string, name: string, description: any, userCompletedAt?: any | null, image: string, url: string, buttonText: string, publishedAt: any, endTime?: any | null }> } };
 
-export type StandingsPageQueryVariables = Exact<{ [key: string]: never; }>;
+export type StandingsPageQueryVariables = Exact<{
+  entityType: LeaderboardEntityType;
+  filter?: InputMaybe<LeaderboardFilter>;
+}>;
 
 
 export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, image?: string | null, rank: number, isMe: boolean } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank: number, isMe: boolean, image?: string | null } | null } } };
@@ -1783,10 +1786,10 @@ export function useChallengesPageQuery(options?: Omit<Urql.UseQueryArgs<never, C
   return Urql.useQuery<ChallengesPageQuery, ChallengesPageQueryVariables | undefined>({ query: ChallengesPageDocument, variables: undefined, ...options });
 };
 export const StandingsPageDocument = gql`
-    query StandingsPage {
+    query StandingsPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter) {
   myCurrentProject {
     id
-    leaderboard(entityType: PERSONS) {
+    leaderboard(entityType: $entityType, filter: $filter) {
       edges {
         node {
           id
