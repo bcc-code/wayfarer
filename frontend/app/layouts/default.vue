@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 import '~/assets/styles/user.css'
+import { getContrastColor } from '~/utils/colors'
 
 const { t } = useI18n()
 
@@ -53,11 +54,17 @@ const { data } = useCurrentProjectQuery()
 watch(data, (newData) => {
   if (!newData) return
 
+  const primaryColor = newData.myCurrentProject.branding.colors.primary
+
   // Set dynamic project theme color
   document.documentElement.style.setProperty(
     '--color-accent-base',
-    newData.myCurrentProject.branding.colors.primary,
+    primaryColor,
   )
+
+  // Calculate and set the on-accent contrast color
+  const contrastColor = getContrastColor(primaryColor)
+  document.documentElement.style.setProperty('--color-on-accent', contrastColor)
 })
 
 const route = useRoute()
