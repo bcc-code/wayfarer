@@ -303,7 +303,7 @@ export type Event = {
   description: Scalars['String']['output'];
   endDate: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
-  leaderboard: Array<LeaderboardEntry>;
+  leaderboard: LeaderboardConnection;
   name: Scalars['String']['output'];
   parentProject: Project;
   startDate: Scalars['DateTime']['output'];
@@ -311,8 +311,12 @@ export type Event = {
 
 
 export type EventLeaderboardArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  entityType: LeaderboardEntityType;
   filter?: InputMaybe<LeaderboardFilter>;
-  type: LeaderboardType;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type EventConnection = {
@@ -348,11 +352,34 @@ export enum Gender {
   Male = 'MALE'
 }
 
+export type LeaderboardConnection = {
+  __typename?: 'LeaderboardConnection';
+  edges: Array<LeaderboardEdge>;
+  me?: Maybe<LeaderboardEntry>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type LeaderboardEdge = {
+  __typename?: 'LeaderboardEdge';
+  cursor: Scalars['String']['output'];
+  node: LeaderboardEntry;
+};
+
+export enum LeaderboardEntityType {
+  Churches = 'CHURCHES',
+  Persons = 'PERSONS',
+  Superteams = 'SUPERTEAMS',
+  Teams = 'TEAMS'
+}
+
 export type LeaderboardEntry = {
   __typename?: 'LeaderboardEntry';
-  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
+  isMe: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
+  rank: Scalars['Int']['output'];
   score: Scalars['Int']['output'];
 };
 
@@ -367,12 +394,6 @@ export type LeaderboardFilter = {
   superTeamId?: InputMaybe<Scalars['ID']['input']>;
   teamId?: InputMaybe<Scalars['ID']['input']>;
 };
-
-export enum LeaderboardType {
-  Monthly = 'MONTHLY',
-  Total = 'TOTAL',
-  Weekly = 'WEEKLY'
-}
 
 export type ListeningAchievement = Achievement & {
   __typename?: 'ListeningAchievement';
@@ -859,7 +880,7 @@ export type Project = {
   endDate: Scalars['DateTime']['output'];
   events: Array<Event>;
   id: Scalars['ID']['output'];
-  leaderboard: Array<LeaderboardEntry>;
+  leaderboard: LeaderboardConnection;
   myTeam?: Maybe<Team>;
   name: Scalars['String']['output'];
   startDate: Scalars['DateTime']['output'];
@@ -869,8 +890,12 @@ export type Project = {
 
 
 export type ProjectLeaderboardArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  entityType: LeaderboardEntityType;
   filter?: InputMaybe<LeaderboardFilter>;
-  type: LeaderboardType;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type ProjectConnection = {
@@ -1192,17 +1217,10 @@ export type SuperTeam = {
   __typename?: 'SuperTeam';
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
-  leaderboard: Array<LeaderboardEntry>;
   members: UserConnection;
   name: Scalars['String']['output'];
   parentProject: Project;
   teams: Array<Team>;
-};
-
-
-export type SuperTeamLeaderboardArgs = {
-  filter?: InputMaybe<LeaderboardFilter>;
-  type: LeaderboardType;
 };
 
 
@@ -1239,17 +1257,10 @@ export type Team = {
   __typename?: 'Team';
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
-  leaderboard: Array<LeaderboardEntry>;
   members: Array<User>;
   name: Scalars['String']['output'];
   parentProject: Project;
   superTeam?: Maybe<SuperTeam>;
-};
-
-
-export type TeamLeaderboardArgs = {
-  filter?: InputMaybe<LeaderboardFilter>;
-  type: LeaderboardType;
 };
 
 export type TeamConnection = {
@@ -1466,7 +1477,7 @@ export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __
 export type StandingsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: Array<{ __typename?: 'LeaderboardEntry', name: string, description?: string | null, score: number, image?: string | null }> } };
+export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, image?: string | null, rank: number, isMe: boolean } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank: number, isMe: boolean, image?: string | null } | null } } };
 
 export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1481,7 +1492,7 @@ export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User'
 export type UnitPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, myTeam?: { __typename?: 'Team', id: string, name: string, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null, leaderboard: Array<{ __typename?: 'LeaderboardEntry', name: string, description?: string | null, score: number, image?: string | null }> } | null } };
+export type UnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, myTeam?: { __typename?: 'Team', id: string, name: string, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null } | null } };
 
 
 export const GetMeDocument = gql`
@@ -1775,11 +1786,25 @@ export const StandingsPageDocument = gql`
     query StandingsPage {
   myCurrentProject {
     id
-    leaderboard(type: TOTAL) {
-      name
-      description
-      score
-      image
+    leaderboard(entityType: PERSONS) {
+      edges {
+        node {
+          id
+          name
+          score
+          image
+          rank
+          isMe
+        }
+      }
+      me {
+        id
+        name
+        score
+        rank
+        isMe
+        image
+      }
     }
   }
 }
@@ -1826,12 +1851,6 @@ export const UnitPageDocument = gql`
       superTeam {
         id
         name
-      }
-      leaderboard(type: TOTAL) {
-        name
-        description
-        score
-        image
       }
     }
   }

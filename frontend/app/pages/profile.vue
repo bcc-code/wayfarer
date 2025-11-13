@@ -25,33 +25,6 @@ query ProfilePage {
 `)
 
 const { data, error, fetching } = useProfilePageQuery()
-
-const leaderboard = [
-  {
-    name: 'Name Nameson',
-    description: 'Local Church',
-    score: 4321,
-    image: 'https://placehold.co/32',
-  },
-  {
-    name: 'Name Nameson',
-    description: 'Local Church',
-    score: 4321,
-    image: 'https://placehold.co/32',
-  },
-  {
-    name: 'Name Nameson',
-    description: 'Local Church',
-    score: 4321,
-    image: 'https://placehold.co/32',
-  },
-  {
-    name: 'Name Nameson',
-    description: 'Local Church',
-    score: 4321,
-    image: 'https://placehold.co/32',
-  },
-]
 </script>
 
 <template>
@@ -72,7 +45,6 @@ const leaderboard = [
         </div>
       </div>
       <LocaleSelector />
-      <LeaderboardList variant="compact" :leaderboard />
     </div>
   </PageLayout>
 </template>
