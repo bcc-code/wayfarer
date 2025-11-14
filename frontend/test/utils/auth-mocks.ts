@@ -265,3 +265,48 @@ export function mockWindowLocation(pathname = '/') {
     hash: '',
   }
 }
+
+/**
+ * Mock implementation of useRoute
+ * Returns a route object with query parameters
+ *
+ * @example
+ * const route = mockUseRoute({ token: 'abc123', redirect: '/admin' })
+ */
+export function mockUseRoute(query: Record<string, string | string[]> = {}) {
+  return {
+    query,
+    path: '/callback',
+    name: 'callback',
+    params: {},
+    meta: {},
+  }
+}
+
+/**
+ * Mock implementation of useRuntimeConfig
+ *
+ * @example
+ * const config = mockUseRuntimeConfig()
+ */
+export function mockUseRuntimeConfig() {
+  return {
+    public: {
+      apiUrl: 'http://localhost:8080/graphql',
+      callbackUrl: 'http://localhost:8080/callback',
+      loginUrl: 'https://login.example.com/auth',
+    },
+  }
+}
+
+/**
+ * Mock implementation of $fetch
+ * Use with vi.fn() to control responses
+ *
+ * @example
+ * const mockFetch = vi.fn().mockResolvedValue({ token: 'new-token' })
+ * global.$fetch = mockFetch
+ */
+export function mockFetch() {
+  return vi.fn()
+}

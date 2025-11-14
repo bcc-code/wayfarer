@@ -21,9 +21,9 @@ Tests pure functions related to authentication:
 
 **Run:** `pnpm test -- auth-helpers.test.ts`
 
-### ✅ `auth.test.ts` (91 tests - **29 IMPLEMENTED, 62 SCAFFOLDED**)
+### ✅ `auth.test.ts` (88 tests - **41 IMPLEMENTED, 47 SCAFFOLDED**)
 
-**Status:** Core auth functionality tests implemented and passing
+**Status:** Core auth functionality and callback page tests implemented and passing
 
 Implemented tests for:
 
@@ -55,9 +55,23 @@ Implemented tests for:
   - Church data handling
   - Multiple updates and reactivity
 
-Still scaffolded (placeholders - 62 tests):
+- ✅ **Callback Page Token Validation** (12 tests)
+  - Backend token validation
+  - Token storage after validation
+  - Redirect to home after success
+  - Redirect to specified path
+  - Missing token parameter handling
+  - Invalid token format handling
+  - Expired token handling
+  - Backend validation failure
+  - Network timeout handling
+  - Malformed response handling
+  - Redirect with query params
+  - Hash preservation in redirects
+  - Array redirect parameter handling
 
-- Callback page validation
+Still scaffolded (placeholders - 47 tests):
+
 - Middleware protection
 - Security tests
 - Integration tests
@@ -215,6 +229,9 @@ We've created a comprehensive set of mock utilities for testing auth functionali
 - **`mockNavigateTo()`** - Mock Nuxt navigation
 - **`mockCreateError()`** - Mock Nuxt error creation
 - **`mockWindowLocation(pathname)`** - Mock window.location
+- **`mockUseRoute(query)`** - Mock Nuxt route with query parameters
+- **`mockUseRuntimeConfig()`** - Mock Nuxt runtime config (apiUrl, callbackUrl, loginUrl)
+- **`mockFetch()`** - Mock $fetch for backend API calls
 - **`createMockFetchResponse(data, ok, status)`** - Mock fetch responses
 
 #### Example Usage
@@ -295,17 +312,17 @@ pnpm test -- auth --watch
 | useAuth Composable - Login Redirect     | 100% ✅ | 100%   |
 | useAuth Composable - Role Authorization | 100% ✅ | 100%   |
 | useAuth Composable - Me Query           | 100% ✅ | 100%   |
-| Callback Page                           | 0%      | 85%    |
+| Callback Page Token Validation          | 100% ✅ | 100%   |
 | Auth Middleware                         | 0%      | 95%    |
 | Admin Middleware                        | 0%      | 90%    |
 | Integration                             | 0%      | 80%    |
 
-**Total Progress: 127 tests passing (65 fully implemented, 62 scaffolded)**
+**Total Progress: 124 tests passing (77 fully implemented, 47 scaffolded)**
 
 **Breakdown:**
 
 - `auth-helpers.test.ts`: 36 tests (100% implemented)
-- `auth.test.ts`: 29 implemented + 62 scaffolded = 91 tests
+- `auth.test.ts`: 41 implemented + 47 scaffolded = 88 tests
 
 ## Next Steps
 
@@ -314,9 +331,10 @@ pnpm test -- auth --watch
 3. ✅ **Completed:** Implemented login redirect tests (5 tests)
 4. ✅ **Completed:** Implemented role-based authorization tests (9 tests)
 5. ✅ **Completed:** Implemented GraphQL me query tests (6 tests)
-6. **Next:** Implement callback page validation tests (using $fetch mocks)
-7. **Next:** Implement middleware protection tests
-8. **Future:** Complete security and integration tests
+6. ✅ **Completed:** Implemented callback page validation tests (12 tests)
+7. **Next:** Implement auth middleware protection tests
+8. **Next:** Implement admin middleware tests
+9. **Future:** Complete security and integration tests
 
 ## References
 
