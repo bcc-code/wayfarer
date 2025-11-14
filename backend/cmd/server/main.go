@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -27,11 +28,14 @@ import (
 	"github.com/bcc-media/wayfarer/internal/logger"
 	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/ravilushqa/otelgqlgen"
 	"github.com/sony/gobreaker/v2"
 	"github.com/vektah/gqlparser/v2/ast"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func main() {
@@ -46,8 +50,31 @@ func main() {
 	lgr := logger.New(cfg.Server.Environment, logger.ParseLevel(cfg.Log.Level))
 	slog.SetDefault(lgr)
 
-	// Connect to database
+	// Initialize OpenTelemetry tracer
 	ctx := context.Background()
+	tracerProvider, err := otel.InitTracer(ctx, otel.Config{
+		Enabled:          cfg.OTEL.Enabled,
+		ServiceName:      cfg.OTEL.ServiceName,
+		ServiceVersion:   cfg.OTEL.ServiceVersion,
+		ExporterEndpoint: cfg.OTEL.ExporterEndpoint,
+		ExporterInsecure: cfg.OTEL.ExporterInsecure,
+		SamplingRatio:    cfg.OTEL.SamplingRatio,
+	})
+	if err != nil {
+		slog.Error("Failed to initialize OpenTelemetry tracer", "error", err)
+		os.Exit(1)
+	}
+	if tracerProvider != nil {
+		defer func() {
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := tracerProvider.Shutdown(shutdownCtx); err != nil {
+				slog.Error("Failed to shutdown tracer provider", "error", err)
+			}
+		}()
+	}
+
+	// Connect to database
 	db, err := database.Connect(ctx, cfg.Database)
 	if err != nil {
 		slog.Error("Failed to connect to database", "error", err)
@@ -137,12 +164,24 @@ func main() {
 	})
 	apiHandler.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 
+	// Add OpenTelemetry tracing for GraphQL operations
+	if cfg.OTEL.Enabled {
+		apiHandler.Use(otelgqlgen.Middleware())
+		slog.Info("OpenTelemetry GraphQL instrumentation enabled")
+	}
+
 	// Set up Gin router
 	if cfg.Server.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	router := gin.Default()
+
+	// Add OpenTelemetry middleware for HTTP tracing
+	if cfg.OTEL.Enabled {
+		router.Use(otelgin.Middleware(cfg.OTEL.ServiceName))
+		slog.Info("OpenTelemetry HTTP instrumentation enabled")
+	}
 
 	// Configure CORS to allow all headers
 	router.Use(cors.New(cors.Config{
@@ -187,6 +226,24 @@ func main() {
 			"sets_rejected": metrics.SetsRejected(),
 		})
 	})
+
+	// Profiling endpoints (use with caution in production)
+	pprofGroup := router.Group("/debug/pprof")
+	{
+		pprofGroup.GET("/", gin.WrapF(pprof.Index))
+		pprofGroup.GET("/cmdline", gin.WrapF(pprof.Cmdline))
+		pprofGroup.GET("/profile", gin.WrapF(pprof.Profile))
+		pprofGroup.POST("/symbol", gin.WrapF(pprof.Symbol))
+		pprofGroup.GET("/symbol", gin.WrapF(pprof.Symbol))
+		pprofGroup.GET("/trace", gin.WrapF(pprof.Trace))
+		pprofGroup.GET("/allocs", gin.WrapH(pprof.Handler("allocs")))
+		pprofGroup.GET("/block", gin.WrapH(pprof.Handler("block")))
+		pprofGroup.GET("/goroutine", gin.WrapH(pprof.Handler("goroutine")))
+		pprofGroup.GET("/heap", gin.WrapH(pprof.Handler("heap")))
+		pprofGroup.GET("/mutex", gin.WrapH(pprof.Handler("mutex")))
+		pprofGroup.GET("/threadcreate", gin.WrapH(pprof.Handler("threadcreate")))
+	}
+	slog.Info("Profiling endpoints enabled at /debug/pprof")
 
 	// Authentication callback endpoint (no JWT middleware)
 	authHandler := &handlers.AuthHandler{

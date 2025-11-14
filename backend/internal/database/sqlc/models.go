@@ -59,6 +59,62 @@ type Event struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
+type LeaderboardEventChurch struct {
+	EventID   string             `json:"event_id"`
+	ChurchID  string             `json:"church_id"`
+	Score     int64              `json:"score"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LeaderboardEventPerson struct {
+	EventID   string             `json:"event_id"`
+	UserID    string             `json:"user_id"`
+	Score     int64              `json:"score"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LeaderboardEventSuperteam struct {
+	EventID     string             `json:"event_id"`
+	SuperTeamID string             `json:"super_team_id"`
+	Score       int64              `json:"score"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LeaderboardEventTeam struct {
+	EventID   string             `json:"event_id"`
+	TeamID    string             `json:"team_id"`
+	Score     int64              `json:"score"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LeaderboardProjectChurch struct {
+	ProjectID string             `json:"project_id"`
+	ChurchID  string             `json:"church_id"`
+	Score     int64              `json:"score"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LeaderboardProjectPerson struct {
+	ProjectID string             `json:"project_id"`
+	UserID    string             `json:"user_id"`
+	Score     int64              `json:"score"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LeaderboardProjectSuperteam struct {
+	ProjectID   string             `json:"project_id"`
+	SuperTeamID string             `json:"super_team_id"`
+	Score       int64              `json:"score"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LeaderboardProjectTeam struct {
+	ProjectID string             `json:"project_id"`
+	TeamID    string             `json:"team_id"`
+	Score     int64              `json:"score"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
 type ListeningAchievement struct {
 	AchievementID string `json:"achievement_id"`
 }

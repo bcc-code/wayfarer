@@ -946,3 +946,39 @@ func LeaderboardCountKey(context, contextID, entityType string, params map[strin
 
 	return fmt.Sprintf("%s%s:%s:%s:%s", PrefixLeaderboardCount, context, contextID, entityType, paramsHash)
 }
+
+// FullLeaderboardKey builds a cache key for full leaderboard results (no pagination)
+// context: "project" or "event"
+// contextID: project ID or event ID
+// entityType: "persons", "teams", "superteams", or "churches"
+// params: filter parameters (includes all filters like churchId, gender, age, score range, etc.)
+func FullLeaderboardKey(context, contextID, entityType string, params map[string]string) string {
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for shorter key
+	paramsHash := ""
+	if builder.Len() > 0 {
+		hash := sha256.Sum256([]byte(builder.String()))
+		paramsHash = hex.EncodeToString(hash[:])[:16]
+	} else {
+		paramsHash = "all"
+	}
+
+	return fmt.Sprintf("%sfull:%s:%s:%s:%s", PrefixLeaderboard, context, contextID, entityType, paramsHash)
+}

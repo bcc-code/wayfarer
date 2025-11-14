@@ -19,6 +19,10 @@ migrate-status: ## Check migration status
 	@echo "Checking migration status..."
 	@go run ./cmd/migrate -direction status
 
+clear-db: ## Clear all database tables
+	@echo "Clearing database..."
+	@go run ./cmd/clear
+
 seed: ## Seed database with test data
 	@echo "Seeding database..."
 	@go run ./cmd/seed
@@ -26,6 +30,10 @@ seed: ## Seed database with test data
 seed-reproducible: ## Seed database with reproducible data (seed=42)
 	@echo "Seeding database with seed 42..."
 	@go run ./cmd/seed -seed 42
+
+seed-large: ## Seed database with large dataset for performance testing
+	@echo "Seeding database with large dataset (10k users, 50 projects)..."
+	@go run ./cmd/seed -users 10000 -projects 50 -churches 100 -superteams 5 -achievements 50 -team-size 8
 
 test: ## Run all tests
 	@echo "Running tests..."
@@ -47,6 +55,7 @@ build: ## Build all binaries
 	@go build -o bin/migrate ./cmd/migrate
 	@go build -o bin/server ./cmd/server
 	@go build -o bin/seed ./cmd/seed
+	@go build -o bin/clear ./cmd/clear
 	@go build -o bin/debug ./cmd/debug
 
 clean: ## Remove build artifacts
@@ -73,3 +82,24 @@ dev: ## Run development server
 debug: ## Run debug TUI tool
 	@echo "Starting debug tool..."
 	@go run ./cmd/debug
+
+## Observability Commands
+
+jaeger-up: ## Start Jaeger tracing
+	@echo "Starting Jaeger..."
+	@cd ../docker/jaeger && docker compose up -d
+	@echo "Jaeger UI available at: http://localhost:16686"
+
+jaeger-down: ## Stop Jaeger tracing
+	@echo "Stopping Jaeger..."
+	@cd ../docker/jaeger && docker compose down
+
+jaeger-restart: ## Restart Jaeger (clears in-memory traces)
+	@echo "Restarting Jaeger..."
+	@cd ../docker/jaeger && docker compose restart
+
+jaeger-logs: ## View Jaeger logs
+	@cd ../docker/jaeger && docker compose logs -f
+
+jaeger-ps: ## Show Jaeger container status
+	@cd ../docker/jaeger && docker compose ps

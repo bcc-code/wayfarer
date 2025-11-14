@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/services"
 )
 
 // resolveProjectByID is a helper function to load a project by ID using the dataloader
@@ -41,4 +42,87 @@ func resolveChallengeByID(ctx context.Context, r *Resolver, challengeID *string)
 		return nil, fmt.Errorf("failed to load challenge: %w", err)
 	}
 	return challenge, nil
+}
+
+// buildLeaderboardConnection builds a GraphQL connection from leaderboard entries
+func buildLeaderboardConnection(
+	entries []services.LeaderboardEntry,
+	meEntry *services.LeaderboardEntry,
+	totalCount int,
+	currentUserID string,
+	first *int,
+	last *int,
+	after *string,
+	before *string,
+) *model.LeaderboardConnection {
+	// Determine if there are more entries
+	hasMore := false
+	requestedLimit := 10
+	if first != nil {
+		requestedLimit = *first
+		hasMore = len(entries) > requestedLimit
+	} else if last != nil {
+		requestedLimit = *last
+		hasMore = len(entries) > requestedLimit
+	}
+
+	// Trim to requested limit
+	if hasMore {
+		entries = entries[:requestedLimit]
+	}
+
+	// Build edges
+	edges := make([]model.LeaderboardEdge, len(entries))
+	for i, entry := range entries {
+		// Set isMe flag based on entity ID matching current user's entity
+		isMe := (meEntry != nil && entry.EntityID == meEntry.EntityID)
+
+		edges[i] = model.LeaderboardEdge{
+			Cursor: fmt.Sprintf("%d", entry.Rank),
+			Node: &model.LeaderboardEntry{
+				ID:    entry.EntityID,
+				Name:  entry.Name,
+				Score: entry.Score,
+				Rank:  int(entry.Rank),
+				IsMe:  isMe,
+				Image: entry.Image,
+			},
+		}
+	}
+
+	// Build page info
+	var startCursor, endCursor *string
+	if len(edges) > 0 {
+		s := edges[0].Cursor
+		startCursor = &s
+		e := edges[len(edges)-1].Cursor
+		endCursor = &e
+	}
+
+	pageInfo := &model.PageInfo{
+		HasNextPage:     hasMore && last == nil,
+		HasPreviousPage: hasMore && first == nil,
+		StartCursor:     startCursor,
+		EndCursor:       endCursor,
+	}
+
+	// Build "me" entry
+	var me *model.LeaderboardEntry
+	if meEntry != nil {
+		me = &model.LeaderboardEntry{
+			ID:    meEntry.EntityID,
+			Name:  meEntry.Name,
+			Score: meEntry.Score,
+			Rank:  int(meEntry.Rank),
+			IsMe:  true,
+			Image: meEntry.Image,
+		}
+	}
+
+	return &model.LeaderboardConnection{
+		Edges:      edges,
+		PageInfo:   pageInfo,
+		TotalCount: totalCount,
+		Me:         me,
+	}
 }

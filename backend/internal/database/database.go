@@ -5,9 +5,12 @@ import (
 	"embed"
 	"fmt"
 	"log/slog"
+	"regexp"
+	"strings"
 
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
 )
@@ -19,6 +22,28 @@ var Migrations embed.FS
 type DB struct {
 	Pool    *pgxpool.Pool
 	Queries *sqlc.Queries
+}
+
+// queryNameRegex extracts the query name from sqlc-generated SQL comments
+// Format: -- name: QueryName :one
+var queryNameRegex = regexp.MustCompile(`(?m)^--\s*name:\s*(\w+)`)
+
+// extractQueryName attempts to extract the query name from the SQL statement
+// If a "-- name: QueryName" comment is found, returns "QueryName"
+// Otherwise returns "query" as a fallback
+func extractQueryName(sql string) string {
+	matches := queryNameRegex.FindStringSubmatch(sql)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+
+	// Fallback: try to get first word of SQL (SELECT, INSERT, etc.)
+	words := strings.Fields(strings.TrimSpace(sql))
+	if len(words) > 0 {
+		return strings.ToLower(words[0])
+	}
+
+	return "query"
 }
 
 // Connect creates a new database connection pool
@@ -34,7 +59,19 @@ func Connect(ctx context.Context, cfg config.DatabaseConfig) (*DB, error) {
 	poolConfig.MaxConnLifetime = cfg.ConnMaxLifetime
 	poolConfig.MaxConnIdleTime = cfg.ConnMaxIdleTime
 
-	// Enable query logging if configured
+	// Add OpenTelemetry tracing for database queries
+	// This automatically enables if a global tracer is set via otel.SetTracerProvider()
+	// Configure with custom span name extraction from sqlc comments
+	poolConfig.ConnConfig.Tracer = otelpgx.NewTracer(
+		otelpgx.WithSpanNameFunc(func(stmt string) string {
+			// Extract query name from "-- name: QueryName" comment
+			queryName := extractQueryName(stmt)
+			return "db." + queryName
+		}),
+	)
+	slog.Info("OpenTelemetry database tracing configured with query name extraction")
+
+	// Enable console query logging if configured (for debugging)
 	if cfg.LogQueries {
 		poolConfig.ConnConfig.Tracer = &tracelog.TraceLog{
 			Logger: tracelog.LoggerFunc(func(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]interface{}) {
@@ -63,7 +100,7 @@ func Connect(ctx context.Context, cfg config.DatabaseConfig) (*DB, error) {
 			}),
 			LogLevel: tracelog.LogLevelTrace,
 		}
-		slog.Info("database query logging enabled")
+		slog.Info("database query logging enabled (replaces OTEL tracing)")
 	}
 
 	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)

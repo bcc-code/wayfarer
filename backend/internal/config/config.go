@@ -18,6 +18,7 @@ type Config struct {
 	Log      LogConfig
 	Members  MembersConfig
 	Auth0    Auth0Config
+	OTEL     OTELConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -66,6 +67,16 @@ type Auth0Config struct {
 	ClientSecret string // Auth0 client secret
 }
 
+// OTELConfig holds OpenTelemetry configuration
+type OTELConfig struct {
+	Enabled          bool    // Enable/disable tracing
+	ServiceName      string  // Service name for traces
+	ServiceVersion   string  // Service version
+	ExporterEndpoint string  // OTLP exporter endpoint (e.g., "localhost:4317")
+	ExporterInsecure bool    // Use insecure connection (no TLS)
+	SamplingRatio    float64 // Sampling ratio (0.0 to 1.0)
+}
+
 // Load reads all environment variables and returns a Config struct
 // This should be called once at application startup
 func Load() (*Config, error) {
@@ -106,6 +117,14 @@ func Load() (*Config, error) {
 			Domain:       getEnv("AUTH0_DOMAIN", ""),
 			ClientID:     getEnv("AUTH0_CLIENT_ID", ""),
 			ClientSecret: getEnv("AUTH0_CLIENT_SECRET", ""),
+		},
+		OTEL: OTELConfig{
+			Enabled:          getEnvAsBool("OTEL_ENABLED", false),
+			ServiceName:      getEnv("OTEL_SERVICE_NAME", "wayfarer-backend"),
+			ServiceVersion:   getEnv("OTEL_SERVICE_VERSION", "dev"),
+			ExporterEndpoint: getEnv("OTEL_EXPORTER_ENDPOINT", "localhost:4317"),
+			ExporterInsecure: getEnvAsBool("OTEL_EXPORTER_INSECURE", true),
+			SamplingRatio:    getEnvAsFloat("OTEL_SAMPLING_RATIO", 1.0),
 		},
 	}
 
@@ -156,6 +175,18 @@ func getEnvAsBool(key string, defaultValue bool) bool {
 		return defaultValue
 	}
 	value, err := strconv.ParseBool(valueStr)
+	if err != nil {
+		return defaultValue
+	}
+	return value
+}
+
+func getEnvAsFloat(key string, defaultValue float64) float64 {
+	valueStr := os.Getenv(key)
+	if valueStr == "" {
+		return defaultValue
+	}
+	value, err := strconv.ParseFloat(valueStr, 64)
 	if err != nil {
 		return defaultValue
 	}
