@@ -43,9 +43,31 @@ export function useAuth() {
   // Only fetch user data if we have a token AND we're not on the callback page
   const { isAuthReady } = useAuthReady()
 
-  const { data } = useGetMeQuery({
+  const { data, fetching } = useGetMeQuery({
     pause: computed(() => !isAuthReady.value),
   })
+
+  // If we already have user data, mark as not loading
+  if (me.value) {
+    isLoading.value = false
+  }
+
+  // If we don't have a token, we're not loading (we're just not authenticated)
+  if (!token.value) {
+    isLoading.value = false
+  }
+
+  // Update loading state: we're done loading when query is not fetching
+  // This handles both completed queries and paused queries
+  watch(
+    fetching,
+    (isFetching) => {
+      if (!isFetching) {
+        isLoading.value = false
+      }
+    },
+    { immediate: true },
+  )
 
   watch(
     () => data.value?.me,
