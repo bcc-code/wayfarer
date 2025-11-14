@@ -57,10 +57,12 @@ gql(`
   }
 `)
 
+const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useAdminProjectPageQuery({
   variables: {
     projectId: route.params.projectId,
   },
+  pause: computed(() => !isAuthReady.value),
 })
 
 const state = reactive({

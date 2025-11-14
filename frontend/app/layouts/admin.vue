@@ -21,7 +21,11 @@ gql(`
   }
 `)
 
-const { data } = useAdminSidebarQuery()
+const { isAuthReady } = useAuthReady()
+const { data } = useAdminSidebarQuery({
+  pause: computed(() => !isAuthReady.value),
+})
+
 const projectsLinks = computed(() => {
   return data.value?.projects.edges.map(({ node: project }) => ({
     label: project.name,

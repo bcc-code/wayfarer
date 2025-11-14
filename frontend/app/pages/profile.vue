@@ -21,7 +21,10 @@ gql(`
   }
 `)
 
-const { data, error, fetching } = useProfilePageQuery()
+const { isAuthReady } = useAuthReady()
+const { data, error, fetching } = useProfilePageQuery({
+  pause: computed(() => !isAuthReady.value),
+})
 
 const achievements = computed(() => {
   return data.value?.me.projects.flatMap((project) => project.achievements)

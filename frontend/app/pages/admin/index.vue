@@ -33,7 +33,10 @@ gql(`
   }
 `)
 
-const { data, fetching, error } = useAdminHomePageQuery()
+const { isAuthReady } = useAuthReady()
+const { data, fetching, error } = useAdminHomePageQuery({
+  pause: computed(() => !isAuthReady.value),
+})
 const { currentProjects } = useGroupedProjects(() =>
   data.value?.projects.edges.map((edge) => edge.node),
 )

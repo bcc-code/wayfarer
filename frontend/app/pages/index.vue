@@ -27,10 +27,12 @@ gql(`
   }
 `)
 
+const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useStandingsPageQuery({
   variables: {
     entityType: LeaderboardEntityType.Persons,
   },
+  pause: computed(() => !isAuthReady.value),
 })
 
 const leaderboard = computed<LeaderboardEntry[]>(() => {

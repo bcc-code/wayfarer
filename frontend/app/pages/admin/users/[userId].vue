@@ -33,10 +33,12 @@ gql(`
 
 const route = useRoute('admin-users-userId')
 
+const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminUserPageQuery({
   variables: {
     id: route.params.userId,
   },
+  pause: computed(() => !isAuthReady.value),
 })
 </script>
 

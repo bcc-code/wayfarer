@@ -46,8 +46,10 @@ gql(`
 const pagination = usePagination({
   defaultPageSize: 15,
 })
+const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminUsersPageQuery({
   variables: pagination.variables,
+  pause: computed(() => !isAuthReady.value),
 })
 
 // Update pagination state when data changes

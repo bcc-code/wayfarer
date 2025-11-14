@@ -17,7 +17,11 @@ gql(`
   }
 `)
 
-const { data, fetching, error } = useChallengesPageQuery()
+const { isAuthReady } = useAuthReady()
+
+const { data, fetching, error } = useChallengesPageQuery({
+  pause: computed(() => !isAuthReady.value),
+})
 const relevantChallenges = computed(() => {
   const notCompleted = data.value?.myCurrentProject.challenges.filter(
     (challenge) => !challenge.userCompletedAt,

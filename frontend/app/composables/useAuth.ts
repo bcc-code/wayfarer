@@ -39,7 +39,13 @@ export function useAuth() {
   const token = useCookie('token')
   const isLoading = useState('isLoading', () => true)
   const me = useState<GetMeQuery['me'] | null | undefined>('me', () => null)
-  const { data } = useGetMeQuery()
+
+  // Only fetch user data if we have a token AND we're not on the callback page
+  const { isAuthReady } = useAuthReady()
+
+  const { data } = useGetMeQuery({
+    pause: computed(() => !isAuthReady.value),
+  })
 
   watch(
     () => data.value?.me,

@@ -9,26 +9,43 @@ definePageMeta({
 const config = useRuntimeConfig()
 const { setAccessToken } = useAuth()
 
-onBeforeMount(async () => {
-  const { token, redirect } = route.query
-  if (token) {
-    try {
-      const response = await $fetch<{ token: string }>(
-        `${config.public.callbackUrl}?token=${token}`,
-        { method: 'GET' },
-      )
-      if (response && response.token) {
-        setAccessToken(response.token)
+// Use a global state to prevent multiple concurrent callbacks across component re-mounts
+const processing = useState('callback-processing', () => false)
 
-        if (redirect && typeof redirect === 'string') {
-          navigateTo(redirect)
-        } else {
-          navigateTo('/')
-        }
-      }
-    } catch (e) {
-      console.error(e)
+onMounted(async () => {
+  // Only process once globally
+  if (processing.value) {
+    return
+  }
+
+  processing.value = true
+
+  const { token, redirect } = route.query
+  if (!token || typeof token !== 'string') {
+    processing.value = false
+    return
+  }
+
+  try {
+    const response = await $fetch<{ token: string }>(
+      `${config.public.callbackUrl}?token=${token}`,
+      { method: 'GET' },
+    )
+
+    if (response && response.token) {
+      setAccessToken(response.token)
+
+      const redirectPath =
+        redirect && typeof redirect === 'string' ? redirect : '/'
+
+      // Use replace to prevent back button issues
+      await navigateTo(redirectPath, { replace: true })
+      processing.value = false
+    } else {
+      processing.value = false
     }
+  } catch {
+    processing.value = false
   }
 })
 </script>

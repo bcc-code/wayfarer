@@ -49,7 +49,10 @@ onBeforeMount(() => {
   document.documentElement.classList.add('light')
 })
 
-const { data } = useCurrentProjectQuery()
+const { isAuthReady } = useAuthReady()
+const { data } = useCurrentProjectQuery({
+  pause: computed(() => !isAuthReady.value),
+})
 
 watch(data, (newData) => {
   if (!newData) return

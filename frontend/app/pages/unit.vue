@@ -15,7 +15,10 @@ gql(`
   }
 `)
 
-const { data, error, fetching } = useUnitPageQuery()
+const { isAuthReady } = useAuthReady()
+const { data, error, fetching } = useUnitPageQuery({
+  pause: computed(() => !isAuthReady.value),
+})
 </script>
 
 <template>
