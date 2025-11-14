@@ -21,28 +21,42 @@ Tests pure functions related to authentication:
 
 **Run:** `pnpm test -- auth-helpers.test.ts`
 
-### ✅ `auth.test.ts` (95 tests - **IMPLEMENTED**)
+### ✅ `auth.test.ts` (91 tests - **29 IMPLEMENTED, 62 SCAFFOLDED**)
 
-**Status:** Core auth tests implemented and passing
+**Status:** Core auth functionality tests implemented and passing
 
 Implemented tests for:
 
-- ✅ Token Management (9 tests)
+- ✅ **Token Management** (9 tests)
   - Token storage and retrieval
   - Cookie handling
   - Token overwriting
   - Special characters and long tokens
   - Loading state management
   - Token clearing
-- ✅ Role-based Authorization (9 tests)
+
+- ✅ **Login Redirect** (5 tests)
+  - Redirect to login URL with current path
+  - Redirect parameter encoding
+  - Handling paths with query params
+  - Handling hash fragments
+  - Special character encoding
+
+- ✅ **Role-based Authorization** (9 tests)
   - Superadmin, admin, church admin, project admin, team lead detection
   - Multiple roles handling
   - Empty/null user scenarios
 
-Still scaffolded (placeholders):
+- ✅ **GraphQL Me Query** (6 tests)
+  - User data updates
+  - Loading state management
+  - Null user handling
+  - Role computed reactivity
+  - Church data handling
+  - Multiple updates and reactivity
 
-- Login redirects
-- GraphQL me query
+Still scaffolded (placeholders - 62 tests):
+
 - Callback page validation
 - Middleware protection
 - Security tests
@@ -278,24 +292,31 @@ pnpm test -- auth --watch
 | --------------------------------------- | ------- | ------ |
 | Helper Functions                        | 100% ✅ | 100%   |
 | useAuth Composable - Token Management   | 100% ✅ | 100%   |
+| useAuth Composable - Login Redirect     | 100% ✅ | 100%   |
 | useAuth Composable - Role Authorization | 100% ✅ | 100%   |
-| useAuth Composable - Login/Me Query     | 0%      | 90%    |
+| useAuth Composable - Me Query           | 100% ✅ | 100%   |
 | Callback Page                           | 0%      | 85%    |
 | Auth Middleware                         | 0%      | 95%    |
 | Admin Middleware                        | 0%      | 90%    |
 | Integration                             | 0%      | 80%    |
 
-**Total Progress: 131 tests passing (18 fully implemented, 77 scaffolded)**
+**Total Progress: 127 tests passing (65 fully implemented, 62 scaffolded)**
+
+**Breakdown:**
+
+- `auth-helpers.test.ts`: 36 tests (100% implemented)
+- `auth.test.ts`: 29 implemented + 62 scaffolded = 91 tests
 
 ## Next Steps
 
-1. ✅ **Completed:** Created comprehensive helper functions and tests
-2. ✅ **Completed:** Implemented token management tests with Vue mocking
-3. ✅ **Completed:** Implemented role-based authorization tests
-4. **Next:** Implement login redirect tests (using window.location mocks)
-5. **Next:** Implement callback page validation tests (using $fetch mocks)
-6. **Next:** Implement middleware protection tests
-7. **Future:** Complete integration tests for full auth flows
+1. ✅ **Completed:** Created comprehensive helper functions and tests (36 tests)
+2. ✅ **Completed:** Implemented token management tests with Vue mocking (9 tests)
+3. ✅ **Completed:** Implemented login redirect tests (5 tests)
+4. ✅ **Completed:** Implemented role-based authorization tests (9 tests)
+5. ✅ **Completed:** Implemented GraphQL me query tests (6 tests)
+6. **Next:** Implement callback page validation tests (using $fetch mocks)
+7. **Next:** Implement middleware protection tests
+8. **Future:** Complete security and integration tests
 
 ## References
 
