@@ -82,3 +82,24 @@ dev: ## Run development server
 debug: ## Run debug TUI tool
 	@echo "Starting debug tool..."
 	@go run ./cmd/debug
+
+## Observability Commands
+
+jaeger-up: ## Start Jaeger tracing
+	@echo "Starting Jaeger..."
+	@cd ../docker/jaeger && docker compose up -d
+	@echo "Jaeger UI available at: http://localhost:16686"
+
+jaeger-down: ## Stop Jaeger tracing
+	@echo "Stopping Jaeger..."
+	@cd ../docker/jaeger && docker compose down
+
+jaeger-restart: ## Restart Jaeger (clears in-memory traces)
+	@echo "Restarting Jaeger..."
+	@cd ../docker/jaeger && docker compose restart
+
+jaeger-logs: ## View Jaeger logs
+	@cd ../docker/jaeger && docker compose logs -f
+
+jaeger-ps: ## Show Jaeger container status
+	@cd ../docker/jaeger && docker compose ps

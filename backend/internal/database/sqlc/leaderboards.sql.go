@@ -1317,6 +1317,492 @@ func (q *Queries) GetEventTeamLeaderboard(ctx context.Context, arg GetEventTeamL
 	return items, nil
 }
 
+const GetFullEventChurchLeaderboard = `-- name: GetFullEventChurchLeaderboard :many
+WITH ranked_scores AS (
+    SELECT
+        c.id AS entity_id,
+        c.name,
+        NULL::text AS image,
+        lec.score,
+        RANK() OVER (ORDER BY lec.score DESC, c.name ASC) AS rank
+    FROM leaderboard_event_churches lec
+    INNER JOIN churches c ON lec.church_id = c.id
+    WHERE lec.event_id = $1::text
+      AND lec.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR lec.score <= $3::int)
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+ORDER BY rank ASC
+`
+
+type GetFullEventChurchLeaderboardParams struct {
+	Eventid  string `json:"eventid"`
+	Minscore int32  `json:"minscore"`
+	Maxscore int32  `json:"maxscore"`
+}
+
+type GetFullEventChurchLeaderboardRow struct {
+	EntityID string  `json:"entity_id"`
+	Name     string  `json:"name"`
+	Image    *string `json:"image"`
+	Score    int64   `json:"score"`
+	Rank     int64   `json:"rank"`
+}
+
+func (q *Queries) GetFullEventChurchLeaderboard(ctx context.Context, arg GetFullEventChurchLeaderboardParams) ([]*GetFullEventChurchLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, GetFullEventChurchLeaderboard, arg.Eventid, arg.Minscore, arg.Maxscore)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetFullEventChurchLeaderboardRow{}
+	for rows.Next() {
+		var i GetFullEventChurchLeaderboardRow
+		if err := rows.Scan(
+			&i.EntityID,
+			&i.Name,
+			&i.Image,
+			&i.Score,
+			&i.Rank,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetFullEventPersonLeaderboard = `-- name: GetFullEventPersonLeaderboard :many
+WITH ranked_scores AS (
+    SELECT
+        u.id AS entity_id,
+        u.name,
+        u.avatar_url AS image,
+        lep.score,
+        RANK() OVER (ORDER BY lep.score DESC, u.name ASC) AS rank
+    FROM leaderboard_event_persons lep
+    INNER JOIN users u ON lep.user_id = u.id
+    WHERE lep.event_id = $1::text
+      AND lep.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR lep.score <= $3::int)
+      AND ($4::text = '' OR u.church_id = $4::text)
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+ORDER BY rank ASC
+`
+
+type GetFullEventPersonLeaderboardParams struct {
+	Eventid  string `json:"eventid"`
+	Minscore int32  `json:"minscore"`
+	Maxscore int32  `json:"maxscore"`
+	Churchid string `json:"churchid"`
+}
+
+type GetFullEventPersonLeaderboardRow struct {
+	EntityID string  `json:"entity_id"`
+	Name     string  `json:"name"`
+	Image    *string `json:"image"`
+	Score    int64   `json:"score"`
+	Rank     int64   `json:"rank"`
+}
+
+func (q *Queries) GetFullEventPersonLeaderboard(ctx context.Context, arg GetFullEventPersonLeaderboardParams) ([]*GetFullEventPersonLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, GetFullEventPersonLeaderboard,
+		arg.Eventid,
+		arg.Minscore,
+		arg.Maxscore,
+		arg.Churchid,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetFullEventPersonLeaderboardRow{}
+	for rows.Next() {
+		var i GetFullEventPersonLeaderboardRow
+		if err := rows.Scan(
+			&i.EntityID,
+			&i.Name,
+			&i.Image,
+			&i.Score,
+			&i.Rank,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetFullEventSuperTeamLeaderboard = `-- name: GetFullEventSuperTeamLeaderboard :many
+WITH ranked_scores AS (
+    SELECT
+        st.id AS entity_id,
+        st.name,
+        NULL::text AS image,
+        lest.score,
+        RANK() OVER (ORDER BY lest.score DESC, st.name ASC) AS rank
+    FROM leaderboard_event_superteams lest
+    INNER JOIN super_teams st ON lest.super_team_id = st.id
+    WHERE lest.event_id = $1::text
+      AND lest.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR lest.score <= $3::int)
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+ORDER BY rank ASC
+`
+
+type GetFullEventSuperTeamLeaderboardParams struct {
+	Eventid  string `json:"eventid"`
+	Minscore int32  `json:"minscore"`
+	Maxscore int32  `json:"maxscore"`
+}
+
+type GetFullEventSuperTeamLeaderboardRow struct {
+	EntityID string  `json:"entity_id"`
+	Name     string  `json:"name"`
+	Image    *string `json:"image"`
+	Score    int64   `json:"score"`
+	Rank     int64   `json:"rank"`
+}
+
+func (q *Queries) GetFullEventSuperTeamLeaderboard(ctx context.Context, arg GetFullEventSuperTeamLeaderboardParams) ([]*GetFullEventSuperTeamLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, GetFullEventSuperTeamLeaderboard, arg.Eventid, arg.Minscore, arg.Maxscore)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetFullEventSuperTeamLeaderboardRow{}
+	for rows.Next() {
+		var i GetFullEventSuperTeamLeaderboardRow
+		if err := rows.Scan(
+			&i.EntityID,
+			&i.Name,
+			&i.Image,
+			&i.Score,
+			&i.Rank,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetFullEventTeamLeaderboard = `-- name: GetFullEventTeamLeaderboard :many
+WITH ranked_scores AS (
+    SELECT
+        t.id AS entity_id,
+        t.name,
+        NULL::text AS image,
+        let.score,
+        RANK() OVER (ORDER BY let.score DESC, t.name ASC) AS rank
+    FROM leaderboard_event_teams let
+    INNER JOIN teams t ON let.team_id = t.id
+    WHERE let.event_id = $1::text
+      AND let.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR let.score <= $3::int)
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+ORDER BY rank ASC
+`
+
+type GetFullEventTeamLeaderboardParams struct {
+	Eventid  string `json:"eventid"`
+	Minscore int32  `json:"minscore"`
+	Maxscore int32  `json:"maxscore"`
+}
+
+type GetFullEventTeamLeaderboardRow struct {
+	EntityID string  `json:"entity_id"`
+	Name     string  `json:"name"`
+	Image    *string `json:"image"`
+	Score    int64   `json:"score"`
+	Rank     int64   `json:"rank"`
+}
+
+func (q *Queries) GetFullEventTeamLeaderboard(ctx context.Context, arg GetFullEventTeamLeaderboardParams) ([]*GetFullEventTeamLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, GetFullEventTeamLeaderboard, arg.Eventid, arg.Minscore, arg.Maxscore)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetFullEventTeamLeaderboardRow{}
+	for rows.Next() {
+		var i GetFullEventTeamLeaderboardRow
+		if err := rows.Scan(
+			&i.EntityID,
+			&i.Name,
+			&i.Image,
+			&i.Score,
+			&i.Rank,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetFullProjectChurchLeaderboard = `-- name: GetFullProjectChurchLeaderboard :many
+WITH ranked_scores AS (
+    SELECT
+        c.id AS entity_id,
+        c.name,
+        NULL::text AS image,
+        lpc.score,
+        RANK() OVER (ORDER BY lpc.score DESC, c.name ASC) AS rank
+    FROM leaderboard_project_churches lpc
+    INNER JOIN churches c ON lpc.church_id = c.id
+    WHERE lpc.project_id = $1::text
+      AND lpc.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR lpc.score <= $3::int)
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+ORDER BY rank ASC
+`
+
+type GetFullProjectChurchLeaderboardParams struct {
+	Projectid string `json:"projectid"`
+	Minscore  int32  `json:"minscore"`
+	Maxscore  int32  `json:"maxscore"`
+}
+
+type GetFullProjectChurchLeaderboardRow struct {
+	EntityID string  `json:"entity_id"`
+	Name     string  `json:"name"`
+	Image    *string `json:"image"`
+	Score    int64   `json:"score"`
+	Rank     int64   `json:"rank"`
+}
+
+func (q *Queries) GetFullProjectChurchLeaderboard(ctx context.Context, arg GetFullProjectChurchLeaderboardParams) ([]*GetFullProjectChurchLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, GetFullProjectChurchLeaderboard, arg.Projectid, arg.Minscore, arg.Maxscore)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetFullProjectChurchLeaderboardRow{}
+	for rows.Next() {
+		var i GetFullProjectChurchLeaderboardRow
+		if err := rows.Scan(
+			&i.EntityID,
+			&i.Name,
+			&i.Image,
+			&i.Score,
+			&i.Rank,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetFullProjectPersonLeaderboard = `-- name: GetFullProjectPersonLeaderboard :many
+WITH ranked_scores AS (
+    SELECT
+        u.id AS entity_id,
+        u.name,
+        u.avatar_url AS image,
+        lpp.score,
+        RANK() OVER (ORDER BY lpp.score DESC, u.name ASC) AS rank
+    FROM leaderboard_project_persons lpp
+    INNER JOIN users u ON lpp.user_id = u.id
+    WHERE lpp.project_id = $1::text
+      AND lpp.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR lpp.score <= $3::int)
+      AND ($4::text = '' OR u.church_id = $4::text)
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+ORDER BY rank ASC
+`
+
+type GetFullProjectPersonLeaderboardParams struct {
+	Projectid string `json:"projectid"`
+	Minscore  int32  `json:"minscore"`
+	Maxscore  int32  `json:"maxscore"`
+	Churchid  string `json:"churchid"`
+}
+
+type GetFullProjectPersonLeaderboardRow struct {
+	EntityID string  `json:"entity_id"`
+	Name     string  `json:"name"`
+	Image    *string `json:"image"`
+	Score    int64   `json:"score"`
+	Rank     int64   `json:"rank"`
+}
+
+func (q *Queries) GetFullProjectPersonLeaderboard(ctx context.Context, arg GetFullProjectPersonLeaderboardParams) ([]*GetFullProjectPersonLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, GetFullProjectPersonLeaderboard,
+		arg.Projectid,
+		arg.Minscore,
+		arg.Maxscore,
+		arg.Churchid,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetFullProjectPersonLeaderboardRow{}
+	for rows.Next() {
+		var i GetFullProjectPersonLeaderboardRow
+		if err := rows.Scan(
+			&i.EntityID,
+			&i.Name,
+			&i.Image,
+			&i.Score,
+			&i.Rank,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetFullProjectSuperTeamLeaderboard = `-- name: GetFullProjectSuperTeamLeaderboard :many
+WITH ranked_scores AS (
+    SELECT
+        st.id AS entity_id,
+        st.name,
+        NULL::text AS image,
+        lpst.score,
+        RANK() OVER (ORDER BY lpst.score DESC, st.name ASC) AS rank
+    FROM leaderboard_project_superteams lpst
+    INNER JOIN super_teams st ON lpst.super_team_id = st.id
+    WHERE lpst.project_id = $1::text
+      AND lpst.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR lpst.score <= $3::int)
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+ORDER BY rank ASC
+`
+
+type GetFullProjectSuperTeamLeaderboardParams struct {
+	Projectid string `json:"projectid"`
+	Minscore  int32  `json:"minscore"`
+	Maxscore  int32  `json:"maxscore"`
+}
+
+type GetFullProjectSuperTeamLeaderboardRow struct {
+	EntityID string  `json:"entity_id"`
+	Name     string  `json:"name"`
+	Image    *string `json:"image"`
+	Score    int64   `json:"score"`
+	Rank     int64   `json:"rank"`
+}
+
+func (q *Queries) GetFullProjectSuperTeamLeaderboard(ctx context.Context, arg GetFullProjectSuperTeamLeaderboardParams) ([]*GetFullProjectSuperTeamLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, GetFullProjectSuperTeamLeaderboard, arg.Projectid, arg.Minscore, arg.Maxscore)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetFullProjectSuperTeamLeaderboardRow{}
+	for rows.Next() {
+		var i GetFullProjectSuperTeamLeaderboardRow
+		if err := rows.Scan(
+			&i.EntityID,
+			&i.Name,
+			&i.Image,
+			&i.Score,
+			&i.Rank,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetFullProjectTeamLeaderboard = `-- name: GetFullProjectTeamLeaderboard :many
+WITH ranked_scores AS (
+    SELECT
+        t.id AS entity_id,
+        t.name,
+        NULL::text AS image,
+        lpt.score,
+        RANK() OVER (ORDER BY lpt.score DESC, t.name ASC) AS rank
+    FROM leaderboard_project_teams lpt
+    INNER JOIN teams t ON lpt.team_id = t.id
+    WHERE lpt.project_id = $1::text
+      AND lpt.score >= COALESCE($2::int, 1)
+      AND ($3::int IS NULL OR lpt.score <= $3::int)
+)
+SELECT entity_id, name, image, score, rank
+FROM ranked_scores
+ORDER BY rank ASC
+`
+
+type GetFullProjectTeamLeaderboardParams struct {
+	Projectid string `json:"projectid"`
+	Minscore  int32  `json:"minscore"`
+	Maxscore  int32  `json:"maxscore"`
+}
+
+type GetFullProjectTeamLeaderboardRow struct {
+	EntityID string  `json:"entity_id"`
+	Name     string  `json:"name"`
+	Image    *string `json:"image"`
+	Score    int64   `json:"score"`
+	Rank     int64   `json:"rank"`
+}
+
+func (q *Queries) GetFullProjectTeamLeaderboard(ctx context.Context, arg GetFullProjectTeamLeaderboardParams) ([]*GetFullProjectTeamLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, GetFullProjectTeamLeaderboard, arg.Projectid, arg.Minscore, arg.Maxscore)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetFullProjectTeamLeaderboardRow{}
+	for rows.Next() {
+		var i GetFullProjectTeamLeaderboardRow
+		if err := rows.Scan(
+			&i.EntityID,
+			&i.Name,
+			&i.Image,
+			&i.Score,
+			&i.Rank,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetProjectChurchLeaderboard = `-- name: GetProjectChurchLeaderboard :many
 
 WITH church_scores AS (
