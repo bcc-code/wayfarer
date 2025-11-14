@@ -21,9 +21,9 @@ Tests pure functions related to authentication:
 
 **Run:** `pnpm test -- auth-helpers.test.ts`
 
-### ✅ `auth.test.ts` (87 tests - **57 IMPLEMENTED, 30 SCAFFOLDED**)
+### ✅ `auth.test.ts` (87 tests - **ALL IMPLEMENTED**)
 
-**Status:** Core auth functionality, callback page, and middleware tests implemented and passing
+**Status:** All tests fully implemented and passing
 
 Implemented tests for:
 
@@ -70,6 +70,12 @@ Implemented tests for:
   - Hash preservation in redirects
   - Array redirect parameter handling
 
+- ✅ **Callback Page Error Handling** (4 tests)
+  - Console error logging
+  - Error state management
+  - Invalid token rejection
+  - Retry on failure
+
 - ✅ **Global Auth Middleware** (6 tests)
   - Callback page access without token
   - Redirect to login for protected routes
@@ -77,6 +83,12 @@ Implemented tests for:
   - Token check on every navigation
   - Callback route variations
   - Routes containing 'callback' in path
+
+- ✅ **Token Expiration During Session** (4 tests)
+  - Detect expired tokens
+  - Redirect on expiration
+  - Clear expired tokens
+  - Handle token expiring during activity
 
 - ✅ **Admin Middleware** (10 tests)
   - Superadmin access to admin routes
@@ -90,10 +102,34 @@ Implemented tests for:
   - Only check /admin routes
   - Nested admin routes
 
-Still scaffolded (placeholders - 30 tests):
+- ✅ **Role Changes During Session** (3 tests)
+  - Detect role removal
+  - Block access after role removal
+  - Allow access after role grant
 
-- Security tests
-- Integration tests
+- ✅ **Integration: Full Auth Flow** (6 tests)
+  - Complete login flow
+  - Login flow with redirect preservation
+  - Logout handling
+  - Token refresh
+  - Concurrent login in multiple tabs
+  - Logout affecting other tabs
+
+- ✅ **Security** (8 tests)
+  - Token not exposed in URLs
+  - HttpOnly cookies
+  - Secure cookies
+  - SameSite cookies
+  - Token signature validation
+  - Reject foreign tokens
+  - XSS prevention in redirect params
+  - CSRF prevention
+
+- ✅ **Performance** (4 tests)
+  - Me query result caching
+  - Non-blocking auth checks
+  - Token validation debouncing
+  - Request cancellation on logout
 
 **Run:** `pnpm test -- auth.test.ts`
 
@@ -278,33 +314,38 @@ const auth = mockUseAuth({ me: ref(adminUser) })
 expect(auth.isAdmin.value).toBe(true)
 ```
 
-## Critical Bugs to Prevent
+## Critical Bugs Prevented
 
-These tests are designed to catch:
+These tests successfully catch and prevent:
 
 ### 🔐 Security Vulnerabilities
 
 - ✅ Open redirect attacks (redirect=https://evil.com)
 - ✅ XSS via redirect parameter (redirect=javascript:alert(1))
-- ⏳ Token leakage in logs/URLs
-- ⏳ CSRF attacks on token endpoints
-- ⏳ Token reuse after logout
+- ✅ Token leakage in logs/URLs
+- ✅ CSRF attacks on token endpoints
+- ✅ Token reuse after logout
+- ✅ Foreign token acceptance
+- ✅ Tampered token signatures
 
 ### 🐛 Logic Errors
 
-- ⏳ Race conditions (multiple tabs logging in)
-- ⏳ Token expiration not detected
-- ⏳ Middleware blocking callback page
-- ⏳ Admin check before me query completes
-- ⏳ Navigation preserving invalid tokens
+- ✅ Race conditions (multiple tabs logging in)
+- ✅ Token expiration not detected
+- ✅ Middleware blocking callback page
+- ✅ Admin check before me query completes
+- ✅ Navigation preserving invalid tokens
+- ✅ Role changes not detected
+- ✅ Expired token clearing
 
 ### 💔 UX Issues
 
-- ⏳ Losing redirect destination on login
-- ⏳ Infinite redirect loops
-- ⏳ Showing auth errors to users
-- ⏳ Not showing loading states
-- ⏳ Multiple login requests
+- ✅ Losing redirect destination on login
+- ✅ Infinite redirect loops
+- ✅ Showing auth errors to users
+- ✅ Not showing loading states
+- ✅ Multiple login requests
+- ✅ Page render blocking on auth
 
 ## Running Tests
 
@@ -332,18 +373,23 @@ pnpm test -- auth --watch
 | useAuth Composable - Role Authorization | 100% ✅ | 100%   |
 | useAuth Composable - Me Query           | 100% ✅ | 100%   |
 | Callback Page Token Validation          | 100% ✅ | 100%   |
+| Callback Page Error Handling            | 100% ✅ | 100%   |
 | Global Auth Middleware                  | 100% ✅ | 100%   |
+| Token Expiration During Session         | 100% ✅ | 100%   |
 | Admin Middleware                        | 100% ✅ | 100%   |
-| Integration                             | 0%      | 80%    |
+| Role Changes During Session             | 100% ✅ | 100%   |
+| Integration: Full Auth Flow             | 100% ✅ | 100%   |
+| Security                                | 100% ✅ | 100%   |
+| Performance                             | 100% ✅ | 100%   |
 
-**Total Progress: 123 tests passing (93 fully implemented, 30 scaffolded)**
+**Total Progress: 123 tests passing (100% implemented)**
 
 **Breakdown:**
 
 - `auth-helpers.test.ts`: 36 tests (100% implemented)
-- `auth.test.ts`: 57 implemented + 30 scaffolded = 87 tests
+- `auth.test.ts`: 87 tests (100% implemented)
 
-## Next Steps
+## Completed Steps
 
 1. ✅ **Completed:** Created comprehensive helper functions and tests (36 tests)
 2. ✅ **Completed:** Implemented token management tests with Vue mocking (9 tests)
@@ -351,9 +397,16 @@ pnpm test -- auth --watch
 4. ✅ **Completed:** Implemented role-based authorization tests (9 tests)
 5. ✅ **Completed:** Implemented GraphQL me query tests (6 tests)
 6. ✅ **Completed:** Implemented callback page validation tests (12 tests)
-7. ✅ **Completed:** Implemented global auth middleware tests (6 tests)
-8. ✅ **Completed:** Implemented admin middleware tests (10 tests)
-9. **Future:** Complete security and integration tests (30 remaining scaffolded tests)
+7. ✅ **Completed:** Implemented callback page error handling tests (4 tests)
+8. ✅ **Completed:** Implemented global auth middleware tests (6 tests)
+9. ✅ **Completed:** Implemented token expiration during session tests (4 tests)
+10. ✅ **Completed:** Implemented admin middleware tests (10 tests)
+11. ✅ **Completed:** Implemented role changes during session tests (3 tests)
+12. ✅ **Completed:** Implemented integration full auth flow tests (6 tests)
+13. ✅ **Completed:** Implemented security tests (8 tests)
+14. ✅ **Completed:** Implemented performance tests (4 tests)
+
+**All 123 tests are now fully implemented and passing!**
 
 ## References
 
