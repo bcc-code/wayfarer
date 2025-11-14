@@ -84,6 +84,11 @@ func (c *Cache) Metrics() *ristretto.Metrics {
 	return c.cache.Metrics
 }
 
+// Wait blocks until all pending writes to the cache have been processed
+func (c *Cache) Wait() {
+	c.cache.Wait()
+}
+
 // Close waits for all goroutines to finish and closes the cache
 func (c *Cache) Close() {
 	c.cache.Close()

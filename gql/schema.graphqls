@@ -74,9 +74,8 @@ type Mutation {
 
     # Project Management
     createProject(input: CreateProjectInput!): Project! @requireRole(roles: ["admin"])
-    updateProject(id: ID!, input: UpdateProjectInput!): Project! @requireRole(roles: ["admin"])
+    updateProject(id: ID!, input: UpdateProjectInput!): Project! @requireRole(roles: ["admin", "project_admin"])
     deleteProject(id: ID!): Boolean! @requireRole(roles: ["admin"])
-    cloneProject(id: ID!, newName: String!): Project! @requireRole(roles: ["admin"])
     archiveProject(id: ID!): Boolean! @requireRole(roles: ["admin"])
 
     # Event Management

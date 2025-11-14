@@ -15,6 +15,8 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/ulid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // JoinProject is the resolver for the joinProject field.
@@ -100,27 +102,181 @@ func (r *mutationResolver) UpdateAvatar(ctx context.Context, file graphql.Upload
 
 // CreateProject is the resolver for the createProject field.
 func (r *mutationResolver) CreateProject(ctx context.Context, input model.CreateProjectInput) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: CreateProject - createProject"))
+	// Validate input
+	if input.EndDate.Before(input.StartDate.Time) {
+		return nil, fmt.Errorf("end date must be after start date")
+	}
+
+	// Generate new project ID
+	projectID := ulid.NewProjectID()
+
+	// Handle optional description
+	description := ""
+	if input.Description != nil {
+		description = *input.Description
+	}
+
+	// Create project in database
+	row, err := r.DB.Queries.CreateProject(ctx, sqlc.CreateProjectParams{
+		ID:              projectID,
+		Name:            input.Name,
+		Description:     description,
+		Startdate:       pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true},
+		Enddate:         pgtype.Timestamptz{Time: input.EndDate.Time, Valid: true},
+		Logourl:         input.Branding.Logo,
+		Colorprimary:    input.Branding.Colors.Primary,
+		Colorsecondary:  input.Branding.Colors.Secondary,
+		Colortertiary:   input.Branding.Colors.Tertiary,
+		Rounding:        int32(input.Branding.Rounding),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create project: %w", err)
+	}
+
+	// Convert to GraphQL model
+	project := &model.Project{
+		ID:          row.ID,
+		Name:        row.Name,
+		Description: row.Description,
+		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
+		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+		Branding: &model.Branding{
+			Logo: row.LogoUrl,
+			Colors: &model.Colors{
+				Primary:   row.ColorPrimary,
+				Secondary: row.ColorSecondary,
+				Tertiary:  row.ColorTertiary,
+			},
+			Rounding: int(row.Rounding),
+		},
+		ArchivedAt: row.Archived,
+	}
+
+	return project, nil
 }
 
 // UpdateProject is the resolver for the updateProject field.
 func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input model.UpdateProjectInput) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: UpdateProject - updateProject"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization (project admin or system admin)
+	if !r.RoleService.CanManageProject(ctx, userID, id) {
+		return nil, fmt.Errorf("unauthorized to update this project")
+	}
+
+	// Load existing project to verify it exists
+	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, id)
+	_, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load project: %w", err)
+	}
+
+	// Validate dates if both are provided
+	if input.StartDate != nil && input.EndDate != nil {
+		if input.EndDate.Before(input.StartDate.Time) {
+			return nil, fmt.Errorf("end date must be after start date")
+		}
+	}
+
+	// Build update parameters
+	params := sqlc.UpdateProjectParams{
+		ID: id,
+	}
+
+	// Only set fields that are provided
+	if input.Name != nil {
+		params.Name = *input.Name
+	}
+	if input.Description != nil {
+		params.Description = *input.Description
+	}
+	if input.StartDate != nil {
+		params.Startdate = pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true}
+	}
+	if input.EndDate != nil {
+		params.Enddate = pgtype.Timestamptz{Time: input.EndDate.Time, Valid: true}
+	}
+	if input.Branding != nil {
+		if input.Branding.Logo != "" {
+			params.Logourl = input.Branding.Logo
+		}
+		if input.Branding.Colors != nil {
+			if input.Branding.Colors.Primary != "" {
+				params.Colorprimary = input.Branding.Colors.Primary
+			}
+			if input.Branding.Colors.Secondary != "" {
+				params.Colorsecondary = input.Branding.Colors.Secondary
+			}
+			if input.Branding.Colors.Tertiary != "" {
+				params.Colortertiary = input.Branding.Colors.Tertiary
+			}
+		}
+		if input.Branding.Rounding != 0 {
+			params.Rounding = int32(input.Branding.Rounding)
+		}
+	}
+
+	// Update project in database
+	row, err := r.DB.Queries.UpdateProject(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update project: %w", err)
+	}
+
+	// Invalidate cache
+	r.Cache.InvalidateProject(id)
+
+	// Convert to GraphQL model
+	project := &model.Project{
+		ID:          row.ID,
+		Name:        row.Name,
+		Description: row.Description,
+		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
+		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+		Branding: &model.Branding{
+			Logo: row.LogoUrl,
+			Colors: &model.Colors{
+				Primary:   row.ColorPrimary,
+				Secondary: row.ColorSecondary,
+				Tertiary:  row.ColorTertiary,
+			},
+			Rounding: int(row.Rounding),
+		},
+		ArchivedAt: row.Archived,
+	}
+
+	return project, nil
 }
 
 // DeleteProject is the resolver for the deleteProject field.
 func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteProject - deleteProject"))
-}
+	// Delete project from database
+	err := r.DB.Queries.DeleteProject(ctx, id)
+	if err != nil {
+		return false, fmt.Errorf("failed to delete project: %w", err)
+	}
 
-// CloneProject is the resolver for the cloneProject field.
-func (r *mutationResolver) CloneProject(ctx context.Context, id string, newName string) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: CloneProject - cloneProject"))
+	// Invalidate cache
+	r.Cache.InvalidateProject(id)
+
+	return true, nil
 }
 
 // ArchiveProject is the resolver for the archiveProject field.
 func (r *mutationResolver) ArchiveProject(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: ArchiveProject - archiveProject"))
+	// Archive project in database
+	_, err := r.DB.Queries.ArchiveProject(ctx, id)
+	if err != nil {
+		return false, fmt.Errorf("failed to archive project: %w", err)
+	}
+
+	// Invalidate cache
+	r.Cache.InvalidateProject(id)
+
+	return true, nil
 }
 
 // CreateEvent is the resolver for the createEvent field.
@@ -1911,3 +2067,15 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *mutationResolver) CloneProject(ctx context.Context, id string, newName string) (*model.Project, error) {
+	panic(fmt.Errorf("not implemented: CloneProject - cloneProject"))
+}
+*/

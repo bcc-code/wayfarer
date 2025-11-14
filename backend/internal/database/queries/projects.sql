@@ -59,3 +59,58 @@ WHERE
     AND (@startdatebefore::timestamptz IS NULL OR start_date <= @startdatebefore::timestamptz)
     AND (@enddateafter::timestamptz IS NULL OR end_date >= @enddateafter::timestamptz)
     AND (@enddatebefore::timestamptz IS NULL OR end_date <= @enddatebefore::timestamptz);
+
+-- name: CreateProject :one
+INSERT INTO projects (
+    id,
+    name,
+    description,
+    start_date,
+    end_date,
+    logo_url,
+    color_primary,
+    color_secondary,
+    color_tertiary,
+    rounding
+)
+VALUES (
+    @id::text,
+    @name::text,
+    @description::text,
+    @startdate::timestamptz,
+    @enddate::timestamptz,
+    @logourl::text,
+    @colorprimary::text,
+    @colorsecondary::text,
+    @colortertiary::text,
+    @rounding::int
+)
+RETURNING id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived;
+
+-- name: UpdateProject :one
+UPDATE projects
+SET
+    name = COALESCE(@name::text, name),
+    description = COALESCE(@description::text, description),
+    start_date = COALESCE(@startdate::timestamptz, start_date),
+    end_date = COALESCE(@enddate::timestamptz, end_date),
+    logo_url = COALESCE(@logourl::text, logo_url),
+    color_primary = COALESCE(@colorprimary::text, color_primary),
+    color_secondary = COALESCE(@colorsecondary::text, color_secondary),
+    color_tertiary = COALESCE(@colortertiary::text, color_tertiary),
+    rounding = COALESCE(@rounding::int, rounding),
+    updated_at = now()
+WHERE id = @id::text
+RETURNING id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived;
+
+-- name: DeleteProject :exec
+DELETE FROM projects
+WHERE id = @id::text;
+
+-- name: ArchiveProject :one
+UPDATE projects
+SET
+    archived = true,
+    updated_at = now()
+WHERE id = @id::text
+RETURNING id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived;

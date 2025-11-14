@@ -224,7 +224,6 @@ type ComplexityRoot struct {
 		BulkCompleteChallenges         func(childComplexity int, userIds []string, challengeID string, completedAt *scalars.DateTime) int
 		BulkCreateChallenges           func(childComplexity int, inputs []model.CreateChallengeInput) int
 		BulkPublishChallenges          func(childComplexity int, ids []string, publishedAt scalars.DateTime) int
-		CloneProject                   func(childComplexity int, id string, newName string) int
 		CompleteChallenge              func(childComplexity int, userID string, challengeID string, completedAt *scalars.DateTime) int
 		CreateChallenge                func(childComplexity int, input model.CreateChallengeInput) int
 		CreateEvent                    func(childComplexity int, projectID string, input model.CreateEventInput) int
@@ -523,7 +522,6 @@ type MutationResolver interface {
 	CreateProject(ctx context.Context, input model.CreateProjectInput) (*model.Project, error)
 	UpdateProject(ctx context.Context, id string, input model.UpdateProjectInput) (*model.Project, error)
 	DeleteProject(ctx context.Context, id string) (bool, error)
-	CloneProject(ctx context.Context, id string, newName string) (*model.Project, error)
 	ArchiveProject(ctx context.Context, id string) (bool, error)
 	CreateEvent(ctx context.Context, projectID string, input model.CreateEventInput) (*model.Event, error)
 	UpdateEvent(ctx context.Context, id string, input model.UpdateEventInput) (*model.Event, error)
@@ -1434,17 +1432,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.BulkPublishChallenges(childComplexity, args["ids"].([]string), args["publishedAt"].(scalars.DateTime)), true
-	case "Mutation.cloneProject":
-		if e.complexity.Mutation.CloneProject == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_cloneProject_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.CloneProject(childComplexity, args["id"].(string), args["newName"].(string)), true
 	case "Mutation.completeChallenge":
 		if e.complexity.Mutation.CompleteChallenge == nil {
 			break
@@ -3950,9 +3937,8 @@ type Mutation {
 
     # Project Management
     createProject(input: CreateProjectInput!): Project! @requireRole(roles: ["admin"])
-    updateProject(id: ID!, input: UpdateProjectInput!): Project! @requireRole(roles: ["admin"])
+    updateProject(id: ID!, input: UpdateProjectInput!): Project! @requireRole(roles: ["admin", "project_admin"])
     deleteProject(id: ID!): Boolean! @requireRole(roles: ["admin"])
-    cloneProject(id: ID!, newName: String!): Project! @requireRole(roles: ["admin"])
     archiveProject(id: ID!): Boolean! @requireRole(roles: ["admin"])
 
     # Event Management
@@ -4440,22 +4426,6 @@ func (ec *executionContext) field_Mutation_bulkPublishChallenges_args(ctx contex
 		return nil, err
 	}
 	args["publishedAt"] = arg1
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_cloneProject_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "newName", ec.unmarshalNString2string)
-	if err != nil {
-		return nil, err
-	}
-	args["newName"] = arg1
 	return args, nil
 }
 
@@ -8860,7 +8830,7 @@ func (ec *executionContext) _Mutation_updateProject(ctx context.Context, field g
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "project_admin"})
 				if err != nil {
 					var zeroVal *model.Project
 					return zeroVal, err
@@ -8988,95 +8958,6 @@ func (ec *executionContext) fieldContext_Mutation_deleteProject(ctx context.Cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteProject_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_cloneProject(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_cloneProject,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().CloneProject(ctx, fc.Args["id"].(string), fc.Args["newName"].(string))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
-				if err != nil {
-					var zeroVal *model.Project
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Project
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
-		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProject,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_cloneProject(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Project_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Project_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Project_description(ctx, field)
-			case "challenges":
-				return ec.fieldContext_Project_challenges(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Project_leaderboard(ctx, field)
-			case "events":
-				return ec.fieldContext_Project_events(ctx, field)
-			case "startDate":
-				return ec.fieldContext_Project_startDate(ctx, field)
-			case "endDate":
-				return ec.fieldContext_Project_endDate(ctx, field)
-			case "branding":
-				return ec.fieldContext_Project_branding(ctx, field)
-			case "teams":
-				return ec.fieldContext_Project_teams(ctx, field)
-			case "myTeam":
-				return ec.fieldContext_Project_myTeam(ctx, field)
-			case "achievements":
-				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
-			case "archivedAt":
-				return ec.fieldContext_Project_archivedAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_cloneProject_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -24373,13 +24254,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteProject":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteProject(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "cloneProject":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_cloneProject(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

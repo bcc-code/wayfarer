@@ -11,6 +11,48 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const ArchiveProject = `-- name: ArchiveProject :one
+UPDATE projects
+SET
+    archived = true,
+    updated_at = now()
+WHERE id = $1::text
+RETURNING id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived
+`
+
+type ArchiveProjectRow struct {
+	ID             string             `json:"id"`
+	Name           string             `json:"name"`
+	Description    string             `json:"description"`
+	StartDate      pgtype.Timestamptz `json:"start_date"`
+	EndDate        pgtype.Timestamptz `json:"end_date"`
+	LogoUrl        string             `json:"logo_url"`
+	ColorPrimary   string             `json:"color_primary"`
+	ColorSecondary string             `json:"color_secondary"`
+	ColorTertiary  string             `json:"color_tertiary"`
+	Rounding       int32              `json:"rounding"`
+	Archived       *bool              `json:"archived"`
+}
+
+func (q *Queries) ArchiveProject(ctx context.Context, id string) (*ArchiveProjectRow, error) {
+	row := q.db.QueryRow(ctx, ArchiveProject, id)
+	var i ArchiveProjectRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.StartDate,
+		&i.EndDate,
+		&i.LogoUrl,
+		&i.ColorPrimary,
+		&i.ColorSecondary,
+		&i.ColorTertiary,
+		&i.Rounding,
+		&i.Archived,
+	)
+	return &i, err
+}
+
 const CountProjectsFiltered = `-- name: CountProjectsFiltered :one
 SELECT COUNT(id)
 FROM projects
@@ -44,6 +86,101 @@ func (q *Queries) CountProjectsFiltered(ctx context.Context, arg CountProjectsFi
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const CreateProject = `-- name: CreateProject :one
+INSERT INTO projects (
+    id,
+    name,
+    description,
+    start_date,
+    end_date,
+    logo_url,
+    color_primary,
+    color_secondary,
+    color_tertiary,
+    rounding
+)
+VALUES (
+    $1::text,
+    $2::text,
+    $3::text,
+    $4::timestamptz,
+    $5::timestamptz,
+    $6::text,
+    $7::text,
+    $8::text,
+    $9::text,
+    $10::int
+)
+RETURNING id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived
+`
+
+type CreateProjectParams struct {
+	ID             string             `json:"id"`
+	Name           string             `json:"name"`
+	Description    string             `json:"description"`
+	Startdate      pgtype.Timestamptz `json:"startdate"`
+	Enddate        pgtype.Timestamptz `json:"enddate"`
+	Logourl        string             `json:"logourl"`
+	Colorprimary   string             `json:"colorprimary"`
+	Colorsecondary string             `json:"colorsecondary"`
+	Colortertiary  string             `json:"colortertiary"`
+	Rounding       int32              `json:"rounding"`
+}
+
+type CreateProjectRow struct {
+	ID             string             `json:"id"`
+	Name           string             `json:"name"`
+	Description    string             `json:"description"`
+	StartDate      pgtype.Timestamptz `json:"start_date"`
+	EndDate        pgtype.Timestamptz `json:"end_date"`
+	LogoUrl        string             `json:"logo_url"`
+	ColorPrimary   string             `json:"color_primary"`
+	ColorSecondary string             `json:"color_secondary"`
+	ColorTertiary  string             `json:"color_tertiary"`
+	Rounding       int32              `json:"rounding"`
+	Archived       *bool              `json:"archived"`
+}
+
+func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (*CreateProjectRow, error) {
+	row := q.db.QueryRow(ctx, CreateProject,
+		arg.ID,
+		arg.Name,
+		arg.Description,
+		arg.Startdate,
+		arg.Enddate,
+		arg.Logourl,
+		arg.Colorprimary,
+		arg.Colorsecondary,
+		arg.Colortertiary,
+		arg.Rounding,
+	)
+	var i CreateProjectRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.StartDate,
+		&i.EndDate,
+		&i.LogoUrl,
+		&i.ColorPrimary,
+		&i.ColorSecondary,
+		&i.ColorTertiary,
+		&i.Rounding,
+		&i.Archived,
+	)
+	return &i, err
+}
+
+const DeleteProject = `-- name: DeleteProject :exec
+DELETE FROM projects
+WHERE id = $1::text
+`
+
+func (q *Queries) DeleteProject(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, DeleteProject, id)
+	return err
 }
 
 const GetAllProjects = `-- name: GetAllProjects :many
@@ -343,4 +480,78 @@ func (q *Queries) GetProjectsFilteredCursor(ctx context.Context, arg GetProjects
 		return nil, err
 	}
 	return items, nil
+}
+
+const UpdateProject = `-- name: UpdateProject :one
+UPDATE projects
+SET
+    name = COALESCE($1::text, name),
+    description = COALESCE($2::text, description),
+    start_date = COALESCE($3::timestamptz, start_date),
+    end_date = COALESCE($4::timestamptz, end_date),
+    logo_url = COALESCE($5::text, logo_url),
+    color_primary = COALESCE($6::text, color_primary),
+    color_secondary = COALESCE($7::text, color_secondary),
+    color_tertiary = COALESCE($8::text, color_tertiary),
+    rounding = COALESCE($9::int, rounding),
+    updated_at = now()
+WHERE id = $10::text
+RETURNING id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived
+`
+
+type UpdateProjectParams struct {
+	Name           string             `json:"name"`
+	Description    string             `json:"description"`
+	Startdate      pgtype.Timestamptz `json:"startdate"`
+	Enddate        pgtype.Timestamptz `json:"enddate"`
+	Logourl        string             `json:"logourl"`
+	Colorprimary   string             `json:"colorprimary"`
+	Colorsecondary string             `json:"colorsecondary"`
+	Colortertiary  string             `json:"colortertiary"`
+	Rounding       int32              `json:"rounding"`
+	ID             string             `json:"id"`
+}
+
+type UpdateProjectRow struct {
+	ID             string             `json:"id"`
+	Name           string             `json:"name"`
+	Description    string             `json:"description"`
+	StartDate      pgtype.Timestamptz `json:"start_date"`
+	EndDate        pgtype.Timestamptz `json:"end_date"`
+	LogoUrl        string             `json:"logo_url"`
+	ColorPrimary   string             `json:"color_primary"`
+	ColorSecondary string             `json:"color_secondary"`
+	ColorTertiary  string             `json:"color_tertiary"`
+	Rounding       int32              `json:"rounding"`
+	Archived       *bool              `json:"archived"`
+}
+
+func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (*UpdateProjectRow, error) {
+	row := q.db.QueryRow(ctx, UpdateProject,
+		arg.Name,
+		arg.Description,
+		arg.Startdate,
+		arg.Enddate,
+		arg.Logourl,
+		arg.Colorprimary,
+		arg.Colorsecondary,
+		arg.Colortertiary,
+		arg.Rounding,
+		arg.ID,
+	)
+	var i UpdateProjectRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.StartDate,
+		&i.EndDate,
+		&i.LogoUrl,
+		&i.ColorPrimary,
+		&i.ColorSecondary,
+		&i.ColorTertiary,
+		&i.Rounding,
+		&i.Archived,
+	)
+	return &i, err
 }
