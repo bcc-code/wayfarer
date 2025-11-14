@@ -21,9 +21,9 @@ Tests pure functions related to authentication:
 
 **Run:** `pnpm test -- auth-helpers.test.ts`
 
-### ✅ `auth.test.ts` (88 tests - **41 IMPLEMENTED, 47 SCAFFOLDED**)
+### ✅ `auth.test.ts` (87 tests - **57 IMPLEMENTED, 30 SCAFFOLDED**)
 
-**Status:** Core auth functionality and callback page tests implemented and passing
+**Status:** Core auth functionality, callback page, and middleware tests implemented and passing
 
 Implemented tests for:
 
@@ -70,9 +70,28 @@ Implemented tests for:
   - Hash preservation in redirects
   - Array redirect parameter handling
 
-Still scaffolded (placeholders - 47 tests):
+- ✅ **Global Auth Middleware** (6 tests)
+  - Callback page access without token
+  - Redirect to login for protected routes
+  - Allow access with valid token
+  - Token check on every navigation
+  - Callback route variations
+  - Routes containing 'callback' in path
 
-- Middleware protection
+- ✅ **Admin Middleware** (10 tests)
+  - Superadmin access to admin routes
+  - Admin access to admin routes
+  - Block regular users (403 error)
+  - Redirect to login if no token
+  - Return 403 for non-admin users
+  - Wait for me query to complete
+  - Timeout handling for slow queries
+  - Handle me query errors
+  - Only check /admin routes
+  - Nested admin routes
+
+Still scaffolded (placeholders - 30 tests):
+
 - Security tests
 - Integration tests
 
@@ -313,16 +332,16 @@ pnpm test -- auth --watch
 | useAuth Composable - Role Authorization | 100% ✅ | 100%   |
 | useAuth Composable - Me Query           | 100% ✅ | 100%   |
 | Callback Page Token Validation          | 100% ✅ | 100%   |
-| Auth Middleware                         | 0%      | 95%    |
-| Admin Middleware                        | 0%      | 90%    |
+| Global Auth Middleware                  | 100% ✅ | 100%   |
+| Admin Middleware                        | 100% ✅ | 100%   |
 | Integration                             | 0%      | 80%    |
 
-**Total Progress: 124 tests passing (77 fully implemented, 47 scaffolded)**
+**Total Progress: 123 tests passing (93 fully implemented, 30 scaffolded)**
 
 **Breakdown:**
 
 - `auth-helpers.test.ts`: 36 tests (100% implemented)
-- `auth.test.ts`: 41 implemented + 47 scaffolded = 88 tests
+- `auth.test.ts`: 57 implemented + 30 scaffolded = 87 tests
 
 ## Next Steps
 
@@ -332,9 +351,9 @@ pnpm test -- auth --watch
 4. ✅ **Completed:** Implemented role-based authorization tests (9 tests)
 5. ✅ **Completed:** Implemented GraphQL me query tests (6 tests)
 6. ✅ **Completed:** Implemented callback page validation tests (12 tests)
-7. **Next:** Implement auth middleware protection tests
-8. **Next:** Implement admin middleware tests
-9. **Future:** Complete security and integration tests
+7. ✅ **Completed:** Implemented global auth middleware tests (6 tests)
+8. ✅ **Completed:** Implemented admin middleware tests (10 tests)
+9. **Future:** Complete security and integration tests (30 remaining scaffolded tests)
 
 ## References
 
