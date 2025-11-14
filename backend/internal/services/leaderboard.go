@@ -811,13 +811,6 @@ func (s *LeaderboardService) buildProjectPersonPositionParams(params Leaderboard
 		Projectid: params.ContextID,
 		Userid: params.UserID,
 		Churchid: getFilterString(params.Filter, "churchId"),
-		Country: getFilterString(params.Filter, "country"),
-		Churchcategory: getFilterString(params.Filter, "churchCategory"),
-		Gender: getFilterString(params.Filter, "gender"),
-		Minage: getFilterInt(params.Filter, "minAge"),
-		Maxage: getFilterInt(params.Filter, "maxAge"),
-		Teamid: getFilterString(params.Filter, "teamId"),
-		Superteamid: getFilterString(params.Filter, "superTeamId"),
 		Minscore: getFilterInt(params.Filter, "minScore"),
 		Maxscore: getFilterInt(params.Filter, "maxScore"),
 	}
@@ -867,7 +860,6 @@ func (s *LeaderboardService) buildProjectTeamPositionParams(params LeaderboardPa
 	return sqlc.FindMyProjectTeamPositionParams{
 		Projectid: params.ContextID,
 		Userid: params.UserID,
-		Superteamid: getFilterString(params.Filter, "superTeamId"),
 		Minscore: getFilterInt(params.Filter, "minScore"),
 		Maxscore: getFilterInt(params.Filter, "maxScore"),
 	}
@@ -980,8 +972,6 @@ func (s *LeaderboardService) buildProjectChurchPositionParams(params Leaderboard
 	return sqlc.FindMyProjectChurchPositionParams{
 		Projectid: params.ContextID,
 		Userid: params.UserID,
-		Country: getFilterString(params.Filter, "country"),
-		Churchcategory: getFilterString(params.Filter, "churchCategory"),
 		Minscore: getFilterInt(params.Filter, "minScore"),
 		Maxscore: getFilterInt(params.Filter, "maxScore"),
 	}
@@ -1052,11 +1042,6 @@ func (s *LeaderboardService) buildEventPersonPositionParams(params LeaderboardPa
 		Eventid: params.ContextID,
 		Userid: params.UserID,
 		Churchid: getFilterString(params.Filter, "churchId"),
-		Country: getFilterString(params.Filter, "country"),
-		Churchcategory: getFilterString(params.Filter, "churchCategory"),
-		Gender: getFilterString(params.Filter, "gender"),
-		Minage: getFilterInt(params.Filter, "minAge"),
-		Maxage: getFilterInt(params.Filter, "maxAge"),
 		Minscore: getFilterInt(params.Filter, "minScore"),
 		Maxscore: getFilterInt(params.Filter, "maxScore"),
 	}
@@ -1223,8 +1208,6 @@ func (s *LeaderboardService) buildEventChurchPositionParams(params LeaderboardPa
 	return sqlc.FindMyEventChurchPositionParams{
 		Eventid: params.ContextID,
 		Userid: params.UserID,
-		Country: getFilterString(params.Filter, "country"),
-		Churchcategory: getFilterString(params.Filter, "churchCategory"),
 		Minscore: getFilterInt(params.Filter, "minScore"),
 		Maxscore: getFilterInt(params.Filter, "maxScore"),
 	}
