@@ -96,8 +96,8 @@ func Load() (*Config, error) {
 			URL:             getEnv("DATABASE_URL", ""),
 			MaxOpenConns:    getEnvAsInt("DB_MAX_OPEN_CONNS", 25),
 			MaxIdleConns:    getEnvAsInt("DB_MAX_IDLE_CONNS", 5),
-			ConnMaxLifetime: getEnvAsDuration("DB_CONN_MAX_LIFETIME", 5*time.Minute),
-			ConnMaxIdleTime: getEnvAsDuration("DB_CONN_MAX_IDLE_TIME", 5*time.Minute),
+			ConnMaxLifetime: getEnvAsDuration("DB_CONN_MAX_LIFETIME", 10*time.Minute),
+			ConnMaxIdleTime: getEnvAsDuration("DB_CONN_MAX_IDLE_TIME", 1*time.Minute),
 			LogQueries:      getEnvAsBool("DB_LOG_QUERIES", false),
 		},
 		JWT: JWTConfig{

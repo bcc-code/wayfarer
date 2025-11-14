@@ -136,8 +136,8 @@ func main() {
 	slog.Info("RoleService initialized with caching")
 
 	// Initialize LeaderboardService
-	leaderboardService := services.NewLeaderboardService(db.Queries, cacheInstance.Cache)
-	slog.Info("LeaderboardService initialized with caching")
+	leaderboardService := services.NewLeaderboardService(db.Queries, cacheInstance.Cache, dataLoaders)
+	slog.Info("LeaderboardService initialized with caching and loaders")
 
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{

@@ -11,6 +11,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/loaders"
 )
 
 // LeaderboardQuerier defines the database operations needed for leaderboards
@@ -62,13 +63,15 @@ type LeaderboardQuerier interface {
 type LeaderboardService struct {
 	queries LeaderboardQuerier
 	cache   *cache.Cache
+	loaders *loaders.Loaders
 }
 
 // NewLeaderboardService creates a new leaderboard service
-func NewLeaderboardService(queries LeaderboardQuerier, c *cache.Cache) *LeaderboardService {
+func NewLeaderboardService(queries LeaderboardQuerier, c *cache.Cache, l *loaders.Loaders) *LeaderboardService {
 	return &LeaderboardService{
 		queries: queries,
 		cache:   c,
+		loaders: l,
 	}
 }
 
@@ -214,11 +217,17 @@ func (s *LeaderboardService) getProjectTeamLeaderboard(ctx context.Context, para
 			// Find "me" in cached results
 			var meEntry *LeaderboardEntry
 			if params.UserID != "" {
-				// Get my team ID first
-				posParams := s.buildProjectTeamPositionParams(params)
-				myPos, err := s.queries.FindMyProjectTeamPosition(ctx, posParams)
-				if err == nil && myPos != nil {
-					meEntry = findMeInLeaderboard(fullLeaderboard, myPos.EntityID)
+				// Use loader to get user's teams
+				thunk := s.loaders.TeamsByUserLoader.Load(ctx, params.UserID)
+				teams, err := thunk()
+				if err == nil && teams != nil {
+					// Find team in this project
+					for _, team := range teams {
+						if team.ProjectID == params.ContextID {
+							meEntry = findMeInLeaderboard(fullLeaderboard, team.ID)
+							break
+						}
+					}
 				}
 			}
 
@@ -261,11 +270,17 @@ func (s *LeaderboardService) getProjectTeamLeaderboard(ctx context.Context, para
 	// Find "me" in results
 	var meEntry *LeaderboardEntry
 	if params.UserID != "" {
-		// Get my team ID first
-		posParams := s.buildProjectTeamPositionParams(params)
-		myPos, err := s.queries.FindMyProjectTeamPosition(ctx, posParams)
-		if err == nil && myPos != nil {
-			meEntry = findMeInLeaderboard(fullLeaderboard, myPos.EntityID)
+		// Use loader to get user's teams
+		thunk := s.loaders.TeamsByUserLoader.Load(ctx, params.UserID)
+		teams, err := thunk()
+		if err == nil && teams != nil {
+			// Find team in this project
+			for _, team := range teams {
+				if team.ProjectID == params.ContextID {
+					meEntry = findMeInLeaderboard(fullLeaderboard, team.ID)
+					break
+				}
+			}
 		}
 	}
 
@@ -293,11 +308,17 @@ func (s *LeaderboardService) getProjectSuperTeamLeaderboard(ctx context.Context,
 			// Find "me" in cached results
 			var meEntry *LeaderboardEntry
 			if params.UserID != "" {
-				// Get my superteam ID first
-				posParams := s.buildProjectSuperTeamPositionParams(params)
-				myPos, err := s.queries.FindMyProjectSuperTeamPosition(ctx, posParams)
-				if err == nil && myPos != nil {
-					meEntry = findMeInLeaderboard(fullLeaderboard, myPos.EntityID)
+				// Use loader to get user's superteams
+				thunk := s.loaders.SuperTeamsByUserLoader.Load(ctx, params.UserID)
+				superTeams, err := thunk()
+				if err == nil && superTeams != nil {
+					// Find superteam in this project
+					for _, superTeam := range superTeams {
+						if superTeam.ProjectID == params.ContextID {
+							meEntry = findMeInLeaderboard(fullLeaderboard, superTeam.ID)
+							break
+						}
+					}
 				}
 			}
 
@@ -340,11 +361,17 @@ func (s *LeaderboardService) getProjectSuperTeamLeaderboard(ctx context.Context,
 	// Find "me" in results
 	var meEntry *LeaderboardEntry
 	if params.UserID != "" {
-		// Get my superteam ID first
-		posParams := s.buildProjectSuperTeamPositionParams(params)
-		myPos, err := s.queries.FindMyProjectSuperTeamPosition(ctx, posParams)
-		if err == nil && myPos != nil {
-			meEntry = findMeInLeaderboard(fullLeaderboard, myPos.EntityID)
+		// Use loader to get user's superteams
+		thunk := s.loaders.SuperTeamsByUserLoader.Load(ctx, params.UserID)
+		superTeams, err := thunk()
+		if err == nil && superTeams != nil {
+			// Find superteam in this project
+			for _, superTeam := range superTeams {
+				if superTeam.ProjectID == params.ContextID {
+					meEntry = findMeInLeaderboard(fullLeaderboard, superTeam.ID)
+					break
+				}
+			}
 		}
 	}
 
@@ -372,11 +399,11 @@ func (s *LeaderboardService) getProjectChurchLeaderboard(ctx context.Context, pa
 			// Find "me" in cached results
 			var meEntry *LeaderboardEntry
 			if params.UserID != "" {
-				// Get my church ID first
-				posParams := s.buildProjectChurchPositionParams(params)
-				myPos, err := s.queries.FindMyProjectChurchPosition(ctx, posParams)
-				if err == nil && myPos != nil {
-					meEntry = findMeInLeaderboard(fullLeaderboard, myPos.EntityID)
+				// Use loader to get user (includes ChurchID)
+				thunk := s.loaders.UserByIDLoader.Load(ctx, params.UserID)
+				user, err := thunk()
+				if err == nil && user != nil {
+					meEntry = findMeInLeaderboard(fullLeaderboard, user.ChurchID)
 				}
 			}
 
@@ -419,11 +446,11 @@ func (s *LeaderboardService) getProjectChurchLeaderboard(ctx context.Context, pa
 	// Find "me" in results
 	var meEntry *LeaderboardEntry
 	if params.UserID != "" {
-		// Get my church ID first
-		posParams := s.buildProjectChurchPositionParams(params)
-		myPos, err := s.queries.FindMyProjectChurchPosition(ctx, posParams)
-		if err == nil && myPos != nil {
-			meEntry = findMeInLeaderboard(fullLeaderboard, myPos.EntityID)
+		// Use loader to get user (includes ChurchID)
+		thunk := s.loaders.UserByIDLoader.Load(ctx, params.UserID)
+		user, err := thunk()
+		if err == nil && user != nil {
+			meEntry = findMeInLeaderboard(fullLeaderboard, user.ChurchID)
 		}
 	}
 
@@ -522,11 +549,21 @@ func (s *LeaderboardService) getEventTeamLeaderboard(ctx context.Context, params
 			// Find "me" in cached results
 			var meEntry *LeaderboardEntry
 			if params.UserID != "" {
-				// Get my team ID first
-				posParams := s.buildEventTeamPositionParams(params)
-				myPos, err := s.queries.FindMyEventTeamPosition(ctx, posParams)
-				if err == nil && myPos != nil {
-					meEntry = findMeInLeaderboard(fullLeaderboard, myPos.EntityID)
+				// Get event to find its project, then get user's teams
+				eventThunk := s.loaders.EventByIDLoader.Load(ctx, params.ContextID)
+				event, err := eventThunk()
+				if err == nil && event != nil {
+					teamsThunk := s.loaders.TeamsByUserLoader.Load(ctx, params.UserID)
+					teams, err := teamsThunk()
+					if err == nil && teams != nil {
+						// Find team in this event's project
+						for _, team := range teams {
+							if team.ProjectID == event.ProjectID {
+								meEntry = findMeInLeaderboard(fullLeaderboard, team.ID)
+								break
+							}
+						}
+					}
 				}
 			}
 
@@ -569,11 +606,21 @@ func (s *LeaderboardService) getEventTeamLeaderboard(ctx context.Context, params
 	// Find "me" in results
 	var meEntry *LeaderboardEntry
 	if params.UserID != "" {
-		// Get my team ID first
-		posParams := s.buildEventTeamPositionParams(params)
-		myPos, err := s.queries.FindMyEventTeamPosition(ctx, posParams)
-		if err == nil && myPos != nil {
-			meEntry = findMeInLeaderboard(fullLeaderboard, myPos.EntityID)
+		// Get event to find its project, then get user's teams
+		eventThunk := s.loaders.EventByIDLoader.Load(ctx, params.ContextID)
+		event, err := eventThunk()
+		if err == nil && event != nil {
+			teamsThunk := s.loaders.TeamsByUserLoader.Load(ctx, params.UserID)
+			teams, err := teamsThunk()
+			if err == nil && teams != nil {
+				// Find team in this event's project
+				for _, team := range teams {
+					if team.ProjectID == event.ProjectID {
+						meEntry = findMeInLeaderboard(fullLeaderboard, team.ID)
+						break
+					}
+				}
+			}
 		}
 	}
 
@@ -601,11 +648,21 @@ func (s *LeaderboardService) getEventSuperTeamLeaderboard(ctx context.Context, p
 			// Find "me" in cached results
 			var meEntry *LeaderboardEntry
 			if params.UserID != "" {
-				// Get my superteam ID first
-				posParams := s.buildEventSuperTeamPositionParams(params)
-				myPos, err := s.queries.FindMyEventSuperTeamPosition(ctx, posParams)
-				if err == nil && myPos != nil {
-					meEntry = findMeInLeaderboard(fullLeaderboard, myPos.EntityID)
+				// Get event to find its project, then get user's superteams
+				eventThunk := s.loaders.EventByIDLoader.Load(ctx, params.ContextID)
+				event, err := eventThunk()
+				if err == nil && event != nil {
+					superTeamsThunk := s.loaders.SuperTeamsByUserLoader.Load(ctx, params.UserID)
+					superTeams, err := superTeamsThunk()
+					if err == nil && superTeams != nil {
+						// Find superteam in this event's project
+						for _, superTeam := range superTeams {
+							if superTeam.ProjectID == event.ProjectID {
+								meEntry = findMeInLeaderboard(fullLeaderboard, superTeam.ID)
+								break
+							}
+						}
+					}
 				}
 			}
 
@@ -648,11 +705,21 @@ func (s *LeaderboardService) getEventSuperTeamLeaderboard(ctx context.Context, p
 	// Find "me" in results
 	var meEntry *LeaderboardEntry
 	if params.UserID != "" {
-		// Get my superteam ID first
-		posParams := s.buildEventSuperTeamPositionParams(params)
-		myPos, err := s.queries.FindMyEventSuperTeamPosition(ctx, posParams)
-		if err == nil && myPos != nil {
-			meEntry = findMeInLeaderboard(fullLeaderboard, myPos.EntityID)
+		// Get event to find its project, then get user's superteams
+		eventThunk := s.loaders.EventByIDLoader.Load(ctx, params.ContextID)
+		event, err := eventThunk()
+		if err == nil && event != nil {
+			superTeamsThunk := s.loaders.SuperTeamsByUserLoader.Load(ctx, params.UserID)
+			superTeams, err := superTeamsThunk()
+			if err == nil && superTeams != nil {
+				// Find superteam in this event's project
+				for _, superTeam := range superTeams {
+					if superTeam.ProjectID == event.ProjectID {
+						meEntry = findMeInLeaderboard(fullLeaderboard, superTeam.ID)
+						break
+					}
+				}
+			}
 		}
 	}
 
@@ -680,11 +747,11 @@ func (s *LeaderboardService) getEventChurchLeaderboard(ctx context.Context, para
 			// Find "me" in cached results
 			var meEntry *LeaderboardEntry
 			if params.UserID != "" {
-				// Get my church ID first
-				posParams := s.buildEventChurchPositionParams(params)
-				myPos, err := s.queries.FindMyEventChurchPosition(ctx, posParams)
-				if err == nil && myPos != nil {
-					meEntry = findMeInLeaderboard(fullLeaderboard, myPos.EntityID)
+				// Use loader to get user (includes ChurchID)
+				thunk := s.loaders.UserByIDLoader.Load(ctx, params.UserID)
+				user, err := thunk()
+				if err == nil && user != nil {
+					meEntry = findMeInLeaderboard(fullLeaderboard, user.ChurchID)
 				}
 			}
 
@@ -727,11 +794,11 @@ func (s *LeaderboardService) getEventChurchLeaderboard(ctx context.Context, para
 	// Find "me" in results
 	var meEntry *LeaderboardEntry
 	if params.UserID != "" {
-		// Get my church ID first
-		posParams := s.buildEventChurchPositionParams(params)
-		myPos, err := s.queries.FindMyEventChurchPosition(ctx, posParams)
-		if err == nil && myPos != nil {
-			meEntry = findMeInLeaderboard(fullLeaderboard, myPos.EntityID)
+		// Use loader to get user (includes ChurchID)
+		thunk := s.loaders.UserByIDLoader.Load(ctx, params.UserID)
+		user, err := thunk()
+		if err == nil && user != nil {
+			meEntry = findMeInLeaderboard(fullLeaderboard, user.ChurchID)
 		}
 	}
 
