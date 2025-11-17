@@ -76,7 +76,7 @@ type Track {
 }
 
 type Branding {
-    logo: String!
+    logo: String
     colors: Colors!
     rounding: Int! # border-radius in pixels
 }
@@ -326,7 +326,7 @@ input AgeRangeInput {
 }
 
 input BrandingInput {
-    logo: String!
+    logo: String
     colors: ColorsInput!
     rounding: Int!
 }

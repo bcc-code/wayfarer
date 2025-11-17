@@ -3206,7 +3206,7 @@ type Track {
 }
 
 type Branding {
-    logo: String!
+    logo: String
     colors: Colors!
     rounding: Int! # border-radius in pixels
 }
@@ -3456,7 +3456,7 @@ input AgeRangeInput {
 }
 
 input BrandingInput {
-    logo: String!
+    logo: String
     colors: ColorsInput!
     rounding: Int!
 }
@@ -5970,9 +5970,9 @@ func (ec *executionContext) _Branding_logo(ctx context.Context, field graphql.Co
 			return obj.Logo, nil
 		},
 		nil,
-		ec.marshalNString2string,
+		ec.marshalOString2ᚖstring,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -20953,7 +20953,7 @@ func (ec *executionContext) unmarshalInputBrandingInput(ctx context.Context, obj
 		switch k {
 		case "logo":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("logo"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -23049,9 +23049,6 @@ func (ec *executionContext) _Branding(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = graphql.MarshalString("Branding")
 		case "logo":
 			out.Values[i] = ec._Branding_logo(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "colors":
 			out.Values[i] = ec._Branding_colors(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

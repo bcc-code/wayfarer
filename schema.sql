@@ -78,7 +78,7 @@ CREATE TABLE projects (
     description TEXT NOT NULL,
     start_date TIMESTAMPTZ NOT NULL,
     end_date TIMESTAMPTZ NOT NULL,
-    logo_url VARCHAR(500) NOT NULL,
+    logo_url VARCHAR(500),
     color_primary VARCHAR(50) NOT NULL,
     color_secondary VARCHAR(50) NOT NULL,
     color_tertiary VARCHAR(50) NOT NULL,

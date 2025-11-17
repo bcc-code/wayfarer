@@ -134,7 +134,7 @@ type Project struct {
 	Description    string             `json:"description"`
 	StartDate      pgtype.Timestamptz `json:"start_date"`
 	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        string             `json:"logo_url"`
+	LogoUrl        *string            `json:"logo_url"`
 	ColorPrimary   string             `json:"color_primary"`
 	ColorSecondary string             `json:"color_secondary"`
 	ColorTertiary  string             `json:"color_tertiary"`

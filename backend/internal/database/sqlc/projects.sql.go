@@ -26,7 +26,7 @@ type ArchiveProjectRow struct {
 	Description    string             `json:"description"`
 	StartDate      pgtype.Timestamptz `json:"start_date"`
 	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        string             `json:"logo_url"`
+	LogoUrl        *string            `json:"logo_url"`
 	ColorPrimary   string             `json:"color_primary"`
 	ColorSecondary string             `json:"color_secondary"`
 	ColorTertiary  string             `json:"color_tertiary"`
@@ -122,7 +122,7 @@ type CreateProjectParams struct {
 	Description    string             `json:"description"`
 	Startdate      pgtype.Timestamptz `json:"startdate"`
 	Enddate        pgtype.Timestamptz `json:"enddate"`
-	Logourl        string             `json:"logourl"`
+	Logourl        *string            `json:"logourl"`
 	Colorprimary   string             `json:"colorprimary"`
 	Colorsecondary string             `json:"colorsecondary"`
 	Colortertiary  string             `json:"colortertiary"`
@@ -135,7 +135,7 @@ type CreateProjectRow struct {
 	Description    string             `json:"description"`
 	StartDate      pgtype.Timestamptz `json:"start_date"`
 	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        string             `json:"logo_url"`
+	LogoUrl        *string            `json:"logo_url"`
 	ColorPrimary   string             `json:"color_primary"`
 	ColorSecondary string             `json:"color_secondary"`
 	ColorTertiary  string             `json:"color_tertiary"`
@@ -195,7 +195,7 @@ type GetAllProjectsRow struct {
 	Description    string             `json:"description"`
 	StartDate      pgtype.Timestamptz `json:"start_date"`
 	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        string             `json:"logo_url"`
+	LogoUrl        *string            `json:"logo_url"`
 	ColorPrimary   string             `json:"color_primary"`
 	ColorSecondary string             `json:"color_secondary"`
 	ColorTertiary  string             `json:"color_tertiary"`
@@ -247,7 +247,7 @@ type GetProjectByIDRow struct {
 	Description    string             `json:"description"`
 	StartDate      pgtype.Timestamptz `json:"start_date"`
 	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        string             `json:"logo_url"`
+	LogoUrl        *string            `json:"logo_url"`
 	ColorPrimary   string             `json:"color_primary"`
 	ColorSecondary string             `json:"color_secondary"`
 	ColorTertiary  string             `json:"color_tertiary"`
@@ -286,7 +286,7 @@ type GetProjectsByIDsRow struct {
 	Description    string             `json:"description"`
 	StartDate      pgtype.Timestamptz `json:"start_date"`
 	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        string             `json:"logo_url"`
+	LogoUrl        *string            `json:"logo_url"`
 	ColorPrimary   string             `json:"color_primary"`
 	ColorSecondary string             `json:"color_secondary"`
 	ColorTertiary  string             `json:"color_tertiary"`
@@ -352,7 +352,7 @@ type GetProjectsByUserIDsRow struct {
 	Description    string             `json:"description"`
 	StartDate      pgtype.Timestamptz `json:"start_date"`
 	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        string             `json:"logo_url"`
+	LogoUrl        *string            `json:"logo_url"`
 	ColorPrimary   string             `json:"color_primary"`
 	ColorSecondary string             `json:"color_secondary"`
 	ColorTertiary  string             `json:"color_tertiary"`
@@ -431,7 +431,7 @@ type GetProjectsFilteredCursorRow struct {
 	Description    string             `json:"description"`
 	StartDate      pgtype.Timestamptz `json:"start_date"`
 	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        string             `json:"logo_url"`
+	LogoUrl        *string            `json:"logo_url"`
 	ColorPrimary   string             `json:"color_primary"`
 	ColorSecondary string             `json:"color_secondary"`
 	ColorTertiary  string             `json:"color_tertiary"`
@@ -501,10 +501,10 @@ RETURNING id, name, description, start_date, end_date, logo_url, color_primary, 
 
 type UpdateProjectParams struct {
 	Name           string             `json:"name"`
-	Description    string             `json:"description"`
+	Description    *string            `json:"description"`
 	Startdate      pgtype.Timestamptz `json:"startdate"`
 	Enddate        pgtype.Timestamptz `json:"enddate"`
-	Logourl        string             `json:"logourl"`
+	Logourl        *string            `json:"logourl"`
 	Colorprimary   string             `json:"colorprimary"`
 	Colorsecondary string             `json:"colorsecondary"`
 	Colortertiary  string             `json:"colortertiary"`
@@ -518,7 +518,7 @@ type UpdateProjectRow struct {
 	Description    string             `json:"description"`
 	StartDate      pgtype.Timestamptz `json:"start_date"`
 	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        string             `json:"logo_url"`
+	LogoUrl        *string            `json:"logo_url"`
 	ColorPrimary   string             `json:"color_primary"`
 	ColorSecondary string             `json:"color_secondary"`
 	ColorTertiary  string             `json:"color_tertiary"`

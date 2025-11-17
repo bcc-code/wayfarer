@@ -43,6 +43,11 @@ func projectByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(cont
 
 			// Convert to GraphQL model and populate cache
 			for _, row := range rows {
+				var logo *string
+				if row.LogoUrl != nil {
+					logo = row.LogoUrl
+				}
+
 				project := &model.Project{
 					ID:          row.ID,
 					Name:        row.Name,
@@ -50,7 +55,7 @@ func projectByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(cont
 					StartDate:   scalars.DateTime{Time: row.StartDate.Time},
 					EndDate:     scalars.DateTime{Time: row.EndDate.Time},
 					Branding: &model.Branding{
-						Logo: row.LogoUrl,
+						Logo: logo,
 						Colors: &model.Colors{
 							Primary:   row.ColorPrimary,
 							Secondary: row.ColorSecondary,

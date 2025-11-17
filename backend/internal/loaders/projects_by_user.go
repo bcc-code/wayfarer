@@ -41,6 +41,11 @@ func projectsByUserBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(c
 
 			// Group projects by user ID and convert to GraphQL model
 			for _, row := range rows {
+				var logo *string
+				if row.LogoUrl != nil {
+					logo = row.LogoUrl
+				}
+
 				project := &model.Project{
 					ID:          row.ID,
 					Name:        row.Name,
@@ -48,7 +53,7 @@ func projectsByUserBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(c
 					StartDate:   scalars.DateTime{Time: row.StartDate.Time},
 					EndDate:     scalars.DateTime{Time: row.EndDate.Time},
 					Branding: &model.Branding{
-						Logo: row.LogoUrl,
+						Logo: logo,
 						Colors: &model.Colors{
 							Primary:   row.ColorPrimary,
 							Secondary: row.ColorSecondary,

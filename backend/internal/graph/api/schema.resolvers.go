@@ -118,22 +118,27 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.Create
 
 	// Create project in database
 	row, err := r.DB.Queries.CreateProject(ctx, sqlc.CreateProjectParams{
-		ID:              projectID,
-		Name:            input.Name,
-		Description:     description,
-		Startdate:       pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true},
-		Enddate:         pgtype.Timestamptz{Time: input.EndDate.Time, Valid: true},
-		Logourl:         input.Branding.Logo,
-		Colorprimary:    input.Branding.Colors.Primary,
-		Colorsecondary:  input.Branding.Colors.Secondary,
-		Colortertiary:   input.Branding.Colors.Tertiary,
-		Rounding:        int32(input.Branding.Rounding),
+		ID:             projectID,
+		Name:           input.Name,
+		Description:    description,
+		Startdate:      pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true},
+		Enddate:        pgtype.Timestamptz{Time: input.EndDate.Time, Valid: true},
+		Logourl:        input.Branding.Logo,
+		Colorprimary:   input.Branding.Colors.Primary,
+		Colorsecondary: input.Branding.Colors.Secondary,
+		Colortertiary:  input.Branding.Colors.Tertiary,
+		Rounding:       int32(input.Branding.Rounding),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create project: %w", err)
 	}
 
 	// Convert to GraphQL model
+	var logo *string
+	if row.LogoUrl != nil {
+		logo = row.LogoUrl
+	}
+
 	project := &model.Project{
 		ID:          row.ID,
 		Name:        row.Name,
@@ -141,7 +146,7 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.Create
 		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
 		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
 		Branding: &model.Branding{
-			Logo: row.LogoUrl,
+			Logo: logo,
 			Colors: &model.Colors{
 				Primary:   row.ColorPrimary,
 				Secondary: row.ColorSecondary,
@@ -192,7 +197,7 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 		params.Name = *input.Name
 	}
 	if input.Description != nil {
-		params.Description = *input.Description
+		params.Description = input.Description
 	}
 	if input.StartDate != nil {
 		params.Startdate = pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true}
@@ -201,7 +206,7 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 		params.Enddate = pgtype.Timestamptz{Time: input.EndDate.Time, Valid: true}
 	}
 	if input.Branding != nil {
-		if input.Branding.Logo != "" {
+		if input.Branding.Logo != nil {
 			params.Logourl = input.Branding.Logo
 		}
 		if input.Branding.Colors != nil {
@@ -230,6 +235,11 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 	r.Cache.InvalidateProject(id)
 
 	// Convert to GraphQL model
+	var logo *string
+	if row.LogoUrl != nil {
+		logo = row.LogoUrl
+	}
+
 	project := &model.Project{
 		ID:          row.ID,
 		Name:        row.Name,
@@ -237,7 +247,7 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
 		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
 		Branding: &model.Branding{
-			Logo: row.LogoUrl,
+			Logo: logo,
 			Colors: &model.Colors{
 				Primary:   row.ColorPrimary,
 				Secondary: row.ColorSecondary,
@@ -2067,15 +2077,3 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *mutationResolver) CloneProject(ctx context.Context, id string, newName string) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: CloneProject - cloneProject"))
-}
-*/
