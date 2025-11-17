@@ -25,13 +25,35 @@ func (d *DateTime) UnmarshalGQL(v interface{}) error {
 		return fmt.Errorf("DateTime must be a string")
 	}
 
+	// Try parsing as RFC3339 first (e.g., "2025-12-12T00:00:00Z")
 	t, err := time.Parse(time.RFC3339, str)
-	if err != nil {
-		return fmt.Errorf("invalid DateTime format: %w", err)
+	if err == nil {
+		d.Time = t
+		return nil
 	}
 
-	d.Time = t
-	return nil
+	// Try parsing as date only (e.g., "2025-12-12"), assume UTC midnight
+	t, err = time.Parse("2006-01-02", str)
+	if err == nil {
+		d.Time = t
+		return nil
+	}
+
+	// Try parsing as datetime-local format (e.g., "2025-12-12T00:00"), assume UTC
+	t, err = time.Parse("2006-01-02T15:04", str)
+	if err == nil {
+		d.Time = t
+		return nil
+	}
+
+	// Try parsing as datetime-local with seconds (e.g., "2025-12-12T00:00:00"), assume UTC
+	t, err = time.Parse("2006-01-02T15:04:05", str)
+	if err == nil {
+		d.Time = t
+		return nil
+	}
+
+	return fmt.Errorf("invalid DateTime format: %w", err)
 }
 
 // Date scalar representing YYYY-MM-DD date

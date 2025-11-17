@@ -26,7 +26,7 @@ func main() {
 	now := time.Now()
 	claims := WayfarerClaims{
 		UserID:    userID,
-		UserRoles: []string{"user"},
+		UserRoles: []string{"user", "admin", "superadmin"},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "wayfarer",
 			IssuedAt:  jwt.NewNumericDate(now),

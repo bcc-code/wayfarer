@@ -14,8 +14,8 @@ import (
 )
 
 type WayfarerClaims struct {
-	UserID   string `json:"user_id"`
-	UserRole string `json:"user_role"`
+	UserID    string   `json:"user_id"`
+	UserRoles []string `json:"user_roles"`
 	jwt.RegisteredClaims
 }
 
@@ -114,8 +114,8 @@ func (m model) generateToken() tea.Cmd {
 
 		now := time.Now()
 		claims := WayfarerClaims{
-			UserID:   form.selectedUserID,
-			UserRole: "user",
+			UserID:    form.selectedUserID,
+			UserRoles: []string{"user"},
 			RegisteredClaims: jwt.RegisteredClaims{
 				Issuer:    "wayfarer",
 				IssuedAt:  jwt.NewNumericDate(now),
