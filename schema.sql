@@ -151,8 +151,8 @@ CREATE TABLE challenges (
     event_id CHAR(28) REFERENCES events(id) ON DELETE SET NULL,
     name VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
-    image_url VARCHAR(500) NOT NULL,
-    url VARCHAR(500) NOT NULL,
+    image_url VARCHAR(500),
+    url VARCHAR(500),
     button_text VARCHAR(100) NOT NULL,
     published_at TIMESTAMPTZ,
     end_time TIMESTAMPTZ,
@@ -171,7 +171,7 @@ CREATE TABLE achievements (
     challenge_id CHAR(28) REFERENCES challenges(id) ON DELETE SET NULL,
     name VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
-    image_url VARCHAR(500) NOT NULL,
+    image_url VARCHAR(500),
     points INT NOT NULL DEFAULT 0,
     hidden BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT now(),
@@ -193,7 +193,7 @@ CREATE TABLE reading_achievement_articles (
     article_id VARCHAR(255) NOT NULL,
     title VARCHAR(500) NOT NULL,
     author VARCHAR(255) NOT NULL,
-    url VARCHAR(500) NOT NULL,
+    url VARCHAR(500),
     INDEX idx_reading_articles_achievement (achievement_id),
     UNIQUE (achievement_id, article_id)
 );

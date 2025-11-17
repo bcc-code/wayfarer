@@ -11,6 +11,171 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const AssignChallengeToEvent = `-- name: AssignChallengeToEvent :one
+UPDATE challenges
+SET
+    event_id = $1::text,
+    updated_at = now()
+WHERE id = $2::text
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+`
+
+type AssignChallengeToEventParams struct {
+	Eventid string `json:"eventid"`
+	ID      string `json:"id"`
+}
+
+func (q *Queries) AssignChallengeToEvent(ctx context.Context, arg AssignChallengeToEventParams) (*Challenge, error) {
+	row := q.db.QueryRow(ctx, AssignChallengeToEvent, arg.Eventid, arg.ID)
+	var i Challenge
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.EventID,
+		&i.Name,
+		&i.Description,
+		&i.ImageUrl,
+		&i.Url,
+		&i.ButtonText,
+		&i.PublishedAt,
+		&i.EndTime,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const BulkCreateChallenges = `-- name: BulkCreateChallenges :many
+INSERT INTO challenges (
+    id,
+    project_id,
+    event_id,
+    name,
+    description,
+    image_url,
+    url,
+    button_text,
+    published_at,
+    end_time
+)
+SELECT
+    unnest($1::text[]),
+    unnest($2::text[]),
+    unnest($3::text[]),
+    unnest($4::text[]),
+    unnest($5::text[]),
+    unnest($6::text[]),
+    unnest($7::text[]),
+    unnest($8::text[]),
+    unnest($9::timestamptz[]),
+    unnest($10::timestamptz[])
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+`
+
+type BulkCreateChallengesParams struct {
+	Ids          []string             `json:"ids"`
+	Projectids   []string             `json:"projectids"`
+	Eventids     []string             `json:"eventids"`
+	Names        []string             `json:"names"`
+	Descriptions []string             `json:"descriptions"`
+	Imageurls    []string             `json:"imageurls"`
+	Urls         []string             `json:"urls"`
+	Buttontexts  []string             `json:"buttontexts"`
+	Publishedats []pgtype.Timestamptz `json:"publishedats"`
+	Endtimes     []pgtype.Timestamptz `json:"endtimes"`
+}
+
+func (q *Queries) BulkCreateChallenges(ctx context.Context, arg BulkCreateChallengesParams) ([]*Challenge, error) {
+	rows, err := q.db.Query(ctx, BulkCreateChallenges,
+		arg.Ids,
+		arg.Projectids,
+		arg.Eventids,
+		arg.Names,
+		arg.Descriptions,
+		arg.Imageurls,
+		arg.Urls,
+		arg.Buttontexts,
+		arg.Publishedats,
+		arg.Endtimes,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Challenge{}
+	for rows.Next() {
+		var i Challenge
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.EventID,
+			&i.Name,
+			&i.Description,
+			&i.ImageUrl,
+			&i.Url,
+			&i.ButtonText,
+			&i.PublishedAt,
+			&i.EndTime,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const BulkPublishChallenges = `-- name: BulkPublishChallenges :many
+UPDATE challenges
+SET
+    published_at = $1::timestamptz,
+    updated_at = now()
+WHERE id = ANY($2::text[])
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+`
+
+type BulkPublishChallengesParams struct {
+	Publishedat pgtype.Timestamptz `json:"publishedat"`
+	Ids         []string           `json:"ids"`
+}
+
+func (q *Queries) BulkPublishChallenges(ctx context.Context, arg BulkPublishChallengesParams) ([]*Challenge, error) {
+	rows, err := q.db.Query(ctx, BulkPublishChallenges, arg.Publishedat, arg.Ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Challenge{}
+	for rows.Next() {
+		var i Challenge
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.EventID,
+			&i.Name,
+			&i.Description,
+			&i.ImageUrl,
+			&i.Url,
+			&i.ButtonText,
+			&i.PublishedAt,
+			&i.EndTime,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const CountChallengesFiltered = `-- name: CountChallengesFiltered :one
 SELECT COUNT(DISTINCT id)
 FROM challenges
@@ -41,6 +206,88 @@ func (q *Queries) CountChallengesFiltered(ctx context.Context, arg CountChalleng
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const CreateChallenge = `-- name: CreateChallenge :one
+INSERT INTO challenges (
+    id,
+    project_id,
+    event_id,
+    name,
+    description,
+    image_url,
+    url,
+    button_text,
+    published_at,
+    end_time
+)
+VALUES (
+    $1::text,
+    $2::text,
+    $3::text,
+    $4::text,
+    $5::text,
+    $6::text,
+    $7::text,
+    $8::text,
+    $9::timestamptz,
+    $10::timestamptz
+)
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+`
+
+type CreateChallengeParams struct {
+	ID          string             `json:"id"`
+	Projectid   string             `json:"projectid"`
+	Eventid     string             `json:"eventid"`
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	Imageurl    *string            `json:"imageurl"`
+	Url         *string            `json:"url"`
+	Buttontext  string             `json:"buttontext"`
+	Publishedat pgtype.Timestamptz `json:"publishedat"`
+	Endtime     pgtype.Timestamptz `json:"endtime"`
+}
+
+func (q *Queries) CreateChallenge(ctx context.Context, arg CreateChallengeParams) (*Challenge, error) {
+	row := q.db.QueryRow(ctx, CreateChallenge,
+		arg.ID,
+		arg.Projectid,
+		arg.Eventid,
+		arg.Name,
+		arg.Description,
+		arg.Imageurl,
+		arg.Url,
+		arg.Buttontext,
+		arg.Publishedat,
+		arg.Endtime,
+	)
+	var i Challenge
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.EventID,
+		&i.Name,
+		&i.Description,
+		&i.ImageUrl,
+		&i.Url,
+		&i.ButtonText,
+		&i.PublishedAt,
+		&i.EndTime,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const DeleteChallenge = `-- name: DeleteChallenge :exec
+DELETE FROM challenges
+WHERE id = $1::text
+`
+
+func (q *Queries) DeleteChallenge(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, DeleteChallenge, id)
+	return err
 }
 
 const GetChallengesByEventIDs = `-- name: GetChallengesByEventIDs :many
@@ -236,4 +483,93 @@ func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChalle
 		return nil, err
 	}
 	return items, nil
+}
+
+const PublishChallenge = `-- name: PublishChallenge :one
+UPDATE challenges
+SET
+    published_at = $1::timestamptz,
+    updated_at = now()
+WHERE id = $2::text
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+`
+
+type PublishChallengeParams struct {
+	Publishedat pgtype.Timestamptz `json:"publishedat"`
+	ID          string             `json:"id"`
+}
+
+func (q *Queries) PublishChallenge(ctx context.Context, arg PublishChallengeParams) (*Challenge, error) {
+	row := q.db.QueryRow(ctx, PublishChallenge, arg.Publishedat, arg.ID)
+	var i Challenge
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.EventID,
+		&i.Name,
+		&i.Description,
+		&i.ImageUrl,
+		&i.Url,
+		&i.ButtonText,
+		&i.PublishedAt,
+		&i.EndTime,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const UpdateChallenge = `-- name: UpdateChallenge :one
+UPDATE challenges
+SET
+    name = COALESCE($1::text, name),
+    description = COALESCE($2::text, description),
+    image_url = COALESCE($3::text, image_url),
+    url = COALESCE($4::text, url),
+    button_text = COALESCE($5::text, button_text),
+    event_id = COALESCE($6::text, event_id),
+    end_time = COALESCE($7::timestamptz, end_time),
+    updated_at = now()
+WHERE id = $8::text
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+`
+
+type UpdateChallengeParams struct {
+	Name        *string            `json:"name"`
+	Description *string            `json:"description"`
+	Imageurl    *string            `json:"imageurl"`
+	Url         *string            `json:"url"`
+	Buttontext  *string            `json:"buttontext"`
+	Eventid     *string            `json:"eventid"`
+	Endtime     pgtype.Timestamptz `json:"endtime"`
+	ID          string             `json:"id"`
+}
+
+func (q *Queries) UpdateChallenge(ctx context.Context, arg UpdateChallengeParams) (*Challenge, error) {
+	row := q.db.QueryRow(ctx, UpdateChallenge,
+		arg.Name,
+		arg.Description,
+		arg.Imageurl,
+		arg.Url,
+		arg.Buttontext,
+		arg.Eventid,
+		arg.Endtime,
+		arg.ID,
+	)
+	var i Challenge
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.EventID,
+		&i.Name,
+		&i.Description,
+		&i.ImageUrl,
+		&i.Url,
+		&i.ButtonText,
+		&i.PublishedAt,
+		&i.EndTime,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
 }

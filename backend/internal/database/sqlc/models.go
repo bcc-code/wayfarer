@@ -16,7 +16,7 @@ type Achievement struct {
 	ChallengeID     *string            `json:"challenge_id"`
 	Name            string             `json:"name"`
 	Description     string             `json:"description"`
-	ImageUrl        string             `json:"image_url"`
+	ImageUrl        *string            `json:"image_url"`
 	Points          int32              `json:"points"`
 	Hidden          *bool              `json:"hidden"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
@@ -29,8 +29,8 @@ type Challenge struct {
 	EventID     *string            `json:"event_id"`
 	Name        string             `json:"name"`
 	Description string             `json:"description"`
-	ImageUrl    string             `json:"image_url"`
-	Url         string             `json:"url"`
+	ImageUrl    *string            `json:"image_url"`
+	Url         *string            `json:"url"`
 	ButtonText  string             `json:"button_text"`
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
 	EndTime     pgtype.Timestamptz `json:"end_time"`
@@ -149,12 +149,12 @@ type ReadingAchievement struct {
 }
 
 type ReadingAchievementArticle struct {
-	ID            string `json:"id"`
-	AchievementID string `json:"achievement_id"`
-	ArticleID     string `json:"article_id"`
-	Title         string `json:"title"`
-	Author        string `json:"author"`
-	Url           string `json:"url"`
+	ID            string  `json:"id"`
+	AchievementID string  `json:"achievement_id"`
+	ArticleID     string  `json:"article_id"`
+	Title         string  `json:"title"`
+	Author        string  `json:"author"`
+	Url           *string `json:"url"`
 }
 
 type ScoreAdjustment struct {

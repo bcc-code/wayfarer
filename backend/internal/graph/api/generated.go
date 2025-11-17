@@ -222,10 +222,10 @@ type ComplexityRoot struct {
 		BulkAwardSuperTeamAchievements func(childComplexity int, superTeamIds []string, achievementID string) int
 		BulkAwardTeamAchievements      func(childComplexity int, teamIds []string, achievementID string) int
 		BulkCompleteChallenges         func(childComplexity int, userIds []string, challengeID string, completedAt *scalars.DateTime) int
-		BulkCreateChallenges           func(childComplexity int, inputs []model.CreateChallengeInput) int
+		BulkCreateChallenges           func(childComplexity int, projectID string, eventID string, inputs []model.CreateChallengeInput) int
 		BulkPublishChallenges          func(childComplexity int, ids []string, publishedAt scalars.DateTime) int
 		CompleteChallenge              func(childComplexity int, userID string, challengeID string, completedAt *scalars.DateTime) int
-		CreateChallenge                func(childComplexity int, input model.CreateChallengeInput) int
+		CreateChallenge                func(childComplexity int, projectID string, eventID string, input model.CreateChallengeInput) int
 		CreateEvent                    func(childComplexity int, projectID string, input model.CreateEventInput) int
 		CreateListeningAchievement     func(childComplexity int, input model.CreateListeningAchievementInput) int
 		CreateProject                  func(childComplexity int, input model.CreateProjectInput) int
@@ -527,13 +527,13 @@ type MutationResolver interface {
 	UpdateEvent(ctx context.Context, id string, input model.UpdateEventInput) (*model.Event, error)
 	DeleteEvent(ctx context.Context, id string) (bool, error)
 	MoveEvent(ctx context.Context, id string, newProjectID string) (*model.Event, error)
-	CreateChallenge(ctx context.Context, input model.CreateChallengeInput) (*model.Challenge, error)
+	CreateChallenge(ctx context.Context, projectID string, eventID string, input model.CreateChallengeInput) (*model.Challenge, error)
 	UpdateChallenge(ctx context.Context, id string, input model.UpdateChallengeInput) (*model.Challenge, error)
 	DeleteChallenge(ctx context.Context, id string) (bool, error)
 	PublishChallenge(ctx context.Context, id string, publishedAt scalars.DateTime) (*model.Challenge, error)
 	AssignChallengeToEvent(ctx context.Context, challengeID string, eventID string) (*model.Challenge, error)
 	BulkPublishChallenges(ctx context.Context, ids []string, publishedAt scalars.DateTime) ([]model.Challenge, error)
-	BulkCreateChallenges(ctx context.Context, inputs []model.CreateChallengeInput) ([]model.Challenge, error)
+	BulkCreateChallenges(ctx context.Context, projectID string, eventID string, inputs []model.CreateChallengeInput) ([]model.Challenge, error)
 	CreateSimpleAchievement(ctx context.Context, input model.CreateSimpleAchievementInput) (*model.SimpleAchievement, error)
 	CreateReadingAchievement(ctx context.Context, input model.CreateReadingAchievementInput) (*model.ReadingAchievement, error)
 	CreateListeningAchievement(ctx context.Context, input model.CreateListeningAchievementInput) (*model.ListeningAchievement, error)
@@ -1420,7 +1420,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.BulkCreateChallenges(childComplexity, args["inputs"].([]model.CreateChallengeInput)), true
+		return e.complexity.Mutation.BulkCreateChallenges(childComplexity, args["projectId"].(string), args["eventId"].(string), args["inputs"].([]model.CreateChallengeInput)), true
 	case "Mutation.bulkPublishChallenges":
 		if e.complexity.Mutation.BulkPublishChallenges == nil {
 			break
@@ -1453,7 +1453,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateChallenge(childComplexity, args["input"].(model.CreateChallengeInput)), true
+		return e.complexity.Mutation.CreateChallenge(childComplexity, args["projectId"].(string), args["eventId"].(string), args["input"].(model.CreateChallengeInput)), true
 	case "Mutation.createEvent":
 		if e.complexity.Mutation.CreateEvent == nil {
 			break
@@ -3195,14 +3195,14 @@ type Article {
     id: ID!
     title: String!
     author: String!
-    url: String!
+    url: String
 }
 
 type Track {
     id: ID!
     name: String!
     description: String!
-    image: String!
+    image: String
 }
 
 type Branding {
@@ -3363,10 +3363,10 @@ type Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String!
+    image: String
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
-    url: String!
+    url: String
     buttonText: String!
     publishedAt: DateTime!
     endTime: DateTime
@@ -3377,7 +3377,7 @@ interface Achievement {
     id: ID!
     name: String!
     description: String!
-    image: String!
+    image: String
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -3392,7 +3392,7 @@ type SimpleAchievement implements Achievement {
     id: ID!
     name: String!
     description: String!
-    image: String!
+    image: String
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -3405,7 +3405,7 @@ type ReadingAchievement implements Achievement {
     id: ID!
     name: String!
     description: String!
-    image: String!
+    image: String
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -3421,7 +3421,7 @@ type ListeningAchievement implements Achievement {
     id: ID!
     name: String!
     description: String!
-    image: String!
+    image: String
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -3437,7 +3437,7 @@ type StreakAchievement implements Achievement {
     id: ID!
     name: String!
     description: String!
-    image: String!
+    image: String
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -3470,13 +3470,13 @@ input ColorsInput {
 input ArticleInput {
     title: String!
     author: String!
-    url: String!
+    url: String
 }
 
 input TrackInput {
     name: String!
     description: String!
-    image: String!
+    image: String
 }
 
 input CreateProjectInput {
@@ -3511,11 +3511,9 @@ input UpdateEventInput {
 
 input CreateChallengeInput {
     name: String!
-    description: HTML!
-    image: String!
-    projectId: ID!
-    eventId: ID
-    url: String!
+    description: HTML
+    image: String
+    url: String
     buttonText: String!
     endTime: DateTime
 }
@@ -3533,7 +3531,7 @@ input UpdateChallengeInput {
 input CreateSimpleAchievementInput {
     name: String!
     description: String!
-    image: String!
+    image: String
     projectId: ID!
     eventId: ID
     challengeId: ID
@@ -3544,7 +3542,7 @@ input CreateSimpleAchievementInput {
 input CreateReadingAchievementInput {
     name: String!
     description: String!
-    image: String!
+    image: String
     projectId: ID!
     eventId: ID
     challengeId: ID
@@ -3556,7 +3554,7 @@ input CreateReadingAchievementInput {
 input CreateListeningAchievementInput {
     name: String!
     description: String!
-    image: String!
+    image: String
     projectId: ID!
     eventId: ID
     challengeId: ID
@@ -3568,7 +3566,7 @@ input CreateListeningAchievementInput {
 input CreateStreakAchievementInput {
     name: String!
     description: String!
-    image: String!
+    image: String
     projectId: ID!
     eventId: ID
     challengeId: ID
@@ -3948,13 +3946,13 @@ type Mutation {
     moveEvent(id: ID!, newProjectId: ID!): Event! @requireRole(roles: ["admin", "superadmin"])
 
     # Challenge Management
-    createChallenge(input: CreateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
+    createChallenge(projectId: ID!, eventId: ID!, input: CreateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     updateChallenge(id: ID!, input: UpdateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     deleteChallenge(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
     publishChallenge(id: ID!, publishedAt: DateTime!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     assignChallengeToEvent(challengeId: ID!, eventId: ID!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     bulkPublishChallenges(ids: [ID!]!, publishedAt: DateTime!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
-    bulkCreateChallenges(inputs: [CreateChallengeInput!]!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
+    bulkCreateChallenges(projectId: ID!, eventId: ID!, inputs: [CreateChallengeInput!]!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
 
     # Achievement Management
     createSimpleAchievement(input: CreateSimpleAchievementInput!): SimpleAchievement! @requireRole(roles: ["admin", "superadmin"])
@@ -4405,11 +4403,21 @@ func (ec *executionContext) field_Mutation_bulkCompleteChallenges_args(ctx conte
 func (ec *executionContext) field_Mutation_bulkCreateChallenges_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "inputs", ec.unmarshalNCreateChallengeInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateChallengeInputᚄ)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "projectId", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
 	}
-	args["inputs"] = arg0
+	args["projectId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "eventId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["eventId"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "inputs", ec.unmarshalNCreateChallengeInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateChallengeInputᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["inputs"] = arg2
 	return args, nil
 }
 
@@ -4453,11 +4461,21 @@ func (ec *executionContext) field_Mutation_completeChallenge_args(ctx context.Co
 func (ec *executionContext) field_Mutation_createChallenge_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateChallengeInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateChallengeInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "projectId", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
 	}
-	args["input"] = arg0
+	args["projectId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "eventId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["eventId"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateChallengeInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateChallengeInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg2
 	return args, nil
 }
 
@@ -5941,9 +5959,9 @@ func (ec *executionContext) _Article_url(ctx context.Context, field graphql.Coll
 			return obj.URL, nil
 		},
 		nil,
-		ec.marshalNString2string,
+		ec.marshalOString2ᚖstring,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -6152,9 +6170,9 @@ func (ec *executionContext) _Challenge_image(ctx context.Context, field graphql.
 			return obj.Image, nil
 		},
 		nil,
-		ec.marshalNString2string,
+		ec.marshalOString2ᚖstring,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -6287,9 +6305,9 @@ func (ec *executionContext) _Challenge_url(ctx context.Context, field graphql.Co
 			return obj.URL, nil
 		},
 		nil,
-		ec.marshalNString2string,
+		ec.marshalOString2ᚖstring,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -8015,9 +8033,9 @@ func (ec *executionContext) _ListeningAchievement_image(ctx context.Context, fie
 			return obj.Image, nil
 		},
 		nil,
-		ec.marshalNString2string,
+		ec.marshalOString2ᚖstring,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -9321,7 +9339,7 @@ func (ec *executionContext) _Mutation_createChallenge(ctx context.Context, field
 		ec.fieldContext_Mutation_createChallenge,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().CreateChallenge(ctx, fc.Args["input"].(model.CreateChallengeInput))
+			return ec.resolvers.Mutation().CreateChallenge(ctx, fc.Args["projectId"].(string), fc.Args["eventId"].(string), fc.Args["input"].(model.CreateChallengeInput))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -9795,7 +9813,7 @@ func (ec *executionContext) _Mutation_bulkCreateChallenges(ctx context.Context, 
 		ec.fieldContext_Mutation_bulkCreateChallenges,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().BulkCreateChallenges(ctx, fc.Args["inputs"].([]model.CreateChallengeInput))
+			return ec.resolvers.Mutation().BulkCreateChallenges(ctx, fc.Args["projectId"].(string), fc.Args["eventId"].(string), fc.Args["inputs"].([]model.CreateChallengeInput))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -15618,9 +15636,9 @@ func (ec *executionContext) _ReadingAchievement_image(ctx context.Context, field
 			return obj.Image, nil
 		},
 		nil,
-		ec.marshalNString2string,
+		ec.marshalOString2ᚖstring,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -16296,9 +16314,9 @@ func (ec *executionContext) _SimpleAchievement_image(ctx context.Context, field 
 			return obj.Image, nil
 		},
 		nil,
-		ec.marshalNString2string,
+		ec.marshalOString2ᚖstring,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -16915,9 +16933,9 @@ func (ec *executionContext) _StreakAchievement_image(ctx context.Context, field 
 			return obj.Image, nil
 		},
 		nil,
-		ec.marshalNString2string,
+		ec.marshalOString2ᚖstring,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -18424,9 +18442,9 @@ func (ec *executionContext) _Track_image(ctx context.Context, field graphql.Coll
 			return obj.Image, nil
 		},
 		nil,
-		ec.marshalNString2string,
+		ec.marshalOString2ᚖstring,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -20878,7 +20896,7 @@ func (ec *executionContext) unmarshalInputArticleInput(ctx context.Context, obj 
 			it.Author = data
 		case "url":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -21122,7 +21140,7 @@ func (ec *executionContext) unmarshalInputCreateChallengeInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "projectId", "eventId", "url", "buttonText", "endTime"}
+	fieldsInOrder := [...]string{"name", "description", "image", "url", "buttonText", "endTime"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -21138,35 +21156,21 @@ func (ec *executionContext) unmarshalInputCreateChallengeInput(ctx context.Conte
 			it.Name = data
 		case "description":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
-			data, err := ec.unmarshalNHTML2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐHTML(ctx, v)
+			data, err := ec.unmarshalOHTML2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐHTML(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Description = data
 		case "image":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Image = data
-		case "projectId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
-			data, err := ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProjectID = data
-		case "eventId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("eventId"))
-			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.EventID = data
 		case "url":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -21310,7 +21314,7 @@ func (ec *executionContext) unmarshalInputCreateListeningAchievementInput(ctx co
 			it.Description = data
 		case "image":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -21448,7 +21452,7 @@ func (ec *executionContext) unmarshalInputCreateReadingAchievementInput(ctx cont
 			it.Description = data
 		case "image":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -21531,7 +21535,7 @@ func (ec *executionContext) unmarshalInputCreateSimpleAchievementInput(ctx conte
 			it.Description = data
 		case "image":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -21607,7 +21611,7 @@ func (ec *executionContext) unmarshalInputCreateStreakAchievementInput(ctx conte
 			it.Description = data
 		case "image":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -22322,7 +22326,7 @@ func (ec *executionContext) unmarshalInputTrackInput(ctx context.Context, obj an
 			it.Description = data
 		case "image":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -23010,9 +23014,6 @@ func (ec *executionContext) _Article(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "url":
 			out.Values[i] = ec._Article_url(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -23110,9 +23111,6 @@ func (ec *executionContext) _Challenge(ctx context.Context, sel ast.SelectionSet
 			}
 		case "image":
 			out.Values[i] = ec._Challenge_image(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "project":
 			field := field
 
@@ -23184,9 +23182,6 @@ func (ec *executionContext) _Challenge(ctx context.Context, sel ast.SelectionSet
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "url":
 			out.Values[i] = ec._Challenge_url(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "buttonText":
 			out.Values[i] = ec._Challenge_buttonText(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -24001,9 +23996,6 @@ func (ec *executionContext) _ListeningAchievement(ctx context.Context, sel ast.S
 			}
 		case "image":
 			out.Values[i] = ec._ListeningAchievement_image(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "project":
 			field := field
 
@@ -25805,9 +25797,6 @@ func (ec *executionContext) _ReadingAchievement(ctx context.Context, sel ast.Sel
 			}
 		case "image":
 			out.Values[i] = ec._ReadingAchievement_image(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "project":
 			field := field
 
@@ -26162,9 +26151,6 @@ func (ec *executionContext) _SimpleAchievement(ctx context.Context, sel ast.Sele
 			}
 		case "image":
 			out.Values[i] = ec._SimpleAchievement_image(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "project":
 			field := field
 
@@ -26523,9 +26509,6 @@ func (ec *executionContext) _StreakAchievement(ctx context.Context, sel ast.Sele
 			}
 		case "image":
 			out.Values[i] = ec._StreakAchievement_image(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "project":
 			field := field
 
@@ -27366,9 +27349,6 @@ func (ec *executionContext) _Track(ctx context.Context, sel ast.SelectionSet, ob
 			}
 		case "image":
 			out.Values[i] = ec._Track_image(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

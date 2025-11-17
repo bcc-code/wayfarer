@@ -44,3 +44,98 @@ WHERE
     AND (@eventid::text = '' OR event_id = @eventid::text)
     AND (@publishedafter::timestamptz IS NULL OR published_at >= @publishedafter::timestamptz)
     AND (@publishedbefore::timestamptz IS NULL OR published_at <= @publishedbefore::timestamptz);
+
+-- name: CreateChallenge :one
+INSERT INTO challenges (
+    id,
+    project_id,
+    event_id,
+    name,
+    description,
+    image_url,
+    url,
+    button_text,
+    published_at,
+    end_time
+)
+VALUES (
+    @id::text,
+    @projectid::text,
+    @eventid::text,
+    @name::text,
+    @description::text,
+    sqlc.narg('imageurl')::text,
+    sqlc.narg('url')::text,
+    @buttontext::text,
+    @publishedat::timestamptz,
+    @endtime::timestamptz
+)
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at;
+
+-- name: UpdateChallenge :one
+UPDATE challenges
+SET
+    name = COALESCE(sqlc.narg('name')::text, name),
+    description = COALESCE(sqlc.narg('description')::text, description),
+    image_url = COALESCE(sqlc.narg('imageurl')::text, image_url),
+    url = COALESCE(sqlc.narg('url')::text, url),
+    button_text = COALESCE(sqlc.narg('buttontext')::text, button_text),
+    event_id = COALESCE(sqlc.narg('eventid')::text, event_id),
+    end_time = COALESCE(sqlc.narg('endtime')::timestamptz, end_time),
+    updated_at = now()
+WHERE id = @id::text
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at;
+
+-- name: DeleteChallenge :exec
+DELETE FROM challenges
+WHERE id = @id::text;
+
+-- name: PublishChallenge :one
+UPDATE challenges
+SET
+    published_at = @publishedat::timestamptz,
+    updated_at = now()
+WHERE id = @id::text
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at;
+
+-- name: AssignChallengeToEvent :one
+UPDATE challenges
+SET
+    event_id = @eventid::text,
+    updated_at = now()
+WHERE id = @id::text
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at;
+
+-- name: BulkPublishChallenges :many
+UPDATE challenges
+SET
+    published_at = @publishedat::timestamptz,
+    updated_at = now()
+WHERE id = ANY(@ids::text[])
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at;
+
+-- name: BulkCreateChallenges :many
+INSERT INTO challenges (
+    id,
+    project_id,
+    event_id,
+    name,
+    description,
+    image_url,
+    url,
+    button_text,
+    published_at,
+    end_time
+)
+SELECT
+    unnest(@ids::text[]),
+    unnest(@projectids::text[]),
+    unnest(@eventids::text[]),
+    unnest(@names::text[]),
+    unnest(@descriptions::text[]),
+    unnest(@imageurls::text[]),
+    unnest(@urls::text[]),
+    unnest(@buttontexts::text[]),
+    unnest(@publishedats::timestamptz[]),
+    unnest(@endtimes::timestamptz[])
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at;

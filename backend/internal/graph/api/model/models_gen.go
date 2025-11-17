@@ -16,7 +16,7 @@ type Achievement interface {
 	GetID() string
 	GetName() string
 	GetDescription() string
-	GetImage() string
+	GetImage() *string
 	GetProject() *Project
 	GetEvent() *Event
 	GetChallenge() *Challenge
@@ -53,16 +53,16 @@ type AgeRangeInput struct {
 }
 
 type Article struct {
-	ID     string `json:"id"`
-	Title  string `json:"title"`
-	Author string `json:"author"`
-	URL    string `json:"url"`
+	ID     string  `json:"id"`
+	Title  string  `json:"title"`
+	Author string  `json:"author"`
+	URL    *string `json:"url,omitempty"`
 }
 
 type ArticleInput struct {
-	Title  string `json:"title"`
-	Author string `json:"author"`
-	URL    string `json:"url"`
+	Title  string  `json:"title"`
+	Author string  `json:"author"`
+	URL    *string `json:"url,omitempty"`
 }
 
 type AssignRoleInput struct {
@@ -88,10 +88,10 @@ type Challenge struct {
 	ID              string            `json:"id"`
 	Name            string            `json:"name"`
 	Description     scalars.HTML      `json:"description"`
-	Image           string            `json:"image"`
+	Image           *string           `json:"image,omitempty"`
 	Project         *Project          `json:"project"`
 	Event           *Event            `json:"event,omitempty"`
-	URL             string            `json:"url"`
+	URL             *string           `json:"url,omitempty"`
 	ButtonText      string            `json:"buttonText"`
 	PublishedAt     scalars.DateTime  `json:"publishedAt"`
 	EndTime         *scalars.DateTime `json:"endTime,omitempty"`
@@ -157,11 +157,9 @@ type ColorsInput struct {
 
 type CreateChallengeInput struct {
 	Name        string            `json:"name"`
-	Description scalars.HTML      `json:"description"`
-	Image       string            `json:"image"`
-	ProjectID   string            `json:"projectId"`
-	EventID     *string           `json:"eventId,omitempty"`
-	URL         string            `json:"url"`
+	Description *scalars.HTML     `json:"description,omitempty"`
+	Image       *string           `json:"image,omitempty"`
+	URL         *string           `json:"url,omitempty"`
 	ButtonText  string            `json:"buttonText"`
 	EndTime     *scalars.DateTime `json:"endTime,omitempty"`
 }
@@ -182,7 +180,7 @@ type CreateEventInput struct {
 type CreateListeningAchievementInput struct {
 	Name        string       `json:"name"`
 	Description string       `json:"description"`
-	Image       string       `json:"image"`
+	Image       *string      `json:"image,omitempty"`
 	ProjectID   string       `json:"projectId"`
 	EventID     *string      `json:"eventId,omitempty"`
 	ChallengeID *string      `json:"challengeId,omitempty"`
@@ -202,7 +200,7 @@ type CreateProjectInput struct {
 type CreateReadingAchievementInput struct {
 	Name        string         `json:"name"`
 	Description string         `json:"description"`
-	Image       string         `json:"image"`
+	Image       *string        `json:"image,omitempty"`
 	ProjectID   string         `json:"projectId"`
 	EventID     *string        `json:"eventId,omitempty"`
 	ChallengeID *string        `json:"challengeId,omitempty"`
@@ -214,7 +212,7 @@ type CreateReadingAchievementInput struct {
 type CreateSimpleAchievementInput struct {
 	Name        string  `json:"name"`
 	Description string  `json:"description"`
-	Image       string  `json:"image"`
+	Image       *string `json:"image,omitempty"`
 	ProjectID   string  `json:"projectId"`
 	EventID     *string `json:"eventId,omitempty"`
 	ChallengeID *string `json:"challengeId,omitempty"`
@@ -225,7 +223,7 @@ type CreateSimpleAchievementInput struct {
 type CreateStreakAchievementInput struct {
 	Name         string  `json:"name"`
 	Description  string  `json:"description"`
-	Image        string  `json:"image"`
+	Image        *string `json:"image,omitempty"`
 	ProjectID    string  `json:"projectId"`
 	EventID      *string `json:"eventId,omitempty"`
 	ChallengeID  *string `json:"challengeId,omitempty"`
@@ -340,7 +338,7 @@ type ListeningAchievement struct {
 	ID              string            `json:"id"`
 	Name            string            `json:"name"`
 	Description     string            `json:"description"`
-	Image           string            `json:"image"`
+	Image           *string           `json:"image,omitempty"`
 	Project         *Project          `json:"project"`
 	Event           *Event            `json:"event,omitempty"`
 	Challenge       *Challenge        `json:"challenge,omitempty"`
@@ -359,7 +357,7 @@ func (ListeningAchievement) IsAchievement()                        {}
 func (this ListeningAchievement) GetID() string                    { return this.ID }
 func (this ListeningAchievement) GetName() string                  { return this.Name }
 func (this ListeningAchievement) GetDescription() string           { return this.Description }
-func (this ListeningAchievement) GetImage() string                 { return this.Image }
+func (this ListeningAchievement) GetImage() *string                { return this.Image }
 func (this ListeningAchievement) GetProject() *Project             { return this.Project }
 func (this ListeningAchievement) GetEvent() *Event                 { return this.Event }
 func (this ListeningAchievement) GetChallenge() *Challenge         { return this.Challenge }
@@ -421,7 +419,7 @@ type ReadingAchievement struct {
 	ID          string            `json:"id"`
 	Name        string            `json:"name"`
 	Description string            `json:"description"`
-	Image       string            `json:"image"`
+	Image       *string           `json:"image,omitempty"`
 	Project     *Project          `json:"project"`
 	Event       *Event            `json:"event,omitempty"`
 	Challenge   *Challenge        `json:"challenge,omitempty"`
@@ -440,7 +438,7 @@ func (ReadingAchievement) IsAchievement()                        {}
 func (this ReadingAchievement) GetID() string                    { return this.ID }
 func (this ReadingAchievement) GetName() string                  { return this.Name }
 func (this ReadingAchievement) GetDescription() string           { return this.Description }
-func (this ReadingAchievement) GetImage() string                 { return this.Image }
+func (this ReadingAchievement) GetImage() *string                { return this.Image }
 func (this ReadingAchievement) GetProject() *Project             { return this.Project }
 func (this ReadingAchievement) GetEvent() *Event                 { return this.Event }
 func (this ReadingAchievement) GetChallenge() *Challenge         { return this.Challenge }
@@ -467,7 +465,7 @@ type SimpleAchievement struct {
 	ID          string            `json:"id"`
 	Name        string            `json:"name"`
 	Description string            `json:"description"`
-	Image       string            `json:"image"`
+	Image       *string           `json:"image,omitempty"`
 	Project     *Project          `json:"project"`
 	Event       *Event            `json:"event,omitempty"`
 	Challenge   *Challenge        `json:"challenge,omitempty"`
@@ -483,7 +481,7 @@ func (SimpleAchievement) IsAchievement()                        {}
 func (this SimpleAchievement) GetID() string                    { return this.ID }
 func (this SimpleAchievement) GetName() string                  { return this.Name }
 func (this SimpleAchievement) GetDescription() string           { return this.Description }
-func (this SimpleAchievement) GetImage() string                 { return this.Image }
+func (this SimpleAchievement) GetImage() *string                { return this.Image }
 func (this SimpleAchievement) GetProject() *Project             { return this.Project }
 func (this SimpleAchievement) GetEvent() *Event                 { return this.Event }
 func (this SimpleAchievement) GetChallenge() *Challenge         { return this.Challenge }
@@ -506,7 +504,7 @@ type StreakAchievement struct {
 	ID           string            `json:"id"`
 	Name         string            `json:"name"`
 	Description  string            `json:"description"`
-	Image        string            `json:"image"`
+	Image        *string           `json:"image,omitempty"`
 	Project      *Project          `json:"project"`
 	Event        *Event            `json:"event,omitempty"`
 	Challenge    *Challenge        `json:"challenge,omitempty"`
@@ -525,7 +523,7 @@ func (StreakAchievement) IsAchievement()                        {}
 func (this StreakAchievement) GetID() string                    { return this.ID }
 func (this StreakAchievement) GetName() string                  { return this.Name }
 func (this StreakAchievement) GetDescription() string           { return this.Description }
-func (this StreakAchievement) GetImage() string                 { return this.Image }
+func (this StreakAchievement) GetImage() *string                { return this.Image }
 func (this StreakAchievement) GetProject() *Project             { return this.Project }
 func (this StreakAchievement) GetEvent() *Event                 { return this.Event }
 func (this StreakAchievement) GetChallenge() *Challenge         { return this.Challenge }
@@ -616,16 +614,16 @@ type TeamFilter struct {
 }
 
 type Track struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Image       string `json:"image"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Image       *string `json:"image,omitempty"`
 }
 
 type TrackInput struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Image       string `json:"image"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Image       *string `json:"image,omitempty"`
 }
 
 type UpdateAchievementInput struct {

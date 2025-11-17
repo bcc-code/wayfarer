@@ -489,38 +489,360 @@ func (r *mutationResolver) MoveEvent(ctx context.Context, id string, newProjectI
 }
 
 // CreateChallenge is the resolver for the createChallenge field.
-func (r *mutationResolver) CreateChallenge(ctx context.Context, input model.CreateChallengeInput) (*model.Challenge, error) {
-	panic(fmt.Errorf("not implemented: CreateChallenge - createChallenge"))
+func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string, eventID string, input model.CreateChallengeInput) (*model.Challenge, error) {
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization (admins, superadmins, and project admins for their own projects)
+	if !r.RoleService.CanManageProject(ctx, userID, projectID) {
+		return nil, fmt.Errorf("unauthorized to create challenges in this project")
+	}
+
+	// Generate new challenge ID
+	challengeID := ulid.NewChallengeID()
+
+	// Build params for database
+	params := sqlc.CreateChallengeParams{
+		ID:         challengeID,
+		Projectid:  projectID,
+		Name:       input.Name,
+		Buttontext: input.ButtonText,
+	}
+
+	// Set optional description (default to empty string if not provided)
+	if input.Description != nil {
+		params.Description = string(*input.Description)
+	}
+
+	// Set optional image and URL
+	params.Imageurl = input.Image
+	params.Url = input.URL
+
+	// Set required eventID
+	params.Eventid = eventID
+
+	// Set optional endTime
+	if input.EndTime != nil {
+		params.Endtime = pgtype.Timestamptz{Time: input.EndTime.Time, Valid: true}
+	}
+
+	// Create challenge in database
+	row, err := r.DB.Queries.CreateChallenge(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create challenge: %w", err)
+	}
+
+	// Convert to GraphQL model
+	return convertRowToChallenge(row), nil
 }
 
 // UpdateChallenge is the resolver for the updateChallenge field.
 func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input model.UpdateChallengeInput) (*model.Challenge, error) {
-	panic(fmt.Errorf("not implemented: UpdateChallenge - updateChallenge"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load existing challenge to verify it exists and get project ID
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, id)
+	existingChallenge, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load challenge: %w", err)
+	}
+
+	// Check authorization (admins, superadmins, and project admins for their own projects)
+	if !r.RoleService.CanManageProject(ctx, userID, existingChallenge.ProjectID) {
+		return nil, fmt.Errorf("unauthorized to update this challenge")
+	}
+
+	// Build update parameters
+	params := sqlc.UpdateChallengeParams{
+		ID: id,
+	}
+
+	// Only set fields that are provided
+	if input.Name != nil {
+		params.Name = input.Name
+	}
+	if input.Description != nil {
+		desc := string(*input.Description)
+		params.Description = &desc
+	}
+	if input.Image != nil {
+		params.Imageurl = input.Image
+	}
+	if input.URL != nil {
+		params.Url = input.URL
+	}
+	if input.ButtonText != nil {
+		params.Buttontext = input.ButtonText
+	}
+	if input.EventID != nil {
+		params.Eventid = input.EventID
+	}
+	if input.EndTime != nil {
+		params.Endtime = pgtype.Timestamptz{Time: input.EndTime.Time, Valid: true}
+	}
+
+	// Update challenge in database
+	row, err := r.DB.Queries.UpdateChallenge(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update challenge: %w", err)
+	}
+
+	// Invalidate cache
+	r.Cache.InvalidateChallenge(id)
+
+	// Convert to GraphQL model
+	return convertRowToChallenge(row), nil
 }
 
 // DeleteChallenge is the resolver for the deleteChallenge field.
 func (r *mutationResolver) DeleteChallenge(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteChallenge - deleteChallenge"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return false, fmt.Errorf("user not authenticated")
+	}
+
+	// Load existing challenge to verify it exists and get project ID
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, id)
+	existingChallenge, err := thunk()
+	if err != nil {
+		return false, fmt.Errorf("failed to load challenge: %w", err)
+	}
+
+	// Check authorization (admins, superadmins, and project admins for their own projects)
+	if !r.RoleService.CanManageProject(ctx, userID, existingChallenge.ProjectID) {
+		return false, fmt.Errorf("unauthorized to delete this challenge")
+	}
+
+	// Delete challenge from database
+	err = r.DB.Queries.DeleteChallenge(ctx, id)
+	if err != nil {
+		return false, fmt.Errorf("failed to delete challenge: %w", err)
+	}
+
+	// Invalidate cache
+	r.Cache.InvalidateChallenge(id)
+
+	return true, nil
 }
 
 // PublishChallenge is the resolver for the publishChallenge field.
 func (r *mutationResolver) PublishChallenge(ctx context.Context, id string, publishedAt scalars.DateTime) (*model.Challenge, error) {
-	panic(fmt.Errorf("not implemented: PublishChallenge - publishChallenge"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load existing challenge to verify it exists and get project ID
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, id)
+	existingChallenge, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load challenge: %w", err)
+	}
+
+	// Check authorization (admins, superadmins, and project admins for their own projects)
+	if !r.RoleService.CanManageProject(ctx, userID, existingChallenge.ProjectID) {
+		return nil, fmt.Errorf("unauthorized to publish this challenge")
+	}
+
+	// Publish challenge in database
+	row, err := r.DB.Queries.PublishChallenge(ctx, sqlc.PublishChallengeParams{
+		ID:          id,
+		Publishedat: pgtype.Timestamptz{Time: publishedAt.Time, Valid: true},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to publish challenge: %w", err)
+	}
+
+	// Invalidate cache
+	r.Cache.InvalidateChallenge(id)
+
+	// Convert to GraphQL model
+	return convertRowToChallenge(row), nil
 }
 
 // AssignChallengeToEvent is the resolver for the assignChallengeToEvent field.
 func (r *mutationResolver) AssignChallengeToEvent(ctx context.Context, challengeID string, eventID string) (*model.Challenge, error) {
-	panic(fmt.Errorf("not implemented: AssignChallengeToEvent - assignChallengeToEvent"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load existing challenge to verify it exists and get project ID
+	challengeThunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
+	existingChallenge, err := challengeThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load challenge: %w", err)
+	}
+
+	// Load event to verify it exists and belongs to the same project
+	eventThunk := r.Loaders.EventByIDLoader.Load(ctx, eventID)
+	event, err := eventThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load event: %w", err)
+	}
+
+	// Verify event belongs to the same project as the challenge
+	if event.ProjectID != existingChallenge.ProjectID {
+		return nil, fmt.Errorf("event must belong to the same project as the challenge")
+	}
+
+	// Check authorization (admins, superadmins, and project admins for their own projects)
+	if !r.RoleService.CanManageProject(ctx, userID, existingChallenge.ProjectID) {
+		return nil, fmt.Errorf("unauthorized to modify this challenge")
+	}
+
+	// Assign challenge to event in database
+	row, err := r.DB.Queries.AssignChallengeToEvent(ctx, sqlc.AssignChallengeToEventParams{
+		ID:      challengeID,
+		Eventid: eventID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to assign challenge to event: %w", err)
+	}
+
+	// Invalidate cache
+	r.Cache.InvalidateChallenge(challengeID)
+
+	// Convert to GraphQL model
+	return convertRowToChallenge(row), nil
 }
 
 // BulkPublishChallenges is the resolver for the bulkPublishChallenges field.
 func (r *mutationResolver) BulkPublishChallenges(ctx context.Context, ids []string, publishedAt scalars.DateTime) ([]model.Challenge, error) {
-	panic(fmt.Errorf("not implemented: BulkPublishChallenges - bulkPublishChallenges"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load all challenges to verify they exist and check authorization
+	challenges := make([]*model.Challenge, 0, len(ids))
+	for _, id := range ids {
+		thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, id)
+		challenge, err := thunk()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load challenge %s: %w", id, err)
+		}
+
+		// Check authorization for each challenge
+		if !r.RoleService.CanManageProject(ctx, userID, challenge.ProjectID) {
+			return nil, fmt.Errorf("unauthorized to publish challenge %s", id)
+		}
+
+		challenges = append(challenges, challenge)
+	}
+
+	// Publish challenges in database
+	rows, err := r.DB.Queries.BulkPublishChallenges(ctx, sqlc.BulkPublishChallengesParams{
+		Ids:         ids,
+		Publishedat: pgtype.Timestamptz{Time: publishedAt.Time, Valid: true},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to bulk publish challenges: %w", err)
+	}
+
+	// Invalidate cache for all challenges
+	for _, id := range ids {
+		r.Cache.InvalidateChallenge(id)
+	}
+
+	// Convert to GraphQL models
+	result := make([]model.Challenge, len(rows))
+	for i, row := range rows {
+		result[i] = *convertRowToChallenge(row)
+	}
+
+	return result, nil
 }
 
 // BulkCreateChallenges is the resolver for the bulkCreateChallenges field.
-func (r *mutationResolver) BulkCreateChallenges(ctx context.Context, inputs []model.CreateChallengeInput) ([]model.Challenge, error) {
-	panic(fmt.Errorf("not implemented: BulkCreateChallenges - bulkCreateChallenges"))
+func (r *mutationResolver) BulkCreateChallenges(ctx context.Context, projectID string, eventID string, inputs []model.CreateChallengeInput) ([]model.Challenge, error) {
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization for the project
+	if !r.RoleService.CanManageProject(ctx, userID, projectID) {
+		return nil, fmt.Errorf("unauthorized to create challenges in project %s", projectID)
+	}
+
+	// Prepare data for bulk insert
+	ids := make([]string, len(inputs))
+	projectIDs := make([]string, len(inputs))
+	eventIDs := make([]string, len(inputs))
+	names := make([]string, len(inputs))
+	descriptions := make([]string, len(inputs))
+	imageURLs := make([]string, len(inputs))
+	urls := make([]string, len(inputs))
+	buttonTexts := make([]string, len(inputs))
+	publishedAts := make([]pgtype.Timestamptz, len(inputs))
+	endTimes := make([]pgtype.Timestamptz, len(inputs))
+
+	for i, input := range inputs {
+		// Generate ID for each challenge
+		ids[i] = ulid.NewChallengeID()
+		projectIDs[i] = projectID
+		names[i] = input.Name
+		if input.URL != nil {
+			urls[i] = *input.URL
+		}
+		buttonTexts[i] = input.ButtonText
+
+		// Set optional description
+		if input.Description != nil {
+			descriptions[i] = string(*input.Description)
+		}
+
+		// Set optional image
+		if input.Image != nil {
+			imageURLs[i] = *input.Image
+		}
+
+		// Set required eventID (use the top-level eventID parameter for all)
+		eventIDs[i] = eventID
+
+		// Set optional endTime
+		if input.EndTime != nil {
+			endTimes[i] = pgtype.Timestamptz{Time: input.EndTime.Time, Valid: true}
+		}
+	}
+
+	// Create challenges in database
+	rows, err := r.DB.Queries.BulkCreateChallenges(ctx, sqlc.BulkCreateChallengesParams{
+		Ids:          ids,
+		Projectids:   projectIDs,
+		Eventids:     eventIDs,
+		Names:        names,
+		Descriptions: descriptions,
+		Imageurls:    imageURLs,
+		Urls:         urls,
+		Buttontexts:  buttonTexts,
+		Publishedats: publishedAts,
+		Endtimes:     endTimes,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to bulk create challenges: %w", err)
+	}
+
+	// Convert to GraphQL models
+	result := make([]model.Challenge, len(rows))
+	for i, row := range rows {
+		result[i] = *convertRowToChallenge(row)
+	}
+
+	return result, nil
 }
 
 // CreateSimpleAchievement is the resolver for the createSimpleAchievement field.

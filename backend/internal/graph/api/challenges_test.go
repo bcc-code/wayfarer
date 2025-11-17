@@ -513,3 +513,8 @@ func TestBuildChallengeCacheKeyParams(t *testing.T) {
 		})
 	}
 }
+
+// NOTE: Unit tests for challenge mutation resolvers would require a proper mocking infrastructure
+// for the Resolver type and its dependencies. The codebase currently only has unit tests for
+// helper functions. The mutation resolvers should be tested through integration tests or
+// manual testing with a real database.

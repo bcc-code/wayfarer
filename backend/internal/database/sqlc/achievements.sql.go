@@ -97,7 +97,7 @@ type GetAchievementsByIDsRow struct {
 	ChallengeID            *string            `json:"challenge_id"`
 	Name                   string             `json:"name"`
 	Description            string             `json:"description"`
-	ImageUrl               string             `json:"image_url"`
+	ImageUrl               *string            `json:"image_url"`
 	Points                 int32              `json:"points"`
 	Hidden                 *bool              `json:"hidden"`
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`
@@ -185,7 +185,7 @@ type GetAchievementsByProjectIDsRow struct {
 	ChallengeID            *string            `json:"challenge_id"`
 	Name                   string             `json:"name"`
 	Description            string             `json:"description"`
-	ImageUrl               string             `json:"image_url"`
+	ImageUrl               *string            `json:"image_url"`
 	Points                 int32              `json:"points"`
 	Hidden                 *bool              `json:"hidden"`
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`
@@ -316,7 +316,7 @@ type GetAchievementsFilteredCursorRow struct {
 	ChallengeID            *string            `json:"challenge_id"`
 	Name                   string             `json:"name"`
 	Description            string             `json:"description"`
-	ImageUrl               string             `json:"image_url"`
+	ImageUrl               *string            `json:"image_url"`
 	Points                 int32              `json:"points"`
 	Hidden                 *bool              `json:"hidden"`
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`

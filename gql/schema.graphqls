@@ -85,13 +85,13 @@ type Mutation {
     moveEvent(id: ID!, newProjectId: ID!): Event! @requireRole(roles: ["admin", "superadmin"])
 
     # Challenge Management
-    createChallenge(input: CreateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
+    createChallenge(projectId: ID!, eventId: ID!, input: CreateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     updateChallenge(id: ID!, input: UpdateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     deleteChallenge(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
     publishChallenge(id: ID!, publishedAt: DateTime!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     assignChallengeToEvent(challengeId: ID!, eventId: ID!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     bulkPublishChallenges(ids: [ID!]!, publishedAt: DateTime!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
-    bulkCreateChallenges(inputs: [CreateChallengeInput!]!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
+    bulkCreateChallenges(projectId: ID!, eventId: ID!, inputs: [CreateChallengeInput!]!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
 
     # Achievement Management
     createSimpleAchievement(input: CreateSimpleAchievementInput!): SimpleAchievement! @requireRole(roles: ["admin", "superadmin"])

@@ -45,16 +45,11 @@ func tracksByAchievementBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 					description = *row.Description
 				}
 
-				image := ""
-				if row.ImageUrl != nil {
-					image = *row.ImageUrl
-				}
-
 				track := model.Track{
 					ID:          row.ID, // Use the database row ID, not TrackID
 					Name:        row.Name,
 					Description: description,
-					Image:       image,
+					Image:       row.ImageUrl,
 				}
 				tracksByAchievement[row.AchievementID] = append(tracksByAchievement[row.AchievementID], track)
 			}

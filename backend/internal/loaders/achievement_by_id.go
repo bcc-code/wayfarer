@@ -126,11 +126,16 @@ func convertToReadingAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool)
 
 	articles := make([]model.Article, 0, len(articlesData))
 	for _, articleData := range articlesData {
+		var url *string
+		if urlVal, ok := articleData["url"]; ok && urlVal != nil {
+			urlStr := urlVal.(string)
+			url = &urlStr
+		}
 		article := model.Article{
 			ID:     articleData["id"].(string),
 			Title:  articleData["title"].(string),
 			Author: articleData["author"].(string),
-			URL:    articleData["url"].(string),
+			URL:    url,
 		}
 		articles = append(articles, article)
 	}
@@ -170,16 +175,17 @@ func convertToListeningAchievement(row *sqlc.GetAchievementsByIDsRow, hidden boo
 		if desc, ok := trackData["description"]; ok && desc != nil {
 			description = desc.(string)
 		}
-		imageURL := ""
+		var image *string
 		if img, ok := trackData["image_url"]; ok && img != nil {
-			imageURL = img.(string)
+			imageURL := img.(string)
+			image = &imageURL
 		}
 
 		track := model.Track{
 			ID:          trackData["id"].(string),
 			Name:        trackData["name"].(string),
 			Description: description,
-			Image:       imageURL,
+			Image:       image,
 		}
 		tracks = append(tracks, track)
 	}
