@@ -3936,99 +3936,99 @@ type Mutation {
     # ==================== Admin API Mutations ====================
 
     # Project Management
-    createProject(input: CreateProjectInput!): Project! @requireRole(roles: ["admin"])
-    updateProject(id: ID!, input: UpdateProjectInput!): Project! @requireRole(roles: ["admin", "project_admin"])
-    deleteProject(id: ID!): Boolean! @requireRole(roles: ["admin"])
-    archiveProject(id: ID!): Boolean! @requireRole(roles: ["admin"])
+    createProject(input: CreateProjectInput!): Project! @requireRole(roles: ["admin", "superadmin"])
+    updateProject(id: ID!, input: UpdateProjectInput!): Project! @requireRole(roles: ["admin", "superadmin", "project_admin"])
+    deleteProject(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    archiveProject(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
 
     # Event Management
-    createEvent(projectId: ID!, input: CreateEventInput!): Event! @requireRole(roles: ["admin"])
-    updateEvent(id: ID!, input: UpdateEventInput!): Event! @requireRole(roles: ["admin"])
-    deleteEvent(id: ID!): Boolean! @requireRole(roles: ["admin"])
-    moveEvent(id: ID!, newProjectId: ID!): Event! @requireRole(roles: ["admin"])
+    createEvent(projectId: ID!, input: CreateEventInput!): Event! @requireRole(roles: ["admin", "superadmin"])
+    updateEvent(id: ID!, input: UpdateEventInput!): Event! @requireRole(roles: ["admin", "superadmin"])
+    deleteEvent(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    moveEvent(id: ID!, newProjectId: ID!): Event! @requireRole(roles: ["admin", "superadmin"])
 
     # Challenge Management
-    createChallenge(input: CreateChallengeInput!): Challenge! @requireRole(roles: ["admin"])
-    updateChallenge(id: ID!, input: UpdateChallengeInput!): Challenge! @requireRole(roles: ["admin"])
-    deleteChallenge(id: ID!): Boolean! @requireRole(roles: ["admin"])
-    publishChallenge(id: ID!, publishedAt: DateTime!): Challenge! @requireRole(roles: ["admin"])
-    assignChallengeToEvent(challengeId: ID!, eventId: ID!): Challenge! @requireRole(roles: ["admin"])
-    bulkPublishChallenges(ids: [ID!]!, publishedAt: DateTime!): [Challenge!]! @requireRole(roles: ["admin"])
-    bulkCreateChallenges(inputs: [CreateChallengeInput!]!): [Challenge!]! @requireRole(roles: ["admin"])
+    createChallenge(input: CreateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
+    updateChallenge(id: ID!, input: UpdateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
+    deleteChallenge(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    publishChallenge(id: ID!, publishedAt: DateTime!): Challenge! @requireRole(roles: ["admin", "superadmin"])
+    assignChallengeToEvent(challengeId: ID!, eventId: ID!): Challenge! @requireRole(roles: ["admin", "superadmin"])
+    bulkPublishChallenges(ids: [ID!]!, publishedAt: DateTime!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
+    bulkCreateChallenges(inputs: [CreateChallengeInput!]!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
 
     # Achievement Management
-    createSimpleAchievement(input: CreateSimpleAchievementInput!): SimpleAchievement! @requireRole(roles: ["admin"])
-    createReadingAchievement(input: CreateReadingAchievementInput!): ReadingAchievement! @requireRole(roles: ["admin"])
-    createListeningAchievement(input: CreateListeningAchievementInput!): ListeningAchievement! @requireRole(roles: ["admin"])
-    createStreakAchievement(input: CreateStreakAchievementInput!): StreakAchievement! @requireRole(roles: ["admin"])
-    updateAchievement(id: ID!, input: UpdateAchievementInput!): Achievement! @requireRole(roles: ["admin"])
-    deleteAchievement(id: ID!): Boolean! @requireRole(roles: ["admin"])
-    linkAchievementToChallenge(achievementId: ID!, challengeId: ID!): Achievement! @requireRole(roles: ["admin"])
+    createSimpleAchievement(input: CreateSimpleAchievementInput!): SimpleAchievement! @requireRole(roles: ["admin", "superadmin"])
+    createReadingAchievement(input: CreateReadingAchievementInput!): ReadingAchievement! @requireRole(roles: ["admin", "superadmin"])
+    createListeningAchievement(input: CreateListeningAchievementInput!): ListeningAchievement! @requireRole(roles: ["admin", "superadmin"])
+    createStreakAchievement(input: CreateStreakAchievementInput!): StreakAchievement! @requireRole(roles: ["admin", "superadmin"])
+    updateAchievement(id: ID!, input: UpdateAchievementInput!): Achievement! @requireRole(roles: ["admin", "superadmin"])
+    deleteAchievement(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    linkAchievementToChallenge(achievementId: ID!, challengeId: ID!): Achievement! @requireRole(roles: ["admin", "superadmin"])
 
     # Team Management
-    createTeam(projectId: ID!, input: CreateTeamInput!): Team! @requireRole(roles: ["admin"])
-    updateTeam(id: ID!, input: UpdateTeamInput!): Team! @requireRole(roles: ["admin"])
-    deleteTeam(id: ID!): Boolean! @requireRole(roles: ["admin"])
-    addTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin"])
-    removeTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin"])
-    bulkAssignUsersToTeam(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin"])
+    createTeam(projectId: ID!, input: CreateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin"])
+    updateTeam(id: ID!, input: UpdateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin"])
+    deleteTeam(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    addTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin"])
+    removeTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin"])
+    bulkAssignUsersToTeam(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin"])
 
     # SuperTeam Management
-    createSuperTeam(projectId: ID!, input: CreateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin"])
-    updateSuperTeam(id: ID!, input: UpdateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin"])
-    deleteSuperTeam(id: ID!): Boolean! @requireRole(roles: ["admin"])
-    assignTeamsToSuperTeam(superTeamId: ID!, teamIds: [ID!]!): SuperTeam! @requireRole(roles: ["admin"])
+    createSuperTeam(projectId: ID!, input: CreateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
+    updateSuperTeam(id: ID!, input: UpdateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
+    deleteSuperTeam(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    assignTeamsToSuperTeam(superTeamId: ID!, teamIds: [ID!]!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
 
     # User Management
-    assignUserToProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin"])
-    removeUserFromProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin"])
-    assignUserToEvent(userId: ID!, eventId: ID!): User! @requireRole(roles: ["admin"])
+    assignUserToProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
+    removeUserFromProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
+    assignUserToEvent(userId: ID!, eventId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
 
     # Streak Management
-    createStreak(input: CreateStreakInput!): Streak! @requireRole(roles: ["admin"])
-    updateStreak(id: ID!, input: UpdateStreakInput!): Streak! @requireRole(roles: ["admin"])
-    deleteStreak(id: ID!): Boolean! @requireRole(roles: ["admin"])
+    createStreak(input: CreateStreakInput!): Streak! @requireRole(roles: ["admin", "superadmin"])
+    updateStreak(id: ID!, input: UpdateStreakInput!): Streak! @requireRole(roles: ["admin", "superadmin"])
+    deleteStreak(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
 
     # ==================== M2M API Mutations ====================
     # Accessible by both m2m and admin roles
 
     # Achievement Notifications
-    awardAchievement(userId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin"])
-    revokeAchievement(userId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin"])
+    awardAchievement(userId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    revokeAchievement(userId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Challenge Completion Notifications
-    completeChallenge(userId: ID!, challengeId: ID!, completedAt: DateTime): Challenge! @requireRole(roles: ["m2m", "admin"])
-    uncompleteChallenge(userId: ID!, challengeId: ID!): Boolean! @requireRole(roles: ["m2m", "admin"])
+    completeChallenge(userId: ID!, challengeId: ID!, completedAt: DateTime): Challenge! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    uncompleteChallenge(userId: ID!, challengeId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Reading Progress Tracking
-    markArticleAsRead(userId: ID!, achievementId: ID!, articleId: ID!): ReadingAchievement! @requireRole(roles: ["m2m", "admin"])
-    unmarkArticleAsRead(userId: ID!, achievementId: ID!, articleId: ID!): ReadingAchievement! @requireRole(roles: ["m2m", "admin"])
+    markArticleAsRead(userId: ID!, achievementId: ID!, articleId: ID!): ReadingAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    unmarkArticleAsRead(userId: ID!, achievementId: ID!, articleId: ID!): ReadingAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Listening Progress Tracking
-    markTrackAsListened(userId: ID!, achievementId: ID!, trackId: ID!): ListeningAchievement! @requireRole(roles: ["m2m", "admin"])
-    unmarkTrackAsListened(userId: ID!, achievementId: ID!, trackId: ID!): ListeningAchievement! @requireRole(roles: ["m2m", "admin"])
+    markTrackAsListened(userId: ID!, achievementId: ID!, trackId: ID!): ListeningAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    unmarkTrackAsListened(userId: ID!, achievementId: ID!, trackId: ID!): ListeningAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Streak Tracking
-    recordStreakActivity(userId: ID!, achievementId: ID!, currentStreak: Int!): StreakAchievement! @requireRole(roles: ["m2m", "admin"])
+    recordStreakActivity(userId: ID!, achievementId: ID!, currentStreak: Int!): StreakAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Score Adjustments (unified signature with optional reason for audit trail)
-    adjustUserScore(userId: ID!, projectId: ID!, points: Int!, reason: String): Boolean! @requireRole(roles: ["admin", "m2m"])
-    adjustTeamScore(teamId: ID!, projectId: ID!, points: Int!, reason: String): Boolean! @requireRole(roles: ["admin", "m2m"])
-    adjustSuperTeamScore(superTeamId: ID!, projectId: ID!, points: Int!, reason: String): Boolean! @requireRole(roles: ["admin", "m2m"])
+    adjustUserScore(userId: ID!, projectId: ID!, points: Int!, reason: String): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    adjustTeamScore(teamId: ID!, projectId: ID!, points: Int!, reason: String): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    adjustSuperTeamScore(superTeamId: ID!, projectId: ID!, points: Int!, reason: String): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Team Achievements
-    awardTeamAchievement(teamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin"])
-    revokeTeamAchievement(teamId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin"])
+    awardTeamAchievement(teamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    revokeTeamAchievement(teamId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # SuperTeam Achievements
-    awardSuperTeamAchievement(superTeamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin"])
-    revokeSuperTeamAchievement(superTeamId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin"])
+    awardSuperTeamAchievement(superTeamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    revokeSuperTeamAchievement(superTeamId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Bulk Operations
-    bulkAwardAchievements(userIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin"])
-    bulkCompleteChallenges(userIds: [ID!]!, challengeId: ID!, completedAt: DateTime): [Challenge!]! @requireRole(roles: ["m2m", "admin"])
-    bulkAwardTeamAchievements(teamIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin"])
-    bulkAwardSuperTeamAchievements(superTeamIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin"])
+    bulkAwardAchievements(userIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    bulkCompleteChallenges(userIds: [ID!]!, challengeId: ID!, completedAt: DateTime): [Challenge!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    bulkAwardTeamAchievements(teamIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    bulkAwardSuperTeamAchievements(superTeamIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # ==================== Role Management Mutations ====================
     assignRole(input: AssignRoleInput!): UserRole! @requireRole(roles: ["admin", "superadmin"])
@@ -8741,7 +8741,7 @@ func (ec *executionContext) _Mutation_createProject(ctx context.Context, field g
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Project
 					return zeroVal, err
@@ -8830,7 +8830,7 @@ func (ec *executionContext) _Mutation_updateProject(ctx context.Context, field g
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "project_admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "project_admin"})
 				if err != nil {
 					var zeroVal *model.Project
 					return zeroVal, err
@@ -8919,7 +8919,7 @@ func (ec *executionContext) _Mutation_deleteProject(ctx context.Context, field g
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -8978,7 +8978,7 @@ func (ec *executionContext) _Mutation_archiveProject(ctx context.Context, field 
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -9037,7 +9037,7 @@ func (ec *executionContext) _Mutation_createEvent(ctx context.Context, field gra
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Event
 					return zeroVal, err
@@ -9114,7 +9114,7 @@ func (ec *executionContext) _Mutation_updateEvent(ctx context.Context, field gra
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Event
 					return zeroVal, err
@@ -9191,7 +9191,7 @@ func (ec *executionContext) _Mutation_deleteEvent(ctx context.Context, field gra
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -9250,7 +9250,7 @@ func (ec *executionContext) _Mutation_moveEvent(ctx context.Context, field graph
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Event
 					return zeroVal, err
@@ -9327,7 +9327,7 @@ func (ec *executionContext) _Mutation_createChallenge(ctx context.Context, field
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Challenge
 					return zeroVal, err
@@ -9410,7 +9410,7 @@ func (ec *executionContext) _Mutation_updateChallenge(ctx context.Context, field
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Challenge
 					return zeroVal, err
@@ -9493,7 +9493,7 @@ func (ec *executionContext) _Mutation_deleteChallenge(ctx context.Context, field
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -9552,7 +9552,7 @@ func (ec *executionContext) _Mutation_publishChallenge(ctx context.Context, fiel
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Challenge
 					return zeroVal, err
@@ -9635,7 +9635,7 @@ func (ec *executionContext) _Mutation_assignChallengeToEvent(ctx context.Context
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Challenge
 					return zeroVal, err
@@ -9718,7 +9718,7 @@ func (ec *executionContext) _Mutation_bulkPublishChallenges(ctx context.Context,
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal []model.Challenge
 					return zeroVal, err
@@ -9801,7 +9801,7 @@ func (ec *executionContext) _Mutation_bulkCreateChallenges(ctx context.Context, 
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal []model.Challenge
 					return zeroVal, err
@@ -9884,7 +9884,7 @@ func (ec *executionContext) _Mutation_createSimpleAchievement(ctx context.Contex
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.SimpleAchievement
 					return zeroVal, err
@@ -9965,7 +9965,7 @@ func (ec *executionContext) _Mutation_createReadingAchievement(ctx context.Conte
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.ReadingAchievement
 					return zeroVal, err
@@ -10052,7 +10052,7 @@ func (ec *executionContext) _Mutation_createListeningAchievement(ctx context.Con
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.ListeningAchievement
 					return zeroVal, err
@@ -10139,7 +10139,7 @@ func (ec *executionContext) _Mutation_createStreakAchievement(ctx context.Contex
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.StreakAchievement
 					return zeroVal, err
@@ -10224,7 +10224,7 @@ func (ec *executionContext) _Mutation_updateAchievement(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal model.Achievement
 					return zeroVal, err
@@ -10283,7 +10283,7 @@ func (ec *executionContext) _Mutation_deleteAchievement(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -10342,7 +10342,7 @@ func (ec *executionContext) _Mutation_linkAchievementToChallenge(ctx context.Con
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal model.Achievement
 					return zeroVal, err
@@ -10401,7 +10401,7 @@ func (ec *executionContext) _Mutation_createTeam(ctx context.Context, field grap
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Team
 					return zeroVal, err
@@ -10474,7 +10474,7 @@ func (ec *executionContext) _Mutation_updateTeam(ctx context.Context, field grap
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Team
 					return zeroVal, err
@@ -10547,7 +10547,7 @@ func (ec *executionContext) _Mutation_deleteTeam(ctx context.Context, field grap
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -10606,7 +10606,7 @@ func (ec *executionContext) _Mutation_addTeamMembers(ctx context.Context, field 
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Team
 					return zeroVal, err
@@ -10679,7 +10679,7 @@ func (ec *executionContext) _Mutation_removeTeamMembers(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Team
 					return zeroVal, err
@@ -10752,7 +10752,7 @@ func (ec *executionContext) _Mutation_bulkAssignUsersToTeam(ctx context.Context,
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Team
 					return zeroVal, err
@@ -10825,7 +10825,7 @@ func (ec *executionContext) _Mutation_createSuperTeam(ctx context.Context, field
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.SuperTeam
 					return zeroVal, err
@@ -10898,7 +10898,7 @@ func (ec *executionContext) _Mutation_updateSuperTeam(ctx context.Context, field
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.SuperTeam
 					return zeroVal, err
@@ -10971,7 +10971,7 @@ func (ec *executionContext) _Mutation_deleteSuperTeam(ctx context.Context, field
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -11030,7 +11030,7 @@ func (ec *executionContext) _Mutation_assignTeamsToSuperTeam(ctx context.Context
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.SuperTeam
 					return zeroVal, err
@@ -11103,7 +11103,7 @@ func (ec *executionContext) _Mutation_assignUserToProject(ctx context.Context, f
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.User
 					return zeroVal, err
@@ -11194,7 +11194,7 @@ func (ec *executionContext) _Mutation_removeUserFromProject(ctx context.Context,
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.User
 					return zeroVal, err
@@ -11285,7 +11285,7 @@ func (ec *executionContext) _Mutation_assignUserToEvent(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.User
 					return zeroVal, err
@@ -11376,7 +11376,7 @@ func (ec *executionContext) _Mutation_createStreak(ctx context.Context, field gr
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Streak
 					return zeroVal, err
@@ -11451,7 +11451,7 @@ func (ec *executionContext) _Mutation_updateStreak(ctx context.Context, field gr
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Streak
 					return zeroVal, err
@@ -11526,7 +11526,7 @@ func (ec *executionContext) _Mutation_deleteStreak(ctx context.Context, field gr
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -11585,7 +11585,7 @@ func (ec *executionContext) _Mutation_awardAchievement(ctx context.Context, fiel
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal model.Achievement
 					return zeroVal, err
@@ -11644,7 +11644,7 @@ func (ec *executionContext) _Mutation_revokeAchievement(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -11703,7 +11703,7 @@ func (ec *executionContext) _Mutation_completeChallenge(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.Challenge
 					return zeroVal, err
@@ -11786,7 +11786,7 @@ func (ec *executionContext) _Mutation_uncompleteChallenge(ctx context.Context, f
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -11845,7 +11845,7 @@ func (ec *executionContext) _Mutation_markArticleAsRead(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.ReadingAchievement
 					return zeroVal, err
@@ -11932,7 +11932,7 @@ func (ec *executionContext) _Mutation_unmarkArticleAsRead(ctx context.Context, f
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.ReadingAchievement
 					return zeroVal, err
@@ -12019,7 +12019,7 @@ func (ec *executionContext) _Mutation_markTrackAsListened(ctx context.Context, f
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.ListeningAchievement
 					return zeroVal, err
@@ -12106,7 +12106,7 @@ func (ec *executionContext) _Mutation_unmarkTrackAsListened(ctx context.Context,
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.ListeningAchievement
 					return zeroVal, err
@@ -12193,7 +12193,7 @@ func (ec *executionContext) _Mutation_recordStreakActivity(ctx context.Context, 
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.StreakAchievement
 					return zeroVal, err
@@ -12278,7 +12278,7 @@ func (ec *executionContext) _Mutation_adjustUserScore(ctx context.Context, field
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "m2m"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -12337,7 +12337,7 @@ func (ec *executionContext) _Mutation_adjustTeamScore(ctx context.Context, field
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "m2m"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -12396,7 +12396,7 @@ func (ec *executionContext) _Mutation_adjustSuperTeamScore(ctx context.Context, 
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "m2m"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -12455,7 +12455,7 @@ func (ec *executionContext) _Mutation_awardTeamAchievement(ctx context.Context, 
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal model.Achievement
 					return zeroVal, err
@@ -12514,7 +12514,7 @@ func (ec *executionContext) _Mutation_revokeTeamAchievement(ctx context.Context,
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -12573,7 +12573,7 @@ func (ec *executionContext) _Mutation_awardSuperTeamAchievement(ctx context.Cont
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal model.Achievement
 					return zeroVal, err
@@ -12632,7 +12632,7 @@ func (ec *executionContext) _Mutation_revokeSuperTeamAchievement(ctx context.Con
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -12691,7 +12691,7 @@ func (ec *executionContext) _Mutation_bulkAwardAchievements(ctx context.Context,
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal []model.Achievement
 					return zeroVal, err
@@ -12750,7 +12750,7 @@ func (ec *executionContext) _Mutation_bulkCompleteChallenges(ctx context.Context
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal []model.Challenge
 					return zeroVal, err
@@ -12833,7 +12833,7 @@ func (ec *executionContext) _Mutation_bulkAwardTeamAchievements(ctx context.Cont
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal []model.Achievement
 					return zeroVal, err
@@ -12892,7 +12892,7 @@ func (ec *executionContext) _Mutation_bulkAwardSuperTeamAchievements(ctx context
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal []model.Achievement
 					return zeroVal, err
