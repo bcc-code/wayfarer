@@ -6,7 +6,7 @@ definePageMeta({
 
 gql(`
   query AdminProjectsPage {
-    projects {
+    projects(first: 100) {
       edges {
         node {
           id
@@ -37,8 +37,8 @@ const { currentProjects, futureProjects, pastProjects } = useGroupedProjects(
 </script>
 
 <template>
-  <UContainer>
-    <div class="my-12 flex flex-col items-start gap-8">
+  <UContainer class="py-12">
+    <div class="mb-12 flex flex-col items-start gap-8">
       <h1 class="text-3xl">Projects</h1>
       <UButton icon="lucide:plus" :to="{ name: 'admin-projects-new' }">
         New Project

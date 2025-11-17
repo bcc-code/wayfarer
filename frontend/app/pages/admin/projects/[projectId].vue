@@ -65,7 +65,9 @@ const { data, error, fetching } = useAdminProjectPageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
-const state = reactive({
+type State = Omit<AdminProjectPageQuery['project'], 'id'>
+
+const state = reactive<State>({
   name: '',
   description: '',
   startDate: '',
@@ -140,9 +142,9 @@ watch(data, () => {
           <template #branding>
             <div class="mt-4 flex flex-col gap-4">
               <UFormField label="Logo">
-                <NuxtImg :src="state.branding.logo" width="64" />
+                <NuxtImg :src="state.branding.logo || ''" width="64" />
               </UFormField>
-              <UFormField label="Accent Color">
+              <UFormField label="Accent color">
                 <ColorPickerInput v-model="state.branding.colors.primary" />
               </UFormField>
             </div>

@@ -16,40 +16,39 @@ gql(`
 `)
 
 const schema = z.object({
-  name: z.string().nonempty(),
+  name: z.string().nonempty({ error: 'Name is required' }),
   description: z.string().optional(),
-  startDate: z.string().nonempty(),
-  endDate: z.string().nonempty(),
-  branding: z
-    .object({
-      logo: z.string(),
-      colors: z.object({
-        primary: z.string(),
-        secondary: z.string(),
-        tertiary: z.string(),
-      }),
-      rounding: z.number(),
-    })
-    .optional(),
+  startDate: z.string().nonempty({ error: 'Start date is required' }),
+  endDate: z.string().nonempty({ error: 'End date is required' }),
+  branding: z.object({
+    logo: z.string().optional(),
+    colors: z.object({
+      primary: z.string(),
+      secondary: z.string(),
+      tertiary: z.string(),
+    }),
+    rounding: z.number(),
+  }),
 })
 type Schema = z.infer<typeof schema>
 const state = reactive<Schema>({
   name: '',
-  description: '',
+  description: undefined,
   startDate: '',
   endDate: '',
   branding: {
-    logo: '',
-    colors: {
-      primary: '',
-      secondary: '',
-      tertiary: '',
-    },
+    logo: undefined,
     rounding: 0,
+    colors: {
+      primary: '#000000',
+      secondary: '#000000',
+      tertiary: '#000000',
+    },
   },
 })
 
 const { executeMutation } = useCreateProjectMutation()
+const toast = useToast()
 
 async function createProject(event: FormSubmitEvent<Schema>) {
   if (!event.data) {
@@ -57,6 +56,15 @@ async function createProject(event: FormSubmitEvent<Schema>) {
   }
 
   executeMutation({ input: event.data }).then((response) => {
+    console.log(response)
+    if (response.error) {
+      toast.add({
+        title: response.error.name,
+        description: response.error.message,
+        color: 'error',
+      })
+      return
+    }
     if (!response.data) {
       return
     }
@@ -104,12 +112,15 @@ async function createProject(event: FormSubmitEvent<Schema>) {
         </UFormField>
         <div class="flex gap-4">
           <UFormField name="startDate" label="Starts at" required>
-            <UInput v-model="state.startDate" type="datetime-local" required />
+            <UInput v-model="state.startDate" type="date" required />
           </UFormField>
           <UFormField name="endDate" label="Ends at" required>
-            <UInput v-model="state.endDate" type="datetime-local" required />
+            <UInput v-model="state.endDate" type="date" required />
           </UFormField>
         </div>
+        <UFormField label="Accent color">
+          <ColorPickerInput v-model="state.branding.colors.primary" />
+        </UFormField>
         <UButton type="submit">Create project</UButton>
       </UForm>
     </UContainer>
