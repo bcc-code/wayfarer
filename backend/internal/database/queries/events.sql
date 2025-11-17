@@ -54,3 +54,45 @@ FROM events e
 INNER JOIN user_events ue ON e.id = ue.event_id
 WHERE ue.user_id = ANY(@userids::text[])
 ORDER BY e.start_date DESC;
+
+-- name: CreateEvent :one
+INSERT INTO events (
+    id,
+    project_id,
+    name,
+    description,
+    start_date,
+    end_date
+)
+VALUES (
+    @id::text,
+    @projectid::text,
+    @name::text,
+    @description::text,
+    @startdate::timestamptz,
+    @enddate::timestamptz
+)
+RETURNING id, project_id, name, description, start_date, end_date, created_at, updated_at;
+
+-- name: UpdateEvent :one
+UPDATE events
+SET
+    name = COALESCE(sqlc.narg('name')::text, name),
+    description = COALESCE(sqlc.narg('description')::text, description),
+    start_date = COALESCE(sqlc.narg('startdate')::timestamptz, start_date),
+    end_date = COALESCE(sqlc.narg('enddate')::timestamptz, end_date),
+    updated_at = now()
+WHERE id = @id::text
+RETURNING id, project_id, name, description, start_date, end_date, created_at, updated_at;
+
+-- name: DeleteEvent :exec
+DELETE FROM events
+WHERE id = @id::text;
+
+-- name: MoveEvent :one
+UPDATE events
+SET
+    project_id = @newprojectid::text,
+    updated_at = now()
+WHERE id = @id::text
+RETURNING id, project_id, name, description, start_date, end_date, created_at, updated_at;

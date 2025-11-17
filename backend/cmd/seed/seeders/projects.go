@@ -48,8 +48,8 @@ func (s *Seeder) SeedProjects(stats *Stats) error {
 		projectID := ulid.NewProjectID()
 
 		// Random project timing
-		startOffset := rand.Intn(365) - 180  // -180 to +185 days
-		duration := rand.Intn(120) + 30      // 30-150 days duration
+		startOffset := rand.Intn(365) - 180 // -180 to +185 days
+		duration := rand.Intn(120) + 30     // 30-150 days duration
 		startDate := time.Now().AddDate(0, 0, startOffset)
 		endDate := startDate.AddDate(0, 0, duration)
 

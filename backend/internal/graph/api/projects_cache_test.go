@@ -81,8 +81,8 @@ func TestCacheInvalidationOnArchive(t *testing.T) {
 
 	// Add project to cache
 	testCache.Set(cache.ProjectKey(projectID), &model.Project{
-		ID:       projectID,
-		Name:     "Test Project",
+		ID:         projectID,
+		Name:       "Test Project",
 		ArchivedAt: boolPtr(false),
 	})
 	testCache.Wait()

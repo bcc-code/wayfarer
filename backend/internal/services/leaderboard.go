@@ -77,7 +77,7 @@ func NewLeaderboardService(queries LeaderboardQuerier, c *cache.Cache, l *loader
 
 // LeaderboardParams contains common parameters for leaderboard requests
 type LeaderboardParams struct {
-	ContextID  string                  // Project ID or Event ID
+	ContextID  string // Project ID or Event ID
 	EntityType model.LeaderboardEntityType
 	Filter     *model.LeaderboardFilter
 	First      *int
@@ -142,17 +142,17 @@ func (s *LeaderboardService) getProjectPersonLeaderboard(ctx context.Context, pa
 		// Unmarshal from cache
 		if cachedBytes, ok := cachedData.([]byte); ok {
 			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-			// Successfully got from cache
-			total := len(fullLeaderboard)
+				// Successfully got from cache
+				total := len(fullLeaderboard)
 
-			// Find "me" in cached results
-			var meEntry *LeaderboardEntry
-			if params.UserID != "" {
-				meEntry = findMeInLeaderboard(fullLeaderboard, params.UserID)
-			}
+				// Find "me" in cached results
+				var meEntry *LeaderboardEntry
+				if params.UserID != "" {
+					meEntry = findMeInLeaderboard(fullLeaderboard, params.UserID)
+				}
 
-			// Paginate in-memory
-			paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
+				// Paginate in-memory
+				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
 
 				return paginated, meEntry, total, nil
 			}
@@ -211,28 +211,28 @@ func (s *LeaderboardService) getProjectTeamLeaderboard(ctx context.Context, para
 		// Unmarshal from cache
 		if cachedBytes, ok := cachedData.([]byte); ok {
 			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-			// Successfully got from cache
-			total := len(fullLeaderboard)
+				// Successfully got from cache
+				total := len(fullLeaderboard)
 
-			// Find "me" in cached results
-			var meEntry *LeaderboardEntry
-			if params.UserID != "" {
-				// Use loader to get user's teams
-				thunk := s.loaders.TeamsByUserLoader.Load(ctx, params.UserID)
-				teams, err := thunk()
-				if err == nil && teams != nil {
-					// Find team in this project
-					for _, team := range teams {
-						if team.ProjectID == params.ContextID {
-							meEntry = findMeInLeaderboard(fullLeaderboard, team.ID)
-							break
+				// Find "me" in cached results
+				var meEntry *LeaderboardEntry
+				if params.UserID != "" {
+					// Use loader to get user's teams
+					thunk := s.loaders.TeamsByUserLoader.Load(ctx, params.UserID)
+					teams, err := thunk()
+					if err == nil && teams != nil {
+						// Find team in this project
+						for _, team := range teams {
+							if team.ProjectID == params.ContextID {
+								meEntry = findMeInLeaderboard(fullLeaderboard, team.ID)
+								break
+							}
 						}
 					}
 				}
-			}
 
-			// Paginate in-memory
-			paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
+				// Paginate in-memory
+				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
 
 				return paginated, meEntry, total, nil
 			}
@@ -302,28 +302,28 @@ func (s *LeaderboardService) getProjectSuperTeamLeaderboard(ctx context.Context,
 		// Unmarshal from cache
 		if cachedBytes, ok := cachedData.([]byte); ok {
 			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-			// Successfully got from cache
-			total := len(fullLeaderboard)
+				// Successfully got from cache
+				total := len(fullLeaderboard)
 
-			// Find "me" in cached results
-			var meEntry *LeaderboardEntry
-			if params.UserID != "" {
-				// Use loader to get user's superteams
-				thunk := s.loaders.SuperTeamsByUserLoader.Load(ctx, params.UserID)
-				superTeams, err := thunk()
-				if err == nil && superTeams != nil {
-					// Find superteam in this project
-					for _, superTeam := range superTeams {
-						if superTeam.ProjectID == params.ContextID {
-							meEntry = findMeInLeaderboard(fullLeaderboard, superTeam.ID)
-							break
+				// Find "me" in cached results
+				var meEntry *LeaderboardEntry
+				if params.UserID != "" {
+					// Use loader to get user's superteams
+					thunk := s.loaders.SuperTeamsByUserLoader.Load(ctx, params.UserID)
+					superTeams, err := thunk()
+					if err == nil && superTeams != nil {
+						// Find superteam in this project
+						for _, superTeam := range superTeams {
+							if superTeam.ProjectID == params.ContextID {
+								meEntry = findMeInLeaderboard(fullLeaderboard, superTeam.ID)
+								break
+							}
 						}
 					}
 				}
-			}
 
-			// Paginate in-memory
-			paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
+				// Paginate in-memory
+				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
 
 				return paginated, meEntry, total, nil
 			}
@@ -393,22 +393,22 @@ func (s *LeaderboardService) getProjectChurchLeaderboard(ctx context.Context, pa
 		// Unmarshal from cache
 		if cachedBytes, ok := cachedData.([]byte); ok {
 			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-			// Successfully got from cache
-			total := len(fullLeaderboard)
+				// Successfully got from cache
+				total := len(fullLeaderboard)
 
-			// Find "me" in cached results
-			var meEntry *LeaderboardEntry
-			if params.UserID != "" {
-				// Use loader to get user (includes ChurchID)
-				thunk := s.loaders.UserByIDLoader.Load(ctx, params.UserID)
-				user, err := thunk()
-				if err == nil && user != nil {
-					meEntry = findMeInLeaderboard(fullLeaderboard, user.ChurchID)
+				// Find "me" in cached results
+				var meEntry *LeaderboardEntry
+				if params.UserID != "" {
+					// Use loader to get user (includes ChurchID)
+					thunk := s.loaders.UserByIDLoader.Load(ctx, params.UserID)
+					user, err := thunk()
+					if err == nil && user != nil {
+						meEntry = findMeInLeaderboard(fullLeaderboard, user.ChurchID)
+					}
 				}
-			}
 
-			// Paginate in-memory
-			paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
+				// Paginate in-memory
+				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
 
 				return paginated, meEntry, total, nil
 			}
@@ -474,17 +474,17 @@ func (s *LeaderboardService) getEventPersonLeaderboard(ctx context.Context, para
 		// Unmarshal from cache
 		if cachedBytes, ok := cachedData.([]byte); ok {
 			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-			// Successfully got from cache
-			total := len(fullLeaderboard)
+				// Successfully got from cache
+				total := len(fullLeaderboard)
 
-			// Find "me" in cached results
-			var meEntry *LeaderboardEntry
-			if params.UserID != "" {
-				meEntry = findMeInLeaderboard(fullLeaderboard, params.UserID)
-			}
+				// Find "me" in cached results
+				var meEntry *LeaderboardEntry
+				if params.UserID != "" {
+					meEntry = findMeInLeaderboard(fullLeaderboard, params.UserID)
+				}
 
-			// Paginate in-memory
-			paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
+				// Paginate in-memory
+				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
 
 				return paginated, meEntry, total, nil
 			}
@@ -543,32 +543,32 @@ func (s *LeaderboardService) getEventTeamLeaderboard(ctx context.Context, params
 		// Unmarshal from cache
 		if cachedBytes, ok := cachedData.([]byte); ok {
 			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-			// Successfully got from cache
-			total := len(fullLeaderboard)
+				// Successfully got from cache
+				total := len(fullLeaderboard)
 
-			// Find "me" in cached results
-			var meEntry *LeaderboardEntry
-			if params.UserID != "" {
-				// Get event to find its project, then get user's teams
-				eventThunk := s.loaders.EventByIDLoader.Load(ctx, params.ContextID)
-				event, err := eventThunk()
-				if err == nil && event != nil {
-					teamsThunk := s.loaders.TeamsByUserLoader.Load(ctx, params.UserID)
-					teams, err := teamsThunk()
-					if err == nil && teams != nil {
-						// Find team in this event's project
-						for _, team := range teams {
-							if team.ProjectID == event.ProjectID {
-								meEntry = findMeInLeaderboard(fullLeaderboard, team.ID)
-								break
+				// Find "me" in cached results
+				var meEntry *LeaderboardEntry
+				if params.UserID != "" {
+					// Get event to find its project, then get user's teams
+					eventThunk := s.loaders.EventByIDLoader.Load(ctx, params.ContextID)
+					event, err := eventThunk()
+					if err == nil && event != nil {
+						teamsThunk := s.loaders.TeamsByUserLoader.Load(ctx, params.UserID)
+						teams, err := teamsThunk()
+						if err == nil && teams != nil {
+							// Find team in this event's project
+							for _, team := range teams {
+								if team.ProjectID == event.ProjectID {
+									meEntry = findMeInLeaderboard(fullLeaderboard, team.ID)
+									break
+								}
 							}
 						}
 					}
 				}
-			}
 
-			// Paginate in-memory
-			paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
+				// Paginate in-memory
+				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
 
 				return paginated, meEntry, total, nil
 			}
@@ -642,32 +642,32 @@ func (s *LeaderboardService) getEventSuperTeamLeaderboard(ctx context.Context, p
 		// Unmarshal from cache
 		if cachedBytes, ok := cachedData.([]byte); ok {
 			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-			// Successfully got from cache
-			total := len(fullLeaderboard)
+				// Successfully got from cache
+				total := len(fullLeaderboard)
 
-			// Find "me" in cached results
-			var meEntry *LeaderboardEntry
-			if params.UserID != "" {
-				// Get event to find its project, then get user's superteams
-				eventThunk := s.loaders.EventByIDLoader.Load(ctx, params.ContextID)
-				event, err := eventThunk()
-				if err == nil && event != nil {
-					superTeamsThunk := s.loaders.SuperTeamsByUserLoader.Load(ctx, params.UserID)
-					superTeams, err := superTeamsThunk()
-					if err == nil && superTeams != nil {
-						// Find superteam in this event's project
-						for _, superTeam := range superTeams {
-							if superTeam.ProjectID == event.ProjectID {
-								meEntry = findMeInLeaderboard(fullLeaderboard, superTeam.ID)
-								break
+				// Find "me" in cached results
+				var meEntry *LeaderboardEntry
+				if params.UserID != "" {
+					// Get event to find its project, then get user's superteams
+					eventThunk := s.loaders.EventByIDLoader.Load(ctx, params.ContextID)
+					event, err := eventThunk()
+					if err == nil && event != nil {
+						superTeamsThunk := s.loaders.SuperTeamsByUserLoader.Load(ctx, params.UserID)
+						superTeams, err := superTeamsThunk()
+						if err == nil && superTeams != nil {
+							// Find superteam in this event's project
+							for _, superTeam := range superTeams {
+								if superTeam.ProjectID == event.ProjectID {
+									meEntry = findMeInLeaderboard(fullLeaderboard, superTeam.ID)
+									break
+								}
 							}
 						}
 					}
 				}
-			}
 
-			// Paginate in-memory
-			paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
+				// Paginate in-memory
+				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
 
 				return paginated, meEntry, total, nil
 			}
@@ -741,22 +741,22 @@ func (s *LeaderboardService) getEventChurchLeaderboard(ctx context.Context, para
 		// Unmarshal from cache
 		if cachedBytes, ok := cachedData.([]byte); ok {
 			if err := json.Unmarshal(cachedBytes, &fullLeaderboard); err == nil {
-			// Successfully got from cache
-			total := len(fullLeaderboard)
+				// Successfully got from cache
+				total := len(fullLeaderboard)
 
-			// Find "me" in cached results
-			var meEntry *LeaderboardEntry
-			if params.UserID != "" {
-				// Use loader to get user (includes ChurchID)
-				thunk := s.loaders.UserByIDLoader.Load(ctx, params.UserID)
-				user, err := thunk()
-				if err == nil && user != nil {
-					meEntry = findMeInLeaderboard(fullLeaderboard, user.ChurchID)
+				// Find "me" in cached results
+				var meEntry *LeaderboardEntry
+				if params.UserID != "" {
+					// Use loader to get user (includes ChurchID)
+					thunk := s.loaders.UserByIDLoader.Load(ctx, params.UserID)
+					user, err := thunk()
+					if err == nil && user != nil {
+						meEntry = findMeInLeaderboard(fullLeaderboard, user.ChurchID)
+					}
 				}
-			}
 
-			// Paginate in-memory
-			paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
+				// Paginate in-memory
+				paginated := paginateLeaderboard(fullLeaderboard, params.First, params.After, params.Last, params.Before)
 
 				return paginated, meEntry, total, nil
 			}
@@ -833,53 +833,53 @@ func (s *LeaderboardService) buildProjectPersonParams(params LeaderboardParams) 
 	}
 
 	return sqlc.GetProjectPersonLeaderboardParams{
-		Projectid: params.ContextID,
-		Churchid: getFilterString(params.Filter, "churchId"),
-		Country: getFilterString(params.Filter, "country"),
+		Projectid:      params.ContextID,
+		Churchid:       getFilterString(params.Filter, "churchId"),
+		Country:        getFilterString(params.Filter, "country"),
 		Churchcategory: getFilterString(params.Filter, "churchCategory"),
-		Gender: getFilterString(params.Filter, "gender"),
-		Minage: getFilterInt(params.Filter, "minAge"),
-		Maxage: getFilterInt(params.Filter, "maxAge"),
-		Teamid: getFilterString(params.Filter, "teamId"),
-		Superteamid: getFilterString(params.Filter, "superTeamId"),
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
-		Afterrank: afterRank,
-		Beforerank: beforeRank,
-		Querylimit: int32(limit),
+		Gender:         getFilterString(params.Filter, "gender"),
+		Minage:         getFilterInt(params.Filter, "minAge"),
+		Maxage:         getFilterInt(params.Filter, "maxAge"),
+		Teamid:         getFilterString(params.Filter, "teamId"),
+		Superteamid:    getFilterString(params.Filter, "superTeamId"),
+		Minscore:       getFilterInt(params.Filter, "minScore"),
+		Maxscore:       getFilterInt(params.Filter, "maxScore"),
+		Afterrank:      afterRank,
+		Beforerank:     beforeRank,
+		Querylimit:     int32(limit),
 	}
 }
 
 func (s *LeaderboardService) buildFullProjectPersonParams(params LeaderboardParams) sqlc.GetFullProjectPersonLeaderboardParams {
 	return sqlc.GetFullProjectPersonLeaderboardParams{
 		Projectid: params.ContextID,
-		Churchid: getFilterString(params.Filter, "churchId"),
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
+		Churchid:  getFilterString(params.Filter, "churchId"),
+		Minscore:  getFilterInt(params.Filter, "minScore"),
+		Maxscore:  getFilterInt(params.Filter, "maxScore"),
 	}
 }
 
 func (s *LeaderboardService) buildProjectPersonCountParams(params LeaderboardParams) sqlc.CountProjectPersonLeaderboardParams {
 	return sqlc.CountProjectPersonLeaderboardParams{
-		Projectid: params.ContextID,
-		Churchid: getFilterString(params.Filter, "churchId"),
-		Country: getFilterString(params.Filter, "country"),
+		Projectid:      params.ContextID,
+		Churchid:       getFilterString(params.Filter, "churchId"),
+		Country:        getFilterString(params.Filter, "country"),
 		Churchcategory: getFilterString(params.Filter, "churchCategory"),
-		Gender: getFilterString(params.Filter, "gender"),
-		Minage: getFilterInt(params.Filter, "minAge"),
-		Maxage: getFilterInt(params.Filter, "maxAge"),
-		Teamid: getFilterString(params.Filter, "teamId"),
-		Superteamid: getFilterString(params.Filter, "superTeamId"),
+		Gender:         getFilterString(params.Filter, "gender"),
+		Minage:         getFilterInt(params.Filter, "minAge"),
+		Maxage:         getFilterInt(params.Filter, "maxAge"),
+		Teamid:         getFilterString(params.Filter, "teamId"),
+		Superteamid:    getFilterString(params.Filter, "superTeamId"),
 	}
 }
 
 func (s *LeaderboardService) buildProjectPersonPositionParams(params LeaderboardParams) sqlc.FindMyProjectPersonPositionParams {
 	return sqlc.FindMyProjectPersonPositionParams{
 		Projectid: params.ContextID,
-		Userid: params.UserID,
-		Churchid: getFilterString(params.Filter, "churchId"),
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
+		Userid:    params.UserID,
+		Churchid:  getFilterString(params.Filter, "churchId"),
+		Minscore:  getFilterInt(params.Filter, "minScore"),
+		Maxscore:  getFilterInt(params.Filter, "maxScore"),
 	}
 }
 
@@ -906,19 +906,19 @@ func (s *LeaderboardService) buildProjectTeamParams(params LeaderboardParams) sq
 	}
 
 	return sqlc.GetProjectTeamLeaderboardParams{
-		Projectid: params.ContextID,
+		Projectid:   params.ContextID,
 		Superteamid: getFilterString(params.Filter, "superTeamId"),
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
-		Afterrank: afterRank,
-		Beforerank: beforeRank,
-		Querylimit: int32(limit),
+		Minscore:    getFilterInt(params.Filter, "minScore"),
+		Maxscore:    getFilterInt(params.Filter, "maxScore"),
+		Afterrank:   afterRank,
+		Beforerank:  beforeRank,
+		Querylimit:  int32(limit),
 	}
 }
 
 func (s *LeaderboardService) buildProjectTeamCountParams(params LeaderboardParams) sqlc.CountProjectTeamLeaderboardParams {
 	return sqlc.CountProjectTeamLeaderboardParams{
-		Projectid: params.ContextID,
+		Projectid:   params.ContextID,
 		Superteamid: getFilterString(params.Filter, "superTeamId"),
 	}
 }
@@ -926,17 +926,17 @@ func (s *LeaderboardService) buildProjectTeamCountParams(params LeaderboardParam
 func (s *LeaderboardService) buildProjectTeamPositionParams(params LeaderboardParams) sqlc.FindMyProjectTeamPositionParams {
 	return sqlc.FindMyProjectTeamPositionParams{
 		Projectid: params.ContextID,
-		Userid: params.UserID,
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
+		Userid:    params.UserID,
+		Minscore:  getFilterInt(params.Filter, "minScore"),
+		Maxscore:  getFilterInt(params.Filter, "maxScore"),
 	}
 }
 
 func (s *LeaderboardService) buildFullProjectTeamParams(params LeaderboardParams) sqlc.GetFullProjectTeamLeaderboardParams {
 	return sqlc.GetFullProjectTeamLeaderboardParams{
 		Projectid: params.ContextID,
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
+		Minscore:  getFilterInt(params.Filter, "minScore"),
+		Maxscore:  getFilterInt(params.Filter, "maxScore"),
 	}
 }
 
@@ -963,10 +963,10 @@ func (s *LeaderboardService) buildProjectSuperTeamParams(params LeaderboardParam
 	}
 
 	return sqlc.GetProjectSuperTeamLeaderboardParams{
-		Projectid: params.ContextID,
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
-		Afterrank: afterRank,
+		Projectid:  params.ContextID,
+		Minscore:   getFilterInt(params.Filter, "minScore"),
+		Maxscore:   getFilterInt(params.Filter, "maxScore"),
+		Afterrank:  afterRank,
 		Beforerank: beforeRank,
 		Querylimit: int32(limit),
 	}
@@ -979,17 +979,17 @@ func (s *LeaderboardService) buildProjectSuperTeamCountParams(params Leaderboard
 func (s *LeaderboardService) buildProjectSuperTeamPositionParams(params LeaderboardParams) sqlc.FindMyProjectSuperTeamPositionParams {
 	return sqlc.FindMyProjectSuperTeamPositionParams{
 		Projectid: params.ContextID,
-		Userid: params.UserID,
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
+		Userid:    params.UserID,
+		Minscore:  getFilterInt(params.Filter, "minScore"),
+		Maxscore:  getFilterInt(params.Filter, "maxScore"),
 	}
 }
 
 func (s *LeaderboardService) buildFullProjectSuperTeamParams(params LeaderboardParams) sqlc.GetFullProjectSuperTeamLeaderboardParams {
 	return sqlc.GetFullProjectSuperTeamLeaderboardParams{
 		Projectid: params.ContextID,
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
+		Minscore:  getFilterInt(params.Filter, "minScore"),
+		Maxscore:  getFilterInt(params.Filter, "maxScore"),
 	}
 }
 
@@ -1016,21 +1016,21 @@ func (s *LeaderboardService) buildProjectChurchParams(params LeaderboardParams) 
 	}
 
 	return sqlc.GetProjectChurchLeaderboardParams{
-		Projectid: params.ContextID,
-		Country: getFilterString(params.Filter, "country"),
+		Projectid:      params.ContextID,
+		Country:        getFilterString(params.Filter, "country"),
 		Churchcategory: getFilterString(params.Filter, "churchCategory"),
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
-		Afterrank: afterRank,
-		Beforerank: beforeRank,
-		Querylimit: int32(limit),
+		Minscore:       getFilterInt(params.Filter, "minScore"),
+		Maxscore:       getFilterInt(params.Filter, "maxScore"),
+		Afterrank:      afterRank,
+		Beforerank:     beforeRank,
+		Querylimit:     int32(limit),
 	}
 }
 
 func (s *LeaderboardService) buildProjectChurchCountParams(params LeaderboardParams) sqlc.CountProjectChurchLeaderboardParams {
 	return sqlc.CountProjectChurchLeaderboardParams{
-		Projectid: params.ContextID,
-		Country: getFilterString(params.Filter, "country"),
+		Projectid:      params.ContextID,
+		Country:        getFilterString(params.Filter, "country"),
 		Churchcategory: getFilterString(params.Filter, "churchCategory"),
 	}
 }
@@ -1038,17 +1038,17 @@ func (s *LeaderboardService) buildProjectChurchCountParams(params LeaderboardPar
 func (s *LeaderboardService) buildProjectChurchPositionParams(params LeaderboardParams) sqlc.FindMyProjectChurchPositionParams {
 	return sqlc.FindMyProjectChurchPositionParams{
 		Projectid: params.ContextID,
-		Userid: params.UserID,
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
+		Userid:    params.UserID,
+		Minscore:  getFilterInt(params.Filter, "minScore"),
+		Maxscore:  getFilterInt(params.Filter, "maxScore"),
 	}
 }
 
 func (s *LeaderboardService) buildFullProjectChurchParams(params LeaderboardParams) sqlc.GetFullProjectChurchLeaderboardParams {
 	return sqlc.GetFullProjectChurchLeaderboardParams{
 		Projectid: params.ContextID,
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
+		Minscore:  getFilterInt(params.Filter, "minScore"),
+		Maxscore:  getFilterInt(params.Filter, "maxScore"),
 	}
 }
 
@@ -1077,37 +1077,37 @@ func (s *LeaderboardService) buildEventPersonParams(params LeaderboardParams) sq
 	}
 
 	return sqlc.GetEventPersonLeaderboardParams{
-		Eventid: params.ContextID,
-		Churchid: getFilterString(params.Filter, "churchId"),
-		Country: getFilterString(params.Filter, "country"),
+		Eventid:        params.ContextID,
+		Churchid:       getFilterString(params.Filter, "churchId"),
+		Country:        getFilterString(params.Filter, "country"),
 		Churchcategory: getFilterString(params.Filter, "churchCategory"),
-		Gender: getFilterString(params.Filter, "gender"),
-		Minage: getFilterInt(params.Filter, "minAge"),
-		Maxage: getFilterInt(params.Filter, "maxAge"),
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
-		Afterrank: afterRank,
-		Beforerank: beforeRank,
-		Querylimit: int32(limit),
+		Gender:         getFilterString(params.Filter, "gender"),
+		Minage:         getFilterInt(params.Filter, "minAge"),
+		Maxage:         getFilterInt(params.Filter, "maxAge"),
+		Minscore:       getFilterInt(params.Filter, "minScore"),
+		Maxscore:       getFilterInt(params.Filter, "maxScore"),
+		Afterrank:      afterRank,
+		Beforerank:     beforeRank,
+		Querylimit:     int32(limit),
 	}
 }
 
 func (s *LeaderboardService) buildEventPersonCountParams(params LeaderboardParams) sqlc.CountEventPersonLeaderboardParams {
 	return sqlc.CountEventPersonLeaderboardParams{
-		Eventid: params.ContextID,
-		Churchid: getFilterString(params.Filter, "churchId"),
-		Country: getFilterString(params.Filter, "country"),
+		Eventid:        params.ContextID,
+		Churchid:       getFilterString(params.Filter, "churchId"),
+		Country:        getFilterString(params.Filter, "country"),
 		Churchcategory: getFilterString(params.Filter, "churchCategory"),
-		Gender: getFilterString(params.Filter, "gender"),
-		Minage: getFilterInt(params.Filter, "minAge"),
-		Maxage: getFilterInt(params.Filter, "maxAge"),
+		Gender:         getFilterString(params.Filter, "gender"),
+		Minage:         getFilterInt(params.Filter, "minAge"),
+		Maxage:         getFilterInt(params.Filter, "maxAge"),
 	}
 }
 
 func (s *LeaderboardService) buildEventPersonPositionParams(params LeaderboardParams) sqlc.FindMyEventPersonPositionParams {
 	return sqlc.FindMyEventPersonPositionParams{
-		Eventid: params.ContextID,
-		Userid: params.UserID,
+		Eventid:  params.ContextID,
+		Userid:   params.UserID,
 		Churchid: getFilterString(params.Filter, "churchId"),
 		Minscore: getFilterInt(params.Filter, "minScore"),
 		Maxscore: getFilterInt(params.Filter, "maxScore"),
@@ -1116,7 +1116,7 @@ func (s *LeaderboardService) buildEventPersonPositionParams(params LeaderboardPa
 
 func (s *LeaderboardService) buildFullEventPersonParams(params LeaderboardParams) sqlc.GetFullEventPersonLeaderboardParams {
 	return sqlc.GetFullEventPersonLeaderboardParams{
-		Eventid: params.ContextID,
+		Eventid:  params.ContextID,
 		Churchid: getFilterString(params.Filter, "churchId"),
 		Minscore: getFilterInt(params.Filter, "minScore"),
 		Maxscore: getFilterInt(params.Filter, "maxScore"),
@@ -1146,10 +1146,10 @@ func (s *LeaderboardService) buildEventTeamParams(params LeaderboardParams) sqlc
 	}
 
 	return sqlc.GetEventTeamLeaderboardParams{
-		Eventid: params.ContextID,
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
-		Afterrank: afterRank,
+		Eventid:    params.ContextID,
+		Minscore:   getFilterInt(params.Filter, "minScore"),
+		Maxscore:   getFilterInt(params.Filter, "maxScore"),
+		Afterrank:  afterRank,
 		Beforerank: beforeRank,
 		Querylimit: int32(limit),
 	}
@@ -1161,8 +1161,8 @@ func (s *LeaderboardService) buildEventTeamCountParams(params LeaderboardParams)
 
 func (s *LeaderboardService) buildEventTeamPositionParams(params LeaderboardParams) sqlc.FindMyEventTeamPositionParams {
 	return sqlc.FindMyEventTeamPositionParams{
-		Eventid: params.ContextID,
-		Userid: params.UserID,
+		Eventid:  params.ContextID,
+		Userid:   params.UserID,
 		Minscore: getFilterInt(params.Filter, "minScore"),
 		Maxscore: getFilterInt(params.Filter, "maxScore"),
 	}
@@ -1170,7 +1170,7 @@ func (s *LeaderboardService) buildEventTeamPositionParams(params LeaderboardPara
 
 func (s *LeaderboardService) buildFullEventTeamParams(params LeaderboardParams) sqlc.GetFullEventTeamLeaderboardParams {
 	return sqlc.GetFullEventTeamLeaderboardParams{
-		Eventid: params.ContextID,
+		Eventid:  params.ContextID,
 		Minscore: getFilterInt(params.Filter, "minScore"),
 		Maxscore: getFilterInt(params.Filter, "maxScore"),
 	}
@@ -1199,10 +1199,10 @@ func (s *LeaderboardService) buildEventSuperTeamParams(params LeaderboardParams)
 	}
 
 	return sqlc.GetEventSuperTeamLeaderboardParams{
-		Eventid: params.ContextID,
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
-		Afterrank: afterRank,
+		Eventid:    params.ContextID,
+		Minscore:   getFilterInt(params.Filter, "minScore"),
+		Maxscore:   getFilterInt(params.Filter, "maxScore"),
+		Afterrank:  afterRank,
 		Beforerank: beforeRank,
 		Querylimit: int32(limit),
 	}
@@ -1214,8 +1214,8 @@ func (s *LeaderboardService) buildEventSuperTeamCountParams(params LeaderboardPa
 
 func (s *LeaderboardService) buildEventSuperTeamPositionParams(params LeaderboardParams) sqlc.FindMyEventSuperTeamPositionParams {
 	return sqlc.FindMyEventSuperTeamPositionParams{
-		Eventid: params.ContextID,
-		Userid: params.UserID,
+		Eventid:  params.ContextID,
+		Userid:   params.UserID,
 		Minscore: getFilterInt(params.Filter, "minScore"),
 		Maxscore: getFilterInt(params.Filter, "maxScore"),
 	}
@@ -1223,7 +1223,7 @@ func (s *LeaderboardService) buildEventSuperTeamPositionParams(params Leaderboar
 
 func (s *LeaderboardService) buildFullEventSuperTeamParams(params LeaderboardParams) sqlc.GetFullEventSuperTeamLeaderboardParams {
 	return sqlc.GetFullEventSuperTeamLeaderboardParams{
-		Eventid: params.ContextID,
+		Eventid:  params.ContextID,
 		Minscore: getFilterInt(params.Filter, "minScore"),
 		Maxscore: getFilterInt(params.Filter, "maxScore"),
 	}
@@ -1252,29 +1252,29 @@ func (s *LeaderboardService) buildEventChurchParams(params LeaderboardParams) sq
 	}
 
 	return sqlc.GetEventChurchLeaderboardParams{
-		Eventid: params.ContextID,
-		Country: getFilterString(params.Filter, "country"),
+		Eventid:        params.ContextID,
+		Country:        getFilterString(params.Filter, "country"),
 		Churchcategory: getFilterString(params.Filter, "churchCategory"),
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
-		Afterrank: afterRank,
-		Beforerank: beforeRank,
-		Querylimit: int32(limit),
+		Minscore:       getFilterInt(params.Filter, "minScore"),
+		Maxscore:       getFilterInt(params.Filter, "maxScore"),
+		Afterrank:      afterRank,
+		Beforerank:     beforeRank,
+		Querylimit:     int32(limit),
 	}
 }
 
 func (s *LeaderboardService) buildEventChurchCountParams(params LeaderboardParams) sqlc.CountEventChurchLeaderboardParams {
 	return sqlc.CountEventChurchLeaderboardParams{
-		Eventid: params.ContextID,
-		Country: getFilterString(params.Filter, "country"),
+		Eventid:        params.ContextID,
+		Country:        getFilterString(params.Filter, "country"),
 		Churchcategory: getFilterString(params.Filter, "churchCategory"),
 	}
 }
 
 func (s *LeaderboardService) buildEventChurchPositionParams(params LeaderboardParams) sqlc.FindMyEventChurchPositionParams {
 	return sqlc.FindMyEventChurchPositionParams{
-		Eventid: params.ContextID,
-		Userid: params.UserID,
+		Eventid:  params.ContextID,
+		Userid:   params.UserID,
 		Minscore: getFilterInt(params.Filter, "minScore"),
 		Maxscore: getFilterInt(params.Filter, "maxScore"),
 	}
@@ -1282,7 +1282,7 @@ func (s *LeaderboardService) buildEventChurchPositionParams(params LeaderboardPa
 
 func (s *LeaderboardService) buildFullEventChurchParams(params LeaderboardParams) sqlc.GetFullEventChurchLeaderboardParams {
 	return sqlc.GetFullEventChurchLeaderboardParams{
-		Eventid: params.ContextID,
+		Eventid:  params.ContextID,
 		Minscore: getFilterInt(params.Filter, "minScore"),
 		Maxscore: getFilterInt(params.Filter, "maxScore"),
 	}
@@ -1324,8 +1324,6 @@ func getFilterString(filter *model.LeaderboardFilter, field string) string {
 
 	return ""
 }
-
-
 
 func getFilterInt(filter *model.LeaderboardFilter, field string) int32 {
 	if filter == nil {

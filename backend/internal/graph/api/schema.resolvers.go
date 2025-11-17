@@ -291,22 +291,201 @@ func (r *mutationResolver) ArchiveProject(ctx context.Context, id string) (bool,
 
 // CreateEvent is the resolver for the createEvent field.
 func (r *mutationResolver) CreateEvent(ctx context.Context, projectID string, input model.CreateEventInput) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: CreateEvent - createEvent"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization (admins, superadmins, and project admins for their own projects)
+	if !r.RoleService.CanManageProject(ctx, userID, projectID) {
+		return nil, fmt.Errorf("unauthorized to create events in this project")
+	}
+
+	// Validate input
+	if input.EndDate.Before(input.StartDate.Time) {
+		return nil, fmt.Errorf("end date must be after start date")
+	}
+
+	// Generate new event ID
+	eventID := ulid.NewEventID()
+
+	// Create event in database
+	row, err := r.DB.Queries.CreateEvent(ctx, sqlc.CreateEventParams{
+		ID:          eventID,
+		Projectid:   projectID,
+		Name:        input.Name,
+		Description: input.Description,
+		Startdate:   pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true},
+		Enddate:     pgtype.Timestamptz{Time: input.EndDate.Time, Valid: true},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create event: %w", err)
+	}
+
+	// Convert to GraphQL model
+	event := &model.Event{
+		ID:          row.ID,
+		Name:        row.Name,
+		Description: row.Description,
+		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
+		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+	}
+
+	return event, nil
 }
 
 // UpdateEvent is the resolver for the updateEvent field.
 func (r *mutationResolver) UpdateEvent(ctx context.Context, id string, input model.UpdateEventInput) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: UpdateEvent - updateEvent"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load existing event to verify it exists and get project ID
+	thunk := r.Loaders.EventByIDLoader.Load(ctx, id)
+	existingEvent, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load event: %w", err)
+	}
+
+	// Check authorization (admins, superadmins, and project admins for their own projects)
+	if !r.RoleService.CanManageProject(ctx, userID, existingEvent.ProjectID) {
+		return nil, fmt.Errorf("unauthorized to update this event")
+	}
+
+	// Validate dates if both are provided
+	if input.StartDate != nil && input.EndDate != nil {
+		if input.EndDate.Before(input.StartDate.Time) {
+			return nil, fmt.Errorf("end date must be after start date")
+		}
+	}
+
+	// Build update parameters
+	params := sqlc.UpdateEventParams{
+		ID: id,
+	}
+
+	// Only set fields that are provided
+	if input.Name != nil {
+		params.Name = input.Name
+	}
+	if input.Description != nil {
+		params.Description = input.Description
+	}
+	if input.StartDate != nil {
+		params.Startdate = pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true}
+	}
+	if input.EndDate != nil {
+		params.Enddate = pgtype.Timestamptz{Time: input.EndDate.Time, Valid: true}
+	}
+
+	// Update event in database
+	row, err := r.DB.Queries.UpdateEvent(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update event: %w", err)
+	}
+
+	// Invalidate cache
+	r.Cache.InvalidateEvent(id)
+
+	// Convert to GraphQL model
+	event := &model.Event{
+		ID:          row.ID,
+		Name:        row.Name,
+		Description: row.Description,
+		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
+		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+	}
+
+	return event, nil
 }
 
 // DeleteEvent is the resolver for the deleteEvent field.
 func (r *mutationResolver) DeleteEvent(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteEvent - deleteEvent"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return false, fmt.Errorf("user not authenticated")
+	}
+
+	// Load existing event to verify it exists and get project ID
+	thunk := r.Loaders.EventByIDLoader.Load(ctx, id)
+	existingEvent, err := thunk()
+	if err != nil {
+		return false, fmt.Errorf("failed to load event: %w", err)
+	}
+
+	// Check authorization (admins, superadmins, and project admins for their own projects)
+	if !r.RoleService.CanManageProject(ctx, userID, existingEvent.ProjectID) {
+		return false, fmt.Errorf("unauthorized to delete this event")
+	}
+
+	// Delete event from database
+	err = r.DB.Queries.DeleteEvent(ctx, id)
+	if err != nil {
+		return false, fmt.Errorf("failed to delete event: %w", err)
+	}
+
+	// Invalidate cache
+	r.Cache.InvalidateEvent(id)
+
+	return true, nil
 }
 
 // MoveEvent is the resolver for the moveEvent field.
 func (r *mutationResolver) MoveEvent(ctx context.Context, id string, newProjectID string) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: MoveEvent - moveEvent"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization (only admins and superadmins can move events)
+	if !r.RoleService.IsAdmin(ctx, userID) {
+		return nil, fmt.Errorf("unauthorized to move events between projects")
+	}
+
+	// Load existing event to verify it exists and get old project ID
+	thunk := r.Loaders.EventByIDLoader.Load(ctx, id)
+	existingEvent, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load event: %w", err)
+	}
+	oldProjectID := existingEvent.ProjectID
+
+	// Verify new project exists
+	newProjectThunk := r.Loaders.ProjectByIDLoader.Load(ctx, newProjectID)
+	_, err = newProjectThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load new project: %w", err)
+	}
+
+	// Move event to new project
+	row, err := r.DB.Queries.MoveEvent(ctx, sqlc.MoveEventParams{
+		ID:           id,
+		Newprojectid: newProjectID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to move event: %w", err)
+	}
+
+	// Invalidate cache for both old and new projects
+	r.Cache.InvalidateEvent(id)
+	r.Cache.InvalidateProject(oldProjectID)
+	r.Cache.InvalidateProject(newProjectID)
+
+	// Convert to GraphQL model
+	event := &model.Event{
+		ID:          row.ID,
+		Name:        row.Name,
+		Description: row.Description,
+		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
+		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+	}
+
+	return event, nil
 }
 
 // CreateChallenge is the resolver for the createChallenge field.

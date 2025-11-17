@@ -46,6 +46,68 @@ func (q *Queries) CountEventsFiltered(ctx context.Context, arg CountEventsFilter
 	return count, err
 }
 
+const CreateEvent = `-- name: CreateEvent :one
+INSERT INTO events (
+    id,
+    project_id,
+    name,
+    description,
+    start_date,
+    end_date
+)
+VALUES (
+    $1::text,
+    $2::text,
+    $3::text,
+    $4::text,
+    $5::timestamptz,
+    $6::timestamptz
+)
+RETURNING id, project_id, name, description, start_date, end_date, created_at, updated_at
+`
+
+type CreateEventParams struct {
+	ID          string             `json:"id"`
+	Projectid   string             `json:"projectid"`
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	Startdate   pgtype.Timestamptz `json:"startdate"`
+	Enddate     pgtype.Timestamptz `json:"enddate"`
+}
+
+func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (*Event, error) {
+	row := q.db.QueryRow(ctx, CreateEvent,
+		arg.ID,
+		arg.Projectid,
+		arg.Name,
+		arg.Description,
+		arg.Startdate,
+		arg.Enddate,
+	)
+	var i Event
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.StartDate,
+		&i.EndDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const DeleteEvent = `-- name: DeleteEvent :exec
+DELETE FROM events
+WHERE id = $1::text
+`
+
+func (q *Queries) DeleteEvent(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, DeleteEvent, id)
+	return err
+}
+
 const GetEventByID = `-- name: GetEventByID :one
 SELECT id, project_id, name, description, start_date, end_date, created_at, updated_at
 FROM events
@@ -294,4 +356,76 @@ func (q *Queries) GetEventsFilteredCursor(ctx context.Context, arg GetEventsFilt
 		return nil, err
 	}
 	return items, nil
+}
+
+const MoveEvent = `-- name: MoveEvent :one
+UPDATE events
+SET
+    project_id = $1::text,
+    updated_at = now()
+WHERE id = $2::text
+RETURNING id, project_id, name, description, start_date, end_date, created_at, updated_at
+`
+
+type MoveEventParams struct {
+	Newprojectid string `json:"newprojectid"`
+	ID           string `json:"id"`
+}
+
+func (q *Queries) MoveEvent(ctx context.Context, arg MoveEventParams) (*Event, error) {
+	row := q.db.QueryRow(ctx, MoveEvent, arg.Newprojectid, arg.ID)
+	var i Event
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.StartDate,
+		&i.EndDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const UpdateEvent = `-- name: UpdateEvent :one
+UPDATE events
+SET
+    name = COALESCE($1::text, name),
+    description = COALESCE($2::text, description),
+    start_date = COALESCE($3::timestamptz, start_date),
+    end_date = COALESCE($4::timestamptz, end_date),
+    updated_at = now()
+WHERE id = $5::text
+RETURNING id, project_id, name, description, start_date, end_date, created_at, updated_at
+`
+
+type UpdateEventParams struct {
+	Name        *string            `json:"name"`
+	Description *string            `json:"description"`
+	Startdate   pgtype.Timestamptz `json:"startdate"`
+	Enddate     pgtype.Timestamptz `json:"enddate"`
+	ID          string             `json:"id"`
+}
+
+func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (*Event, error) {
+	row := q.db.QueryRow(ctx, UpdateEvent,
+		arg.Name,
+		arg.Description,
+		arg.Startdate,
+		arg.Enddate,
+		arg.ID,
+	)
+	var i Event
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.StartDate,
+		&i.EndDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
 }
