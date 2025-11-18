@@ -128,8 +128,9 @@ func main() {
 	slog.Info("Cache initialized", "default_ttl", "15m", "max_cost", "100MB")
 
 	// Initialize DataLoaders (shared globally across all requests)
+	// Dataloaders handle request batching while Ristretto cache handles data caching
 	dataLoaders := loaders.NewLoaders(db, cacheInstance)
-	slog.Info("DataLoaders initialized with global caching")
+	slog.Info("DataLoaders initialized with Ristretto cache integration")
 
 	// Initialize RoleService
 	roleService := services.NewRoleService(db.Queries, cacheInstance)

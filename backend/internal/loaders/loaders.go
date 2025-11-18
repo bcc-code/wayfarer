@@ -1,6 +1,8 @@
 package loaders
 
 import (
+	"context"
+
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -9,7 +11,7 @@ import (
 )
 
 // Loaders holds all dataloader instances for batching database queries
-// These are shared globally across all requests and use built-in caching
+// These are shared globally across all requests and rely on Ristretto cache for data caching
 type Loaders struct {
 	UserByIDLoader              *dataloader.Loader[string, *model.User]
 	ChurchLoader                *dataloader.Loader[string, *model.Church]
@@ -39,113 +41,49 @@ type Loaders struct {
 	UserStreakActivityLoader    *dataloader.Loader[UserStreakActivityKey, []*sqlc.UserStreakActivity]
 }
 
-// NewLoaders creates all dataloaders with batch functions and default caching
+// newBatchedLoader creates a new batched dataloader with standard configuration:
+// - Batch capacity of 100
+// - Cache disabled (we rely on Ristretto cache in batch functions instead)
+func newBatchedLoader[K comparable, V any](
+	batchFunc func(context.Context, []K) []*dataloader.Result[V],
+) *dataloader.Loader[K, V] {
+	return dataloader.NewBatchedLoader(
+		batchFunc,
+		dataloader.WithBatchCapacity[K, V](100),
+		dataloader.WithCache[K, V](&dataloader.NoCache[K, V]{}), // Disable internal cache, use Ristretto instead
+	)
+}
+
+// NewLoaders creates all dataloaders with batch functions
+// Dataloaders provide request batching while relying on Ristretto cache for data caching
 // Should be called once at server startup
 func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 	return &Loaders{
-		UserByIDLoader: dataloader.NewBatchedLoader(
-			userByIDBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, *model.User](100),
-		),
-		ChurchLoader: dataloader.NewBatchedLoader(
-			churchBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, *model.Church](100),
-		),
-		ProjectsByUserLoader: dataloader.NewBatchedLoader(
-			projectsByUserBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []*model.Project](100),
-		),
-		EventsByUserLoader: dataloader.NewBatchedLoader(
-			eventsByUserBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []*model.Event](100),
-		),
-		EventsByProjectLoader: dataloader.NewBatchedLoader(
-			eventsByProjectBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []*model.Event](100),
-		),
-		TeamsByUserLoader: dataloader.NewBatchedLoader(
-			teamsByUserBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []*model.Team](100),
-		),
-		TeamsByProjectLoader: dataloader.NewBatchedLoader(
-			teamsByProjectBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []*model.Team](100),
-		),
-		TeamsBySuperTeamLoader: dataloader.NewBatchedLoader(
-			teamsBySuperTeamBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []*model.Team](100),
-		),
-		SuperTeamsByUserLoader: dataloader.NewBatchedLoader(
-			superTeamsByUserBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []*model.SuperTeam](100),
-		),
-		RolesByUserLoader: dataloader.NewBatchedLoader(
-			rolesByUserBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []*model.UserRole](100),
-		),
-		UsersByTeamLoader: dataloader.NewBatchedLoader(
-			usersByTeamBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []*model.User](100),
-		),
-		ProjectByIDLoader: dataloader.NewBatchedLoader(
-			projectByIDBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, *model.Project](100),
-		),
-		EventByIDLoader: dataloader.NewBatchedLoader(
-			eventByIDBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, *model.Event](100),
-		),
-		TeamByIDLoader: dataloader.NewBatchedLoader(
-			teamByIDBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, *model.Team](100),
-		),
-		SuperTeamByIDLoader: dataloader.NewBatchedLoader(
-			superTeamByIDBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, *model.SuperTeam](100),
-		),
-		AchievementByIDLoader: dataloader.NewBatchedLoader(
-			achievementByIDBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, model.Achievement](100),
-		),
-		AchievementsByProjectLoader: dataloader.NewBatchedLoader(
-			achievementsByProjectBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []model.Achievement](100),
-		),
-		ArticlesByAchievementLoader: dataloader.NewBatchedLoader(
-			articlesByAchievementBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []model.Article](100),
-		),
-		TracksByAchievementLoader: dataloader.NewBatchedLoader(
-			tracksByAchievementBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []model.Track](100),
-		),
-		ChallengeByIDLoader: dataloader.NewBatchedLoader(
-			challengeByIDBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, *model.Challenge](100),
-		),
-		ChallengesByProjectLoader: dataloader.NewBatchedLoader(
-			challengesByProjectBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []*model.Challenge](100),
-		),
-		ChallengesByEventLoader: dataloader.NewBatchedLoader(
-			challengesByEventBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []*model.Challenge](100),
-		),
-		StreakByIDLoader: dataloader.NewBatchedLoader(
-			streakByIDBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, *model.Streak](100),
-		),
-		StreaksByProjectLoader: dataloader.NewBatchedLoader(
-			streaksByProjectBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []*model.Streak](100),
-		),
-		RelevantDaysByStreakLoader: dataloader.NewBatchedLoader(
-			relevantDaysByStreakBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[string, []model.DateRange](100),
-		),
-		UserStreakActivityLoader: dataloader.NewBatchedLoader(
-			userStreakActivityBatchFunc(db, cache),
-			dataloader.WithBatchCapacity[UserStreakActivityKey, []*sqlc.UserStreakActivity](100),
-		),
+		UserByIDLoader:              newBatchedLoader(userByIDBatchFunc(db, cache)),
+		ChurchLoader:                newBatchedLoader(churchBatchFunc(db, cache)),
+		ProjectsByUserLoader:        newBatchedLoader(projectsByUserBatchFunc(db, cache)),
+		EventsByUserLoader:          newBatchedLoader(eventsByUserBatchFunc(db, cache)),
+		EventsByProjectLoader:       newBatchedLoader(eventsByProjectBatchFunc(db, cache)),
+		TeamsByUserLoader:           newBatchedLoader(teamsByUserBatchFunc(db, cache)),
+		TeamsByProjectLoader:        newBatchedLoader(teamsByProjectBatchFunc(db, cache)),
+		TeamsBySuperTeamLoader:      newBatchedLoader(teamsBySuperTeamBatchFunc(db, cache)),
+		SuperTeamsByUserLoader:      newBatchedLoader(superTeamsByUserBatchFunc(db, cache)),
+		RolesByUserLoader:           newBatchedLoader(rolesByUserBatchFunc(db, cache)),
+		UsersByTeamLoader:           newBatchedLoader(usersByTeamBatchFunc(db, cache)),
+		ProjectByIDLoader:           newBatchedLoader(projectByIDBatchFunc(db, cache)),
+		EventByIDLoader:             newBatchedLoader(eventByIDBatchFunc(db, cache)),
+		TeamByIDLoader:              newBatchedLoader(teamByIDBatchFunc(db, cache)),
+		SuperTeamByIDLoader:         newBatchedLoader(superTeamByIDBatchFunc(db, cache)),
+		AchievementByIDLoader:       newBatchedLoader(achievementByIDBatchFunc(db, cache)),
+		AchievementsByProjectLoader: newBatchedLoader(achievementsByProjectBatchFunc(db, cache)),
+		ArticlesByAchievementLoader: newBatchedLoader(articlesByAchievementBatchFunc(db, cache)),
+		TracksByAchievementLoader:   newBatchedLoader(tracksByAchievementBatchFunc(db, cache)),
+		ChallengeByIDLoader:         newBatchedLoader(challengeByIDBatchFunc(db, cache)),
+		ChallengesByProjectLoader:   newBatchedLoader(challengesByProjectBatchFunc(db, cache)),
+		ChallengesByEventLoader:     newBatchedLoader(challengesByEventBatchFunc(db, cache)),
+		StreakByIDLoader:            newBatchedLoader(streakByIDBatchFunc(db, cache)),
+		StreaksByProjectLoader:      newBatchedLoader(streaksByProjectBatchFunc(db, cache)),
+		RelevantDaysByStreakLoader:  newBatchedLoader(relevantDaysByStreakBatchFunc(db, cache)),
+		UserStreakActivityLoader:    newBatchedLoader(userStreakActivityBatchFunc(db, cache)),
 	}
 }
