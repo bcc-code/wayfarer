@@ -4,5 +4,10 @@ export default defineAppConfig({
       primary: 'emerald',
       neutral: 'zinc',
     },
+    formField: {
+      slots: {
+        labelWrapper: 'justify-start gap-2',
+      },
+    },
   },
 })

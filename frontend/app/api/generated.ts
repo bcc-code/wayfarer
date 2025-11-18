@@ -1422,6 +1422,21 @@ export type AdminHomePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type AdminHomePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } }> } };
 
+export type AdminProjectEditPageQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectEditPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, archivedAt?: boolean | null, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', primary: string } } } };
+
+export type UpdateProjectMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateProjectInput;
+}>;
+
+
+export type UpdateProjectMutation = { __typename?: 'Mutation', updateProject: { __typename?: 'Project', id: string } };
+
 export type AdminProjectPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
@@ -1599,6 +1614,40 @@ export const AdminHomePageDocument = gql`
 
 export function useAdminHomePageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminHomePageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminHomePageQuery, AdminHomePageQueryVariables | undefined>({ query: AdminHomePageDocument, variables: undefined, ...options });
+};
+export const AdminProjectEditPageDocument = gql`
+    query AdminProjectEditPage($projectId: ID!) {
+  project(id: $projectId) {
+    id
+    name
+    description
+    startDate
+    endDate
+    archivedAt
+    branding {
+      logo
+      rounding
+      colors {
+        primary
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminProjectEditPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectEditPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectEditPageQuery, AdminProjectEditPageQueryVariables | undefined>({ query: AdminProjectEditPageDocument, variables: undefined, ...options });
+};
+export const UpdateProjectDocument = gql`
+    mutation UpdateProject($id: ID!, $input: UpdateProjectInput!) {
+  updateProject(id: $id, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useUpdateProjectMutation() {
+  return Urql.useMutation<UpdateProjectMutation, UpdateProjectMutationVariables>(UpdateProjectDocument);
 };
 export const AdminProjectPageDocument = gql`
     query AdminProjectPage($projectId: ID!) {

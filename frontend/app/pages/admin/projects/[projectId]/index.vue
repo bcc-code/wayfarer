@@ -118,32 +118,31 @@ watch(data, () => {
       <ErrorState v-else-if="error" :error class="h-[600px]" />
       <template v-else-if="data">
         <header class="my-12">
-          <div>
-            <div class="mb-6 flex justify-between gap-4">
-              <UFormField>
-                <NuxtImg
-                  v-if="state.branding.logo"
-                  :src="state.branding.logo"
-                  width="64"
-                  class="rounded"
-                />
-                <div
-                  v-else
-                  class="bg-muted text-dimmed flex size-16 items-center justify-center rounded text-lg"
-                >
-                  <UIcon name="lucide:image" />
-                </div>
-              </UFormField>
-              <UFormField label="Accent color">
-                <ColorPickerInput v-model="state.branding.colors.primary" />
-              </UFormField>
-            </div>
-            <h1 class="mb-2 text-3xl">
+          <div class="space-y-2">
+            <NuxtImg
+              v-if="state.branding.logo"
+              :src="state.branding.logo"
+              width="64"
+              class="mb-4 rounded"
+            />
+            <h1 class="text-3xl">
               {{ state.name }}
             </h1>
             <p v-if="state.description" class="text-muted max-w-2xl">
               {{ state.description }}
             </p>
+            <div class="mt-4">
+              <UButton
+                variant="soft"
+                icon="lucide:pencil"
+                :to="{
+                  name: 'admin-projects-projectId-edit',
+                  params: { projectId: route.params.projectId },
+                }"
+              >
+                Edit project
+              </UButton>
+            </div>
           </div>
         </header>
         <UTabs
