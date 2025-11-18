@@ -108,6 +108,5 @@ Each project can contain multiple events, which usually is some form of in-perso
 - When creating commits sign with: Assited by [MODEL] via [Tool]
 - Generate unit tests for functions you write. Use the unit tests to verify correctnes. When mocking use mockery, with the config `.mockery.yml`.
 - Put notes into notes folder. Before doing a big investigation check if we already have notes on the system.
-- Use "make gqltest" in ./backend/ dir to run a sanity check after changes to schemas and resolvers.
 - Update the notes if you make changes to schemas and other things that invalidate the notest.
 - Do not EVER automatically run the seed script!

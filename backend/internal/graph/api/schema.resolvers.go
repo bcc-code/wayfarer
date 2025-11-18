@@ -7,6 +7,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/bcc-media/wayfarer/internal/cache"
@@ -16,6 +17,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/ulid"
+	"github.com/bcc-media/wayfarer/internal/utils"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -92,7 +94,77 @@ func (r *mutationResolver) JoinEvent(ctx context.Context, eventID string) (*mode
 
 // JoinTeam is the resolver for the joinTeam field.
 func (r *mutationResolver) JoinTeam(ctx context.Context, code string) (*model.Team, error) {
-	panic(fmt.Errorf("not implemented: JoinTeam - joinTeam"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Look up team by join code
+	team, err := r.DB.Queries.GetTeamByJoinCode(ctx, code)
+	if err != nil {
+		return nil, fmt.Errorf("invalid join code")
+	}
+
+	// Get team's project ID
+	projectID, err := r.DB.Queries.GetTeamProjectID(ctx, team.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get team project ID: %w", err)
+	}
+
+	// Ensure user is enrolled in the project (auto-join if not already)
+	isInProject, err := r.DB.Queries.IsUserInProject(ctx, sqlc.IsUserInProjectParams{
+		Userid:    userID,
+		Projectid: projectID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to check if user is in project: %w", err)
+	}
+	if !isInProject {
+		// Automatically join the user to the project
+		err = r.DB.Queries.JoinProject(ctx, sqlc.JoinProjectParams{
+			Userid:    userID,
+			Projectid: projectID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to join user to project: %w", err)
+		}
+	}
+
+	// Remove user from any existing team in this project
+	err = r.DB.Queries.RemoveUserFromTeamsInProject(ctx, sqlc.RemoveUserFromTeamsInProjectParams{
+		Userid:    userID,
+		Projectid: projectID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to remove user from existing teams: %w", err)
+	}
+
+	// Add user to the team
+	err = r.DB.Queries.AddTeamMember(ctx, sqlc.AddTeamMemberParams{
+		Teamid: team.ID,
+		Userid: userID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to join team: %w", err)
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateTeam(team.ID)
+	r.Cache.InvalidateUser(userID)
+
+	// Convert to GraphQL model
+	description := ""
+	if team.Description != nil {
+		description = *team.Description
+	}
+
+	return &model.Team{
+		ID:          team.ID,
+		Name:        team.Name,
+		Description: description,
+		JoinCode:    team.JoinCode,
+	}, nil
 }
 
 // UpdateAvatar is the resolver for the updateAvatar field.
@@ -890,32 +962,466 @@ func (r *mutationResolver) LinkAchievementToChallenge(ctx context.Context, achie
 
 // CreateTeam is the resolver for the createTeam field.
 func (r *mutationResolver) CreateTeam(ctx context.Context, projectID string, input model.CreateTeamInput) (*model.Team, error) {
-	panic(fmt.Errorf("not implemented: CreateTeam - createTeam"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageProject(ctx, userID, projectID) {
+		return nil, fmt.Errorf("unauthorized to create teams in this project")
+	}
+
+	// Load the project to verify it exists
+	projectThunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
+	project, err := projectThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load project: %w", err)
+	}
+
+	// Validate that the project is not archived
+	if project.ArchivedAt != nil && *project.ArchivedAt {
+		return nil, fmt.Errorf("cannot create team in archived project")
+	}
+
+	// Generate unique join code
+	var joinCode string
+	for attempt := 0; attempt < 10; attempt++ {
+		code, err := utils.GenerateJoinCode()
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate join code: %w", err)
+		}
+
+		// Check if code already exists
+		exists, err := r.DB.Queries.JoinCodeExists(ctx, code)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check join code existence: %w", err)
+		}
+
+		if !exists {
+			joinCode = code
+			break
+		}
+	}
+
+	if joinCode == "" {
+		return nil, fmt.Errorf("failed to generate unique join code after 10 attempts")
+	}
+
+	// Generate new team ID
+	teamID := ulid.NewTeamID()
+
+	// Create the team
+	team, err := r.DB.Queries.CreateTeam(ctx, sqlc.CreateTeamParams{
+		ID:          teamID,
+		Projectid:   projectID,
+		Name:        input.Name,
+		Description: input.Description,
+		Joincode:    joinCode,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create team: %w", err)
+	}
+
+	// Convert to GraphQL model
+	description := ""
+	if team.Description != nil {
+		description = *team.Description
+	}
+
+	return &model.Team{
+		ID:          team.ID,
+		Name:        team.Name,
+		Description: description,
+		JoinCode:    team.JoinCode,
+	}, nil
 }
 
 // UpdateTeam is the resolver for the updateTeam field.
 func (r *mutationResolver) UpdateTeam(ctx context.Context, id string, input model.UpdateTeamInput) (*model.Team, error) {
-	panic(fmt.Errorf("not implemented: UpdateTeam - updateTeam"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageTeam(ctx, userID, id) {
+		return nil, fmt.Errorf("unauthorized to update this team")
+	}
+
+	// Load the team to verify it exists
+	teamThunk := r.Loaders.TeamByIDLoader.Load(ctx, id)
+	existingTeam, err := teamThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load team: %w", err)
+	}
+
+	// Prepare update parameters using existing values as defaults
+	name := existingTeam.Name
+	if input.Name != nil {
+		name = *input.Name
+	}
+
+	description := existingTeam.Description
+	if input.Description != nil {
+		description = *input.Description
+	}
+
+	// Update the team
+	team, err := r.DB.Queries.UpdateTeam(ctx, sqlc.UpdateTeamParams{
+		ID:          id,
+		Name:        name,
+		Description: description,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update team: %w", err)
+	}
+
+	// Invalidate cache
+	r.Cache.InvalidateTeam(id)
+
+	// Convert to GraphQL model
+	teamDescription := ""
+	if team.Description != nil {
+		teamDescription = *team.Description
+	}
+
+	return &model.Team{
+		ID:          team.ID,
+		Name:        team.Name,
+		Description: teamDescription,
+		JoinCode:    team.JoinCode,
+	}, nil
 }
 
 // DeleteTeam is the resolver for the deleteTeam field.
 func (r *mutationResolver) DeleteTeam(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteTeam - deleteTeam"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return false, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization - only admins and superadmins can delete teams
+	if !r.RoleService.CanDeleteTeam(ctx, userID) {
+		return false, fmt.Errorf("unauthorized to delete teams")
+	}
+
+	// Load the team to verify it exists
+	teamThunk := r.Loaders.TeamByIDLoader.Load(ctx, id)
+	_, err := teamThunk()
+	if err != nil {
+		return false, fmt.Errorf("failed to load team: %w", err)
+	}
+
+	// Delete the team
+	err = r.DB.Queries.DeleteTeam(ctx, id)
+	if err != nil {
+		return false, fmt.Errorf("failed to delete team: %w", err)
+	}
+
+	// Invalidate cache
+	r.Cache.InvalidateTeam(id)
+
+	return true, nil
 }
 
 // AddTeamMembers is the resolver for the addTeamMembers field.
-func (r *mutationResolver) AddTeamMembers(ctx context.Context, teamID string, userIds []string) (*model.Team, error) {
-	panic(fmt.Errorf("not implemented: AddTeamMembers - addTeamMembers"))
+func (r *mutationResolver) AddTeamMembers(ctx context.Context, teamID string, userIds []string, force *bool) (*model.Team, error) {
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageTeam(ctx, userID, teamID) {
+		return nil, fmt.Errorf("unauthorized to manage this team")
+	}
+
+	// Load team to verify it exists
+	teamThunk := r.Loaders.TeamByIDLoader.Load(ctx, teamID)
+	team, err := teamThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load team: %w", err)
+	}
+
+	// Get team's project ID
+	projectID, err := r.DB.Queries.GetTeamProjectID(ctx, teamID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get team project ID: %w", err)
+	}
+
+	// Determine whether to force add
+	shouldForce := force != nil && *force
+
+	// Add each user to the team
+	for _, uid := range userIds {
+		// Verify user exists (will be handled by loader)
+		userThunk := r.Loaders.UserByIDLoader.Load(ctx, uid)
+		_, err := userThunk()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load user %s: %w", uid, err)
+		}
+
+		// Ensure user is enrolled in the project (auto-join if not already)
+		isInProject, err := r.DB.Queries.IsUserInProject(ctx, sqlc.IsUserInProjectParams{
+			Userid:    uid,
+			Projectid: projectID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to check if user %s is in project: %w", uid, err)
+		}
+		if !isInProject {
+			// Automatically join the user to the project
+			err = r.DB.Queries.JoinProject(ctx, sqlc.JoinProjectParams{
+				Userid:    uid,
+				Projectid: projectID,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to join user %s to project: %w", uid, err)
+			}
+		}
+
+		// If not forcing, check if user is already on another team in this project
+		if !shouldForce {
+			existingTeam, err := r.DB.Queries.GetUserTeamByProjectID(ctx, sqlc.GetUserTeamByProjectIDParams{
+				Userid:    uid,
+				Projectid: projectID,
+			})
+			// If err is nil, user is already on a team
+			if err == nil && existingTeam.ID != teamID {
+				return nil, fmt.Errorf("user %s is already on team %s in this project", uid, existingTeam.ID)
+			}
+			// Ignore error if it's a "no rows" error (user not on any team)
+		}
+
+		// If forcing, remove user from all teams in this project first
+		if shouldForce {
+			err = r.DB.Queries.RemoveUserFromTeamsInProject(ctx, sqlc.RemoveUserFromTeamsInProjectParams{
+				Userid:    uid,
+				Projectid: projectID,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to remove user %s from existing teams: %w", uid, err)
+			}
+		}
+
+		// Add user to the team
+		err = r.DB.Queries.AddTeamMember(ctx, sqlc.AddTeamMemberParams{
+			Teamid: teamID,
+			Userid: uid,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to add user %s to team: %w", uid, err)
+		}
+
+		// Invalidate user cache
+		r.Cache.InvalidateUser(uid)
+	}
+
+	// Invalidate team cache
+	r.Cache.InvalidateTeam(teamID)
+
+	// Return the team (loaders already returns model.Team)
+	return &model.Team{
+		ID:          team.ID,
+		Name:        team.Name,
+		Description: team.Description,
+		JoinCode:    team.JoinCode,
+	}, nil
 }
 
 // RemoveTeamMembers is the resolver for the removeTeamMembers field.
 func (r *mutationResolver) RemoveTeamMembers(ctx context.Context, teamID string, userIds []string) (*model.Team, error) {
-	panic(fmt.Errorf("not implemented: RemoveTeamMembers - removeTeamMembers"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageTeam(ctx, userID, teamID) {
+		return nil, fmt.Errorf("unauthorized to manage this team")
+	}
+
+	// Load team to verify it exists
+	teamThunk := r.Loaders.TeamByIDLoader.Load(ctx, teamID)
+	team, err := teamThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load team: %w", err)
+	}
+
+	// Remove each user from the team
+	for _, uid := range userIds {
+		err := r.DB.Queries.RemoveTeamMember(ctx, sqlc.RemoveTeamMemberParams{
+			Teamid: teamID,
+			Userid: uid,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to remove user %s from team: %w", uid, err)
+		}
+
+		// Invalidate user cache
+		r.Cache.InvalidateUser(uid)
+	}
+
+	// Invalidate team cache
+	r.Cache.InvalidateTeam(teamID)
+
+	// Return the team (loaders already returns model.Team)
+	return &model.Team{
+		ID:          team.ID,
+		Name:        team.Name,
+		Description: team.Description,
+		JoinCode:    team.JoinCode,
+	}, nil
 }
 
-// BulkAssignUsersToTeam is the resolver for the bulkAssignUsersToTeam field.
-func (r *mutationResolver) BulkAssignUsersToTeam(ctx context.Context, teamID string, userIds []string) (*model.Team, error) {
-	panic(fmt.Errorf("not implemented: BulkAssignUsersToTeam - bulkAssignUsersToTeam"))
+// RegenerateJoinCode is the resolver for the regenerateJoinCode field.
+func (r *mutationResolver) RegenerateJoinCode(ctx context.Context, teamID string) (*model.Team, error) {
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageTeam(ctx, userID, teamID) {
+		return nil, fmt.Errorf("unauthorized to manage this team")
+	}
+
+	// Load team to verify it exists
+	teamThunk := r.Loaders.TeamByIDLoader.Load(ctx, teamID)
+	_, err := teamThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load team: %w", err)
+	}
+
+	// Generate unique join code
+	var joinCode string
+	for attempt := 0; attempt < 10; attempt++ {
+		code, err := utils.GenerateJoinCode()
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate join code: %w", err)
+		}
+
+		// Check if code already exists
+		exists, err := r.DB.Queries.JoinCodeExists(ctx, code)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check join code existence: %w", err)
+		}
+
+		if !exists {
+			joinCode = code
+			break
+		}
+	}
+
+	if joinCode == "" {
+		return nil, fmt.Errorf("failed to generate unique join code after 10 attempts")
+	}
+
+	// Update the team's join code
+	updatedTeam, err := r.DB.Queries.RegenerateJoinCode(ctx, sqlc.RegenerateJoinCodeParams{
+		ID:       teamID,
+		Joincode: joinCode,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to regenerate join code: %w", err)
+	}
+
+	// Invalidate cache
+	r.Cache.InvalidateTeam(teamID)
+
+	// Convert to GraphQL model
+	description := ""
+	if updatedTeam.Description != nil {
+		description = *updatedTeam.Description
+	}
+
+	return &model.Team{
+		ID:          updatedTeam.ID,
+		Name:        updatedTeam.Name,
+		Description: description,
+		JoinCode:    updatedTeam.JoinCode,
+	}, nil
+}
+
+// AssignTeamLead is the resolver for the assignTeamLead field.
+func (r *mutationResolver) AssignTeamLead(ctx context.Context, teamID string, userID string) (*model.Team, error) {
+	// Get authenticated user ID from context
+	authenticatedUserID, ok := middleware.GetUserID(ctx)
+	if !ok || authenticatedUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageTeam(ctx, authenticatedUserID, teamID) {
+		return nil, fmt.Errorf("unauthorized to manage this team")
+	}
+
+	// Load team to verify it exists
+	teamThunk := r.Loaders.TeamByIDLoader.Load(ctx, teamID)
+	team, err := teamThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load team: %w", err)
+	}
+
+	// Verify target user is a team member
+	isMember, err := r.DB.Queries.IsUserTeamMember(ctx, sqlc.IsUserTeamMemberParams{
+		Teamid: teamID,
+		Userid: userID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to check team membership: %w", err)
+	}
+	if !isMember {
+		return nil, fmt.Errorf("user %s is not a member of this team", userID)
+	}
+
+	// Get current team lead (if exists)
+	currentLeadID, err := r.DB.Queries.GetTeamLeadUserID(ctx, teamID)
+	if err == nil && currentLeadID != "" {
+		// Remove existing team lead role
+		err = r.DB.Queries.RemoveTeamLeadRole(ctx, sqlc.RemoveTeamLeadRoleParams{
+			Userid: currentLeadID,
+			Teamid: teamID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to remove existing team lead: %w", err)
+		}
+
+		// Invalidate old team lead's cache
+		r.Cache.InvalidateUser(currentLeadID)
+	}
+
+	// Assign new team lead
+	roleID := ulid.NewUserRoleID()
+	_, err = r.DB.Queries.AssignTeamLeadRole(ctx, sqlc.AssignTeamLeadRoleParams{
+		ID:         roleID,
+		Userid:     userID,
+		Teamid:     teamID,
+		Assignedby: authenticatedUserID,
+		Assignedat: pgtype.Timestamptz{Time: time.Now(), Valid: true},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to assign team lead role: %w", err)
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateTeam(teamID)
+	r.Cache.InvalidateUser(userID)
+
+	// Return the team (loaders already returns model.Team)
+	return &model.Team{
+		ID:          team.ID,
+		Name:        team.Name,
+		Description: team.Description,
+		JoinCode:    team.JoinCode,
+	}, nil
 }
 
 // CreateSuperTeam is the resolver for the createSuperTeam field.

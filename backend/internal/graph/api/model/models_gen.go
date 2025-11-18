@@ -586,6 +586,7 @@ type Team struct {
 	ID            string     `json:"id"`
 	Name          string     `json:"name"`
 	Description   string     `json:"description"`
+	JoinCode      string     `json:"joinCode"`
 	Members       []User     `json:"members"`
 	ParentProject *Project   `json:"parentProject"`
 	SuperTeam     *SuperTeam `json:"superTeam,omitempty"`

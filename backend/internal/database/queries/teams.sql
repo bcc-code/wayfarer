@@ -67,3 +67,95 @@ INNER JOIN team_members tm ON t.id = tm.team_id
 WHERE tm.user_id = @userid::text
   AND t.project_id = @projectid::text
 LIMIT 1;
+
+-- name: CreateTeam :one
+INSERT INTO teams (id, project_id, name, description, join_code)
+VALUES (@id::text, @projectid::text, @name::text, @description::text, @joincode::text)
+RETURNING id, project_id, name, description, join_code, super_team_id, created_at, updated_at;
+
+-- name: UpdateTeam :one
+UPDATE teams
+SET
+    name = COALESCE(@name::text, name),
+    description = COALESCE(@description::text, description),
+    updated_at = now()
+WHERE id = @id::text
+RETURNING id, project_id, name, description, join_code, super_team_id, created_at, updated_at;
+
+-- name: DeleteTeam :exec
+DELETE FROM teams
+WHERE id = @id::text;
+
+-- name: GetTeamByJoinCode :one
+SELECT id, project_id, name, description, join_code, super_team_id, created_at, updated_at
+FROM teams
+WHERE join_code = @joincode::text;
+
+-- name: RegenerateJoinCode :one
+UPDATE teams
+SET join_code = @joincode::text, updated_at = now()
+WHERE id = @id::text
+RETURNING id, project_id, name, description, join_code, super_team_id, created_at, updated_at;
+
+-- name: AddTeamMember :exec
+INSERT INTO team_members (team_id, user_id)
+VALUES (@teamid::text, @userid::text)
+ON CONFLICT (team_id, user_id) DO NOTHING;
+
+-- name: RemoveTeamMember :exec
+DELETE FROM team_members
+WHERE team_id = @teamid::text AND user_id = @userid::text;
+
+-- name: HasTeamMemberFromChurch :one
+SELECT EXISTS(
+    SELECT 1
+    FROM team_members tm
+    INNER JOIN users u ON tm.user_id = u.id
+    WHERE tm.team_id = @teamid::text
+      AND u.church_id = @churchid::text
+);
+
+-- name: GetTeamProjectID :one
+SELECT project_id
+FROM teams
+WHERE id = @teamid::text;
+
+-- name: RemoveUserFromTeamsInProject :exec
+DELETE FROM team_members
+WHERE user_id = @userid::text
+  AND team_id IN (
+    SELECT id FROM teams WHERE project_id = @projectid::text
+  );
+
+-- name: RemoveTeamLeadRole :exec
+DELETE FROM user_roles
+WHERE user_id = @userid::text
+  AND team_id = @teamid::text
+  AND role = 'TEAM_LEAD';
+
+-- name: AssignTeamLeadRole :one
+INSERT INTO user_roles (id, user_id, role, team_id, assigned_by, assigned_at)
+VALUES (@id::text, @userid::text, 'TEAM_LEAD', @teamid::text, @assignedby::text, @assignedat::timestamptz)
+RETURNING id, user_id, role, church_id, project_id, team_id, assigned_by, assigned_at;
+
+-- name: GetTeamLeadUserID :one
+SELECT user_id
+FROM user_roles
+WHERE team_id = @teamid::text
+  AND role = 'TEAM_LEAD'
+LIMIT 1;
+
+-- name: IsUserTeamMember :one
+SELECT EXISTS(
+    SELECT 1
+    FROM team_members
+    WHERE team_id = @teamid::text
+      AND user_id = @userid::text
+);
+
+-- name: JoinCodeExists :one
+SELECT EXISTS(
+    SELECT 1
+    FROM teams
+    WHERE join_code = @joincode::text
+);

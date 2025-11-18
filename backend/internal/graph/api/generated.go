@@ -204,20 +204,20 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddTeamMembers                 func(childComplexity int, teamID string, userIds []string) int
+		AddTeamMembers                 func(childComplexity int, teamID string, userIds []string, force *bool) int
 		AdjustSuperTeamScore           func(childComplexity int, superTeamID string, projectID string, points int, reason *string) int
 		AdjustTeamScore                func(childComplexity int, teamID string, projectID string, points int, reason *string) int
 		AdjustUserScore                func(childComplexity int, userID string, projectID string, points int, reason *string) int
 		ArchiveProject                 func(childComplexity int, id string) int
 		AssignChallengeToEvent         func(childComplexity int, challengeID string, eventID string) int
 		AssignRole                     func(childComplexity int, input model.AssignRoleInput) int
+		AssignTeamLead                 func(childComplexity int, teamID string, userID string) int
 		AssignTeamsToSuperTeam         func(childComplexity int, superTeamID string, teamIds []string) int
 		AssignUserToEvent              func(childComplexity int, userID string, eventID string) int
 		AssignUserToProject            func(childComplexity int, userID string, projectID string) int
 		AwardAchievement               func(childComplexity int, userID string, achievementID string) int
 		AwardSuperTeamAchievement      func(childComplexity int, superTeamID string, achievementID string) int
 		AwardTeamAchievement           func(childComplexity int, teamID string, achievementID string) int
-		BulkAssignUsersToTeam          func(childComplexity int, teamID string, userIds []string) int
 		BulkAwardAchievements          func(childComplexity int, userIds []string, achievementID string) int
 		BulkAwardSuperTeamAchievements func(childComplexity int, superTeamIds []string, achievementID string) int
 		BulkAwardTeamAchievements      func(childComplexity int, teamIds []string, achievementID string) int
@@ -251,6 +251,7 @@ type ComplexityRoot struct {
 		MoveEvent                      func(childComplexity int, id string, newProjectID string) int
 		PublishChallenge               func(childComplexity int, id string, publishedAt scalars.DateTime) int
 		RecordStreakActivity           func(childComplexity int, userID string, achievementID string, currentStreak int) int
+		RegenerateJoinCode             func(childComplexity int, teamID string) int
 		RemoveTeamMembers              func(childComplexity int, teamID string, userIds []string) int
 		RemoveUserFromProject          func(childComplexity int, userID string, projectID string) int
 		RevokeAchievement              func(childComplexity int, userID string, achievementID string) int
@@ -436,6 +437,7 @@ type ComplexityRoot struct {
 	Team struct {
 		Description   func(childComplexity int) int
 		ID            func(childComplexity int) int
+		JoinCode      func(childComplexity int) int
 		Members       func(childComplexity int) int
 		Name          func(childComplexity int) int
 		ParentProject func(childComplexity int) int
@@ -544,9 +546,10 @@ type MutationResolver interface {
 	CreateTeam(ctx context.Context, projectID string, input model.CreateTeamInput) (*model.Team, error)
 	UpdateTeam(ctx context.Context, id string, input model.UpdateTeamInput) (*model.Team, error)
 	DeleteTeam(ctx context.Context, id string) (bool, error)
-	AddTeamMembers(ctx context.Context, teamID string, userIds []string) (*model.Team, error)
+	AddTeamMembers(ctx context.Context, teamID string, userIds []string, force *bool) (*model.Team, error)
 	RemoveTeamMembers(ctx context.Context, teamID string, userIds []string) (*model.Team, error)
-	BulkAssignUsersToTeam(ctx context.Context, teamID string, userIds []string) (*model.Team, error)
+	RegenerateJoinCode(ctx context.Context, teamID string) (*model.Team, error)
+	AssignTeamLead(ctx context.Context, teamID string, userID string) (*model.Team, error)
 	CreateSuperTeam(ctx context.Context, projectID string, input model.CreateSuperTeamInput) (*model.SuperTeam, error)
 	UpdateSuperTeam(ctx context.Context, id string, input model.UpdateSuperTeamInput) (*model.SuperTeam, error)
 	DeleteSuperTeam(ctx context.Context, id string) (bool, error)
@@ -1222,7 +1225,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddTeamMembers(childComplexity, args["teamId"].(string), args["userIds"].([]string)), true
+		return e.complexity.Mutation.AddTeamMembers(childComplexity, args["teamId"].(string), args["userIds"].([]string), args["force"].(*bool)), true
 	case "Mutation.adjustSuperTeamScore":
 		if e.complexity.Mutation.AdjustSuperTeamScore == nil {
 			break
@@ -1289,6 +1292,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.AssignRole(childComplexity, args["input"].(model.AssignRoleInput)), true
+	case "Mutation.assignTeamLead":
+		if e.complexity.Mutation.AssignTeamLead == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_assignTeamLead_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AssignTeamLead(childComplexity, args["teamId"].(string), args["userId"].(string)), true
 	case "Mutation.assignTeamsToSuperTeam":
 		if e.complexity.Mutation.AssignTeamsToSuperTeam == nil {
 			break
@@ -1355,17 +1369,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.AwardTeamAchievement(childComplexity, args["teamId"].(string), args["achievementId"].(string)), true
-	case "Mutation.bulkAssignUsersToTeam":
-		if e.complexity.Mutation.BulkAssignUsersToTeam == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_bulkAssignUsersToTeam_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.BulkAssignUsersToTeam(childComplexity, args["teamId"].(string), args["userIds"].([]string)), true
 	case "Mutation.bulkAwardAchievements":
 		if e.complexity.Mutation.BulkAwardAchievements == nil {
 			break
@@ -1729,6 +1732,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.RecordStreakActivity(childComplexity, args["userId"].(string), args["achievementId"].(string), args["currentStreak"].(int)), true
+	case "Mutation.regenerateJoinCode":
+		if e.complexity.Mutation.RegenerateJoinCode == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_regenerateJoinCode_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RegenerateJoinCode(childComplexity, args["teamId"].(string)), true
 	case "Mutation.removeTeamMembers":
 		if e.complexity.Mutation.RemoveTeamMembers == nil {
 			break
@@ -2755,6 +2769,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Team.ID(childComplexity), true
+	case "Team.joinCode":
+		if e.complexity.Team.JoinCode == nil {
+			break
+		}
+
+		return e.complexity.Team.JoinCode(childComplexity), true
 	case "Team.members":
 		if e.complexity.Team.Members == nil {
 			break
@@ -3343,6 +3363,7 @@ type Team {
     id: ID!
     name: String!
     description: String!
+    joinCode: String!
     members: [User!]! @goField(forceResolver: true)
     parentProject: Project! @goField(forceResolver: true)
     superTeam: SuperTeam @goField(forceResolver: true)
@@ -3967,9 +3988,10 @@ type Mutation {
     createTeam(projectId: ID!, input: CreateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin"])
     updateTeam(id: ID!, input: UpdateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin"])
     deleteTeam(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-    addTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin"])
+    addTeamMembers(teamId: ID!, userIds: [ID!]!, force: Boolean): Team! @requireRole(roles: ["admin", "superadmin"])
     removeTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin"])
-    bulkAssignUsersToTeam(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin"])
+    regenerateJoinCode(teamId: ID!): Team! @requireRole(roles: ["admin", "superadmin"])
+    assignTeamLead(teamId: ID!, userId: ID!): Team! @requireRole(roles: ["admin", "superadmin"])
 
     # SuperTeam Management
     createSuperTeam(projectId: ID!, input: CreateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
@@ -4100,6 +4122,11 @@ func (ec *executionContext) field_Mutation_addTeamMembers_args(ctx context.Conte
 		return nil, err
 	}
 	args["userIds"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "force", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["force"] = arg2
 	return args, nil
 }
 
@@ -4219,6 +4246,22 @@ func (ec *executionContext) field_Mutation_assignRole_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_assignTeamLead_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "teamId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["teamId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_assignTeamsToSuperTeam_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -4312,22 +4355,6 @@ func (ec *executionContext) field_Mutation_awardTeamAchievement_args(ctx context
 		return nil, err
 	}
 	args["achievementId"] = arg1
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_bulkAssignUsersToTeam_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "teamId", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["teamId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "userIds", ec.unmarshalNID2ᚕstringᚄ)
-	if err != nil {
-		return nil, err
-	}
-	args["userIds"] = arg1
 	return args, nil
 }
 
@@ -4811,6 +4838,17 @@ func (ec *executionContext) field_Mutation_recordStreakActivity_args(ctx context
 		return nil, err
 	}
 	args["currentStreak"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_regenerateJoinCode_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "teamId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["teamId"] = arg0
 	return args, nil
 }
 
@@ -8630,6 +8668,8 @@ func (ec *executionContext) fieldContext_Mutation_joinTeam(ctx context.Context, 
 				return ec.fieldContext_Team_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "parentProject":
@@ -10454,6 +10494,8 @@ func (ec *executionContext) fieldContext_Mutation_createTeam(ctx context.Context
 				return ec.fieldContext_Team_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "parentProject":
@@ -10527,6 +10569,8 @@ func (ec *executionContext) fieldContext_Mutation_updateTeam(ctx context.Context
 				return ec.fieldContext_Team_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "parentProject":
@@ -10618,7 +10662,7 @@ func (ec *executionContext) _Mutation_addTeamMembers(ctx context.Context, field 
 		ec.fieldContext_Mutation_addTeamMembers,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().AddTeamMembers(ctx, fc.Args["teamId"].(string), fc.Args["userIds"].([]string))
+			return ec.resolvers.Mutation().AddTeamMembers(ctx, fc.Args["teamId"].(string), fc.Args["userIds"].([]string), fc.Args["force"].(*bool))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -10659,6 +10703,8 @@ func (ec *executionContext) fieldContext_Mutation_addTeamMembers(ctx context.Con
 				return ec.fieldContext_Team_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "parentProject":
@@ -10732,6 +10778,8 @@ func (ec *executionContext) fieldContext_Mutation_removeTeamMembers(ctx context.
 				return ec.fieldContext_Team_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "parentProject":
@@ -10756,15 +10804,15 @@ func (ec *executionContext) fieldContext_Mutation_removeTeamMembers(ctx context.
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_bulkAssignUsersToTeam(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_regenerateJoinCode(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_bulkAssignUsersToTeam,
+		ec.fieldContext_Mutation_regenerateJoinCode,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().BulkAssignUsersToTeam(ctx, fc.Args["teamId"].(string), fc.Args["userIds"].([]string))
+			return ec.resolvers.Mutation().RegenerateJoinCode(ctx, fc.Args["teamId"].(string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -10791,7 +10839,7 @@ func (ec *executionContext) _Mutation_bulkAssignUsersToTeam(ctx context.Context,
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_bulkAssignUsersToTeam(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_regenerateJoinCode(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -10805,6 +10853,8 @@ func (ec *executionContext) fieldContext_Mutation_bulkAssignUsersToTeam(ctx cont
 				return ec.fieldContext_Team_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "parentProject":
@@ -10822,7 +10872,82 @@ func (ec *executionContext) fieldContext_Mutation_bulkAssignUsersToTeam(ctx cont
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_bulkAssignUsersToTeam_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_regenerateJoinCode_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_assignTeamLead(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_assignTeamLead,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().AssignTeamLead(ctx, fc.Args["teamId"].(string), fc.Args["userId"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.Team
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.Team
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeam,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_assignTeamLead(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Team_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Team_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "members":
+				return ec.fieldContext_Team_members(ctx, field)
+			case "parentProject":
+				return ec.fieldContext_Team_parentProject(ctx, field)
+			case "superTeam":
+				return ec.fieldContext_Team_superTeam(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Team", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_assignTeamLead_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -13562,6 +13687,8 @@ func (ec *executionContext) fieldContext_Project_teams(_ context.Context, field 
 				return ec.fieldContext_Team_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "parentProject":
@@ -13605,6 +13732,8 @@ func (ec *executionContext) fieldContext_Project_myTeam(_ context.Context, field
 				return ec.fieldContext_Team_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "parentProject":
@@ -14578,6 +14707,8 @@ func (ec *executionContext) fieldContext_Query_team(ctx context.Context, field g
 				return ec.fieldContext_Team_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "parentProject":
@@ -16204,6 +16335,8 @@ func (ec *executionContext) fieldContext_RoleScope_team(_ context.Context, field
 				return ec.fieldContext_Team_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "parentProject":
@@ -17732,6 +17865,8 @@ func (ec *executionContext) fieldContext_SuperTeam_teams(_ context.Context, fiel
 				return ec.fieldContext_Team_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "parentProject":
@@ -17995,6 +18130,35 @@ func (ec *executionContext) _Team_description(ctx context.Context, field graphql
 }
 
 func (ec *executionContext) fieldContext_Team_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Team_joinCode(ctx context.Context, field graphql.CollectedField, obj *model.Team) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Team_joinCode,
+		func(ctx context.Context) (any, error) {
+			return obj.JoinCode, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Team_joinCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Team",
 		Field:      field,
@@ -18332,6 +18496,8 @@ func (ec *executionContext) fieldContext_TeamEdge_node(_ context.Context, field 
 				return ec.fieldContext_Team_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "parentProject":
@@ -18897,6 +19063,8 @@ func (ec *executionContext) fieldContext_User_teams(_ context.Context, field gra
 				return ec.fieldContext_Team_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "parentProject":
@@ -24415,9 +24583,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "bulkAssignUsersToTeam":
+		case "regenerateJoinCode":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_bulkAssignUsersToTeam(ctx, field)
+				return ec._Mutation_regenerateJoinCode(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "assignTeamLead":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_assignTeamLead(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -27097,6 +27272,11 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "description":
 			out.Values[i] = ec._Team_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "joinCode":
+			out.Values[i] = ec._Team_joinCode(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
