@@ -153,6 +153,19 @@ func (r *mutationResolver) JoinTeam(ctx context.Context, code string) (*model.Te
 	r.Cache.InvalidateTeam(team.ID)
 	r.Cache.InvalidateUser(userID)
 
+	// Invalidate superteam cache if team belongs to a superteam (member count changes)
+	if team.SuperTeamID != nil {
+		r.Cache.InvalidateSuperTeam(*team.SuperTeamID)
+	}
+
+	// Invalidate teams filter queries (member count changes)
+	r.Cache.DeletePrefix(cache.PrefixTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixTeamsCount)
+
+	// Invalidate superteams filter queries (member counts may have changed)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsCount)
+
 	// Convert to GraphQL model
 	description := ""
 	if team.Description != nil {
@@ -1024,6 +1037,11 @@ func (r *mutationResolver) CreateTeam(ctx context.Context, projectID string, inp
 		return nil, fmt.Errorf("failed to create team: %w", err)
 	}
 
+	// Invalidate caches
+	r.Cache.InvalidateProject(projectID)
+	r.Cache.DeletePrefix(cache.PrefixTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixTeamsCount)
+
 	// Convert to GraphQL model
 	description := ""
 	if team.Description != nil {
@@ -1079,8 +1097,10 @@ func (r *mutationResolver) UpdateTeam(ctx context.Context, id string, input mode
 		return nil, fmt.Errorf("failed to update team: %w", err)
 	}
 
-	// Invalidate cache
+	// Invalidate caches
 	r.Cache.InvalidateTeam(id)
+	r.Cache.DeletePrefix(cache.PrefixTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixTeamsCount)
 
 	// Convert to GraphQL model
 	teamDescription := ""
@@ -1109,11 +1129,17 @@ func (r *mutationResolver) DeleteTeam(ctx context.Context, id string) (bool, err
 		return false, fmt.Errorf("unauthorized to delete teams")
 	}
 
-	// Load the team to verify it exists
+	// Load the team to verify it exists and get its details
 	teamThunk := r.Loaders.TeamByIDLoader.Load(ctx, id)
-	_, err := teamThunk()
+	team, err := teamThunk()
 	if err != nil {
 		return false, fmt.Errorf("failed to load team: %w", err)
+	}
+
+	// Get all team members before deletion
+	members, err := r.DB.Queries.GetUsersByTeamIDs(ctx, []string{id})
+	if err != nil {
+		return false, fmt.Errorf("failed to get team members: %w", err)
 	}
 
 	// Delete the team
@@ -1122,8 +1148,29 @@ func (r *mutationResolver) DeleteTeam(ctx context.Context, id string) (bool, err
 		return false, fmt.Errorf("failed to delete team: %w", err)
 	}
 
-	// Invalidate cache
+	// Invalidate team cache
 	r.Cache.InvalidateTeam(id)
+
+	// Invalidate project cache (for project.teams)
+	r.Cache.InvalidateProject(team.ProjectID)
+
+	// Invalidate superteam cache if team belonged to a superteam
+	if team.SuperTeamID != nil {
+		r.Cache.InvalidateSuperTeam(*team.SuperTeamID)
+	}
+
+	// Invalidate user caches for all team members
+	for _, member := range members {
+		r.Cache.InvalidateUser(member.ID)
+	}
+
+	// Invalidate teams filter queries
+	r.Cache.DeletePrefix(cache.PrefixTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixTeamsCount)
+
+	// Invalidate superteams filter queries (member counts may have changed)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsCount)
 
 	return true, nil
 }
@@ -1225,6 +1272,19 @@ func (r *mutationResolver) AddTeamMembers(ctx context.Context, teamID string, us
 	// Invalidate team cache
 	r.Cache.InvalidateTeam(teamID)
 
+	// Invalidate superteam cache if team belongs to a superteam (member count changes)
+	if team.SuperTeamID != nil {
+		r.Cache.InvalidateSuperTeam(*team.SuperTeamID)
+	}
+
+	// Invalidate teams filter queries (member count changes)
+	r.Cache.DeletePrefix(cache.PrefixTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixTeamsCount)
+
+	// Invalidate superteams filter queries (member counts may have changed)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsCount)
+
 	// Return the team (loaders already returns model.Team)
 	return &model.Team{
 		ID:          team.ID,
@@ -1270,6 +1330,19 @@ func (r *mutationResolver) RemoveTeamMembers(ctx context.Context, teamID string,
 
 	// Invalidate team cache
 	r.Cache.InvalidateTeam(teamID)
+
+	// Invalidate superteam cache if team belongs to a superteam (member count changes)
+	if team.SuperTeamID != nil {
+		r.Cache.InvalidateSuperTeam(*team.SuperTeamID)
+	}
+
+	// Invalidate teams filter queries (member count changes)
+	r.Cache.DeletePrefix(cache.PrefixTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixTeamsCount)
+
+	// Invalidate superteams filter queries (member counts may have changed)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixSuperTeamsCount)
 
 	// Return the team (loaders already returns model.Team)
 	return &model.Team{

@@ -202,6 +202,13 @@ func (c *CacheWithRegistry) InvalidateTeam(teamID string) {
 	c.DeletePrefix("team:" + teamID)
 }
 
+// InvalidateSuperTeam invalidates all cache entries related to a super team
+func (c *CacheWithRegistry) InvalidateSuperTeam(superTeamID string) {
+	c.Delete(SuperTeamKey(superTeamID))
+	c.Delete(TeamsBySuperTeamKey(superTeamID))
+	c.DeletePrefix("superteam:" + superTeamID)
+}
+
 // InvalidateChallenge invalidates all cache entries related to a challenge
 func (c *CacheWithRegistry) InvalidateChallenge(challengeID string) {
 	c.Delete(ChallengeKey(challengeID))
