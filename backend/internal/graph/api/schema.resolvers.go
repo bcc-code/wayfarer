@@ -112,7 +112,7 @@ func (r *mutationResolver) JoinTeam(ctx context.Context, code string) (*model.Te
 		return nil, fmt.Errorf("failed to get team project ID: %w", err)
 	}
 
-	// Verify user is enrolled in the project
+	// Ensure user is enrolled in the project (auto-join if not already)
 	isInProject, err := r.DB.Queries.IsUserInProject(ctx, sqlc.IsUserInProjectParams{
 		Userid:    userID,
 		Projectid: projectID,
@@ -121,7 +121,14 @@ func (r *mutationResolver) JoinTeam(ctx context.Context, code string) (*model.Te
 		return nil, fmt.Errorf("failed to check if user is in project: %w", err)
 	}
 	if !isInProject {
-		return nil, fmt.Errorf("you must be enrolled in the project to join this team")
+		// Automatically join the user to the project
+		err = r.DB.Queries.JoinProject(ctx, sqlc.JoinProjectParams{
+			Userid:    userID,
+			Projectid: projectID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to join user to project: %w", err)
+		}
 	}
 
 	// Remove user from any existing team in this project
