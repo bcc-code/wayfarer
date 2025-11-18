@@ -108,7 +108,6 @@ type Mutation {
     deleteTeam(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
     addTeamMembers(teamId: ID!, userIds: [ID!]!, force: Boolean): Team! @requireRole(roles: ["admin", "superadmin"])
     removeTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin"])
-    bulkAssignUsersToTeam(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin"])
     regenerateJoinCode(teamId: ID!): Team! @requireRole(roles: ["admin", "superadmin"])
     assignTeamLead(teamId: ID!, userId: ID!): Team! @requireRole(roles: ["admin", "superadmin"])
 

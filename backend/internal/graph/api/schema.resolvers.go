@@ -1158,7 +1158,7 @@ func (r *mutationResolver) AddTeamMembers(ctx context.Context, teamID string, us
 			return nil, fmt.Errorf("failed to load user %s: %w", uid, err)
 		}
 
-		// Verify user is enrolled in the project
+		// Ensure user is enrolled in the project (auto-join if not already)
 		isInProject, err := r.DB.Queries.IsUserInProject(ctx, sqlc.IsUserInProjectParams{
 			Userid:    uid,
 			Projectid: projectID,
@@ -1167,7 +1167,14 @@ func (r *mutationResolver) AddTeamMembers(ctx context.Context, teamID string, us
 			return nil, fmt.Errorf("failed to check if user %s is in project: %w", uid, err)
 		}
 		if !isInProject {
-			return nil, fmt.Errorf("user %s is not enrolled in the project", uid)
+			// Automatically join the user to the project
+			err = r.DB.Queries.JoinProject(ctx, sqlc.JoinProjectParams{
+				Userid:    uid,
+				Projectid: projectID,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to join user %s to project: %w", uid, err)
+			}
 		}
 
 		// If not forcing, check if user is already on another team in this project
@@ -1247,87 +1254,6 @@ func (r *mutationResolver) RemoveTeamMembers(ctx context.Context, teamID string,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to remove user %s from team: %w", uid, err)
-		}
-
-		// Invalidate user cache
-		r.Cache.InvalidateUser(uid)
-	}
-
-	// Invalidate team cache
-	r.Cache.InvalidateTeam(teamID)
-
-	// Return the team (loaders already returns model.Team)
-	return &model.Team{
-		ID:          team.ID,
-		Name:        team.Name,
-		Description: team.Description,
-		JoinCode:    team.JoinCode,
-	}, nil
-}
-
-// BulkAssignUsersToTeam is the resolver for the bulkAssignUsersToTeam field.
-func (r *mutationResolver) BulkAssignUsersToTeam(ctx context.Context, teamID string, userIds []string) (*model.Team, error) {
-	// Get authenticated user ID from context
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return nil, fmt.Errorf("user not authenticated")
-	}
-
-	// Check authorization
-	if !r.RoleService.CanManageTeam(ctx, userID, teamID) {
-		return nil, fmt.Errorf("unauthorized to manage this team")
-	}
-
-	// Load team to verify it exists
-	teamThunk := r.Loaders.TeamByIDLoader.Load(ctx, teamID)
-	team, err := teamThunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load team: %w", err)
-	}
-
-	// Get team's project ID
-	projectID, err := r.DB.Queries.GetTeamProjectID(ctx, teamID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get team project ID: %w", err)
-	}
-
-	// Add each user to the team (always removing from existing teams first)
-	for _, uid := range userIds {
-		// Verify user exists
-		userThunk := r.Loaders.UserByIDLoader.Load(ctx, uid)
-		_, err := userThunk()
-		if err != nil {
-			return nil, fmt.Errorf("failed to load user %s: %w", uid, err)
-		}
-
-		// Verify user is enrolled in the project
-		isInProject, err := r.DB.Queries.IsUserInProject(ctx, sqlc.IsUserInProjectParams{
-			Userid:    uid,
-			Projectid: projectID,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to check if user %s is in project: %w", uid, err)
-		}
-		if !isInProject {
-			return nil, fmt.Errorf("user %s is not enrolled in the project", uid)
-		}
-
-		// Always remove user from all teams in this project first
-		err = r.DB.Queries.RemoveUserFromTeamsInProject(ctx, sqlc.RemoveUserFromTeamsInProjectParams{
-			Userid:    uid,
-			Projectid: projectID,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to remove user %s from existing teams: %w", uid, err)
-		}
-
-		// Add user to the team
-		err = r.DB.Queries.AddTeamMember(ctx, sqlc.AddTeamMemberParams{
-			Teamid: teamID,
-			Userid: uid,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to add user %s to team: %w", uid, err)
 		}
 
 		// Invalidate user cache
