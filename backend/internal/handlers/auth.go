@@ -292,11 +292,11 @@ func (h *AuthHandler) generateWayfarerToken(userID string) (string, error) {
 	roles := make([]string, 0, len(userRoles))
 	if len(userRoles) > 0 {
 		for _, role := range userRoles {
-			roles = append(roles, role.Role)
+			roles = append(roles, strings.ToLower(role.Role))
 		}
 	} else {
 		// Default to USER role if no roles found
-		roles = append(roles, string(services.RoleUser))
+		roles = append(roles, strings.ToLower(string(services.RoleUser)))
 	}
 
 	claims := WayfarerClaims{
