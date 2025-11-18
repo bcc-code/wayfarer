@@ -419,13 +419,13 @@ export type Mutation = {
   archiveProject: Scalars['Boolean']['output'];
   assignChallengeToEvent: Challenge;
   assignRole: UserRole;
+  assignTeamLead: Team;
   assignTeamsToSuperTeam: SuperTeam;
   assignUserToEvent: User;
   assignUserToProject: User;
   awardAchievement: Achievement;
   awardSuperTeamAchievement: Achievement;
   awardTeamAchievement: Achievement;
-  bulkAssignUsersToTeam: Team;
   bulkAwardAchievements: Array<Achievement>;
   bulkAwardSuperTeamAchievements: Array<Achievement>;
   bulkAwardTeamAchievements: Array<Achievement>;
@@ -459,6 +459,7 @@ export type Mutation = {
   moveEvent: Event;
   publishChallenge: Challenge;
   recordStreakActivity: StreakAchievement;
+  regenerateJoinCode: Team;
   removeTeamMembers: Team;
   removeUserFromProject: User;
   revokeAchievement: Scalars['Boolean']['output'];
@@ -480,6 +481,7 @@ export type Mutation = {
 
 
 export type MutationAddTeamMembersArgs = {
+  force?: InputMaybe<Scalars['Boolean']['input']>;
   teamId: Scalars['ID']['input'];
   userIds: Array<Scalars['ID']['input']>;
 };
@@ -525,6 +527,12 @@ export type MutationAssignRoleArgs = {
 };
 
 
+export type MutationAssignTeamLeadArgs = {
+  teamId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
 export type MutationAssignTeamsToSuperTeamArgs = {
   superTeamId: Scalars['ID']['input'];
   teamIds: Array<Scalars['ID']['input']>;
@@ -558,12 +566,6 @@ export type MutationAwardSuperTeamAchievementArgs = {
 export type MutationAwardTeamAchievementArgs = {
   achievementId: Scalars['ID']['input'];
   teamId: Scalars['ID']['input'];
-};
-
-
-export type MutationBulkAssignUsersToTeamArgs = {
-  teamId: Scalars['ID']['input'];
-  userIds: Array<Scalars['ID']['input']>;
 };
 
 
@@ -753,6 +755,11 @@ export type MutationRecordStreakActivityArgs = {
   achievementId: Scalars['ID']['input'];
   currentStreak: Scalars['Int']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationRegenerateJoinCodeArgs = {
+  teamId: Scalars['ID']['input'];
 };
 
 
@@ -1252,6 +1259,7 @@ export type Team = {
   __typename?: 'Team';
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
+  joinCode: Scalars['String']['output'];
   members: Array<User>;
   name: Scalars['String']['output'];
   parentProject: Project;
