@@ -332,6 +332,9 @@ func (r *mutationResolver) CreateEvent(ctx context.Context, projectID string, in
 		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
 	}
 
+	// Invalidate project cache to reflect new event in lists
+	r.Cache.InvalidateProject(projectID)
+
 	return event, nil
 }
 
@@ -430,6 +433,7 @@ func (r *mutationResolver) DeleteEvent(ctx context.Context, id string) (bool, er
 
 	// Invalidate cache
 	r.Cache.InvalidateEvent(id)
+	r.Cache.InvalidateProject(existingEvent.ProjectID)
 
 	return true, nil
 }
@@ -535,6 +539,9 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 		return nil, fmt.Errorf("failed to create challenge: %w", err)
 	}
 
+	// Invalidate project cache to reflect new challenge in lists
+	r.Cache.InvalidateProject(projectID)
+
 	// Convert to GraphQL model
 	return convertRowToChallenge(row), nil
 }
@@ -629,6 +636,7 @@ func (r *mutationResolver) DeleteChallenge(ctx context.Context, id string) (bool
 
 	// Invalidate cache
 	r.Cache.InvalidateChallenge(id)
+	r.Cache.InvalidateProject(existingChallenge.ProjectID)
 
 	return true, nil
 }
