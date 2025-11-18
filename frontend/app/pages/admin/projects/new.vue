@@ -90,38 +90,32 @@ async function createProject(event: FormSubmitEvent<Schema>) {
         />
       </UContainer>
     </div>
-    <UContainer>
+    <UContainer class="py-12">
       <UForm
         :state
         :schema="schema"
-        class="space-y-6 py-12"
+        class="flex max-w-md flex-col gap-6"
         @submit.prevent="createProject"
       >
-        <UFormField name="name" label="Name" required>
-          <UInput
-            v-model="state.name"
-            placeholder="New project"
-            size="xl"
-            type="text"
-            autofocus
-            required
-          />
+        <UFormField name="name" label="Name">
+          <UInput v-model="state.name" size="xl" required class="w-full" />
         </UFormField>
-        <UFormField name="description" label="Description">
-          <UTextarea v-model="state.description" class="w-sm" autoresize />
+        <UFormField
+          name="description"
+          label="Description"
+          hint="(optional)"
+          help="This is only for admins to have better context"
+        >
+          <UTextarea v-model="state.description" class="w-full" autoresize />
         </UFormField>
-        <div class="flex gap-4">
-          <UFormField name="startDate" label="Starts at" required>
-            <UInput v-model="state.startDate" type="date" required />
-          </UFormField>
-          <UFormField name="endDate" label="Ends at" required>
-            <UInput v-model="state.endDate" type="date" required />
-          </UFormField>
-        </div>
+        <DateRangeField
+          v-model:start="state.startDate"
+          v-model:end="state.endDate"
+        />
         <UFormField label="Accent color">
           <ColorPickerInput v-model="state.branding.colors.primary" />
         </UFormField>
-        <UButton type="submit">Create project</UButton>
+        <UButton type="submit" size="lg" block>Create project</UButton>
       </UForm>
     </UContainer>
   </div>

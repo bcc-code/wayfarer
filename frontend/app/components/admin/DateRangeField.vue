@@ -1,19 +1,23 @@
 <script setup lang="ts">
 import { parseDate, type DateValue } from '@internationalized/date'
 
+const props = defineProps<{
+  placeholder?: string
+}>()
+
 const start = defineModel<string>('start')
 const end = defineModel<string>('end')
 
 const isOpen = ref(false)
 
 function toDateString(dateStr: string | undefined): string | undefined {
-  if (!dateStr) return undefined
+  if (!dateStr || dateStr.trim() === '') return undefined
   // Handle both ISO timestamps and date-only strings
   return dateStr.split('T')[0]
 }
 
 function toCalendarDate(dateStr: string | undefined): DateValue | undefined {
-  if (!dateStr) return undefined
+  if (!dateStr || dateStr.trim() === '') return undefined
   const dateOnly = toDateString(dateStr)
   if (!dateOnly) return undefined
   try {
@@ -76,9 +80,9 @@ const range = computed<{ start: DateValue; end: DateValue } | undefined>({
 })
 
 function formatDate(dateStr: string | undefined) {
-  if (!dateStr) return ''
+  if (!dateStr || dateStr.trim() === '') return undefined
   const dateOnly = toDateString(dateStr)
-  if (!dateOnly) return ''
+  if (!dateOnly) return undefined
   const date = new Date(dateOnly + 'T00:00:00')
   return date.toLocaleDateString('en-US', {
     month: 'short',
@@ -100,19 +104,14 @@ const displayValue = computed(() => {
   if (endFormatted) {
     return endFormatted
   }
-  return ''
+  return props.placeholder || 'Select a date range'
 })
 </script>
 
 <template>
   <UFormField label="Project duration">
     <UPopover v-model:open="isOpen" :ui="{ content: 'p-1' }">
-      <UInput
-        :model-value="displayValue"
-        placeholder="Select date range"
-        readonly
-        icon="lucide:calendar"
-      />
+      <UInput :model-value="displayValue" readonly icon="lucide:calendar" />
       <template #content>
         <UCalendar v-model="range" range />
       </template>

@@ -173,7 +173,6 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
         </UFormField>
         <UButton type="submit" size="lg" block>Save changes</UButton>
       </UForm>
-      <pre>{{ state }}</pre>
     </UContainer>
   </div>
 </template>
