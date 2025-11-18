@@ -25,12 +25,6 @@ gql(`
       }
     }
   }
-
-  mutation UpdateProject($id: ID!, $input: UpdateProjectInput!) {
-    updateProject(id: $id, input: $input) {
-      id
-    }
-  }
 `)
 
 const route = useRoute('admin-projects-projectId-edit')

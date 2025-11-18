@@ -22,7 +22,7 @@ gql(`
         }
       }
     }
-    achievements(filter: { projectId: $projectId }) {
+    achievements(first: 50, filter: { projectId: $projectId }) {
       edges {
         node {
           id
@@ -30,7 +30,7 @@ gql(`
         }
       }
     }
-    events(filter: { projectId: $projectId }) {
+    events(first: 50, filter: { projectId: $projectId }) {
       edges {
         node {
           id
@@ -38,7 +38,7 @@ gql(`
         }
       }
     }
-    challenges(filter: { projectId: $projectId }) {
+    challenges(first: 50, filter: { projectId: $projectId }) {
       edges {
         node {
           id
@@ -46,7 +46,7 @@ gql(`
         }
       }
     }
-    streaks(filter: { projectId: $projectId }) {
+    streaks(first: 50, filter: { projectId: $projectId }) {
       edges {
         node {
           id
@@ -90,6 +90,26 @@ watch(data, () => {
     state.branding = data.value.project.branding
   }
 })
+
+const toast = useToast()
+const { executeMutation } = useDeleteChallengeMutation()
+const deleteChallenge = (challengeId: string) => {
+  executeMutation({ challengeId })
+    .then(() => {
+      toast.add({
+        title: 'Challenge deleted',
+        description: 'The challenge has been deleted',
+        color: 'success',
+      })
+    })
+    .catch((error) => {
+      toast.add({
+        title: error.name,
+        description: error.message,
+        color: 'error',
+      })
+    })
+}
 </script>
 
 <template>
@@ -158,7 +178,22 @@ watch(data, () => {
             <UTable :data="data.events.edges.map((e) => e.node)" />
           </template>
           <template #challenges>
-            <UTable :data="data.challenges.edges.map((e) => e.node)" />
+            <UTable
+              :data="data.challenges.edges.map((e) => e.node)"
+              :columns="[
+                { accessorKey: 'id' },
+                { accessorKey: 'name' },
+                { id: 'action' },
+              ]"
+            >
+              <template #action-cell="{ row }">
+                <UButton
+                  color="error"
+                  @click="() => deleteChallenge(row.original.id)"
+                  >Delete</UButton
+                >
+              </template>
+            </UTable>
           </template>
           <template #streaks>
             <UTable :data="data.streaks.edges.map((e) => e.node)" />

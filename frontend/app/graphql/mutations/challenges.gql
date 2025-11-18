@@ -1,0 +1,3 @@
+mutation DeleteChallenge($challengeId: ID!) {
+  deleteChallenge(id: $challengeId)
+}

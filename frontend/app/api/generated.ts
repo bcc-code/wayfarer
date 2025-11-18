@@ -1415,6 +1415,28 @@ export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, membersId: string, gender: Gender, birthdate: string, church: { __typename?: 'Church', id: string, name: string, country: string, category: ChurchCategory }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType, church?: { __typename?: 'Church', id: string } | null, team?: { __typename?: 'Team', id: string } | null, project?: { __typename?: 'Project', id: string } | null } | null }> } };
 
+export type DeleteChallengeMutationVariables = Exact<{
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteChallengeMutation = { __typename?: 'Mutation', deleteChallenge: boolean };
+
+export type CreateProjectMutationVariables = Exact<{
+  input: CreateProjectInput;
+}>;
+
+
+export type CreateProjectMutation = { __typename?: 'Mutation', createProject: { __typename?: 'Project', id: string } };
+
+export type UpdateProjectMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateProjectInput;
+}>;
+
+
+export type UpdateProjectMutation = { __typename?: 'Mutation', updateProject: { __typename?: 'Project', id: string } };
+
 export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1437,14 +1459,6 @@ export type AdminProjectEditPageQueryVariables = Exact<{
 
 export type AdminProjectEditPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, archivedAt?: boolean | null, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', primary: string } } } };
 
-export type UpdateProjectMutationVariables = Exact<{
-  id: Scalars['ID']['input'];
-  input: UpdateProjectInput;
-}>;
-
-
-export type UpdateProjectMutation = { __typename?: 'Mutation', updateProject: { __typename?: 'Project', id: string } };
-
 export type AdminProjectPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
@@ -1461,13 +1475,6 @@ export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AdminProjectsPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, colors: { __typename?: 'Colors', primary: string } } } }> } };
-
-export type CreateProjectMutationVariables = Exact<{
-  input: CreateProjectInput;
-}>;
-
-
-export type CreateProjectMutation = { __typename?: 'Mutation', createProject: { __typename?: 'Project', id: string } };
 
 export type AdminUserPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -1555,6 +1562,37 @@ export const GetMeDocument = gql`
 
 export function useGetMeQuery(options?: Omit<Urql.UseQueryArgs<never, GetMeQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<GetMeQuery, GetMeQueryVariables | undefined>({ query: GetMeDocument, variables: undefined, ...options });
+};
+export const DeleteChallengeDocument = gql`
+    mutation DeleteChallenge($challengeId: ID!) {
+  deleteChallenge(id: $challengeId)
+}
+    `;
+
+export function useDeleteChallengeMutation() {
+  return Urql.useMutation<DeleteChallengeMutation, DeleteChallengeMutationVariables>(DeleteChallengeDocument);
+};
+export const CreateProjectDocument = gql`
+    mutation CreateProject($input: CreateProjectInput!) {
+  createProject(input: $input) {
+    id
+  }
+}
+    `;
+
+export function useCreateProjectMutation() {
+  return Urql.useMutation<CreateProjectMutation, CreateProjectMutationVariables>(CreateProjectDocument);
+};
+export const UpdateProjectDocument = gql`
+    mutation UpdateProject($id: ID!, $input: UpdateProjectInput!) {
+  updateProject(id: $id, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useUpdateProjectMutation() {
+  return Urql.useMutation<UpdateProjectMutation, UpdateProjectMutationVariables>(UpdateProjectDocument);
 };
 export const AdminSidebarDocument = gql`
     query AdminSidebar {
@@ -1646,17 +1684,6 @@ export const AdminProjectEditPageDocument = gql`
 export function useAdminProjectEditPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectEditPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectEditPageQuery, AdminProjectEditPageQueryVariables | undefined>({ query: AdminProjectEditPageDocument, variables: undefined, ...options });
 };
-export const UpdateProjectDocument = gql`
-    mutation UpdateProject($id: ID!, $input: UpdateProjectInput!) {
-  updateProject(id: $id, input: $input) {
-    id
-  }
-}
-    `;
-
-export function useUpdateProjectMutation() {
-  return Urql.useMutation<UpdateProjectMutation, UpdateProjectMutationVariables>(UpdateProjectDocument);
-};
 export const AdminProjectPageDocument = gql`
     query AdminProjectPage($projectId: ID!) {
   project(id: $projectId) {
@@ -1673,7 +1700,7 @@ export const AdminProjectPageDocument = gql`
       }
     }
   }
-  achievements(filter: {projectId: $projectId}) {
+  achievements(first: 50, filter: {projectId: $projectId}) {
     edges {
       node {
         id
@@ -1681,7 +1708,7 @@ export const AdminProjectPageDocument = gql`
       }
     }
   }
-  events(filter: {projectId: $projectId}) {
+  events(first: 50, filter: {projectId: $projectId}) {
     edges {
       node {
         id
@@ -1689,7 +1716,7 @@ export const AdminProjectPageDocument = gql`
       }
     }
   }
-  challenges(filter: {projectId: $projectId}) {
+  challenges(first: 50, filter: {projectId: $projectId}) {
     edges {
       node {
         id
@@ -1697,7 +1724,7 @@ export const AdminProjectPageDocument = gql`
       }
     }
   }
-  streaks(filter: {projectId: $projectId}) {
+  streaks(first: 50, filter: {projectId: $projectId}) {
     edges {
       node {
         id
@@ -1735,17 +1762,6 @@ export const AdminProjectsPageDocument = gql`
 
 export function useAdminProjectsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectsPageQuery, AdminProjectsPageQueryVariables | undefined>({ query: AdminProjectsPageDocument, variables: undefined, ...options });
-};
-export const CreateProjectDocument = gql`
-    mutation CreateProject($input: CreateProjectInput!) {
-  createProject(input: $input) {
-    id
-  }
-}
-    `;
-
-export function useCreateProjectMutation() {
-  return Urql.useMutation<CreateProjectMutation, CreateProjectMutationVariables>(CreateProjectDocument);
 };
 export const AdminUserPageDocument = gql`
     query AdminUserPage($id: ID!) {

@@ -7,14 +7,6 @@ definePageMeta({
   middleware: 'admin',
 })
 
-gql(`
-  mutation CreateProject($input: CreateProjectInput!) {
-    createProject(input: $input) {
-      id
-    }
-  }
-`)
-
 const schema = z.object({
   name: z.string().nonempty({ error: 'Name is required' }),
   description: z.string().optional(),
