@@ -28,7 +28,7 @@ export type Achievement = {
   event?: Maybe<Event>;
   hidden: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
-  image: Scalars['String']['output'];
+  image?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   points: Scalars['Int']['output'];
   project: Project;
@@ -69,13 +69,13 @@ export type Article = {
   author: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   title: Scalars['String']['output'];
-  url: Scalars['String']['output'];
+  url?: Maybe<Scalars['String']['output']>;
 };
 
 export type ArticleInput = {
   author: Scalars['String']['input'];
   title: Scalars['String']['input'];
-  url: Scalars['String']['input'];
+  url?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type AssignRoleInput = {
@@ -105,11 +105,11 @@ export type Challenge = {
   endTime?: Maybe<Scalars['DateTime']['output']>;
   event?: Maybe<Event>;
   id: Scalars['ID']['output'];
-  image: Scalars['String']['output'];
+  image?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   project: Project;
   publishedAt: Scalars['DateTime']['output'];
-  url: Scalars['String']['output'];
+  url?: Maybe<Scalars['String']['output']>;
   userCompletedAt?: Maybe<Scalars['DateTime']['output']>;
 };
 
@@ -182,13 +182,11 @@ export type ColorsInput = {
 
 export type CreateChallengeInput = {
   buttonText: Scalars['String']['input'];
-  description: Scalars['HTML']['input'];
+  description?: InputMaybe<Scalars['HTML']['input']>;
   endTime?: InputMaybe<Scalars['DateTime']['input']>;
-  eventId?: InputMaybe<Scalars['ID']['input']>;
-  image: Scalars['String']['input'];
+  image?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
-  projectId: Scalars['ID']['input'];
-  url: Scalars['String']['input'];
+  url?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateChurchInput = {
@@ -209,7 +207,7 @@ export type CreateListeningAchievementInput = {
   description: Scalars['String']['input'];
   eventId?: InputMaybe<Scalars['ID']['input']>;
   hidden: Scalars['Boolean']['input'];
-  image: Scalars['String']['input'];
+  image?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   points: Scalars['Int']['input'];
   projectId: Scalars['ID']['input'];
@@ -230,7 +228,7 @@ export type CreateReadingAchievementInput = {
   description: Scalars['String']['input'];
   eventId?: InputMaybe<Scalars['ID']['input']>;
   hidden: Scalars['Boolean']['input'];
-  image: Scalars['String']['input'];
+  image?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   points: Scalars['Int']['input'];
   projectId: Scalars['ID']['input'];
@@ -241,7 +239,7 @@ export type CreateSimpleAchievementInput = {
   description: Scalars['String']['input'];
   eventId?: InputMaybe<Scalars['ID']['input']>;
   hidden: Scalars['Boolean']['input'];
-  image: Scalars['String']['input'];
+  image?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   points: Scalars['Int']['input'];
   projectId: Scalars['ID']['input'];
@@ -252,7 +250,7 @@ export type CreateStreakAchievementInput = {
   description: Scalars['String']['input'];
   eventId?: InputMaybe<Scalars['ID']['input']>;
   hidden: Scalars['Boolean']['input'];
-  image: Scalars['String']['input'];
+  image?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   neededStreak: Scalars['Int']['input'];
   points: Scalars['Int']['input'];
@@ -403,7 +401,7 @@ export type ListeningAchievement = Achievement & {
   event?: Maybe<Event>;
   hidden: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
-  image: Scalars['String']['output'];
+  image?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   nextTrack: Track;
   points: Scalars['Int']['output'];
@@ -595,7 +593,9 @@ export type MutationBulkCompleteChallengesArgs = {
 
 
 export type MutationBulkCreateChallengesArgs = {
+  eventId: Scalars['ID']['input'];
   inputs: Array<CreateChallengeInput>;
+  projectId: Scalars['ID']['input'];
 };
 
 
@@ -613,7 +613,9 @@ export type MutationCompleteChallengeArgs = {
 
 
 export type MutationCreateChallengeArgs = {
+  eventId: Scalars['ID']['input'];
   input: CreateChallengeInput;
+  projectId: Scalars['ID']['input'];
 };
 
 
@@ -1096,7 +1098,7 @@ export type ReadingAchievement = Achievement & {
   event?: Maybe<Event>;
   hidden: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
-  image: Scalars['String']['output'];
+  image?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   nextArticle: Article;
   points: Scalars['Int']['output'];
@@ -1144,7 +1146,7 @@ export type SimpleAchievement = Achievement & {
   event?: Maybe<Event>;
   hidden: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
-  image: Scalars['String']['output'];
+  image?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   points: Scalars['Int']['output'];
   project: Project;
@@ -1174,7 +1176,7 @@ export type StreakAchievement = Achievement & {
   event?: Maybe<Event>;
   hidden: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
-  image: Scalars['String']['output'];
+  image?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   neededStreak: Scalars['Int']['output'];
   points: Scalars['Int']['output'];
@@ -1282,13 +1284,13 @@ export type Track = {
   __typename?: 'Track';
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
-  image: Scalars['String']['output'];
+  image?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
 };
 
 export type TrackInput = {
   description: Scalars['String']['input'];
-  image: Scalars['String']['input'];
+  image?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
 };
 
@@ -1465,7 +1467,7 @@ export type AdminUsersPageQuery = { __typename?: 'Query', users: { __typename?: 
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', challenges: Array<{ __typename?: 'Challenge', id: string, name: string, description: any, userCompletedAt?: any | null, image: string, url: string, buttonText: string, publishedAt: any, endTime?: any | null }> } };
+export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', challenges: Array<{ __typename?: 'Challenge', id: string, name: string, description: any, userCompletedAt?: any | null, image?: string | null, url?: string | null, buttonText: string, publishedAt: any, endTime?: any | null }> } };
 
 export type StandingsPageQueryVariables = Exact<{
   entityType: LeaderboardEntityType;
@@ -1479,10 +1481,10 @@ export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, image?: string | null, projects: Array<{ __typename?: 'Project', id: string, achievements: Array<
-        | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
-        | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
-        | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
-        | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image: string, hidden: boolean, achievedAt?: any | null, points: number }
+        | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
+        | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
+        | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
+        | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       > }> } };
 
 export type UnitPageQueryVariables = Exact<{ [key: string]: never; }>;

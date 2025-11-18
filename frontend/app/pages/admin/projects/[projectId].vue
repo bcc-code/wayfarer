@@ -118,20 +118,36 @@ watch(data, () => {
       <ErrorState v-else-if="error" :error class="h-[600px]" />
       <template v-else-if="data">
         <header class="my-12">
-          <div class="my-8 flex flex-col gap-6">
-            <div>
-              <h1 class="mb-2 text-3xl">
-                {{ state.name }}
-              </h1>
-              <p v-if="state.description" class="text-muted max-w-2xl">
-                {{ state.description }}
-              </p>
+          <div>
+            <div class="mb-6 flex justify-between gap-4">
+              <UFormField>
+                <NuxtImg
+                  v-if="state.branding.logo"
+                  :src="state.branding.logo"
+                  width="64"
+                  class="rounded"
+                />
+                <div
+                  v-else
+                  class="bg-muted text-dimmed flex size-16 items-center justify-center rounded text-lg"
+                >
+                  <UIcon name="lucide:image" />
+                </div>
+              </UFormField>
+              <UFormField label="Accent color">
+                <ColorPickerInput v-model="state.branding.colors.primary" />
+              </UFormField>
             </div>
+            <h1 class="mb-2 text-3xl">
+              {{ state.name }}
+            </h1>
+            <p v-if="state.description" class="text-muted max-w-2xl">
+              {{ state.description }}
+            </p>
           </div>
         </header>
         <UTabs
           :items="[
-            { label: 'Branding', slot: 'branding' },
             { label: 'Events', slot: 'events' },
             { label: 'Challenges', slot: 'challenges' },
             { label: 'Streaks', slot: 'streaks' },
@@ -139,16 +155,6 @@ watch(data, () => {
           ]"
           variant="link"
         >
-          <template #branding>
-            <div class="mt-4 flex flex-col gap-4">
-              <UFormField label="Logo">
-                <NuxtImg :src="state.branding.logo || ''" width="64" />
-              </UFormField>
-              <UFormField label="Accent color">
-                <ColorPickerInput v-model="state.branding.colors.primary" />
-              </UFormField>
-            </div>
-          </template>
           <template #events>
             <UTable :data="data.events.edges.map((e) => e.node)" />
           </template>
