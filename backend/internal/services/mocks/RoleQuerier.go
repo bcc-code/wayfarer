@@ -106,6 +106,72 @@ func (_c *MockRoleQuerier_AssignRole_Call) RunAndReturn(run func(ctx context.Con
 	return _c
 }
 
+// GetTeamProjectID provides a mock function for the type MockRoleQuerier
+func (_mock *MockRoleQuerier) GetTeamProjectID(ctx context.Context, teamid string) (string, error) {
+	ret := _mock.Called(ctx, teamid)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTeamProjectID")
+	}
+
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+		return returnFunc(ctx, teamid)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = returnFunc(ctx, teamid)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, teamid)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRoleQuerier_GetTeamProjectID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTeamProjectID'
+type MockRoleQuerier_GetTeamProjectID_Call struct {
+	*mock.Call
+}
+
+// GetTeamProjectID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - teamid string
+func (_e *MockRoleQuerier_Expecter) GetTeamProjectID(ctx interface{}, teamid interface{}) *MockRoleQuerier_GetTeamProjectID_Call {
+	return &MockRoleQuerier_GetTeamProjectID_Call{Call: _e.mock.On("GetTeamProjectID", ctx, teamid)}
+}
+
+func (_c *MockRoleQuerier_GetTeamProjectID_Call) Run(run func(ctx context.Context, teamid string)) *MockRoleQuerier_GetTeamProjectID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRoleQuerier_GetTeamProjectID_Call) Return(s string, err error) *MockRoleQuerier_GetTeamProjectID_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *MockRoleQuerier_GetTeamProjectID_Call) RunAndReturn(run func(ctx context.Context, teamid string) (string, error)) *MockRoleQuerier_GetTeamProjectID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetUserRoles provides a mock function for the type MockRoleQuerier
 func (_mock *MockRoleQuerier) GetUserRoles(ctx context.Context, userID string) ([]*sqlc.UserRole, error) {
 	ret := _mock.Called(ctx, userID)
@@ -434,6 +500,72 @@ func (_c *MockRoleQuerier_HasRoleInTeam_Call) Return(b bool, err error) *MockRol
 }
 
 func (_c *MockRoleQuerier_HasRoleInTeam_Call) RunAndReturn(run func(ctx context.Context, arg sqlc.HasRoleInTeamParams) (bool, error)) *MockRoleQuerier_HasRoleInTeam_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// HasTeamMemberFromChurch provides a mock function for the type MockRoleQuerier
+func (_mock *MockRoleQuerier) HasTeamMemberFromChurch(ctx context.Context, arg sqlc.HasTeamMemberFromChurchParams) (bool, error) {
+	ret := _mock.Called(ctx, arg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for HasTeamMemberFromChurch")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, sqlc.HasTeamMemberFromChurchParams) (bool, error)); ok {
+		return returnFunc(ctx, arg)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, sqlc.HasTeamMemberFromChurchParams) bool); ok {
+		r0 = returnFunc(ctx, arg)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, sqlc.HasTeamMemberFromChurchParams) error); ok {
+		r1 = returnFunc(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRoleQuerier_HasTeamMemberFromChurch_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'HasTeamMemberFromChurch'
+type MockRoleQuerier_HasTeamMemberFromChurch_Call struct {
+	*mock.Call
+}
+
+// HasTeamMemberFromChurch is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg sqlc.HasTeamMemberFromChurchParams
+func (_e *MockRoleQuerier_Expecter) HasTeamMemberFromChurch(ctx interface{}, arg interface{}) *MockRoleQuerier_HasTeamMemberFromChurch_Call {
+	return &MockRoleQuerier_HasTeamMemberFromChurch_Call{Call: _e.mock.On("HasTeamMemberFromChurch", ctx, arg)}
+}
+
+func (_c *MockRoleQuerier_HasTeamMemberFromChurch_Call) Run(run func(ctx context.Context, arg sqlc.HasTeamMemberFromChurchParams)) *MockRoleQuerier_HasTeamMemberFromChurch_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 sqlc.HasTeamMemberFromChurchParams
+		if args[1] != nil {
+			arg1 = args[1].(sqlc.HasTeamMemberFromChurchParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRoleQuerier_HasTeamMemberFromChurch_Call) Return(b bool, err error) *MockRoleQuerier_HasTeamMemberFromChurch_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *MockRoleQuerier_HasTeamMemberFromChurch_Call) RunAndReturn(run func(ctx context.Context, arg sqlc.HasTeamMemberFromChurchParams) (bool, error)) *MockRoleQuerier_HasTeamMemberFromChurch_Call {
 	_c.Call.Return(run)
 	return _c
 }
