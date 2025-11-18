@@ -22,6 +22,8 @@ type RoleQuerier interface {
 	HasRoleInChurch(ctx context.Context, arg sqlc.HasRoleInChurchParams) (bool, error)
 	HasRoleInProject(ctx context.Context, arg sqlc.HasRoleInProjectParams) (bool, error)
 	HasRoleInTeam(ctx context.Context, arg sqlc.HasRoleInTeamParams) (bool, error)
+	HasTeamMemberFromChurch(ctx context.Context, arg sqlc.HasTeamMemberFromChurchParams) (bool, error)
+	GetTeamProjectID(ctx context.Context, teamid string) (string, error)
 }
 
 // RoleType represents the available roles in the system
@@ -311,8 +313,8 @@ func (s *RoleService) CanManageChurch(ctx context.Context, userID, churchID stri
 // Returns true if user is:
 // - superadmin
 // - admin
-// - church admin for the team's church
 // - project admin for the team's project
+// - church admin (if any team member is from their church)
 // - team lead for this team
 func (s *RoleService) CanManageTeam(ctx context.Context, userID, teamID string) bool {
 	// Check if user is superadmin or admin
@@ -325,9 +327,51 @@ func (s *RoleService) CanManageTeam(ctx context.Context, userID, teamID string) 
 		return true
 	}
 
-	// TODO: Check if user is church admin or project admin for the team's church/project
-	// This requires additional queries to get the team's church and project
-	// For now, return false - will be implemented when needed
+	// Get the team's project ID
+	projectID, err := s.queries.GetTeamProjectID(ctx, teamID)
+	if err != nil {
+		slog.Error("error getting team project ID", "teamID", teamID, "error", err)
+		return false
+	}
+
+	// Check if user is project admin for the team's project
+	if s.HasRoleInProject(ctx, userID, RoleProjectAdmin, projectID) {
+		return true
+	}
+
+	// Check if user is church admin and team has member from their church
+	// Get all user roles to find church admin roles
+	roles, err := s.LoadUserRoles(ctx, userID)
+	if err != nil {
+		slog.Error("error loading user roles", "userID", userID, "error", err)
+		return false
+	}
+
+	for _, role := range roles {
+		if role.Role == string(RoleChurchAdmin) && role.ChurchID != nil {
+			// Check if team has any member from this church
+			hasMember, err := s.queries.HasTeamMemberFromChurch(ctx, sqlc.HasTeamMemberFromChurchParams{
+				Teamid:   teamID,
+				Churchid: *role.ChurchID,
+			})
+			if err != nil {
+				slog.Error("error checking team member from church", "teamID", teamID, "churchID", *role.ChurchID, "error", err)
+				continue
+			}
+			if hasMember {
+				return true
+			}
+		}
+	}
 
 	return false
+}
+
+// CanDeleteTeam checks if a user can delete a specific team
+// Only admins and superadmins can delete teams (not team leads)
+// Returns true if user is:
+// - superadmin
+// - admin
+func (s *RoleService) CanDeleteTeam(ctx context.Context, userID string) bool {
+	return s.IsAdmin(ctx, userID)
 }

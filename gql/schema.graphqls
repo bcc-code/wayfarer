@@ -106,9 +106,11 @@ type Mutation {
     createTeam(projectId: ID!, input: CreateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin"])
     updateTeam(id: ID!, input: UpdateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin"])
     deleteTeam(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-    addTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin"])
+    addTeamMembers(teamId: ID!, userIds: [ID!]!, force: Boolean): Team! @requireRole(roles: ["admin", "superadmin"])
     removeTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin"])
     bulkAssignUsersToTeam(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin"])
+    regenerateJoinCode(teamId: ID!): Team! @requireRole(roles: ["admin", "superadmin"])
+    assignTeamLead(teamId: ID!, userId: ID!): Team! @requireRole(roles: ["admin", "superadmin"])
 
     # SuperTeam Management
     createSuperTeam(projectId: ID!, input: CreateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])

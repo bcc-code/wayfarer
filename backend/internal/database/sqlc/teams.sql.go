@@ -11,6 +11,58 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const AddTeamMember = `-- name: AddTeamMember :exec
+INSERT INTO team_members (team_id, user_id)
+VALUES ($1::text, $2::text)
+ON CONFLICT (team_id, user_id) DO NOTHING
+`
+
+type AddTeamMemberParams struct {
+	Teamid string `json:"teamid"`
+	Userid string `json:"userid"`
+}
+
+func (q *Queries) AddTeamMember(ctx context.Context, arg AddTeamMemberParams) error {
+	_, err := q.db.Exec(ctx, AddTeamMember, arg.Teamid, arg.Userid)
+	return err
+}
+
+const AssignTeamLeadRole = `-- name: AssignTeamLeadRole :one
+INSERT INTO user_roles (id, user_id, role, team_id, assigned_by, assigned_at)
+VALUES ($1::text, $2::text, 'TEAM_LEAD', $3::text, $4::text, $5::timestamptz)
+RETURNING id, user_id, role, church_id, project_id, team_id, assigned_by, assigned_at
+`
+
+type AssignTeamLeadRoleParams struct {
+	ID         string             `json:"id"`
+	Userid     string             `json:"userid"`
+	Teamid     string             `json:"teamid"`
+	Assignedby string             `json:"assignedby"`
+	Assignedat pgtype.Timestamptz `json:"assignedat"`
+}
+
+func (q *Queries) AssignTeamLeadRole(ctx context.Context, arg AssignTeamLeadRoleParams) (*UserRole, error) {
+	row := q.db.QueryRow(ctx, AssignTeamLeadRole,
+		arg.ID,
+		arg.Userid,
+		arg.Teamid,
+		arg.Assignedby,
+		arg.Assignedat,
+	)
+	var i UserRole
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Role,
+		&i.ChurchID,
+		&i.ProjectID,
+		&i.TeamID,
+		&i.AssignedBy,
+		&i.AssignedAt,
+	)
+	return &i, err
+}
+
 const CountTeamsFiltered = `-- name: CountTeamsFiltered :one
 SELECT COUNT(DISTINCT t.id)
 FROM teams t
@@ -49,6 +101,102 @@ func (q *Queries) CountTeamsFiltered(ctx context.Context, arg CountTeamsFiltered
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const CreateTeam = `-- name: CreateTeam :one
+INSERT INTO teams (id, project_id, name, description, join_code)
+VALUES ($1::text, $2::text, $3::text, $4::text, $5::text)
+RETURNING id, project_id, name, description, join_code, super_team_id, created_at, updated_at
+`
+
+type CreateTeamParams struct {
+	ID          string `json:"id"`
+	Projectid   string `json:"projectid"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Joincode    string `json:"joincode"`
+}
+
+func (q *Queries) CreateTeam(ctx context.Context, arg CreateTeamParams) (*Team, error) {
+	row := q.db.QueryRow(ctx, CreateTeam,
+		arg.ID,
+		arg.Projectid,
+		arg.Name,
+		arg.Description,
+		arg.Joincode,
+	)
+	var i Team
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.JoinCode,
+		&i.SuperTeamID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const DeleteTeam = `-- name: DeleteTeam :exec
+DELETE FROM teams
+WHERE id = $1::text
+`
+
+func (q *Queries) DeleteTeam(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, DeleteTeam, id)
+	return err
+}
+
+const GetTeamByJoinCode = `-- name: GetTeamByJoinCode :one
+SELECT id, project_id, name, description, join_code, super_team_id, created_at, updated_at
+FROM teams
+WHERE join_code = $1::text
+`
+
+func (q *Queries) GetTeamByJoinCode(ctx context.Context, joincode string) (*Team, error) {
+	row := q.db.QueryRow(ctx, GetTeamByJoinCode, joincode)
+	var i Team
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.JoinCode,
+		&i.SuperTeamID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const GetTeamLeadUserID = `-- name: GetTeamLeadUserID :one
+SELECT user_id
+FROM user_roles
+WHERE team_id = $1::text
+  AND role = 'TEAM_LEAD'
+LIMIT 1
+`
+
+func (q *Queries) GetTeamLeadUserID(ctx context.Context, teamid string) (string, error) {
+	row := q.db.QueryRow(ctx, GetTeamLeadUserID, teamid)
+	var user_id string
+	err := row.Scan(&user_id)
+	return user_id, err
+}
+
+const GetTeamProjectID = `-- name: GetTeamProjectID :one
+SELECT project_id
+FROM teams
+WHERE id = $1::text
+`
+
+func (q *Queries) GetTeamProjectID(ctx context.Context, teamid string) (string, error) {
+	row := q.db.QueryRow(ctx, GetTeamProjectID, teamid)
+	var project_id string
+	err := row.Scan(&project_id)
+	return project_id, err
 }
 
 const GetTeamsByIDs = `-- name: GetTeamsByIDs :many
@@ -300,6 +448,174 @@ type GetUserTeamByProjectIDParams struct {
 
 func (q *Queries) GetUserTeamByProjectID(ctx context.Context, arg GetUserTeamByProjectIDParams) (*Team, error) {
 	row := q.db.QueryRow(ctx, GetUserTeamByProjectID, arg.Userid, arg.Projectid)
+	var i Team
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.JoinCode,
+		&i.SuperTeamID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const HasTeamMemberFromChurch = `-- name: HasTeamMemberFromChurch :one
+SELECT EXISTS(
+    SELECT 1
+    FROM team_members tm
+    INNER JOIN users u ON tm.user_id = u.id
+    WHERE tm.team_id = $1::text
+      AND u.church_id = $2::text
+)
+`
+
+type HasTeamMemberFromChurchParams struct {
+	Teamid   string `json:"teamid"`
+	Churchid string `json:"churchid"`
+}
+
+func (q *Queries) HasTeamMemberFromChurch(ctx context.Context, arg HasTeamMemberFromChurchParams) (bool, error) {
+	row := q.db.QueryRow(ctx, HasTeamMemberFromChurch, arg.Teamid, arg.Churchid)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const IsUserTeamMember = `-- name: IsUserTeamMember :one
+SELECT EXISTS(
+    SELECT 1
+    FROM team_members
+    WHERE team_id = $1::text
+      AND user_id = $2::text
+)
+`
+
+type IsUserTeamMemberParams struct {
+	Teamid string `json:"teamid"`
+	Userid string `json:"userid"`
+}
+
+func (q *Queries) IsUserTeamMember(ctx context.Context, arg IsUserTeamMemberParams) (bool, error) {
+	row := q.db.QueryRow(ctx, IsUserTeamMember, arg.Teamid, arg.Userid)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const JoinCodeExists = `-- name: JoinCodeExists :one
+SELECT EXISTS(
+    SELECT 1
+    FROM teams
+    WHERE join_code = $1::text
+)
+`
+
+func (q *Queries) JoinCodeExists(ctx context.Context, joincode string) (bool, error) {
+	row := q.db.QueryRow(ctx, JoinCodeExists, joincode)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const RegenerateJoinCode = `-- name: RegenerateJoinCode :one
+UPDATE teams
+SET join_code = $1::text, updated_at = now()
+WHERE id = $2::text
+RETURNING id, project_id, name, description, join_code, super_team_id, created_at, updated_at
+`
+
+type RegenerateJoinCodeParams struct {
+	Joincode string `json:"joincode"`
+	ID       string `json:"id"`
+}
+
+func (q *Queries) RegenerateJoinCode(ctx context.Context, arg RegenerateJoinCodeParams) (*Team, error) {
+	row := q.db.QueryRow(ctx, RegenerateJoinCode, arg.Joincode, arg.ID)
+	var i Team
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.JoinCode,
+		&i.SuperTeamID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const RemoveTeamLeadRole = `-- name: RemoveTeamLeadRole :exec
+DELETE FROM user_roles
+WHERE user_id = $1::text
+  AND team_id = $2::text
+  AND role = 'TEAM_LEAD'
+`
+
+type RemoveTeamLeadRoleParams struct {
+	Userid string `json:"userid"`
+	Teamid string `json:"teamid"`
+}
+
+func (q *Queries) RemoveTeamLeadRole(ctx context.Context, arg RemoveTeamLeadRoleParams) error {
+	_, err := q.db.Exec(ctx, RemoveTeamLeadRole, arg.Userid, arg.Teamid)
+	return err
+}
+
+const RemoveTeamMember = `-- name: RemoveTeamMember :exec
+DELETE FROM team_members
+WHERE team_id = $1::text AND user_id = $2::text
+`
+
+type RemoveTeamMemberParams struct {
+	Teamid string `json:"teamid"`
+	Userid string `json:"userid"`
+}
+
+func (q *Queries) RemoveTeamMember(ctx context.Context, arg RemoveTeamMemberParams) error {
+	_, err := q.db.Exec(ctx, RemoveTeamMember, arg.Teamid, arg.Userid)
+	return err
+}
+
+const RemoveUserFromTeamsInProject = `-- name: RemoveUserFromTeamsInProject :exec
+DELETE FROM team_members
+WHERE user_id = $1::text
+  AND team_id IN (
+    SELECT id FROM teams WHERE project_id = $2::text
+  )
+`
+
+type RemoveUserFromTeamsInProjectParams struct {
+	Userid    string `json:"userid"`
+	Projectid string `json:"projectid"`
+}
+
+func (q *Queries) RemoveUserFromTeamsInProject(ctx context.Context, arg RemoveUserFromTeamsInProjectParams) error {
+	_, err := q.db.Exec(ctx, RemoveUserFromTeamsInProject, arg.Userid, arg.Projectid)
+	return err
+}
+
+const UpdateTeam = `-- name: UpdateTeam :one
+UPDATE teams
+SET
+    name = COALESCE($1::text, name),
+    description = COALESCE($2::text, description),
+    updated_at = now()
+WHERE id = $3::text
+RETURNING id, project_id, name, description, join_code, super_team_id, created_at, updated_at
+`
+
+type UpdateTeamParams struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	ID          string `json:"id"`
+}
+
+func (q *Queries) UpdateTeam(ctx context.Context, arg UpdateTeamParams) (*Team, error) {
+	row := q.db.QueryRow(ctx, UpdateTeam, arg.Name, arg.Description, arg.ID)
 	var i Team
 	err := row.Scan(
 		&i.ID,
