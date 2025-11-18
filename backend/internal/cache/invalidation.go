@@ -169,8 +169,24 @@ func (c *CacheWithRegistry) InvalidateUser(userID string) {
 
 // InvalidateProject invalidates all cache entries related to a project
 func (c *CacheWithRegistry) InvalidateProject(projectID string) {
+	// Direct project entity
 	c.Delete(ProjectKey(projectID))
+
+	// All related entities (events, teams, challenges, etc. by project)
 	c.DeletePrefix("project:" + projectID)
+
+	// All project list/filter queries (any filter combination)
+	// These are invalidated globally since filter query cache keys are hashed
+	// and don't contain the project ID
+	c.DeletePrefix(PrefixProjectsFilter)
+	c.DeletePrefix(PrefixProjectsCount)
+
+	// All leaderboard data for this project
+	// Leaderboard keys use pattern: leaderboard:{context}:{contextID}:...
+	c.DeletePrefix("leaderboard:project:" + projectID)
+	c.DeletePrefix("leaderboard:position:project:" + projectID)
+	c.DeletePrefix("leaderboard:count:project:" + projectID)
+	c.DeletePrefix("leaderboard:full:project:" + projectID)
 }
 
 // InvalidateEvent invalidates all cache entries related to an event
