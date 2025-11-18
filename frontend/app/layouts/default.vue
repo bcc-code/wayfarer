@@ -88,6 +88,7 @@ const { left, height, width, top } = useElementBounding(activeMenuItem)
 
 <template>
   <div class="text-default relative mx-auto h-full w-full max-w-xl">
+    <ThemePresetSwitcher />
     <div class="h-full">
       <slot />
     </div>

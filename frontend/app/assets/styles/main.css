@@ -25,14 +25,15 @@
   --color-border-default: rgb(40 37 33 / 0.15);
 
   /* Border radius */
-  --radius-list: 24px;
-  --radius-list-inset: 20px;
-  --radius-navigation: 32px;
-  --radius-navigation-inset: 28px;
-  --radius-card: 48px;
-  --radius-button-large: 26px;
-  --radius-button-medium: 22px;
-  --radius-button-small: 18px;
+  --radius-multiplier: 1;
+  --radius-list: calc(24px * var(--radius-multiplier));
+  --radius-list-inset: calc(20px * var(--radius-multiplier));
+  --radius-navigation: calc(32px * var(--radius-multiplier));
+  --radius-navigation-inset: calc(28px * var(--radius-multiplier));
+  --radius-card: calc(48px * var(--radius-multiplier));
+  --radius-button-large: calc(26px * var(--radius-multiplier));
+  --radius-button-medium: calc(22px * var(--radius-multiplier));
+  --radius-button-small: calc(18px * var(--radius-multiplier));
 
   /* Spacing */
   --spacing-default: 20px;
