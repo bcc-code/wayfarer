@@ -32,10 +32,10 @@ func TestChallengeCacheBehavior(t *testing.T) {
 		ID:          challengeID,
 		Name:        "Test Challenge",
 		Description: scalars.HTML("Test description"),
-		Image:       "https://example.com/image.png",
+		Image:       stringPtr("https://example.com/image.png"),
 		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
 		EventID:     nil,
-		URL:         "https://example.com/challenge",
+		URL:         stringPtr("https://example.com/challenge"),
 		ButtonText:  "Start Challenge",
 		PublishedAt: scalars.DateTime{Time: publishedAt},
 		EndTime:     &scalars.DateTime{Time: endTime},
@@ -57,7 +57,7 @@ func TestChallengeCacheBehavior(t *testing.T) {
 	assert.Equal(t, challengeID, cachedChallenge.ID)
 	assert.Equal(t, "Test Challenge", cachedChallenge.Name)
 	assert.Equal(t, scalars.HTML("Test description"), cachedChallenge.Description)
-	assert.Equal(t, "https://example.com/challenge", cachedChallenge.URL)
+	assert.Equal(t, "https://example.com/challenge", *cachedChallenge.URL)
 	assert.Equal(t, "Start Challenge", cachedChallenge.ButtonText)
 	assert.NotNil(t, cachedChallenge.EndTime)
 }
@@ -74,9 +74,9 @@ func TestChallengeCacheExpiry(t *testing.T) {
 		ID:          challengeID,
 		Name:        "Test Challenge",
 		Description: scalars.HTML("Test description"),
-		Image:       "https://example.com/image.png",
+		Image:       stringPtr("https://example.com/image.png"),
 		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-		URL:         "https://example.com/challenge",
+		URL:         stringPtr("https://example.com/challenge"),
 		ButtonText:  "Start Challenge",
 		PublishedAt: scalars.DateTime{Time: publishedAt},
 	}
@@ -104,10 +104,10 @@ func TestChallengeModel(t *testing.T) {
 		ID:          "CL01K8XV6VK9ED2GBZSQ2VDTAT8T",
 		Name:        "Daily Bible Reading",
 		Description: scalars.HTML("<p>Read the daily passage</p>"),
-		Image:       "https://example.com/bible.png",
+		Image:       stringPtr("https://example.com/bible.png"),
 		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
 		EventID:     &eventID,
-		URL:         "https://example.com/bible-reading",
+		URL:         stringPtr("https://example.com/bible-reading"),
 		ButtonText:  "Read Now",
 		PublishedAt: scalars.DateTime{Time: publishedAt},
 		EndTime:     &scalars.DateTime{Time: endTime},
@@ -116,7 +116,7 @@ func TestChallengeModel(t *testing.T) {
 	assert.Equal(t, "CL01K8XV6VK9ED2GBZSQ2VDTAT8T", challenge.ID)
 	assert.Equal(t, "Daily Bible Reading", challenge.Name)
 	assert.Equal(t, scalars.HTML("<p>Read the daily passage</p>"), challenge.Description)
-	assert.Equal(t, "https://example.com/bible-reading", challenge.URL)
+	assert.Equal(t, "https://example.com/bible-reading", *challenge.URL)
 	assert.Equal(t, "Read Now", challenge.ButtonText)
 	assert.NotNil(t, challenge.EventID)
 	assert.Equal(t, "EV01K8XV6VK9ED2GBZSQ2VDTAT8T", *challenge.EventID)
@@ -130,10 +130,10 @@ func TestChallengeModelWithoutEndTime(t *testing.T) {
 		ID:          "CL01K8XV6VK9ED2GBZSQ2VDTAT8T",
 		Name:        "Ongoing Challenge",
 		Description: scalars.HTML("Challenge with no end time"),
-		Image:       "https://example.com/ongoing.png",
+		Image:       stringPtr("https://example.com/ongoing.png"),
 		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
 		EventID:     nil,
-		URL:         "https://example.com/ongoing",
+		URL:         stringPtr("https://example.com/ongoing"),
 		ButtonText:  "Participate",
 		PublishedAt: scalars.DateTime{Time: publishedAt},
 		EndTime:     nil,
@@ -157,9 +157,9 @@ func TestMultipleChallengesInCache(t *testing.T) {
 			ID:          "CL01K8XV6VK9ED2GBZSQ2VDTAT8T",
 			Name:        "Challenge 1",
 			Description: scalars.HTML("First challenge"),
-			Image:       "https://example.com/1.png",
+			Image:       stringPtr("https://example.com/1.png"),
 			ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-			URL:         "https://example.com/challenge1",
+			URL:         stringPtr("https://example.com/challenge1"),
 			ButtonText:  "Start",
 			PublishedAt: scalars.DateTime{Time: publishedAt},
 			EndTime:     &scalars.DateTime{Time: endTime},
@@ -168,9 +168,9 @@ func TestMultipleChallengesInCache(t *testing.T) {
 			ID:          "CL01K8XV6VK9ED2GBZSQ2VDTAT9T",
 			Name:        "Challenge 2",
 			Description: scalars.HTML("Second challenge"),
-			Image:       "https://example.com/2.png",
+			Image:       stringPtr("https://example.com/2.png"),
 			ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-			URL:         "https://example.com/challenge2",
+			URL:         stringPtr("https://example.com/challenge2"),
 			ButtonText:  "Begin",
 			PublishedAt: scalars.DateTime{Time: publishedAt},
 			EndTime:     nil,
@@ -179,9 +179,9 @@ func TestMultipleChallengesInCache(t *testing.T) {
 			ID:          "CL01K8XV6VK9ED2GBZSQ2VDTATZZ",
 			Name:        "Challenge 3",
 			Description: scalars.HTML("Third challenge"),
-			Image:       "https://example.com/3.png",
+			Image:       stringPtr("https://example.com/3.png"),
 			ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-			URL:         "https://example.com/challenge3",
+			URL:         stringPtr("https://example.com/challenge3"),
 			ButtonText:  "Go",
 			PublishedAt: scalars.DateTime{Time: publishedAt},
 			EndTime:     &scalars.DateTime{Time: endTime},

@@ -10,6 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func stringPtr(s string) *string {
+	return &s
+}
+
 func TestAchievementCacheKey(t *testing.T) {
 	achievementID := "AC01K8XV6VK9ED2GBZSQ2VDTAT8T"
 	cacheKey := cache.AchievementKey(achievementID)
@@ -28,7 +32,7 @@ func TestAchievementCacheBehavior(t *testing.T) {
 		ID:          achievementID,
 		Name:        "Test Achievement",
 		Description: "Test description",
-		Image:       "https://example.com/image.png",
+		Image:       stringPtr("https://example.com/image.png"),
 		Points:      100,
 		Hidden:      false,
 		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
@@ -63,7 +67,7 @@ func TestAchievementCacheExpiry(t *testing.T) {
 		ID:          achievementID,
 		Name:        "Test Achievement",
 		Description: "Test description",
-		Image:       "https://example.com/image.png",
+		Image:       stringPtr("https://example.com/image.png"),
 		Points:      100,
 		Hidden:      false,
 		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
@@ -88,7 +92,7 @@ func TestSimpleAchievementModel(t *testing.T) {
 		ID:          "AC01K8XV6VK9ED2GBZSQ2VDTAT8T",
 		Name:        "First Achievement",
 		Description: "Complete your first challenge",
-		Image:       "https://example.com/achievement.png",
+		Image:       stringPtr("https://example.com/achievement.png"),
 		Points:      50,
 		Hidden:      false,
 		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
@@ -107,13 +111,13 @@ func TestReadingAchievementModel(t *testing.T) {
 			ID:     "RA01K8XV6VK9ED2GBZSQ2VDTAT8T",
 			Title:  "Article 1",
 			Author: "John Doe",
-			URL:    "https://example.com/article1",
+			URL:    stringPtr("https://example.com/article1"),
 		},
 		{
 			ID:     "RA01K8XV6VK9ED2GBZSQ2VDTAT9T",
 			Title:  "Article 2",
 			Author: "Jane Smith",
-			URL:    "https://example.com/article2",
+			URL:    stringPtr("https://example.com/article2"),
 		},
 	}
 
@@ -121,7 +125,7 @@ func TestReadingAchievementModel(t *testing.T) {
 		ID:          "AC01K8XV6VK9ED2GBZSQ2VDTAT8T",
 		Name:        "Reading Achievement",
 		Description: "Read all required articles",
-		Image:       "https://example.com/reading.png",
+		Image:       stringPtr("https://example.com/reading.png"),
 		Points:      100,
 		Hidden:      false,
 		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
@@ -142,13 +146,13 @@ func TestListeningAchievementModel(t *testing.T) {
 			ID:          "LT01K8XV6VK9ED2GBZSQ2VDTAT8T",
 			Name:        "Track 1",
 			Description: "First track description",
-			Image:       "https://example.com/track1.jpg",
+			Image:       stringPtr("https://example.com/track1.jpg"),
 		},
 		{
 			ID:          "LT01K8XV6VK9ED2GBZSQ2VDTAT9T",
 			Name:        "Track 2",
 			Description: "Second track description",
-			Image:       "https://example.com/track2.jpg",
+			Image:       stringPtr("https://example.com/track2.jpg"),
 		},
 	}
 
@@ -156,7 +160,7 @@ func TestListeningAchievementModel(t *testing.T) {
 		ID:              "AC01K8XV6VK9ED2GBZSQ2VDTAT8T",
 		Name:            "Listening Achievement",
 		Description:     "Listen to all required tracks",
-		Image:           "https://example.com/listening.png",
+		Image:           stringPtr("https://example.com/listening.png"),
 		Points:          150,
 		Hidden:          false,
 		ProjectID:       "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
@@ -176,7 +180,7 @@ func TestStreakAchievementModel(t *testing.T) {
 		ID:           "AC01K8XV6VK9ED2GBZSQ2VDTAT8T",
 		Name:         "Streak Achievement",
 		Description:  "Maintain a 7-day streak",
-		Image:        "https://example.com/streak.png",
+		Image:        stringPtr("https://example.com/streak.png"),
 		Points:       200,
 		Hidden:       false,
 		ProjectID:    "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
@@ -200,7 +204,7 @@ func TestMultipleAchievementsInCache(t *testing.T) {
 			ID:          "AC01K8XV6VK9ED2GBZSQ2VDTAT8T",
 			Name:        "Simple Achievement",
 			Description: "First achievement",
-			Image:       "https://example.com/1.png",
+			Image:       stringPtr("https://example.com/1.png"),
 			Points:      50,
 			Hidden:      false,
 			ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
@@ -209,7 +213,7 @@ func TestMultipleAchievementsInCache(t *testing.T) {
 			ID:          "AC01K8XV6VK9ED2GBZSQ2VDTAT9T",
 			Name:        "Reading Achievement",
 			Description: "Second achievement",
-			Image:       "https://example.com/2.png",
+			Image:       stringPtr("https://example.com/2.png"),
 			Points:      100,
 			Hidden:      false,
 			ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
@@ -220,7 +224,7 @@ func TestMultipleAchievementsInCache(t *testing.T) {
 			ID:              "AC01K8XV6VK9ED2GBZSQ2VDTATZZ",
 			Name:            "Listening Achievement",
 			Description:     "Third achievement",
-			Image:           "https://example.com/3.png",
+			Image:           stringPtr("https://example.com/3.png"),
 			Points:          150,
 			Hidden:          false,
 			ProjectID:       "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
@@ -253,7 +257,7 @@ func TestHiddenAchievement(t *testing.T) {
 		ID:          "AC01K8XV6VK9ED2GBZSQ2VDTAT8T",
 		Name:        "Secret Achievement",
 		Description: "Hidden achievement",
-		Image:       "https://example.com/secret.png",
+		Image:       stringPtr("https://example.com/secret.png"),
 		Points:      500,
 		Hidden:      true,
 		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
