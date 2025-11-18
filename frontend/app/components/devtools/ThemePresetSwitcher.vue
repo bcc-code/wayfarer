@@ -2,9 +2,9 @@
 import { onKeyDown } from '@vueuse/core'
 
 const themes = [
-  { color: '#A2D3C2', rounding: 1 },
+  { color: '#EA8C55', rounding: 1 },
   { color: '#5448C8', rounding: 0.5 },
-  { color: '#F6D8AE', rounding: 0 },
+  { color: '#BEEDAA', rounding: 0 },
 ]
 function setTheme(theme: number) {
   const themeData = themes[theme]
