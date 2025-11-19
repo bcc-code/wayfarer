@@ -16,6 +16,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/bcc-media/wayfarer/internal/utils"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -940,32 +941,894 @@ func (r *mutationResolver) BulkCreateChallenges(ctx context.Context, projectID s
 
 // CreateSimpleAchievement is the resolver for the createSimpleAchievement field.
 func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input model.CreateSimpleAchievementInput) (*model.SimpleAchievement, error) {
-	panic(fmt.Errorf("not implemented: CreateSimpleAchievement - createSimpleAchievement"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageProject(ctx, userID, input.ProjectID) {
+		return nil, fmt.Errorf("unauthorized to create achievements in this project")
+	}
+
+	// Generate new achievement ID
+	achievementID := ulid.NewAchievementID()
+
+	// Build params for database
+	params := sqlc.CreateAchievementParams{
+		ID:              achievementID,
+		AchievementType: "SIMPLE",
+		ProjectID:       input.ProjectID,
+		Name:            input.Name,
+		Description:     input.Description,
+		Points:          int32(input.Points),
+		Hidden:          input.Hidden,
+	}
+
+	// Set optional fields
+	if input.EventID != nil {
+		params.EventID = *input.EventID
+	}
+	if input.ChallengeID != nil {
+		params.ChallengeID = *input.ChallengeID
+	}
+	if input.Image != nil {
+		params.ImageUrl = *input.Image
+	}
+
+	// Create achievement in database
+	achievement, err := r.DB.Queries.CreateAchievement(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create simple achievement: %w", err)
+	}
+
+	// Invalidate project cache
+	r.Cache.InvalidateProject(input.ProjectID)
+
+	// Convert to GraphQL model
+	hidden := false
+	if achievement.Hidden != nil {
+		hidden = *achievement.Hidden
+	}
+
+	return &model.SimpleAchievement{
+		ID:          achievement.ID,
+		Name:        achievement.Name,
+		Description: achievement.Description,
+		Image:       achievement.ImageUrl,
+		Points:      int(achievement.Points),
+		Hidden:      hidden,
+		ProjectID:   achievement.ProjectID,
+		EventID:     achievement.EventID,
+		ChallengeID: achievement.ChallengeID,
+	}, nil
 }
 
 // CreateReadingAchievement is the resolver for the createReadingAchievement field.
 func (r *mutationResolver) CreateReadingAchievement(ctx context.Context, input model.CreateReadingAchievementInput) (*model.ReadingAchievement, error) {
-	panic(fmt.Errorf("not implemented: CreateReadingAchievement - createReadingAchievement"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageProject(ctx, userID, input.ProjectID) {
+		return nil, fmt.Errorf("unauthorized to create achievements in this project")
+	}
+
+	// Generate new achievement ID
+	achievementID := ulid.NewAchievementID()
+
+	// Start transaction
+	tx, err := r.DB.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	// Create queries with transaction
+	qtx := r.DB.Queries.WithTx(tx)
+
+	// Create achievement in database
+	achievementParams := sqlc.CreateAchievementParams{
+		ID:              achievementID,
+		AchievementType: "READING",
+		ProjectID:       input.ProjectID,
+		Name:            input.Name,
+		Description:     input.Description,
+		Points:          int32(input.Points),
+		Hidden:          input.Hidden,
+	}
+
+	// Set optional fields
+	if input.EventID != nil {
+		achievementParams.EventID = *input.EventID
+	}
+	if input.ChallengeID != nil {
+		achievementParams.ChallengeID = *input.ChallengeID
+	}
+	if input.Image != nil {
+		achievementParams.ImageUrl = *input.Image
+	}
+
+	achievement, err := qtx.CreateAchievement(ctx, achievementParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create reading achievement: %w", err)
+	}
+
+	// Create reading achievement junction
+	if err := qtx.CreateReadingAchievementJunction(ctx, achievementID); err != nil {
+		return nil, fmt.Errorf("failed to create reading achievement junction: %w", err)
+	}
+
+	// Create articles
+	articles := make([]model.Article, 0, len(input.Articles))
+	for _, articleInput := range input.Articles {
+		articleID := ulid.NewReadingAchievementID()
+
+		articleParams := sqlc.CreateReadingAchievementArticleParams{
+			ID:            articleID,
+			AchievementID: achievementID,
+			ArticleID:     articleInput.Title, // Using title as article_id for now
+			Title:         articleInput.Title,
+			Author:        articleInput.Author,
+		}
+
+		if articleInput.URL != nil {
+			articleParams.Url = *articleInput.URL
+		}
+
+		article, err := qtx.CreateReadingAchievementArticle(ctx, articleParams)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create article: %w", err)
+		}
+
+		articles = append(articles, model.Article{
+			ID:     article.ID,
+			Title:  article.Title,
+			Author: article.Author,
+			URL:    article.Url,
+		})
+	}
+
+	// Commit transaction
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	// Invalidate project cache
+	r.Cache.InvalidateProject(input.ProjectID)
+
+	// Convert to GraphQL model
+	hidden := false
+	if achievement.Hidden != nil {
+		hidden = *achievement.Hidden
+	}
+
+	return &model.ReadingAchievement{
+		ID:          achievement.ID,
+		Name:        achievement.Name,
+		Description: achievement.Description,
+		Image:       achievement.ImageUrl,
+		Points:      int(achievement.Points),
+		Hidden:      hidden,
+		ProjectID:   achievement.ProjectID,
+		EventID:     achievement.EventID,
+		ChallengeID: achievement.ChallengeID,
+		Articles:    articles,
+		UserHasRead: []model.Article{},
+		NextArticle: nil,
+	}, nil
 }
 
 // CreateListeningAchievement is the resolver for the createListeningAchievement field.
 func (r *mutationResolver) CreateListeningAchievement(ctx context.Context, input model.CreateListeningAchievementInput) (*model.ListeningAchievement, error) {
-	panic(fmt.Errorf("not implemented: CreateListeningAchievement - createListeningAchievement"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageProject(ctx, userID, input.ProjectID) {
+		return nil, fmt.Errorf("unauthorized to create achievements in this project")
+	}
+
+	// Generate new achievement ID
+	achievementID := ulid.NewAchievementID()
+
+	// Start transaction
+	tx, err := r.DB.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	// Create queries with transaction
+	qtx := r.DB.Queries.WithTx(tx)
+
+	// Create achievement in database
+	achievementParams := sqlc.CreateAchievementParams{
+		ID:              achievementID,
+		AchievementType: "LISTENING",
+		ProjectID:       input.ProjectID,
+		Name:            input.Name,
+		Description:     input.Description,
+		Points:          int32(input.Points),
+		Hidden:          input.Hidden,
+	}
+
+	// Set optional fields
+	if input.EventID != nil {
+		achievementParams.EventID = *input.EventID
+	}
+	if input.ChallengeID != nil {
+		achievementParams.ChallengeID = *input.ChallengeID
+	}
+	if input.Image != nil {
+		achievementParams.ImageUrl = *input.Image
+	}
+
+	achievement, err := qtx.CreateAchievement(ctx, achievementParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create listening achievement: %w", err)
+	}
+
+	// Create listening achievement junction
+	if err := qtx.CreateListeningAchievementJunction(ctx, achievementID); err != nil {
+		return nil, fmt.Errorf("failed to create listening achievement junction: %w", err)
+	}
+
+	// Create tracks
+	tracks := make([]model.Track, 0, len(input.Tracks))
+	for _, trackInput := range input.Tracks {
+		trackID := ulid.NewListeningAchievementID()
+
+		trackParams := sqlc.CreateListeningAchievementTrackParams{
+			ID:            trackID,
+			AchievementID: achievementID,
+			TrackID:       trackInput.Name, // Using name as track_id for now
+			Name:          trackInput.Name,
+			Description:   trackInput.Description,
+		}
+
+		if trackInput.Image != nil {
+			trackParams.ImageUrl = *trackInput.Image
+		}
+
+		track, err := qtx.CreateListeningAchievementTrack(ctx, trackParams)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create track: %w", err)
+		}
+
+		description := ""
+		if track.Description != nil {
+			description = *track.Description
+		}
+
+		tracks = append(tracks, model.Track{
+			ID:          track.ID,
+			Name:        track.Name,
+			Description: description,
+			Image:       track.ImageUrl,
+		})
+	}
+
+	// Commit transaction
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	// Invalidate project cache
+	r.Cache.InvalidateProject(input.ProjectID)
+
+	// Convert to GraphQL model
+	hidden := false
+	if achievement.Hidden != nil {
+		hidden = *achievement.Hidden
+	}
+
+	return &model.ListeningAchievement{
+		ID:              achievement.ID,
+		Name:            achievement.Name,
+		Description:     achievement.Description,
+		Image:           achievement.ImageUrl,
+		Points:          int(achievement.Points),
+		Hidden:          hidden,
+		ProjectID:       achievement.ProjectID,
+		EventID:         achievement.EventID,
+		ChallengeID:     achievement.ChallengeID,
+		Tracks:          tracks,
+		UserHasListened: []model.Track{},
+		NextTrack:       nil,
+	}, nil
 }
 
 // CreateStreakAchievement is the resolver for the createStreakAchievement field.
 func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input model.CreateStreakAchievementInput) (*model.StreakAchievement, error) {
-	panic(fmt.Errorf("not implemented: CreateStreakAchievement - createStreakAchievement"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageProject(ctx, userID, input.ProjectID) {
+		return nil, fmt.Errorf("unauthorized to create achievements in this project")
+	}
+
+	// Generate new achievement ID
+	achievementID := ulid.NewAchievementID()
+
+	// Start transaction
+	tx, err := r.DB.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	// Create queries with transaction
+	qtx := r.DB.Queries.WithTx(tx)
+
+	// Create achievement in database
+	achievementParams := sqlc.CreateAchievementParams{
+		ID:              achievementID,
+		AchievementType: "STREAK",
+		ProjectID:       input.ProjectID,
+		Name:            input.Name,
+		Description:     input.Description,
+		Points:          int32(input.Points),
+		Hidden:          input.Hidden,
+	}
+
+	// Set optional fields
+	if input.EventID != nil {
+		achievementParams.EventID = *input.EventID
+	}
+	if input.ChallengeID != nil {
+		achievementParams.ChallengeID = *input.ChallengeID
+	}
+	if input.Image != nil {
+		achievementParams.ImageUrl = *input.Image
+	}
+
+	achievement, err := qtx.CreateAchievement(ctx, achievementParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create streak achievement: %w", err)
+	}
+
+	// Create streak achievement data
+	streakDataParams := sqlc.CreateStreakAchievementDataParams{
+		AchievementID: achievementID,
+		StreakID:      input.StreakID,
+		NeededStreak:  int32(input.NeededStreak),
+	}
+
+	if err := qtx.CreateStreakAchievementData(ctx, streakDataParams); err != nil {
+		return nil, fmt.Errorf("failed to create streak achievement data: %w", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	// Invalidate project cache
+	r.Cache.InvalidateProject(input.ProjectID)
+
+	// Convert to GraphQL model
+	hidden := false
+	if achievement.Hidden != nil {
+		hidden = *achievement.Hidden
+	}
+
+	return &model.StreakAchievement{
+		ID:           achievement.ID,
+		Name:         achievement.Name,
+		Description:  achievement.Description,
+		Image:        achievement.ImageUrl,
+		Points:       int(achievement.Points),
+		Hidden:       hidden,
+		ProjectID:    achievement.ProjectID,
+		EventID:      achievement.EventID,
+		ChallengeID:  achievement.ChallengeID,
+		NeededStreak: input.NeededStreak,
+		StreakID:     input.StreakID,
+	}, nil
 }
 
 // UpdateAchievement is the resolver for the updateAchievement field.
 func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, input model.UpdateAchievementInput) (model.Achievement, error) {
-	panic(fmt.Errorf("not implemented: UpdateAchievement - updateAchievement"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load the achievement to verify it exists and get project ID
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, id)
+	existingAchievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	// Extract project ID from the concrete type
+	var projectID string
+	switch ach := existingAchievement.(type) {
+	case *model.SimpleAchievement:
+		projectID = ach.ProjectID
+	case *model.ReadingAchievement:
+		projectID = ach.ProjectID
+	case *model.ListeningAchievement:
+		projectID = ach.ProjectID
+	case *model.StreakAchievement:
+		projectID = ach.ProjectID
+	default:
+		return nil, fmt.Errorf("unknown achievement type")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageProject(ctx, userID, projectID) {
+		return nil, fmt.Errorf("unauthorized to update achievements in this project")
+	}
+
+	// Build params for database
+	params := sqlc.UpdateAchievementParams{
+		ID:          id,
+		Name:        input.Name,
+		Description: input.Description,
+		ImageUrl:    input.Image,
+		EventID:     input.EventID,
+		ChallengeID: input.ChallengeID,
+		Hidden:      input.Hidden,
+	}
+
+	// Convert points if provided
+	if input.Points != nil {
+		points := int32(*input.Points)
+		params.Points = &points
+	}
+
+	// Update achievement in database
+	_, err = r.DB.Queries.UpdateAchievement(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update achievement: %w", err)
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateProject(projectID)
+	r.Cache.InvalidateAchievement(id)
+	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
+
+	// Reload and return updated achievement
+	achievementThunk = r.Loaders.AchievementByIDLoader.Load(ctx, id)
+	updatedAchievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to reload achievement: %w", err)
+	}
+
+	return updatedAchievement, nil
+}
+
+// UpdateReadingAchievement is the resolver for the updateReadingAchievement field.
+func (r *mutationResolver) UpdateReadingAchievement(ctx context.Context, id string, input model.UpdateReadingAchievementInput) (*model.ReadingAchievement, error) {
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load the achievement to verify it exists and get project ID
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, id)
+	existingAchievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	// Verify it's a reading achievement
+	readingAch, ok := existingAchievement.(*model.ReadingAchievement)
+	if !ok {
+		return nil, fmt.Errorf("achievement is not a reading achievement")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageProject(ctx, userID, readingAch.ProjectID) {
+		return nil, fmt.Errorf("unauthorized to update achievements in this project")
+	}
+
+	// Start transaction if we need to update articles
+	if input.Articles != nil {
+		tx, err := r.DB.Pool.Begin(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to begin transaction: %w", err)
+		}
+		defer tx.Rollback(ctx)
+
+		qtx := r.DB.Queries.WithTx(tx)
+
+		// Update common fields if provided
+		if input.Name != nil || input.Description != nil || input.Image != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
+			params := sqlc.UpdateAchievementParams{
+				ID:          id,
+				Name:        input.Name,
+				Description: input.Description,
+				ImageUrl:    input.Image,
+				EventID:     input.EventID,
+				ChallengeID: input.ChallengeID,
+				Hidden:      input.Hidden,
+			}
+			if input.Points != nil {
+				points := int32(*input.Points)
+				params.Points = &points
+			}
+
+			if _, err := qtx.UpdateAchievement(ctx, params); err != nil {
+				return nil, fmt.Errorf("failed to update achievement: %w", err)
+			}
+		}
+
+		// Delete existing articles and create new ones
+		if err := qtx.DeleteReadingAchievementArticles(ctx, id); err != nil {
+			return nil, fmt.Errorf("failed to delete existing articles: %w", err)
+		}
+
+		// Create new articles
+		for _, articleInput := range input.Articles {
+			articleID := ulid.NewReadingAchievementID()
+			articleParams := sqlc.CreateReadingAchievementArticleParams{
+				ID:            articleID,
+				AchievementID: id,
+				ArticleID:     articleInput.Title,
+				Title:         articleInput.Title,
+				Author:        articleInput.Author,
+			}
+			if articleInput.URL != nil {
+				articleParams.Url = *articleInput.URL
+			}
+
+			if _, err := qtx.CreateReadingAchievementArticle(ctx, articleParams); err != nil {
+				return nil, fmt.Errorf("failed to create article: %w", err)
+			}
+		}
+
+		if err := tx.Commit(ctx); err != nil {
+			return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		}
+	} else {
+		// Just update common fields without transaction
+		params := sqlc.UpdateAchievementParams{
+			ID:          id,
+			Name:        input.Name,
+			Description: input.Description,
+			ImageUrl:    input.Image,
+			EventID:     input.EventID,
+			ChallengeID: input.ChallengeID,
+			Hidden:      input.Hidden,
+		}
+		if input.Points != nil {
+			points := int32(*input.Points)
+			params.Points = &points
+		}
+
+		if _, err := r.DB.Queries.UpdateAchievement(ctx, params); err != nil {
+			return nil, fmt.Errorf("failed to update achievement: %w", err)
+		}
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateProject(readingAch.ProjectID)
+	r.Cache.InvalidateAchievement(id)
+	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
+
+	// Reload and return updated achievement
+	achievementThunk = r.Loaders.AchievementByIDLoader.Load(ctx, id)
+	updatedAchievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to reload achievement: %w", err)
+	}
+
+	readingAchievement, ok := updatedAchievement.(*model.ReadingAchievement)
+	if !ok {
+		return nil, fmt.Errorf("updated achievement is not a reading achievement")
+	}
+
+	return readingAchievement, nil
+}
+
+// UpdateListeningAchievement is the resolver for the updateListeningAchievement field.
+func (r *mutationResolver) UpdateListeningAchievement(ctx context.Context, id string, input model.UpdateListeningAchievementInput) (*model.ListeningAchievement, error) {
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load the achievement to verify it exists and get project ID
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, id)
+	existingAchievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	// Verify it's a listening achievement
+	listeningAch, ok := existingAchievement.(*model.ListeningAchievement)
+	if !ok {
+		return nil, fmt.Errorf("achievement is not a listening achievement")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageProject(ctx, userID, listeningAch.ProjectID) {
+		return nil, fmt.Errorf("unauthorized to update achievements in this project")
+	}
+
+	// Start transaction if we need to update tracks
+	if input.Tracks != nil {
+		tx, err := r.DB.Pool.Begin(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to begin transaction: %w", err)
+		}
+		defer tx.Rollback(ctx)
+
+		qtx := r.DB.Queries.WithTx(tx)
+
+		// Update common fields if provided
+		if input.Name != nil || input.Description != nil || input.Image != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
+			params := sqlc.UpdateAchievementParams{
+				ID:          id,
+				Name:        input.Name,
+				Description: input.Description,
+				ImageUrl:    input.Image,
+				EventID:     input.EventID,
+				ChallengeID: input.ChallengeID,
+				Hidden:      input.Hidden,
+			}
+			if input.Points != nil {
+				points := int32(*input.Points)
+				params.Points = &points
+			}
+
+			if _, err := qtx.UpdateAchievement(ctx, params); err != nil {
+				return nil, fmt.Errorf("failed to update achievement: %w", err)
+			}
+		}
+
+		// Delete existing tracks and create new ones
+		if err := qtx.DeleteListeningAchievementTracks(ctx, id); err != nil {
+			return nil, fmt.Errorf("failed to delete existing tracks: %w", err)
+		}
+
+		// Create new tracks
+		for _, trackInput := range input.Tracks {
+			trackID := ulid.NewListeningAchievementID()
+			trackParams := sqlc.CreateListeningAchievementTrackParams{
+				ID:            trackID,
+				AchievementID: id,
+				TrackID:       trackInput.Name,
+				Name:          trackInput.Name,
+				Description:   trackInput.Description,
+			}
+			if trackInput.Image != nil {
+				trackParams.ImageUrl = *trackInput.Image
+			}
+
+			if _, err := qtx.CreateListeningAchievementTrack(ctx, trackParams); err != nil {
+				return nil, fmt.Errorf("failed to create track: %w", err)
+			}
+		}
+
+		if err := tx.Commit(ctx); err != nil {
+			return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		}
+	} else {
+		// Just update common fields without transaction
+		params := sqlc.UpdateAchievementParams{
+			ID:          id,
+			Name:        input.Name,
+			Description: input.Description,
+			ImageUrl:    input.Image,
+			EventID:     input.EventID,
+			ChallengeID: input.ChallengeID,
+			Hidden:      input.Hidden,
+		}
+		if input.Points != nil {
+			points := int32(*input.Points)
+			params.Points = &points
+		}
+
+		if _, err := r.DB.Queries.UpdateAchievement(ctx, params); err != nil {
+			return nil, fmt.Errorf("failed to update achievement: %w", err)
+		}
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateProject(listeningAch.ProjectID)
+	r.Cache.InvalidateAchievement(id)
+	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
+
+	// Reload and return updated achievement
+	achievementThunk = r.Loaders.AchievementByIDLoader.Load(ctx, id)
+	updatedAchievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to reload achievement: %w", err)
+	}
+
+	listeningAchievement, ok := updatedAchievement.(*model.ListeningAchievement)
+	if !ok {
+		return nil, fmt.Errorf("updated achievement is not a listening achievement")
+	}
+
+	return listeningAchievement, nil
+}
+
+// UpdateStreakAchievement is the resolver for the updateStreakAchievement field.
+func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id string, input model.UpdateStreakAchievementInput) (*model.StreakAchievement, error) {
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load the achievement to verify it exists and get project ID
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, id)
+	existingAchievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	// Verify it's a streak achievement
+	streakAch, ok := existingAchievement.(*model.StreakAchievement)
+	if !ok {
+		return nil, fmt.Errorf("achievement is not a streak achievement")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageProject(ctx, userID, streakAch.ProjectID) {
+		return nil, fmt.Errorf("unauthorized to update achievements in this project")
+	}
+
+	// Start transaction if we need to update streak data
+	if input.NeededStreak != nil || input.StreakID != nil {
+		tx, err := r.DB.Pool.Begin(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to begin transaction: %w", err)
+		}
+		defer tx.Rollback(ctx)
+
+		qtx := r.DB.Queries.WithTx(tx)
+
+		// Update common fields if provided
+		if input.Name != nil || input.Description != nil || input.Image != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
+			params := sqlc.UpdateAchievementParams{
+				ID:          id,
+				Name:        input.Name,
+				Description: input.Description,
+				ImageUrl:    input.Image,
+				EventID:     input.EventID,
+				ChallengeID: input.ChallengeID,
+				Hidden:      input.Hidden,
+			}
+			if input.Points != nil {
+				points := int32(*input.Points)
+				params.Points = &points
+			}
+
+			if _, err := qtx.UpdateAchievement(ctx, params); err != nil {
+				return nil, fmt.Errorf("failed to update achievement: %w", err)
+			}
+		}
+
+		// Update streak-specific data
+		streakParams := sqlc.UpdateStreakAchievementDataParams{
+			AchievementID: id,
+			StreakID:      input.StreakID,
+		}
+		if input.NeededStreak != nil {
+			neededStreak := int32(*input.NeededStreak)
+			streakParams.NeededStreak = &neededStreak
+		}
+
+		if err := qtx.UpdateStreakAchievementData(ctx, streakParams); err != nil {
+			return nil, fmt.Errorf("failed to update streak data: %w", err)
+		}
+
+		if err := tx.Commit(ctx); err != nil {
+			return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		}
+	} else {
+		// Just update common fields without transaction
+		params := sqlc.UpdateAchievementParams{
+			ID:          id,
+			Name:        input.Name,
+			Description: input.Description,
+			ImageUrl:    input.Image,
+			EventID:     input.EventID,
+			ChallengeID: input.ChallengeID,
+			Hidden:      input.Hidden,
+		}
+		if input.Points != nil {
+			points := int32(*input.Points)
+			params.Points = &points
+		}
+
+		if _, err := r.DB.Queries.UpdateAchievement(ctx, params); err != nil {
+			return nil, fmt.Errorf("failed to update achievement: %w", err)
+		}
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateProject(streakAch.ProjectID)
+	r.Cache.InvalidateAchievement(id)
+	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
+
+	// Reload and return updated achievement
+	achievementThunk = r.Loaders.AchievementByIDLoader.Load(ctx, id)
+	updatedAchievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to reload achievement: %w", err)
+	}
+
+	streakAchievement, ok := updatedAchievement.(*model.StreakAchievement)
+	if !ok {
+		return nil, fmt.Errorf("updated achievement is not a streak achievement")
+	}
+
+	return streakAchievement, nil
 }
 
 // DeleteAchievement is the resolver for the deleteAchievement field.
 func (r *mutationResolver) DeleteAchievement(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteAchievement - deleteAchievement"))
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return false, fmt.Errorf("user not authenticated")
+	}
+
+	// Load the achievement to verify it exists and get project ID
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, id)
+	existingAchievement, err := achievementThunk()
+	if err != nil {
+		return false, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	// Extract project ID from the concrete type
+	var projectID string
+	switch ach := existingAchievement.(type) {
+	case *model.SimpleAchievement:
+		projectID = ach.ProjectID
+	case *model.ReadingAchievement:
+		projectID = ach.ProjectID
+	case *model.ListeningAchievement:
+		projectID = ach.ProjectID
+	case *model.StreakAchievement:
+		projectID = ach.ProjectID
+	default:
+		return false, fmt.Errorf("unknown achievement type")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageProject(ctx, userID, projectID) {
+		return false, fmt.Errorf("unauthorized to delete achievements in this project")
+	}
+
+	// Delete achievement (cascade will handle related tables)
+	if err := r.DB.Queries.DeleteAchievement(ctx, id); err != nil {
+		return false, fmt.Errorf("failed to delete achievement: %w", err)
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateProject(projectID)
+	r.Cache.InvalidateAchievement(id)
+	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
+
+	return true, nil
 }
 
 // LinkAchievementToChallenge is the resolver for the linkAchievementToChallenge field.
@@ -1549,12 +2412,91 @@ func (r *mutationResolver) DeleteStreak(ctx context.Context, id string) (bool, e
 
 // AwardAchievement is the resolver for the awardAchievement field.
 func (r *mutationResolver) AwardAchievement(ctx context.Context, userID string, achievementID string) (model.Achievement, error) {
-	panic(fmt.Errorf("not implemented: AwardAchievement - awardAchievement"))
+	// First, get the achievement to know which project/event it belongs to
+	achievementRow, err := r.DB.Queries.GetAchievementsByIDs(ctx, []string{achievementID})
+	if err != nil || len(achievementRow) == 0 {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	projectID := achievementRow[0].ProjectID
+	var eventID *string
+	if achievementRow[0].EventID != nil && *achievementRow[0].EventID != "" {
+		eventID = achievementRow[0].EventID
+	}
+
+	// Award achievement to user (will return error if already awarded)
+	if err := r.DB.Queries.AwardUserAchievement(ctx, sqlc.AwardUserAchievementParams{
+		UserID:        userID,
+		AchievementID: achievementID,
+	}); err != nil {
+		return nil, fmt.Errorf("failed to award achievement: %w", err)
+	}
+
+	// Invalidate user cache
+	r.Cache.InvalidateUser(userID)
+	r.Cache.InvalidateAchievement(achievementID)
+
+	// Invalidate project leaderboards (this will also invalidate project-level church, team, and superteam leaderboards)
+	r.Cache.InvalidateProject(projectID)
+
+	// Invalidate event leaderboards if achievement belongs to an event
+	if eventID != nil {
+		r.Cache.InvalidateEvent(*eventID)
+	}
+
+	// Load and return the achievement
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
+	achievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	return achievement, nil
 }
 
 // RevokeAchievement is the resolver for the revokeAchievement field.
 func (r *mutationResolver) RevokeAchievement(ctx context.Context, userID string, achievementID string) (bool, error) {
-	panic(fmt.Errorf("not implemented: RevokeAchievement - revokeAchievement"))
+	// First, get the achievement to know which project/event it belongs to
+	achievementRow, err := r.DB.Queries.GetAchievementsByIDs(ctx, []string{achievementID})
+	if err != nil || len(achievementRow) == 0 {
+		return false, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	projectID := achievementRow[0].ProjectID
+	var eventID *string
+	if achievementRow[0].EventID != nil && *achievementRow[0].EventID != "" {
+		eventID = achievementRow[0].EventID
+	}
+
+	// Revoke achievement from user
+	if err := r.DB.Queries.RevokeUserAchievement(ctx, sqlc.RevokeUserAchievementParams{
+		UserID:        userID,
+		AchievementID: achievementID,
+	}); err != nil {
+		return false, fmt.Errorf("failed to revoke achievement: %w", err)
+	}
+
+	// Delete score journal entry for this achievement
+	if err := r.DB.Queries.DeleteScoreJournalByAchievement(ctx, sqlc.DeleteScoreJournalByAchievementParams{
+		UserID:        userID,
+		AchievementID: achievementID,
+	}); err != nil {
+		return false, fmt.Errorf("failed to delete score journal entry: %w", err)
+	}
+
+	// Invalidate user cache
+	r.Cache.InvalidateUser(userID)
+	r.Cache.InvalidateAchievement(achievementID)
+
+	// Invalidate project leaderboards
+	r.Cache.InvalidateProject(projectID)
+
+	// Invalidate event leaderboards if achievement belongs to an event
+	if eventID != nil {
+		r.Cache.InvalidateEvent(*eventID)
+	}
+
+	return true, nil
 }
 
 // CompleteChallenge is the resolver for the completeChallenge field.
@@ -1592,39 +2534,185 @@ func (r *mutationResolver) RecordStreakActivity(ctx context.Context, userID stri
 	panic(fmt.Errorf("not implemented: RecordStreakActivity - recordStreakActivity"))
 }
 
-// AdjustUserScore is the resolver for the adjustUserScore field.
-func (r *mutationResolver) AdjustUserScore(ctx context.Context, userID string, projectID string, points int, reason *string) (bool, error) {
-	panic(fmt.Errorf("not implemented: AdjustUserScore - adjustUserScore"))
-}
+// CreateScoreAdjustment is the resolver for the createScoreAdjustment field.
+func (r *mutationResolver) CreateScoreAdjustment(ctx context.Context, input model.CreateScoreAdjustmentInput) (*model.ScoreJournal, error) {
+	// Get authenticated user
+	awardedByUserID, ok := middleware.GetUserID(ctx)
+	if !ok || awardedByUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
 
-// AdjustTeamScore is the resolver for the adjustTeamScore field.
-func (r *mutationResolver) AdjustTeamScore(ctx context.Context, teamID string, projectID string, points int, reason *string) (bool, error) {
-	panic(fmt.Errorf("not implemented: AdjustTeamScore - adjustTeamScore"))
-}
+	// Generate new score journal entry ID
+	journalID := ulid.NewScoreJournalID()
 
-// AdjustSuperTeamScore is the resolver for the adjustSuperTeamScore field.
-func (r *mutationResolver) AdjustSuperTeamScore(ctx context.Context, superTeamID string, projectID string, points int, reason *string) (bool, error) {
-	panic(fmt.Errorf("not implemented: AdjustSuperTeamScore - adjustSuperTeamScore"))
+	// Build params
+	params := sqlc.CreateScoreJournalEntryParams{
+		ID:         journalID,
+		ProjectID:  input.ProjectID,
+		UserID:     input.UserID,
+		Points:     int32(input.Points),
+		SourceType: "MANUAL",
+		AwardedBy:  awardedByUserID,
+	}
+
+	// Set optional fields
+	if input.EventID != nil {
+		params.EventID = *input.EventID
+	}
+	if input.ChallengeID != nil {
+		params.ChallengeID = *input.ChallengeID
+	}
+	if input.Reason != nil {
+		params.Reason = *input.Reason
+	}
+
+	// Create entry
+	entry, err := r.DB.Queries.CreateScoreJournalEntry(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create score journal entry: %w", err)
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateUser(input.UserID)
+	r.Cache.InvalidateProject(input.ProjectID)
+	if input.EventID != nil {
+		r.Cache.InvalidateEvent(*input.EventID)
+	}
+
+	// Convert to GraphQL model
+	return &model.ScoreJournal{
+		ID:         entry.ID,
+		Points:     int(entry.Points),
+		SourceType: model.ScoreSourceTypeManual,
+		Reason:     entry.Reason,
+		CreatedAt:  scalars.DateTime{Time: entry.CreatedAt.Time},
+	}, nil
 }
 
 // AwardTeamAchievement is the resolver for the awardTeamAchievement field.
 func (r *mutationResolver) AwardTeamAchievement(ctx context.Context, teamID string, achievementID string) (model.Achievement, error) {
-	panic(fmt.Errorf("not implemented: AwardTeamAchievement - awardTeamAchievement"))
+	// Award achievement to all team members in a single query
+	if err := r.DB.Queries.AwardTeamAchievementBatch(ctx, sqlc.AwardTeamAchievementBatchParams{
+		TeamID:        teamID,
+		AchievementID: achievementID,
+	}); err != nil {
+		return nil, fmt.Errorf("failed to award achievement to team: %w", err)
+	}
+
+	// Get team members for cache invalidation
+	users, err := r.DB.Queries.GetUsersByTeamIDs(ctx, []string{teamID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get team members for cache invalidation: %w", err)
+	}
+
+	// Invalidate user caches
+	for _, user := range users {
+		r.Cache.InvalidateUser(user.ID)
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateTeam(teamID)
+	r.Cache.InvalidateAchievement(achievementID)
+
+	// Load and return the achievement
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
+	achievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	return achievement, nil
 }
 
 // RevokeTeamAchievement is the resolver for the revokeTeamAchievement field.
 func (r *mutationResolver) RevokeTeamAchievement(ctx context.Context, teamID string, achievementID string) (bool, error) {
-	panic(fmt.Errorf("not implemented: RevokeTeamAchievement - revokeTeamAchievement"))
+	// Revoke achievement from all team members in a single query
+	if err := r.DB.Queries.RevokeTeamAchievementBatch(ctx, sqlc.RevokeTeamAchievementBatchParams{
+		TeamID:        teamID,
+		AchievementID: achievementID,
+	}); err != nil {
+		return false, fmt.Errorf("failed to revoke achievement from team: %w", err)
+	}
+
+	// Get team members for cache invalidation
+	users, err := r.DB.Queries.GetUsersByTeamIDs(ctx, []string{teamID})
+	if err != nil {
+		return false, fmt.Errorf("failed to get team members for cache invalidation: %w", err)
+	}
+
+	// Invalidate user caches
+	for _, user := range users {
+		r.Cache.InvalidateUser(user.ID)
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateTeam(teamID)
+	r.Cache.InvalidateAchievement(achievementID)
+
+	return true, nil
 }
 
 // AwardSuperTeamAchievement is the resolver for the awardSuperTeamAchievement field.
 func (r *mutationResolver) AwardSuperTeamAchievement(ctx context.Context, superTeamID string, achievementID string) (model.Achievement, error) {
-	panic(fmt.Errorf("not implemented: AwardSuperTeamAchievement - awardSuperTeamAchievement"))
+	// Award achievement to all superteam members in a single query
+	if err := r.DB.Queries.AwardSuperTeamAchievementBatch(ctx, sqlc.AwardSuperTeamAchievementBatchParams{
+		SuperTeamID:   superTeamID,
+		AchievementID: achievementID,
+	}); err != nil {
+		return nil, fmt.Errorf("failed to award achievement to superteam: %w", err)
+	}
+
+	// Get superteam members for cache invalidation
+	users, err := r.DB.Queries.GetUsersBySuperTeamIDs(ctx, []string{superTeamID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get superteam members for cache invalidation: %w", err)
+	}
+
+	// Invalidate user caches
+	for _, user := range users {
+		r.Cache.InvalidateUser(user.ID)
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateSuperTeam(superTeamID)
+	r.Cache.InvalidateAchievement(achievementID)
+
+	// Load and return the achievement
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
+	achievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	return achievement, nil
 }
 
 // RevokeSuperTeamAchievement is the resolver for the revokeSuperTeamAchievement field.
 func (r *mutationResolver) RevokeSuperTeamAchievement(ctx context.Context, superTeamID string, achievementID string) (bool, error) {
-	panic(fmt.Errorf("not implemented: RevokeSuperTeamAchievement - revokeSuperTeamAchievement"))
+	// Revoke achievement from all superteam members in a single query
+	if err := r.DB.Queries.RevokeSuperTeamAchievementBatch(ctx, sqlc.RevokeSuperTeamAchievementBatchParams{
+		SuperTeamID:   superTeamID,
+		AchievementID: achievementID,
+	}); err != nil {
+		return false, fmt.Errorf("failed to revoke achievement from superteam: %w", err)
+	}
+
+	// Get superteam members for cache invalidation
+	users, err := r.DB.Queries.GetUsersBySuperTeamIDs(ctx, []string{superTeamID})
+	if err != nil {
+		return false, fmt.Errorf("failed to get superteam members for cache invalidation: %w", err)
+	}
+
+	// Invalidate user caches
+	for _, user := range users {
+		r.Cache.InvalidateUser(user.ID)
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateSuperTeam(superTeamID)
+	r.Cache.InvalidateAchievement(achievementID)
+
+	return true, nil
 }
 
 // BulkAwardAchievements is the resolver for the bulkAwardAchievements field.
@@ -1635,16 +2723,6 @@ func (r *mutationResolver) BulkAwardAchievements(ctx context.Context, userIds []
 // BulkCompleteChallenges is the resolver for the bulkCompleteChallenges field.
 func (r *mutationResolver) BulkCompleteChallenges(ctx context.Context, userIds []string, challengeID string, completedAt *scalars.DateTime) ([]model.Challenge, error) {
 	panic(fmt.Errorf("not implemented: BulkCompleteChallenges - bulkCompleteChallenges"))
-}
-
-// BulkAwardTeamAchievements is the resolver for the bulkAwardTeamAchievements field.
-func (r *mutationResolver) BulkAwardTeamAchievements(ctx context.Context, teamIds []string, achievementID string) ([]model.Achievement, error) {
-	panic(fmt.Errorf("not implemented: BulkAwardTeamAchievements - bulkAwardTeamAchievements"))
-}
-
-// BulkAwardSuperTeamAchievements is the resolver for the bulkAwardSuperTeamAchievements field.
-func (r *mutationResolver) BulkAwardSuperTeamAchievements(ctx context.Context, superTeamIds []string, achievementID string) ([]model.Achievement, error) {
-	panic(fmt.Errorf("not implemented: BulkAwardSuperTeamAchievements - bulkAwardSuperTeamAchievements"))
 }
 
 // AssignRole is the resolver for the assignRole field.
@@ -3009,6 +4087,193 @@ func (r *queryResolver) CurrentEvent(ctx context.Context) (*model.Event, error) 
 	}
 
 	return event, nil
+}
+
+// ScoreJournal is the resolver for the scoreJournal field.
+func (r *queryResolver) ScoreJournal(ctx context.Context, projectID string, userID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
+	// Get current user
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check permissions
+	allowed := false
+
+	// 1. Admins/SuperAdmins can see all scores
+	if r.RoleService.IsAdmin(ctx, currentUserID) || r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) {
+		allowed = true
+	}
+
+	// 2. Project admins can see scores for their project
+	if !allowed && r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, projectID) {
+		allowed = true
+	}
+
+	// 3. Users can see their own scores
+	if !allowed && userID == currentUserID {
+		allowed = true
+	}
+
+	// 4. Church admins can see scores for members of their church
+	if !allowed {
+		// Load current user to get their church ID
+		currentUserThunk := r.Loaders.UserByIDLoader.Load(ctx, currentUserID)
+		currentUser, err := currentUserThunk()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load current user: %w", err)
+		}
+
+		if r.RoleService.HasRoleInChurch(ctx, currentUserID, services.RoleChurchAdmin, currentUser.ChurchID) {
+			// Verify the requested user belongs to the church
+			userThunk := r.Loaders.UserByIDLoader.Load(ctx, userID)
+			requestedUser, err := userThunk()
+			if err != nil {
+				return nil, fmt.Errorf("failed to load requested user: %w", err)
+			}
+			if requestedUser.ChurchID == currentUser.ChurchID {
+				allowed = true
+			}
+		}
+	}
+
+	if !allowed {
+		return nil, fmt.Errorf("permission denied: you do not have access to view these score journal entries")
+	}
+
+	// Decode cursors if provided
+	var afterCursor, beforeCursor *string
+	if after != nil && *after != "" {
+		decoded, err := pagination.DecodeCursor(*after)
+		if err != nil {
+			return nil, fmt.Errorf("invalid after cursor: %w", err)
+		}
+		afterCursor = &decoded
+	}
+	if before != nil && *before != "" {
+		decoded, err := pagination.DecodeCursor(*before)
+		if err != nil {
+			return nil, fmt.Errorf("invalid before cursor: %w", err)
+		}
+		beforeCursor = &decoded
+	}
+
+	// Determine requested limit and fetch one extra for hasMore detection
+	requestedLimit := 50 // default
+	if first != nil {
+		requestedLimit = *first
+	} else if last != nil {
+		requestedLimit = *last
+	}
+	queryLimit := requestedLimit + 1
+
+	// Determine pagination direction
+	isBackward := last != nil
+
+	// Build filter params
+	params := sqlc.GetScoreJournalFilteredParams{
+		ProjectID:  projectID,
+		UserID:     userID,
+		Querylimit: int32(queryLimit),
+		Isbackward: isBackward,
+	}
+
+	// Set optional filters
+	if filter.EventID != nil {
+		params.EventID = *filter.EventID
+	}
+	if filter.ChallengeID != nil {
+		params.ChallengeID = *filter.ChallengeID
+	}
+	if filter.SourceType != nil {
+		params.SourceType = string(*filter.SourceType)
+	}
+
+	// Set cursor params
+	if afterCursor != nil {
+		params.Aftercursor = *afterCursor
+	}
+	if beforeCursor != nil {
+		params.Beforecursor = *beforeCursor
+	}
+
+	// Get entries
+	rows, err := r.DB.Queries.GetScoreJournalFiltered(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get score journal: %w", err)
+	}
+
+	// Get total count
+	countParams := sqlc.CountScoreJournalFilteredParams{
+		ProjectID: projectID,
+		UserID:    userID,
+	}
+	if filter.EventID != nil {
+		countParams.EventID = *filter.EventID
+	}
+	if filter.ChallengeID != nil {
+		countParams.ChallengeID = *filter.ChallengeID
+	}
+	if filter.SourceType != nil {
+		countParams.SourceType = string(*filter.SourceType)
+	}
+
+	totalCount, err := r.DB.Queries.CountScoreJournalFiltered(ctx, countParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count score journal: %w", err)
+	}
+
+	// Check if there are more results
+	hasMore := len(rows) > requestedLimit
+	entries := rows
+	if hasMore {
+		// Trim the extra record we fetched for hasMore detection
+		entries = rows[:requestedLimit]
+	}
+
+	// If backward pagination, reverse the results
+	if last != nil {
+		for i, j := 0, len(entries)-1; i < j; i, j = i+1, j-1 {
+			entries[i], entries[j] = entries[j], entries[i]
+		}
+	}
+
+	// Convert to GraphQL model
+	modelEntries := make([]*model.ScoreJournal, len(entries))
+	for i, entry := range entries {
+		// Determine source type
+		sourceType := model.ScoreSourceTypeManual
+		if entry.SourceType == "ACHIEVEMENT" {
+			sourceType = model.ScoreSourceTypeAchievement
+		}
+
+		modelEntries[i] = &model.ScoreJournal{
+			ID:          entry.ID,
+			ProjectID:   entry.ProjectID,
+			UserID:      entry.UserID,
+			EventID:     entry.EventID,
+			ChallengeID: entry.ChallengeID,
+			Points:      int(entry.Points),
+			SourceType:  sourceType,
+			SourceID:    entry.SourceID,
+			Reason:      entry.Reason,
+			AwardedByID: entry.AwardedBy,
+			CreatedAt:   scalars.DateTime{Time: entry.CreatedAt.Time},
+		}
+	}
+
+	// Build the connection
+	connection := pagination.BuildScoreJournalConnection(pagination.BuildScoreJournalConnectionParams{
+		ScoreJournals:   modelEntries,
+		RequestedFirst:  first,
+		RequestedLast:   last,
+		RequestedAfter:  after,
+		RequestedBefore: before,
+		TotalCount:      int(totalCount),
+		HasMore:         hasMore,
+	})
+
+	return connection, nil
 }
 
 // UserRoles is the resolver for the userRoles field.

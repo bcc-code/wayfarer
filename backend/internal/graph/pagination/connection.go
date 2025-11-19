@@ -538,3 +538,71 @@ func buildStreakPageInfo(params BuildStreakConnectionParams, edges []model.Strea
 
 	return pageInfo
 }
+
+// BuildScoreJournalConnectionParams holds parameters for building a score journal connection
+type BuildScoreJournalConnectionParams struct {
+	ScoreJournals   []*model.ScoreJournal
+	RequestedFirst  *int
+	RequestedLast   *int
+	RequestedAfter  *string
+	RequestedBefore *string
+	TotalCount      int
+	HasMore         bool
+}
+
+// BuildScoreJournalConnection builds a GraphQL ScoreJournal connection with edges and page info
+func BuildScoreJournalConnection(params BuildScoreJournalConnectionParams) *model.ScoreJournalConnection {
+	edges := make([]model.ScoreJournalEdge, len(params.ScoreJournals))
+	for i, entry := range params.ScoreJournals {
+		edges[i] = model.ScoreJournalEdge{
+			Cursor: EncodeCursor(entry.ID),
+			Node:   entry,
+		}
+	}
+
+	pageInfo := buildScoreJournalPageInfo(params, edges)
+
+	return &model.ScoreJournalConnection{
+		Edges:      edges,
+		PageInfo:   pageInfo,
+		TotalCount: params.TotalCount,
+	}
+}
+
+// buildScoreJournalPageInfo constructs the PageInfo for score journal
+func buildScoreJournalPageInfo(params BuildScoreJournalConnectionParams, edges []model.ScoreJournalEdge) *model.PageInfo {
+	pageInfo := &model.PageInfo{
+		HasNextPage:     false,
+		HasPreviousPage: false,
+		StartCursor:     nil,
+		EndCursor:       nil,
+	}
+
+	if len(edges) == 0 {
+		return pageInfo
+	}
+
+	// Set start and end cursors
+	startCursor := edges[0].Cursor
+	endCursor := edges[len(edges)-1].Cursor
+	pageInfo.StartCursor = &startCursor
+	pageInfo.EndCursor = &endCursor
+
+	// Determine hasNextPage
+	if params.RequestedFirst != nil {
+		pageInfo.HasNextPage = params.HasMore
+	}
+
+	// Determine hasPreviousPage
+	if params.RequestedLast != nil {
+		pageInfo.HasPreviousPage = params.HasMore
+		// If we're paginating backward with a 'before' cursor, there must be a next page
+		if params.RequestedBefore != nil && *params.RequestedBefore != "" {
+			pageInfo.HasNextPage = true
+		}
+	} else if params.RequestedAfter != nil && *params.RequestedAfter != "" {
+		pageInfo.HasPreviousPage = true
+	}
+
+	return pageInfo
+}

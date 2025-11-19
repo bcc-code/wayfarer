@@ -327,6 +327,100 @@ func (r *roleScopeResolver) Team(ctx context.Context, obj *model.RoleScope) (*mo
 }
 
 // Project is the resolver for the project field.
+func (r *scoreJournalResolver) Project(ctx context.Context, obj *model.ScoreJournal) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// User is the resolver for the user field.
+func (r *scoreJournalResolver) User(ctx context.Context, obj *model.ScoreJournal) (*model.User, error) {
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+	return user, nil
+}
+
+// Event is the resolver for the event field.
+func (r *scoreJournalResolver) Event(ctx context.Context, obj *model.ScoreJournal) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *scoreJournalResolver) Challenge(ctx context.Context, obj *model.ScoreJournal) (*model.Challenge, error) {
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// Source is the resolver for the source field.
+func (r *scoreJournalResolver) Source(ctx context.Context, obj *model.ScoreJournal) (model.ScoreSource, error) {
+	// Return nil if no source ID
+	if obj.SourceID == nil {
+		return nil, nil
+	}
+
+	// Load appropriate source based on sourceType
+	switch obj.SourceType {
+	case model.ScoreSourceTypeAchievement:
+		thunk := r.Loaders.AchievementByIDLoader.Load(ctx, *obj.SourceID)
+		achievement, err := thunk()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load achievement: %w", err)
+		}
+		// Type switch to return the concrete achievement type
+		switch ach := achievement.(type) {
+		case *model.SimpleAchievement:
+			return ach, nil
+		case *model.ReadingAchievement:
+			return ach, nil
+		case *model.ListeningAchievement:
+			return ach, nil
+		case *model.StreakAchievement:
+			return ach, nil
+		default:
+			return nil, fmt.Errorf("unexpected achievement type: %T", achievement)
+		}
+
+	case model.ScoreSourceTypeChallenge:
+		thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, *obj.SourceID)
+		challenge, err := thunk()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load challenge: %w", err)
+		}
+		return challenge, nil
+
+	case model.ScoreSourceTypeEvent:
+		thunk := r.Loaders.EventByIDLoader.Load(ctx, *obj.SourceID)
+		event, err := thunk()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load event: %w", err)
+		}
+		return event, nil
+
+	case model.ScoreSourceTypeManual:
+		// Manual adjustments don't have a source entity
+		return nil, nil
+
+	default:
+		return nil, fmt.Errorf("unknown source type: %s", obj.SourceType)
+	}
+}
+
+// AwardedBy is the resolver for the awardedBy field.
+func (r *scoreJournalResolver) AwardedBy(ctx context.Context, obj *model.ScoreJournal) (*model.User, error) {
+	// Only return user if source_type is MANUAL
+	if obj.SourceType != model.ScoreSourceTypeManual || obj.AwardedByID == nil {
+		return nil, nil
+	}
+
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, *obj.AwardedByID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+	return user, nil
+}
+
+// Project is the resolver for the project field.
 func (r *simpleAchievementResolver) Project(ctx context.Context, obj *model.SimpleAchievement) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
@@ -946,6 +1040,9 @@ func (r *Resolver) ReadingAchievement() ReadingAchievementResolver {
 // RoleScope returns RoleScopeResolver implementation.
 func (r *Resolver) RoleScope() RoleScopeResolver { return &roleScopeResolver{r} }
 
+// ScoreJournal returns ScoreJournalResolver implementation.
+func (r *Resolver) ScoreJournal() ScoreJournalResolver { return &scoreJournalResolver{r} }
+
 // SimpleAchievement returns SimpleAchievementResolver implementation.
 func (r *Resolver) SimpleAchievement() SimpleAchievementResolver {
 	return &simpleAchievementResolver{r}
@@ -977,6 +1074,7 @@ type listeningAchievementResolver struct{ *Resolver }
 type projectResolver struct{ *Resolver }
 type readingAchievementResolver struct{ *Resolver }
 type roleScopeResolver struct{ *Resolver }
+type scoreJournalResolver struct{ *Resolver }
 type simpleAchievementResolver struct{ *Resolver }
 type streakResolver struct{ *Resolver }
 type streakAchievementResolver struct{ *Resolver }

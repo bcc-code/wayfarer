@@ -54,6 +54,13 @@ enum ScopeType {
     TEAM
 }
 
+enum ScoreSourceType {
+    ACHIEVEMENT
+    CHALLENGE
+    EVENT
+    MANUAL
+}
+
 # ==================== Supporting Types ====================
 
 type AgeRange {
@@ -444,6 +451,7 @@ input CreateStreakAchievementInput {
     points: Int!
     hidden: Boolean!
     neededStreak: Int!
+    streakId: ID!
 }
 
 input UpdateAchievementInput {
@@ -454,6 +462,40 @@ input UpdateAchievementInput {
     challengeId: ID
     points: Int
     hidden: Boolean
+}
+
+input UpdateReadingAchievementInput {
+    name: String
+    description: String
+    image: String
+    eventId: ID
+    challengeId: ID
+    points: Int
+    hidden: Boolean
+    articles: [ArticleInput!]
+}
+
+input UpdateListeningAchievementInput {
+    name: String
+    description: String
+    image: String
+    eventId: ID
+    challengeId: ID
+    points: Int
+    hidden: Boolean
+    tracks: [TrackInput!]
+}
+
+input UpdateStreakAchievementInput {
+    name: String
+    description: String
+    image: String
+    eventId: ID
+    challengeId: ID
+    points: Int
+    hidden: Boolean
+    neededStreak: Int
+    streakId: ID
 }
 
 input CreateTeamInput {
@@ -590,6 +632,13 @@ input StreakFilter {
     ids: [ID!]  # Support bulk ID lookup for M2M API
 }
 
+input ScoreJournalFilter {
+    eventId: ID  # Optional: filter by event
+    challengeId: ID  # Optional: filter by challenge
+    sourceType: ScoreSourceType  # Optional: filter by source type
+    ids: [ID!]  # Support bulk ID lookup
+}
+
 # ==================== Role Management Types ====================
 
 type RoleScope {
@@ -620,6 +669,44 @@ input RevokeRoleInput {
     role: RoleType!
     scopeType: ScopeType
     scopeId: ID
+}
+
+# ==================== Score Journal ====================
+
+union ScoreSource = SimpleAchievement | ReadingAchievement | ListeningAchievement | StreakAchievement | Challenge | Event
+
+type ScoreJournal {
+    id: ID!
+    project: Project! @goField(forceResolver: true)
+    user: User! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
+    points: Int!
+    sourceType: ScoreSourceType!
+    source: ScoreSource @goField(forceResolver: true)
+    reason: String
+    awardedBy: User @goField(forceResolver: true)
+    createdAt: DateTime!
+}
+
+type ScoreJournalEdge {
+    cursor: String!
+    node: ScoreJournal!
+}
+
+type ScoreJournalConnection {
+    edges: [ScoreJournalEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+input CreateScoreAdjustmentInput {
+    projectId: ID!
+    userId: ID!
+    eventId: ID
+    challengeId: ID
+    points: Int!
+    reason: String
 }
 
 # ==================== Relay Pagination ====================

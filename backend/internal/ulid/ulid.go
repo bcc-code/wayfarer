@@ -25,7 +25,7 @@ const (
 	PrefixAchievement          = "AC" // Achievements
 	PrefixReadingAchievement   = "RA" // Reading Achievement Articles
 	PrefixListeningAchievement = "LT" // Listening Achievement Tracks
-	PrefixScoreAdjustment      = "SA" // Score Adjustments
+	PrefixScoreJournal         = "SJ" // Score Journal
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -112,9 +112,9 @@ func NewListeningAchievementID() string {
 	return newID(PrefixListeningAchievement)
 }
 
-// NewScoreAdjustmentID generates a new ID for a score adjustment (SA prefix)
-func NewScoreAdjustmentID() string {
-	return newID(PrefixScoreAdjustment)
+// NewScoreJournalID generates a new ID for a score journal entry (SJ prefix)
+func NewScoreJournalID() string {
+	return newID(PrefixScoreJournal)
 }
 
 // Validation functions
@@ -215,7 +215,7 @@ func IsListeningAchievementID(id string) bool {
 	return IsValidID(id, PrefixListeningAchievement)
 }
 
-// IsScoreAdjustmentID validates a score adjustment ID
-func IsScoreAdjustmentID(id string) bool {
-	return IsValidID(id, PrefixScoreAdjustment)
+// IsScoreJournalID validates a score journal ID
+func IsScoreJournalID(id string) bool {
+	return IsValidID(id, PrefixScoreJournal)
 }

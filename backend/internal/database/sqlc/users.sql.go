@@ -311,6 +311,55 @@ func (q *Queries) GetUsersBySuperTeamIDCursor(ctx context.Context, arg GetUsersB
 	return items, nil
 }
 
+const GetUsersBySuperTeamIDs = `-- name: GetUsersBySuperTeamIDs :many
+SELECT DISTINCT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.avatar_url
+FROM users u
+INNER JOIN team_members tm ON u.id = tm.user_id
+INNER JOIN teams t ON tm.team_id = t.id
+WHERE t.super_team_id = ANY($1::text[])
+ORDER BY u.id
+`
+
+type GetUsersBySuperTeamIDsRow struct {
+	ID        string      `json:"id"`
+	MembersID string      `json:"members_id"`
+	Gender    string      `json:"gender"`
+	ChurchID  string      `json:"church_id"`
+	Birthdate pgtype.Date `json:"birthdate"`
+	Email     string      `json:"email"`
+	Name      string      `json:"name"`
+	AvatarUrl *string     `json:"avatar_url"`
+}
+
+func (q *Queries) GetUsersBySuperTeamIDs(ctx context.Context, superteamids []string) ([]*GetUsersBySuperTeamIDsRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersBySuperTeamIDs, superteamids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUsersBySuperTeamIDsRow{}
+	for rows.Next() {
+		var i GetUsersBySuperTeamIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MembersID,
+			&i.Gender,
+			&i.ChurchID,
+			&i.Birthdate,
+			&i.Email,
+			&i.Name,
+			&i.AvatarUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUsersByTeamIDs = `-- name: GetUsersByTeamIDs :many
 SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.avatar_url, tm.team_id, tm.joined_at
 FROM users u

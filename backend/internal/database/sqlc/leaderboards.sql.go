@@ -701,12 +701,11 @@ WITH church_scores AS (
         c.id AS entity_id,
         c.name,
         NULL::text AS image,
-        COALESCE(SUM(a.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM churches c
     INNER JOIN users u ON c.id = u.church_id
     INNER JOIN user_events ue ON u.id = ue.user_id
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = $6::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = $6::text
     WHERE
         ue.event_id = $6::text
         AND ($7::text = '' OR c.country = $7::text)
@@ -746,11 +745,11 @@ type GetEventChurchLeaderboardParams struct {
 }
 
 type GetEventChurchLeaderboardRow struct {
-	EntityID string      `json:"entity_id"`
-	Name     string      `json:"name"`
-	Image    *string     `json:"image"`
-	Score    interface{} `json:"score"`
-	Rank     int64       `json:"rank"`
+	EntityID string  `json:"entity_id"`
+	Name     string  `json:"name"`
+	Image    *string `json:"image"`
+	Score    int64   `json:"score"`
+	Rank     int64   `json:"rank"`
 }
 
 // ==================== Event Church Leaderboard ====================
@@ -796,11 +795,10 @@ WITH person_scores AS (
         u.id AS entity_id,
         u.name,
         u.avatar_url AS image,
-        COALESCE(SUM(a.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM users u
     INNER JOIN user_events ue ON u.id = ue.user_id
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = $6::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = $6::text
     WHERE
         ue.event_id = $6::text
         AND ($7::text = '' OR u.church_id = $7::text)
@@ -852,11 +850,11 @@ type GetEventPersonLeaderboardParams struct {
 }
 
 type GetEventPersonLeaderboardRow struct {
-	EntityID string      `json:"entity_id"`
-	Name     string      `json:"name"`
-	Image    *string     `json:"image"`
-	Score    interface{} `json:"score"`
-	Rank     int64       `json:"rank"`
+	EntityID string  `json:"entity_id"`
+	Name     string  `json:"name"`
+	Image    *string `json:"image"`
+	Score    int64   `json:"score"`
+	Rank     int64   `json:"rank"`
 }
 
 // ==================== Event Person Leaderboard ====================
@@ -909,19 +907,14 @@ superteam_scores AS (
         st.id AS entity_id,
         st.name,
         NULL::text AS image,
-        COALESCE(SUM(a.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM super_teams st
     CROSS JOIN event_project ep
     INNER JOIN teams t ON t.super_team_id = st.id
     INNER JOIN team_members tm ON t.id = tm.team_id
     INNER JOIN users u ON tm.user_id = u.id
     INNER JOIN user_events ue ON u.id = ue.user_id AND ue.event_id = $6::text
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = $6::text
-    LEFT JOIN team_achievements ta ON t.id = ta.team_id
-    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.event_id = $6::text
-    LEFT JOIN super_team_achievements sta ON st.id = sta.super_team_id
-    LEFT JOIN achievements sta_ach ON sta.achievement_id = sta_ach.id AND sta_ach.event_id = $6::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = $6::text
     WHERE
         st.project_id = ep.project_id
     GROUP BY st.id, st.name
@@ -957,11 +950,11 @@ type GetEventSuperTeamLeaderboardParams struct {
 }
 
 type GetEventSuperTeamLeaderboardRow struct {
-	EntityID string      `json:"entity_id"`
-	Name     string      `json:"name"`
-	Image    *string     `json:"image"`
-	Score    interface{} `json:"score"`
-	Rank     int64       `json:"rank"`
+	EntityID string  `json:"entity_id"`
+	Name     string  `json:"name"`
+	Image    *string `json:"image"`
+	Score    int64   `json:"score"`
+	Rank     int64   `json:"rank"`
 }
 
 // ==================== Event SuperTeam Leaderboard ====================
@@ -1008,16 +1001,13 @@ team_scores AS (
         t.id AS entity_id,
         t.name,
         NULL::text AS image,
-        COALESCE(SUM(a.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM teams t
     CROSS JOIN event_project ep
     INNER JOIN team_members tm ON t.id = tm.team_id
     INNER JOIN users u ON tm.user_id = u.id
     INNER JOIN user_events ue ON u.id = ue.user_id AND ue.event_id = $6::text
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = $6::text
-    LEFT JOIN team_achievements ta ON t.id = ta.team_id
-    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.event_id = $6::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = $6::text
     WHERE
         t.project_id = ep.project_id
     GROUP BY t.id, t.name
@@ -1053,11 +1043,11 @@ type GetEventTeamLeaderboardParams struct {
 }
 
 type GetEventTeamLeaderboardRow struct {
-	EntityID string      `json:"entity_id"`
-	Name     string      `json:"name"`
-	Image    *string     `json:"image"`
-	Score    interface{} `json:"score"`
-	Rank     int64       `json:"rank"`
+	EntityID string  `json:"entity_id"`
+	Name     string  `json:"name"`
+	Image    *string `json:"image"`
+	Score    int64   `json:"score"`
+	Rank     int64   `json:"rank"`
 }
 
 // ==================== Event Team Leaderboard ====================
@@ -1587,13 +1577,11 @@ WITH church_scores AS (
         c.id AS entity_id,
         c.name,
         NULL::text AS image,
-        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM churches c
     INNER JOIN users u ON c.id = u.church_id
     INNER JOIN user_projects up ON u.id = up.user_id
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = $6::text
-    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = u.id AND sa.project_id = $6::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = $6::text
     WHERE
         up.project_id = $6::text
         AND ($7::text = '' OR c.country = $7::text)
@@ -1636,7 +1624,7 @@ type GetProjectChurchLeaderboardRow struct {
 	EntityID string  `json:"entity_id"`
 	Name     string  `json:"name"`
 	Image    *string `json:"image"`
-	Score    int32   `json:"score"`
+	Score    int64   `json:"score"`
 	Rank     int64   `json:"rank"`
 }
 
@@ -1717,13 +1705,11 @@ person_scores AS (
         fu.id AS entity_id,
         fu.name,
         fu.avatar_url AS image,
-        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM filtered_users fu
-    LEFT JOIN user_achievements ua ON fu.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = $6::text
-    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = fu.id AND sa.project_id = $6::text
+    LEFT JOIN score_journal sj ON sj.user_id = fu.id AND sj.project_id = $6::text
     GROUP BY fu.id, fu.name, fu.avatar_url
-    HAVING COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) >= 1
+    HAVING COALESCE(SUM(sj.points), 0) >= 1
 ),
 ranked_scores AS (
     SELECT
@@ -1766,7 +1752,7 @@ type GetProjectPersonLeaderboardRow struct {
 	EntityID string  `json:"entity_id"`
 	Name     string  `json:"name"`
 	Image    *string `json:"image"`
-	Score    int32   `json:"score"`
+	Score    int64   `json:"score"`
 	Rank     int64   `json:"rank"`
 }
 
@@ -1819,18 +1805,12 @@ WITH superteam_scores AS (
         st.id AS entity_id,
         st.name,
         NULL::text AS image,
-        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM super_teams st
     INNER JOIN teams t ON t.super_team_id = st.id
     INNER JOIN team_members tm ON t.id = tm.team_id
     INNER JOIN users u ON tm.user_id = u.id
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = $6::text
-    LEFT JOIN team_achievements ta ON t.id = ta.team_id
-    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.project_id = $6::text
-    LEFT JOIN super_team_achievements sta ON st.id = sta.super_team_id
-    LEFT JOIN achievements sta_ach ON sta.achievement_id = sta_ach.id AND sta_ach.project_id = $6::text
-    LEFT JOIN score_adjustments sa ON sa.entity_type = 'SUPER_TEAM' AND sa.entity_id = st.id AND sa.project_id = $6::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = $6::text
     WHERE
         st.project_id = $6::text
     GROUP BY st.id, st.name
@@ -1869,7 +1849,7 @@ type GetProjectSuperTeamLeaderboardRow struct {
 	EntityID string  `json:"entity_id"`
 	Name     string  `json:"name"`
 	Image    *string `json:"image"`
-	Score    int32   `json:"score"`
+	Score    int64   `json:"score"`
 	Rank     int64   `json:"rank"`
 }
 
@@ -1914,15 +1894,11 @@ WITH team_scores AS (
         t.id AS entity_id,
         t.name,
         NULL::text AS image,
-        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM teams t
     INNER JOIN team_members tm ON t.id = tm.team_id
     INNER JOIN users u ON tm.user_id = u.id
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = $6::text
-    LEFT JOIN team_achievements ta ON t.id = ta.team_id
-    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.project_id = $6::text
-    LEFT JOIN score_adjustments sa ON sa.entity_type = 'TEAM' AND sa.entity_id = t.id AND sa.project_id = $6::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = $6::text
     WHERE
         t.project_id = $6::text
         AND ($7::text = '' OR t.super_team_id = $7::text)
@@ -1963,7 +1939,7 @@ type GetProjectTeamLeaderboardRow struct {
 	EntityID string  `json:"entity_id"`
 	Name     string  `json:"name"`
 	Image    *string `json:"image"`
-	Score    int32   `json:"score"`
+	Score    int64   `json:"score"`
 	Rank     int64   `json:"rank"`
 }
 

@@ -88,6 +88,14 @@ INNER JOIN team_members tm ON u.id = tm.user_id
 WHERE tm.team_id = ANY(@teamids::text[])
 ORDER BY tm.team_id, tm.joined_at;
 
+-- name: GetUsersBySuperTeamIDs :many
+SELECT DISTINCT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.avatar_url
+FROM users u
+INNER JOIN team_members tm ON u.id = tm.user_id
+INNER JOIN teams t ON tm.team_id = t.id
+WHERE t.super_team_id = ANY(@superteamids::text[])
+ORDER BY u.id;
+
 -- name: GetUsersBySuperTeamIDCursor :many
 WITH distinct_user_ids AS (
     SELECT DISTINCT u.id

@@ -40,13 +40,11 @@ person_scores AS (
         fu.id AS entity_id,
         fu.name,
         fu.avatar_url AS image,
-        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM filtered_users fu
-    LEFT JOIN user_achievements ua ON fu.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = @projectid::text
-    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = fu.id AND sa.project_id = @projectid::text
+    LEFT JOIN score_journal sj ON sj.user_id = fu.id AND sj.project_id = @projectid::text
     GROUP BY fu.id, fu.name, fu.avatar_url
-    HAVING COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) >= 1
+    HAVING COALESCE(SUM(sj.points), 0) >= 1
 ),
 ranked_scores AS (
     SELECT
@@ -145,15 +143,11 @@ WITH team_scores AS (
         t.id AS entity_id,
         t.name,
         NULL::text AS image,
-        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM teams t
     INNER JOIN team_members tm ON t.id = tm.team_id
     INNER JOIN users u ON tm.user_id = u.id
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = @projectid::text
-    LEFT JOIN team_achievements ta ON t.id = ta.team_id
-    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.project_id = @projectid::text
-    LEFT JOIN score_adjustments sa ON sa.entity_type = 'TEAM' AND sa.entity_id = t.id AND sa.project_id = @projectid::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = @projectid::text
     WHERE
         t.project_id = @projectid::text
         AND (@superteamid::text = '' OR t.super_team_id = @superteamid::text)
@@ -237,18 +231,12 @@ WITH superteam_scores AS (
         st.id AS entity_id,
         st.name,
         NULL::text AS image,
-        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM super_teams st
     INNER JOIN teams t ON t.super_team_id = st.id
     INNER JOIN team_members tm ON t.id = tm.team_id
     INNER JOIN users u ON tm.user_id = u.id
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = @projectid::text
-    LEFT JOIN team_achievements ta ON t.id = ta.team_id
-    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.project_id = @projectid::text
-    LEFT JOIN super_team_achievements sta ON st.id = sta.super_team_id
-    LEFT JOIN achievements sta_ach ON sta.achievement_id = sta_ach.id AND sta_ach.project_id = @projectid::text
-    LEFT JOIN score_adjustments sa ON sa.entity_type = 'SUPER_TEAM' AND sa.entity_id = st.id AND sa.project_id = @projectid::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = @projectid::text
     WHERE
         st.project_id = @projectid::text
     GROUP BY st.id, st.name
@@ -331,13 +319,11 @@ WITH church_scores AS (
         c.id AS entity_id,
         c.name,
         NULL::text AS image,
-        COALESCE(SUM(a.points), 0) + COALESCE(SUM(sa.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM churches c
     INNER JOIN users u ON c.id = u.church_id
     INNER JOIN user_projects up ON u.id = up.user_id
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.project_id = @projectid::text
-    LEFT JOIN score_adjustments sa ON sa.entity_type = 'USER' AND sa.entity_id = u.id AND sa.project_id = @projectid::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = @projectid::text
     WHERE
         up.project_id = @projectid::text
         AND (@country::text = '' OR c.country = @country::text)
@@ -423,11 +409,10 @@ WITH person_scores AS (
         u.id AS entity_id,
         u.name,
         u.avatar_url AS image,
-        COALESCE(SUM(a.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM users u
     INNER JOIN user_events ue ON u.id = ue.user_id
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = @eventid::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = @eventid::text
     WHERE
         ue.event_id = @eventid::text
         AND (@churchid::text = '' OR u.church_id = @churchid::text)
@@ -528,16 +513,13 @@ team_scores AS (
         t.id AS entity_id,
         t.name,
         NULL::text AS image,
-        COALESCE(SUM(a.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM teams t
     CROSS JOIN event_project ep
     INNER JOIN team_members tm ON t.id = tm.team_id
     INNER JOIN users u ON tm.user_id = u.id
     INNER JOIN user_events ue ON u.id = ue.user_id AND ue.event_id = @eventid::text
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = @eventid::text
-    LEFT JOIN team_achievements ta ON t.id = ta.team_id
-    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.event_id = @eventid::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = @eventid::text
     WHERE
         t.project_id = ep.project_id
     GROUP BY t.id, t.name
@@ -626,19 +608,14 @@ superteam_scores AS (
         st.id AS entity_id,
         st.name,
         NULL::text AS image,
-        COALESCE(SUM(a.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM super_teams st
     CROSS JOIN event_project ep
     INNER JOIN teams t ON t.super_team_id = st.id
     INNER JOIN team_members tm ON t.id = tm.team_id
     INNER JOIN users u ON tm.user_id = u.id
     INNER JOIN user_events ue ON u.id = ue.user_id AND ue.event_id = @eventid::text
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = @eventid::text
-    LEFT JOIN team_achievements ta ON t.id = ta.team_id
-    LEFT JOIN achievements ta_ach ON ta.achievement_id = ta_ach.id AND ta_ach.event_id = @eventid::text
-    LEFT JOIN super_team_achievements sta ON st.id = sta.super_team_id
-    LEFT JOIN achievements sta_ach ON sta.achievement_id = sta_ach.id AND sta_ach.event_id = @eventid::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = @eventid::text
     WHERE
         st.project_id = ep.project_id
     GROUP BY st.id, st.name
@@ -725,12 +702,11 @@ WITH church_scores AS (
         c.id AS entity_id,
         c.name,
         NULL::text AS image,
-        COALESCE(SUM(a.points), 0) AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM churches c
     INNER JOIN users u ON c.id = u.church_id
     INNER JOIN user_events ue ON u.id = ue.user_id
-    LEFT JOIN user_achievements ua ON u.id = ua.user_id
-    LEFT JOIN achievements a ON ua.achievement_id = a.id AND a.event_id = @eventid::text
+    LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = @eventid::text
     WHERE
         ue.event_id = @eventid::text
         AND (@country::text = '' OR c.country = @country::text)

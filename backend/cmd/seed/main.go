@@ -122,6 +122,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	slog.Info("Seeding score journal")
+	if err := seeder.SeedScoreJournal(stats); err != nil {
+		slog.Error("Failed to seed score journal", "error", err)
+		os.Exit(1)
+	}
+
 	// Print summary
 	slog.Info("Seed completed successfully",
 		"churches", stats.Churches,

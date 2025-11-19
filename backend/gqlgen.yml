@@ -153,6 +153,34 @@ models:
       StreakID:
         type: string
 
+  ScoreJournal:
+    fields:
+      project:
+        resolver: true
+      user:
+        resolver: true
+      event:
+        resolver: true
+      challenge:
+        resolver: true
+      source:
+        resolver: true
+      awardedBy:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      UserID:
+        type: string
+      EventID:
+        type: "*string"
+      ChallengeID:
+        type: "*string"
+      SourceID:
+        type: "*string"
+      AwardedByID:
+        type: "*string"
+
 # Autobind - automatically bind Go types to GraphQL types if they match by name
 autobind:
   - github.com/bcc-media/wayfarer/internal/graph/api/model

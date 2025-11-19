@@ -30,8 +30,6 @@ const (
 
 	// Progress tracking
 	PrefixUserAchievements         = "userachievements:"
-	PrefixTeamAchievements         = "teamachievements:"
-	PrefixSuperTeamAchievements    = "superteamachievements:"
 	PrefixUserChallengeCompletions = "userchallenges:"
 	PrefixUserReadingProgress      = "userreading:"
 	PrefixUserListeningProgress    = "userlistening:"

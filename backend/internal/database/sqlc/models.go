@@ -157,15 +157,18 @@ type ReadingAchievementArticle struct {
 	Url           *string `json:"url"`
 }
 
-type ScoreAdjustment struct {
-	ID         string             `json:"id"`
-	EntityType string             `json:"entity_type"`
-	EntityID   string             `json:"entity_id"`
-	ProjectID  string             `json:"project_id"`
-	Points     int32              `json:"points"`
-	Reason     *string            `json:"reason"`
-	AdjustedBy *string            `json:"adjusted_by"`
-	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+type ScoreJournal struct {
+	ID          string             `json:"id"`
+	ProjectID   string             `json:"project_id"`
+	UserID      string             `json:"user_id"`
+	EventID     *string            `json:"event_id"`
+	ChallengeID *string            `json:"challenge_id"`
+	Points      int32              `json:"points"`
+	SourceType  string             `json:"source_type"`
+	SourceID    *string            `json:"source_id"`
+	Reason      *string            `json:"reason"`
+	AwardedBy   *string            `json:"awarded_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 type Streak struct {
@@ -199,12 +202,6 @@ type SuperTeam struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
-type SuperTeamAchievement struct {
-	SuperTeamID   string             `json:"super_team_id"`
-	AchievementID string             `json:"achievement_id"`
-	AchievedAt    pgtype.Timestamptz `json:"achieved_at"`
-}
-
 type Team struct {
 	ID          string             `json:"id"`
 	ProjectID   string             `json:"project_id"`
@@ -214,12 +211,6 @@ type Team struct {
 	SuperTeamID *string            `json:"super_team_id"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-}
-
-type TeamAchievement struct {
-	TeamID        string             `json:"team_id"`
-	AchievementID string             `json:"achievement_id"`
-	AchievedAt    pgtype.Timestamptz `json:"achieved_at"`
 }
 
 type TeamMember struct {

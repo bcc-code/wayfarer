@@ -50,6 +50,9 @@ type Query {
     currentProject: Project!
     currentEvent: Event!
 
+    # ==================== Score Journal Queries ====================
+    scoreJournal(projectId: ID!, userId: ID!, filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection! @requireRole(roles: ["user", "admin", "m2m", "superadmin"])
+
     # ==================== Role Management Queries ====================
     userRoles(userId: ID!): [UserRole!]!
     usersWithRole(role: RoleType!, scopeType: ScopeType, scopeId: ID): [User!]!
@@ -99,6 +102,9 @@ type Mutation {
     createListeningAchievement(input: CreateListeningAchievementInput!): ListeningAchievement! @requireRole(roles: ["admin", "superadmin"])
     createStreakAchievement(input: CreateStreakAchievementInput!): StreakAchievement! @requireRole(roles: ["admin", "superadmin"])
     updateAchievement(id: ID!, input: UpdateAchievementInput!): Achievement! @requireRole(roles: ["admin", "superadmin"])
+    updateReadingAchievement(id: ID!, input: UpdateReadingAchievementInput!): ReadingAchievement! @requireRole(roles: ["admin", "superadmin"])
+    updateListeningAchievement(id: ID!, input: UpdateListeningAchievementInput!): ListeningAchievement! @requireRole(roles: ["admin", "superadmin"])
+    updateStreakAchievement(id: ID!, input: UpdateStreakAchievementInput!): StreakAchievement! @requireRole(roles: ["admin", "superadmin"])
     deleteAchievement(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
     linkAchievementToChallenge(achievementId: ID!, challengeId: ID!): Achievement! @requireRole(roles: ["admin", "superadmin"])
 
@@ -149,10 +155,8 @@ type Mutation {
     # Streak Tracking
     recordStreakActivity(userId: ID!, achievementId: ID!, currentStreak: Int!): StreakAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
-    # Score Adjustments (unified signature with optional reason for audit trail)
-    adjustUserScore(userId: ID!, projectId: ID!, points: Int!, reason: String): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    adjustTeamScore(teamId: ID!, projectId: ID!, points: Int!, reason: String): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    adjustSuperTeamScore(superTeamId: ID!, projectId: ID!, points: Int!, reason: String): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    # Score Adjustments
+    createScoreAdjustment(input: CreateScoreAdjustmentInput!): ScoreJournal! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Team Achievements
     awardTeamAchievement(teamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
@@ -165,8 +169,6 @@ type Mutation {
     # Bulk Operations
     bulkAwardAchievements(userIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
     bulkCompleteChallenges(userIds: [ID!]!, challengeId: ID!, completedAt: DateTime): [Challenge!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    bulkAwardTeamAchievements(teamIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    bulkAwardSuperTeamAchievements(superTeamIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # ==================== Role Management Mutations ====================
     assignRole(input: AssignRoleInput!): UserRole! @requireRole(roles: ["admin", "superadmin"])

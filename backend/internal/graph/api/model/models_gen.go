@@ -25,6 +25,10 @@ type Achievement interface {
 	GetHidden() bool
 }
 
+type ScoreSource interface {
+	IsScoreSource()
+}
+
 type AchievementConnection struct {
 	Edges      []AchievementEdge `json:"edges"`
 	PageInfo   *PageInfo         `json:"pageInfo"`
@@ -99,6 +103,8 @@ type Challenge struct {
 	EventID         *string           `json:"-"`
 	ProjectID       string            `json:"-"`
 }
+
+func (Challenge) IsScoreSource() {}
 
 type ChallengeConnection struct {
 	Edges      []ChallengeEdge `json:"edges"`
@@ -209,6 +215,15 @@ type CreateReadingAchievementInput struct {
 	Articles    []ArticleInput `json:"articles"`
 }
 
+type CreateScoreAdjustmentInput struct {
+	ProjectID   string  `json:"projectId"`
+	UserID      string  `json:"userId"`
+	EventID     *string `json:"eventId,omitempty"`
+	ChallengeID *string `json:"challengeId,omitempty"`
+	Points      int     `json:"points"`
+	Reason      *string `json:"reason,omitempty"`
+}
+
 type CreateSimpleAchievementInput struct {
 	Name        string  `json:"name"`
 	Description string  `json:"description"`
@@ -230,6 +245,7 @@ type CreateStreakAchievementInput struct {
 	Points       int     `json:"points"`
 	Hidden       bool    `json:"hidden"`
 	NeededStreak int     `json:"neededStreak"`
+	StreakID     string  `json:"streakId"`
 }
 
 type CreateStreakInput struct {
@@ -280,6 +296,8 @@ type Event struct {
 	ParentProject *Project               `json:"parentProject"`
 	ProjectID     string                 `json:"-"`
 }
+
+func (Event) IsScoreSource() {}
 
 type EventConnection struct {
 	Edges      []EventEdge `json:"edges"`
@@ -365,6 +383,8 @@ func (this ListeningAchievement) GetAchievedAt() *scalars.DateTime { return this
 func (this ListeningAchievement) GetPoints() int                   { return this.Points }
 func (this ListeningAchievement) GetHidden() bool                  { return this.Hidden }
 
+func (ListeningAchievement) IsScoreSource() {}
+
 type Mutation struct {
 }
 
@@ -446,6 +466,8 @@ func (this ReadingAchievement) GetAchievedAt() *scalars.DateTime { return this.A
 func (this ReadingAchievement) GetPoints() int                   { return this.Points }
 func (this ReadingAchievement) GetHidden() bool                  { return this.Hidden }
 
+func (ReadingAchievement) IsScoreSource() {}
+
 type RevokeRoleInput struct {
 	UserID    string     `json:"userId"`
 	Role      RoleType   `json:"role"`
@@ -459,6 +481,44 @@ type RoleScope struct {
 	Church  *Church   `json:"church,omitempty"`
 	Project *Project  `json:"project,omitempty"`
 	Team    *Team     `json:"team,omitempty"`
+}
+
+type ScoreJournal struct {
+	ID          string           `json:"id"`
+	Project     *Project         `json:"project"`
+	User        *User            `json:"user"`
+	Event       *Event           `json:"event,omitempty"`
+	Challenge   *Challenge       `json:"challenge,omitempty"`
+	Points      int              `json:"points"`
+	SourceType  ScoreSourceType  `json:"sourceType"`
+	Source      ScoreSource      `json:"source,omitempty"`
+	Reason      *string          `json:"reason,omitempty"`
+	AwardedBy   *User            `json:"awardedBy,omitempty"`
+	CreatedAt   scalars.DateTime `json:"createdAt"`
+	AwardedByID *string          `json:"-"`
+	ChallengeID *string          `json:"-"`
+	EventID     *string          `json:"-"`
+	ProjectID   string           `json:"-"`
+	SourceID    *string          `json:"-"`
+	UserID      string           `json:"-"`
+}
+
+type ScoreJournalConnection struct {
+	Edges      []ScoreJournalEdge `json:"edges"`
+	PageInfo   *PageInfo          `json:"pageInfo"`
+	TotalCount int                `json:"totalCount"`
+}
+
+type ScoreJournalEdge struct {
+	Cursor string        `json:"cursor"`
+	Node   *ScoreJournal `json:"node"`
+}
+
+type ScoreJournalFilter struct {
+	EventID     *string          `json:"eventId,omitempty"`
+	ChallengeID *string          `json:"challengeId,omitempty"`
+	SourceType  *ScoreSourceType `json:"sourceType,omitempty"`
+	Ids         []string         `json:"ids,omitempty"`
 }
 
 type SimpleAchievement struct {
@@ -488,6 +548,8 @@ func (this SimpleAchievement) GetChallenge() *Challenge         { return this.Ch
 func (this SimpleAchievement) GetAchievedAt() *scalars.DateTime { return this.AchievedAt }
 func (this SimpleAchievement) GetPoints() int                   { return this.Points }
 func (this SimpleAchievement) GetHidden() bool                  { return this.Hidden }
+
+func (SimpleAchievement) IsScoreSource() {}
 
 type Streak struct {
 	ID           string      `json:"id"`
@@ -530,6 +592,8 @@ func (this StreakAchievement) GetChallenge() *Challenge         { return this.Ch
 func (this StreakAchievement) GetAchievedAt() *scalars.DateTime { return this.AchievedAt }
 func (this StreakAchievement) GetPoints() int                   { return this.Points }
 func (this StreakAchievement) GetHidden() bool                  { return this.Hidden }
+
+func (StreakAchievement) IsScoreSource() {}
 
 type StreakConnection struct {
 	Edges      []StreakEdge `json:"edges"`
@@ -660,12 +724,46 @@ type UpdateEventInput struct {
 	EndDate     *scalars.DateTime `json:"endDate,omitempty"`
 }
 
+type UpdateListeningAchievementInput struct {
+	Name        *string      `json:"name,omitempty"`
+	Description *string      `json:"description,omitempty"`
+	Image       *string      `json:"image,omitempty"`
+	EventID     *string      `json:"eventId,omitempty"`
+	ChallengeID *string      `json:"challengeId,omitempty"`
+	Points      *int         `json:"points,omitempty"`
+	Hidden      *bool        `json:"hidden,omitempty"`
+	Tracks      []TrackInput `json:"tracks,omitempty"`
+}
+
 type UpdateProjectInput struct {
 	Name        *string           `json:"name,omitempty"`
 	Description *string           `json:"description,omitempty"`
 	StartDate   *scalars.DateTime `json:"startDate,omitempty"`
 	EndDate     *scalars.DateTime `json:"endDate,omitempty"`
 	Branding    *BrandingInput    `json:"branding,omitempty"`
+}
+
+type UpdateReadingAchievementInput struct {
+	Name        *string        `json:"name,omitempty"`
+	Description *string        `json:"description,omitempty"`
+	Image       *string        `json:"image,omitempty"`
+	EventID     *string        `json:"eventId,omitempty"`
+	ChallengeID *string        `json:"challengeId,omitempty"`
+	Points      *int           `json:"points,omitempty"`
+	Hidden      *bool          `json:"hidden,omitempty"`
+	Articles    []ArticleInput `json:"articles,omitempty"`
+}
+
+type UpdateStreakAchievementInput struct {
+	Name         *string `json:"name,omitempty"`
+	Description  *string `json:"description,omitempty"`
+	Image        *string `json:"image,omitempty"`
+	EventID      *string `json:"eventId,omitempty"`
+	ChallengeID  *string `json:"challengeId,omitempty"`
+	Points       *int    `json:"points,omitempty"`
+	Hidden       *bool   `json:"hidden,omitempty"`
+	NeededStreak *int    `json:"neededStreak,omitempty"`
+	StreakID     *string `json:"streakId,omitempty"`
 }
 
 type UpdateStreakInput struct {
@@ -1076,6 +1174,65 @@ func (e *ScopeType) UnmarshalJSON(b []byte) error {
 }
 
 func (e ScopeType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type ScoreSourceType string
+
+const (
+	ScoreSourceTypeAchievement ScoreSourceType = "ACHIEVEMENT"
+	ScoreSourceTypeChallenge   ScoreSourceType = "CHALLENGE"
+	ScoreSourceTypeEvent       ScoreSourceType = "EVENT"
+	ScoreSourceTypeManual      ScoreSourceType = "MANUAL"
+)
+
+var AllScoreSourceType = []ScoreSourceType{
+	ScoreSourceTypeAchievement,
+	ScoreSourceTypeChallenge,
+	ScoreSourceTypeEvent,
+	ScoreSourceTypeManual,
+}
+
+func (e ScoreSourceType) IsValid() bool {
+	switch e {
+	case ScoreSourceTypeAchievement, ScoreSourceTypeChallenge, ScoreSourceTypeEvent, ScoreSourceTypeManual:
+		return true
+	}
+	return false
+}
+
+func (e ScoreSourceType) String() string {
+	return string(e)
+}
+
+func (e *ScoreSourceType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ScoreSourceType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ScoreSourceType", str)
+	}
+	return nil
+}
+
+func (e ScoreSourceType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ScoreSourceType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ScoreSourceType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

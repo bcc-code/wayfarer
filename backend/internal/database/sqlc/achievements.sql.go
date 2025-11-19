@@ -11,6 +11,71 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const AwardSuperTeamAchievementBatch = `-- name: AwardSuperTeamAchievementBatch :exec
+INSERT INTO user_achievements (user_id, achievement_id, achieved_at)
+SELECT
+    tm.user_id,
+    $1::text,
+    COALESCE($2::timestamptz, now())
+FROM teams t
+INNER JOIN team_members tm ON tm.team_id = t.id
+WHERE t.super_team_id = $3::text
+ON CONFLICT (user_id, achievement_id) DO NOTHING
+`
+
+type AwardSuperTeamAchievementBatchParams struct {
+	AchievementID string             `json:"achievement_id"`
+	AchievedAt    pgtype.Timestamptz `json:"achieved_at"`
+	SuperTeamID   string             `json:"super_team_id"`
+}
+
+// Award achievement to all members of a superteam (through all teams in superteam) in a single query
+func (q *Queries) AwardSuperTeamAchievementBatch(ctx context.Context, arg AwardSuperTeamAchievementBatchParams) error {
+	_, err := q.db.Exec(ctx, AwardSuperTeamAchievementBatch, arg.AchievementID, arg.AchievedAt, arg.SuperTeamID)
+	return err
+}
+
+const AwardTeamAchievementBatch = `-- name: AwardTeamAchievementBatch :exec
+INSERT INTO user_achievements (user_id, achievement_id, achieved_at)
+SELECT
+    tm.user_id,
+    $1::text,
+    COALESCE($2::timestamptz, now())
+FROM team_members tm
+WHERE tm.team_id = $3::text
+ON CONFLICT (user_id, achievement_id) DO NOTHING
+`
+
+type AwardTeamAchievementBatchParams struct {
+	AchievementID string             `json:"achievement_id"`
+	AchievedAt    pgtype.Timestamptz `json:"achieved_at"`
+	TeamID        string             `json:"team_id"`
+}
+
+// Award achievement to all members of a team in a single query
+func (q *Queries) AwardTeamAchievementBatch(ctx context.Context, arg AwardTeamAchievementBatchParams) error {
+	_, err := q.db.Exec(ctx, AwardTeamAchievementBatch, arg.AchievementID, arg.AchievedAt, arg.TeamID)
+	return err
+}
+
+const AwardUserAchievement = `-- name: AwardUserAchievement :exec
+
+INSERT INTO user_achievements (user_id, achievement_id, achieved_at)
+VALUES ($1::text, $2::text, COALESCE($3::timestamptz, now()))
+`
+
+type AwardUserAchievementParams struct {
+	UserID        string             `json:"user_id"`
+	AchievementID string             `json:"achievement_id"`
+	AchievedAt    pgtype.Timestamptz `json:"achieved_at"`
+}
+
+// ==================== Award/Revoke Operations ====================
+func (q *Queries) AwardUserAchievement(ctx context.Context, arg AwardUserAchievementParams) error {
+	_, err := q.db.Exec(ctx, AwardUserAchievement, arg.UserID, arg.AchievementID, arg.AchievedAt)
+	return err
+}
+
 const CountAchievementsFiltered = `-- name: CountAchievementsFiltered :one
 SELECT COUNT(DISTINCT a.id)
 FROM achievements a
@@ -31,6 +96,249 @@ func (q *Queries) CountAchievementsFiltered(ctx context.Context, arg CountAchiev
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const CreateAchievement = `-- name: CreateAchievement :one
+
+INSERT INTO achievements (
+    id,
+    achievement_type,
+    project_id,
+    event_id,
+    challenge_id,
+    name,
+    description,
+    image_url,
+    points,
+    hidden
+) VALUES (
+    $1::text,
+    $2::text,
+    $3::text,
+    $4::text,
+    $5::text,
+    $6::text,
+    $7::text,
+    $8::text,
+    $9::int,
+    $10::bool
+) RETURNING id, achievement_type, project_id, event_id, challenge_id, name, description, image_url, points, hidden, created_at, updated_at
+`
+
+type CreateAchievementParams struct {
+	ID              string `json:"id"`
+	AchievementType string `json:"achievement_type"`
+	ProjectID       string `json:"project_id"`
+	EventID         string `json:"event_id"`
+	ChallengeID     string `json:"challenge_id"`
+	Name            string `json:"name"`
+	Description     string `json:"description"`
+	ImageUrl        string `json:"image_url"`
+	Points          int32  `json:"points"`
+	Hidden          bool   `json:"hidden"`
+}
+
+// ==================== Create Operations ====================
+func (q *Queries) CreateAchievement(ctx context.Context, arg CreateAchievementParams) (*Achievement, error) {
+	row := q.db.QueryRow(ctx, CreateAchievement,
+		arg.ID,
+		arg.AchievementType,
+		arg.ProjectID,
+		arg.EventID,
+		arg.ChallengeID,
+		arg.Name,
+		arg.Description,
+		arg.ImageUrl,
+		arg.Points,
+		arg.Hidden,
+	)
+	var i Achievement
+	err := row.Scan(
+		&i.ID,
+		&i.AchievementType,
+		&i.ProjectID,
+		&i.EventID,
+		&i.ChallengeID,
+		&i.Name,
+		&i.Description,
+		&i.ImageUrl,
+		&i.Points,
+		&i.Hidden,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const CreateListeningAchievementJunction = `-- name: CreateListeningAchievementJunction :exec
+INSERT INTO listening_achievements (achievement_id)
+VALUES ($1::text)
+`
+
+func (q *Queries) CreateListeningAchievementJunction(ctx context.Context, achievementID string) error {
+	_, err := q.db.Exec(ctx, CreateListeningAchievementJunction, achievementID)
+	return err
+}
+
+const CreateListeningAchievementTrack = `-- name: CreateListeningAchievementTrack :one
+INSERT INTO listening_achievement_tracks (
+    id,
+    achievement_id,
+    track_id,
+    name,
+    description,
+    image_url
+) VALUES (
+    $1::text,
+    $2::text,
+    $3::text,
+    $4::text,
+    $5::text,
+    $6::text
+) RETURNING id, achievement_id, track_id, name, description, image_url
+`
+
+type CreateListeningAchievementTrackParams struct {
+	ID            string `json:"id"`
+	AchievementID string `json:"achievement_id"`
+	TrackID       string `json:"track_id"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	ImageUrl      string `json:"image_url"`
+}
+
+func (q *Queries) CreateListeningAchievementTrack(ctx context.Context, arg CreateListeningAchievementTrackParams) (*ListeningAchievementTrack, error) {
+	row := q.db.QueryRow(ctx, CreateListeningAchievementTrack,
+		arg.ID,
+		arg.AchievementID,
+		arg.TrackID,
+		arg.Name,
+		arg.Description,
+		arg.ImageUrl,
+	)
+	var i ListeningAchievementTrack
+	err := row.Scan(
+		&i.ID,
+		&i.AchievementID,
+		&i.TrackID,
+		&i.Name,
+		&i.Description,
+		&i.ImageUrl,
+	)
+	return &i, err
+}
+
+const CreateReadingAchievementArticle = `-- name: CreateReadingAchievementArticle :one
+INSERT INTO reading_achievement_articles (
+    id,
+    achievement_id,
+    article_id,
+    title,
+    author,
+    url
+) VALUES (
+    $1::text,
+    $2::text,
+    $3::text,
+    $4::text,
+    $5::text,
+    $6::text
+) RETURNING id, achievement_id, article_id, title, author, url
+`
+
+type CreateReadingAchievementArticleParams struct {
+	ID            string `json:"id"`
+	AchievementID string `json:"achievement_id"`
+	ArticleID     string `json:"article_id"`
+	Title         string `json:"title"`
+	Author        string `json:"author"`
+	Url           string `json:"url"`
+}
+
+func (q *Queries) CreateReadingAchievementArticle(ctx context.Context, arg CreateReadingAchievementArticleParams) (*ReadingAchievementArticle, error) {
+	row := q.db.QueryRow(ctx, CreateReadingAchievementArticle,
+		arg.ID,
+		arg.AchievementID,
+		arg.ArticleID,
+		arg.Title,
+		arg.Author,
+		arg.Url,
+	)
+	var i ReadingAchievementArticle
+	err := row.Scan(
+		&i.ID,
+		&i.AchievementID,
+		&i.ArticleID,
+		&i.Title,
+		&i.Author,
+		&i.Url,
+	)
+	return &i, err
+}
+
+const CreateReadingAchievementJunction = `-- name: CreateReadingAchievementJunction :exec
+INSERT INTO reading_achievements (achievement_id)
+VALUES ($1::text)
+`
+
+func (q *Queries) CreateReadingAchievementJunction(ctx context.Context, achievementID string) error {
+	_, err := q.db.Exec(ctx, CreateReadingAchievementJunction, achievementID)
+	return err
+}
+
+const CreateStreakAchievementData = `-- name: CreateStreakAchievementData :exec
+INSERT INTO streak_achievements (
+    achievement_id,
+    streak_id,
+    needed_streak
+) VALUES (
+    $1::text,
+    $2::text,
+    $3::int
+)
+`
+
+type CreateStreakAchievementDataParams struct {
+	AchievementID string `json:"achievement_id"`
+	StreakID      string `json:"streak_id"`
+	NeededStreak  int32  `json:"needed_streak"`
+}
+
+func (q *Queries) CreateStreakAchievementData(ctx context.Context, arg CreateStreakAchievementDataParams) error {
+	_, err := q.db.Exec(ctx, CreateStreakAchievementData, arg.AchievementID, arg.StreakID, arg.NeededStreak)
+	return err
+}
+
+const DeleteAchievement = `-- name: DeleteAchievement :exec
+
+DELETE FROM achievements
+WHERE id = $1::text
+`
+
+// ==================== Delete Operations ====================
+func (q *Queries) DeleteAchievement(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, DeleteAchievement, id)
+	return err
+}
+
+const DeleteListeningAchievementTracks = `-- name: DeleteListeningAchievementTracks :exec
+DELETE FROM listening_achievement_tracks
+WHERE achievement_id = $1::text
+`
+
+func (q *Queries) DeleteListeningAchievementTracks(ctx context.Context, achievementID string) error {
+	_, err := q.db.Exec(ctx, DeleteListeningAchievementTracks, achievementID)
+	return err
+}
+
+const DeleteReadingAchievementArticles = `-- name: DeleteReadingAchievementArticles :exec
+DELETE FROM reading_achievement_articles
+WHERE achievement_id = $1::text
+`
+
+func (q *Queries) DeleteReadingAchievementArticles(ctx context.Context, achievementID string) error {
+	_, err := q.db.Exec(ctx, DeleteReadingAchievementArticles, achievementID)
+	return err
 }
 
 const GetAchievementsByIDs = `-- name: GetAchievementsByIDs :many
@@ -442,4 +750,139 @@ func (q *Queries) GetTracksByAchievementIDs(ctx context.Context, achievementIds 
 		return nil, err
 	}
 	return items, nil
+}
+
+const RevokeSuperTeamAchievementBatch = `-- name: RevokeSuperTeamAchievementBatch :exec
+DELETE FROM user_achievements
+WHERE achievement_id = $1::text
+  AND user_id IN (
+    SELECT tm.user_id
+    FROM teams t
+    INNER JOIN team_members tm ON tm.team_id = t.id
+    WHERE t.super_team_id = $2::text
+  )
+`
+
+type RevokeSuperTeamAchievementBatchParams struct {
+	AchievementID string `json:"achievement_id"`
+	SuperTeamID   string `json:"super_team_id"`
+}
+
+// Revoke achievement from all members of a superteam in a single query
+func (q *Queries) RevokeSuperTeamAchievementBatch(ctx context.Context, arg RevokeSuperTeamAchievementBatchParams) error {
+	_, err := q.db.Exec(ctx, RevokeSuperTeamAchievementBatch, arg.AchievementID, arg.SuperTeamID)
+	return err
+}
+
+const RevokeTeamAchievementBatch = `-- name: RevokeTeamAchievementBatch :exec
+DELETE FROM user_achievements
+WHERE achievement_id = $1::text
+  AND user_id IN (
+    SELECT tm.user_id
+    FROM team_members tm
+    WHERE tm.team_id = $2::text
+  )
+`
+
+type RevokeTeamAchievementBatchParams struct {
+	AchievementID string `json:"achievement_id"`
+	TeamID        string `json:"team_id"`
+}
+
+// Revoke achievement from all members of a team in a single query
+func (q *Queries) RevokeTeamAchievementBatch(ctx context.Context, arg RevokeTeamAchievementBatchParams) error {
+	_, err := q.db.Exec(ctx, RevokeTeamAchievementBatch, arg.AchievementID, arg.TeamID)
+	return err
+}
+
+const RevokeUserAchievement = `-- name: RevokeUserAchievement :exec
+DELETE FROM user_achievements
+WHERE user_id = $1::text
+    AND achievement_id = $2::text
+`
+
+type RevokeUserAchievementParams struct {
+	UserID        string `json:"user_id"`
+	AchievementID string `json:"achievement_id"`
+}
+
+func (q *Queries) RevokeUserAchievement(ctx context.Context, arg RevokeUserAchievementParams) error {
+	_, err := q.db.Exec(ctx, RevokeUserAchievement, arg.UserID, arg.AchievementID)
+	return err
+}
+
+const UpdateAchievement = `-- name: UpdateAchievement :one
+
+UPDATE achievements
+SET
+    name = CASE WHEN $1::text IS NOT NULL THEN $1::text ELSE name END,
+    description = CASE WHEN $2::text IS NOT NULL THEN $2::text ELSE description END,
+    image_url = CASE WHEN $3::text IS NOT NULL THEN $3::text ELSE image_url END,
+    event_id = CASE WHEN $4::text IS NOT NULL THEN $4::text ELSE event_id END,
+    challenge_id = CASE WHEN $5::text IS NOT NULL THEN $5::text ELSE challenge_id END,
+    points = CASE WHEN $6::int IS NOT NULL THEN $6::int ELSE points END,
+    hidden = CASE WHEN $7::bool IS NOT NULL THEN $7::bool ELSE hidden END,
+    updated_at = now()
+WHERE id = $8::text
+RETURNING id, achievement_type, project_id, event_id, challenge_id, name, description, image_url, points, hidden, created_at, updated_at
+`
+
+type UpdateAchievementParams struct {
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+	ImageUrl    *string `json:"image_url"`
+	EventID     *string `json:"event_id"`
+	ChallengeID *string `json:"challenge_id"`
+	Points      *int32  `json:"points"`
+	Hidden      *bool   `json:"hidden"`
+	ID          string  `json:"id"`
+}
+
+// ==================== Update Operations ====================
+func (q *Queries) UpdateAchievement(ctx context.Context, arg UpdateAchievementParams) (*Achievement, error) {
+	row := q.db.QueryRow(ctx, UpdateAchievement,
+		arg.Name,
+		arg.Description,
+		arg.ImageUrl,
+		arg.EventID,
+		arg.ChallengeID,
+		arg.Points,
+		arg.Hidden,
+		arg.ID,
+	)
+	var i Achievement
+	err := row.Scan(
+		&i.ID,
+		&i.AchievementType,
+		&i.ProjectID,
+		&i.EventID,
+		&i.ChallengeID,
+		&i.Name,
+		&i.Description,
+		&i.ImageUrl,
+		&i.Points,
+		&i.Hidden,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const UpdateStreakAchievementData = `-- name: UpdateStreakAchievementData :exec
+UPDATE streak_achievements
+SET
+    streak_id = CASE WHEN $1::text IS NOT NULL THEN $1::text ELSE streak_id END,
+    needed_streak = CASE WHEN $2::int IS NOT NULL THEN $2::int ELSE needed_streak END
+WHERE achievement_id = $3::text
+`
+
+type UpdateStreakAchievementDataParams struct {
+	StreakID      *string `json:"streak_id"`
+	NeededStreak  *int32  `json:"needed_streak"`
+	AchievementID string  `json:"achievement_id"`
+}
+
+func (q *Queries) UpdateStreakAchievementData(ctx context.Context, arg UpdateStreakAchievementDataParams) error {
+	_, err := q.db.Exec(ctx, UpdateStreakAchievementData, arg.StreakID, arg.NeededStreak, arg.AchievementID)
+	return err
 }
