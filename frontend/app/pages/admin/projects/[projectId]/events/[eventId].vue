@@ -61,6 +61,7 @@ watch(
 )
 
 const { executeMutation } = useUpdateEventMutation()
+const { executeMutation: executeDelete } = useDeleteEventMutation()
 const toast = useToast()
 
 async function updateEvent(event: FormSubmitEvent<Schema>) {
@@ -88,6 +89,35 @@ async function updateEvent(event: FormSubmitEvent<Schema>) {
       })
     },
   )
+}
+
+async function deleteEvent() {
+  const confirmed = confirm(
+    `Are you sure you want to delete "${state.name}"? This action cannot be undone.`,
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  const response = await executeDelete({ id: route.params.eventId })
+  if (response.error) {
+    toast.add({
+      title: response.error.name,
+      description: response.error.message,
+      color: 'error',
+    })
+    return
+  }
+  toast.add({
+    title: 'Success',
+    description: 'Event deleted successfully',
+    color: 'success',
+  })
+  navigateTo({
+    name: 'admin-projects-projectId',
+    params: { projectId: route.params.projectId },
+  })
 }
 </script>
 
@@ -152,6 +182,15 @@ async function updateEvent(event: FormSubmitEvent<Schema>) {
             v-model:end="state.endDate"
           />
           <UButton type="submit" size="lg" block>Save changes</UButton>
+          <UButton
+            color="error"
+            variant="ghost"
+            size="lg"
+            block
+            @click="deleteEvent"
+          >
+            Delete Event
+          </UButton>
         </UForm>
       </template>
     </UContainer>

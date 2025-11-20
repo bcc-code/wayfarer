@@ -184,9 +184,9 @@ const tab = computed({
               ]"
             >
               <template #action-cell="{ row }">
-                <div class="flex gap-2">
+                <div class="flex justify-end gap-2">
                   <UButton
-                    variant="soft"
+                    variant="ghost"
                     :to="{
                       name: 'admin-projects-projectId-events-eventId',
                       params: {
@@ -211,9 +211,9 @@ const tab = computed({
               ]"
             >
               <template #action-cell="{ row }">
-                <div class="flex gap-2">
+                <div class="flex justify-end gap-2">
                   <UButton
-                    variant="soft"
+                    variant="ghost"
                     :to="{
                       name: 'admin-projects-projectId-challenges-challengeId',
                       params: {
@@ -238,9 +238,9 @@ const tab = computed({
               ]"
             >
               <template #action-cell="{ row }">
-                <div class="flex gap-2">
+                <div class="flex justify-end gap-2">
                   <UButton
-                    variant="soft"
+                    variant="ghost"
                     :to="{
                       name: 'admin-projects-projectId-streaks-streakId',
                       params: {
@@ -265,9 +265,9 @@ const tab = computed({
               ]"
             >
               <template #action-cell="{ row }">
-                <div class="flex gap-2">
+                <div class="flex justify-end gap-2">
                   <UButton
-                    variant="soft"
+                    variant="ghost"
                     :to="{
                       name: 'admin-projects-projectId-achievements-achievementId',
                       params: {

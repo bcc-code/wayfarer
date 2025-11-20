@@ -66,6 +66,7 @@ watch(
 )
 
 const { executeMutation } = useUpdateAchievementMutation()
+const { executeMutation: executeDelete } = useDeleteAchievementMutation()
 const toast = useToast()
 
 async function updateAchievement(event: FormSubmitEvent<Schema>) {
@@ -93,6 +94,35 @@ async function updateAchievement(event: FormSubmitEvent<Schema>) {
       })
     },
   )
+}
+
+async function deleteAchievement() {
+  const confirmed = confirm(
+    `Are you sure you want to delete "${state.name}"? This action cannot be undone.`,
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  const response = await executeDelete({ id: route.params.achievementId })
+  if (response.error) {
+    toast.add({
+      title: response.error.name,
+      description: response.error.message,
+      color: 'error',
+    })
+    return
+  }
+  toast.add({
+    title: 'Success',
+    description: 'Achievement deleted successfully',
+    color: 'success',
+  })
+  navigateTo({
+    name: 'admin-projects-projectId',
+    params: { projectId: route.params.projectId },
+  })
 }
 </script>
 
@@ -176,6 +206,15 @@ async function updateAchievement(event: FormSubmitEvent<Schema>) {
             />
           </UFormField>
           <UButton type="submit" size="lg" block>Save changes</UButton>
+          <UButton
+            color="error"
+            variant="ghost"
+            size="lg"
+            block
+            @click="deleteAchievement"
+          >
+            Delete Achievement
+          </UButton>
         </UForm>
       </template>
     </UContainer>
