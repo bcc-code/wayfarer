@@ -175,7 +175,7 @@ const tab = computed({
           variant="link"
         >
           <template #events>
-            <div class="mb-4 flex justify-end">
+            <div class="my-2">
               <UButton
                 icon="lucide:plus"
                 :to="{
@@ -213,7 +213,7 @@ const tab = computed({
             </UTable>
           </template>
           <template #challenges>
-            <div class="mb-4 flex justify-end">
+            <div class="my-2">
               <UButton
                 icon="lucide:plus"
                 :to="{
@@ -251,7 +251,7 @@ const tab = computed({
             </UTable>
           </template>
           <template #streaks>
-            <div class="mb-4 flex justify-end">
+            <div class="my-2">
               <UButton
                 icon="lucide:plus"
                 :to="{
@@ -289,7 +289,7 @@ const tab = computed({
             </UTable>
           </template>
           <template #achievements>
-            <div class="mb-4 flex justify-end">
+            <div class="my-2">
               <UButton
                 icon="lucide:plus"
                 :to="{
