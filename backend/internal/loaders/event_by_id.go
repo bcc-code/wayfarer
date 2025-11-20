@@ -45,6 +45,7 @@ func eventByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(contex
 			for _, row := range rows {
 				event := &model.Event{
 					ID:          row.ID,
+					ProjectID:   row.ProjectID,
 					Name:        row.Name,
 					Description: row.Description,
 					StartDate:   scalars.DateTime{Time: row.StartDate.Time},
