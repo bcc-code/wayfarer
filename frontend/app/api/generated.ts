@@ -234,6 +234,15 @@ export type CreateReadingAchievementInput = {
   projectId: Scalars['ID']['input'];
 };
 
+export type CreateScoreAdjustmentInput = {
+  challengeId?: InputMaybe<Scalars['ID']['input']>;
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  points: Scalars['Int']['input'];
+  projectId: Scalars['ID']['input'];
+  reason?: InputMaybe<Scalars['String']['input']>;
+  userId: Scalars['ID']['input'];
+};
+
 export type CreateSimpleAchievementInput = {
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   description: Scalars['String']['input'];
@@ -255,6 +264,7 @@ export type CreateStreakAchievementInput = {
   neededStreak: Scalars['Int']['input'];
   points: Scalars['Int']['input'];
   projectId: Scalars['ID']['input'];
+  streakId: Scalars['ID']['input'];
 };
 
 export type CreateStreakInput = {
@@ -413,9 +423,6 @@ export type ListeningAchievement = Achievement & {
 export type Mutation = {
   __typename?: 'Mutation';
   addTeamMembers: Team;
-  adjustSuperTeamScore: Scalars['Boolean']['output'];
-  adjustTeamScore: Scalars['Boolean']['output'];
-  adjustUserScore: Scalars['Boolean']['output'];
   archiveProject: Scalars['Boolean']['output'];
   assignChallengeToEvent: Challenge;
   assignRole: UserRole;
@@ -427,8 +434,6 @@ export type Mutation = {
   awardSuperTeamAchievement: Achievement;
   awardTeamAchievement: Achievement;
   bulkAwardAchievements: Array<Achievement>;
-  bulkAwardSuperTeamAchievements: Array<Achievement>;
-  bulkAwardTeamAchievements: Array<Achievement>;
   bulkCompleteChallenges: Array<Challenge>;
   bulkCreateChallenges: Array<Challenge>;
   bulkPublishChallenges: Array<Challenge>;
@@ -438,6 +443,7 @@ export type Mutation = {
   createListeningAchievement: ListeningAchievement;
   createProject: Project;
   createReadingAchievement: ReadingAchievement;
+  createScoreAdjustment: ScoreJournal;
   createSimpleAchievement: SimpleAchievement;
   createStreak: Streak;
   createStreakAchievement: StreakAchievement;
@@ -473,8 +479,11 @@ export type Mutation = {
   updateAvatar: User;
   updateChallenge: Challenge;
   updateEvent: Event;
+  updateListeningAchievement: ListeningAchievement;
   updateProject: Project;
+  updateReadingAchievement: ReadingAchievement;
   updateStreak: Streak;
+  updateStreakAchievement: StreakAchievement;
   updateSuperTeam: SuperTeam;
   updateTeam: Team;
 };
@@ -484,30 +493,6 @@ export type MutationAddTeamMembersArgs = {
   force?: InputMaybe<Scalars['Boolean']['input']>;
   teamId: Scalars['ID']['input'];
   userIds: Array<Scalars['ID']['input']>;
-};
-
-
-export type MutationAdjustSuperTeamScoreArgs = {
-  points: Scalars['Int']['input'];
-  projectId: Scalars['ID']['input'];
-  reason?: InputMaybe<Scalars['String']['input']>;
-  superTeamId: Scalars['ID']['input'];
-};
-
-
-export type MutationAdjustTeamScoreArgs = {
-  points: Scalars['Int']['input'];
-  projectId: Scalars['ID']['input'];
-  reason?: InputMaybe<Scalars['String']['input']>;
-  teamId: Scalars['ID']['input'];
-};
-
-
-export type MutationAdjustUserScoreArgs = {
-  points: Scalars['Int']['input'];
-  projectId: Scalars['ID']['input'];
-  reason?: InputMaybe<Scalars['String']['input']>;
-  userId: Scalars['ID']['input'];
 };
 
 
@@ -575,18 +560,6 @@ export type MutationBulkAwardAchievementsArgs = {
 };
 
 
-export type MutationBulkAwardSuperTeamAchievementsArgs = {
-  achievementId: Scalars['ID']['input'];
-  superTeamIds: Array<Scalars['ID']['input']>;
-};
-
-
-export type MutationBulkAwardTeamAchievementsArgs = {
-  achievementId: Scalars['ID']['input'];
-  teamIds: Array<Scalars['ID']['input']>;
-};
-
-
 export type MutationBulkCompleteChallengesArgs = {
   challengeId: Scalars['ID']['input'];
   completedAt?: InputMaybe<Scalars['DateTime']['input']>;
@@ -639,6 +612,11 @@ export type MutationCreateProjectArgs = {
 
 export type MutationCreateReadingAchievementArgs = {
   input: CreateReadingAchievementInput;
+};
+
+
+export type MutationCreateScoreAdjustmentArgs = {
+  input: CreateScoreAdjustmentInput;
 };
 
 
@@ -841,15 +819,33 @@ export type MutationUpdateEventArgs = {
 };
 
 
+export type MutationUpdateListeningAchievementArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateListeningAchievementInput;
+};
+
+
 export type MutationUpdateProjectArgs = {
   id: Scalars['ID']['input'];
   input: UpdateProjectInput;
 };
 
 
+export type MutationUpdateReadingAchievementArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateReadingAchievementInput;
+};
+
+
 export type MutationUpdateStreakArgs = {
   id: Scalars['ID']['input'];
   input: UpdateStreakInput;
+};
+
+
+export type MutationUpdateStreakAchievementArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateStreakAchievementInput;
 };
 
 
@@ -941,6 +937,7 @@ export type Query = {
   myProjects: Array<Project>;
   project: Project;
   projects: ProjectConnection;
+  scoreJournal: ScoreJournalConnection;
   streak: Streak;
   streaks: StreakConnection;
   superteam: SuperTeam;
@@ -1026,6 +1023,17 @@ export type QueryProjectsArgs = {
   filter?: InputMaybe<ProjectFilter>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryScoreJournalArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<ScoreJournalFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  projectId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -1143,6 +1151,50 @@ export enum ScopeType {
   Church = 'CHURCH',
   Project = 'PROJECT',
   Team = 'TEAM'
+}
+
+export type ScoreJournal = {
+  __typename?: 'ScoreJournal';
+  awardedBy?: Maybe<User>;
+  challenge?: Maybe<Challenge>;
+  createdAt: Scalars['DateTime']['output'];
+  event?: Maybe<Event>;
+  id: Scalars['ID']['output'];
+  points: Scalars['Int']['output'];
+  project: Project;
+  reason?: Maybe<Scalars['String']['output']>;
+  source?: Maybe<ScoreSource>;
+  sourceType: ScoreSourceType;
+  user: User;
+};
+
+export type ScoreJournalConnection = {
+  __typename?: 'ScoreJournalConnection';
+  edges: Array<ScoreJournalEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type ScoreJournalEdge = {
+  __typename?: 'ScoreJournalEdge';
+  cursor: Scalars['String']['output'];
+  node: ScoreJournal;
+};
+
+export type ScoreJournalFilter = {
+  challengeId?: InputMaybe<Scalars['ID']['input']>;
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  sourceType?: InputMaybe<ScoreSourceType>;
+};
+
+export type ScoreSource = Challenge | Event | ListeningAchievement | ReadingAchievement | SimpleAchievement | StreakAchievement;
+
+export enum ScoreSourceType {
+  Achievement = 'ACHIEVEMENT',
+  Challenge = 'CHALLENGE',
+  Event = 'EVENT',
+  Manual = 'MANUAL'
 }
 
 export type SimpleAchievement = Achievement & {
@@ -1335,12 +1387,46 @@ export type UpdateEventInput = {
   startDate?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
+export type UpdateListeningAchievementInput = {
+  challengeId?: InputMaybe<Scalars['ID']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  hidden?: InputMaybe<Scalars['Boolean']['input']>;
+  image?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  points?: InputMaybe<Scalars['Int']['input']>;
+  tracks?: InputMaybe<Array<TrackInput>>;
+};
+
 export type UpdateProjectInput = {
   branding?: InputMaybe<BrandingInput>;
   description?: InputMaybe<Scalars['String']['input']>;
   endDate?: InputMaybe<Scalars['DateTime']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   startDate?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+export type UpdateReadingAchievementInput = {
+  articles?: InputMaybe<Array<ArticleInput>>;
+  challengeId?: InputMaybe<Scalars['ID']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  hidden?: InputMaybe<Scalars['Boolean']['input']>;
+  image?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  points?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type UpdateStreakAchievementInput = {
+  challengeId?: InputMaybe<Scalars['ID']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  hidden?: InputMaybe<Scalars['Boolean']['input']>;
+  image?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  neededStreak?: InputMaybe<Scalars['Int']['input']>;
+  points?: InputMaybe<Scalars['Int']['input']>;
+  streakId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type UpdateStreakInput = {
@@ -1452,12 +1538,41 @@ export type AdminHomePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type AdminHomePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } }> } };
 
+export type AdminProjectAchievementPageQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+  achievementId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectAchievementPageQuery = { __typename?: 'Query', achievement:
+    | { __typename?: 'ListeningAchievement', id: string, name: string, description: string }
+    | { __typename?: 'ReadingAchievement', id: string, name: string, description: string }
+    | { __typename?: 'SimpleAchievement', id: string, name: string, description: string }
+    | { __typename?: 'StreakAchievement', id: string, name: string, description: string }
+  , project: { __typename?: 'Project', id: string, name: string } };
+
+export type AdminProjectChallengePageQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectChallengePageQuery = { __typename?: 'Query', challenge: { __typename?: 'Challenge', id: string, name: string, description: any, image?: string | null, url?: string | null, buttonText: string, publishedAt: any, endTime?: any | null }, project: { __typename?: 'Project', id: string, name: string } };
+
 export type AdminProjectEditPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
 }>;
 
 
 export type AdminProjectEditPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, archivedAt?: boolean | null, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', primary: string } } } };
+
+export type AdminProjectEventPageQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+  eventId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectEventPageQuery = { __typename?: 'Query', event: { __typename?: 'Event', id: string, name: string, description: string }, project: { __typename?: 'Project', id: string, name: string } };
 
 export type AdminProjectPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -1470,6 +1585,14 @@ export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typenam
         | { __typename?: 'SimpleAchievement', id: string, name: string }
         | { __typename?: 'StreakAchievement', id: string, name: string }
        }> }, events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string } }> }, challenges: { __typename?: 'ChallengeConnection', edges: Array<{ __typename?: 'ChallengeEdge', node: { __typename?: 'Challenge', id: string, name: string } }> }, streaks: { __typename?: 'StreakConnection', edges: Array<{ __typename?: 'StreakEdge', node: { __typename?: 'Streak', id: string, name: string } }> } };
+
+export type AdminProjectStreakPageQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+  streakId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectStreakPageQuery = { __typename?: 'Query', streak: { __typename?: 'Streak', id: string, name: string, description: string, status: number, relevantDays: Array<{ __typename?: 'DateRange', start: any, end: any }> }, project: { __typename?: 'Project', id: string, name: string } };
 
 export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1661,6 +1784,45 @@ export const AdminHomePageDocument = gql`
 export function useAdminHomePageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminHomePageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminHomePageQuery, AdminHomePageQueryVariables | undefined>({ query: AdminHomePageDocument, variables: undefined, ...options });
 };
+export const AdminProjectAchievementPageDocument = gql`
+    query AdminProjectAchievementPage($projectId: ID!, $achievementId: ID!) {
+  achievement(id: $achievementId) {
+    id
+    name
+    description
+  }
+  project(id: $projectId) {
+    id
+    name
+  }
+}
+    `;
+
+export function useAdminProjectAchievementPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectAchievementPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectAchievementPageQuery, AdminProjectAchievementPageQueryVariables | undefined>({ query: AdminProjectAchievementPageDocument, variables: undefined, ...options });
+};
+export const AdminProjectChallengePageDocument = gql`
+    query AdminProjectChallengePage($projectId: ID!, $challengeId: ID!) {
+  challenge(id: $challengeId) {
+    id
+    name
+    description
+    image
+    url
+    buttonText
+    publishedAt
+    endTime
+  }
+  project(id: $projectId) {
+    id
+    name
+  }
+}
+    `;
+
+export function useAdminProjectChallengePageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectChallengePageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectChallengePageQuery, AdminProjectChallengePageQueryVariables | undefined>({ query: AdminProjectChallengePageDocument, variables: undefined, ...options });
+};
 export const AdminProjectEditPageDocument = gql`
     query AdminProjectEditPage($projectId: ID!) {
   project(id: $projectId) {
@@ -1683,6 +1845,23 @@ export const AdminProjectEditPageDocument = gql`
 
 export function useAdminProjectEditPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectEditPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectEditPageQuery, AdminProjectEditPageQueryVariables | undefined>({ query: AdminProjectEditPageDocument, variables: undefined, ...options });
+};
+export const AdminProjectEventPageDocument = gql`
+    query AdminProjectEventPage($projectId: ID!, $eventId: ID!) {
+  event(id: $eventId) {
+    id
+    name
+    description
+  }
+  project(id: $projectId) {
+    id
+    name
+  }
+}
+    `;
+
+export function useAdminProjectEventPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectEventPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectEventPageQuery, AdminProjectEventPageQueryVariables | undefined>({ query: AdminProjectEventPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectPageDocument = gql`
     query AdminProjectPage($projectId: ID!) {
@@ -1737,6 +1916,28 @@ export const AdminProjectPageDocument = gql`
 
 export function useAdminProjectPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectPageQuery, AdminProjectPageQueryVariables | undefined>({ query: AdminProjectPageDocument, variables: undefined, ...options });
+};
+export const AdminProjectStreakPageDocument = gql`
+    query AdminProjectStreakPage($projectId: ID!, $streakId: ID!) {
+  streak(id: $streakId) {
+    id
+    name
+    description
+    status
+    relevantDays {
+      start
+      end
+    }
+  }
+  project(id: $projectId) {
+    id
+    name
+  }
+}
+    `;
+
+export function useAdminProjectStreakPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectStreakPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectStreakPageQuery, AdminProjectStreakPageQueryVariables | undefined>({ query: AdminProjectStreakPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectsPageDocument = gql`
     query AdminProjectsPage {

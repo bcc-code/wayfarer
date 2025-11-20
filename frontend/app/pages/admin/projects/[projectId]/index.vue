@@ -90,26 +90,6 @@ watch(data, () => {
     state.branding = data.value.project.branding
   }
 })
-
-const toast = useToast()
-const { executeMutation } = useDeleteChallengeMutation()
-const deleteChallenge = (challengeId: string) => {
-  executeMutation({ challengeId })
-    .then(() => {
-      toast.add({
-        title: 'Challenge deleted',
-        description: 'The challenge has been deleted',
-        color: 'success',
-      })
-    })
-    .catch((error) => {
-      toast.add({
-        title: error.name,
-        description: error.message,
-        color: 'error',
-      })
-    })
-}
 </script>
 
 <template>
@@ -175,7 +155,31 @@ const deleteChallenge = (challengeId: string) => {
           variant="link"
         >
           <template #events>
-            <UTable :data="data.events.edges.map((e) => e.node)" />
+            <UTable
+              :data="data.events.edges.map((e) => e.node)"
+              :columns="[
+                { accessorKey: 'id' },
+                { accessorKey: 'name' },
+                { id: 'action' },
+              ]"
+            >
+              <template #action-cell="{ row }">
+                <div class="flex gap-2">
+                  <UButton
+                    variant="soft"
+                    :to="{
+                      name: 'admin-projects-projectId-events-eventId',
+                      params: {
+                        projectId: route.params.projectId,
+                        eventId: row.original.id,
+                      },
+                    }"
+                  >
+                    Edit
+                  </UButton>
+                </div>
+              </template>
+            </UTable>
           </template>
           <template #challenges>
             <UTable
@@ -187,19 +191,76 @@ const deleteChallenge = (challengeId: string) => {
               ]"
             >
               <template #action-cell="{ row }">
-                <UButton
-                  color="error"
-                  @click="() => deleteChallenge(row.original.id)"
-                  >Delete</UButton
-                >
+                <div class="flex gap-2">
+                  <UButton
+                    variant="soft"
+                    :to="{
+                      name: 'admin-projects-projectId-challenges-challengeId',
+                      params: {
+                        projectId: route.params.projectId,
+                        challengeId: row.original.id,
+                      },
+                    }"
+                  >
+                    Edit
+                  </UButton>
+                </div>
               </template>
             </UTable>
           </template>
           <template #streaks>
-            <UTable :data="data.streaks.edges.map((e) => e.node)" />
+            <UTable
+              :data="data.streaks.edges.map((e) => e.node)"
+              :columns="[
+                { accessorKey: 'id' },
+                { accessorKey: 'name' },
+                { id: 'action' },
+              ]"
+            >
+              <template #action-cell="{ row }">
+                <div class="flex gap-2">
+                  <UButton
+                    variant="soft"
+                    :to="{
+                      name: 'admin-projects-projectId-streaks-streakId',
+                      params: {
+                        projectId: route.params.projectId,
+                        streakId: row.original.id,
+                      },
+                    }"
+                  >
+                    Edit
+                  </UButton>
+                </div>
+              </template>
+            </UTable>
           </template>
           <template #achievements>
-            <UTable :data="data.achievements.edges.map((e) => e.node)" />
+            <UTable
+              :data="data.achievements.edges.map((e) => e.node)"
+              :columns="[
+                { accessorKey: 'id' },
+                { accessorKey: 'name' },
+                { id: 'action' },
+              ]"
+            >
+              <template #action-cell="{ row }">
+                <div class="flex gap-2">
+                  <UButton
+                    variant="soft"
+                    :to="{
+                      name: 'admin-projects-projectId-achievements-achievementId',
+                      params: {
+                        projectId: route.params.projectId,
+                        achievementId: row.original.id,
+                      },
+                    }"
+                  >
+                    Edit
+                  </UButton>
+                </div>
+              </template>
+            </UTable>
           </template>
         </UTabs>
       </template>
