@@ -2727,12 +2727,108 @@ func (r *mutationResolver) BulkCompleteChallenges(ctx context.Context, userIds [
 
 // AssignRole is the resolver for the assignRole field.
 func (r *mutationResolver) AssignRole(ctx context.Context, input model.AssignRoleInput) (*model.UserRole, error) {
-	panic(fmt.Errorf("not implemented: AssignRole - assignRole"))
+	// Get authenticated user (assigner)
+	assignerID, ok := middleware.GetUserID(ctx)
+	if !ok || assignerID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Convert scope from input to separate pointers
+	var churchID, projectID, teamID *string
+	if input.ScopeType != nil && input.ScopeID != nil {
+		switch *input.ScopeType {
+		case model.ScopeTypeChurch:
+			churchID = input.ScopeID
+		case model.ScopeTypeProject:
+			projectID = input.ScopeID
+		case model.ScopeTypeTeam:
+			teamID = input.ScopeID
+		}
+	}
+
+	// Call RoleService (includes authorization check)
+	role, err := r.RoleService.AssignRole(
+		ctx,
+		assignerID,
+		input.UserID,
+		services.RoleType(input.Role),
+		churchID,
+		projectID,
+		teamID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to assign role: %w", err)
+	}
+
+	// Invalidate user's role cache
+	r.Cache.InvalidateUser(input.UserID)
+
+	// Convert sqlc.UserRole to model.UserRole
+	var scope *model.RoleScope
+	if role.ChurchID != nil {
+		scope = &model.RoleScope{
+			Type: model.ScopeTypeChurch,
+			ID:   *role.ChurchID,
+		}
+	} else if role.ProjectID != nil {
+		scope = &model.RoleScope{
+			Type: model.ScopeTypeProject,
+			ID:   *role.ProjectID,
+		}
+	} else if role.TeamID != nil {
+		scope = &model.RoleScope{
+			Type: model.ScopeTypeTeam,
+			ID:   *role.TeamID,
+		}
+	}
+
+	return &model.UserRole{
+		ID:    role.ID,
+		Role:  model.RoleType(role.Role),
+		User:  &model.User{ID: role.UserID},
+		Scope: scope,
+	}, nil
 }
 
 // RevokeRole is the resolver for the revokeRole field.
 func (r *mutationResolver) RevokeRole(ctx context.Context, input model.RevokeRoleInput) (bool, error) {
-	panic(fmt.Errorf("not implemented: RevokeRole - revokeRole"))
+	// Get authenticated user (revoker)
+	revokerID, ok := middleware.GetUserID(ctx)
+	if !ok || revokerID == "" {
+		return false, fmt.Errorf("user not authenticated")
+	}
+
+	// Convert scope from input to separate pointers
+	var churchID, projectID, teamID *string
+	if input.ScopeType != nil && input.ScopeID != nil {
+		switch *input.ScopeType {
+		case model.ScopeTypeChurch:
+			churchID = input.ScopeID
+		case model.ScopeTypeProject:
+			projectID = input.ScopeID
+		case model.ScopeTypeTeam:
+			teamID = input.ScopeID
+		}
+	}
+
+	// Call RoleService (includes authorization check)
+	err := r.RoleService.RevokeRole(
+		ctx,
+		revokerID,
+		input.UserID,
+		services.RoleType(input.Role),
+		churchID,
+		projectID,
+		teamID,
+	)
+	if err != nil {
+		return false, fmt.Errorf("failed to revoke role: %w", err)
+	}
+
+	// Invalidate user's role cache
+	r.Cache.InvalidateUser(input.UserID)
+
+	return true, nil
 }
 
 // Me is the resolver for the me field.

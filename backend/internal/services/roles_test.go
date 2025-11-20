@@ -300,6 +300,69 @@ func TestAssignRole_UnauthorizedFails(t *testing.T) {
 
 }
 
+func TestRevokeRole_WithAuthorization(t *testing.T) {
+	mockQueries := mocks.NewMockRoleQuerier(t)
+	service := NewRoleService(mockQueries, newTestCache())
+
+	ctx := context.Background()
+	revokerID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	targetUserID := "US02ARZ3NDEKTSV4RRFFQ69G5FAV"
+	projectID := "PR01ARZ3NDEKTSV4RRFFQ69G5FAV"
+
+	// Mock: revoker is not a superadmin
+	mockQueries.On("HasRole", ctx, sqlc.HasRoleParams{
+		UserID: revokerID,
+		Role:   string(RoleSuperAdmin),
+	}).Return(false, nil)
+
+	// Mock: revoker is an admin
+	mockQueries.On("HasRole", ctx, sqlc.HasRoleParams{
+		UserID: revokerID,
+		Role:   string(RoleAdmin),
+	}).Return(true, nil)
+
+	// Mock: role revocation succeeds
+	mockQueries.On("RevokeRole", ctx, mock.MatchedBy(func(params sqlc.RevokeRoleParams) bool {
+		return params.UserID == targetUserID &&
+			params.Role == string(RoleProjectAdmin) &&
+			params.ProjectID != nil && *params.ProjectID == projectID
+	})).Return(nil)
+
+	// Revoke the role
+	err := service.RevokeRole(ctx, revokerID, targetUserID, RoleProjectAdmin, nil, &projectID, nil)
+
+	assert.NoError(t, err)
+
+}
+
+func TestRevokeRole_UnauthorizedFails(t *testing.T) {
+	mockQueries := mocks.NewMockRoleQuerier(t)
+	service := NewRoleService(mockQueries, newTestCache())
+
+	ctx := context.Background()
+	revokerID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	targetUserID := "US02ARZ3NDEKTSV4RRFFQ69G5FAV"
+
+	// Mock: revoker is not a superadmin
+	mockQueries.On("HasRole", ctx, sqlc.HasRoleParams{
+		UserID: revokerID,
+		Role:   string(RoleSuperAdmin),
+	}).Return(false, nil)
+
+	// Mock: revoker is not an admin
+	mockQueries.On("HasRole", ctx, sqlc.HasRoleParams{
+		UserID: revokerID,
+		Role:   string(RoleAdmin),
+	}).Return(false, nil)
+
+	// Try to revoke admin role (should fail)
+	err := service.RevokeRole(ctx, revokerID, targetUserID, RoleAdmin, nil, nil, nil)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "does not have permission")
+
+}
+
 // Helper function
 func stringPtr(s string) *string {
 	return &s
