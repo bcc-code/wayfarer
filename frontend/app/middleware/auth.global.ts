@@ -4,9 +4,15 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
-  const { token, loginWithRedirect } = useAuth()
+  const token = useCookie('token')
+  const config = useRuntimeConfig()
 
   if (!token.value) {
-    await loginWithRedirect()
+    return navigateTo(
+      `${config.public.loginUrl}?redirect=${to.path}`,
+      {
+        external: true,
+      },
+    )
   }
 })

@@ -3,33 +3,38 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
-  const { me, isLoading, token, loginWithRedirect, isAdmin, isSuperAdmin } =
-    useAuth()
+  const token = useCookie('token')
+  const config = useRuntimeConfig()
 
   // If no token, redirect to login
   if (!token.value) {
-    return loginWithRedirect()
+    return navigateTo(
+      `${config.public.loginUrl}?redirect=${to.path}`,
+      {
+        external: true,
+      },
+    )
   }
 
-  // Wait for auth to complete (with timeout)
-  let attempts = 0
-  while (isLoading.value && attempts < 100) {
-    // Max 1 second
-    await new Promise((resolve) => setTimeout(resolve, 10))
-    attempts++
+  // Check if we already have user data
+  const me = useState<any>('me', () => null)
+
+  // If we have user data, check roles
+  if (me.value) {
+    const isAdmin = me.value?.roles.some((role: any) => role.role === 'ADMIN')
+    const isSuperAdmin = me.value?.roles.some(
+      (role: any) => role.role === 'SUPERADMIN',
+    )
+
+    if (!isSuperAdmin && !isAdmin) {
+      return createError({
+        statusCode: 403,
+        statusMessage: 'Forbidden',
+        message: 'You do not have permission to access this page',
+      })
+    }
   }
 
-  // If still loading or no user data, something went wrong
-  if (!me.value) {
-    return loginWithRedirect()
-  }
-
-  // Check for superadmin role
-  if (!isSuperAdmin.value && !isAdmin.value) {
-    return createError({
-      statusCode: 403,
-      statusMessage: 'Forbidden',
-      message: 'You do not have permission to access this page',
-    })
-  }
+  // If we don't have user data yet, let it through and the page will handle loading
+  // The useAuth() composable will be called in the layout/page and will populate the data
 })
