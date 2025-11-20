@@ -5,7 +5,7 @@ definePageMeta({
 })
 
 gql(`
-	query AdminProjectStreakPage($projectId: ID!, $streakId: ID!) {
+	query AdminProjectStreakPage($streakId: ID!) {
     streak(id: $streakId) {
       id
       name
@@ -15,10 +15,10 @@ gql(`
         start
         end
       }
-    }
-    project(id: $projectId) {
-      id
-      name
+      project {
+        id
+        name
+      }
     }
   }
 `)
@@ -28,7 +28,6 @@ const route = useRoute('admin-projects-projectId-streaks-streakId')
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminProjectStreakPageQuery({
   variables: {
-    projectId: route.params.projectId,
     streakId: route.params.streakId,
   },
   pause: computed(() => !isAuthReady.value),
@@ -46,7 +45,7 @@ const { data, fetching, error } = useAdminProjectStreakPageQuery({
               to: { name: 'admin-projects' },
             },
             {
-              label: data?.project.name ?? route.params.projectId,
+              label: data?.streak.project.name ?? route.params.projectId,
               to: {
                 name: 'admin-projects-projectId',
                 params: { projectId: route.params.projectId },

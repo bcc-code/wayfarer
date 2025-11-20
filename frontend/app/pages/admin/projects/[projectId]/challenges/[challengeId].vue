@@ -5,22 +5,22 @@ definePageMeta({
 })
 
 gql(`
-	query AdminProjectChallengePage($projectId: ID!, $challengeId: ID!) {
-		challenge(id: $challengeId) {
-			id
-			name
-			description
-			image
-			url
-			buttonText
-			publishedAt
-			endTime
-		}
-		project(id: $projectId) {
-			id
-			name
-		}
-	}
+	query AdminProjectChallengePage($challengeId: ID!) {
+    challenge(id: $challengeId) {
+      id
+      name
+      description
+      image
+      url
+      buttonText
+      publishedAt
+      endTime
+      project {
+        id
+        name
+      }
+    }
+  }
 `)
 
 const route = useRoute('admin-projects-projectId-challenges-challengeId')
@@ -28,7 +28,6 @@ const route = useRoute('admin-projects-projectId-challenges-challengeId')
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminProjectChallengePageQuery({
   variables: {
-    projectId: route.params.projectId,
     challengeId: route.params.challengeId,
   },
   pause: computed(() => !isAuthReady.value),
@@ -46,7 +45,7 @@ const { data, fetching, error } = useAdminProjectChallengePageQuery({
               to: { name: 'admin-projects' },
             },
             {
-              label: data?.project.name ?? route.params.projectId,
+              label: data?.challenge.project.name ?? route.params.projectId,
               to: {
                 name: 'admin-projects-projectId',
                 params: { projectId: route.params.projectId },

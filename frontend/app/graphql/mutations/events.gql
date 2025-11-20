@@ -1,0 +1,15 @@
+mutation DeleteEvent($id: ID!) {
+  deleteEvent(id: $id)
+}
+
+mutation UpdateEvent($id: ID!, $input: UpdateEventInput!) {
+  updateEvent(id: $id, input: $input) {
+    id
+  }
+}
+
+mutation CreateEvent($projectId: ID!, $input: CreateEventInput!) {
+  createEvent(projectId: $projectId, input: $input) {
+    id
+  }
+}

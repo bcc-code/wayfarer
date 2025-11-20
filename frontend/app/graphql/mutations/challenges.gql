@@ -1,3 +1,19 @@
-mutation DeleteChallenge($challengeId: ID!) {
-  deleteChallenge(id: $challengeId)
+mutation DeleteChallenge($id: ID!) {
+  deleteChallenge(id: $id)
+}
+
+mutation UpdateChallenge($id: ID!, $input: UpdateChallengeInput!) {
+  updateChallenge(id: $id, input: $input) {
+    id
+  }
+}
+
+mutation CreateChallenge(
+  $projectId: ID!
+  $eventId: ID!
+  $input: CreateChallengeInput!
+) {
+  createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
+    id
+  }
 }

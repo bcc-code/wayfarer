@@ -90,6 +90,21 @@ watch(data, () => {
     state.branding = data.value.project.branding
   }
 })
+
+// Tabs state management
+const params = useUrlSearchParams('history')
+const fallbackTab = useLocalStorage('fallback-tab', 'events')
+const tab = computed({
+  get() {
+    if (typeof params.tab === 'string') return params.tab
+    if (fallbackTab.value) return fallbackTab.value
+    return 'events'
+  },
+  set(tab: string) {
+    params.tab = tab
+    fallbackTab.value = tab
+  },
+})
 </script>
 
 <template>
@@ -146,11 +161,16 @@ watch(data, () => {
           </div>
         </header>
         <UTabs
+          v-model="tab"
           :items="[
-            { label: 'Events', slot: 'events' },
-            { label: 'Challenges', slot: 'challenges' },
-            { label: 'Streaks', slot: 'streaks' },
-            { label: 'Achievements', slot: 'achievements' },
+            { value: 'events', label: 'Events', slot: 'events' },
+            { value: 'challenges', label: 'Challenges', slot: 'challenges' },
+            { value: 'streaks', label: 'Streaks', slot: 'streaks' },
+            {
+              value: 'achievements',
+              label: 'Achievements',
+              slot: 'achievements',
+            },
           ]"
           variant="link"
         >

@@ -5,15 +5,19 @@ definePageMeta({
 })
 
 gql(`
-	query AdminProjectAchievementPage($projectId: ID!, $achievementId: ID!) {
+	query AdminProjectAchievementPage($achievementId: ID!) {
     achievement(id: $achievementId) {
       id
       name
       description
-    }
-    project(id: $projectId) {
-      id
-      name
+      image
+      achievedAt
+      points
+      hidden
+      project {
+        id
+        name
+      }
     }
   }
 `)
@@ -23,7 +27,6 @@ const route = useRoute('admin-projects-projectId-achievements-achievementId')
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminProjectAchievementPageQuery({
   variables: {
-    projectId: route.params.projectId,
     achievementId: route.params.achievementId,
   },
   pause: computed(() => !isAuthReady.value),
@@ -41,7 +44,7 @@ const { data, fetching, error } = useAdminProjectAchievementPageQuery({
               to: { name: 'admin-projects' },
             },
             {
-              label: data?.project.name ?? route.params.projectId,
+              label: data?.achievement.project.name ?? route.params.projectId,
               to: {
                 name: 'admin-projects-projectId',
                 params: { projectId: route.params.projectId },

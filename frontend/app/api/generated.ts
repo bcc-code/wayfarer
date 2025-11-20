@@ -1502,11 +1502,51 @@ export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, membersId: string, gender: Gender, birthdate: string, church: { __typename?: 'Church', id: string, name: string, country: string, category: ChurchCategory }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType, church?: { __typename?: 'Church', id: string } | null, team?: { __typename?: 'Team', id: string } | null, project?: { __typename?: 'Project', id: string } | null } | null }> } };
 
 export type DeleteChallengeMutationVariables = Exact<{
-  challengeId: Scalars['ID']['input'];
+  id: Scalars['ID']['input'];
 }>;
 
 
 export type DeleteChallengeMutation = { __typename?: 'Mutation', deleteChallenge: boolean };
+
+export type UpdateChallengeMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateChallengeInput;
+}>;
+
+
+export type UpdateChallengeMutation = { __typename?: 'Mutation', updateChallenge: { __typename?: 'Challenge', id: string } };
+
+export type CreateChallengeMutationVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+  eventId: Scalars['ID']['input'];
+  input: CreateChallengeInput;
+}>;
+
+
+export type CreateChallengeMutation = { __typename?: 'Mutation', createChallenge: { __typename?: 'Challenge', id: string } };
+
+export type DeleteEventMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteEventMutation = { __typename?: 'Mutation', deleteEvent: boolean };
+
+export type UpdateEventMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateEventInput;
+}>;
+
+
+export type UpdateEventMutation = { __typename?: 'Mutation', updateEvent: { __typename?: 'Event', id: string } };
+
+export type CreateEventMutationVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+  input: CreateEventInput;
+}>;
+
+
+export type CreateEventMutation = { __typename?: 'Mutation', createEvent: { __typename?: 'Event', id: string } };
 
 export type CreateProjectMutationVariables = Exact<{
   input: CreateProjectInput;
@@ -1522,6 +1562,13 @@ export type UpdateProjectMutationVariables = Exact<{
 
 
 export type UpdateProjectMutation = { __typename?: 'Mutation', updateProject: { __typename?: 'Project', id: string } };
+
+export type DeleteProjectMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteProjectMutation = { __typename?: 'Mutation', deleteProject: boolean };
 
 export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1539,25 +1586,23 @@ export type AdminHomePageQueryVariables = Exact<{ [key: string]: never; }>;
 export type AdminHomePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } }> } };
 
 export type AdminProjectAchievementPageQueryVariables = Exact<{
-  projectId: Scalars['ID']['input'];
   achievementId: Scalars['ID']['input'];
 }>;
 
 
 export type AdminProjectAchievementPageQuery = { __typename?: 'Query', achievement:
-    | { __typename?: 'ListeningAchievement', id: string, name: string, description: string }
-    | { __typename?: 'ReadingAchievement', id: string, name: string, description: string }
-    | { __typename?: 'SimpleAchievement', id: string, name: string, description: string }
-    | { __typename?: 'StreakAchievement', id: string, name: string, description: string }
-  , project: { __typename?: 'Project', id: string, name: string } };
+    | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image?: string | null, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
+   };
 
 export type AdminProjectChallengePageQueryVariables = Exact<{
-  projectId: Scalars['ID']['input'];
   challengeId: Scalars['ID']['input'];
 }>;
 
 
-export type AdminProjectChallengePageQuery = { __typename?: 'Query', challenge: { __typename?: 'Challenge', id: string, name: string, description: any, image?: string | null, url?: string | null, buttonText: string, publishedAt: any, endTime?: any | null }, project: { __typename?: 'Project', id: string, name: string } };
+export type AdminProjectChallengePageQuery = { __typename?: 'Query', challenge: { __typename?: 'Challenge', id: string, name: string, description: any, image?: string | null, url?: string | null, buttonText: string, publishedAt: any, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string } } };
 
 export type AdminProjectEditPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -1567,12 +1612,11 @@ export type AdminProjectEditPageQueryVariables = Exact<{
 export type AdminProjectEditPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, archivedAt?: boolean | null, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', primary: string } } } };
 
 export type AdminProjectEventPageQueryVariables = Exact<{
-  projectId: Scalars['ID']['input'];
   eventId: Scalars['ID']['input'];
 }>;
 
 
-export type AdminProjectEventPageQuery = { __typename?: 'Query', event: { __typename?: 'Event', id: string, name: string, description: string }, project: { __typename?: 'Project', id: string, name: string } };
+export type AdminProjectEventPageQuery = { __typename?: 'Query', event: { __typename?: 'Event', id: string, name: string, description: string, parentProject: { __typename?: 'Project', id: string, name: string } } };
 
 export type AdminProjectPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -1587,12 +1631,11 @@ export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typenam
        }> }, events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string } }> }, challenges: { __typename?: 'ChallengeConnection', edges: Array<{ __typename?: 'ChallengeEdge', node: { __typename?: 'Challenge', id: string, name: string } }> }, streaks: { __typename?: 'StreakConnection', edges: Array<{ __typename?: 'StreakEdge', node: { __typename?: 'Streak', id: string, name: string } }> } };
 
 export type AdminProjectStreakPageQueryVariables = Exact<{
-  projectId: Scalars['ID']['input'];
   streakId: Scalars['ID']['input'];
 }>;
 
 
-export type AdminProjectStreakPageQuery = { __typename?: 'Query', streak: { __typename?: 'Streak', id: string, name: string, description: string, status: number, relevantDays: Array<{ __typename?: 'DateRange', start: any, end: any }> }, project: { __typename?: 'Project', id: string, name: string } };
+export type AdminProjectStreakPageQuery = { __typename?: 'Query', streak: { __typename?: 'Streak', id: string, name: string, description: string, status: number, relevantDays: Array<{ __typename?: 'DateRange', start: any, end: any }>, project: { __typename?: 'Project', id: string, name: string } } };
 
 export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1687,13 +1730,66 @@ export function useGetMeQuery(options?: Omit<Urql.UseQueryArgs<never, GetMeQuery
   return Urql.useQuery<GetMeQuery, GetMeQueryVariables | undefined>({ query: GetMeDocument, variables: undefined, ...options });
 };
 export const DeleteChallengeDocument = gql`
-    mutation DeleteChallenge($challengeId: ID!) {
-  deleteChallenge(id: $challengeId)
+    mutation DeleteChallenge($id: ID!) {
+  deleteChallenge(id: $id)
 }
     `;
 
 export function useDeleteChallengeMutation() {
   return Urql.useMutation<DeleteChallengeMutation, DeleteChallengeMutationVariables>(DeleteChallengeDocument);
+};
+export const UpdateChallengeDocument = gql`
+    mutation UpdateChallenge($id: ID!, $input: UpdateChallengeInput!) {
+  updateChallenge(id: $id, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useUpdateChallengeMutation() {
+  return Urql.useMutation<UpdateChallengeMutation, UpdateChallengeMutationVariables>(UpdateChallengeDocument);
+};
+export const CreateChallengeDocument = gql`
+    mutation CreateChallenge($projectId: ID!, $eventId: ID!, $input: CreateChallengeInput!) {
+  createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useCreateChallengeMutation() {
+  return Urql.useMutation<CreateChallengeMutation, CreateChallengeMutationVariables>(CreateChallengeDocument);
+};
+export const DeleteEventDocument = gql`
+    mutation DeleteEvent($id: ID!) {
+  deleteEvent(id: $id)
+}
+    `;
+
+export function useDeleteEventMutation() {
+  return Urql.useMutation<DeleteEventMutation, DeleteEventMutationVariables>(DeleteEventDocument);
+};
+export const UpdateEventDocument = gql`
+    mutation UpdateEvent($id: ID!, $input: UpdateEventInput!) {
+  updateEvent(id: $id, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useUpdateEventMutation() {
+  return Urql.useMutation<UpdateEventMutation, UpdateEventMutationVariables>(UpdateEventDocument);
+};
+export const CreateEventDocument = gql`
+    mutation CreateEvent($projectId: ID!, $input: CreateEventInput!) {
+  createEvent(projectId: $projectId, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useCreateEventMutation() {
+  return Urql.useMutation<CreateEventMutation, CreateEventMutationVariables>(CreateEventDocument);
 };
 export const CreateProjectDocument = gql`
     mutation CreateProject($input: CreateProjectInput!) {
@@ -1716,6 +1812,15 @@ export const UpdateProjectDocument = gql`
 
 export function useUpdateProjectMutation() {
   return Urql.useMutation<UpdateProjectMutation, UpdateProjectMutationVariables>(UpdateProjectDocument);
+};
+export const DeleteProjectDocument = gql`
+    mutation DeleteProject($id: ID!) {
+  deleteProject(id: $id)
+}
+    `;
+
+export function useDeleteProjectMutation() {
+  return Urql.useMutation<DeleteProjectMutation, DeleteProjectMutationVariables>(DeleteProjectDocument);
 };
 export const AdminSidebarDocument = gql`
     query AdminSidebar {
@@ -1785,15 +1890,19 @@ export function useAdminHomePageQuery(options?: Omit<Urql.UseQueryArgs<never, Ad
   return Urql.useQuery<AdminHomePageQuery, AdminHomePageQueryVariables | undefined>({ query: AdminHomePageDocument, variables: undefined, ...options });
 };
 export const AdminProjectAchievementPageDocument = gql`
-    query AdminProjectAchievementPage($projectId: ID!, $achievementId: ID!) {
+    query AdminProjectAchievementPage($achievementId: ID!) {
   achievement(id: $achievementId) {
     id
     name
     description
-  }
-  project(id: $projectId) {
-    id
-    name
+    image
+    achievedAt
+    points
+    hidden
+    project {
+      id
+      name
+    }
   }
 }
     `;
@@ -1802,7 +1911,7 @@ export function useAdminProjectAchievementPageQuery(options?: Omit<Urql.UseQuery
   return Urql.useQuery<AdminProjectAchievementPageQuery, AdminProjectAchievementPageQueryVariables | undefined>({ query: AdminProjectAchievementPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectChallengePageDocument = gql`
-    query AdminProjectChallengePage($projectId: ID!, $challengeId: ID!) {
+    query AdminProjectChallengePage($challengeId: ID!) {
   challenge(id: $challengeId) {
     id
     name
@@ -1812,10 +1921,10 @@ export const AdminProjectChallengePageDocument = gql`
     buttonText
     publishedAt
     endTime
-  }
-  project(id: $projectId) {
-    id
-    name
+    project {
+      id
+      name
+    }
   }
 }
     `;
@@ -1847,15 +1956,15 @@ export function useAdminProjectEditPageQuery(options?: Omit<Urql.UseQueryArgs<ne
   return Urql.useQuery<AdminProjectEditPageQuery, AdminProjectEditPageQueryVariables | undefined>({ query: AdminProjectEditPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectEventPageDocument = gql`
-    query AdminProjectEventPage($projectId: ID!, $eventId: ID!) {
+    query AdminProjectEventPage($eventId: ID!) {
   event(id: $eventId) {
     id
     name
     description
-  }
-  project(id: $projectId) {
-    id
-    name
+    parentProject {
+      id
+      name
+    }
   }
 }
     `;
@@ -1918,7 +2027,7 @@ export function useAdminProjectPageQuery(options?: Omit<Urql.UseQueryArgs<never,
   return Urql.useQuery<AdminProjectPageQuery, AdminProjectPageQueryVariables | undefined>({ query: AdminProjectPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectStreakPageDocument = gql`
-    query AdminProjectStreakPage($projectId: ID!, $streakId: ID!) {
+    query AdminProjectStreakPage($streakId: ID!) {
   streak(id: $streakId) {
     id
     name
@@ -1928,10 +2037,10 @@ export const AdminProjectStreakPageDocument = gql`
       start
       end
     }
-  }
-  project(id: $projectId) {
-    id
-    name
+    project {
+      id
+      name
+    }
   }
 }
     `;

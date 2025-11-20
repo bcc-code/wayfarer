@@ -5,15 +5,15 @@ definePageMeta({
 })
 
 gql(`
-	query AdminProjectEventPage($projectId: ID!, $eventId: ID!) {
+	query AdminProjectEventPage($eventId: ID!) {
 		event(id: $eventId) {
 			id
 			name
 			description
-		}
-		project(id: $projectId) {
-			id
-			name
+      parentProject {
+        id
+        name
+      }
 		}
 	}
 `)
@@ -23,7 +23,6 @@ const route = useRoute('admin-projects-projectId-events-eventId')
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminProjectEventPageQuery({
   variables: {
-    projectId: route.params.projectId,
     eventId: route.params.eventId,
   },
   pause: computed(() => !isAuthReady.value),
@@ -41,7 +40,7 @@ const { data, fetching, error } = useAdminProjectEventPageQuery({
               to: { name: 'admin-projects' },
             },
             {
-              label: data?.project.name ?? route.params.projectId,
+              label: data?.event.parentProject.name ?? route.params.projectId,
               to: {
                 name: 'admin-projects-projectId',
                 params: { projectId: route.params.projectId },
