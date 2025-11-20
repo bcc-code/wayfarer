@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { FormSubmitEvent } from '@nuxt/ui'
+import z from 'zod'
+
 definePageMeta({
   layout: 'admin',
   middleware: 'admin',
@@ -32,6 +35,69 @@ const { data, fetching, error } = useAdminProjectChallengePageQuery({
   },
   pause: computed(() => !isAuthReady.value),
 })
+
+const schema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  description: z.string().optional(),
+  image: z.string().optional(),
+  url: z.url('Must be a valid URL').optional().or(z.literal('')),
+  buttonText: z.string().min(1, 'Button text is required'),
+  endTime: z.string().optional(),
+})
+type Schema = z.infer<typeof schema>
+const state = reactive<Schema>({
+  name: '',
+  description: undefined,
+  image: undefined,
+  url: undefined,
+  buttonText: '',
+  endTime: undefined,
+})
+
+watch(
+  () => data.value,
+  (d) => {
+    if (d) {
+      state.name = d.challenge.name
+      state.description = d.challenge.description ?? undefined
+      state.image = d.challenge.image ?? undefined
+      state.url = d.challenge.url ?? undefined
+      state.buttonText = d.challenge.buttonText
+      state.endTime = d.challenge.endTime ?? undefined
+    }
+  },
+  { once: true },
+)
+
+const { executeMutation } = useUpdateChallengeMutation()
+const toast = useToast()
+
+async function updateChallenge(event: FormSubmitEvent<Schema>) {
+  if (!event.data) {
+    return
+  }
+
+  executeMutation({ id: route.params.challengeId, input: event.data }).then(
+    (response) => {
+      if (response.error) {
+        toast.add({
+          title: response.error.name,
+          description: response.error.message,
+          color: 'error',
+        })
+        return
+      }
+      if (!response.data) {
+        return
+      }
+      toast.add({
+        title: 'Success',
+        description: 'Challenge updated successfully',
+        color: 'success',
+      })
+    },
+  )
+}
 </script>
 
 <template>
@@ -72,7 +138,63 @@ const { data, fetching, error } = useAdminProjectChallengePageQuery({
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
       <template v-else-if="data">
-        <pre>{{ data.challenge }}</pre>
+        <UForm
+          :state
+          :schema="schema"
+          loading-auto
+          class="flex max-w-md flex-col gap-6"
+          @submit.prevent="updateChallenge"
+        >
+          <UFormField name="name" label="Name">
+            <UInput v-model="state.name" size="xl" required class="w-full" />
+          </UFormField>
+          <UFormField
+            name="description"
+            label="Description"
+            hint="(optional)"
+            help="Supports HTML formatting"
+          >
+            <UTextarea v-model="state.description" class="w-full" autoresize />
+          </UFormField>
+          <UFormField
+            name="image"
+            label="Image URL"
+            hint="(optional)"
+            help="URL to an image for this challenge"
+          >
+            <UInput v-model="state.image" size="xl" class="w-full" />
+          </UFormField>
+          <UFormField
+            name="url"
+            label="Challenge URL"
+            hint="(optional)"
+            help="External link for the challenge"
+          >
+            <UInput v-model="state.url" size="xl" class="w-full" />
+          </UFormField>
+          <UFormField name="buttonText" label="Button Text">
+            <UInput
+              v-model="state.buttonText"
+              size="xl"
+              required
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField
+            name="endTime"
+            label="End Time"
+            hint="(optional)"
+            help="When this challenge expires"
+          >
+            <UInput
+              v-model="state.endTime"
+              type="datetime-local"
+              size="xl"
+              class="w-full"
+            />
+          </UFormField>
+          <UButton type="submit" size="lg" block>Save changes</UButton>
+        </UForm>
       </template>
     </UContainer>
   </div>

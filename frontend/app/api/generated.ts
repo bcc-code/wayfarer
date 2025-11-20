@@ -1501,6 +1501,54 @@ export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, membersId: string, gender: Gender, birthdate: string, church: { __typename?: 'Church', id: string, name: string, country: string, category: ChurchCategory }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType, church?: { __typename?: 'Church', id: string } | null, team?: { __typename?: 'Team', id: string } | null, project?: { __typename?: 'Project', id: string } | null } | null }> } };
 
+export type DeleteAchievementMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteAchievementMutation = { __typename?: 'Mutation', deleteAchievement: boolean };
+
+export type UpdateAchievementMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateAchievementInput;
+}>;
+
+
+export type UpdateAchievementMutation = { __typename?: 'Mutation', updateAchievement:
+    | { __typename?: 'ListeningAchievement', id: string }
+    | { __typename?: 'ReadingAchievement', id: string }
+    | { __typename?: 'SimpleAchievement', id: string }
+    | { __typename?: 'StreakAchievement', id: string }
+   };
+
+export type CreateSimpleAchievementMutationVariables = Exact<{
+  input: CreateSimpleAchievementInput;
+}>;
+
+
+export type CreateSimpleAchievementMutation = { __typename?: 'Mutation', createSimpleAchievement: { __typename?: 'SimpleAchievement', id: string } };
+
+export type CreateStreakAchievementMutationVariables = Exact<{
+  input: CreateStreakAchievementInput;
+}>;
+
+
+export type CreateStreakAchievementMutation = { __typename?: 'Mutation', createStreakAchievement: { __typename?: 'StreakAchievement', id: string } };
+
+export type CreateReadingAchievementMutationVariables = Exact<{
+  input: CreateReadingAchievementInput;
+}>;
+
+
+export type CreateReadingAchievementMutation = { __typename?: 'Mutation', createReadingAchievement: { __typename?: 'ReadingAchievement', id: string } };
+
+export type CreateListeningAchievementMutationVariables = Exact<{
+  input: CreateListeningAchievementInput;
+}>;
+
+
+export type CreateListeningAchievementMutation = { __typename?: 'Mutation', createListeningAchievement: { __typename?: 'ListeningAchievement', id: string } };
+
 export type DeleteChallengeMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -1570,6 +1618,28 @@ export type DeleteProjectMutationVariables = Exact<{
 
 export type DeleteProjectMutation = { __typename?: 'Mutation', deleteProject: boolean };
 
+export type DeleteStreakMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteStreakMutation = { __typename?: 'Mutation', deleteStreak: boolean };
+
+export type UpdateStreakMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateStreakInput;
+}>;
+
+
+export type UpdateStreakMutation = { __typename?: 'Mutation', updateStreak: { __typename?: 'Streak', id: string } };
+
+export type CreateStreakMutationVariables = Exact<{
+  input: CreateStreakInput;
+}>;
+
+
+export type CreateStreakMutation = { __typename?: 'Mutation', createStreak: { __typename?: 'Streak', id: string } };
+
 export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1616,7 +1686,7 @@ export type AdminProjectEventPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectEventPageQuery = { __typename?: 'Query', event: { __typename?: 'Event', id: string, name: string, description: string, parentProject: { __typename?: 'Project', id: string, name: string } } };
+export type AdminProjectEventPageQuery = { __typename?: 'Query', event: { __typename?: 'Event', id: string, name: string, description: string, startDate: any, endDate: any, parentProject: { __typename?: 'Project', id: string, name: string } } };
 
 export type AdminProjectPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -1729,6 +1799,70 @@ export const GetMeDocument = gql`
 export function useGetMeQuery(options?: Omit<Urql.UseQueryArgs<never, GetMeQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<GetMeQuery, GetMeQueryVariables | undefined>({ query: GetMeDocument, variables: undefined, ...options });
 };
+export const DeleteAchievementDocument = gql`
+    mutation DeleteAchievement($id: ID!) {
+  deleteAchievement(id: $id)
+}
+    `;
+
+export function useDeleteAchievementMutation() {
+  return Urql.useMutation<DeleteAchievementMutation, DeleteAchievementMutationVariables>(DeleteAchievementDocument);
+};
+export const UpdateAchievementDocument = gql`
+    mutation UpdateAchievement($id: ID!, $input: UpdateAchievementInput!) {
+  updateAchievement(id: $id, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useUpdateAchievementMutation() {
+  return Urql.useMutation<UpdateAchievementMutation, UpdateAchievementMutationVariables>(UpdateAchievementDocument);
+};
+export const CreateSimpleAchievementDocument = gql`
+    mutation CreateSimpleAchievement($input: CreateSimpleAchievementInput!) {
+  createSimpleAchievement(input: $input) {
+    id
+  }
+}
+    `;
+
+export function useCreateSimpleAchievementMutation() {
+  return Urql.useMutation<CreateSimpleAchievementMutation, CreateSimpleAchievementMutationVariables>(CreateSimpleAchievementDocument);
+};
+export const CreateStreakAchievementDocument = gql`
+    mutation CreateStreakAchievement($input: CreateStreakAchievementInput!) {
+  createStreakAchievement(input: $input) {
+    id
+  }
+}
+    `;
+
+export function useCreateStreakAchievementMutation() {
+  return Urql.useMutation<CreateStreakAchievementMutation, CreateStreakAchievementMutationVariables>(CreateStreakAchievementDocument);
+};
+export const CreateReadingAchievementDocument = gql`
+    mutation CreateReadingAchievement($input: CreateReadingAchievementInput!) {
+  createReadingAchievement(input: $input) {
+    id
+  }
+}
+    `;
+
+export function useCreateReadingAchievementMutation() {
+  return Urql.useMutation<CreateReadingAchievementMutation, CreateReadingAchievementMutationVariables>(CreateReadingAchievementDocument);
+};
+export const CreateListeningAchievementDocument = gql`
+    mutation CreateListeningAchievement($input: CreateListeningAchievementInput!) {
+  createListeningAchievement(input: $input) {
+    id
+  }
+}
+    `;
+
+export function useCreateListeningAchievementMutation() {
+  return Urql.useMutation<CreateListeningAchievementMutation, CreateListeningAchievementMutationVariables>(CreateListeningAchievementDocument);
+};
 export const DeleteChallengeDocument = gql`
     mutation DeleteChallenge($id: ID!) {
   deleteChallenge(id: $id)
@@ -1821,6 +1955,37 @@ export const DeleteProjectDocument = gql`
 
 export function useDeleteProjectMutation() {
   return Urql.useMutation<DeleteProjectMutation, DeleteProjectMutationVariables>(DeleteProjectDocument);
+};
+export const DeleteStreakDocument = gql`
+    mutation DeleteStreak($id: ID!) {
+  deleteStreak(id: $id)
+}
+    `;
+
+export function useDeleteStreakMutation() {
+  return Urql.useMutation<DeleteStreakMutation, DeleteStreakMutationVariables>(DeleteStreakDocument);
+};
+export const UpdateStreakDocument = gql`
+    mutation UpdateStreak($id: ID!, $input: UpdateStreakInput!) {
+  updateStreak(id: $id, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useUpdateStreakMutation() {
+  return Urql.useMutation<UpdateStreakMutation, UpdateStreakMutationVariables>(UpdateStreakDocument);
+};
+export const CreateStreakDocument = gql`
+    mutation CreateStreak($input: CreateStreakInput!) {
+  createStreak(input: $input) {
+    id
+  }
+}
+    `;
+
+export function useCreateStreakMutation() {
+  return Urql.useMutation<CreateStreakMutation, CreateStreakMutationVariables>(CreateStreakDocument);
 };
 export const AdminSidebarDocument = gql`
     query AdminSidebar {
@@ -1961,6 +2126,8 @@ export const AdminProjectEventPageDocument = gql`
     id
     name
     description
+    startDate
+    endDate
     parentProject {
       id
       name

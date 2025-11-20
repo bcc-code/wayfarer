@@ -1,0 +1,33 @@
+mutation DeleteAchievement($id: ID!) {
+  deleteAchievement(id: $id)
+}
+
+mutation UpdateAchievement($id: ID!, $input: UpdateAchievementInput!) {
+  updateAchievement(id: $id, input: $input) {
+    id
+  }
+}
+
+mutation CreateSimpleAchievement($input: CreateSimpleAchievementInput!) {
+  createSimpleAchievement(input: $input) {
+    id
+  }
+}
+
+mutation CreateStreakAchievement($input: CreateStreakAchievementInput!) {
+  createStreakAchievement(input: $input) {
+    id
+  }
+}
+
+mutation CreateReadingAchievement($input: CreateReadingAchievementInput!) {
+  createReadingAchievement(input: $input) {
+    id
+  }
+}
+
+mutation CreateListeningAchievement($input: CreateListeningAchievementInput!) {
+  createListeningAchievement(input: $input) {
+    id
+  }
+}

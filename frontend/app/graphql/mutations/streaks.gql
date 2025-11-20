@@ -1,0 +1,15 @@
+mutation DeleteStreak($id: ID!) {
+  deleteStreak(id: $id)
+}
+
+mutation UpdateStreak($id: ID!, $input: UpdateStreakInput!) {
+  updateStreak(id: $id, input: $input) {
+    id
+  }
+}
+
+mutation CreateStreak($input: CreateStreakInput!) {
+  createStreak(input: $input) {
+    id
+  }
+}
