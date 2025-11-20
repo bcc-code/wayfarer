@@ -175,6 +175,17 @@ const tab = computed({
           variant="link"
         >
           <template #events>
+            <div class="mb-4 flex justify-end">
+              <UButton
+                icon="lucide:plus"
+                :to="{
+                  name: 'admin-projects-projectId-events-new',
+                  params: { projectId: route.params.projectId },
+                }"
+              >
+                Create Event
+              </UButton>
+            </div>
             <UTable
               :data="data.events.edges.map((e) => e.node)"
               :columns="[
@@ -202,6 +213,17 @@ const tab = computed({
             </UTable>
           </template>
           <template #challenges>
+            <div class="mb-4 flex justify-end">
+              <UButton
+                icon="lucide:plus"
+                :to="{
+                  name: 'admin-projects-projectId-challenges-new',
+                  params: { projectId: route.params.projectId },
+                }"
+              >
+                Create Challenge
+              </UButton>
+            </div>
             <UTable
               :data="data.challenges.edges.map((e) => e.node)"
               :columns="[
@@ -229,6 +251,17 @@ const tab = computed({
             </UTable>
           </template>
           <template #streaks>
+            <div class="mb-4 flex justify-end">
+              <UButton
+                icon="lucide:plus"
+                :to="{
+                  name: 'admin-projects-projectId-streaks-new',
+                  params: { projectId: route.params.projectId },
+                }"
+              >
+                Create Streak
+              </UButton>
+            </div>
             <UTable
               :data="data.streaks.edges.map((e) => e.node)"
               :columns="[
@@ -256,6 +289,17 @@ const tab = computed({
             </UTable>
           </template>
           <template #achievements>
+            <div class="mb-4 flex justify-end">
+              <UButton
+                icon="lucide:plus"
+                :to="{
+                  name: 'admin-projects-projectId-achievements-new',
+                  params: { projectId: route.params.projectId },
+                }"
+              >
+                Create Achievement
+              </UButton>
+            </div>
             <UTable
               :data="data.achievements.edges.map((e) => e.node)"
               :columns="[

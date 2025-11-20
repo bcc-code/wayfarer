@@ -113,7 +113,7 @@ const displayValue = computed(() => {
     <UPopover v-model:open="isOpen" :ui="{ content: 'p-1' }">
       <UInput :model-value="displayValue" readonly icon="lucide:calendar" />
       <template #content>
-        <UCalendar v-model="range" range />
+        <UCalendar v-model="range" range variant="soft" />
       </template>
     </UPopover>
   </UFormField>

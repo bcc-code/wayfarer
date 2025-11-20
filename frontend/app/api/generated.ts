@@ -1667,12 +1667,26 @@ export type AdminProjectAchievementPageQuery = { __typename?: 'Query', achieveme
     | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
    };
 
+export type AdminProjectAchievementsNewPageQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectAchievementsNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string } };
+
 export type AdminProjectChallengePageQueryVariables = Exact<{
   challengeId: Scalars['ID']['input'];
 }>;
 
 
 export type AdminProjectChallengePageQuery = { __typename?: 'Query', challenge: { __typename?: 'Challenge', id: string, name: string, description: any, image?: string | null, url?: string | null, buttonText: string, publishedAt: any, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string } } };
+
+export type AdminProjectChallengeNewPageQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectChallengeNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string }, events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string } }> } };
 
 export type AdminProjectEditPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -2075,6 +2089,18 @@ export const AdminProjectAchievementPageDocument = gql`
 export function useAdminProjectAchievementPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectAchievementPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectAchievementPageQuery, AdminProjectAchievementPageQueryVariables | undefined>({ query: AdminProjectAchievementPageDocument, variables: undefined, ...options });
 };
+export const AdminProjectAchievementsNewPageDocument = gql`
+    query AdminProjectAchievementsNewPage($projectId: ID!) {
+  project(id: $projectId) {
+    id
+    name
+  }
+}
+    `;
+
+export function useAdminProjectAchievementsNewPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectAchievementsNewPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectAchievementsNewPageQuery, AdminProjectAchievementsNewPageQueryVariables | undefined>({ query: AdminProjectAchievementsNewPageDocument, variables: undefined, ...options });
+};
 export const AdminProjectChallengePageDocument = gql`
     query AdminProjectChallengePage($challengeId: ID!) {
   challenge(id: $challengeId) {
@@ -2096,6 +2122,26 @@ export const AdminProjectChallengePageDocument = gql`
 
 export function useAdminProjectChallengePageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectChallengePageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectChallengePageQuery, AdminProjectChallengePageQueryVariables | undefined>({ query: AdminProjectChallengePageDocument, variables: undefined, ...options });
+};
+export const AdminProjectChallengeNewPageDocument = gql`
+    query AdminProjectChallengeNewPage($projectId: ID!) {
+  project(id: $projectId) {
+    id
+    name
+  }
+  events(first: 100, filter: {projectId: $projectId}) {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminProjectChallengeNewPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectChallengeNewPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectChallengeNewPageQuery, AdminProjectChallengeNewPageQueryVariables | undefined>({ query: AdminProjectChallengeNewPageDocument, variables: undefined, ...options });
 };
 export const AdminProjectEditPageDocument = gql`
     query AdminProjectEditPage($projectId: ID!) {
