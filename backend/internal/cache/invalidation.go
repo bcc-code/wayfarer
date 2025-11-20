@@ -193,6 +193,11 @@ func (c *CacheWithRegistry) InvalidateProject(projectID string) {
 func (c *CacheWithRegistry) InvalidateEvent(eventID string) {
 	c.Delete(EventKey(eventID))
 	c.DeletePrefix("event:" + eventID)
+
+	// All event list/filter queries (any filter combination)
+	// These are invalidated globally since filter query cache keys are hashed
+	c.DeletePrefix(PrefixEventsFilter)
+	c.DeletePrefix(PrefixEventsCount)
 }
 
 // InvalidateTeam invalidates all cache entries related to a team
@@ -212,9 +217,19 @@ func (c *CacheWithRegistry) InvalidateSuperTeam(superTeamID string) {
 // InvalidateChallenge invalidates all cache entries related to a challenge
 func (c *CacheWithRegistry) InvalidateChallenge(challengeID string) {
 	c.Delete(ChallengeKey(challengeID))
+
+	// All challenge list/filter queries (any filter combination)
+	// These are invalidated globally since filter query cache keys are hashed
+	c.DeletePrefix(PrefixChallengesFilter)
+	c.DeletePrefix(PrefixChallengesCount)
 }
 
 // InvalidateAchievement invalidates all cache entries related to an achievement
 func (c *CacheWithRegistry) InvalidateAchievement(achievementID string) {
 	c.Delete(AchievementKey(achievementID))
+
+	// All achievement list/filter queries (any filter combination)
+	// These are invalidated globally since filter query cache keys are hashed
+	c.DeletePrefix(PrefixAchievementsFilter)
+	c.DeletePrefix(PrefixAchievementsCount)
 }

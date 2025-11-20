@@ -690,6 +690,18 @@ func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input
 	// Invalidate cache
 	r.Cache.InvalidateChallenge(id)
 
+	// If eventID is being changed, invalidate both old and new events
+	if input.EventID != nil {
+		// Invalidate old event if it exists
+		if existingChallenge.EventID != nil {
+			r.Cache.InvalidateEvent(*existingChallenge.EventID)
+		}
+		// Invalidate new event if it's being set to a value
+		if *input.EventID != "" {
+			r.Cache.InvalidateEvent(*input.EventID)
+		}
+	}
+
 	// Convert to GraphQL model
 	return convertRowToChallenge(row), nil
 }
@@ -806,6 +818,13 @@ func (r *mutationResolver) AssignChallengeToEvent(ctx context.Context, challenge
 
 	// Invalidate cache
 	r.Cache.InvalidateChallenge(challengeID)
+
+	// Invalidate old event if it exists
+	if existingChallenge.EventID != nil {
+		r.Cache.InvalidateEvent(*existingChallenge.EventID)
+	}
+	// Invalidate new event
+	r.Cache.InvalidateEvent(eventID)
 
 	// Convert to GraphQL model
 	return convertRowToChallenge(row), nil
@@ -929,6 +948,9 @@ func (r *mutationResolver) BulkCreateChallenges(ctx context.Context, projectID s
 	if err != nil {
 		return nil, fmt.Errorf("failed to bulk create challenges: %w", err)
 	}
+
+	// Invalidate project cache to reflect new challenges in lists
+	r.Cache.InvalidateProject(projectID)
 
 	// Convert to GraphQL models
 	result := make([]model.Challenge, len(rows))
@@ -1360,17 +1382,22 @@ func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, inp
 		return nil, fmt.Errorf("failed to load achievement: %w", err)
 	}
 
-	// Extract project ID from the concrete type
+	// Extract project ID and event ID from the concrete type
 	var projectID string
+	var oldEventID *string
 	switch ach := existingAchievement.(type) {
 	case *model.SimpleAchievement:
 		projectID = ach.ProjectID
+		oldEventID = ach.EventID
 	case *model.ReadingAchievement:
 		projectID = ach.ProjectID
+		oldEventID = ach.EventID
 	case *model.ListeningAchievement:
 		projectID = ach.ProjectID
+		oldEventID = ach.EventID
 	case *model.StreakAchievement:
 		projectID = ach.ProjectID
+		oldEventID = ach.EventID
 	default:
 		return nil, fmt.Errorf("unknown achievement type")
 	}
@@ -1407,6 +1434,18 @@ func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, inp
 	r.Cache.InvalidateProject(projectID)
 	r.Cache.InvalidateAchievement(id)
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
+
+	// If eventID is being changed, invalidate both old and new events
+	if input.EventID != nil {
+		// Invalidate old event if it exists
+		if oldEventID != nil {
+			r.Cache.InvalidateEvent(*oldEventID)
+		}
+		// Invalidate new event if it's being set to a value
+		if *input.EventID != "" {
+			r.Cache.InvalidateEvent(*input.EventID)
+		}
+	}
 
 	// Reload and return updated achievement
 	achievementThunk = r.Loaders.AchievementByIDLoader.Load(ctx, id)
@@ -1527,6 +1566,18 @@ func (r *mutationResolver) UpdateReadingAchievement(ctx context.Context, id stri
 	r.Cache.InvalidateProject(readingAch.ProjectID)
 	r.Cache.InvalidateAchievement(id)
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
+
+	// If eventID is being changed, invalidate both old and new events
+	if input.EventID != nil {
+		// Invalidate old event if it exists
+		if readingAch.EventID != nil {
+			r.Cache.InvalidateEvent(*readingAch.EventID)
+		}
+		// Invalidate new event if it's being set to a value
+		if *input.EventID != "" {
+			r.Cache.InvalidateEvent(*input.EventID)
+		}
+	}
 
 	// Reload and return updated achievement
 	achievementThunk = r.Loaders.AchievementByIDLoader.Load(ctx, id)
@@ -1653,6 +1704,18 @@ func (r *mutationResolver) UpdateListeningAchievement(ctx context.Context, id st
 	r.Cache.InvalidateAchievement(id)
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
 
+	// If eventID is being changed, invalidate both old and new events
+	if input.EventID != nil {
+		// Invalidate old event if it exists
+		if listeningAch.EventID != nil {
+			r.Cache.InvalidateEvent(*listeningAch.EventID)
+		}
+		// Invalidate new event if it's being set to a value
+		if *input.EventID != "" {
+			r.Cache.InvalidateEvent(*input.EventID)
+		}
+	}
+
 	// Reload and return updated achievement
 	achievementThunk = r.Loaders.AchievementByIDLoader.Load(ctx, id)
 	updatedAchievement, err := achievementThunk()
@@ -1767,6 +1830,18 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 	r.Cache.InvalidateProject(streakAch.ProjectID)
 	r.Cache.InvalidateAchievement(id)
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
+
+	// If eventID is being changed, invalidate both old and new events
+	if input.EventID != nil {
+		// Invalidate old event if it exists
+		if streakAch.EventID != nil {
+			r.Cache.InvalidateEvent(*streakAch.EventID)
+		}
+		// Invalidate new event if it's being set to a value
+		if *input.EventID != "" {
+			r.Cache.InvalidateEvent(*input.EventID)
+		}
+	}
 
 	// Reload and return updated achievement
 	achievementThunk = r.Loaders.AchievementByIDLoader.Load(ctx, id)
@@ -2271,6 +2346,10 @@ func (r *mutationResolver) RegenerateJoinCode(ctx context.Context, teamID string
 
 	// Invalidate cache
 	r.Cache.InvalidateTeam(teamID)
+
+	// Invalidate teams filter/count caches (join code might be in filter params)
+	r.Cache.DeletePrefix(cache.PrefixTeamsFilter)
+	r.Cache.DeletePrefix(cache.PrefixTeamsCount)
 
 	// Convert to GraphQL model
 	description := ""
