@@ -27,6 +27,10 @@ gql(`
         node {
           id
           name
+          description
+          image
+          points
+          hidden
         }
       }
     }
@@ -35,6 +39,7 @@ gql(`
         node {
           id
           name
+          description
         }
       }
     }
@@ -43,6 +48,8 @@ gql(`
         node {
           id
           name
+          description
+          image
         }
       }
     }
@@ -51,6 +58,7 @@ gql(`
         node {
           id
           name
+          description
         }
       }
     }
@@ -90,6 +98,9 @@ watch(data, () => {
     state.branding = data.value.project.branding
   }
 })
+
+const { copy } = useClipboard()
+const toast = useToast()
 
 // Tabs state management
 const params = useUrlSearchParams('history')
@@ -189,25 +200,40 @@ const tab = computed({
             <UTable
               :data="data.events.edges.map((e) => e.node)"
               :columns="[
-                { accessorKey: 'id' },
                 { accessorKey: 'name' },
-                { id: 'action' },
+                { accessorKey: 'description' },
+                { id: 'actions' },
               ]"
             >
-              <template #action-cell="{ row }">
+              <template #actions-cell="{ row }">
                 <div class="flex justify-end gap-2">
-                  <UButton
-                    variant="ghost"
-                    :to="{
-                      name: 'admin-projects-projectId-events-eventId',
-                      params: {
-                        projectId: route.params.projectId,
-                        eventId: row.original.id,
+                  <UDropdownMenu
+                    :items="[
+                      {
+                        label: 'Edit',
+                        to: {
+                          name: 'admin-projects-projectId-events-eventId',
+                          params: {
+                            projectId: route.params.projectId,
+                            eventId: row.original.id,
+                          },
+                        },
                       },
-                    }"
+                      {
+                        label: 'Copy ID',
+                        onClick: () => {
+                          copy(row.original.id)
+                          toast.add({
+                            title: 'Copied',
+                            description: 'ID copied to clipboard',
+                            color: 'success',
+                          })
+                        },
+                      },
+                    ]"
                   >
-                    Edit
-                  </UButton>
+                    <UButton icon="lucide:ellipsis" variant="ghost" size="sm" />
+                  </UDropdownMenu>
                 </div>
               </template>
             </UTable>
@@ -227,25 +253,50 @@ const tab = computed({
             <UTable
               :data="data.challenges.edges.map((e) => e.node)"
               :columns="[
-                { accessorKey: 'id' },
+                { accessorKey: 'image' },
                 { accessorKey: 'name' },
-                { id: 'action' },
+                { accessorKey: 'description' },
+                { id: 'actions' },
               ]"
             >
-              <template #action-cell="{ row }">
+              <template #image-cell="{ row }">
+                <NuxtImg
+                  v-if="row.original.image"
+                  :src="row.original.image"
+                  height="32"
+                  width="32"
+                  class="bg-muted size-8 rounded"
+                />
+              </template>
+              <template #actions-cell="{ row }">
                 <div class="flex justify-end gap-2">
-                  <UButton
-                    variant="ghost"
-                    :to="{
-                      name: 'admin-projects-projectId-challenges-challengeId',
-                      params: {
-                        projectId: route.params.projectId,
-                        challengeId: row.original.id,
+                  <UDropdownMenu
+                    :items="[
+                      {
+                        label: 'Edit',
+                        to: {
+                          name: 'admin-projects-projectId-challenges-challengeId',
+                          params: {
+                            projectId: route.params.projectId,
+                            challengeId: row.original.id,
+                          },
+                        },
                       },
-                    }"
+                      {
+                        label: 'Copy ID',
+                        onClick: () => {
+                          copy(row.original.id)
+                          toast.add({
+                            title: 'Copied',
+                            description: 'ID copied to clipboard',
+                            color: 'success',
+                          })
+                        },
+                      },
+                    ]"
                   >
-                    Edit
-                  </UButton>
+                    <UButton icon="lucide:ellipsis" variant="ghost" size="sm" />
+                  </UDropdownMenu>
                 </div>
               </template>
             </UTable>
@@ -265,25 +316,40 @@ const tab = computed({
             <UTable
               :data="data.streaks.edges.map((e) => e.node)"
               :columns="[
-                { accessorKey: 'id' },
                 { accessorKey: 'name' },
-                { id: 'action' },
+                { accessorKey: 'description' },
+                { id: 'actions' },
               ]"
             >
-              <template #action-cell="{ row }">
+              <template #actions-cell="{ row }">
                 <div class="flex justify-end gap-2">
-                  <UButton
-                    variant="ghost"
-                    :to="{
-                      name: 'admin-projects-projectId-streaks-streakId',
-                      params: {
-                        projectId: route.params.projectId,
-                        streakId: row.original.id,
+                  <UDropdownMenu
+                    :items="[
+                      {
+                        label: 'Edit',
+                        to: {
+                          name: 'admin-projects-projectId-streaks-streakId',
+                          params: {
+                            projectId: route.params.projectId,
+                            streakId: row.original.id,
+                          },
+                        },
                       },
-                    }"
+                      {
+                        label: 'Copy ID',
+                        onClick: () => {
+                          copy(row.original.id)
+                          toast.add({
+                            title: 'Copied',
+                            description: 'ID copied to clipboard',
+                            color: 'success',
+                          })
+                        },
+                      },
+                    ]"
                   >
-                    Edit
-                  </UButton>
+                    <UButton icon="lucide:ellipsis" variant="ghost" size="sm" />
+                  </UDropdownMenu>
                 </div>
               </template>
             </UTable>
@@ -303,25 +369,57 @@ const tab = computed({
             <UTable
               :data="data.achievements.edges.map((e) => e.node)"
               :columns="[
-                { accessorKey: 'id' },
+                { accessorKey: 'image' },
                 { accessorKey: 'name' },
-                { id: 'action' },
+                { accessorKey: 'description' },
+                { accessorKey: 'points' },
+                { accessorKey: 'hidden' },
+                { id: 'actions' },
               ]"
             >
-              <template #action-cell="{ row }">
+              <template #image-cell="{ row }">
+                <NuxtImg
+                  v-if="row.original.image"
+                  :src="row.original.image"
+                  height="32"
+                  width="32"
+                  class="bg-muted size-8 rounded"
+                />
+              </template>
+              <template #hidden-cell="{ row }">
+                <div>
+                  <UIcon v-if="row.original.hidden" name="lucide:check" />
+                </div>
+              </template>
+              <template #actions-cell="{ row }">
                 <div class="flex justify-end gap-2">
-                  <UButton
-                    variant="ghost"
-                    :to="{
-                      name: 'admin-projects-projectId-achievements-achievementId',
-                      params: {
-                        projectId: route.params.projectId,
-                        achievementId: row.original.id,
+                  <UDropdownMenu
+                    :items="[
+                      {
+                        label: 'Edit',
+                        to: {
+                          name: 'admin-projects-projectId-achievements-achievementId',
+                          params: {
+                            projectId: route.params.projectId,
+                            achievementId: row.original.id,
+                          },
+                        },
                       },
-                    }"
+                      {
+                        label: 'Copy ID',
+                        onClick: () => {
+                          copy(row.original.id)
+                          toast.add({
+                            title: 'Copied',
+                            description: 'ID copied to clipboard',
+                            color: 'success',
+                          })
+                        },
+                      },
+                    ]"
                   >
-                    Edit
-                  </UButton>
+                    <UButton icon="lucide:ellipsis" variant="ghost" size="sm" />
+                  </UDropdownMenu>
                 </div>
               </template>
             </UTable>

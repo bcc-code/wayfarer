@@ -1708,11 +1708,11 @@ export type AdminProjectPageQueryVariables = Exact<{
 
 
 export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', primary: string } } }, achievements: { __typename?: 'AchievementConnection', edges: Array<{ __typename?: 'AchievementEdge', node:
-        | { __typename?: 'ListeningAchievement', id: string, name: string }
-        | { __typename?: 'ReadingAchievement', id: string, name: string }
-        | { __typename?: 'SimpleAchievement', id: string, name: string }
-        | { __typename?: 'StreakAchievement', id: string, name: string }
-       }> }, events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string } }> }, challenges: { __typename?: 'ChallengeConnection', edges: Array<{ __typename?: 'ChallengeEdge', node: { __typename?: 'Challenge', id: string, name: string } }> }, streaks: { __typename?: 'StreakConnection', edges: Array<{ __typename?: 'StreakEdge', node: { __typename?: 'Streak', id: string, name: string } }> } };
+        | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
+        | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
+        | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
+        | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
+       }> }, events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string, description: string } }> }, challenges: { __typename?: 'ChallengeConnection', edges: Array<{ __typename?: 'ChallengeEdge', node: { __typename?: 'Challenge', id: string, name: string, description: any, image?: string | null } }> }, streaks: { __typename?: 'StreakConnection', edges: Array<{ __typename?: 'StreakEdge', node: { __typename?: 'Streak', id: string, name: string, description: string } }> } };
 
 export type AdminProjectStreakPageQueryVariables = Exact<{
   streakId: Scalars['ID']['input'];
@@ -2206,6 +2206,10 @@ export const AdminProjectPageDocument = gql`
       node {
         id
         name
+        description
+        image
+        points
+        hidden
       }
     }
   }
@@ -2214,6 +2218,7 @@ export const AdminProjectPageDocument = gql`
       node {
         id
         name
+        description
       }
     }
   }
@@ -2222,6 +2227,8 @@ export const AdminProjectPageDocument = gql`
       node {
         id
         name
+        description
+        image
       }
     }
   }
@@ -2230,6 +2237,7 @@ export const AdminProjectPageDocument = gql`
       node {
         id
         name
+        description
       }
     }
   }

@@ -91,5 +91,6 @@ const groups = computed(() => [
     </header>
     <slot />
     <UDashboardSearch :groups="groups" />
+    <QuickAccess />
   </div>
 </template>
