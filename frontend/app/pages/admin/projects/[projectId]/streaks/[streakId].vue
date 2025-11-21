@@ -105,6 +105,10 @@ async function updateStreak(event: FormSubmitEvent<Schema>) {
         description: 'Streak updated successfully',
         color: 'success',
       })
+      navigateTo({
+        name: 'admin-projects-projectId',
+        params: { projectId: route.params.projectId },
+      })
     },
   )
 }

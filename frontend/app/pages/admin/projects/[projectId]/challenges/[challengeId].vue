@@ -96,6 +96,10 @@ async function updateChallenge(event: FormSubmitEvent<Schema>) {
         description: 'Challenge updated successfully',
         color: 'success',
       })
+      navigateTo({
+        name: 'admin-projects-projectId',
+        params: { projectId: route.params.projectId },
+      })
     },
   )
 }

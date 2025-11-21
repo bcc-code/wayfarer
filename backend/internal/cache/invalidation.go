@@ -79,6 +79,15 @@ func extractPrefixes(key string) []string {
 		PrefixUser, PrefixChurch, PrefixProject, PrefixEvent, PrefixTeam,
 		PrefixSuperTeam, PrefixChallenge, PrefixAchievement, PrefixStreak,
 		PrefixUserProjects, PrefixUserEvents, PrefixTeamMembers, PrefixUserRoles,
+		PrefixUsersFilter, PrefixUsersCount,
+		PrefixProjectsFilter, PrefixProjectsCount,
+		PrefixEventsFilter, PrefixEventsCount,
+		PrefixTeamsFilter, PrefixTeamsCount,
+		PrefixSuperTeamsFilter, PrefixSuperTeamsCount,
+		PrefixAchievementsFilter, PrefixAchievementsCount,
+		PrefixChallengesFilter, PrefixChallengesCount,
+		PrefixChurchesFilter, PrefixChurchesCount,
+		PrefixStreaksFilter, PrefixStreaksCount,
 	} {
 		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
 			prefixes = append(prefixes, prefix)

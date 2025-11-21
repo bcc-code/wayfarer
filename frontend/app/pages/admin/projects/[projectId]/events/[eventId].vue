@@ -87,6 +87,10 @@ async function updateEvent(event: FormSubmitEvent<Schema>) {
         description: 'Event updated successfully',
         color: 'success',
       })
+      navigateTo({
+        name: 'admin-projects-projectId',
+        params: { projectId: route.params.projectId },
+      })
     },
   )
 }
