@@ -7,24 +7,19 @@ const { t } = useI18n()
 
 const links = computed<NavigationMenuItem[]>(() => [
   {
+    label: t('navigation.profile'),
+    icon: 'IconProfile',
+    to: { name: 'profile' },
+  },
+  {
     label: t('navigation.standings'),
-    icon: 'lucide:list',
+    icon: 'IconStandings',
     to: { name: 'index' },
   },
   {
     label: t('navigation.challenges'),
-    icon: 'lucide:medal',
+    icon: 'IconChallenges',
     to: { name: 'challenges' },
-  },
-  {
-    label: t('navigation.unit'),
-    icon: 'lucide:users',
-    to: { name: 'unit' },
-  },
-  {
-    label: t('navigation.profile'),
-    icon: 'lucide:user',
-    to: { name: 'profile' },
   },
 ])
 
@@ -42,12 +37,6 @@ gql(`
     }
   }
 `)
-
-// Force light theme for now
-onBeforeMount(() => {
-  document.documentElement.classList.remove('dark')
-  document.documentElement.classList.add('light')
-})
 
 const { isAuthReady } = useAuthReady()
 const { data } = useCurrentProjectQuery({
@@ -92,12 +81,12 @@ const { left, height, width, top } = useElementBounding(activeMenuItem)
     <div class="h-full">
       <slot />
     </div>
-    <div class="fixed inset-x-0 bottom-0">
+    <div v-if="route.path != '/settings'" class="fixed inset-x-0 bottom-0">
       <ProgressiveBlur
         class="p-navigation-outside from-shadow-blank/0 to-shadow-default bg-linear-to-b"
       >
         <ul
-          class="bg-background-raised shadow-large rounded-navigation p-navigation-inset relative mx-auto grid w-full max-w-xl grid-cols-4"
+          class="bg-background-raised shadow-large rounded-navigation p-navigation-inset relative mx-auto grid w-full max-w-xl grid-cols-3"
         >
           <li v-for="link in links" :key="link.label" class="grow">
             <NuxtLink
@@ -108,7 +97,7 @@ const { left, height, width, top } = useElementBounding(activeMenuItem)
               <UIcon
                 v-if="link.icon"
                 :name="link.icon"
-                class="size-4 shrink-0"
+                class="size-7 shrink-0"
               />
               <span class="text-xs">{{ link.label }}</span>
             </NuxtLink>

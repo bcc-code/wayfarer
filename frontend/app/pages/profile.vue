@@ -5,17 +5,18 @@ gql(`
       id
       name
       image
-      projects {
+    }
+    currentProject {
+      id
+      name
+      achievements {
         id
-        achievements {
-          id
-          name
-          description
-          image
-          hidden
-          achievedAt
-          points
-        }
+        name
+        description
+        image
+        hidden
+        achievedAt
+        points
       }
     }
   }
@@ -25,60 +26,54 @@ const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useProfilePageQuery({
   pause: computed(() => !isAuthReady.value),
 })
-
-const achievements = computed(() => {
-  return data.value?.me.projects.flatMap((project) => project.achievements)
-})
-const completedAchievements = computed(() => {
-  return achievements.value?.filter((achievement) => achievement.achievedAt)
-})
-const notCompletedAchievements = computed(() => {
-  return achievements.value?.filter((achievement) => !achievement.achievedAt)
-})
 </script>
 
 <template>
   <PageLayout :title="$t('pages.profile')">
+    <template #action>
+      <NuxtLink :to="{ name: 'settings' }">
+        <button
+          class="rounded-button-medium bg-border-default grid size-11 place-items-center"
+        >
+          <Icon name="lucide:settings" />
+        </button>
+      </NuxtLink>
+    </template>
+
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <div v-else-if="data" class="space-y-list-section-gap">
-      <div v-if="data.me.image" class="flex items-center justify-center p-4">
+      <div
+        v-if="data.me"
+        class="gap-medium flex flex-col items-center justify-center p-4"
+      >
         <div
-          class="shadow-large bg-background-raised p-list-section-inset aspect-square size-42 rounded-full"
+          class="shadow-large bg-background-raised p-list-section-inset flex aspect-square size-35 items-center justify-center rounded-full"
         >
           <NuxtImg
+            v-if="data.me.image"
             :src="data.me.image"
             height="160"
             width="160"
-            class="bg-background-default text-accent-contrast rounded-full"
+            class="bg-background-default text-accent-contrast size-full rounded-full"
+          />
+          <Icon
+            v-else
+            name="IconProfile"
+            class="text-accent-contrast size-16"
           />
         </div>
+        <h2 class="text-heading">{{ data.me.name }}</h2>
       </div>
-      <LocaleSelector />
 
-      <template v-if="completedAchievements?.length">
-        <h3 class="text-label mt-6 mb-2">
-          {{ $t('achievements.completed') }}
-        </h3>
-        <div class="gap-list-section-gap grid grid-cols-5">
-          <AchievementBadge
-            v-for="achievement in completedAchievements"
-            :key="achievement.id"
-            :achievement
-          />
-        </div>
-      </template>
-      <template v-if="notCompletedAchievements?.length">
-        <h3 class="text-label mt-6 mb-2">
-          {{ $t('achievements.notCompleted') }}
-        </h3>
-        <div class="gap-list-section-gap grid grid-cols-5">
-          <AchievementBadge
-            v-for="achievement in notCompletedAchievements"
-            :key="achievement.id"
-            :achievement
-          />
-        </div>
+      <template v-if="data.currentProject">
+        <ProfileProjectCard
+          :project-name="data.currentProject.name"
+          :points="2000"
+          :standing="214"
+          :achievements="data.currentProject.achievements"
+          highlighted
+        />
       </template>
     </div>
   </PageLayout>

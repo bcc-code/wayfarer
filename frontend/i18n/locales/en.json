@@ -2,18 +2,27 @@
   "pages": {
     "standings": "Standings",
     "unit": "Your unit",
-    "profile": "Your profile",
-    "challenges": "Challenges"
+    "profile": "My profile",
+    "challenges": "Challenges",
+    "settings": "Settings"
   },
   "navigation": {
     "standings": "Standings",
     "profile": "Profile",
-    "unit": "Unit",
     "challenges": "Challenges"
   },
   "emptyState": "Nothing to see here",
   "achievements": {
     "completed": "My Achievements",
     "notCompleted": "Not Completed"
+  },
+  "settings": {
+    "language": "App Language",
+    "colorMode": "Color Mode",
+    "colorModes": {
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    }
   }
 }

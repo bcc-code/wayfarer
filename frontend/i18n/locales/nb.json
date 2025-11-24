@@ -3,17 +3,26 @@
     "standings": "Ledertavle",
     "unit": "Din unit",
     "profile": "Din profil",
-    "challenges": "Oppgaver"
+    "challenges": "Oppgaver",
+    "settings": "Innstillinger"
   },
   "navigation": {
     "standings": "Ledertavle",
     "profile": "Profil",
-    "unit": "Unit",
     "challenges": "Oppgaver"
   },
   "emptyState": "Ingenting å se her",
   "achievements": {
     "completed": "Mine achievements",
     "notCompleted": "Ikke fullført"
+  },
+  "settings": {
+    "language": "Appspråk",
+    "colorMode": "Fargemodus",
+    "colorModes": {
+      "system": "System",
+      "light": "Lys",
+      "dark": "Mørk"
+    }
   }
 }

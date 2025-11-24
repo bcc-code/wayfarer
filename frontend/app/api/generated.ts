@@ -1760,12 +1760,12 @@ export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __t
 export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, image?: string | null, projects: Array<{ __typename?: 'Project', id: string, achievements: Array<
-        | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-        | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-        | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-        | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-      > }> } };
+export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, image?: string | null }, currentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
+      | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
+    > } };
 
 export type UnitPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2421,17 +2421,18 @@ export const ProfilePageDocument = gql`
     id
     name
     image
-    projects {
+  }
+  currentProject {
+    id
+    name
+    achievements {
       id
-      achievements {
-        id
-        name
-        description
-        image
-        hidden
-        achievedAt
-        points
-      }
+      name
+      description
+      image
+      hidden
+      achievedAt
+      points
     }
   }
 }

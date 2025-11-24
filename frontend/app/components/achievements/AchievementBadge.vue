@@ -9,15 +9,20 @@ const open = ref(false)
 <template>
   <div>
     <button
-      class="bg-background-indent grid aspect-square place-items-center overflow-hidden rounded-full"
+      v-if="!achievement.hidden"
+      class="grid aspect-square place-items-center overflow-hidden rounded-full"
       @click="open = true"
     >
       <NuxtImg
-        v-if="!achievement.hidden"
+        v-if="achievement.image && achievement.achievedAt != null"
         :src="achievement.image"
         class="size-full object-cover"
       />
-      <span v-else>?</span>
+      <NuxtImg
+        v-else
+        src="/images/achievement-placeholder.png"
+        class="size-full object-cover"
+      />
     </button>
     <UDrawer
       v-model:open="open"
@@ -28,14 +33,18 @@ const open = ref(false)
       <template #body>
         <div class="flex flex-col items-center gap-4 pt-4">
           <div
-            class="bg-background-indent grid aspect-square size-40 place-items-center overflow-hidden rounded-full"
+            class="grid aspect-square size-40 place-items-center overflow-hidden rounded-full"
           >
             <NuxtImg
-              v-if="!achievement.hidden"
+              v-if="achievement.image && achievement.achievedAt != null"
               :src="achievement.image"
               class="size-full object-cover"
             />
-            <span v-else>?</span>
+            <NuxtImg
+              v-else
+              src="/images/achievement-placeholder.png"
+              class="size-full object-cover"
+            />
           </div>
           <div class="flex flex-col items-center text-center">
             <h3 class="text-label">

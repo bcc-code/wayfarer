@@ -19,7 +19,7 @@
 
   --color-text-default: #282521;
   --color-text-muted: rgb(40 37 33 / 0.65);
-  --color-text-on-default: rgb(40 37 33 / 0.4);
+  --color-text-hint: rgb(40 37 33 / 0.4);
   --color-shadow-default: rgb(40 37 33 / 0.1);
   --color-shadow-blank: rgb(40 37 33 / 0);
   --color-border-default: rgb(40 37 33 / 0.15);
@@ -37,6 +37,7 @@
 
   /* Spacing */
   --spacing-default: 20px;
+  --spacing-medium: 16px;
   --spacing-small: 8px;
   --spacing-list-section-inset: 4px;
   --spacing-list-section-gap: 8px;
@@ -59,24 +60,28 @@
 
   /* Typography - Font Sizes */
   --font-size-heading: 30px;
+  --font-size-title: 24px;
   --font-size-label: 16px;
   --font-size-caption: 14px;
   --font-size-tiny: 11px;
 
   /* Typography - Line Heights */
   --line-height-heading: 36px;
+  --line-height-title: 32px;
   --line-height-label: 20px;
   --line-height-caption: 20px;
   --line-height-tiny: 12px;
 
   /* Typography - Letter Spacing */
   --letter-spacing-heading: -0.9px;
+  --letter-spacing-title: -0.72px;
   --letter-spacing-label: -0.48px;
   --letter-spacing-caption: -0.42px;
   --letter-spacing-tiny: -0.33px;
 
   /* Typography - Font Weights */
   --font-weight-heading: 600;
+  --font-weight-title: 500;
   --font-weight-label: 500;
   --font-weight-caption: 500;
   --font-weight-tiny: 500;
@@ -111,7 +116,7 @@
 
   --color-text-default: #f3ede5;
   --color-text-muted: rgb(243 237 229 / 0.7);
-  --color-text-on-default: rgb(243 237 229 / 0.5);
+  --color-text-hint: rgb(243 237 229 / 0.4);
   --color-shadow-default: rgb(18 32 38 / 0.3);
   --color-shadow-blank: rgb(18 32 38 / 0);
   --color-border-default: rgb(156 214 243 / 0.09);
@@ -146,6 +151,13 @@
     line-height: var(--line-height-heading);
     font-weight: var(--font-weight-heading);
     letter-spacing: var(--letter-spacing-heading);
+  }
+
+  .text-title {
+    font-size: var(--font-size-title);
+    line-height: var(--line-height-title);
+    font-weight: var(--font-weight-title);
+    letter-spacing: var(--letter-spacing-title);
   }
 
   .text-label {

@@ -3,7 +3,7 @@ import { cva } from 'cva'
 
 withDefaults(
   defineProps<{
-    variant?: 'primary' | 'secondary'
+    variant?: 'primary' | 'secondary' | 'tertiary'
     size?: 'small' | 'medium' | 'large'
   }>(),
   {
@@ -16,7 +16,8 @@ const classes = cva('flex items-center justify-center gap-2 text-label grow', {
   variants: {
     variant: {
       primary: 'bg-accent text-on-accent',
-      secondary: 'bg-background-indent text-default',
+      secondary: 'bg-border-default text-default',
+      tertiary: 'text-default',
     },
     size: {
       small:

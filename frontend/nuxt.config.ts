@@ -38,6 +38,10 @@ export default defineNuxtConfig({
         path: '~/components',
         pathPrefix: false,
       },
+      {
+        path: '~/components/global',
+        global: true,
+      },
     ],
   },
   imports: {
