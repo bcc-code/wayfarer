@@ -59,6 +59,22 @@ type Event struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
+// Stores content completion events from external systems
+type ExternalContentEvent struct {
+	ID string `json:"id"`
+	// Brunstad TV person_id (UUID)
+	PersonID pgtype.UUID `json:"person_id"`
+	// External content identifier
+	ContentID string `json:"content_id"`
+	// External reading plan identifier (nullable)
+	ReadingPlanID *string `json:"reading_plan_id"`
+	// API key identifier that submitted this event
+	Source     string             `json:"source"`
+	ReceivedAt pgtype.Timestamptz `json:"received_at"`
+	// Content completion progress (0.01 to 1.1, where 1.0 = 100%)
+	ContentProgress *float32 `json:"content_progress"`
+}
+
 type LeaderboardEventChurch struct {
 	EventID   string             `json:"event_id"`
 	ChurchID  string             `json:"church_id"`

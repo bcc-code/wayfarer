@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -15,6 +16,7 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	JWT      JWTConfig
+	APIKey   APIKeyConfig
 	Log      LogConfig
 	Members  MembersConfig
 	Auth0    Auth0Config
@@ -47,6 +49,11 @@ type JWTConfig struct {
 	Issuer            string
 	BrunstadTVJWKSURL string
 	BrunstadTVIssuer  string
+}
+
+// APIKeyConfig holds API key authentication configuration for external systems
+type APIKeyConfig struct {
+	Keys map[string]string // map[source_identifier]api_key
 }
 
 // LogConfig holds logging configuration
@@ -105,6 +112,9 @@ func Load() (*Config, error) {
 			Issuer:            getEnv("JWT_ISSUER", "wayfarer"),
 			BrunstadTVJWKSURL: getEnv("BRUNSTAD_TV_JWKS_URL", "https://api.brunstad.tv/.well-known/jwks.json"),
 			BrunstadTVIssuer:  getEnv("BRUNSTAD_TV_JWT_ISSUER", "https://api.brunstad.tv/"),
+		},
+		APIKey: APIKeyConfig{
+			Keys: parseAPIKeys(getEnv("EXTERNAL_API_KEYS", "")),
 		},
 		Log: LogConfig{
 			Level:  getEnv("LOG_LEVEL", "info"),
@@ -191,4 +201,28 @@ func getEnvAsFloat(key string, defaultValue float64) float64 {
 		return defaultValue
 	}
 	return value
+}
+
+// parseAPIKeys parses API keys from environment variable format
+// Format: "source1:key1,source2:key2,source3:key3"
+// Returns a map of source identifier to API key
+func parseAPIKeys(value string) map[string]string {
+	keys := make(map[string]string)
+	if value == "" {
+		return keys
+	}
+
+	pairs := strings.Split(value, ",")
+	for _, pair := range pairs {
+		parts := strings.SplitN(strings.TrimSpace(pair), ":", 2)
+		if len(parts) == 2 {
+			source := strings.TrimSpace(parts[0])
+			key := strings.TrimSpace(parts[1])
+			if source != "" && key != "" {
+				keys[source] = key
+			}
+		}
+	}
+
+	return keys
 }

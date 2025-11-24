@@ -256,6 +256,12 @@ func main() {
 	}
 	router.GET("/callback", authHandler.Callback)
 
+	// Webhook handler for external content events
+	webhookHandler := &handlers.WebhookHandler{
+		DB: db,
+	}
+	router.POST("/api/v1/content-events", middleware.APIKeyAuth(cfg.APIKey), webhookHandler.HandleContentEvent)
+
 	// GraphQL API endpoint
 	router.POST("/graphql", middleware.JWTAuth(cfg.JWT), graphqlHandler(apiHandler))
 	if cfg.Server.Environment != "production" {
