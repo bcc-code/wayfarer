@@ -222,9 +222,18 @@ type Team {
     name: String!
     description: String!
     joinCode: String!
-    members: [User!]! @goField(forceResolver: true)
+    members: [TeamMember!]! @goField(forceResolver: true)
     parentProject: Project! @goField(forceResolver: true)
     superTeam: SuperTeam @goField(forceResolver: true)
+}
+
+type TeamMember {
+    id: ID!
+    name: String!
+    church: Church! @goField(forceResolver: true)
+    isTeamLead: Boolean!
+    joinedAt: String!
+    user: User! @goField(forceResolver: true)
 }
 
 type SuperTeam {

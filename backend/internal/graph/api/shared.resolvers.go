@@ -768,7 +768,7 @@ func (r *superTeamResolver) Teams(ctx context.Context, obj *model.SuperTeam) ([]
 }
 
 // Members is the resolver for the members field.
-func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.User, error) {
+func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.TeamMember, error) {
 	// Get current user ID from context
 	currentUserID, ok := middleware.GetUserID(ctx)
 	if !ok || currentUserID == "" {
@@ -832,15 +832,15 @@ func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.Us
 
 	// Use dataloader to fetch team members
 	thunk := r.Loaders.UsersByTeamLoader.Load(ctx, obj.ID)
-	users, err := thunk()
+	members, err := thunk()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load team members: %w", err)
 	}
 
-	// Convert []*model.User to []model.User
-	result := make([]model.User, len(users))
-	for i, u := range users {
-		result[i] = *u
+	// Convert []*model.TeamMember to []model.TeamMember
+	result := make([]model.TeamMember, len(members))
+	for i, m := range members {
+		result[i] = *m
 	}
 
 	return result, nil
@@ -866,6 +866,28 @@ func (r *teamResolver) SuperTeam(ctx context.Context, obj *model.Team) (*model.S
 	}
 
 	return superTeam, nil
+}
+
+// Church is the resolver for the church field.
+func (r *teamMemberResolver) Church(ctx context.Context, obj *model.TeamMember) (*model.Church, error) {
+	// Use dataloader to fetch church
+	thunk := r.Loaders.ChurchLoader.Load(ctx, obj.ChurchID)
+	church, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load church: %w", err)
+	}
+	return church, nil
+}
+
+// User is the resolver for the user field.
+func (r *teamMemberResolver) User(ctx context.Context, obj *model.TeamMember) (*model.User, error) {
+	// Use dataloader to fetch user
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+	return user, nil
 }
 
 // Church is the resolver for the church field.
@@ -1062,6 +1084,9 @@ func (r *Resolver) SuperTeam() SuperTeamResolver { return &superTeamResolver{r} 
 // Team returns TeamResolver implementation.
 func (r *Resolver) Team() TeamResolver { return &teamResolver{r} }
 
+// TeamMember returns TeamMemberResolver implementation.
+func (r *Resolver) TeamMember() TeamMemberResolver { return &teamMemberResolver{r} }
+
 // User returns UserResolver implementation.
 func (r *Resolver) User() UserResolver { return &userResolver{r} }
 
@@ -1080,5 +1105,6 @@ type streakResolver struct{ *Resolver }
 type streakAchievementResolver struct{ *Resolver }
 type superTeamResolver struct{ *Resolver }
 type teamResolver struct{ *Resolver }
+type teamMemberResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
 type userRoleResolver struct{ *Resolver }

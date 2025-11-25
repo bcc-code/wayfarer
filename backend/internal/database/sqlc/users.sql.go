@@ -361,7 +361,24 @@ func (q *Queries) GetUsersBySuperTeamIDs(ctx context.Context, superteamids []str
 }
 
 const GetUsersByTeamIDs = `-- name: GetUsersByTeamIDs :many
-SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.avatar_url, tm.team_id, tm.joined_at
+SELECT
+    u.id,
+    u.members_id,
+    u.gender,
+    u.church_id,
+    u.birthdate,
+    u.email,
+    u.name,
+    u.avatar_url,
+    tm.team_id,
+    tm.joined_at,
+    EXISTS(
+        SELECT 1
+        FROM user_roles ur
+        WHERE ur.user_id = u.id
+        AND ur.team_id = tm.team_id
+        AND ur.role = 'TEAM_LEAD'
+    ) as is_team_lead
 FROM users u
 INNER JOIN team_members tm ON u.id = tm.user_id
 WHERE tm.team_id = ANY($1::text[])
@@ -369,16 +386,17 @@ ORDER BY tm.team_id, tm.joined_at
 `
 
 type GetUsersByTeamIDsRow struct {
-	ID        string             `json:"id"`
-	MembersID string             `json:"members_id"`
-	Gender    string             `json:"gender"`
-	ChurchID  string             `json:"church_id"`
-	Birthdate pgtype.Date        `json:"birthdate"`
-	Email     string             `json:"email"`
-	Name      string             `json:"name"`
-	AvatarUrl *string            `json:"avatar_url"`
-	TeamID    string             `json:"team_id"`
-	JoinedAt  pgtype.Timestamptz `json:"joined_at"`
+	ID         string             `json:"id"`
+	MembersID  string             `json:"members_id"`
+	Gender     string             `json:"gender"`
+	ChurchID   string             `json:"church_id"`
+	Birthdate  pgtype.Date        `json:"birthdate"`
+	Email      string             `json:"email"`
+	Name       string             `json:"name"`
+	AvatarUrl  *string            `json:"avatar_url"`
+	TeamID     string             `json:"team_id"`
+	JoinedAt   pgtype.Timestamptz `json:"joined_at"`
+	IsTeamLead bool               `json:"is_team_lead"`
 }
 
 func (q *Queries) GetUsersByTeamIDs(ctx context.Context, teamids []string) ([]*GetUsersByTeamIDsRow, error) {
@@ -401,6 +419,7 @@ func (q *Queries) GetUsersByTeamIDs(ctx context.Context, teamids []string) ([]*G
 			&i.AvatarUrl,
 			&i.TeamID,
 			&i.JoinedAt,
+			&i.IsTeamLead,
 		); err != nil {
 			return nil, err
 		}

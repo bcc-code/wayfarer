@@ -23,7 +23,7 @@ type Loaders struct {
 	TeamsBySuperTeamLoader      *dataloader.Loader[string, []*model.Team]
 	SuperTeamsByUserLoader      *dataloader.Loader[string, []*model.SuperTeam]
 	RolesByUserLoader           *dataloader.Loader[string, []*model.UserRole]
-	UsersByTeamLoader           *dataloader.Loader[string, []*model.User]
+	UsersByTeamLoader           *dataloader.Loader[string, []*model.TeamMember]
 	ProjectByIDLoader           *dataloader.Loader[string, *model.Project]
 	EventByIDLoader             *dataloader.Loader[string, *model.Event]
 	TeamByIDLoader              *dataloader.Loader[string, *model.Team]

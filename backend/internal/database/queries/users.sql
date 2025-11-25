@@ -82,7 +82,24 @@ WHERE
     AND (@ids::text[] IS NULL OR u.id = ANY(@ids::text[]));
 
 -- name: GetUsersByTeamIDs :many
-SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.avatar_url, tm.team_id, tm.joined_at
+SELECT
+    u.id,
+    u.members_id,
+    u.gender,
+    u.church_id,
+    u.birthdate,
+    u.email,
+    u.name,
+    u.avatar_url,
+    tm.team_id,
+    tm.joined_at,
+    EXISTS(
+        SELECT 1
+        FROM user_roles ur
+        WHERE ur.user_id = u.id
+        AND ur.team_id = tm.team_id
+        AND ur.role = 'TEAM_LEAD'
+    ) as is_team_lead
 FROM users u
 INNER JOIN team_members tm ON u.id = tm.user_id
 WHERE tm.team_id = ANY(@teamids::text[])

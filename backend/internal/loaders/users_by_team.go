@@ -9,18 +9,18 @@ import (
 	"github.com/graph-gophers/dataloader/v7"
 )
 
-// usersByTeamBatchFunc batches loading users by team IDs
-func usersByTeamBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context.Context, []string) []*dataloader.Result[[]*model.User] {
-	return func(ctx context.Context, teamIDs []string) []*dataloader.Result[[]*model.User] {
+// usersByTeamBatchFunc batches loading team members by team IDs
+func usersByTeamBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context.Context, []string) []*dataloader.Result[[]*model.TeamMember] {
+	return func(ctx context.Context, teamIDs []string) []*dataloader.Result[[]*model.TeamMember] {
 		// Check cache first for each team ID
-		usersByTeam := make(map[string][]*model.User)
+		teamMembers := make(map[string][]*model.TeamMember)
 		missingTeamIDs := []string{}
 
 		for _, teamID := range teamIDs {
 			cacheKey := cache.UsersByTeamKey(teamID)
 			if cached, ok := c.Get(cacheKey); ok {
-				if users, ok := cached.([]*model.User); ok {
-					usersByTeam[teamID] = users
+				if members, ok := cached.([]*model.TeamMember); ok {
+					teamMembers[teamID] = members
 					continue
 				}
 			}
@@ -31,50 +31,45 @@ func usersByTeamBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(cont
 		if len(missingTeamIDs) > 0 {
 			rows, err := db.Queries.GetUsersByTeamIDs(ctx, missingTeamIDs)
 			if err != nil {
-				results := make([]*dataloader.Result[[]*model.User], len(teamIDs))
+				results := make([]*dataloader.Result[[]*model.TeamMember], len(teamIDs))
 				for i := range results {
-					results[i] = &dataloader.Result[[]*model.User]{Error: err}
+					results[i] = &dataloader.Result[[]*model.TeamMember]{Error: err}
 				}
 				return results
 			}
 
-			// Group users by team ID and convert to GraphQL model
+			// Group team members by team ID and convert to GraphQL model
 			for _, row := range rows {
-				// Convert birthdate to string (always valid since birthdate is required)
-				birthdateStr := row.Birthdate.Time.Format("2006-01-02")
-
-				user := &model.User{
-					ID:        row.ID,
-					MembersID: row.MembersID,
-					Gender:    model.Gender(row.Gender),
-					ChurchID:  row.ChurchID,
-					Birthdate: birthdateStr,
-					Email:     row.Email,
-					Name:      row.Name,
-					Image:     row.AvatarUrl,
+				member := &model.TeamMember{
+					ID:         row.ID,
+					Name:       row.Name,
+					IsTeamLead: row.IsTeamLead,
+					JoinedAt:   row.JoinedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
+					UserID:     row.ID,
+					ChurchID:   row.ChurchID,
 				}
-				usersByTeam[row.TeamID] = append(usersByTeam[row.TeamID], user)
+				teamMembers[row.TeamID] = append(teamMembers[row.TeamID], member)
 			}
 
 			// Populate cache for each team, including empty results
 			for _, teamID := range missingTeamIDs {
-				users := usersByTeam[teamID]
-				if users == nil {
-					users = []*model.User{} // Empty slice, not nil
+				members := teamMembers[teamID]
+				if members == nil {
+					members = []*model.TeamMember{} // Empty slice, not nil
 				}
-				usersByTeam[teamID] = users
-				c.Set(cache.UsersByTeamKey(teamID), users)
+				teamMembers[teamID] = members
+				c.Set(cache.UsersByTeamKey(teamID), members)
 			}
 		}
 
 		// Return results in same order as input
-		results := make([]*dataloader.Result[[]*model.User], len(teamIDs))
+		results := make([]*dataloader.Result[[]*model.TeamMember], len(teamIDs))
 		for i, teamID := range teamIDs {
-			users := usersByTeam[teamID]
-			if users == nil {
-				users = []*model.User{} // Return empty slice, not nil
+			members := teamMembers[teamID]
+			if members == nil {
+				members = []*model.TeamMember{} // Return empty slice, not nil
 			}
-			results[i] = &dataloader.Result[[]*model.User]{Data: users}
+			results[i] = &dataloader.Result[[]*model.TeamMember]{Data: members}
 		}
 		return results
 	}

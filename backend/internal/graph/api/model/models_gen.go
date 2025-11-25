@@ -648,15 +648,15 @@ type SuperTeamFilter struct {
 }
 
 type Team struct {
-	ID            string     `json:"id"`
-	Name          string     `json:"name"`
-	Description   string     `json:"description"`
-	JoinCode      string     `json:"joinCode"`
-	Members       []User     `json:"members"`
-	ParentProject *Project   `json:"parentProject"`
-	SuperTeam     *SuperTeam `json:"superTeam,omitempty"`
-	ProjectID     string     `json:"-"`
-	SuperTeamID   *string    `json:"-"`
+	ID            string       `json:"id"`
+	Name          string       `json:"name"`
+	Description   string       `json:"description"`
+	JoinCode      string       `json:"joinCode"`
+	Members       []TeamMember `json:"members"`
+	ParentProject *Project     `json:"parentProject"`
+	SuperTeam     *SuperTeam   `json:"superTeam,omitempty"`
+	ProjectID     string       `json:"-"`
+	SuperTeamID   *string      `json:"-"`
 }
 
 type TeamConnection struct {
@@ -677,6 +677,17 @@ type TeamFilter struct {
 	NoSuperTeam *bool    `json:"noSuperTeam,omitempty"`
 	MinMembers  *int     `json:"minMembers,omitempty"`
 	MaxMembers  *int     `json:"maxMembers,omitempty"`
+}
+
+type TeamMember struct {
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	Church     *Church `json:"church"`
+	IsTeamLead bool    `json:"isTeamLead"`
+	JoinedAt   string  `json:"joinedAt"`
+	User       *User   `json:"user"`
+	ChurchID   string  `json:"-"`
+	UserID     string  `json:"-"`
 }
 
 type Track struct {

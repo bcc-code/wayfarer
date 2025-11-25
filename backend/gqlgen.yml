@@ -69,6 +69,18 @@ models:
       SuperTeamID:
         type: "*string"
 
+  TeamMember:
+    fields:
+      user:
+        resolver: true
+      church:
+        resolver: true
+    extraFields:
+      UserID:
+        type: string
+      ChurchID:
+        type: string
+
   SuperTeam:
     fields:
       parentProject:
