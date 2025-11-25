@@ -1,0 +1,22 @@
+type: environment
+model: environment
+id: ev_GPdZ4AbXG6
+workspaceId: wk_XKsmbMdFg7
+createdAt: 2025-11-25T12:37:04.349121
+updatedAt: 2025-11-25T12:37:46.671445
+name: Local
+public: true
+base: false
+parentModel: environment
+parentId: null
+variables:
+- enabled: true
+  name: HOST
+  value: http://localhost:8080
+  id: PR8gW4seez
+- enabled: true
+  name: TOKEN
+  value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVMwMUs5Vlo4NjYzSko1NjFTUjE1Q0ZQU0tHWiIsInVzZXJfcm9sZXMiOlsidXNlciIsImFkbWluIiwic3VwZXJhZG1pbiJdLCJpc3MiOiJ3YXlmYXJlciIsImV4cCI6MTc2NDE2MDY2MywiaWF0IjoxNzY0MDc0MjYzfQ.GB8lG4I6JwE-hPiohRlbLDTvzSZs-XAWEn2PfqAAXao
+  id: IrVp557pTp
+color: var(--success)
+sortPriority: 0.0
