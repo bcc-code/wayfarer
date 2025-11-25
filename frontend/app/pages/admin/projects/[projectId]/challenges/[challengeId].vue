@@ -43,6 +43,7 @@ const schema = z.object({
   url: z.url('Must be a valid URL').optional().or(z.literal('')),
   buttonText: z.string().min(1, 'Button text is required'),
   endTime: z.string().optional(),
+  publishedAt: z.string().optional(),
 })
 type Schema = z.infer<typeof schema>
 const state = reactive<Schema>({
@@ -52,6 +53,7 @@ const state = reactive<Schema>({
   url: undefined,
   buttonText: '',
   endTime: undefined,
+  publishedAt: undefined,
 })
 
 watch(
@@ -63,7 +65,8 @@ watch(
       state.image = d.challenge.image ?? undefined
       state.url = d.challenge.url ?? undefined
       state.buttonText = d.challenge.buttonText
-      state.endTime = d.challenge.endTime ?? undefined
+      state.endTime = d.challenge.endTime?.split('T')[0] ?? undefined
+      state.publishedAt = d.challenge.publishedAt?.split('T')[0] ?? undefined
     }
   },
   { once: true },
@@ -215,6 +218,19 @@ async function deleteChallenge() {
             />
           </UFormField>
           <UFormField
+            name="publishedAt"
+            label="Published At"
+            hint="(optional)"
+            help="When this challenge is published"
+          >
+            <UInput
+              v-model="state.publishedAt"
+              type="date"
+              size="xl"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField
             name="endTime"
             label="End Time"
             hint="(optional)"
@@ -222,7 +238,7 @@ async function deleteChallenge() {
           >
             <UInput
               v-model="state.endTime"
-              type="datetime-local"
+              type="date"
               size="xl"
               class="w-full"
             />

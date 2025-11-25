@@ -21,7 +21,7 @@ const colorModes = ['system', 'dark', 'light']
 <template>
   <PageLayout :title="$t('pages.settings')">
     <template #action>
-      <NuxtLink :to="{ name: 'profile' }">
+      <NuxtLink :to="{ name: 'index' }">
         <button
           class="rounded-button-medium bg-border-default grid size-11 place-items-center"
         >

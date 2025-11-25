@@ -1765,7 +1765,7 @@ export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User'
       | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-    > } };
+    >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', id: string, score: number, rank: number } | null } } };
 
 export type UnitPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2433,6 +2433,13 @@ export const ProfilePageDocument = gql`
       hidden
       achievedAt
       points
+    }
+    leaderboard(entityType: PERSONS) {
+      me {
+        id
+        score
+        rank
+      }
     }
   }
 }

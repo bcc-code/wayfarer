@@ -9,12 +9,12 @@ const links = computed<NavigationMenuItem[]>(() => [
   {
     label: t('navigation.profile'),
     icon: 'IconProfile',
-    to: { name: 'profile' },
+    to: { name: 'index' },
   },
   {
     label: t('navigation.standings'),
     icon: 'IconStandings',
-    to: { name: 'index' },
+    to: { name: 'standings' },
   },
   {
     label: t('navigation.challenges'),

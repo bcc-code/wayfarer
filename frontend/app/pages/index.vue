@@ -1,26 +1,28 @@
 <script setup lang="ts">
 gql(`
-  query StandingsPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter) {
-    myCurrentProject {
+  query ProfilePage {
+    me {
       id
-      leaderboard(entityType: $entityType, filter: $filter) {
-        edges {
-          node {
-            id
-            name
-            score
-            image
-            rank
-            isMe
-          }
-        }
+      name
+      image
+    }
+    currentProject {
+      id
+      name
+      achievements {
+        id
+        name
+        description
+        image
+        hidden
+        achievedAt
+        points
+      }
+      leaderboard(entityType: PERSONS) {
         me {
           id
-          name
           score
           rank
-          isMe
-          image
         }
       }
     }
@@ -28,37 +30,76 @@ gql(`
 `)
 
 const { isAuthReady } = useAuthReady()
-const { data, error, fetching } = useStandingsPageQuery({
-  variables: {
-    entityType: LeaderboardEntityType.Persons,
-  },
+const { data, error, fetching } = useProfilePageQuery({
   pause: computed(() => !isAuthReady.value),
-})
-
-const leaderboard = computed<LeaderboardEntry[]>(() => {
-  if (!data.value) return []
-
-  const result = []
-  result.push(
-    ...data.value.myCurrentProject.leaderboard.edges.map((edge) => edge.node),
-  )
-  const me = data.value?.myCurrentProject.leaderboard.me
-  if (me && !result.find((entry) => entry.id === me.id)) {
-    result.push(me)
-  }
-  return result
 })
 </script>
 
 <template>
-  <PageLayout :title="$t('pages.standings')">
+  <PageLayout :title="$t('pages.profile')">
+    <template #action>
+      <NuxtLink :to="{ name: 'settings' }">
+        <button
+          class="rounded-button-medium bg-border-default grid size-11 place-items-center"
+        >
+          <Icon name="lucide:settings" />
+        </button>
+      </NuxtLink>
+    </template>
+
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
-    <LeaderboardList
-      v-else-if="leaderboard?.length"
-      :leaderboard="leaderboard"
-      variant="expanded"
-    />
-    <EmptyState v-else />
+    <div v-else-if="data" class="space-y-list-section-gap">
+      <div
+        v-if="data.me"
+        class="gap-medium flex flex-col items-center justify-center p-4"
+      >
+        <div
+          class="shadow-large bg-background-raised p-list-section-inset flex aspect-square size-35 items-center justify-center rounded-full"
+        >
+          <NuxtImg
+            v-if="data.me.image"
+            :src="data.me.image"
+            height="160"
+            width="160"
+            class="bg-background-default text-accent-contrast size-full rounded-full"
+          />
+          <Icon
+            v-else
+            name="IconProfile"
+            class="text-accent-contrast size-16"
+          />
+        </div>
+        <h2 class="text-heading">{{ data.me.name }}</h2>
+      </div>
+
+      <template v-if="data.currentProject">
+        <!-- <h2>{{ data.currentProject.name }}</h2> -->
+        <DesignPanel class="p-medium space-y-default">
+          <div class="divide-border-default grid grid-cols-2 divide-x">
+            <div class="flex flex-col items-center">
+              <p class="text-title">
+                {{ data.currentProject.leaderboard.me?.score }}
+              </p>
+              <p class="text-label text-text-hint">{{ $t('points') }}</p>
+            </div>
+            <div class="flex flex-col items-center">
+              <p class="text-title">
+                {{ data.currentProject.leaderboard.me?.rank }}
+              </p>
+              <p class="text-label text-text-hint">{{ $t('place') }}</p>
+            </div>
+          </div>
+          <DesignButton class="w-full" variant="secondary">
+            Points History
+          </DesignButton>
+        </DesignPanel>
+
+        <AchievementGroup
+          title="Test"
+          :achievements="data.currentProject.achievements"
+        />
+      </template>
+    </div>
   </PageLayout>
 </template>
