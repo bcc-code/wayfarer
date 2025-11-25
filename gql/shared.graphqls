@@ -97,6 +97,7 @@ type Colors {
 type LeaderboardEntry {
     id: ID!
     name: String!
+    description: String!
     score: Int!
     rank: Int!
     isMe: Boolean!

@@ -19,10 +19,13 @@ defineProps<{
       />
     </div>
     <div class="flex flex-col gap-1">
-      <h3 class="text-label">
+      <h3 class="text-label text-balance">
         {{ title || $t('emptyState') }}
       </h3>
-      <p v-if="description" class="text-caption text-muted max-w-sm">
+      <p
+        v-if="description"
+        class="text-caption text-muted max-w-sm text-balance"
+      >
         {{ description }}
       </p>
     </div>

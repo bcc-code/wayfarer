@@ -8,6 +8,7 @@ gql(`
           node {
             id
             name
+            description
             score
             image
             rank
@@ -17,6 +18,7 @@ gql(`
         me {
           id
           name
+          description
           score
           rank
           isMe
@@ -27,39 +29,20 @@ gql(`
   }
 `)
 
-const { isAuthReady } = useAuthReady()
-const { data, error, fetching } = useStandingsPageQuery({
-  variables: {
-    entityType: LeaderboardEntityType.Persons,
-    first: 20,
-  },
-  pause: computed(() => !isAuthReady.value),
-})
-
-const leaderboard = computed<LeaderboardEntry[]>(() => {
-  if (!data.value) return []
-
-  const result = []
-  result.push(
-    ...data.value.myCurrentProject.leaderboard.edges.map((edge) => edge.node),
-  )
-  const me = data.value?.myCurrentProject.leaderboard.me
-  if (me && !result.find((entry) => entry.id === me.id)) {
-    result.push(me)
-  }
-  return result
-})
+const tab = ref<'global' | 'unit'>('global')
 </script>
 
 <template>
   <PageLayout :title="$t('pages.standings')">
-    <LoadingState v-if="fetching" />
-    <ErrorState v-else-if="error" :error />
-    <LeaderboardList
-      v-else-if="leaderboard?.length"
-      :leaderboard="leaderboard"
-      variant="expanded"
+    <DesignTabs
+      v-model="tab"
+      :tabs="[
+        { label: $t('standings.global'), value: 'global' },
+        { label: $t('standings.unit'), value: 'unit' },
+      ]"
+      class="mb-default"
     />
-    <EmptyState v-else />
+    <StandingsGlobal v-if="tab == 'global'" />
+    <StandingsUnit v-if="tab == 'unit'" />
   </PageLayout>
 </template>

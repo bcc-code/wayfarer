@@ -1,24 +1,19 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="Entry extends LeaderboardEntry">
 defineProps<{
-  variant: 'compact' | 'expanded'
-  leaderboard: LeaderboardEntry[]
+  leaderboard: Entry[]
   hideImages?: boolean
+  badge?: (item: Entry) => string
 }>()
 </script>
 
 <template>
-  <div v-if="variant == 'expanded'" class="space-y-list-section-gap">
+  <div class="space-y-list-section-gap">
     <DesignPanel v-for="(item, index) in leaderboard" :key="index">
-      <LeaderboardItem :item :hide-image="hideImages" />
+      <LeaderboardItem
+        :item
+        :hide-image="hideImages"
+        :badge="badge ? badge(item) : undefined"
+      />
     </DesignPanel>
   </div>
-  <DesignPanel
-    v-else-if="variant == 'compact'"
-    class="gap-list-section-inset flex flex-col"
-  >
-    <template v-for="(item, index) in leaderboard" :key="item.id">
-      <hr v-if="index > 0" class="border-border-default mx-3 h-px" />
-      <LeaderboardItem :item :hide-image="hideImages" />
-    </template>
-  </DesignPanel>
 </template>

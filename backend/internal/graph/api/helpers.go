@@ -80,12 +80,13 @@ func buildLeaderboardConnection(
 		edges[i] = model.LeaderboardEdge{
 			Cursor: fmt.Sprintf("%d", entry.Rank),
 			Node: &model.LeaderboardEntry{
-				ID:    entry.EntityID,
-				Name:  entry.Name,
-				Score: entry.Score,
-				Rank:  int(entry.Rank),
-				IsMe:  isMe,
-				Image: entry.Image,
+				ID:          entry.EntityID,
+				Name:        entry.Name,
+				Description: entry.Name, // TODO: use church name here
+				Score:       entry.Score,
+				Rank:        int(entry.Rank),
+				IsMe:        isMe,
+				Image:       entry.Image,
 			},
 		}
 	}

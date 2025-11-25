@@ -43,21 +43,21 @@ const { data } = useCurrentProjectQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
-watch(data, (newData) => {
-  if (!newData) return
+// watch(data, (newData) => {
+//   if (!newData) return
 
-  const primaryColor = newData.myCurrentProject.branding.colors.primary
+//   const primaryColor = newData.myCurrentProject.branding.colors.primary
 
-  // Set dynamic project theme color
-  document.documentElement.style.setProperty(
-    '--color-accent-base',
-    primaryColor,
-  )
+//   // Set dynamic project theme color
+//   document.documentElement.style.setProperty(
+//     '--color-accent-base',
+//     primaryColor,
+//   )
 
-  // Calculate and set the on-accent contrast color
-  const contrastColor = getContrastColor(primaryColor)
-  document.documentElement.style.setProperty('--color-on-accent', contrastColor)
-})
+//   // Calculate and set the on-accent contrast color
+//   const contrastColor = getContrastColor(primaryColor)
+//   document.documentElement.style.setProperty('--color-on-accent', contrastColor)
+// })
 
 const route = useRoute()
 const activeMenuItem = ref()
@@ -77,7 +77,6 @@ const { left, height, width, top } = useElementBounding(activeMenuItem)
 
 <template>
   <div class="text-default relative mx-auto h-full w-full max-w-xl">
-    <ThemePresetSwitcher />
     <div class="h-full">
       <slot />
     </div>

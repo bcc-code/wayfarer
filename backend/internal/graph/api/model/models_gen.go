@@ -332,12 +332,13 @@ type LeaderboardEdge struct {
 }
 
 type LeaderboardEntry struct {
-	ID    string  `json:"id"`
-	Name  string  `json:"name"`
-	Score int     `json:"score"`
-	Rank  int     `json:"rank"`
-	IsMe  bool    `json:"isMe"`
-	Image *string `json:"image,omitempty"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Score       int     `json:"score"`
+	Rank        int     `json:"rank"`
+	IsMe        bool    `json:"isMe"`
+	Image       *string `json:"image,omitempty"`
 }
 
 type LeaderboardFilter struct {

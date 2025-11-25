@@ -1,6 +1,7 @@
 <script setup lang="ts">
 defineProps<{
   item: LeaderboardEntry
+  badge?: string
 }>()
 
 const colorClasses = [
@@ -39,7 +40,17 @@ const getColorClasses = (rank: number, mode: 'dark' | 'light') => {
     </div>
     <div class="grow">
       <p class="text-label">{{ item.name }}</p>
-      <p class="text-caption text-muted">{{ item.name }}</p>
+
+      <p
+        v-if="badge"
+        class="text-caption text-accent flex items-center gap-0.5"
+      >
+        <Icon name="lucide:badge-check" class="size-3.5" />
+        <span>{{ badge }}</span>
+      </p>
+      <p v-else-if="item.description" class="text-caption text-muted">
+        {{ item.description }}
+      </p>
     </div>
     <p
       :class="['text-label tabular-nums', getColorClasses(item.rank, 'light')]"

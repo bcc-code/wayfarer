@@ -24,5 +24,9 @@
       "light": "Light",
       "dark": "Dark"
     }
+  },
+  "standings": {
+    "global": "Top 20",
+    "unit": "Your Unit"
   }
 }

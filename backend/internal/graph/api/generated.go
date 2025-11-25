@@ -180,12 +180,13 @@ type ComplexityRoot struct {
 	}
 
 	LeaderboardEntry struct {
-		ID    func(childComplexity int) int
-		Image func(childComplexity int) int
-		IsMe  func(childComplexity int) int
-		Name  func(childComplexity int) int
-		Rank  func(childComplexity int) int
-		Score func(childComplexity int) int
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Image       func(childComplexity int) int
+		IsMe        func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Rank        func(childComplexity int) int
+		Score       func(childComplexity int) int
 	}
 
 	ListeningAchievement struct {
@@ -1135,6 +1136,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.LeaderboardEdge.Node(childComplexity), true
 
+	case "LeaderboardEntry.description":
+		if e.complexity.LeaderboardEntry.Description == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardEntry.Description(childComplexity), true
 	case "LeaderboardEntry.id":
 		if e.complexity.LeaderboardEntry.ID == nil {
 			break
@@ -3387,6 +3394,7 @@ type Colors {
 type LeaderboardEntry {
     id: ID!
     name: String!
+    description: String!
     score: Int!
     rank: Int!
     isMe: Boolean!
@@ -7932,6 +7940,8 @@ func (ec *executionContext) fieldContext_LeaderboardConnection_me(_ context.Cont
 				return ec.fieldContext_LeaderboardEntry_id(ctx, field)
 			case "name":
 				return ec.fieldContext_LeaderboardEntry_name(ctx, field)
+			case "description":
+				return ec.fieldContext_LeaderboardEntry_description(ctx, field)
 			case "score":
 				return ec.fieldContext_LeaderboardEntry_score(ctx, field)
 			case "rank":
@@ -8004,6 +8014,8 @@ func (ec *executionContext) fieldContext_LeaderboardEdge_node(_ context.Context,
 				return ec.fieldContext_LeaderboardEntry_id(ctx, field)
 			case "name":
 				return ec.fieldContext_LeaderboardEntry_name(ctx, field)
+			case "description":
+				return ec.fieldContext_LeaderboardEntry_description(ctx, field)
 			case "score":
 				return ec.fieldContext_LeaderboardEntry_score(ctx, field)
 			case "rank":
@@ -8065,6 +8077,35 @@ func (ec *executionContext) _LeaderboardEntry_name(ctx context.Context, field gr
 }
 
 func (ec *executionContext) fieldContext_LeaderboardEntry_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeaderboardEntry_description(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardEntry_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardEntry_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "LeaderboardEntry",
 		Field:      field,
@@ -25469,6 +25510,11 @@ func (ec *executionContext) _LeaderboardEntry(ctx context.Context, sel ast.Selec
 			}
 		case "name":
 			out.Values[i] = ec._LeaderboardEntry_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._LeaderboardEntry_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

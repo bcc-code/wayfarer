@@ -76,23 +76,33 @@ const { data, error, fetching } = useProfilePageQuery({
       <template v-if="data.currentProject">
         <!-- <h2>{{ data.currentProject.name }}</h2> -->
         <DesignPanel class="p-medium space-y-default">
-          <div class="divide-border-default grid grid-cols-2 divide-x">
-            <div class="flex flex-col items-center">
-              <p class="text-title">
-                {{ data.currentProject.leaderboard.me?.score }}
-              </p>
-              <p class="text-label text-text-hint">{{ $t('points') }}</p>
+          <template v-if="data.currentProject.leaderboard.me">
+            <div class="divide-border-default grid grid-cols-2 divide-x">
+              <div class="flex flex-col items-center">
+                <p class="text-title">
+                  {{ data.currentProject.leaderboard.me.score }}
+                </p>
+                <p class="text-label text-text-hint">{{ $t('points') }}</p>
+              </div>
+              <div class="flex flex-col items-center">
+                <p class="text-title">
+                  {{ data.currentProject.leaderboard.me.rank }}
+                </p>
+                <p class="text-label text-text-hint">{{ $t('place') }}</p>
+              </div>
             </div>
-            <div class="flex flex-col items-center">
-              <p class="text-title">
-                {{ data.currentProject.leaderboard.me?.rank }}
-              </p>
-              <p class="text-label text-text-hint">{{ $t('place') }}</p>
-            </div>
-          </div>
-          <DesignButton class="w-full" variant="secondary">
-            Points History
-          </DesignButton>
+            <DesignButton class="w-full" variant="secondary">
+              Points History
+            </DesignButton>
+          </template>
+          <template v-else>
+            <EmptyState
+              icon="lucide:coins"
+              title="Nothing here yet"
+              description="You'll see your points here once you start collecting them"
+              class="p-small!"
+            />
+          </template>
         </DesignPanel>
 
         <AchievementGroup

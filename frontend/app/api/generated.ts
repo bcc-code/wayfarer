@@ -383,6 +383,7 @@ export enum LeaderboardEntityType {
 
 export type LeaderboardEntry = {
   __typename?: 'LeaderboardEntry';
+  description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
   isMe: Scalars['Boolean']['output'];
@@ -1766,7 +1767,7 @@ export type StandingsPageQueryVariables = Exact<{
 }>;
 
 
-export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, image?: string | null, rank: number, isMe: boolean } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank: number, isMe: boolean, image?: string | null } | null } } };
+export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, image?: string | null, rank: number, isMe: boolean } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank: number, isMe: boolean, image?: string | null } | null } } };
 
 
 export const GetMeDocument = gql`
@@ -2422,6 +2423,7 @@ export const StandingsPageDocument = gql`
         node {
           id
           name
+          description
           score
           image
           rank
@@ -2431,6 +2433,7 @@ export const StandingsPageDocument = gql`
       me {
         id
         name
+        description
         score
         rank
         isMe
