@@ -1,9 +1,9 @@
 <script setup lang="ts">
 gql(`
-  query StandingsUnitPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter, $first: Int) {
+  query StandingsUnitPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter) {
     myCurrentProject {
       id
-      leaderboard(entityType: $entityType, filter: $filter, first: $first) {
+      leaderboard(entityType: $entityType, filter: $filter) {
         edges {
           node {
             id
@@ -22,6 +22,10 @@ gql(`
           isMe
           image
         }
+      }
+      myTeam {
+        id
+        name
       }
     }
   }
@@ -57,9 +61,12 @@ const leaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
     <ErrorState v-else-if="error" :error />
     <template v-else-if="data">
       <div
+        v-if="data.myCurrentProject.myTeam"
         class="p-medium gap-medium mb-list-section-gap flex flex-col items-center"
       >
-        <h2 class="text-heading">Unit Name</h2>
+        <h2 class="text-heading text-balance">
+          {{ data.myCurrentProject.myTeam.name }}
+        </h2>
         <DesignButton variant="secondary" size="medium">
           {{ $t('standings.editUnit') }}
         </DesignButton>

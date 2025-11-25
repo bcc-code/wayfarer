@@ -2,11 +2,18 @@
 interface Props {
   maxBlur?: number // Maximum blur amount in pixels
   layers?: number // Number of blur layers for smoothness
+  direction?: 'up' | 'down'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   maxBlur: 8,
   layers: 4,
+  direction: 'down',
+})
+
+// Determine gradient direction based on prop
+const gradientDirection = computed(() => {
+  return props.direction === 'up' ? 'to top' : 'to bottom'
 })
 
 // Generate blur layers with increasing amounts and overlapping masks
@@ -35,8 +42,8 @@ const blurLayers = computed(() => {
       :style="{
         backdropFilter: `blur(${layer.blur}px)`,
         WebkitBackdropFilter: `blur(${layer.blur}px)`,
-        maskImage: `linear-gradient(to bottom, transparent 0%, black ${layer.maskMid}%, black 100%)`,
-        WebkitMaskImage: `linear-gradient(to bottom, transparent 0%, black ${layer.maskMid}%, black 100%)`,
+        maskImage: `linear-gradient(${gradientDirection}, transparent 0%, black ${layer.maskMid}%, black 100%)`,
+        WebkitMaskImage: `linear-gradient(${gradientDirection}, transparent 0%, black ${layer.maskMid}%, black 100%)`,
       }"
     />
     <slot />

@@ -1509,11 +1509,10 @@ export type StandingsGlobalPageQuery = { __typename?: 'Query', myCurrentProject:
 export type StandingsUnitPageQueryVariables = Exact<{
   entityType: LeaderboardEntityType;
   filter?: InputMaybe<LeaderboardFilter>;
-  first?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
-export type StandingsUnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, image?: string | null, rank: number, isMe: boolean } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank: number, isMe: boolean, image?: string | null } | null } } };
+export type StandingsUnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, image?: string | null, rank: number, isMe: boolean } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank: number, isMe: boolean, image?: string | null } | null }, myTeam?: { __typename?: 'Team', id: string, name: string } | null } };
 
 export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1813,10 +1812,10 @@ export function useStandingsGlobalPageQuery(options?: Omit<Urql.UseQueryArgs<nev
   return Urql.useQuery<StandingsGlobalPageQuery, StandingsGlobalPageQueryVariables | undefined>({ query: StandingsGlobalPageDocument, variables: undefined, ...options });
 };
 export const StandingsUnitPageDocument = gql`
-    query StandingsUnitPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter, $first: Int) {
+    query StandingsUnitPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter) {
   myCurrentProject {
     id
-    leaderboard(entityType: $entityType, filter: $filter, first: $first) {
+    leaderboard(entityType: $entityType, filter: $filter) {
       edges {
         node {
           id
@@ -1835,6 +1834,10 @@ export const StandingsUnitPageDocument = gql`
         isMe
         image
       }
+    }
+    myTeam {
+      id
+      name
     }
   }
 }
