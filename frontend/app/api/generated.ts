@@ -1313,7 +1313,7 @@ export type Team = {
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   joinCode: Scalars['String']['output'];
-  members: Array<User>;
+  members: Array<TeamMember>;
   name: Scalars['String']['output'];
   parentProject: Project;
   superTeam?: Maybe<SuperTeam>;
@@ -1339,6 +1339,16 @@ export type TeamFilter = {
   noSuperTeam?: InputMaybe<Scalars['Boolean']['input']>;
   projectId?: InputMaybe<Scalars['ID']['input']>;
   superTeamId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type TeamMember = {
+  __typename?: 'TeamMember';
+  church: Church;
+  id: Scalars['ID']['output'];
+  isTeamLead: Scalars['Boolean']['output'];
+  joinedAt: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  user: User;
 };
 
 export type Track = {
