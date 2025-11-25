@@ -307,7 +307,7 @@ func buildCacheKeyParams(filter *model.UserFilter, first *int, after *string, la
 		if filter.TeamID != nil && *filter.TeamID != "" {
 			params["teamid"] = *filter.TeamID
 		}
-		if filter.Ids != nil && len(filter.Ids) > 0 {
+		if len(filter.Ids) > 0 {
 			// Join IDs with comma for deterministic key
 			params["ids"] = fmt.Sprintf("%v", filter.Ids)
 		}

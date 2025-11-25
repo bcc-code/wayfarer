@@ -424,19 +424,6 @@ func TestApplyPermissionFilters(t *testing.T) {
 	}
 }
 
-// mockQuerier is a minimal mock for the Querier interface
-type mockQuerier struct {
-	mock.Mock
-}
-
-func (m *mockQuerier) GetUsersFiltered(ctx context.Context, params sqlc.GetUsersFilteredParams) ([]sqlc.GetUsersFilteredRow, error) {
-	args := m.Called(ctx, params)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]sqlc.GetUsersFilteredRow), args.Error(1)
-}
-
 // TestBuildUserFilterParams tests the buildUserFilterParams function
 func TestBuildUserFilterParams(t *testing.T) {
 	maleGender := model.GenderMale
