@@ -1,9 +1,9 @@
 <script setup lang="ts">
 gql(`
-  query StandingsPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter) {
+  query StandingsPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter, $first: Int) {
     myCurrentProject {
       id
-      leaderboard(entityType: $entityType, filter: $filter) {
+      leaderboard(entityType: $entityType, filter: $filter, first: $first) {
         edges {
           node {
             id
@@ -31,6 +31,7 @@ const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useStandingsPageQuery({
   variables: {
     entityType: LeaderboardEntityType.Persons,
+    first: 20,
   },
   pause: computed(() => !isAuthReady.value),
 })
