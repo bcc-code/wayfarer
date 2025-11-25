@@ -1,6 +1,36 @@
 <script setup lang="ts">
+gql(`
+  query StandingsGlobalPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter, $first: Int) {
+    myCurrentProject {
+      id
+      leaderboard(entityType: $entityType, filter: $filter, first: $first) {
+        edges {
+          node {
+            id
+            name
+            description
+            score
+            image
+            rank
+            isMe
+          }
+        }
+        me {
+          id
+          name
+          description
+          score
+          rank
+          isMe
+          image
+        }
+      }
+    }
+  }
+`)
+
 const { isAuthReady } = useAuthReady()
-const { data, error, fetching } = useStandingsPageQuery({
+const { data, error, fetching } = useStandingsGlobalPageQuery({
   variables: computed(() => ({
     entityType: LeaderboardEntityType.Persons,
     first: 20,
@@ -30,7 +60,6 @@ const leaderboard = computed<LeaderboardEntry[]>(() => {
     <LeaderboardList
       v-else-if="leaderboard?.length"
       :leaderboard="leaderboard"
-      :badge="(item) => item.description"
     />
     <EmptyState v-else />
   </div>

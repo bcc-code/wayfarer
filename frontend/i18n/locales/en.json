@@ -27,6 +27,7 @@
   },
   "standings": {
     "global": "Top 20",
-    "unit": "Your Unit"
+    "unit": "Your Unit",
+    "editUnit": "Edit Unit"
   }
 }

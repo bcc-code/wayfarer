@@ -1,8 +1,9 @@
-<script setup lang="ts" generic="Entry extends LeaderboardEntry">
+<script setup lang="ts" generic="Entry extends Partial<LeaderboardEntry>">
 defineProps<{
   leaderboard: Entry[]
   hideImages?: boolean
-  badge?: (item: Entry) => string
+  badge?: (item: Entry, index: number) => string | undefined
+  hideMedals?: boolean
 }>()
 </script>
 
@@ -12,7 +13,8 @@ defineProps<{
       <LeaderboardItem
         :item
         :hide-image="hideImages"
-        :badge="badge ? badge(item) : undefined"
+        :badge="badge ? badge(item, index) : undefined"
+        :hide-medal="hideMedals"
       />
     </DesignPanel>
   </div>

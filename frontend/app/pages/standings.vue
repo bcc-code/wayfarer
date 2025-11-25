@@ -1,35 +1,14 @@
 <script setup lang="ts">
-gql(`
-  query StandingsPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter, $first: Int) {
-    myCurrentProject {
-      id
-      leaderboard(entityType: $entityType, filter: $filter, first: $first) {
-        edges {
-          node {
-            id
-            name
-            description
-            score
-            image
-            rank
-            isMe
-          }
-        }
-        me {
-          id
-          name
-          description
-          score
-          rank
-          isMe
-          image
-        }
-      }
-    }
-  }
-`)
-
-const tab = ref<'global' | 'unit'>('global')
+const params = useUrlSearchParams('history')
+const tab = computed({
+  get() {
+    if (typeof params.tab === 'string') return params.tab
+    return 'global'
+  },
+  set(tab: 'global' | 'unit') {
+    params.tab = tab
+  },
+})
 </script>
 
 <template>
@@ -40,7 +19,7 @@ const tab = ref<'global' | 'unit'>('global')
         { label: $t('standings.global'), value: 'global' },
         { label: $t('standings.unit'), value: 'unit' },
       ]"
-      class="mb-default"
+      class="mb-default -mt-list-outside"
     />
     <StandingsGlobal v-if="tab == 'global'" />
     <StandingsUnit v-if="tab == 'unit'" />

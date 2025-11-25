@@ -1,7 +1,8 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="Entry extends Partial<LeaderboardEntry>">
 defineProps<{
-  item: LeaderboardEntry
+  item: Entry
   badge?: string
+  hideMedal?: boolean
 }>()
 
 const colorClasses = [
@@ -10,7 +11,8 @@ const colorClasses = [
   { light: 'text-[#C47E49]', dark: 'text-[#512012]' },
 ]
 
-const getColorClasses = (rank: number, mode: 'dark' | 'light') => {
+const getColorClasses = (rank: number | undefined, mode: 'dark' | 'light') => {
+  if (!rank) return
   const color = colorClasses[rank - 1]
   if (color) {
     return color[mode]
@@ -27,12 +29,15 @@ const getColorClasses = (rank: number, mode: 'dark' | 'light') => {
     <div
       :class="[
         'grid aspect-square size-10 place-items-center rounded-full',
-        { 'border-border-default border': item.rank > 3 },
-        getColorClasses(item.rank, 'dark'),
+        {
+          'border-border-default border':
+            hideMedal || (item.rank && item.rank > 3),
+        },
+        !hideMedal && getColorClasses(item.rank, 'dark'),
       ]"
     >
       <NuxtImg
-        v-if="item.rank <= 3"
+        v-if="!hideMedal && item.rank && item.rank <= 3"
         :src="`/images/medals/${item.rank}.png`"
         class="col-span-full row-span-full object-cover"
       />
@@ -53,7 +58,11 @@ const getColorClasses = (rank: number, mode: 'dark' | 'light') => {
       </p>
     </div>
     <p
-      :class="['text-label tabular-nums', getColorClasses(item.rank, 'light')]"
+      :class="[
+        'text-label tabular-nums',
+        { 'text-accent': hideMedal || (item.rank && item.rank > 3) },
+        !hideMedal && getColorClasses(item.rank, 'light'),
+      ]"
     >
       {{ item.score }}
     </p>
