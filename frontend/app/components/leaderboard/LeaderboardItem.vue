@@ -1,38 +1,48 @@
 <script setup lang="ts">
 defineProps<{
   item: LeaderboardEntry
-  hideImage?: boolean
 }>()
+
+const colorClasses = [
+  { light: 'text-[#F2BC28]', dark: 'text-[#864802]' },
+  { light: 'text-[#D4D4D4]', dark: 'text-[#525252]' },
+  { light: 'text-[#C47E49]', dark: 'text-[#512012]' },
+]
+
+const getColorClasses = (rank: number, mode: 'dark' | 'light') => {
+  const color = colorClasses[rank - 1]
+  if (color) {
+    return color[mode]
+  }
+}
 </script>
 
 <template>
   <div
     :class="[
       'rounded-list-inset hover:bg-background-indent active:bg-background-indent flex items-center gap-2.5 px-3 py-2',
-      { 'bg-accent! text-on-accent!': item.isMe },
     ]"
   >
-    <span
-      v-if="item.rank"
-      :class="['text-dimmed text-end', { 'text-on-accent': item.isMe }]"
+    <div
+      :class="[
+        'grid aspect-square size-10 place-items-center rounded-full',
+        { 'border-border-default border': item.rank > 3 },
+        getColorClasses(item.rank, 'dark'),
+      ]"
     >
-      {{ item.rank }}
-    </span>
-    <NuxtImg
-      v-if="item.image && !hideImage"
-      :src="item.image"
-      height="40"
-      width="40"
-      class="bg-accent shrink-0 rounded-full"
-    />
+      <NuxtImg
+        v-if="item.rank <= 3"
+        :src="`/images/medals/${item.rank}.png`"
+        class="col-span-full row-span-full object-cover"
+      />
+      <span class="col-span-full row-span-full">{{ item.rank }}</span>
+    </div>
     <div class="grow">
       <p class="text-label">{{ item.name }}</p>
+      <p class="text-caption text-muted">{{ item.name }}</p>
     </div>
     <p
-      :class="[
-        'text-label text-accent-contrast tabular-nums',
-        { 'text-on-accent': item.isMe },
-      ]"
+      :class="['text-label tabular-nums', getColorClasses(item.rank, 'light')]"
     >
       {{ item.score }}
     </p>
