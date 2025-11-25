@@ -1762,6 +1762,13 @@ export type AdminUsersPageQueryVariables = Exact<{
 
 export type AdminUsersPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'UserEdge', cursor: string, node: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, church: { __typename?: 'Church', name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType }> } }> } };
 
+export type ChallengePageQueryVariables = Exact<{
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type ChallengePageQuery = { __typename?: 'Query', challenge: { __typename?: 'Challenge', id: string, name: string, description: any, image?: string | null, url?: string | null, buttonText: string, publishedAt: any, endTime?: any | null, userCompletedAt?: any | null } };
+
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -2435,6 +2442,25 @@ export const AdminUsersPageDocument = gql`
 
 export function useAdminUsersPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminUsersPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminUsersPageQuery, AdminUsersPageQueryVariables | undefined>({ query: AdminUsersPageDocument, variables: undefined, ...options });
+};
+export const ChallengePageDocument = gql`
+    query ChallengePage($challengeId: ID!) {
+  challenge(id: $challengeId) {
+    id
+    name
+    description
+    image
+    url
+    buttonText
+    publishedAt
+    endTime
+    userCompletedAt
+  }
+}
+    `;
+
+export function useChallengePageQuery(options?: Omit<Urql.UseQueryArgs<never, ChallengePageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ChallengePageQuery, ChallengePageQueryVariables | undefined>({ query: ChallengePageDocument, variables: undefined, ...options });
 };
 export const ChallengesPageDocument = gql`
     query ChallengesPage {

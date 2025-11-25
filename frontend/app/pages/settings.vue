@@ -22,11 +22,7 @@ const colorModes = ['system', 'dark', 'light']
   <PageLayout :title="$t('pages.settings')">
     <template #action>
       <NuxtLink :to="{ name: 'index' }">
-        <button
-          class="rounded-button-medium bg-border-default grid size-11 place-items-center"
-        >
-          <Icon name="lucide:x" class="size-4" />
-        </button>
+        <DesignIconButton icon="lucide:x" />
       </NuxtLink>
     </template>
 

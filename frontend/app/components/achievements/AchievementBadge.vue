@@ -24,39 +24,49 @@ const open = ref(false)
         class="size-full object-cover"
       />
     </button>
-    <UDrawer
+    <UModal
       v-model:open="open"
-      :ui="{ overlay: 'bg-black/50' }"
+      :ui="{ content: 'bg-background-default' }"
+      :transition="false"
       modal
-      class="rounded-t-card! min-h-1/2"
+      fullscreen
     >
-      <template #body>
-        <div class="flex flex-col items-center gap-4 pt-4">
-          <div
-            class="grid aspect-square size-40 place-items-center overflow-hidden rounded-full"
-          >
-            <NuxtImg
-              v-if="achievement.image && achievement.achievedAt != null"
-              :src="achievement.image"
-              class="size-full object-cover"
-            />
-            <NuxtImg
-              v-else
-              src="/images/achievement-placeholder.png"
-              class="size-full object-cover"
-            />
+      <template #content="{ close }">
+        <PageLayout
+          :title="achievement.achievedAt ? 'Unlocked!' : 'Achievement'"
+        >
+          <template #action>
+            <DesignIconButton icon="lucide:x" @click="close" />
+          </template>
+
+          <div class="flex h-full flex-col items-center justify-center gap-4">
+            <div
+              class="grid aspect-square size-55 place-items-center overflow-hidden rounded-full"
+            >
+              <NuxtImg
+                v-if="achievement.image && achievement.achievedAt != null"
+                :src="achievement.image"
+                class="size-full object-cover"
+              />
+              <NuxtImg
+                v-else
+                src="/images/achievement-placeholder.png"
+                class="size-full object-cover"
+              />
+            </div>
+            <div
+              class="flex flex-col items-center gap-1 text-center text-balance"
+            >
+              <h3 class="text-heading">
+                {{ achievement.name }}
+              </h3>
+              <p class="text-label">
+                {{ achievement.description }}
+              </p>
+            </div>
           </div>
-          <div class="flex flex-col items-center text-center">
-            <h3 class="text-label">
-              {{ achievement.name }}
-            </h3>
-            <p class="text-caption text-muted">{{ achievement.description }}</p>
-            <DesignBadge icon="lucide:plus" class="mt-4">
-              {{ achievement.points }}
-            </DesignBadge>
-          </div>
-        </div>
+        </PageLayout>
       </template>
-    </UDrawer>
+    </UModal>
   </div>
 </template>

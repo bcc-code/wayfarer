@@ -18,11 +18,10 @@ defineProps<{
         <h3 class="text-heading">{{ challenge.name }}</h3>
         <div class="text-label" v-html="challenge.description" />
       </div>
-      <div class="gap-small mt-auto grid">
-        <!-- <DesignButton size="large" variant="secondary"> Decline </DesignButton> -->
+      <div class="mt-auto grid">
         <NuxtLink
           :to="
-            challenge.url ?? {
+            challenge.url || {
               name: 'challenges-challengeId',
               params: { challengeId: challenge.id },
             }

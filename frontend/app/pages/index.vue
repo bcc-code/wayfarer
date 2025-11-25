@@ -39,11 +39,7 @@ const { data, error, fetching } = useProfilePageQuery({
   <PageLayout :title="$t('pages.profile')">
     <template #action>
       <NuxtLink :to="{ name: 'settings' }">
-        <button
-          class="rounded-button-medium bg-border-default grid size-11 place-items-center"
-        >
-          <Icon name="lucide:settings" />
-        </button>
+        <DesignIconButton icon="lucide:settings" />
       </NuxtLink>
     </template>
 
