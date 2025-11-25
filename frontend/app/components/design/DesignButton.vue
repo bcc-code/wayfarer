@@ -12,23 +12,26 @@ withDefaults(
   },
 )
 
-const classes = cva('flex items-center justify-center gap-2 text-label grow', {
-  variants: {
-    variant: {
-      primary: 'bg-accent text-on-accent',
-      secondary: 'bg-border-default text-default',
-      tertiary: 'text-default',
-    },
-    size: {
-      small:
-        'px-button-small-horizontal py-button-small-vertical rounded-button-small',
-      medium:
-        'px-button-medium-horizontal py-button-medium-vertical rounded-button-medium',
-      large:
-        'px-button-large-horizontal py-button-large-vertical rounded-button-large',
+const classes = cva(
+  'relative flex items-center justify-center gap-2 text-label grow',
+  {
+    variants: {
+      variant: {
+        primary: 'bg-accent text-on-accent gradient-border',
+        secondary: 'bg-border-default text-default gradient-border',
+        tertiary: 'text-default',
+      },
+      size: {
+        small:
+          'px-button-small-horizontal py-button-small-vertical rounded-button-small',
+        medium:
+          'px-button-medium-horizontal py-button-medium-vertical rounded-button-medium',
+        large:
+          'px-button-large-horizontal py-button-large-vertical rounded-button-large',
+      },
     },
   },
-})
+)
 </script>
 
 <template>
