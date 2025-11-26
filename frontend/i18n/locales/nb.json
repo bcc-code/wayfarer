@@ -13,10 +13,6 @@
     "challenges": "Oppgaver"
   },
   "emptyState": "Ingenting å se her",
-  "achievements": {
-    "completed": "Mine achievements",
-    "notCompleted": "Ikke fullført"
-  },
   "settings": {
     "language": "Appspråk",
     "colorMode": "Fargemodus",
@@ -30,6 +26,10 @@
     "global": "Topp 20",
     "unit": "Din unit",
     "editUnit": "Rediger unit",
-    "you": "Deg"
-  }
+    "you": "Deg",
+    "pointsHistoryButton": "Poenghistorikk",
+    "pointsExplainerButton": "Få poeng"
+  },
+  "place": "plassering",
+  "points": "poeng"
 }

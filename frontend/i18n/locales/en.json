@@ -13,10 +13,6 @@
     "challenges": "Challenges"
   },
   "emptyState": "Nothing to see here",
-  "achievements": {
-    "completed": "My Achievements",
-    "notCompleted": "Not Completed"
-  },
   "settings": {
     "language": "App Language",
     "colorMode": "Color Mode",
@@ -28,8 +24,12 @@
   },
   "standings": {
     "global": "Top 20",
-    "unit": "Your Unit",
-    "editUnit": "Edit Unit",
-    "you": "You"
-  }
+    "unit": "Your unit",
+    "editUnit": "Edit unit",
+    "you": "You",
+    "pointsHistoryButton": "Points history",
+    "pointsExplainerButton": "Get points"
+  },
+  "points": "points",
+  "place": "place"
 }
