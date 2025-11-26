@@ -9,7 +9,7 @@ const hasScrolled = computed(() => y.value > 25)
 
 <template>
   <div class="flex min-h-full flex-col">
-    <div class="sticky top-0">
+    <div class="sticky top-0 z-10">
       <ProgressiveBlur
         direction="up"
         class="from-shadow-blank/0 to-shadow-default bg-linear-to-t"

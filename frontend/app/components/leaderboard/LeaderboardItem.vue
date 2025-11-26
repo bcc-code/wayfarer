@@ -46,7 +46,7 @@ const getColorClasses = (rank: number | undefined, mode: 'dark' | 'light') => {
       <span class="col-span-full row-span-full">{{ item.rank }}</span>
     </div>
     <div class="grow">
-      <div class="flex gap-1">
+      <div class="flex gap-2">
         <p :class="['text-label', { 'text-accent-contrast': isMe }]">
           {{ item.name }}
         </p>
