@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_KGzVPBagKW
 createdAt: 2025-11-25T13:22:34.139477
-updatedAt: 2025-11-26T13:10:16.114637
+updatedAt: 2025-11-26T13:11:53.644194
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -17,6 +17,7 @@ body:
             leaderboard(entityType:PERSONS){
               edges{
                 node{
+                  id
                   rank
                   score
                   name
@@ -32,6 +33,7 @@ body:
           id
           name
           memberLeaderboard {
+            id
             rank
             score
             name
