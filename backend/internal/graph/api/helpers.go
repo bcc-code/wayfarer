@@ -82,7 +82,7 @@ func buildLeaderboardConnection(
 			Node: &model.LeaderboardEntry{
 				ID:          entry.EntityID,
 				Name:        entry.Name,
-				Description: entry.Name, // TODO: use church name here
+				Description: entry.Description,
 				Score:       entry.Score,
 				Rank:        int(entry.Rank),
 				IsMe:        isMe,
@@ -111,12 +111,13 @@ func buildLeaderboardConnection(
 	var me *model.LeaderboardEntry
 	if meEntry != nil {
 		me = &model.LeaderboardEntry{
-			ID:    meEntry.EntityID,
-			Name:  meEntry.Name,
-			Score: meEntry.Score,
-			Rank:  int(meEntry.Rank),
-			IsMe:  true,
-			Image: meEntry.Image,
+			ID:          meEntry.EntityID,
+			Name:        meEntry.Name,
+			Description: meEntry.Description,
+			Score:       meEntry.Score,
+			Rank:        int(meEntry.Rank),
+			IsMe:        true,
+			Image:       meEntry.Image,
 		}
 	}
 

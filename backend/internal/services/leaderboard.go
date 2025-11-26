@@ -89,11 +89,12 @@ type LeaderboardParams struct {
 
 // LeaderboardEntry represents a single entry in the leaderboard
 type LeaderboardEntry struct {
-	EntityID string
-	Name     string
-	Image    *string
-	Score    int
-	Rank     int64
+	EntityID    string
+	Name        string
+	Description string
+	Image       *string
+	Score       int
+	Rank        int64
 }
 
 // GetProjectLeaderboard retrieves leaderboard for a project
@@ -171,11 +172,12 @@ func (s *LeaderboardService) getProjectPersonLeaderboard(ctx context.Context, pa
 	for _, row := range rows {
 		if row != nil {
 			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID: row.EntityID,
-				Name:     row.Name,
-				Image:    row.Image,
-				Score:    int(row.Score),
-				Rank:     row.Rank,
+				EntityID:    row.EntityID,
+				Name:        row.Name,
+				Description: row.ChurchName,
+				Image:       row.Image,
+				Score:       int(row.Score),
+				Rank:        row.Rank,
 			})
 		}
 	}
@@ -503,11 +505,12 @@ func (s *LeaderboardService) getEventPersonLeaderboard(ctx context.Context, para
 	for _, row := range rows {
 		if row != nil {
 			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID: row.EntityID,
-				Name:     row.Name,
-				Image:    row.Image,
-				Score:    int(row.Score),
-				Rank:     row.Rank,
+				EntityID:    row.EntityID,
+				Name:        row.Name,
+				Description: row.ChurchName,
+				Image:       row.Image,
+				Score:       int(row.Score),
+				Rank:        row.Rank,
 			})
 		}
 	}

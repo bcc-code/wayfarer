@@ -291,17 +291,19 @@ WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
         u.name,
+        c.name AS church_name,
         u.avatar_url AS image,
         lep.score,
         RANK() OVER (ORDER BY lep.score DESC, u.name ASC) AS rank
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON lep.user_id = u.id
+    INNER JOIN churches c ON u.church_id = c.id
     WHERE lep.event_id = $2::text
       AND lep.score >= COALESCE($3::int, 1)
       AND ($4::int IS NULL OR lep.score <= $4::int)
       AND ($5::text = '' OR u.church_id = $5::text)
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
 WHERE entity_id = $1::text
 `
@@ -315,11 +317,12 @@ type FindMyEventPersonPositionParams struct {
 }
 
 type FindMyEventPersonPositionRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID   string  `json:"entity_id"`
+	Name       string  `json:"name"`
+	ChurchName string  `json:"church_name"`
+	Image      *string `json:"image"`
+	Score      int64   `json:"score"`
+	Rank       int64   `json:"rank"`
 }
 
 func (q *Queries) FindMyEventPersonPosition(ctx context.Context, arg FindMyEventPersonPositionParams) (*FindMyEventPersonPositionRow, error) {
@@ -334,6 +337,7 @@ func (q *Queries) FindMyEventPersonPosition(ctx context.Context, arg FindMyEvent
 	err := row.Scan(
 		&i.EntityID,
 		&i.Name,
+		&i.ChurchName,
 		&i.Image,
 		&i.Score,
 		&i.Rank,
@@ -524,17 +528,19 @@ WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
         u.name,
+        c.name AS church_name,
         u.avatar_url AS image,
         lpp.score,
         RANK() OVER (ORDER BY lpp.score DESC, u.name ASC) AS rank
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON lpp.user_id = u.id
+    INNER JOIN churches c ON u.church_id = c.id
     WHERE lpp.project_id = $2::text
       AND lpp.score >= COALESCE($3::int, 1)
       AND ($4::int IS NULL OR lpp.score <= $4::int)
       AND ($5::text = '' OR u.church_id = $5::text)
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
 WHERE entity_id = $1::text
 `
@@ -548,11 +554,12 @@ type FindMyProjectPersonPositionParams struct {
 }
 
 type FindMyProjectPersonPositionRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID   string  `json:"entity_id"`
+	Name       string  `json:"name"`
+	ChurchName string  `json:"church_name"`
+	Image      *string `json:"image"`
+	Score      int64   `json:"score"`
+	Rank       int64   `json:"rank"`
 }
 
 func (q *Queries) FindMyProjectPersonPosition(ctx context.Context, arg FindMyProjectPersonPositionParams) (*FindMyProjectPersonPositionRow, error) {
@@ -567,6 +574,7 @@ func (q *Queries) FindMyProjectPersonPosition(ctx context.Context, arg FindMyPro
 	err := row.Scan(
 		&i.EntityID,
 		&i.Name,
+		&i.ChurchName,
 		&i.Image,
 		&i.Score,
 		&i.Rank,
@@ -794,35 +802,38 @@ WITH person_scores AS (
     SELECT
         u.id AS entity_id,
         u.name,
+        c.name AS church_name,
         u.avatar_url AS image,
         COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM users u
     INNER JOIN user_events ue ON u.id = ue.user_id
+    INNER JOIN churches c ON u.church_id = c.id
     LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = $6::text
     WHERE
         ue.event_id = $6::text
         AND ($7::text = '' OR u.church_id = $7::text)
         AND ($8::text = '' OR EXISTS (
-            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.country = $8::text
+            SELECT 1 FROM churches ch WHERE ch.id = u.church_id AND ch.country = $8::text
         ))
         AND ($9::text = '' OR EXISTS (
-            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.category = $9::text
+            SELECT 1 FROM churches ch WHERE ch.id = u.church_id AND ch.category = $9::text
         ))
         AND ($10::text = '' OR u.gender = $10::text)
         AND ($11::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $11::int)
         AND ($12::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $12::int)
-    GROUP BY u.id, u.name, u.avatar_url
+    GROUP BY u.id, u.name, c.name, u.avatar_url
 ),
 ranked_scores AS (
     SELECT
         entity_id,
         name,
+        church_name,
         image,
         score,
         RANK() OVER (ORDER BY score DESC, name ASC) AS rank
     FROM person_scores
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
 WHERE
     score >= 1
@@ -850,11 +861,12 @@ type GetEventPersonLeaderboardParams struct {
 }
 
 type GetEventPersonLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID   string  `json:"entity_id"`
+	Name       string  `json:"name"`
+	ChurchName string  `json:"church_name"`
+	Image      *string `json:"image"`
+	Score      int64   `json:"score"`
+	Rank       int64   `json:"rank"`
 }
 
 // ==================== Event Person Leaderboard ====================
@@ -883,6 +895,7 @@ func (q *Queries) GetEventPersonLeaderboard(ctx context.Context, arg GetEventPer
 		if err := rows.Scan(
 			&i.EntityID,
 			&i.Name,
+			&i.ChurchName,
 			&i.Image,
 			&i.Score,
 			&i.Rank,
@@ -1148,17 +1161,19 @@ WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
         u.name,
+        c.name AS church_name,
         u.avatar_url AS image,
         lep.score,
         RANK() OVER (ORDER BY lep.score DESC, u.name ASC) AS rank
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON lep.user_id = u.id
+    INNER JOIN churches c ON u.church_id = c.id
     WHERE lep.event_id = $1::text
       AND lep.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lep.score <= $3::int)
       AND ($4::text = '' OR u.church_id = $4::text)
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
 ORDER BY rank ASC
 `
@@ -1171,11 +1186,12 @@ type GetFullEventPersonLeaderboardParams struct {
 }
 
 type GetFullEventPersonLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID   string  `json:"entity_id"`
+	Name       string  `json:"name"`
+	ChurchName string  `json:"church_name"`
+	Image      *string `json:"image"`
+	Score      int64   `json:"score"`
+	Rank       int64   `json:"rank"`
 }
 
 func (q *Queries) GetFullEventPersonLeaderboard(ctx context.Context, arg GetFullEventPersonLeaderboardParams) ([]*GetFullEventPersonLeaderboardRow, error) {
@@ -1195,6 +1211,7 @@ func (q *Queries) GetFullEventPersonLeaderboard(ctx context.Context, arg GetFull
 		if err := rows.Scan(
 			&i.EntityID,
 			&i.Name,
+			&i.ChurchName,
 			&i.Image,
 			&i.Score,
 			&i.Rank,
@@ -1391,17 +1408,19 @@ WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
         u.name,
+        c.name AS church_name,
         u.avatar_url AS image,
         lpp.score,
         RANK() OVER (ORDER BY lpp.score DESC, u.name ASC) AS rank
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON lpp.user_id = u.id
+    INNER JOIN churches c ON u.church_id = c.id
     WHERE lpp.project_id = $1::text
       AND lpp.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpp.score <= $3::int)
       AND ($4::text = '' OR u.church_id = $4::text)
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
 ORDER BY rank ASC
 `
@@ -1414,11 +1433,12 @@ type GetFullProjectPersonLeaderboardParams struct {
 }
 
 type GetFullProjectPersonLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID   string  `json:"entity_id"`
+	Name       string  `json:"name"`
+	ChurchName string  `json:"church_name"`
+	Image      *string `json:"image"`
+	Score      int64   `json:"score"`
+	Rank       int64   `json:"rank"`
 }
 
 func (q *Queries) GetFullProjectPersonLeaderboard(ctx context.Context, arg GetFullProjectPersonLeaderboardParams) ([]*GetFullProjectPersonLeaderboardRow, error) {
@@ -1438,6 +1458,7 @@ func (q *Queries) GetFullProjectPersonLeaderboard(ctx context.Context, arg GetFu
 		if err := rows.Scan(
 			&i.EntityID,
 			&i.Name,
+			&i.ChurchName,
 			&i.Image,
 			&i.Score,
 			&i.Rank,
@@ -1669,9 +1690,10 @@ const GetProjectPersonLeaderboard = `-- name: GetProjectPersonLeaderboard :many
 WITH project_users AS MATERIALIZED (
     -- Start with users in THIS project (huge performance win)
     -- MATERIALIZED forces execution order to avoid scanning all users
-    SELECT DISTINCT u.id, u.name, u.avatar_url, u.birthdate, u.church_id, u.gender
+    SELECT DISTINCT u.id, u.name, u.avatar_url, u.birthdate, u.church_id, u.gender, c.name AS church_name
     FROM user_projects up
     INNER JOIN users u ON up.user_id = u.id
+    INNER JOIN churches c ON u.church_id = c.id
     WHERE up.project_id = $6::text
       AND ($7::text = '' OR u.church_id = $7::text)
       AND ($8::text = '' OR u.gender = $8::text)
@@ -1687,7 +1709,7 @@ WITH project_users AS MATERIALIZED (
 ),
 filtered_users AS MATERIALIZED (
     -- Apply age and church filters
-    SELECT pu.id, pu.name, pu.avatar_url
+    SELECT pu.id, pu.name, pu.avatar_url, pu.church_name
     FROM project_users pu
     WHERE ($11::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) >= $11::int)
       AND ($12::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) <= $12::int)
@@ -1704,23 +1726,25 @@ person_scores AS (
     SELECT
         fu.id AS entity_id,
         fu.name,
+        fu.church_name,
         fu.avatar_url AS image,
         COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM filtered_users fu
     LEFT JOIN score_journal sj ON sj.user_id = fu.id AND sj.project_id = $6::text
-    GROUP BY fu.id, fu.name, fu.avatar_url
+    GROUP BY fu.id, fu.name, fu.church_name, fu.avatar_url
     HAVING COALESCE(SUM(sj.points), 0) >= 1
 ),
 ranked_scores AS (
     SELECT
         entity_id,
         name,
+        church_name,
         image,
         score,
         RANK() OVER (ORDER BY score DESC, name ASC) AS rank
     FROM person_scores
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
 WHERE
     ($1::int IS NULL OR score >= $1::int)
@@ -1749,11 +1773,12 @@ type GetProjectPersonLeaderboardParams struct {
 }
 
 type GetProjectPersonLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID   string  `json:"entity_id"`
+	Name       string  `json:"name"`
+	ChurchName string  `json:"church_name"`
+	Image      *string `json:"image"`
+	Score      int64   `json:"score"`
+	Rank       int64   `json:"rank"`
 }
 
 // ==================== Project Person Leaderboard ====================
@@ -1784,6 +1809,7 @@ func (q *Queries) GetProjectPersonLeaderboard(ctx context.Context, arg GetProjec
 		if err := rows.Scan(
 			&i.EntityID,
 			&i.Name,
+			&i.ChurchName,
 			&i.Image,
 			&i.Score,
 			&i.Rank,

@@ -4,9 +4,10 @@
 WITH project_users AS MATERIALIZED (
     -- Start with users in THIS project (huge performance win)
     -- MATERIALIZED forces execution order to avoid scanning all users
-    SELECT DISTINCT u.id, u.name, u.avatar_url, u.birthdate, u.church_id, u.gender
+    SELECT DISTINCT u.id, u.name, u.avatar_url, u.birthdate, u.church_id, u.gender, c.name AS church_name
     FROM user_projects up
     INNER JOIN users u ON up.user_id = u.id
+    INNER JOIN churches c ON u.church_id = c.id
     WHERE up.project_id = @projectid::text
       AND (@churchid::text = '' OR u.church_id = @churchid::text)
       AND (@gender::text = '' OR u.gender = @gender::text)
@@ -22,7 +23,7 @@ WITH project_users AS MATERIALIZED (
 ),
 filtered_users AS MATERIALIZED (
     -- Apply age and church filters
-    SELECT pu.id, pu.name, pu.avatar_url
+    SELECT pu.id, pu.name, pu.avatar_url, pu.church_name
     FROM project_users pu
     WHERE (@minage::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) >= @minage::int)
       AND (@maxage::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) <= @maxage::int)
@@ -39,23 +40,25 @@ person_scores AS (
     SELECT
         fu.id AS entity_id,
         fu.name,
+        fu.church_name,
         fu.avatar_url AS image,
         COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM filtered_users fu
     LEFT JOIN score_journal sj ON sj.user_id = fu.id AND sj.project_id = @projectid::text
-    GROUP BY fu.id, fu.name, fu.avatar_url
+    GROUP BY fu.id, fu.name, fu.church_name, fu.avatar_url
     HAVING COALESCE(SUM(sj.points), 0) >= 1
 ),
 ranked_scores AS (
     SELECT
         entity_id,
         name,
+        church_name,
         image,
         score,
         RANK() OVER (ORDER BY score DESC, name ASC) AS rank
     FROM person_scores
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
 WHERE
     (@minscore::int IS NULL OR score >= @minscore::int)
@@ -70,17 +73,19 @@ WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
         u.name,
+        c.name AS church_name,
         u.avatar_url AS image,
         lpp.score,
         RANK() OVER (ORDER BY lpp.score DESC, u.name ASC) AS rank
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON lpp.user_id = u.id
+    INNER JOIN churches c ON u.church_id = c.id
     WHERE lpp.project_id = @projectid::text
       AND lpp.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR lpp.score <= @maxscore::int)
       AND (@churchid::text = '' OR u.church_id = @churchid::text)
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
 WHERE entity_id = @userid::text;
 
@@ -89,17 +94,19 @@ WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
         u.name,
+        c.name AS church_name,
         u.avatar_url AS image,
         lpp.score,
         RANK() OVER (ORDER BY lpp.score DESC, u.name ASC) AS rank
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON lpp.user_id = u.id
+    INNER JOIN churches c ON u.church_id = c.id
     WHERE lpp.project_id = @projectid::text
       AND lpp.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR lpp.score <= @maxscore::int)
       AND (@churchid::text = '' OR u.church_id = @churchid::text)
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
 ORDER BY rank ASC;
 
@@ -408,35 +415,38 @@ WITH person_scores AS (
     SELECT
         u.id AS entity_id,
         u.name,
+        c.name AS church_name,
         u.avatar_url AS image,
         COALESCE(SUM(sj.points), 0)::bigint AS score
     FROM users u
     INNER JOIN user_events ue ON u.id = ue.user_id
+    INNER JOIN churches c ON u.church_id = c.id
     LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = @eventid::text
     WHERE
         ue.event_id = @eventid::text
         AND (@churchid::text = '' OR u.church_id = @churchid::text)
         AND (@country::text = '' OR EXISTS (
-            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.country = @country::text
+            SELECT 1 FROM churches ch WHERE ch.id = u.church_id AND ch.country = @country::text
         ))
         AND (@churchcategory::text = '' OR EXISTS (
-            SELECT 1 FROM churches c WHERE c.id = u.church_id AND c.category = @churchcategory::text
+            SELECT 1 FROM churches ch WHERE ch.id = u.church_id AND ch.category = @churchcategory::text
         ))
         AND (@gender::text = '' OR u.gender = @gender::text)
         AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
         AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)
-    GROUP BY u.id, u.name, u.avatar_url
+    GROUP BY u.id, u.name, c.name, u.avatar_url
 ),
 ranked_scores AS (
     SELECT
         entity_id,
         name,
+        church_name,
         image,
         score,
         RANK() OVER (ORDER BY score DESC, name ASC) AS rank
     FROM person_scores
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
 WHERE
     score >= 1
@@ -452,17 +462,19 @@ WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
         u.name,
+        c.name AS church_name,
         u.avatar_url AS image,
         lep.score,
         RANK() OVER (ORDER BY lep.score DESC, u.name ASC) AS rank
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON lep.user_id = u.id
+    INNER JOIN churches c ON u.church_id = c.id
     WHERE lep.event_id = @eventid::text
       AND lep.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR lep.score <= @maxscore::int)
       AND (@churchid::text = '' OR u.church_id = @churchid::text)
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
 WHERE entity_id = @userid::text;
 
@@ -471,17 +483,19 @@ WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
         u.name,
+        c.name AS church_name,
         u.avatar_url AS image,
         lep.score,
         RANK() OVER (ORDER BY lep.score DESC, u.name ASC) AS rank
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON lep.user_id = u.id
+    INNER JOIN churches c ON u.church_id = c.id
     WHERE lep.event_id = @eventid::text
       AND lep.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR lep.score <= @maxscore::int)
       AND (@churchid::text = '' OR u.church_id = @churchid::text)
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
 ORDER BY rank ASC;
 
