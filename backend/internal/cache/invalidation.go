@@ -75,7 +75,9 @@ func extractPrefixes(key string) []string {
 	prefixes := []string{}
 
 	// Add the main entity prefix
+	// Note: More specific prefixes must come before general ones (e.g., PrefixTeamLeaderboardTags before PrefixTeam)
 	for _, prefix := range []string{
+		PrefixTeamLeaderboardTags, // Must be before PrefixTeam
 		PrefixUser, PrefixChurch, PrefixProject, PrefixEvent, PrefixTeam,
 		PrefixSuperTeam, PrefixChallenge, PrefixAchievement, PrefixStreak,
 		PrefixUserProjects, PrefixUserEvents, PrefixTeamMembers, PrefixUserRoles,
@@ -246,4 +248,10 @@ func (c *CacheWithRegistry) InvalidateAchievement(achievementID string) {
 	// These are invalidated globally since filter query cache keys are hashed
 	c.DeletePrefix(PrefixAchievementsFilter)
 	c.DeletePrefix(PrefixAchievementsCount)
+}
+
+// InvalidateTeamMemberLeaderboardTags invalidates all tag caches for team member leaderboards
+// Call this when user roles change, as tags like ME depend on user context
+func (c *CacheWithRegistry) InvalidateTeamMemberLeaderboardTags() {
+	c.DeletePrefix(PrefixTeamLeaderboardTags)
 }

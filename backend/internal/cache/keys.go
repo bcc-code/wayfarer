@@ -36,10 +36,11 @@ const (
 	PrefixUserStreakActivity       = "userstreak:"
 
 	// Computed data
-	PrefixLeaderboard         = "leaderboard:"
-	PrefixLeaderboardPosition = "leaderboard:position:"
-	PrefixLeaderboardCount    = "leaderboard:count:"
-	PrefixScore               = "score:"
+	PrefixLeaderboard             = "leaderboard:"
+	PrefixLeaderboardPosition     = "leaderboard:position:"
+	PrefixLeaderboardCount        = "leaderboard:count:"
+	PrefixTeamLeaderboardTags     = "team:leaderboard:tags:"
+	PrefixScore                   = "score:"
 
 	// Query results
 	PrefixUsersFilter        = "usersfilter:"
@@ -103,6 +104,11 @@ func TeamsByUserKey(userID string) string {
 // TeamMemberLeaderboardKey builds a cache key for team member leaderboard
 func TeamMemberLeaderboardKey(teamID string) string {
 	return fmt.Sprintf("%s:leaderboard:%s", PrefixTeam, teamID)
+}
+
+// TeamMemberLeaderboardTagsKey builds a cache key for user-specific leaderboard tags
+func TeamMemberLeaderboardTagsKey(teamID, userID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixTeamLeaderboardTags, teamID, userID)
 }
 
 // TeamsBySuperTeamKey builds a cache key for teams associated with a super team

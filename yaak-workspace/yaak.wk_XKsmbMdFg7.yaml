@@ -2,9 +2,10 @@ type: workspace
 model: workspace
 id: wk_XKsmbMdFg7
 createdAt: 2025-11-25T12:35:05.952550
-updatedAt: 2025-11-25T12:35:05.952551
-authentication: {}
-authenticationType: null
+updatedAt: 2025-11-26T13:07:54.525599
+authentication:
+  token: ${[ TOKEN ]}
+authenticationType: bearer
 description: ''
 headers: []
 name: Wayfarer

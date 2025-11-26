@@ -2430,6 +2430,8 @@ func (r *mutationResolver) AssignTeamLead(ctx context.Context, teamID string, us
 	// Invalidate caches
 	r.Cache.InvalidateTeam(teamID)
 	r.Cache.InvalidateUser(userID)
+	// Invalidate tag cache since team lead role affects leaderboard tags
+	r.Cache.InvalidateTeamMemberLeaderboardTags()
 
 	// Return the team (loaders already returns model.Team)
 	return &model.Team{
@@ -2846,6 +2848,8 @@ func (r *mutationResolver) AssignRole(ctx context.Context, input model.AssignRol
 
 	// Invalidate user's role cache
 	r.Cache.InvalidateUser(input.UserID)
+	// Invalidate tag cache since role affects leaderboard tags
+	r.Cache.InvalidateTeamMemberLeaderboardTags()
 
 	// Convert sqlc.UserRole to model.UserRole
 	var scope *model.RoleScope
@@ -2911,6 +2915,8 @@ func (r *mutationResolver) RevokeRole(ctx context.Context, input model.RevokeRol
 
 	// Invalidate user's role cache
 	r.Cache.InvalidateUser(input.UserID)
+	// Invalidate tag cache since role affects leaderboard tags
+	r.Cache.InvalidateTeamMemberLeaderboardTags()
 
 	return true, nil
 }

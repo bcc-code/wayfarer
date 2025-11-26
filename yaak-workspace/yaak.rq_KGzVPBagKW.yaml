@@ -2,12 +2,11 @@ type: http_request
 model: http_request
 id: rq_KGzVPBagKW
 createdAt: 2025-11-25T13:22:34.139477
-updatedAt: 2025-11-26T09:22:12.362550
+updatedAt: 2025-11-26T13:10:16.114637
 workspaceId: wk_XKsmbMdFg7
 folderId: null
-authentication:
-  token: ${[ TOKEN ]}
-authenticationType: bearer
+authentication: {}
+authenticationType: null
 body:
   query: |-
     query TestTeamLeaderboard {

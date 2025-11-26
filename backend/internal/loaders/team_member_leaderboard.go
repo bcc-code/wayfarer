@@ -10,21 +10,35 @@ import (
 	"github.com/graph-gophers/dataloader/v7"
 )
 
+// cachedLeaderboardEntry stores leaderboard data without user-specific tags
+type cachedLeaderboardEntry struct {
+	ID          string
+	Name        string
+	Description string
+	Score       int
+	Rank        int
+	Image       *string
+}
+
+// cachedLeaderboardTags stores the tag assignments for a specific user viewing the leaderboard
+// Maps entry ID to their tags
+type cachedLeaderboardTags map[string][]model.LeaderboardEntryTag
+
 // teamMemberLeaderboardBatchFunc batches loading team member leaderboards by team IDs
 func teamMemberLeaderboardBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context.Context, []string) []*dataloader.Result[[]model.LeaderboardEntry] {
 	return func(ctx context.Context, teamIDs []string) []*dataloader.Result[[]model.LeaderboardEntry] {
-		// Get current user ID for isMe field
 		currentUserID, _ := middleware.GetUserID(ctx)
 
-		// Check cache first for each team ID
-		leaderboards := make(map[string][]model.LeaderboardEntry)
+		// Store cached entries (without tags) per team
+		cachedEntries := make(map[string][]cachedLeaderboardEntry)
 		missingTeamIDs := []string{}
 
+		// Check cache for leaderboard data (shared across all users)
 		for _, teamID := range teamIDs {
 			cacheKey := cache.TeamMemberLeaderboardKey(teamID)
 			if cached, ok := c.Get(cacheKey); ok {
-				if entries, ok := cached.([]model.LeaderboardEntry); ok {
-					leaderboards[teamID] = entries
+				if entries, ok := cached.([]cachedLeaderboardEntry); ok {
+					cachedEntries[teamID] = entries
 					continue
 				}
 			}
@@ -43,10 +57,9 @@ func teamMemberLeaderboardBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 					return results
 				}
 
-				// Convert database rows to GraphQL LeaderboardEntry model
-				entries := make([]model.LeaderboardEntry, len(rows))
+				// Convert database rows to cached entries (without tags)
+				entries := make([]cachedLeaderboardEntry, len(rows))
 				for i, row := range rows {
-					// Convert score from interface{} to int
 					score := 0
 					if row.Score != nil {
 						if scoreInt64, ok := row.Score.(int64); ok {
@@ -54,39 +67,85 @@ func teamMemberLeaderboardBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 						}
 					}
 
-					// Add ME tag if this is the current user
-					tags := []model.LeaderboardEntryTag{}
-					if row.UserID == currentUserID {
-						tags = append(tags, model.LeaderboardEntryTagMe)
-					}
-
-					entries[i] = model.LeaderboardEntry{
+					entries[i] = cachedLeaderboardEntry{
 						ID:          row.UserID,
 						Name:        row.UserName,
 						Description: row.ChurchName,
 						Score:       score,
 						Rank:        int(row.Rank),
-						Tags:        tags,
 						Image:       row.AvatarUrl,
 					}
 				}
 
-				leaderboards[teamID] = entries
+				cachedEntries[teamID] = entries
 
-				// Cache the result
+				// Cache the leaderboard data (without tags)
 				c.Set(cache.TeamMemberLeaderboardKey(teamID), entries)
 			}
 		}
 
-		// Return results in same order as input
+		// Build results with user-specific tags
 		results := make([]*dataloader.Result[[]model.LeaderboardEntry], len(teamIDs))
 		for i, teamID := range teamIDs {
-			entries := leaderboards[teamID]
+			entries := cachedEntries[teamID]
 			if entries == nil {
-				entries = []model.LeaderboardEntry{} // Return empty slice, not nil
+				results[i] = &dataloader.Result[[]model.LeaderboardEntry]{Data: []model.LeaderboardEntry{}}
+				continue
 			}
-			results[i] = &dataloader.Result[[]model.LeaderboardEntry]{Data: entries}
+
+			// Get or compute tags for this user
+			tags := getOrComputeTags(c, teamID, currentUserID, entries)
+
+			// Convert cached entries to model with tags
+			modelEntries := make([]model.LeaderboardEntry, len(entries))
+			for j, entry := range entries {
+				entryTags := tags[entry.ID]
+				if entryTags == nil {
+					entryTags = []model.LeaderboardEntryTag{}
+				}
+
+				modelEntries[j] = model.LeaderboardEntry{
+					ID:          entry.ID,
+					Name:        entry.Name,
+					Description: entry.Description,
+					Score:       entry.Score,
+					Rank:        entry.Rank,
+					Tags:        entryTags,
+					Image:       entry.Image,
+				}
+			}
+
+			results[i] = &dataloader.Result[[]model.LeaderboardEntry]{Data: modelEntries}
 		}
+
 		return results
 	}
+}
+
+// getOrComputeTags retrieves or computes tags for a specific user viewing the leaderboard
+func getOrComputeTags(c *cache.CacheWithRegistry, teamID, currentUserID string, entries []cachedLeaderboardEntry) cachedLeaderboardTags {
+	// Check tag cache for this user
+	tagCacheKey := cache.TeamMemberLeaderboardTagsKey(teamID, currentUserID)
+	if cached, ok := c.Get(tagCacheKey); ok {
+		if tags, ok := cached.(cachedLeaderboardTags); ok {
+			return tags
+		}
+	}
+
+	// Compute tags for this user
+	tags := make(cachedLeaderboardTags)
+	for _, entry := range entries {
+		entryTags := []model.LeaderboardEntryTag{}
+		if entry.ID == currentUserID {
+			entryTags = append(entryTags, model.LeaderboardEntryTagMe)
+		}
+		if len(entryTags) > 0 {
+			tags[entry.ID] = entryTags
+		}
+	}
+
+	// Cache tags for this user
+	c.Set(tagCacheKey, tags)
+
+	return tags
 }
