@@ -186,6 +186,85 @@ func (q *Queries) GetTeamLeadUserID(ctx context.Context, teamid string) (string,
 	return user_id, err
 }
 
+const GetTeamMemberLeaderboard = `-- name: GetTeamMemberLeaderboard :many
+SELECT
+    u.id AS user_id,
+    u.name AS user_name,
+    u.members_id,
+    u.gender,
+    u.church_id,
+    c.name AS church_name,
+    u.birthdate,
+    u.email,
+    u.avatar_url,
+    COALESCE(SUM(sj.points), 0) AS score,
+    RANK() OVER (ORDER BY COALESCE(SUM(sj.points), 0) DESC) AS rank
+FROM team_members tm
+INNER JOIN users u ON tm.user_id = u.id
+INNER JOIN teams t ON tm.team_id = t.id
+INNER JOIN churches c ON u.church_id = c.id
+LEFT JOIN score_journal sj ON sj.user_id = u.id
+    AND sj.project_id = t.project_id
+WHERE tm.team_id = $1::text
+GROUP BY
+    u.id,
+    u.name,
+    u.members_id,
+    u.gender,
+    u.church_id,
+    c.name,
+    u.birthdate,
+    u.email,
+    u.avatar_url
+ORDER BY score DESC, u.name ASC
+`
+
+type GetTeamMemberLeaderboardRow struct {
+	UserID     string      `json:"user_id"`
+	UserName   string      `json:"user_name"`
+	MembersID  string      `json:"members_id"`
+	Gender     string      `json:"gender"`
+	ChurchID   string      `json:"church_id"`
+	ChurchName string      `json:"church_name"`
+	Birthdate  pgtype.Date `json:"birthdate"`
+	Email      string      `json:"email"`
+	AvatarUrl  *string     `json:"avatar_url"`
+	Score      interface{} `json:"score"`
+	Rank       int64       `json:"rank"`
+}
+
+func (q *Queries) GetTeamMemberLeaderboard(ctx context.Context, teamID string) ([]*GetTeamMemberLeaderboardRow, error) {
+	rows, err := q.db.Query(ctx, GetTeamMemberLeaderboard, teamID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetTeamMemberLeaderboardRow{}
+	for rows.Next() {
+		var i GetTeamMemberLeaderboardRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.UserName,
+			&i.MembersID,
+			&i.Gender,
+			&i.ChurchID,
+			&i.ChurchName,
+			&i.Birthdate,
+			&i.Email,
+			&i.AvatarUrl,
+			&i.Score,
+			&i.Rank,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetTeamProjectID = `-- name: GetTeamProjectID :one
 SELECT project_id
 FROM teams

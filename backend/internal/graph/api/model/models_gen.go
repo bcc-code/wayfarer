@@ -648,15 +648,16 @@ type SuperTeamFilter struct {
 }
 
 type Team struct {
-	ID            string       `json:"id"`
-	Name          string       `json:"name"`
-	Description   string       `json:"description"`
-	JoinCode      string       `json:"joinCode"`
-	Members       []TeamMember `json:"members"`
-	ParentProject *Project     `json:"parentProject"`
-	SuperTeam     *SuperTeam   `json:"superTeam,omitempty"`
-	ProjectID     string       `json:"-"`
-	SuperTeamID   *string      `json:"-"`
+	ID                string             `json:"id"`
+	Name              string             `json:"name"`
+	Description       string             `json:"description"`
+	JoinCode          string             `json:"joinCode"`
+	Members           []TeamMember       `json:"members"`
+	MemberLeaderboard []LeaderboardEntry `json:"memberLeaderboard"`
+	ParentProject     *Project           `json:"parentProject"`
+	SuperTeam         *SuperTeam         `json:"superTeam,omitempty"`
+	ProjectID         string             `json:"-"`
+	SuperTeamID       *string            `json:"-"`
 }
 
 type TeamConnection struct {

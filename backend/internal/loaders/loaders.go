@@ -22,9 +22,10 @@ type Loaders struct {
 	TeamsByProjectLoader        *dataloader.Loader[string, []*model.Team]
 	TeamsBySuperTeamLoader      *dataloader.Loader[string, []*model.Team]
 	SuperTeamsByUserLoader      *dataloader.Loader[string, []*model.SuperTeam]
-	RolesByUserLoader           *dataloader.Loader[string, []*model.UserRole]
-	UsersByTeamLoader           *dataloader.Loader[string, []*model.TeamMember]
-	ProjectByIDLoader           *dataloader.Loader[string, *model.Project]
+	RolesByUserLoader              *dataloader.Loader[string, []*model.UserRole]
+	UsersByTeamLoader              *dataloader.Loader[string, []*model.TeamMember]
+	TeamMemberLeaderboardLoader    *dataloader.Loader[string, []model.LeaderboardEntry]
+	ProjectByIDLoader              *dataloader.Loader[string, *model.Project]
 	EventByIDLoader             *dataloader.Loader[string, *model.Event]
 	TeamByIDLoader              *dataloader.Loader[string, *model.Team]
 	SuperTeamByIDLoader         *dataloader.Loader[string, *model.SuperTeam]
@@ -68,9 +69,10 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		TeamsByProjectLoader:        newBatchedLoader(teamsByProjectBatchFunc(db, cache)),
 		TeamsBySuperTeamLoader:      newBatchedLoader(teamsBySuperTeamBatchFunc(db, cache)),
 		SuperTeamsByUserLoader:      newBatchedLoader(superTeamsByUserBatchFunc(db, cache)),
-		RolesByUserLoader:           newBatchedLoader(rolesByUserBatchFunc(db, cache)),
-		UsersByTeamLoader:           newBatchedLoader(usersByTeamBatchFunc(db, cache)),
-		ProjectByIDLoader:           newBatchedLoader(projectByIDBatchFunc(db, cache)),
+		RolesByUserLoader:              newBatchedLoader(rolesByUserBatchFunc(db, cache)),
+		UsersByTeamLoader:              newBatchedLoader(usersByTeamBatchFunc(db, cache)),
+		TeamMemberLeaderboardLoader:    newBatchedLoader(teamMemberLeaderboardBatchFunc(db, cache)),
+		ProjectByIDLoader:              newBatchedLoader(projectByIDBatchFunc(db, cache)),
 		EventByIDLoader:             newBatchedLoader(eventByIDBatchFunc(db, cache)),
 		TeamByIDLoader:              newBatchedLoader(teamByIDBatchFunc(db, cache)),
 		SuperTeamByIDLoader:         newBatchedLoader(superTeamByIDBatchFunc(db, cache)),

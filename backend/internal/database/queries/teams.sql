@@ -159,3 +159,35 @@ SELECT EXISTS(
     FROM teams
     WHERE join_code = @joincode::text
 );
+
+-- name: GetTeamMemberLeaderboard :many
+SELECT
+    u.id AS user_id,
+    u.name AS user_name,
+    u.members_id,
+    u.gender,
+    u.church_id,
+    c.name AS church_name,
+    u.birthdate,
+    u.email,
+    u.avatar_url,
+    COALESCE(SUM(sj.points), 0) AS score,
+    RANK() OVER (ORDER BY COALESCE(SUM(sj.points), 0) DESC) AS rank
+FROM team_members tm
+INNER JOIN users u ON tm.user_id = u.id
+INNER JOIN teams t ON tm.team_id = t.id
+INNER JOIN churches c ON u.church_id = c.id
+LEFT JOIN score_journal sj ON sj.user_id = u.id
+    AND sj.project_id = t.project_id
+WHERE tm.team_id = @team_id::text
+GROUP BY
+    u.id,
+    u.name,
+    u.members_id,
+    u.gender,
+    u.church_id,
+    c.name,
+    u.birthdate,
+    u.email,
+    u.avatar_url
+ORDER BY score DESC, u.name ASC;

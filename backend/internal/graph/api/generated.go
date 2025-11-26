@@ -463,13 +463,14 @@ type ComplexityRoot struct {
 	}
 
 	Team struct {
-		Description   func(childComplexity int) int
-		ID            func(childComplexity int) int
-		JoinCode      func(childComplexity int) int
-		Members       func(childComplexity int) int
-		Name          func(childComplexity int) int
-		ParentProject func(childComplexity int) int
-		SuperTeam     func(childComplexity int) int
+		Description       func(childComplexity int) int
+		ID                func(childComplexity int) int
+		JoinCode          func(childComplexity int) int
+		MemberLeaderboard func(childComplexity int) int
+		Members           func(childComplexity int) int
+		Name              func(childComplexity int) int
+		ParentProject     func(childComplexity int) int
+		SuperTeam         func(childComplexity int) int
 	}
 
 	TeamConnection struct {
@@ -706,6 +707,7 @@ type SuperTeamResolver interface {
 }
 type TeamResolver interface {
 	Members(ctx context.Context, obj *model.Team) ([]model.TeamMember, error)
+	MemberLeaderboard(ctx context.Context, obj *model.Team) ([]model.LeaderboardEntry, error)
 	ParentProject(ctx context.Context, obj *model.Team) (*model.Project, error)
 	SuperTeam(ctx context.Context, obj *model.Team) (*model.SuperTeam, error)
 }
@@ -2932,6 +2934,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Team.JoinCode(childComplexity), true
+	case "Team.memberLeaderboard":
+		if e.complexity.Team.MemberLeaderboard == nil {
+			break
+		}
+
+		return e.complexity.Team.MemberLeaderboard(childComplexity), true
 	case "Team.members":
 		if e.complexity.Team.Members == nil {
 			break
@@ -3572,6 +3580,7 @@ type Team {
     description: String!
     joinCode: String!
     members: [TeamMember!]! @goField(forceResolver: true)
+    memberLeaderboard: [LeaderboardEntry!]! @goField(forceResolver: true)
     parentProject: Project! @goField(forceResolver: true)
     superTeam: SuperTeam @goField(forceResolver: true)
 }
@@ -8993,6 +9002,8 @@ func (ec *executionContext) fieldContext_Mutation_joinTeam(ctx context.Context, 
 				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -11078,6 +11089,8 @@ func (ec *executionContext) fieldContext_Mutation_createTeam(ctx context.Context
 				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -11153,6 +11166,8 @@ func (ec *executionContext) fieldContext_Mutation_updateTeam(ctx context.Context
 				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -11287,6 +11302,8 @@ func (ec *executionContext) fieldContext_Mutation_addTeamMembers(ctx context.Con
 				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -11362,6 +11379,8 @@ func (ec *executionContext) fieldContext_Mutation_removeTeamMembers(ctx context.
 				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -11437,6 +11456,8 @@ func (ec *executionContext) fieldContext_Mutation_regenerateJoinCode(ctx context
 				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -11512,6 +11533,8 @@ func (ec *executionContext) fieldContext_Mutation_assignTeamLead(ctx context.Con
 				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -14059,6 +14082,8 @@ func (ec *executionContext) fieldContext_Project_teams(_ context.Context, field 
 				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -14104,6 +14129,8 @@ func (ec *executionContext) fieldContext_Project_myTeam(_ context.Context, field
 				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -15079,6 +15106,8 @@ func (ec *executionContext) fieldContext_Query_team(ctx context.Context, field g
 				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -16774,6 +16803,8 @@ func (ec *executionContext) fieldContext_RoleScope_team(_ context.Context, field
 				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -18944,6 +18975,8 @@ func (ec *executionContext) fieldContext_SuperTeam_teams(_ context.Context, fiel
 				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -19289,6 +19322,51 @@ func (ec *executionContext) fieldContext_Team_members(_ context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Team_memberLeaderboard(ctx context.Context, field graphql.CollectedField, obj *model.Team) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Team_memberLeaderboard,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Team().MemberLeaderboard(ctx, obj)
+		},
+		nil,
+		ec.marshalNLeaderboardEntry2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntryᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Team_memberLeaderboard(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_LeaderboardEntry_id(ctx, field)
+			case "name":
+				return ec.fieldContext_LeaderboardEntry_name(ctx, field)
+			case "description":
+				return ec.fieldContext_LeaderboardEntry_description(ctx, field)
+			case "score":
+				return ec.fieldContext_LeaderboardEntry_score(ctx, field)
+			case "rank":
+				return ec.fieldContext_LeaderboardEntry_rank(ctx, field)
+			case "isMe":
+				return ec.fieldContext_LeaderboardEntry_isMe(ctx, field)
+			case "image":
+				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LeaderboardEntry", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Team_parentProject(ctx context.Context, field graphql.CollectedField, obj *model.Team) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -19557,6 +19635,8 @@ func (ec *executionContext) fieldContext_TeamEdge_node(_ context.Context, field 
 				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -20340,6 +20420,8 @@ func (ec *executionContext) fieldContext_User_teams(_ context.Context, field gra
 				return ec.fieldContext_Team_joinCode(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
 			case "parentProject":
 				return ec.fieldContext_Team_parentProject(ctx, field)
 			case "superTeam":
@@ -29365,6 +29447,42 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "memberLeaderboard":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Team_memberLeaderboard(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "parentProject":
 			field := field
 
@@ -31474,6 +31592,54 @@ func (ec *executionContext) unmarshalNLeaderboardEntityType2githubᚗcomᚋbcc�
 
 func (ec *executionContext) marshalNLeaderboardEntityType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntityType(ctx context.Context, sel ast.SelectionSet, v model.LeaderboardEntityType) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) marshalNLeaderboardEntry2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntry(ctx context.Context, sel ast.SelectionSet, v model.LeaderboardEntry) graphql.Marshaler {
+	return ec._LeaderboardEntry(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNLeaderboardEntry2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []model.LeaderboardEntry) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNLeaderboardEntry2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntry(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNLeaderboardEntry2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntry(ctx context.Context, sel ast.SelectionSet, v *model.LeaderboardEntry) graphql.Marshaler {

@@ -196,6 +196,10 @@ func (c *CacheWithRegistry) InvalidateProject(projectID string) {
 	c.DeletePrefix("leaderboard:position:project:" + projectID)
 	c.DeletePrefix("leaderboard:count:project:" + projectID)
 	c.DeletePrefix("leaderboard:full:project:" + projectID)
+
+	// Invalidate all team leaderboards in this project (scores changed)
+	// Team leaderboard keys are "team:leaderboard:{teamID}"
+	c.DeletePrefix("team:leaderboard:")
 }
 
 // InvalidateEvent invalidates all cache entries related to an event
@@ -213,6 +217,7 @@ func (c *CacheWithRegistry) InvalidateEvent(eventID string) {
 func (c *CacheWithRegistry) InvalidateTeam(teamID string) {
 	c.Delete(TeamKey(teamID))
 	c.Delete(TeamMembersByTeamKey(teamID))
+	c.Delete(TeamMemberLeaderboardKey(teamID))
 	c.DeletePrefix("team:" + teamID)
 }
 

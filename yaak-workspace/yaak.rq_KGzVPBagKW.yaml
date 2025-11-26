@@ -1,0 +1,61 @@
+type: http_request
+model: http_request
+id: rq_KGzVPBagKW
+createdAt: 2025-11-25T13:22:34.139477
+updatedAt: 2025-11-26T08:37:46.936536
+workspaceId: wk_XKsmbMdFg7
+folderId: null
+authentication:
+  token: ${[ TOKEN ]}
+authenticationType: bearer
+body:
+  query: |-
+    query TestTeamLeaderboard {
+      projects(first:3){
+        edges{
+          node{
+            name
+            leaderboard(entityType:PERSONS){
+              edges{
+                node{
+                  rank
+                  score
+                  name
+                  description
+                }
+              }
+            }
+          }
+        }
+      }
+        team(id: "TM01K9VZ86X3GX5N7W3MMC65GJMJ") {
+          id
+          name
+          memberLeaderboard {
+            rank
+            score
+            name
+            description
+          }
+        }
+      }
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: ykj3tfsHHJ
+- enabled: true
+  name: ''
+  value: ''
+  id: YGdtvWfsZs
+- enabled: true
+  name: ''
+  value: ''
+  id: 0s4xJY0Rq9
+method: POST
+name: TeamLeaderboards
+sortPriority: -1764074288098.999
+url: ${[ HOST ]}/graphql
+urlParameters: []

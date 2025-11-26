@@ -846,6 +846,18 @@ func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.Te
 	return result, nil
 }
 
+// MemberLeaderboard is the resolver for the memberLeaderboard field.
+func (r *teamResolver) MemberLeaderboard(ctx context.Context, obj *model.Team) ([]model.LeaderboardEntry, error) {
+	// Use dataloader to fetch team member leaderboard (with caching)
+	thunk := r.Loaders.TeamMemberLeaderboardLoader.Load(ctx, obj.ID)
+	entries, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load team member leaderboard: %w", err)
+	}
+
+	return entries, nil
+}
+
 // ParentProject is the resolver for the parentProject field.
 func (r *teamResolver) ParentProject(ctx context.Context, obj *model.Team) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)

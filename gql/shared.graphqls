@@ -223,6 +223,7 @@ type Team {
     description: String!
     joinCode: String!
     members: [TeamMember!]! @goField(forceResolver: true)
+    memberLeaderboard: [LeaderboardEntry!]! @goField(forceResolver: true)
     parentProject: Project! @goField(forceResolver: true)
     superTeam: SuperTeam @goField(forceResolver: true)
 }

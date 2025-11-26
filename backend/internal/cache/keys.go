@@ -100,6 +100,11 @@ func TeamsByUserKey(userID string) string {
 	return PrefixTeamMembers + userID
 }
 
+// TeamMemberLeaderboardKey builds a cache key for team member leaderboard
+func TeamMemberLeaderboardKey(teamID string) string {
+	return fmt.Sprintf("%s:leaderboard:%s", PrefixTeam, teamID)
+}
+
 // TeamsBySuperTeamKey builds a cache key for teams associated with a super team
 func TeamsBySuperTeamKey(superTeamID string) string {
 	return fmt.Sprintf("%s:superteam:%s", PrefixTeam, superTeamID)
