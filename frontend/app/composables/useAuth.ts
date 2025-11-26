@@ -119,10 +119,10 @@ export function useAuth() {
     return me.value?.roles.some((role) => role.role === RoleType.ChurchAdmin)
   })
   const isProjectAdmin = computed(() => {
-    return me.value?.roles.some((role) => role.role === RoleType.ProjectAdmin)
+    return me.value?.roles.some((role) => role.role === RoleType.ProjectAdmin) // TODO: scope project admin to current project
   })
   const isTeamLead = computed(() => {
-    return me.value?.roles.some((role) => role.role === RoleType.TeamLead)
+    return me.value?.roles.some((role) => role.role === RoleType.TeamLead) // TODO: scope team lead to current team
   })
   const isM2M = computed(() => {
     return me.value?.roles.some((role) => role.role === RoleType.M2M)

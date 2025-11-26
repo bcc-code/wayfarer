@@ -1313,6 +1313,7 @@ export type Team = {
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   joinCode: Scalars['String']['output'];
+  memberLeaderboard: Array<LeaderboardEntry>;
   members: Array<TeamMember>;
   name: Scalars['String']['output'];
   parentProject: Project;
@@ -1522,7 +1523,7 @@ export type StandingsUnitPageQueryVariables = Exact<{
 }>;
 
 
-export type StandingsUnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, image?: string | null, rank: number, isMe: boolean } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank: number, isMe: boolean, image?: string | null } | null }, myTeam?: { __typename?: 'Team', id: string, name: string } | null } };
+export type StandingsUnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, image?: string | null, rank: number, isMe: boolean } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank: number, isMe: boolean, image?: string | null } | null }, myTeam?: { __typename?: 'Team', id: string, name: string } | null } };
 
 export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1787,12 +1788,12 @@ export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __
 export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, image?: string | null }, currentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
+export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, image?: string | null }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
       | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-    >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', id: string, score: number, rank: number } | null } } };
+    >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank: number } | null } } };
 
 
 export const StandingsGlobalPageDocument = gql`
@@ -1837,6 +1838,7 @@ export const StandingsUnitPageDocument = gql`
         node {
           id
           name
+          description
           score
           image
           rank
@@ -1846,6 +1848,7 @@ export const StandingsUnitPageDocument = gql`
       me {
         id
         name
+        description
         score
         rank
         isMe
@@ -2500,7 +2503,7 @@ export const ProfilePageDocument = gql`
     name
     image
   }
-  currentProject {
+  myCurrentProject {
     id
     name
     achievements {
@@ -2514,7 +2517,6 @@ export const ProfilePageDocument = gql`
     }
     leaderboard(entityType: PERSONS) {
       me {
-        id
         score
         rank
       }

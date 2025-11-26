@@ -6,7 +6,7 @@ gql(`
       name
       image
     }
-    currentProject {
+    myCurrentProject {
       id
       name
       achievements {
@@ -20,7 +20,6 @@ gql(`
       }
       leaderboard(entityType: PERSONS) {
         me {
-          id
           score
           rank
         }
@@ -69,20 +68,19 @@ const { data, error, fetching } = useProfilePageQuery({
         <h2 class="text-heading">{{ data.me.name }}</h2>
       </div>
 
-      <template v-if="data.currentProject">
-        <!-- <h2>{{ data.currentProject.name }}</h2> -->
+      <template v-if="data.myCurrentProject">
         <DesignPanel class="p-medium space-y-default">
-          <template v-if="data.currentProject.leaderboard.me">
+          <template v-if="data.myCurrentProject.leaderboard.me">
             <div class="divide-border-default grid grid-cols-2 divide-x">
               <div class="flex flex-col items-center">
                 <p class="text-title">
-                  {{ data.currentProject.leaderboard.me.score }}
+                  {{ data.myCurrentProject.leaderboard.me.score }}
                 </p>
                 <p class="text-label text-text-hint">{{ $t('points') }}</p>
               </div>
               <div class="flex flex-col items-center">
                 <p class="text-title">
-                  {{ data.currentProject.leaderboard.me.rank }}
+                  {{ data.myCurrentProject.leaderboard.me.rank }}
                 </p>
                 <p class="text-label text-text-hint">{{ $t('place') }}</p>
               </div>
@@ -103,7 +101,7 @@ const { data, error, fetching } = useProfilePageQuery({
 
         <AchievementGroup
           title="Test"
-          :achievements="data.currentProject.achievements"
+          :achievements="data.myCurrentProject.achievements"
         />
       </template>
     </div>

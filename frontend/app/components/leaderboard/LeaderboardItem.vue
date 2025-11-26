@@ -3,6 +3,7 @@ defineProps<{
   item: Entry
   badge?: string
   hideMedal?: boolean
+  isMe?: boolean
 }>()
 
 const colorClasses = [
@@ -32,6 +33,7 @@ const getColorClasses = (rank: number | undefined, mode: 'dark' | 'light') => {
         {
           'border-border-default border':
             hideMedal || (item.rank && item.rank > 3),
+          'text-accent-contrast': isMe && hideMedal,
         },
         !hideMedal && getColorClasses(item.rank, 'dark'),
       ]"
@@ -44,11 +46,21 @@ const getColorClasses = (rank: number | undefined, mode: 'dark' | 'light') => {
       <span class="col-span-full row-span-full">{{ item.rank }}</span>
     </div>
     <div class="grow">
-      <p class="text-label">{{ item.name }}</p>
+      <div class="flex gap-1">
+        <p :class="['text-label', { 'text-accent-contrast': isMe }]">
+          {{ item.name }}
+        </p>
+        <span
+          v-if="isMe"
+          class="bg-accent text-on-accent text-caption flex gap-1 rounded-full px-1.5"
+        >
+          {{ $t('standings.you') }}
+        </span>
+      </div>
 
       <p
         v-if="badge"
-        class="text-caption text-accent flex items-center gap-0.5"
+        class="text-caption text-accent-contrast flex items-center gap-0.5"
       >
         <Icon name="lucide:badge-check" class="size-3.5" />
         <span>{{ badge }}</span>
@@ -60,7 +72,7 @@ const getColorClasses = (rank: number | undefined, mode: 'dark' | 'light') => {
     <p
       :class="[
         'text-label tabular-nums',
-        { 'text-accent': hideMedal || (item.rank && item.rank > 3) },
+        { 'text-accent-contrast': hideMedal || (item.rank && item.rank > 3) },
         !hideMedal && getColorClasses(item.rank, 'light'),
       ]"
     >

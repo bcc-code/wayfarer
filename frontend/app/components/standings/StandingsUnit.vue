@@ -31,6 +31,7 @@ gql(`
   }
 `)
 
+const { isTeamLead } = useAuth()
 const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useStandingsUnitPageQuery({
   variables: computed(() => ({
@@ -67,7 +68,7 @@ const leaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
         <h2 class="text-heading text-balance">
           {{ data.myCurrentProject.myTeam.name }}
         </h2>
-        <DesignButton variant="secondary" size="medium">
+        <DesignButton v-if="isTeamLead" variant="secondary" size="medium">
           {{ $t('standings.editUnit') }}
         </DesignButton>
       </div>

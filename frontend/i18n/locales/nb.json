@@ -29,6 +29,7 @@
   "standings": {
     "global": "Topp 20",
     "unit": "Din unit",
-    "editUnit": "Rediger unit"
+    "editUnit": "Rediger unit",
+    "you": "Deg"
   }
 }
