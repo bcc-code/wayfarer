@@ -387,7 +387,7 @@ export type LeaderboardEntry = {
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
-  rank: Scalars['Int']['output'];
+  rank?: Maybe<Scalars['Int']['output']>;
   score: Scalars['Int']['output'];
   tags: Array<LeaderboardEntryTag>;
 };
@@ -1521,7 +1521,7 @@ export type StandingsGlobalPageQueryVariables = Exact<{
 }>;
 
 
-export type StandingsGlobalPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, image?: string | null, rank: number, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank: number, tags: Array<LeaderboardEntryTag>, image?: string | null } | null } } };
+export type StandingsGlobalPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, image?: string | null, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag>, image?: string | null } | null } } };
 
 export type StandingsLocalPageQueryVariables = Exact<{
   entityType: LeaderboardEntityType;
@@ -1529,12 +1529,12 @@ export type StandingsLocalPageQueryVariables = Exact<{
 }>;
 
 
-export type StandingsLocalPageQuery = { __typename?: 'Query', me: { __typename?: 'User', church: { __typename?: 'Church', id: string, name: string } }, myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, image?: string | null, rank: number, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank: number, tags: Array<LeaderboardEntryTag>, image?: string | null } | null } } };
+export type StandingsLocalPageQuery = { __typename?: 'Query', me: { __typename?: 'User', church: { __typename?: 'Church', id: string, name: string } }, myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, image?: string | null, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag>, image?: string | null } | null } } };
 
 export type StandingsUnitPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type StandingsUnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, myTeam?: { __typename?: 'Team', id: string, name: string, memberLeaderboard: Array<{ __typename?: 'LeaderboardEntry', id: string, name: string, tags: Array<LeaderboardEntryTag>, rank: number, score: number }> } | null } };
+export type StandingsUnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, myTeam?: { __typename?: 'Team', id: string, name: string, memberLeaderboard: Array<{ __typename?: 'LeaderboardEntry', id: string, name: string, tags: Array<LeaderboardEntryTag>, rank?: number | null, score: number }> } | null } };
 
 export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1812,7 +1812,7 @@ export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User'
       | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-    >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank: number } | null } } };
+    >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank?: number | null } | null } } };
 
 
 export const StandingsGlobalPageDocument = gql`

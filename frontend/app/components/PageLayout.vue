@@ -47,7 +47,7 @@ const hasScrolled = computed(() => y.value > 25)
         </header>
       </ProgressiveBlur>
     </div>
-    <div class="p-list-outside grow pb-28">
+    <div class="p-list-outside grow">
       <slot />
     </div>
   </div>

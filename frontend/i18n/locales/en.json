@@ -26,11 +26,16 @@
     "global": "Top 20",
     "unit": "Your unit",
     "local": "Local",
-    "editUnit": "Edit unit",
     "you": "You",
     "pointsHistoryButton": "Points history",
-    "pointsExplainerButton": "Get points",
-    "unitLeader": "Unit leader"
+    "pointsExplainerButton": "Get points"
+  },
+  "unit": {
+    "unitLeader": "Unit leader",
+    "saveChanges": "Save changes",
+    "unitName": "Unit name",
+    "editUnit": "Edit unit",
+    "noUnitLeader": "No unit leader"
   },
   "points": "points",
   "place": "place"

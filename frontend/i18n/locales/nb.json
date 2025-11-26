@@ -26,11 +26,16 @@
     "global": "Topp 20",
     "unit": "Din unit",
     "local": "Lokalt",
-    "editUnit": "Rediger unit",
     "you": "Deg",
     "pointsHistoryButton": "Poenghistorikk",
-    "pointsExplainerButton": "Få poeng",
-    "unitLeader": "Unitleder"
+    "pointsExplainerButton": "Få poeng"
+  },
+  "unit": {
+    "editUnit": "Rediger unit",
+    "unitLeader": "Unitleder",
+    "saveChanges": "Lagre endringer",
+    "unitName": "Unitnavn",
+    "noUnitLeader": "Ingen unitleder"
   },
   "place": "plass",
   "points": "poeng"
