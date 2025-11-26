@@ -12,7 +12,7 @@ gql(`
             score
             image
             rank
-            isMe
+            tags
           }
         }
         me {
@@ -21,7 +21,7 @@ gql(`
           description
           score
           rank
-          isMe
+          tags
           image
         }
       }

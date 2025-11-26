@@ -15,7 +15,7 @@ defineProps<{
         :hide-image="hideImages"
         :badge="badge ? badge(item, index) : undefined"
         :hide-medal="hideMedals"
-        :is-me="item.isMe"
+        :is-me="item.tags?.includes(LeaderboardEntryTag.Me)"
       />
     </DesignPanel>
   </div>

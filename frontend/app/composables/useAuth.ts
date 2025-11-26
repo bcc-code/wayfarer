@@ -122,6 +122,7 @@ export function useAuth() {
     return me.value?.roles.some((role) => role.role === RoleType.ProjectAdmin) // TODO: scope project admin to current project
   })
   const isTeamLead = computed(() => {
+    return true
     return me.value?.roles.some((role) => role.role === RoleType.TeamLead) // TODO: scope team lead to current team
   })
   const isM2M = computed(() => {

@@ -386,11 +386,17 @@ export type LeaderboardEntry = {
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
-  isMe: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   rank: Scalars['Int']['output'];
   score: Scalars['Int']['output'];
+  tags: Array<LeaderboardEntryTag>;
 };
+
+export enum LeaderboardEntryTag {
+  Admin = 'ADMIN',
+  Me = 'ME',
+  TeamLead = 'TEAM_LEAD'
+}
 
 export type LeaderboardFilter = {
   ageRange?: InputMaybe<AgeRangeInput>;
@@ -1515,15 +1521,20 @@ export type StandingsGlobalPageQueryVariables = Exact<{
 }>;
 
 
-export type StandingsGlobalPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, image?: string | null, rank: number, isMe: boolean } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank: number, isMe: boolean, image?: string | null } | null } } };
+export type StandingsGlobalPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, image?: string | null, rank: number, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank: number, tags: Array<LeaderboardEntryTag>, image?: string | null } | null } } };
 
-export type StandingsUnitPageQueryVariables = Exact<{
+export type StandingsLocalPageQueryVariables = Exact<{
   entityType: LeaderboardEntityType;
   filter?: InputMaybe<LeaderboardFilter>;
 }>;
 
 
-export type StandingsUnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, image?: string | null, rank: number, isMe: boolean } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank: number, isMe: boolean, image?: string | null } | null }, myTeam?: { __typename?: 'Team', id: string, name: string } | null } };
+export type StandingsLocalPageQuery = { __typename?: 'Query', me: { __typename?: 'User', church: { __typename?: 'Church', id: string, name: string } }, myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, image?: string | null, rank: number, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank: number, tags: Array<LeaderboardEntryTag>, image?: string | null } | null } } };
+
+export type StandingsUnitPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type StandingsUnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, myTeam?: { __typename?: 'Team', id: string, name: string, memberLeaderboard: Array<{ __typename?: 'LeaderboardEntry', id: string, name: string, tags: Array<LeaderboardEntryTag>, rank: number, score: number }> } | null } };
 
 export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1669,6 +1680,14 @@ export type CreateStreakMutationVariables = Exact<{
 
 export type CreateStreakMutation = { __typename?: 'Mutation', createStreak: { __typename?: 'Streak', id: string } };
 
+export type UpdateTeamMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateTeamInput;
+}>;
+
+
+export type UpdateTeamMutation = { __typename?: 'Mutation', updateTeam: { __typename?: 'Team', id: string } };
+
 export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1809,7 +1828,7 @@ export const StandingsGlobalPageDocument = gql`
           score
           image
           rank
-          isMe
+          tags
         }
       }
       me {
@@ -1818,7 +1837,7 @@ export const StandingsGlobalPageDocument = gql`
         description
         score
         rank
-        isMe
+        tags
         image
       }
     }
@@ -1829,8 +1848,14 @@ export const StandingsGlobalPageDocument = gql`
 export function useStandingsGlobalPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsGlobalPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<StandingsGlobalPageQuery, StandingsGlobalPageQueryVariables | undefined>({ query: StandingsGlobalPageDocument, variables: undefined, ...options });
 };
-export const StandingsUnitPageDocument = gql`
-    query StandingsUnitPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter) {
+export const StandingsLocalPageDocument = gql`
+    query StandingsLocalPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter) {
+  me {
+    church {
+      id
+      name
+    }
+  }
   myCurrentProject {
     id
     leaderboard(entityType: $entityType, filter: $filter) {
@@ -1838,26 +1863,42 @@ export const StandingsUnitPageDocument = gql`
         node {
           id
           name
-          description
           score
           image
           rank
-          isMe
+          tags
         }
       }
       me {
         id
         name
-        description
         score
         rank
-        isMe
+        tags
         image
       }
     }
+  }
+}
+    `;
+
+export function useStandingsLocalPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsLocalPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<StandingsLocalPageQuery, StandingsLocalPageQueryVariables | undefined>({ query: StandingsLocalPageDocument, variables: undefined, ...options });
+};
+export const StandingsUnitPageDocument = gql`
+    query StandingsUnitPage {
+  myCurrentProject {
+    id
     myTeam {
       id
       name
+      memberLeaderboard {
+        id
+        name
+        tags
+        rank
+        score
+      }
     }
   }
 }
@@ -2093,6 +2134,17 @@ export const CreateStreakDocument = gql`
 
 export function useCreateStreakMutation() {
   return Urql.useMutation<CreateStreakMutation, CreateStreakMutationVariables>(CreateStreakDocument);
+};
+export const UpdateTeamDocument = gql`
+    mutation UpdateTeam($id: ID!, $input: UpdateTeamInput!) {
+  updateTeam(id: $id, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useUpdateTeamMutation() {
+  return Urql.useMutation<UpdateTeamMutation, UpdateTeamMutationVariables>(UpdateTeamDocument);
 };
 export const AdminSidebarDocument = gql`
     query AdminSidebar {

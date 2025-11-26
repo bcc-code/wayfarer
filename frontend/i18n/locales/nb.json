@@ -25,10 +25,12 @@
   "standings": {
     "global": "Topp 20",
     "unit": "Din unit",
+    "local": "Lokalt",
     "editUnit": "Rediger unit",
     "you": "Deg",
     "pointsHistoryButton": "Poenghistorikk",
-    "pointsExplainerButton": "Få poeng"
+    "pointsExplainerButton": "Få poeng",
+    "unitLeader": "Unitleder"
   },
   "place": "plassering",
   "points": "poeng"

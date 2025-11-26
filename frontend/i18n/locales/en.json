@@ -25,10 +25,12 @@
   "standings": {
     "global": "Top 20",
     "unit": "Your unit",
+    "local": "Local",
     "editUnit": "Edit unit",
     "you": "You",
     "pointsHistoryButton": "Points history",
-    "pointsExplainerButton": "Get points"
+    "pointsExplainerButton": "Get points",
+    "unitLeader": "Unit leader"
   },
   "points": "points",
   "place": "place"

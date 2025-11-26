@@ -1,9 +1,15 @@
 <script setup lang="ts" generic="Tab extends { label: string; value: string }">
-defineProps<{
-  tabs: Tab[]
-}>()
+withDefaults(
+  defineProps<{
+    tabs: Tab[]
+    variant?: 'primary' | 'secondary'
+  }>(),
+  {
+    variant: 'primary',
+  },
+)
 
-const modelValue = defineModel({ required: true })
+const modelValue = defineModel<Tab['value']>({ required: true })
 </script>
 
 <template>
@@ -11,7 +17,7 @@ const modelValue = defineModel({ required: true })
     <DesignButton
       v-for="tab in tabs"
       :key="tab.value"
-      :variant="modelValue == tab.value ? 'primary' : 'tertiary'"
+      :variant="modelValue == tab.value ? variant : 'tertiary'"
       @click="modelValue = tab.value"
     >
       {{ tab.label }}

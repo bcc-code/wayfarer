@@ -1,0 +1,94 @@
+<script setup lang="ts">
+gql(`
+  query StandingsLocalPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter) {
+    me {
+      church {
+        id
+        name
+      }
+    }
+    myCurrentProject {
+      id
+      leaderboard(entityType: $entityType, filter: $filter) {
+        edges {
+          node {
+            id
+            name
+            score
+            image
+            rank
+            tags
+          }
+        }
+        me {
+          id
+          name
+          score
+          rank
+          tags
+          image
+        }
+      }
+    }
+  }
+`)
+
+const entityType = ref(LeaderboardEntityType.Persons)
+
+const { me } = useAuth()
+const { isAuthReady } = useAuthReady()
+const { data, error, fetching } = useStandingsLocalPageQuery({
+  variables: computed(() => ({
+    entityType: entityType.value,
+    filter: {
+      churchId: me.value?.church.id,
+    },
+  })),
+  pause: computed(() => !isAuthReady.value || !me.value?.church.id),
+})
+
+const leaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
+  if (!data.value) return []
+
+  const result = []
+  result.push(
+    ...data.value.myCurrentProject.leaderboard.edges.map((edge) => edge.node),
+  )
+  const me = data.value?.myCurrentProject.leaderboard.me
+  if (me && !result.find((entry) => entry.id === me.id)) {
+    result.push(me)
+  }
+  return result
+})
+</script>
+
+<template>
+  <div>
+    <LoadingState v-if="fetching" />
+    <ErrorState v-else-if="error" :error />
+    <template v-else-if="data">
+      <div
+        v-if="data.me.church"
+        class="p-medium gap-medium mb-list-section-gap flex flex-col items-center"
+      >
+        <h2 class="text-heading text-center text-balance">
+          {{ data.me.church.name }}
+        </h2>
+        <DesignTabs
+          v-model="entityType"
+          :tabs="[
+            { label: 'People', value: LeaderboardEntityType.Persons },
+            { label: 'Units', value: LeaderboardEntityType.Teams },
+          ]"
+          variant="secondary"
+        />
+      </div>
+      <LeaderboardList
+        v-if="leaderboard?.length"
+        :leaderboard="leaderboard"
+        hide-medals
+      />
+    </template>
+    <EmptyState v-else />
+  </div>
+</template>

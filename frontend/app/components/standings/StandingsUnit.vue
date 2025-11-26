@@ -1,31 +1,18 @@
 <script setup lang="ts">
 gql(`
-  query StandingsUnitPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter) {
+  query StandingsUnitPage {
     myCurrentProject {
       id
-      leaderboard(entityType: $entityType, filter: $filter) {
-        edges {
-          node {
-            id
-            name
-            score
-            image
-            rank
-            isMe
-          }
-        }
-        me {
-          id
-          name
-          score
-          rank
-          isMe
-          image
-        }
-      }
       myTeam {
         id
         name
+        memberLeaderboard {
+          id
+          name
+          tags
+          rank
+          score
+        }
       }
     }
   }
@@ -34,26 +21,11 @@ gql(`
 const { isTeamLead } = useAuth()
 const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useStandingsUnitPageQuery({
-  variables: computed(() => ({
-    entityType: LeaderboardEntityType.Persons,
-    filter: {},
-  })),
   pause: computed(() => !isAuthReady.value),
 })
 
-const leaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
-  if (!data.value) return []
-
-  const result = []
-  result.push(
-    ...data.value.myCurrentProject.leaderboard.edges.map((edge) => edge.node),
-  )
-  const me = data.value?.myCurrentProject.leaderboard.me
-  if (me && !result.find((entry) => entry.id === me.id)) {
-    result.push(me)
-  }
-  return result
-})
+// Update team
+// const { executeMutation } = useUpdateTeamMutation()
 </script>
 
 <template>
@@ -73,9 +45,14 @@ const leaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
         </DesignButton>
       </div>
       <LeaderboardList
-        v-if="leaderboard?.length"
-        :leaderboard="leaderboard"
-        :badge="(entry, index) => (index == 1 ? 'Unit Leader' : undefined)"
+        v-if="data.myCurrentProject.myTeam?.memberLeaderboard?.length"
+        :leaderboard="data.myCurrentProject.myTeam.memberLeaderboard"
+        :badge="
+          (entry) =>
+            entry.tags?.includes(LeaderboardEntryTag.TeamLead)
+              ? $t('standings.unitLeader')
+              : undefined
+        "
         hide-medals
       />
     </template>
