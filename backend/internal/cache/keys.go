@@ -107,8 +107,15 @@ func TeamMemberLeaderboardKey(teamID string) string {
 }
 
 // TeamMemberLeaderboardTagsKey builds a cache key for user-specific leaderboard tags
+// Deprecated: Use TeamMemberLeaderboardTeamLeadTagsKey for viewer-independent TEAM_LEAD tags
 func TeamMemberLeaderboardTagsKey(teamID, userID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixTeamLeaderboardTags, teamID, userID)
+}
+
+// TeamMemberLeaderboardTeamLeadTagsKey builds a cache key for team lead tags (viewer-independent)
+// TEAM_LEAD tags only depend on the entry user's role, not who is viewing
+func TeamMemberLeaderboardTeamLeadTagsKey(teamID string) string {
+	return fmt.Sprintf("%steamlead:%s", PrefixTeamLeaderboardTags, teamID)
 }
 
 // TeamsBySuperTeamKey builds a cache key for teams associated with a super team

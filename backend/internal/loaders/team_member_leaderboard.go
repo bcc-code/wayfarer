@@ -105,12 +105,13 @@ func teamMemberLeaderboardBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 					entryTags = []model.LeaderboardEntryTag{}
 				}
 
+				rank := entry.Rank
 				modelEntries[j] = model.LeaderboardEntry{
 					ID:          entry.ID,
 					Name:        entry.Name,
 					Description: entry.Description,
 					Score:       entry.Score,
-					Rank:        entry.Rank,
+					Rank:        &rank,
 					Tags:        entryTags,
 					Image:       entry.Image,
 				}
@@ -123,54 +124,26 @@ func teamMemberLeaderboardBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 	}
 }
 
-// getOrComputeTags retrieves or computes tags for a specific user viewing the leaderboard.
-// This includes ME tag and TEAM_LEAD tag (with batched role loading).
+// getOrComputeTags computes tags for a specific user viewing the leaderboard.
+// TEAM_LEAD tags are cached per team (viewer-independent).
+// ME tags are computed on-the-fly (cheap ID comparison, no caching needed).
 func getOrComputeTags(ctx context.Context, db *database.DB, c *cache.CacheWithRegistry, teamID, currentUserID string, entries []cachedLeaderboardEntry) cachedLeaderboardTags {
-	// Check tag cache for this user
-	tagCacheKey := cache.TeamMemberLeaderboardTagsKey(teamID, currentUserID)
-	if cached, ok := c.Get(tagCacheKey); ok {
-		if tags, ok := cached.(cachedLeaderboardTags); ok {
-			return tags
-		}
-	}
+	// Get or compute TEAM_LEAD tags (cached per team, not per user)
+	teamLeadTags := getOrComputeTeamLeadTags(ctx, db, c, teamID, entries)
 
-	// Collect all entry IDs for batched role loading
-	entryIDs := make([]string, len(entries))
-	for i, entry := range entries {
-		entryIDs[i] = entry.ID
-	}
-
-	// Batch load roles for all entries in ONE query
-	entryRoles := make(map[string][]*model.UserRole)
-	if len(entryIDs) > 0 && db != nil {
-		rows, err := db.Queries.GetAllRolesForUsers(ctx, entryIDs)
-		if err == nil {
-			// Group roles by user ID
-			for _, row := range rows {
-				role := convertToUserRole(row)
-				entryRoles[row.UserID] = append(entryRoles[row.UserID], role)
-			}
-		}
-	}
-
-	// Compute tags for this user
+	// Build final tags map with ME tag computed on-the-fly
 	tags := make(cachedLeaderboardTags)
 	for _, entry := range entries {
 		entryTags := []model.LeaderboardEntryTag{}
 
-		// ME tag - simple ID comparison
+		// ME tag - compute on-the-fly (cheap ID comparison)
 		if entry.ID == currentUserID {
 			entryTags = append(entryTags, model.LeaderboardEntryTagMe)
 		}
 
-		// TEAM_LEAD tag - check if entry is team lead of THIS team
-		for _, role := range entryRoles[entry.ID] {
-			if role.Role == model.RoleTypeTeamLead && role.Scope != nil {
-				if role.Scope.Type == model.ScopeTypeTeam && role.Scope.ID == teamID {
-					entryTags = append(entryTags, model.LeaderboardEntryTagTeamLead)
-					break
-				}
-			}
+		// TEAM_LEAD tag - from cached per-team data
+		if teamLeadTags[entry.ID] {
+			entryTags = append(entryTags, model.LeaderboardEntryTagTeamLead)
 		}
 
 		if len(entryTags) > 0 {
@@ -178,10 +151,44 @@ func getOrComputeTags(ctx context.Context, db *database.DB, c *cache.CacheWithRe
 		}
 	}
 
-	// Cache tags for this user
-	c.Set(tagCacheKey, tags)
-
 	return tags
+}
+
+// getOrComputeTeamLeadTags returns a map of entry IDs that are team leads for this team.
+// This is cached per team (not per viewer) since TEAM_LEAD is viewer-independent.
+func getOrComputeTeamLeadTags(ctx context.Context, db *database.DB, c *cache.CacheWithRegistry, teamID string, entries []cachedLeaderboardEntry) map[string]bool {
+	cacheKey := cache.TeamMemberLeaderboardTeamLeadTagsKey(teamID)
+	if cached, ok := c.Get(cacheKey); ok {
+		if tags, ok := cached.(map[string]bool); ok {
+			return tags
+		}
+	}
+
+	// Cache miss - collect all entry IDs for batched role loading
+	entryIDs := make([]string, len(entries))
+	for i, entry := range entries {
+		entryIDs[i] = entry.ID
+	}
+
+	// Batch load roles for all entries in ONE query
+	teamLeadTags := make(map[string]bool)
+	if len(entryIDs) > 0 && db != nil {
+		rows, err := db.Queries.GetAllRolesForUsers(ctx, entryIDs)
+		if err == nil {
+			for _, row := range rows {
+				role := convertToUserRole(row)
+				if role.Role == model.RoleTypeTeamLead && role.Scope != nil {
+					if role.Scope.Type == model.ScopeTypeTeam && role.Scope.ID == teamID {
+						teamLeadTags[row.UserID] = true
+					}
+				}
+			}
+		}
+	}
+
+	// Cache TEAM_LEAD tags per team
+	c.Set(cacheKey, teamLeadTags)
+	return teamLeadTags
 }
 
 // convertToUserRole converts a database role row to a model.UserRole

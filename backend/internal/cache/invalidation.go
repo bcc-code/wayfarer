@@ -250,8 +250,9 @@ func (c *CacheWithRegistry) InvalidateAchievement(achievementID string) {
 	c.DeletePrefix(PrefixAchievementsCount)
 }
 
-// InvalidateTeamMemberLeaderboardTags invalidates all tag caches for team member leaderboards
-// Call this when user roles change, as tags like ME depend on user context
+// InvalidateTeamMemberLeaderboardTags invalidates all tag caches for team member leaderboards.
+// Call this when user roles change, as TEAM_LEAD tags depend on role assignments.
+// Note: TEAM_LEAD tags are cached per team (viewer-independent), ME tags are computed on-the-fly.
 func (c *CacheWithRegistry) InvalidateTeamMemberLeaderboardTags() {
 	c.DeletePrefix(PrefixTeamLeaderboardTags)
 }

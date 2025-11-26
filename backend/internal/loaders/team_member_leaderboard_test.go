@@ -20,26 +20,23 @@ func TestTeamMemberLeaderboardCacheKey(t *testing.T) {
 	assert.Contains(t, cacheKey, "leaderboard")
 }
 
-func TestTeamMemberLeaderboardTagsCacheKey(t *testing.T) {
+func TestTeamMemberLeaderboardTeamLeadTagsCacheKey(t *testing.T) {
 	teamID := "TM01K8XV6VK9ED2GBZSQ2VDTAT8T"
-	userID := "US01K8XV6VK9ED2GBZSQ2VDTAT8T"
-	cacheKey := cache.TeamMemberLeaderboardTagsKey(teamID, userID)
+	cacheKey := cache.TeamMemberLeaderboardTeamLeadTagsKey(teamID)
 
 	assert.NotEmpty(t, cacheKey)
 	assert.Contains(t, cacheKey, teamID)
-	assert.Contains(t, cacheKey, userID)
-	assert.Contains(t, cacheKey, "tags")
+	assert.Contains(t, cacheKey, "teamlead")
 }
 
-func TestTeamMemberLeaderboardTagsCacheKeyUniqueness(t *testing.T) {
-	teamID := "TM01K8XV6VK9ED2GBZSQ2VDTAT8T"
-	userA := "US01K8XV6VK9ED2GBZSQ2VDTAT8A"
-	userB := "US01K8XV6VK9ED2GBZSQ2VDTAT8B"
+func TestTeamMemberLeaderboardTeamLeadTagsCacheKeyUniqueness(t *testing.T) {
+	teamA := "TM01K8XV6VK9ED2GBZSQ2VDTAT8A"
+	teamB := "TM01K8XV6VK9ED2GBZSQ2VDTAT8B"
 
-	cacheKeyA := cache.TeamMemberLeaderboardTagsKey(teamID, userA)
-	cacheKeyB := cache.TeamMemberLeaderboardTagsKey(teamID, userB)
+	cacheKeyA := cache.TeamMemberLeaderboardTeamLeadTagsKey(teamA)
+	cacheKeyB := cache.TeamMemberLeaderboardTeamLeadTagsKey(teamB)
 
-	assert.NotEqual(t, cacheKeyA, cacheKeyB, "different users should have different cache keys")
+	assert.NotEqual(t, cacheKeyA, cacheKeyB, "different teams should have different cache keys")
 }
 
 func TestCachedLeaderboardEntryWithoutTags(t *testing.T) {
@@ -82,72 +79,62 @@ func TestCachedLeaderboardEntryWithoutTags(t *testing.T) {
 	assert.Equal(t, "User B", cachedEntries[1].Name)
 }
 
-func TestTagsCachedSeparatelyPerUser(t *testing.T) {
+func TestTeamLeadTagsCachedPerTeam(t *testing.T) {
 	c, err := cache.NewCacheWithRegistry(cache.DefaultConfig())
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
 	teamID := "TM01K8XV6VK9ED2GBZSQ2VDTAT8T"
-	userA := "US01K8XV6VK9ED2GBZSQ2VDTAT8A"
-	userB := "US01K8XV6VK9ED2GBZSQ2VDTAT8B"
+	teamLeadUserID := "US01K8XV6VK9ED2GBZSQ2VDTAT8A"
 
-	// Cache tags for user A
-	tagsA := cachedLeaderboardTags{
-		userA: []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe},
+	// Cache TEAM_LEAD tags for the team (viewer-independent)
+	teamLeadTags := map[string]bool{
+		teamLeadUserID: true,
 	}
-	cacheKeyA := cache.TeamMemberLeaderboardTagsKey(teamID, userA)
-	c.Set(cacheKeyA, tagsA)
-
-	// Cache tags for user B
-	tagsB := cachedLeaderboardTags{
-		userB: []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe},
-	}
-	cacheKeyB := cache.TeamMemberLeaderboardTagsKey(teamID, userB)
-	c.Set(cacheKeyB, tagsB)
+	cacheKey := cache.TeamMemberLeaderboardTeamLeadTagsKey(teamID)
+	c.Set(cacheKey, teamLeadTags)
 
 	time.Sleep(10 * time.Millisecond) // Allow ristretto to process async writes
 
-	// Verify user A's tags
-	cachedA, ok := c.Get(cacheKeyA)
-	require.True(t, ok, "user A tags should be in cache")
-	retrievedTagsA, ok := cachedA.(cachedLeaderboardTags)
+	// Verify TEAM_LEAD tags are cached per team
+	cached, ok := c.Get(cacheKey)
+	require.True(t, ok, "TEAM_LEAD tags should be in cache")
+	retrievedTags, ok := cached.(map[string]bool)
 	require.True(t, ok)
-	assert.Contains(t, retrievedTagsA, userA)
-	assert.NotContains(t, retrievedTagsA, userB)
-
-	// Verify user B's tags
-	cachedB, ok := c.Get(cacheKeyB)
-	require.True(t, ok, "user B tags should be in cache")
-	retrievedTagsB, ok := cachedB.(cachedLeaderboardTags)
-	require.True(t, ok)
-	assert.Contains(t, retrievedTagsB, userB)
-	assert.NotContains(t, retrievedTagsB, userA)
+	assert.True(t, retrievedTags[teamLeadUserID], "team lead should be marked")
 }
 
-func TestGetOrComputeTags_CacheHit(t *testing.T) {
+func TestGetOrComputeTags_TeamLeadCacheHit(t *testing.T) {
 	c, err := cache.NewCacheWithRegistry(cache.DefaultConfig())
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
 	teamID := "TM01K8XV6VK9ED2GBZSQ2VDTAT8T"
-	userID := "US01K8XV6VK9ED2GBZSQ2VDTAT8A"
+	currentUserID := "US01K8XV6VK9ED2GBZSQ2VDTAT8A"
+	teamLeadUserID := "US01K8XV6VK9ED2GBZSQ2VDTAT8B"
 	entries := []cachedLeaderboardEntry{
-		{ID: userID, Name: "User A", Score: 100, Rank: 1},
+		{ID: currentUserID, Name: "User A", Score: 100, Rank: 1},
+		{ID: teamLeadUserID, Name: "User B", Score: 90, Rank: 2},
 	}
 
-	// Pre-populate tag cache
-	expectedTags := cachedLeaderboardTags{
-		userID: []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe},
+	// Pre-populate TEAM_LEAD tag cache (per team, not per user)
+	teamLeadTags := map[string]bool{
+		teamLeadUserID: true,
 	}
-	cacheKey := cache.TeamMemberLeaderboardTagsKey(teamID, userID)
-	c.Set(cacheKey, expectedTags)
+	cacheKey := cache.TeamMemberLeaderboardTeamLeadTagsKey(teamID)
+	c.Set(cacheKey, teamLeadTags)
 	time.Sleep(10 * time.Millisecond)
 
-	// Call getOrComputeTags - should return cached tags (db not needed for cache hit)
-	tags := getOrComputeTags(context.Background(), nil, c, teamID, userID, entries)
+	// Call getOrComputeTags - TEAM_LEAD from cache, ME computed on-the-fly
+	tags := getOrComputeTags(context.Background(), nil, c, teamID, currentUserID, entries)
 
-	assert.Contains(t, tags, userID)
-	assert.Equal(t, []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe}, tags[userID])
+	// Current user should have ME tag
+	assert.Contains(t, tags, currentUserID)
+	assert.Equal(t, []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe}, tags[currentUserID])
+
+	// Team lead should have TEAM_LEAD tag
+	assert.Contains(t, tags, teamLeadUserID)
+	assert.Equal(t, []model.LeaderboardEntryTag{model.LeaderboardEntryTagTeamLead}, tags[teamLeadUserID])
 }
 
 func TestGetOrComputeTags_CacheMiss(t *testing.T) {
@@ -163,26 +150,27 @@ func TestGetOrComputeTags_CacheMiss(t *testing.T) {
 		{ID: otherUserID, Name: "User B", Score: 90, Rank: 2},
 	}
 
-	// No pre-populated cache - should compute and cache
+	// No pre-populated cache - should compute and cache TEAM_LEAD tags per team
 	// Note: passing nil for db means TEAM_LEAD tags won't be computed (requires role lookup)
-	// This test verifies ME tag computation works correctly
+	// ME tag is computed on-the-fly (no caching needed)
 	tags := getOrComputeTags(context.Background(), nil, c, teamID, userID, entries)
 
-	// User should have ME tag on their entry
+	// User should have ME tag on their entry (computed on-the-fly)
 	assert.Contains(t, tags, userID)
 	assert.Equal(t, []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe}, tags[userID])
 
 	// Other user's entry should not have any tags (no ME tag, and no TEAM_LEAD without db)
 	assert.NotContains(t, tags, otherUserID)
 
-	// Verify tags were cached
+	// Verify TEAM_LEAD tags were cached per team (even if empty)
 	time.Sleep(10 * time.Millisecond)
-	cacheKey := cache.TeamMemberLeaderboardTagsKey(teamID, userID)
+	cacheKey := cache.TeamMemberLeaderboardTeamLeadTagsKey(teamID)
 	cached, ok := c.Get(cacheKey)
-	assert.True(t, ok, "computed tags should be cached")
-	cachedTags, ok := cached.(cachedLeaderboardTags)
+	assert.True(t, ok, "TEAM_LEAD tags should be cached per team")
+	cachedTags, ok := cached.(map[string]bool)
 	require.True(t, ok)
-	assert.Contains(t, cachedTags, userID)
+	// No team leads without db access
+	assert.Empty(t, cachedTags)
 }
 
 func TestInvalidateTeamMemberLeaderboardTags(t *testing.T) {
@@ -190,16 +178,15 @@ func TestInvalidateTeamMemberLeaderboardTags(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
-	teamID := "TM01K8XV6VK9ED2GBZSQ2VDTAT8T"
-	userA := "US01K8XV6VK9ED2GBZSQ2VDTAT8A"
-	userB := "US01K8XV6VK9ED2GBZSQ2VDTAT8B"
+	teamA := "TM01K8XV6VK9ED2GBZSQ2VDTAT8A"
+	teamB := "TM01K8XV6VK9ED2GBZSQ2VDTAT8B"
 
-	// Cache tags for both users
-	tagsA := cachedLeaderboardTags{userA: []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe}}
-	tagsB := cachedLeaderboardTags{userB: []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe}}
+	// Cache TEAM_LEAD tags for both teams (viewer-independent)
+	tagsA := map[string]bool{"US01K8XV6VK9ED2GBZSQ2VDTAT8X": true}
+	tagsB := map[string]bool{"US01K8XV6VK9ED2GBZSQ2VDTAT8Y": true}
 
-	cacheKeyA := cache.TeamMemberLeaderboardTagsKey(teamID, userA)
-	cacheKeyB := cache.TeamMemberLeaderboardTagsKey(teamID, userB)
+	cacheKeyA := cache.TeamMemberLeaderboardTeamLeadTagsKey(teamA)
+	cacheKeyB := cache.TeamMemberLeaderboardTeamLeadTagsKey(teamB)
 
 	c.Set(cacheKeyA, tagsA)
 	c.Set(cacheKeyB, tagsB)
@@ -208,8 +195,8 @@ func TestInvalidateTeamMemberLeaderboardTags(t *testing.T) {
 	// Verify both are cached
 	_, okA := c.Get(cacheKeyA)
 	_, okB := c.Get(cacheKeyB)
-	assert.True(t, okA, "user A tags should be in cache before invalidation")
-	assert.True(t, okB, "user B tags should be in cache before invalidation")
+	assert.True(t, okA, "team A TEAM_LEAD tags should be in cache before invalidation")
+	assert.True(t, okB, "team B TEAM_LEAD tags should be in cache before invalidation")
 
 	// Invalidate all tag caches
 	c.InvalidateTeamMemberLeaderboardTags()
@@ -218,8 +205,8 @@ func TestInvalidateTeamMemberLeaderboardTags(t *testing.T) {
 	// Verify both are invalidated
 	_, okA = c.Get(cacheKeyA)
 	_, okB = c.Get(cacheKeyB)
-	assert.False(t, okA, "user A tags should be invalidated")
-	assert.False(t, okB, "user B tags should be invalidated")
+	assert.False(t, okA, "team A TEAM_LEAD tags should be invalidated")
+	assert.False(t, okB, "team B TEAM_LEAD tags should be invalidated")
 }
 
 func TestLeaderboardDataNotAffectedByTagInvalidation(t *testing.T) {
@@ -237,9 +224,9 @@ func TestLeaderboardDataNotAffectedByTagInvalidation(t *testing.T) {
 	leaderboardKey := cache.TeamMemberLeaderboardKey(teamID)
 	c.Set(leaderboardKey, entries)
 
-	// Cache tags
-	tags := cachedLeaderboardTags{userID: []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe}}
-	tagsKey := cache.TeamMemberLeaderboardTagsKey(teamID, userID)
+	// Cache TEAM_LEAD tags (per team, viewer-independent)
+	tags := map[string]bool{userID: true}
+	tagsKey := cache.TeamMemberLeaderboardTeamLeadTagsKey(teamID)
 	c.Set(tagsKey, tags)
 
 	time.Sleep(10 * time.Millisecond)
@@ -250,7 +237,7 @@ func TestLeaderboardDataNotAffectedByTagInvalidation(t *testing.T) {
 
 	// Tags should be invalidated
 	_, okTags := c.Get(tagsKey)
-	assert.False(t, okTags, "tags should be invalidated")
+	assert.False(t, okTags, "TEAM_LEAD tags should be invalidated")
 
 	// Leaderboard data should still be cached
 	_, okLeaderboard := c.Get(leaderboardKey)

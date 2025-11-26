@@ -105,7 +105,7 @@ type LeaderboardEntry {
     name: String!
     description: String!
     score: Int!
-    rank: Int!
+    rank: Int
     tags: [LeaderboardEntryTag!]!
     image: String
 }

@@ -206,6 +206,7 @@ func buildLeaderboardConnection(
 		// Compute tags using pre-loaded viewer context (no DB lookups)
 		tags := computeLeaderboardTags(entityType, entry.EntityID, currentUserID, viewerCtx)
 
+		rank := int(entry.Rank)
 		edges[i] = model.LeaderboardEdge{
 			Cursor: fmt.Sprintf("%d", entry.Rank),
 			Node: &model.LeaderboardEntry{
@@ -213,7 +214,7 @@ func buildLeaderboardConnection(
 				Name:        entry.Name,
 				Description: entry.Description,
 				Score:       entry.Score,
-				Rank:        int(entry.Rank),
+				Rank:        &rank,
 				Tags:        tags,
 				Image:       entry.Image,
 			},
@@ -240,15 +241,39 @@ func buildLeaderboardConnection(
 	var me *model.LeaderboardEntry
 	if meEntry != nil {
 		meTags := computeLeaderboardTags(entityType, meEntry.EntityID, currentUserID, viewerCtx)
+		meRank := int(meEntry.Rank)
 
 		me = &model.LeaderboardEntry{
 			ID:          meEntry.EntityID,
 			Name:        meEntry.Name,
 			Description: meEntry.Description,
 			Score:       meEntry.Score,
-			Rank:        int(meEntry.Rank),
+			Rank:        &meRank,
 			Tags:        meTags,
 			Image:       meEntry.Image,
+		}
+	} else if entityType == model.LeaderboardEntityTypePersons {
+		// For person leaderboards, always return a "me" entry even if not ranked
+		// Fetch user info for the default entry
+		userThunk := ldrs.UserByIDLoader.Load(ctx, currentUserID)
+		user, err := userThunk()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load user for me entry: %w", err)
+		}
+		if user != nil {
+			var description string
+			if user.Church != nil {
+				description = user.Church.Name
+			}
+			me = &model.LeaderboardEntry{
+				ID:          currentUserID,
+				Name:        user.Name,
+				Description: description,
+				Score:       0,
+				Rank:        nil,
+				Tags:        []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe},
+				Image:       user.Image,
+			}
 		}
 	}
 

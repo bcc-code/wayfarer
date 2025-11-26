@@ -336,7 +336,7 @@ type LeaderboardEntry struct {
 	Name        string                `json:"name"`
 	Description string                `json:"description"`
 	Score       int                   `json:"score"`
-	Rank        int                   `json:"rank"`
+	Rank        *int                  `json:"rank,omitempty"`
 	Tags        []LeaderboardEntryTag `json:"tags"`
 	Image       *string               `json:"image,omitempty"`
 }
