@@ -74,7 +74,10 @@ func (r *eventResolver) Leaderboard(ctx context.Context, obj *model.Event, entit
 	}
 
 	// Build connection
-	connection := buildLeaderboardConnection(entries, meEntry, totalCount, currentUserID, first, last, after, before)
+	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, entityType, obj.ProjectID, r.Loaders, first, last, after, before)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build leaderboard connection: %w", err)
+	}
 
 	return connection, nil
 }
@@ -152,7 +155,10 @@ func (r *projectResolver) Leaderboard(ctx context.Context, obj *model.Project, e
 	}
 
 	// Build connection
-	connection := buildLeaderboardConnection(entries, meEntry, totalCount, currentUserID, first, last, after, before)
+	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, entityType, obj.ID, r.Loaders, first, last, after, before)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build leaderboard connection: %w", err)
+	}
 
 	return connection, nil
 }

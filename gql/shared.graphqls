@@ -61,6 +61,12 @@ enum ScoreSourceType {
     MANUAL
 }
 
+enum LeaderboardEntryTag {
+    TEAM_LEAD
+    ME
+    ADMIN
+}
+
 # ==================== Supporting Types ====================
 
 type AgeRange {
@@ -100,7 +106,7 @@ type LeaderboardEntry {
     description: String!
     score: Int!
     rank: Int!
-    isMe: Boolean!
+    tags: [LeaderboardEntryTag!]!
     image: String
 }
 

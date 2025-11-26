@@ -54,13 +54,19 @@ func teamMemberLeaderboardBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 						}
 					}
 
+					// Add ME tag if this is the current user
+					tags := []model.LeaderboardEntryTag{}
+					if row.UserID == currentUserID {
+						tags = append(tags, model.LeaderboardEntryTagMe)
+					}
+
 					entries[i] = model.LeaderboardEntry{
 						ID:          row.UserID,
 						Name:        row.UserName,
 						Description: row.ChurchName,
 						Score:       score,
 						Rank:        int(row.Rank),
-						IsMe:        row.UserID == currentUserID,
+						Tags:        tags,
 						Image:       row.AvatarUrl,
 					}
 				}

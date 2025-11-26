@@ -184,10 +184,10 @@ type ComplexityRoot struct {
 		Description func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Image       func(childComplexity int) int
-		IsMe        func(childComplexity int) int
 		Name        func(childComplexity int) int
 		Rank        func(childComplexity int) int
 		Score       func(childComplexity int) int
+		Tags        func(childComplexity int) int
 	}
 
 	ListeningAchievement struct {
@@ -1171,12 +1171,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.LeaderboardEntry.Image(childComplexity), true
-	case "LeaderboardEntry.isMe":
-		if e.complexity.LeaderboardEntry.IsMe == nil {
-			break
-		}
-
-		return e.complexity.LeaderboardEntry.IsMe(childComplexity), true
 	case "LeaderboardEntry.name":
 		if e.complexity.LeaderboardEntry.Name == nil {
 			break
@@ -1195,6 +1189,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.LeaderboardEntry.Score(childComplexity), true
+	case "LeaderboardEntry.tags":
+		if e.complexity.LeaderboardEntry.Tags == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardEntry.Tags(childComplexity), true
 
 	case "ListeningAchievement.achievedAt":
 		if e.complexity.ListeningAchievement.AchievedAt == nil {
@@ -3418,6 +3418,12 @@ enum ScoreSourceType {
     MANUAL
 }
 
+enum LeaderboardEntryTag {
+    TEAM_LEAD
+    ME
+    ADMIN
+}
+
 # ==================== Supporting Types ====================
 
 type AgeRange {
@@ -3457,7 +3463,7 @@ type LeaderboardEntry {
     description: String!
     score: Int!
     rank: Int!
-    isMe: Boolean!
+    tags: [LeaderboardEntryTag!]!
     image: String
 }
 
@@ -8016,8 +8022,8 @@ func (ec *executionContext) fieldContext_LeaderboardConnection_me(_ context.Cont
 				return ec.fieldContext_LeaderboardEntry_score(ctx, field)
 			case "rank":
 				return ec.fieldContext_LeaderboardEntry_rank(ctx, field)
-			case "isMe":
-				return ec.fieldContext_LeaderboardEntry_isMe(ctx, field)
+			case "tags":
+				return ec.fieldContext_LeaderboardEntry_tags(ctx, field)
 			case "image":
 				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
 			}
@@ -8090,8 +8096,8 @@ func (ec *executionContext) fieldContext_LeaderboardEdge_node(_ context.Context,
 				return ec.fieldContext_LeaderboardEntry_score(ctx, field)
 			case "rank":
 				return ec.fieldContext_LeaderboardEntry_rank(ctx, field)
-			case "isMe":
-				return ec.fieldContext_LeaderboardEntry_isMe(ctx, field)
+			case "tags":
+				return ec.fieldContext_LeaderboardEntry_tags(ctx, field)
 			case "image":
 				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
 			}
@@ -8246,30 +8252,30 @@ func (ec *executionContext) fieldContext_LeaderboardEntry_rank(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _LeaderboardEntry_isMe(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardEntry) (ret graphql.Marshaler) {
+func (ec *executionContext) _LeaderboardEntry_tags(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardEntry) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_LeaderboardEntry_isMe,
+		ec.fieldContext_LeaderboardEntry_tags,
 		func(ctx context.Context) (any, error) {
-			return obj.IsMe, nil
+			return obj.Tags, nil
 		},
 		nil,
-		ec.marshalNBoolean2bool,
+		ec.marshalNLeaderboardEntryTag2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntryTagᚄ,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_LeaderboardEntry_isMe(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_LeaderboardEntry_tags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "LeaderboardEntry",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			return nil, errors.New("field of type LeaderboardEntryTag does not have child fields")
 		},
 	}
 	return fc, nil
@@ -19356,8 +19362,8 @@ func (ec *executionContext) fieldContext_Team_memberLeaderboard(_ context.Contex
 				return ec.fieldContext_LeaderboardEntry_score(ctx, field)
 			case "rank":
 				return ec.fieldContext_LeaderboardEntry_rank(ctx, field)
-			case "isMe":
-				return ec.fieldContext_LeaderboardEntry_isMe(ctx, field)
+			case "tags":
+				return ec.fieldContext_LeaderboardEntry_tags(ctx, field)
 			case "image":
 				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
 			}
@@ -25869,8 +25875,8 @@ func (ec *executionContext) _LeaderboardEntry(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "isMe":
-			out.Values[i] = ec._LeaderboardEntry_isMe(ctx, field, obj)
+		case "tags":
+			out.Values[i] = ec._LeaderboardEntry_tags(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -31650,6 +31656,75 @@ func (ec *executionContext) marshalNLeaderboardEntry2ᚖgithubᚗcomᚋbccᚑmed
 		return graphql.Null
 	}
 	return ec._LeaderboardEntry(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNLeaderboardEntryTag2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntryTag(ctx context.Context, v any) (model.LeaderboardEntryTag, error) {
+	var res model.LeaderboardEntryTag
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNLeaderboardEntryTag2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntryTag(ctx context.Context, sel ast.SelectionSet, v model.LeaderboardEntryTag) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNLeaderboardEntryTag2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntryTagᚄ(ctx context.Context, v any) ([]model.LeaderboardEntryTag, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.LeaderboardEntryTag, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNLeaderboardEntryTag2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntryTag(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNLeaderboardEntryTag2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntryTagᚄ(ctx context.Context, sel ast.SelectionSet, v []model.LeaderboardEntryTag) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNLeaderboardEntryTag2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntryTag(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNListeningAchievement2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐListeningAchievement(ctx context.Context, sel ast.SelectionSet, v model.ListeningAchievement) graphql.Marshaler {

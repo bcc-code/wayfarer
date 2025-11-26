@@ -332,13 +332,13 @@ type LeaderboardEdge struct {
 }
 
 type LeaderboardEntry struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	Score       int     `json:"score"`
-	Rank        int     `json:"rank"`
-	IsMe        bool    `json:"isMe"`
-	Image       *string `json:"image,omitempty"`
+	ID          string                `json:"id"`
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
+	Score       int                   `json:"score"`
+	Rank        int                   `json:"rank"`
+	Tags        []LeaderboardEntryTag `json:"tags"`
+	Image       *string               `json:"image,omitempty"`
 }
 
 type LeaderboardFilter struct {
@@ -1065,6 +1065,63 @@ func (e *LeaderboardEntityType) UnmarshalJSON(b []byte) error {
 }
 
 func (e LeaderboardEntityType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type LeaderboardEntryTag string
+
+const (
+	LeaderboardEntryTagTeamLead LeaderboardEntryTag = "TEAM_LEAD"
+	LeaderboardEntryTagMe       LeaderboardEntryTag = "ME"
+	LeaderboardEntryTagAdmin    LeaderboardEntryTag = "ADMIN"
+)
+
+var AllLeaderboardEntryTag = []LeaderboardEntryTag{
+	LeaderboardEntryTagTeamLead,
+	LeaderboardEntryTagMe,
+	LeaderboardEntryTagAdmin,
+}
+
+func (e LeaderboardEntryTag) IsValid() bool {
+	switch e {
+	case LeaderboardEntryTagTeamLead, LeaderboardEntryTagMe, LeaderboardEntryTagAdmin:
+		return true
+	}
+	return false
+}
+
+func (e LeaderboardEntryTag) String() string {
+	return string(e)
+}
+
+func (e *LeaderboardEntryTag) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = LeaderboardEntryTag(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid LeaderboardEntryTag", str)
+	}
+	return nil
+}
+
+func (e LeaderboardEntryTag) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *LeaderboardEntryTag) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e LeaderboardEntryTag) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
