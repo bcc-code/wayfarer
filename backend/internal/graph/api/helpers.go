@@ -69,131 +69,98 @@ func resolveAchievedAt(ctx context.Context, r *Resolver, achievementID string) (
 	return &scalars.DateTime{Time: *ts}, nil
 }
 
-// computeLeaderboardTags computes tags for a leaderboard entry based on entity type and viewer context
+// viewerContext holds pre-loaded viewer data to avoid N+1 queries in tag computation
+type viewerContext struct {
+	teamIDs      map[string]bool // Viewer's team IDs in the current project
+	superTeamIDs map[string]bool // Viewer's superteam IDs in the current project
+	churchID     string          // Viewer's church ID
+}
+
+// computeLeaderboardTags computes tags for a leaderboard entry based on entity type and viewer context.
+// This function does NO database lookups - all data is pre-loaded into viewerCtx.
+// Note: ADMIN and TEAM_LEAD tags have been removed from project/event leaderboards.
+// TEAM_LEAD is only shown on team member leaderboards (handled separately).
 func computeLeaderboardTags(
-	ctx context.Context,
 	entityType model.LeaderboardEntityType,
 	entityID string,
-	projectID string,
 	currentUserID string,
-	ldrs *loaders.Loaders,
-) ([]model.LeaderboardEntryTag, error) {
+	viewerCtx *viewerContext,
+) []model.LeaderboardEntryTag {
 	tags := []model.LeaderboardEntryTag{}
 
 	switch entityType {
 	case model.LeaderboardEntityTypePersons:
-		// Check ME tag
+		// ME tag - simple ID comparison
 		if entityID == currentUserID {
 			tags = append(tags, model.LeaderboardEntryTagMe)
 		}
 
-		// Check ADMIN tag
-		userRoles, ok := ctx.Value(middleware.UserRolesKey).([]string)
-		if ok {
-			for _, role := range userRoles {
-				if role == "superadmin" || role == "admin" || role == "project_admin" {
-					// Check if the entity (person in leaderboard) has admin roles
-					personRolesThunk := ldrs.RolesByUserLoader.Load(ctx, entityID)
-					personRoles, err := personRolesThunk()
-					if err == nil {
-						for _, personRole := range personRoles {
-							if personRole.Role == model.RoleTypeSuperadmin ||
-								personRole.Role == model.RoleTypeAdmin ||
-								personRole.Role == model.RoleTypeProjectAdmin {
-								tags = append(tags, model.LeaderboardEntryTagAdmin)
-								goto checkTeamLead // Break out of nested loops
-							}
-						}
-					}
-				}
-			}
-		}
-
-	checkTeamLead:
-		// Check TEAM_LEAD tag
-		// Load viewer's teams
-		viewerTeamsThunk := ldrs.TeamsByUserLoader.Load(ctx, currentUserID)
-		allViewerTeams, err := viewerTeamsThunk()
-		if err != nil {
-			return tags, fmt.Errorf("failed to load viewer teams: %w", err)
-		}
-
-		// Filter teams by project and get team IDs
-		viewerTeamIDs := make(map[string]bool)
-		for _, team := range allViewerTeams {
-			if team.ProjectID == projectID {
-				viewerTeamIDs[team.ID] = true
-			}
-		}
-
-		// Load person's roles
-		personRolesThunk := ldrs.RolesByUserLoader.Load(ctx, entityID)
-		personRoles, err := personRolesThunk()
-		if err != nil {
-			return tags, fmt.Errorf("failed to load person roles: %w", err)
-		}
-
-		// Check if person is TEAM_LEAD of any of viewer's teams
-		for _, role := range personRoles {
-			if role.Role == model.RoleTypeTeamLead && role.Scope != nil {
-				if role.Scope.Type == model.ScopeTypeTeam {
-					if viewerTeamIDs[role.Scope.ID] {
-						tags = append(tags, model.LeaderboardEntryTagTeamLead)
-						break
-					}
-				}
-			}
-		}
-
 	case model.LeaderboardEntityTypeTeams:
-		// For teams, only check ME tag
-		// Load viewer's teams
-		viewerTeamsThunk := ldrs.TeamsByUserLoader.Load(ctx, currentUserID)
-		allViewerTeams, err := viewerTeamsThunk()
-		if err != nil {
-			return tags, fmt.Errorf("failed to load viewer teams: %w", err)
-		}
-
-		// Filter by project and check if entityID matches
-		for _, team := range allViewerTeams {
-			if team.ProjectID == projectID && team.ID == entityID {
-				tags = append(tags, model.LeaderboardEntryTagMe)
-				break
-			}
+		// ME tag - check if this is one of viewer's teams
+		if viewerCtx.teamIDs[entityID] {
+			tags = append(tags, model.LeaderboardEntryTagMe)
 		}
 
 	case model.LeaderboardEntityTypeSuperteams:
-		// For superteams, only check ME tag
-		// Load viewer's teams
-		viewerTeamsThunk := ldrs.TeamsByUserLoader.Load(ctx, currentUserID)
-		allViewerTeams, err := viewerTeamsThunk()
-		if err != nil {
-			return tags, fmt.Errorf("failed to load viewer teams: %w", err)
-		}
-
-		// Filter by project and check if any team belongs to this superteam
-		for _, team := range allViewerTeams {
-			if team.ProjectID == projectID && team.SuperTeam != nil && team.SuperTeam.ID == entityID {
-				tags = append(tags, model.LeaderboardEntryTagMe)
-				break
-			}
+		// ME tag - check if this is viewer's superteam
+		if viewerCtx.superTeamIDs[entityID] {
+			tags = append(tags, model.LeaderboardEntryTagMe)
 		}
 
 	case model.LeaderboardEntityTypeChurches:
-		// For churches, only check ME tag
-		// Load viewer's user data
-		viewerThunk := ldrs.UserByIDLoader.Load(ctx, currentUserID)
-		viewer, err := viewerThunk()
-		if err != nil {
-			return tags, fmt.Errorf("failed to load viewer: %w", err)
-		}
-
-		if viewer.Church.ID == entityID {
+		// ME tag - check if this is viewer's church
+		if entityID == viewerCtx.churchID {
 			tags = append(tags, model.LeaderboardEntryTagMe)
 		}
 	}
 
-	return tags, nil
+	return tags
+}
+
+// preloadViewerContext loads all viewer-specific data needed for tag computation.
+// This is called ONCE before iterating over leaderboard entries.
+func preloadViewerContext(
+	ctx context.Context,
+	currentUserID string,
+	projectID string,
+	entityType model.LeaderboardEntityType,
+	ldrs *loaders.Loaders,
+) (*viewerContext, error) {
+	viewerCtx := &viewerContext{
+		teamIDs:      make(map[string]bool),
+		superTeamIDs: make(map[string]bool),
+	}
+
+	// Load viewer's teams for TEAMS and SUPERTEAMS entity types
+	if entityType == model.LeaderboardEntityTypeTeams || entityType == model.LeaderboardEntityTypeSuperteams {
+		teamsThunk := ldrs.TeamsByUserLoader.Load(ctx, currentUserID)
+		teams, err := teamsThunk()
+		if err != nil {
+			return viewerCtx, fmt.Errorf("failed to load viewer teams: %w", err)
+		}
+		for _, team := range teams {
+			if team.ProjectID == projectID {
+				viewerCtx.teamIDs[team.ID] = true
+				if team.SuperTeam != nil {
+					viewerCtx.superTeamIDs[team.SuperTeam.ID] = true
+				}
+			}
+		}
+	}
+
+	// Load viewer's church for CHURCHES entity type
+	if entityType == model.LeaderboardEntityTypeChurches {
+		userThunk := ldrs.UserByIDLoader.Load(ctx, currentUserID)
+		user, err := userThunk()
+		if err != nil {
+			return viewerCtx, fmt.Errorf("failed to load viewer: %w", err)
+		}
+		if user != nil && user.Church != nil {
+			viewerCtx.churchID = user.Church.ID
+		}
+	}
+
+	return viewerCtx, nil
 }
 
 // buildLeaderboardConnection builds a GraphQL connection from leaderboard entries
@@ -227,14 +194,17 @@ func buildLeaderboardConnection(
 		entries = entries[:requestedLimit]
 	}
 
-	// Build edges
+	// Pre-load viewer context ONCE (outside the loop) to avoid N+1 queries
+	viewerCtx, err := preloadViewerContext(ctx, currentUserID, projectID, entityType, ldrs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to preload viewer context: %w", err)
+	}
+
+	// Build edges - NO dataloader calls in this loop
 	edges := make([]model.LeaderboardEdge, len(entries))
 	for i, entry := range entries {
-		// Compute tags based on entity type and viewer context
-		tags, err := computeLeaderboardTags(ctx, entityType, entry.EntityID, projectID, currentUserID, ldrs)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compute tags for entry %s: %w", entry.EntityID, err)
-		}
+		// Compute tags using pre-loaded viewer context (no DB lookups)
+		tags := computeLeaderboardTags(entityType, entry.EntityID, currentUserID, viewerCtx)
 
 		edges[i] = model.LeaderboardEdge{
 			Cursor: fmt.Sprintf("%d", entry.Rank),
@@ -266,14 +236,10 @@ func buildLeaderboardConnection(
 		EndCursor:       endCursor,
 	}
 
-	// Build "me" entry
+	// Build "me" entry using same pre-loaded context
 	var me *model.LeaderboardEntry
 	if meEntry != nil {
-		// Compute tags for "me" entry
-		meTags, err := computeLeaderboardTags(ctx, entityType, meEntry.EntityID, projectID, currentUserID, ldrs)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compute tags for me entry: %w", err)
-		}
+		meTags := computeLeaderboardTags(entityType, meEntry.EntityID, currentUserID, viewerCtx)
 
 		me = &model.LeaderboardEntry{
 			ID:          meEntry.EntityID,

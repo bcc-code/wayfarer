@@ -1,6 +1,7 @@
 package loaders
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -142,8 +143,8 @@ func TestGetOrComputeTags_CacheHit(t *testing.T) {
 	c.Set(cacheKey, expectedTags)
 	time.Sleep(10 * time.Millisecond)
 
-	// Call getOrComputeTags - should return cached tags
-	tags := getOrComputeTags(c, teamID, userID, entries)
+	// Call getOrComputeTags - should return cached tags (db not needed for cache hit)
+	tags := getOrComputeTags(context.Background(), nil, c, teamID, userID, entries)
 
 	assert.Contains(t, tags, userID)
 	assert.Equal(t, []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe}, tags[userID])
@@ -163,13 +164,15 @@ func TestGetOrComputeTags_CacheMiss(t *testing.T) {
 	}
 
 	// No pre-populated cache - should compute and cache
-	tags := getOrComputeTags(c, teamID, userID, entries)
+	// Note: passing nil for db means TEAM_LEAD tags won't be computed (requires role lookup)
+	// This test verifies ME tag computation works correctly
+	tags := getOrComputeTags(context.Background(), nil, c, teamID, userID, entries)
 
 	// User should have ME tag on their entry
 	assert.Contains(t, tags, userID)
 	assert.Equal(t, []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe}, tags[userID])
 
-	// Other user's entry should not have any tags
+	// Other user's entry should not have any tags (no ME tag, and no TEAM_LEAD without db)
 	assert.NotContains(t, tags, otherUserID)
 
 	// Verify tags were cached

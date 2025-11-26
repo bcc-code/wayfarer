@@ -5,6 +5,7 @@ import (
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/graph-gophers/dataloader/v7"
@@ -93,8 +94,8 @@ func teamMemberLeaderboardBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 				continue
 			}
 
-			// Get or compute tags for this user
-			tags := getOrComputeTags(c, teamID, currentUserID, entries)
+			// Get or compute tags for this user (includes TEAM_LEAD tag)
+			tags := getOrComputeTags(ctx, db, c, teamID, currentUserID, entries)
 
 			// Convert cached entries to model with tags
 			modelEntries := make([]model.LeaderboardEntry, len(entries))
@@ -122,8 +123,9 @@ func teamMemberLeaderboardBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 	}
 }
 
-// getOrComputeTags retrieves or computes tags for a specific user viewing the leaderboard
-func getOrComputeTags(c *cache.CacheWithRegistry, teamID, currentUserID string, entries []cachedLeaderboardEntry) cachedLeaderboardTags {
+// getOrComputeTags retrieves or computes tags for a specific user viewing the leaderboard.
+// This includes ME tag and TEAM_LEAD tag (with batched role loading).
+func getOrComputeTags(ctx context.Context, db *database.DB, c *cache.CacheWithRegistry, teamID, currentUserID string, entries []cachedLeaderboardEntry) cachedLeaderboardTags {
 	// Check tag cache for this user
 	tagCacheKey := cache.TeamMemberLeaderboardTagsKey(teamID, currentUserID)
 	if cached, ok := c.Get(tagCacheKey); ok {
@@ -132,13 +134,45 @@ func getOrComputeTags(c *cache.CacheWithRegistry, teamID, currentUserID string, 
 		}
 	}
 
+	// Collect all entry IDs for batched role loading
+	entryIDs := make([]string, len(entries))
+	for i, entry := range entries {
+		entryIDs[i] = entry.ID
+	}
+
+	// Batch load roles for all entries in ONE query
+	entryRoles := make(map[string][]*model.UserRole)
+	if len(entryIDs) > 0 && db != nil {
+		rows, err := db.Queries.GetAllRolesForUsers(ctx, entryIDs)
+		if err == nil {
+			// Group roles by user ID
+			for _, row := range rows {
+				role := convertToUserRole(row)
+				entryRoles[row.UserID] = append(entryRoles[row.UserID], role)
+			}
+		}
+	}
+
 	// Compute tags for this user
 	tags := make(cachedLeaderboardTags)
 	for _, entry := range entries {
 		entryTags := []model.LeaderboardEntryTag{}
+
+		// ME tag - simple ID comparison
 		if entry.ID == currentUserID {
 			entryTags = append(entryTags, model.LeaderboardEntryTagMe)
 		}
+
+		// TEAM_LEAD tag - check if entry is team lead of THIS team
+		for _, role := range entryRoles[entry.ID] {
+			if role.Role == model.RoleTypeTeamLead && role.Scope != nil {
+				if role.Scope.Type == model.ScopeTypeTeam && role.Scope.ID == teamID {
+					entryTags = append(entryTags, model.LeaderboardEntryTagTeamLead)
+					break
+				}
+			}
+		}
+
 		if len(entryTags) > 0 {
 			tags[entry.ID] = entryTags
 		}
@@ -148,4 +182,30 @@ func getOrComputeTags(c *cache.CacheWithRegistry, teamID, currentUserID string, 
 	c.Set(tagCacheKey, tags)
 
 	return tags
+}
+
+// convertToUserRole converts a database role row to a model.UserRole
+func convertToUserRole(row *sqlc.GetAllRolesForUsersRow) *model.UserRole {
+	role := &model.UserRole{
+		ID:   row.ID,
+		Role: model.RoleType(row.Role),
+	}
+
+	// Build scope if any scope fields are set
+	if row.ChurchID != nil || row.ProjectID != nil || row.TeamID != nil {
+		scope := &model.RoleScope{}
+		if row.ChurchID != nil {
+			scope.Type = model.ScopeTypeChurch
+			scope.ID = *row.ChurchID
+		} else if row.ProjectID != nil {
+			scope.Type = model.ScopeTypeProject
+			scope.ID = *row.ProjectID
+		} else if row.TeamID != nil {
+			scope.Type = model.ScopeTypeTeam
+			scope.ID = *row.TeamID
+		}
+		role.Scope = scope
+	}
+
+	return role
 }
