@@ -752,6 +752,44 @@ func (q *Queries) GetTracksByAchievementIDs(ctx context.Context, achievementIds 
 	return items, nil
 }
 
+const GetUserAchievementTimestamps = `-- name: GetUserAchievementTimestamps :many
+SELECT achievement_id, achieved_at
+FROM user_achievements
+WHERE user_id = $1::text
+  AND achievement_id = ANY($2::text[])
+`
+
+type GetUserAchievementTimestampsParams struct {
+	Userid         string   `json:"userid"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+type GetUserAchievementTimestampsRow struct {
+	AchievementID string             `json:"achievement_id"`
+	AchievedAt    pgtype.Timestamptz `json:"achieved_at"`
+}
+
+// Get achieved_at timestamps for a user's achievements (for achievedAt field resolution)
+func (q *Queries) GetUserAchievementTimestamps(ctx context.Context, arg GetUserAchievementTimestampsParams) ([]*GetUserAchievementTimestampsRow, error) {
+	rows, err := q.db.Query(ctx, GetUserAchievementTimestamps, arg.Userid, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUserAchievementTimestampsRow{}
+	for rows.Next() {
+		var i GetUserAchievementTimestampsRow
+		if err := rows.Scan(&i.AchievementID, &i.AchievedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const RevokeSuperTeamAchievementBatch = `-- name: RevokeSuperTeamAchievementBatch :exec
 DELETE FROM user_achievements
 WHERE achievement_id = $1::text

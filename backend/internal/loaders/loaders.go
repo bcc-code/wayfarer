@@ -2,6 +2,7 @@ package loaders
 
 import (
 	"context"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
@@ -38,8 +39,9 @@ type Loaders struct {
 	ChallengesByEventLoader     *dataloader.Loader[string, []*model.Challenge]
 	StreakByIDLoader            *dataloader.Loader[string, *model.Streak]
 	StreaksByProjectLoader      *dataloader.Loader[string, []*model.Streak]
-	RelevantDaysByStreakLoader  *dataloader.Loader[string, []model.DateRange]
-	UserStreakActivityLoader    *dataloader.Loader[UserStreakActivityKey, []*sqlc.UserStreakActivity]
+	RelevantDaysByStreakLoader       *dataloader.Loader[string, []model.DateRange]
+	UserStreakActivityLoader         *dataloader.Loader[UserStreakActivityKey, []*sqlc.UserStreakActivity]
+	UserAchievementTimestampLoader   *dataloader.Loader[UserAchievementKey, *time.Time]
 }
 
 // newBatchedLoader creates a new batched dataloader with standard configuration:
@@ -85,7 +87,8 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		ChallengesByEventLoader:     newBatchedLoader(challengesByEventBatchFunc(db, cache)),
 		StreakByIDLoader:            newBatchedLoader(streakByIDBatchFunc(db, cache)),
 		StreaksByProjectLoader:      newBatchedLoader(streaksByProjectBatchFunc(db, cache)),
-		RelevantDaysByStreakLoader:  newBatchedLoader(relevantDaysByStreakBatchFunc(db, cache)),
-		UserStreakActivityLoader:    newBatchedLoader(userStreakActivityBatchFunc(db, cache)),
+		RelevantDaysByStreakLoader:       newBatchedLoader(relevantDaysByStreakBatchFunc(db, cache)),
+		UserStreakActivityLoader:         newBatchedLoader(userStreakActivityBatchFunc(db, cache)),
+		UserAchievementTimestampLoader:   newBatchedLoader(userAchievementTimestampBatchFunc(db, cache)),
 	}
 }

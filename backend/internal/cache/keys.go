@@ -200,6 +200,11 @@ func UserStreakActivityKey(userID string, streakID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixUserStreakActivity, userID, streakID)
 }
 
+// UserAchievementTimestampKey builds a cache key for user achievement timestamp (achievedAt)
+func UserAchievementTimestampKey(userID string, achievementID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserAchievements, userID, achievementID)
+}
+
 // TeamMembersByTeamKey builds a cache key for team members
 func TeamMembersByTeamKey(teamID string) string {
 	return PrefixTeamMembers + teamID

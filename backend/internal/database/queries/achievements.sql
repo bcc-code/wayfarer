@@ -335,3 +335,10 @@ WHERE achievement_id = @achievement_id::text
     INNER JOIN team_members tm ON tm.team_id = t.id
     WHERE t.super_team_id = @super_team_id::text
   );
+
+-- name: GetUserAchievementTimestamps :many
+-- Get achieved_at timestamps for a user's achievements (for achievedAt field resolution)
+SELECT achievement_id, achieved_at
+FROM user_achievements
+WHERE user_id = @userid::text
+  AND achievement_id = ANY(@achievement_ids::text[]);

@@ -105,6 +105,8 @@ models:
         resolver: true
       challenge:
         resolver: true
+      achievedAt:
+        resolver: true
     extraFields:
       ProjectID:
         type: string
@@ -121,6 +123,8 @@ models:
         resolver: true
       challenge:
         resolver: true
+      achievedAt:
+        resolver: true
     extraFields:
       ProjectID:
         type: string
@@ -136,6 +140,8 @@ models:
       event:
         resolver: true
       challenge:
+        resolver: true
+      achievedAt:
         resolver: true
     extraFields:
       ProjectID:
@@ -154,6 +160,8 @@ models:
       challenge:
         resolver: true
       streak:
+        resolver: true
+      achievedAt:
         resolver: true
     extraFields:
       ProjectID:

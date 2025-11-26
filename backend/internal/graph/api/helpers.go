@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
@@ -44,6 +45,28 @@ func resolveChallengeByID(ctx context.Context, r *Resolver, challengeID *string)
 		return nil, fmt.Errorf("failed to load challenge: %w", err)
 	}
 	return challenge, nil
+}
+
+// resolveAchievedAt is a helper function to load the achievedAt timestamp for an achievement
+// for the current user using the dataloader
+func resolveAchievedAt(ctx context.Context, r *Resolver, achievementID string) (*scalars.DateTime, error) {
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, nil // Return nil for unauthenticated users
+	}
+
+	key := loaders.UserAchievementKey{UserID: currentUserID, AchievementID: achievementID}
+	thunk := r.Loaders.UserAchievementTimestampLoader.Load(ctx, key)
+	ts, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement timestamp: %w", err)
+	}
+
+	if ts == nil {
+		return nil, nil // User hasn't achieved this
+	}
+
+	return &scalars.DateTime{Time: *ts}, nil
 }
 
 // computeLeaderboardTags computes tags for a leaderboard entry based on entity type and viewer context

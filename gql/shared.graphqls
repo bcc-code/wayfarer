@@ -276,7 +276,7 @@ interface Achievement {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
-    achievedAt: DateTime
+    achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
 }
@@ -291,7 +291,7 @@ type SimpleAchievement implements Achievement {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
-    achievedAt: DateTime
+    achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
 }
@@ -304,7 +304,7 @@ type ReadingAchievement implements Achievement {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
-    achievedAt: DateTime
+    achievedAt: DateTime @goField(forceResolver: true)
     articles: [Article!]! @goField(forceResolver: true)
     userHasRead: [Article!]!
     nextArticle: Article!
@@ -320,7 +320,7 @@ type ListeningAchievement implements Achievement {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
-    achievedAt: DateTime
+    achievedAt: DateTime @goField(forceResolver: true)
     tracks: [Track!]! @goField(forceResolver: true)
     userHasListened: [Track!]!
     nextTrack: Track!
@@ -336,7 +336,7 @@ type StreakAchievement implements Achievement {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
-    achievedAt: DateTime
+    achievedAt: DateTime @goField(forceResolver: true)
     neededStreak: Int!
     points: Int!
     hidden: Boolean!
