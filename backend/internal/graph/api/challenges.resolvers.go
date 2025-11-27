@@ -131,6 +131,12 @@ func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input
 	// Invalidate cache
 	r.Cache.InvalidateChallenge(id)
 
+	// Delete translations when translatable fields are updated
+	if input.Name != nil || input.Description != nil || input.ButtonText != nil {
+		_ = r.DB.Queries.DeleteChallengeTranslations(ctx, id)
+		r.Cache.DeletePrefix(cache.PrefixTranslation + "challenge:" + id)
+	}
+
 	// If eventID is being changed, invalidate both old and new events
 	if input.EventID != nil {
 		// Invalidate old event if it exists

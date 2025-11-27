@@ -9,6 +9,89 @@ import (
 	"context"
 )
 
+const DeleteAchievementTranslations = `-- name: DeleteAchievementTranslations :exec
+DELETE FROM achievement_translations WHERE achievement_id = $1::text
+`
+
+func (q *Queries) DeleteAchievementTranslations(ctx context.Context, achievementID string) error {
+	_, err := q.db.Exec(ctx, DeleteAchievementTranslations, achievementID)
+	return err
+}
+
+const DeleteArticleTranslations = `-- name: DeleteArticleTranslations :exec
+DELETE FROM reading_achievement_article_translations WHERE article_id = $1::text
+`
+
+func (q *Queries) DeleteArticleTranslations(ctx context.Context, articleID string) error {
+	_, err := q.db.Exec(ctx, DeleteArticleTranslations, articleID)
+	return err
+}
+
+const DeleteChallengeTranslations = `-- name: DeleteChallengeTranslations :exec
+DELETE FROM challenge_translations WHERE challenge_id = $1::text
+`
+
+func (q *Queries) DeleteChallengeTranslations(ctx context.Context, challengeID string) error {
+	_, err := q.db.Exec(ctx, DeleteChallengeTranslations, challengeID)
+	return err
+}
+
+const DeleteEventTranslations = `-- name: DeleteEventTranslations :exec
+DELETE FROM event_translations WHERE event_id = $1::text
+`
+
+func (q *Queries) DeleteEventTranslations(ctx context.Context, eventID string) error {
+	_, err := q.db.Exec(ctx, DeleteEventTranslations, eventID)
+	return err
+}
+
+const DeleteProjectTranslations = `-- name: DeleteProjectTranslations :exec
+
+DELETE FROM project_translations WHERE project_id = $1::text
+`
+
+// Delete queries for translation invalidation when base content changes
+func (q *Queries) DeleteProjectTranslations(ctx context.Context, projectID string) error {
+	_, err := q.db.Exec(ctx, DeleteProjectTranslations, projectID)
+	return err
+}
+
+const DeleteStreakTranslations = `-- name: DeleteStreakTranslations :exec
+DELETE FROM streak_translations WHERE streak_id = $1::text
+`
+
+func (q *Queries) DeleteStreakTranslations(ctx context.Context, streakID string) error {
+	_, err := q.db.Exec(ctx, DeleteStreakTranslations, streakID)
+	return err
+}
+
+const DeleteSuperTeamTranslations = `-- name: DeleteSuperTeamTranslations :exec
+DELETE FROM super_team_translations WHERE super_team_id = $1::text
+`
+
+func (q *Queries) DeleteSuperTeamTranslations(ctx context.Context, superTeamID string) error {
+	_, err := q.db.Exec(ctx, DeleteSuperTeamTranslations, superTeamID)
+	return err
+}
+
+const DeleteTeamTranslations = `-- name: DeleteTeamTranslations :exec
+DELETE FROM team_translations WHERE team_id = $1::text
+`
+
+func (q *Queries) DeleteTeamTranslations(ctx context.Context, teamID string) error {
+	_, err := q.db.Exec(ctx, DeleteTeamTranslations, teamID)
+	return err
+}
+
+const DeleteTrackTranslations = `-- name: DeleteTrackTranslations :exec
+DELETE FROM listening_achievement_track_translations WHERE track_id = $1::text
+`
+
+func (q *Queries) DeleteTrackTranslations(ctx context.Context, trackID string) error {
+	_, err := q.db.Exec(ctx, DeleteTrackTranslations, trackID)
+	return err
+}
+
 const GetAchievementTranslationsByIDs = `-- name: GetAchievementTranslationsByIDs :many
 SELECT achievement_id, language_code, name, description
 FROM achievement_translations
