@@ -397,20 +397,21 @@ type PageInfo struct {
 }
 
 type Project struct {
-	ID           string                 `json:"id"`
-	Name         string                 `json:"name"`
-	Description  string                 `json:"description"`
-	Challenges   []Challenge            `json:"challenges"`
-	Leaderboard  *LeaderboardConnection `json:"leaderboard"`
-	Events       []Event                `json:"events"`
-	StartDate    scalars.DateTime       `json:"startDate"`
-	EndDate      scalars.DateTime       `json:"endDate"`
-	Branding     *Branding              `json:"branding"`
-	Teams        []Team                 `json:"teams"`
-	MyTeam       *Team                  `json:"myTeam,omitempty"`
-	Achievements []Achievement          `json:"achievements"`
-	Streaks      []Streak               `json:"streaks"`
-	ArchivedAt   *bool                  `json:"archivedAt,omitempty"`
+	ID           string                  `json:"id"`
+	Name         string                  `json:"name"`
+	Description  string                  `json:"description"`
+	Challenges   []Challenge             `json:"challenges"`
+	Leaderboard  *LeaderboardConnection  `json:"leaderboard"`
+	Events       []Event                 `json:"events"`
+	StartDate    scalars.DateTime        `json:"startDate"`
+	EndDate      scalars.DateTime        `json:"endDate"`
+	Branding     *Branding               `json:"branding"`
+	Teams        []Team                  `json:"teams"`
+	MyTeam       *Team                   `json:"myTeam,omitempty"`
+	Achievements []Achievement           `json:"achievements"`
+	Streaks      []Streak                `json:"streaks"`
+	Journal      *ScoreJournalConnection `json:"journal"`
+	ArchivedAt   *bool                   `json:"archivedAt,omitempty"`
 }
 
 type ProjectConnection struct {

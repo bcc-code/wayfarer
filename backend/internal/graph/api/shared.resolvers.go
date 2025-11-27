@@ -267,6 +267,16 @@ func (r *projectResolver) Streaks(ctx context.Context, obj *model.Project) ([]mo
 	return result, nil
 }
 
+// Journal is the resolver for the journal field.
+// User-facing: returns the current user's score journal for this project
+func (r *projectResolver) Journal(ctx context.Context, obj *model.Project, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+	return r.Resolver.getScoreJournal(ctx, obj.ID, userID, filter, first, after, last, before)
+}
+
 // Project is the resolver for the project field.
 func (r *readingAchievementResolver) Project(ctx context.Context, obj *model.ReadingAchievement) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)

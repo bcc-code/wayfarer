@@ -885,12 +885,22 @@ export type Project = {
   endDate: Scalars['DateTime']['output'];
   events: Array<Event>;
   id: Scalars['ID']['output'];
+  journal: ScoreJournalConnection;
   leaderboard: LeaderboardConnection;
   myTeam?: Maybe<Team>;
   name: Scalars['String']['output'];
   startDate: Scalars['DateTime']['output'];
   streaks: Array<Streak>;
   teams: Array<Team>;
+};
+
+
+export type ProjectJournalArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<ScoreJournalFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -942,7 +952,6 @@ export type Query = {
   myCurrentProject: Project;
   myEvents: Array<Event>;
   myProjects: Array<Project>;
-  myScoreJournal: ScoreJournalConnection;
   project: Project;
   projects: ProjectConnection;
   scoreJournal: ScoreJournalConnection;
@@ -1017,16 +1026,6 @@ export type QueryEventsArgs = {
 
 export type QueryMyEventsArgs = {
   project?: InputMaybe<Scalars['ID']['input']>;
-};
-
-
-export type QueryMyScoreJournalArgs = {
-  after?: InputMaybe<Scalars['String']['input']>;
-  before?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<ScoreJournalFilter>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  last?: InputMaybe<Scalars['Int']['input']>;
-  projectId: Scalars['ID']['input'];
 };
 
 

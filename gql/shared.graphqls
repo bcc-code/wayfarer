@@ -182,6 +182,13 @@ type Project {
     myTeam: Team @goField(forceResolver: true)
     achievements: [Achievement!]! @goField(forceResolver: true)
     streaks: [Streak!]! @goField(forceResolver: true)
+    journal(
+        filter: ScoreJournalFilter
+        first: Int
+        after: String
+        last: Int
+        before: String
+    ): ScoreJournalConnection! @goField(forceResolver: true)
     archivedAt: Boolean
 }
 

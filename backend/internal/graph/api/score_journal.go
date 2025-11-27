@@ -11,8 +11,8 @@ import (
 )
 
 // getScoreJournal retrieves paginated score journal entries for a user in a project.
-// Used by both MyScoreJournal (user-facing) and ScoreJournal (admin-facing) resolvers.
-func (r *queryResolver) getScoreJournal(ctx context.Context, projectID string, userID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
+// Used by Project.journal (user-facing) and Query.scoreJournal (admin-facing) resolvers.
+func (r *Resolver) getScoreJournal(ctx context.Context, projectID string, userID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
 	// Decode cursors if provided
 	var afterCursor, beforeCursor *string
 	if after != nil && *after != "" {

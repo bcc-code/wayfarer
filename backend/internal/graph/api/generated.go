@@ -289,6 +289,7 @@ type ComplexityRoot struct {
 		EndDate      func(childComplexity int) int
 		Events       func(childComplexity int) int
 		ID           func(childComplexity int) int
+		Journal      func(childComplexity int, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
 		Leaderboard  func(childComplexity int, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) int
 		MyTeam       func(childComplexity int) int
 		Name         func(childComplexity int) int
@@ -324,7 +325,6 @@ type ComplexityRoot struct {
 		MyCurrentProject func(childComplexity int) int
 		MyEvents         func(childComplexity int, project *string) int
 		MyProjects       func(childComplexity int) int
-		MyScoreJournal   func(childComplexity int, projectID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
 		Project          func(childComplexity int, id string) int
 		Projects         func(childComplexity int, filter *model.ProjectFilter, first *int, after *string, last *int, before *string) int
 		ScoreJournal     func(childComplexity int, projectID string, userID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
@@ -630,6 +630,7 @@ type ProjectResolver interface {
 	MyTeam(ctx context.Context, obj *model.Project) (*model.Team, error)
 	Achievements(ctx context.Context, obj *model.Project) ([]model.Achievement, error)
 	Streaks(ctx context.Context, obj *model.Project) ([]model.Streak, error)
+	Journal(ctx context.Context, obj *model.Project, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error)
 }
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
@@ -657,7 +658,6 @@ type QueryResolver interface {
 	Streaks(ctx context.Context, filter *model.StreakFilter, first *int, after *string, last *int, before *string) (*model.StreakConnection, error)
 	CurrentProject(ctx context.Context) (*model.Project, error)
 	CurrentEvent(ctx context.Context) (*model.Event, error)
-	MyScoreJournal(ctx context.Context, projectID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error)
 	ScoreJournal(ctx context.Context, projectID string, userID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error)
 	UserRoles(ctx context.Context, userID string) ([]model.UserRole, error)
 	UsersWithRole(ctx context.Context, role model.RoleType, scopeType *model.ScopeType, scopeID *string) ([]model.User, error)
@@ -2057,6 +2057,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Project.ID(childComplexity), true
+	case "Project.journal":
+		if e.complexity.Project.Journal == nil {
+			break
+		}
+
+		args, err := ec.field_Project_journal_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Project.Journal(childComplexity, args["filter"].(*model.ScoreJournalFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
 	case "Project.leaderboard":
 		if e.complexity.Project.Leaderboard == nil {
 			break
@@ -2266,17 +2277,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.MyProjects(childComplexity), true
-	case "Query.myScoreJournal":
-		if e.complexity.Query.MyScoreJournal == nil {
-			break
-		}
-
-		args, err := ec.field_Query_myScoreJournal_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.MyScoreJournal(childComplexity, args["projectId"].(string), args["filter"].(*model.ScoreJournalFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
 	case "Query.project":
 		if e.complexity.Query.Project == nil {
 			break
@@ -3554,6 +3554,13 @@ type Project {
     myTeam: Team @goField(forceResolver: true)
     achievements: [Achievement!]! @goField(forceResolver: true)
     streaks: [Streak!]! @goField(forceResolver: true)
+    journal(
+        filter: ScoreJournalFilter
+        first: Int
+        after: String
+        last: Int
+        before: String
+    ): ScoreJournalConnection! @goField(forceResolver: true)
     archivedAt: Boolean
 }
 
@@ -4259,8 +4266,6 @@ type Query {
     currentEvent: Event!
 
     # ==================== Score Journal Queries ====================
-    # User-facing: returns current user's score journal only
-    myScoreJournal(projectId: ID!, filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection! @requireRole(roles: ["user"])
     # Admin-facing: can query any user's score journal
     scoreJournal(projectId: ID!, userId: ID!, filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection! @requireRole(roles: ["admin", "m2m", "superadmin"])
 
@@ -5404,6 +5409,37 @@ func (ec *executionContext) field_Mutation_updateTeam_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Project_journal_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOScoreJournalFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournalFilter)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg4
+	return args, nil
+}
+
 func (ec *executionContext) field_Project_leaderboard_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -5627,42 +5663,6 @@ func (ec *executionContext) field_Query_myEvents_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["project"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_myScoreJournal_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "projectId", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["projectId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOScoreJournalFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournalFilter)
-	if err != nil {
-		return nil, err
-	}
-	args["filter"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
-	if err != nil {
-		return nil, err
-	}
-	args["first"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
-	if err != nil {
-		return nil, err
-	}
-	args["after"] = arg3
-	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
-	if err != nil {
-		return nil, err
-	}
-	args["last"] = arg4
-	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOString2ᚖstring)
-	if err != nil {
-		return nil, err
-	}
-	args["before"] = arg5
 	return args, nil
 }
 
@@ -6634,6 +6634,8 @@ func (ec *executionContext) fieldContext_Challenge_project(_ context.Context, fi
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -7751,6 +7753,8 @@ func (ec *executionContext) fieldContext_Event_parentProject(_ context.Context, 
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -8530,6 +8534,8 @@ func (ec *executionContext) fieldContext_ListeningAchievement_project(_ context.
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -8912,6 +8918,8 @@ func (ec *executionContext) fieldContext_Mutation_joinProject(ctx context.Contex
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -9246,6 +9254,8 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -9335,6 +9345,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -14276,6 +14288,55 @@ func (ec *executionContext) fieldContext_Project_streaks(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Project_journal(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_journal,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Project().Journal(ctx, obj, fc.Args["filter"].(*model.ScoreJournalFilter), fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
+		},
+		nil,
+		ec.marshalNScoreJournalConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournalConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_journal(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_ScoreJournalConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_ScoreJournalConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_ScoreJournalConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ScoreJournalConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Project_journal_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Project_archivedAt(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -14487,6 +14548,8 @@ func (ec *executionContext) fieldContext_ProjectEdge_node(_ context.Context, fie
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -14607,6 +14670,8 @@ func (ec *executionContext) fieldContext_Query_myProjects(_ context.Context, fie
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -14725,6 +14790,8 @@ func (ec *executionContext) fieldContext_Query_myCurrentProject(_ context.Contex
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -14954,6 +15021,8 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -15839,6 +15908,8 @@ func (ec *executionContext) fieldContext_Query_currentProject(_ context.Context,
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -15891,73 +15962,6 @@ func (ec *executionContext) fieldContext_Query_currentEvent(_ context.Context, f
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
 		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_myScoreJournal(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_myScoreJournal,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().MyScoreJournal(ctx, fc.Args["projectId"].(string), fc.Args["filter"].(*model.ScoreJournalFilter), fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal *model.ScoreJournalConnection
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.ScoreJournalConnection
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
-		ec.marshalNScoreJournalConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournalConnection,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_myScoreJournal(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "edges":
-				return ec.fieldContext_ScoreJournalConnection_edges(ctx, field)
-			case "pageInfo":
-				return ec.fieldContext_ScoreJournalConnection_pageInfo(ctx, field)
-			case "totalCount":
-				return ec.fieldContext_ScoreJournalConnection_totalCount(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ScoreJournalConnection", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_myScoreJournal_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
 	}
 	return fc, nil
 }
@@ -16427,6 +16431,8 @@ func (ec *executionContext) fieldContext_ReadingAchievement_project(_ context.Co
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -16887,6 +16893,8 @@ func (ec *executionContext) fieldContext_RoleScope_project(_ context.Context, fi
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -17022,6 +17030,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_project(_ context.Context,
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -17749,6 +17759,8 @@ func (ec *executionContext) fieldContext_SimpleAchievement_project(_ context.Con
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -18193,6 +18205,8 @@ func (ec *executionContext) fieldContext_Streak_project(_ context.Context, field
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -18368,6 +18382,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_project(_ context.Con
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -19059,6 +19075,8 @@ func (ec *executionContext) fieldContext_SuperTeam_parentProject(_ context.Conte
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -19544,6 +19562,8 @@ func (ec *executionContext) fieldContext_Team_parentProject(_ context.Context, f
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -20457,6 +20477,8 @@ func (ec *executionContext) fieldContext_User_projects(_ context.Context, field 
 				return ec.fieldContext_Project_achievements(ctx, field)
 			case "streaks":
 				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
 			case "archivedAt":
 				return ec.fieldContext_Project_archivedAt(ctx, field)
 			}
@@ -27093,6 +27115,42 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "journal":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_journal(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "archivedAt":
 			out.Values[i] = ec._Project_archivedAt(ctx, field, obj)
 		default:
@@ -27768,28 +27826,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_currentEvent(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "myScoreJournal":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_myScoreJournal(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

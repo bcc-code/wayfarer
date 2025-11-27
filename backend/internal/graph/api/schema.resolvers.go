@@ -4274,20 +4274,10 @@ func (r *queryResolver) CurrentEvent(ctx context.Context) (*model.Event, error) 
 	return event, nil
 }
 
-// MyScoreJournal is the resolver for the myScoreJournal field.
-// User-facing: returns the current user's score journal only
-func (r *queryResolver) MyScoreJournal(ctx context.Context, projectID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return nil, fmt.Errorf("user not authenticated")
-	}
-	return r.getScoreJournal(ctx, projectID, userID, filter, first, after, last, before)
-}
-
 // ScoreJournal is the resolver for the scoreJournal field.
 // Admin-only: query any user's score journal by userId
 func (r *queryResolver) ScoreJournal(ctx context.Context, projectID string, userID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
-	return r.getScoreJournal(ctx, projectID, userID, filter, first, after, last, before)
+	return r.Resolver.getScoreJournal(ctx, projectID, userID, filter, first, after, last, before)
 }
 
 // UserRoles is the resolver for the userRoles field.
