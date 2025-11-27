@@ -146,16 +146,68 @@ func (h *AuthHandler) validateBrunstadTVToken(tokenString string) (*BrunstadTVCl
 	return claims, nil
 }
 
-// findChurchByExternalID finds a church by its external ID
+// findOrCreateChurch finds a church by its external ID, or creates it from the Members API if not found
 func (h *AuthHandler) findChurchByExternalID(ctx context.Context, externalID int32) (*sqlc.GetChurchByExternalIDRow, error) {
 	church, err := h.DB.Queries.GetChurchByExternalID(ctx, &externalID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("church with external_id %d not found", externalID)
-		}
+	if err == nil {
+		return church, nil
+	}
+
+	if !errors.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("database error: %w", err)
 	}
-	return church, nil
+
+	// Church not found, try to create it from Members API
+	if h.MembersClient == nil {
+		return nil, fmt.Errorf("church with external_id %d not found and Members API not configured", externalID)
+	}
+
+	slog.Info("callback: church not found, fetching from Members API", "external_id", externalID)
+
+	org, err := h.MembersClient.GetOrganizationByOrgID(ctx, int(externalID))
+
+	var churchName, country, category string
+	if err != nil {
+		slog.Warn("callback: failed to fetch organization from Members API, creating placeholder",
+			"external_id", externalID,
+			"error", err,
+		)
+		churchName = fmt.Sprintf("Church %d", externalID)
+		country = "Unknown"
+		category = "S"
+	} else {
+		churchName = org.Name
+		country = org.VisitingAddress.CountryCode
+		if country == "" {
+			country = "Unknown"
+		}
+		category = "S"
+	}
+
+	newChurch, err := h.DB.Queries.CreateChurch(ctx, sqlc.CreateChurchParams{
+		ID:         ulid.NewChurchID(),
+		ExternalID: &externalID,
+		Name:       churchName,
+		Country:    country,
+		Category:   category,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create church: %w", err)
+	}
+
+	slog.Info("callback: created new church from Members API",
+		"church_id", newChurch.ID,
+		"name", newChurch.Name,
+		"external_id", externalID,
+	)
+
+	return &sqlc.GetChurchByExternalIDRow{
+		ID:         newChurch.ID,
+		ExternalID: newChurch.ExternalID,
+		Name:       newChurch.Name,
+		Country:    newChurch.Country,
+		Category:   newChurch.Category,
+	}, nil
 }
 
 // findOrCreateUser finds an existing user by members_id or creates a new one
@@ -165,8 +217,6 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 	if err == nil {
 		return user, nil
 	}
-
-	return nil, fmt.Errorf("user %s not in DB. Please fix", claims.PersonID)
 
 	// If user doesn't exist, create new user
 	if !errors.Is(err, pgx.ErrNoRows) {
@@ -318,7 +368,7 @@ func (h *AuthHandler) generateWayfarerToken(userID string) (string, error) {
 	return tokenString, nil
 }
 
-// normalizeGender converts gender string to database format (MALE, FEMALE)
+// normalizeGender converts gender string to database format (MALE, FEMALE, UNKNOWN)
 func normalizeGender(gender string) string {
 	gender = strings.ToUpper(strings.TrimSpace(gender))
 	if gender == "MALE" || gender == "M" {
@@ -327,6 +377,5 @@ func normalizeGender(gender string) string {
 	if gender == "FEMALE" || gender == "F" {
 		return "FEMALE"
 	}
-	// Default to MALE if unknown (you may want to handle this differently)
-	return "MALE"
+	return "UNKNOWN"
 }

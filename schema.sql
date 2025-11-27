@@ -20,7 +20,7 @@ CREATE TABLE users (
     members_id VARCHAR(255) UNIQUE NOT NULL,
     email VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
-    gender VARCHAR(10) NOT NULL CHECK (gender IN ('MALE', 'FEMALE')),
+    gender VARCHAR(10) NOT NULL CHECK (gender IN ('MALE', 'FEMALE', 'UNKNOWN')),
     birthdate DATE,
     church_id CHAR(28) NOT NULL REFERENCES churches(id) ON DELETE RESTRICT,
     avatar_url VARCHAR(500),

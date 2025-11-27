@@ -52,6 +52,7 @@ func sendRequest[t any](ctx context.Context, client *Client, req *http.Request) 
 
 func get[t any](ctx context.Context, client *Client, endpoint string) (*t, error) {
 	url := fmt.Sprintf("https://%s/%s", client.domain, endpoint)
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)

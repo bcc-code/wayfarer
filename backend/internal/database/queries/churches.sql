@@ -34,3 +34,8 @@ WHERE
     (@ids::text[] IS NULL OR id = ANY(@ids::text[]))
     AND (@country::text = '' OR country = @country::text)
     AND (@category::text = '' OR category = @category::text);
+
+-- name: CreateChurch :one
+INSERT INTO churches (id, external_id, name, country, category)
+VALUES (@id, @external_id, @name, @country, @category)
+RETURNING id, external_id, name, country, category;

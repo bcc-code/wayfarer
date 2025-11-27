@@ -11,7 +11,7 @@ import (
 
 const (
 	personFields = "*,affiliations.*"
-	orgFields    = "districtName,type,orgID,uid"
+	orgFields    = "districtName,type,orgID,uid,visitingAddress.countryCode"
 )
 
 // Lookup returns a member from the members api
@@ -55,6 +55,28 @@ func (c *Client) GetMembersByIDs(ctx context.Context, ids []int) ([]Member, erro
 	}
 
 	return out, nil
+}
+
+// GetOrganizationByOrgID returns an organization by its OrgID (external_id).
+func (c *Client) GetOrganizationByOrgID(ctx context.Context, orgID int) (*Organization, error) {
+	filter := map[string]any{
+		"orgID": map[string]any{
+			"_eq": orgID,
+		},
+	}
+
+	encoded, _ := json.Marshal(filter)
+
+	orgs, err := get[[]Organization](ctx, c, fmt.Sprintf("v2/orgs?limit=1&filter=%s&fields=%s", encoded, orgFields))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get organization: %w", err)
+	}
+
+	if len(*orgs) == 0 {
+		return nil, fmt.Errorf("organization with orgID %d not found", orgID)
+	}
+
+	return &(*orgs)[0], nil
 }
 
 // GetOrganizationsByIDs returns organizations by IDs.

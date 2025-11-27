@@ -32,10 +32,16 @@ type Affiliation struct {
 	ValidTo   *time.Time
 }
 
+// OrganizationAddress contains address data for an organization
+type OrganizationAddress struct {
+	CountryCode string `json:"countryCode"`
+}
+
 // Organization contains organizational data
 type Organization struct {
-	OrgID int
-	Name  string `json:"districtName"`
-	Type  string
-	Uid   uuid.UUID
+	OrgID           int
+	Name            string              `json:"districtName"`
+	Type            string
+	Uid             uuid.UUID
+	VisitingAddress OrganizationAddress `json:"visitingAddress"`
 }

@@ -31,6 +31,47 @@ func (q *Queries) CountChurchesFiltered(ctx context.Context, arg CountChurchesFi
 	return count, err
 }
 
+const CreateChurch = `-- name: CreateChurch :one
+INSERT INTO churches (id, external_id, name, country, category)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, external_id, name, country, category
+`
+
+type CreateChurchParams struct {
+	ID         string `json:"id"`
+	ExternalID *int32 `json:"external_id"`
+	Name       string `json:"name"`
+	Country    string `json:"country"`
+	Category   string `json:"category"`
+}
+
+type CreateChurchRow struct {
+	ID         string `json:"id"`
+	ExternalID *int32 `json:"external_id"`
+	Name       string `json:"name"`
+	Country    string `json:"country"`
+	Category   string `json:"category"`
+}
+
+func (q *Queries) CreateChurch(ctx context.Context, arg CreateChurchParams) (*CreateChurchRow, error) {
+	row := q.db.QueryRow(ctx, CreateChurch,
+		arg.ID,
+		arg.ExternalID,
+		arg.Name,
+		arg.Country,
+		arg.Category,
+	)
+	var i CreateChurchRow
+	err := row.Scan(
+		&i.ID,
+		&i.ExternalID,
+		&i.Name,
+		&i.Country,
+		&i.Category,
+	)
+	return &i, err
+}
+
 const GetChurchByExternalID = `-- name: GetChurchByExternalID :one
 SELECT id, external_id, name, country, category
 FROM churches

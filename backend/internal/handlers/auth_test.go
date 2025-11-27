@@ -83,24 +83,24 @@ func TestNormalizeGender(t *testing.T) {
 			expected: "MALE",
 		},
 		{
-			name:     "empty string defaults to MALE",
+			name:     "empty string defaults to UNKNOWN",
 			input:    "",
-			expected: "MALE",
+			expected: "UNKNOWN",
 		},
 		{
-			name:     "unknown value defaults to MALE",
+			name:     "unknown value defaults to UNKNOWN",
 			input:    "unknown",
-			expected: "MALE",
+			expected: "UNKNOWN",
 		},
 		{
-			name:     "null string defaults to MALE",
+			name:     "null string defaults to UNKNOWN",
 			input:    "null",
-			expected: "MALE",
+			expected: "UNKNOWN",
 		},
 		{
-			name:     "other defaults to MALE",
+			name:     "other defaults to UNKNOWN",
 			input:    "other",
-			expected: "MALE",
+			expected: "UNKNOWN",
 		},
 	}
 
