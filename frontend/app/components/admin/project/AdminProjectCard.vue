@@ -1,20 +1,24 @@
 <script setup lang="ts">
-defineProps<{
-  project: AdminProjectsPageQuery['projects'][number]
+const props = defineProps<{
+  project: Project
 }>()
+
+const colorMode = useColorMode()
+const accentColor = computed(() => {
+  return colorMode.value === 'dark'
+    ? props.project.branding.colors.dark.accent
+    : props.project.branding.colors.light.accent
+})
 </script>
 
 <template>
   <UCard
     class="aspect-video shadow-md"
-    :style="{ '--accent': project.branding.colors.primary }"
+    :style="{ '--accent': accentColor }"
     :ui="{
-      root:
-        project.branding.colors.primary &&
-        'ring-(--accent)/25 hover:ring-(--accent)/50',
+      root: accentColor && 'ring-(--accent)/25 hover:ring-(--accent)/50',
       body: [
-        project.branding.colors.primary &&
-          'bg-(--accent)/5 hover:bg-(--accent)/10',
+        accentColor && 'bg-(--accent)/5 hover:bg-(--accent)/10',
         'h-full flex gap-2',
       ],
     }"
