@@ -942,6 +942,7 @@ export type Query = {
   myCurrentProject: Project;
   myEvents: Array<Event>;
   myProjects: Array<Project>;
+  myScoreJournal: ScoreJournalConnection;
   project: Project;
   projects: ProjectConnection;
   scoreJournal: ScoreJournalConnection;
@@ -1016,6 +1017,16 @@ export type QueryEventsArgs = {
 
 export type QueryMyEventsArgs = {
   project?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryMyScoreJournalArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<ScoreJournalFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  projectId: Scalars['ID']['input'];
 };
 
 

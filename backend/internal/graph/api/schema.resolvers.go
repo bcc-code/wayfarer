@@ -4274,58 +4274,23 @@ func (r *queryResolver) CurrentEvent(ctx context.Context) (*model.Event, error) 
 	return event, nil
 }
 
-// ScoreJournal is the resolver for the scoreJournal field.
-func (r *queryResolver) ScoreJournal(ctx context.Context, projectID string, userID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
-	// Get current user
-	currentUserID, ok := middleware.GetUserID(ctx)
-	if !ok || currentUserID == "" {
+// MyScoreJournal is the resolver for the myScoreJournal field.
+// User-facing: returns the current user's score journal only
+func (r *queryResolver) MyScoreJournal(ctx context.Context, projectID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
 		return nil, fmt.Errorf("user not authenticated")
 	}
+	return r.getScoreJournal(ctx, projectID, userID, filter, first, after, last, before)
+}
 
-	// Check permissions
-	allowed := false
+// ScoreJournal is the resolver for the scoreJournal field.
+// Admin-only: query any user's score journal by userId
+func (r *queryResolver) ScoreJournal(ctx context.Context, projectID string, userID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
+	return r.getScoreJournal(ctx, projectID, userID, filter, first, after, last, before)
+}
 
-	// 1. Admins/SuperAdmins can see all scores
-	if r.RoleService.IsAdmin(ctx, currentUserID) || r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) {
-		allowed = true
-	}
-
-	// 2. Project admins can see scores for their project
-	if !allowed && r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, projectID) {
-		allowed = true
-	}
-
-	// 3. Users can see their own scores
-	if !allowed && userID == currentUserID {
-		allowed = true
-	}
-
-	// 4. Church admins can see scores for members of their church
-	if !allowed {
-		// Load current user to get their church ID
-		currentUserThunk := r.Loaders.UserByIDLoader.Load(ctx, currentUserID)
-		currentUser, err := currentUserThunk()
-		if err != nil {
-			return nil, fmt.Errorf("failed to load current user: %w", err)
-		}
-
-		if r.RoleService.HasRoleInChurch(ctx, currentUserID, services.RoleChurchAdmin, currentUser.ChurchID) {
-			// Verify the requested user belongs to the church
-			userThunk := r.Loaders.UserByIDLoader.Load(ctx, userID)
-			requestedUser, err := userThunk()
-			if err != nil {
-				return nil, fmt.Errorf("failed to load requested user: %w", err)
-			}
-			if requestedUser.ChurchID == currentUser.ChurchID {
-				allowed = true
-			}
-		}
-	}
-
-	if !allowed {
-		return nil, fmt.Errorf("permission denied: you do not have access to view these score journal entries")
-	}
-
+func (r *queryResolver) getScoreJournal(ctx context.Context, projectID string, userID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
 	// Decode cursors if provided
 	var afterCursor, beforeCursor *string
 	if after != nil && *after != "" {

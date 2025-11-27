@@ -51,7 +51,10 @@ type Query {
     currentEvent: Event!
 
     # ==================== Score Journal Queries ====================
-    scoreJournal(projectId: ID!, userId: ID!, filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection! @requireRole(roles: ["user", "admin", "m2m", "superadmin"])
+    # User-facing: returns current user's score journal only
+    myScoreJournal(projectId: ID!, filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection! @requireRole(roles: ["user"])
+    # Admin-facing: can query any user's score journal
+    scoreJournal(projectId: ID!, userId: ID!, filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection! @requireRole(roles: ["admin", "m2m", "superadmin"])
 
     # ==================== Role Management Queries ====================
     userRoles(userId: ID!): [UserRole!]!
