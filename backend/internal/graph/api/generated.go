@@ -4354,10 +4354,10 @@ type Query {
     events(filter: EventFilter, first: Int, after: String, last: Int, before: String): EventConnection!
 
     team(id: ID!): Team!
-    teams(filter: TeamFilter, first: Int, after: String, last: Int, before: String): TeamConnection! @requireRole(roles: ["user"])
+    teams(filter: TeamFilter, first: Int, after: String, last: Int, before: String): TeamConnection!
 
     superteam(id: ID!): SuperTeam!
-    superteams(filter: SuperTeamFilter, first: Int, after: String, last: Int, before: String): SuperTeamConnection! @requireRole(roles: ["user"])
+    superteams(filter: SuperTeamFilter, first: Int, after: String, last: Int, before: String): SuperTeamConnection!
 
     achievement(id: ID!): Achievement!
     achievements(filter: AchievementFilter!, first: Int, after: String, last: Int, before: String): AchievementConnection!
@@ -15748,25 +15748,7 @@ func (ec *executionContext) _Query_teams(ctx context.Context, field graphql.Coll
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Query().Teams(ctx, fc.Args["filter"].(*model.TeamFilter), fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal *model.TeamConnection
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.TeamConnection
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNTeamConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamConnection,
 		true,
 		true,
@@ -15870,25 +15852,7 @@ func (ec *executionContext) _Query_superteams(ctx context.Context, field graphql
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Query().Superteams(ctx, fc.Args["filter"].(*model.SuperTeamFilter), fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal *model.SuperTeamConnection
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.SuperTeamConnection
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNSuperTeamConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSuperTeamConnection,
 		true,
 		true,

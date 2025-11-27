@@ -1747,6 +1747,14 @@ export type CreateStreakMutationVariables = Exact<{
 
 export type CreateStreakMutation = { __typename?: 'Mutation', createStreak: { __typename?: 'Streak', id: string } };
 
+export type CreateTeamMutationVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+  input: CreateTeamInput;
+}>;
+
+
+export type CreateTeamMutation = { __typename?: 'Mutation', createTeam: { __typename?: 'Team', id: string } };
+
 export type UpdateTeamMutationVariables = Exact<{
   id: Scalars['ID']['input'];
   input: UpdateTeamInput;
@@ -1754,6 +1762,45 @@ export type UpdateTeamMutationVariables = Exact<{
 
 
 export type UpdateTeamMutation = { __typename?: 'Mutation', updateTeam: { __typename?: 'Team', id: string } };
+
+export type DeleteTeamMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteTeamMutation = { __typename?: 'Mutation', deleteTeam: boolean };
+
+export type AddTeamMembersMutationVariables = Exact<{
+  teamId: Scalars['ID']['input'];
+  userIds: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  force?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type AddTeamMembersMutation = { __typename?: 'Mutation', addTeamMembers: { __typename?: 'Team', id: string } };
+
+export type RemoveTeamMembersMutationVariables = Exact<{
+  teamId: Scalars['ID']['input'];
+  userIds: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type RemoveTeamMembersMutation = { __typename?: 'Mutation', removeTeamMembers: { __typename?: 'Team', id: string } };
+
+export type RegenerateJoinCodeMutationVariables = Exact<{
+  teamId: Scalars['ID']['input'];
+}>;
+
+
+export type RegenerateJoinCodeMutation = { __typename?: 'Mutation', regenerateJoinCode: { __typename?: 'Team', id: string, joinCode: string } };
+
+export type AssignTeamLeadMutationVariables = Exact<{
+  teamId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+}>;
+
+
+export type AssignTeamLeadMutation = { __typename?: 'Mutation', assignTeamLead: { __typename?: 'Team', id: string } };
 
 export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1840,6 +1887,24 @@ export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AdminProjectsPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } } }> } };
+
+export type AdminTeamPageQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type AdminTeamPageQuery = { __typename?: 'Query', team: { __typename?: 'Team', id: string, name: string, description: string, joinCode: string, members: Array<{ __typename?: 'TeamMember', id: string, name: string, isTeamLead: boolean, joinedAt: string, user: { __typename?: 'User', id: string, email: string, image?: string | null }, church: { __typename?: 'Church', id: string, name: string } }>, parentProject: { __typename?: 'Project', id: string, name: string }, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null } };
+
+export type AdminTeamsPageQueryVariables = Exact<{
+  filter?: InputMaybe<TeamFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type AdminTeamsPageQuery = { __typename?: 'Query', teams: { __typename?: 'TeamConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'TeamEdge', cursor: string, node: { __typename?: 'Team', id: string, name: string, description: string, members: Array<{ __typename?: 'TeamMember', id: string }>, parentProject: { __typename?: 'Project', id: string, name: string }, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null } }> } };
 
 export type AdminUserPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -2250,6 +2315,17 @@ export const CreateStreakDocument = gql`
 export function useCreateStreakMutation() {
   return Urql.useMutation<CreateStreakMutation, CreateStreakMutationVariables>(CreateStreakDocument);
 };
+export const CreateTeamDocument = gql`
+    mutation CreateTeam($projectId: ID!, $input: CreateTeamInput!) {
+  createTeam(projectId: $projectId, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useCreateTeamMutation() {
+  return Urql.useMutation<CreateTeamMutation, CreateTeamMutationVariables>(CreateTeamDocument);
+};
 export const UpdateTeamDocument = gql`
     mutation UpdateTeam($id: ID!, $input: UpdateTeamInput!) {
   updateTeam(id: $id, input: $input) {
@@ -2260,6 +2336,60 @@ export const UpdateTeamDocument = gql`
 
 export function useUpdateTeamMutation() {
   return Urql.useMutation<UpdateTeamMutation, UpdateTeamMutationVariables>(UpdateTeamDocument);
+};
+export const DeleteTeamDocument = gql`
+    mutation DeleteTeam($id: ID!) {
+  deleteTeam(id: $id)
+}
+    `;
+
+export function useDeleteTeamMutation() {
+  return Urql.useMutation<DeleteTeamMutation, DeleteTeamMutationVariables>(DeleteTeamDocument);
+};
+export const AddTeamMembersDocument = gql`
+    mutation AddTeamMembers($teamId: ID!, $userIds: [ID!]!, $force: Boolean) {
+  addTeamMembers(teamId: $teamId, userIds: $userIds, force: $force) {
+    id
+  }
+}
+    `;
+
+export function useAddTeamMembersMutation() {
+  return Urql.useMutation<AddTeamMembersMutation, AddTeamMembersMutationVariables>(AddTeamMembersDocument);
+};
+export const RemoveTeamMembersDocument = gql`
+    mutation RemoveTeamMembers($teamId: ID!, $userIds: [ID!]!) {
+  removeTeamMembers(teamId: $teamId, userIds: $userIds) {
+    id
+  }
+}
+    `;
+
+export function useRemoveTeamMembersMutation() {
+  return Urql.useMutation<RemoveTeamMembersMutation, RemoveTeamMembersMutationVariables>(RemoveTeamMembersDocument);
+};
+export const RegenerateJoinCodeDocument = gql`
+    mutation RegenerateJoinCode($teamId: ID!) {
+  regenerateJoinCode(teamId: $teamId) {
+    id
+    joinCode
+  }
+}
+    `;
+
+export function useRegenerateJoinCodeMutation() {
+  return Urql.useMutation<RegenerateJoinCodeMutation, RegenerateJoinCodeMutationVariables>(RegenerateJoinCodeDocument);
+};
+export const AssignTeamLeadDocument = gql`
+    mutation AssignTeamLead($teamId: ID!, $userId: ID!) {
+  assignTeamLead(teamId: $teamId, userId: $userId) {
+    id
+  }
+}
+    `;
+
+export function useAssignTeamLeadMutation() {
+  return Urql.useMutation<AssignTeamLeadMutation, AssignTeamLeadMutationVariables>(AssignTeamLeadDocument);
 };
 export const AdminSidebarDocument = gql`
     query AdminSidebar {
@@ -2598,6 +2728,85 @@ export const AdminProjectsPageDocument = gql`
 
 export function useAdminProjectsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectsPageQuery, AdminProjectsPageQueryVariables | undefined>({ query: AdminProjectsPageDocument, variables: undefined, ...options });
+};
+export const AdminTeamPageDocument = gql`
+    query AdminTeamPage($id: ID!) {
+  team(id: $id) {
+    id
+    name
+    description
+    joinCode
+    members {
+      id
+      name
+      isTeamLead
+      joinedAt
+      user {
+        id
+        email
+        image
+      }
+      church {
+        id
+        name
+      }
+    }
+    parentProject {
+      id
+      name
+    }
+    superTeam {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useAdminTeamPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminTeamPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminTeamPageQuery, AdminTeamPageQueryVariables | undefined>({ query: AdminTeamPageDocument, variables: undefined, ...options });
+};
+export const AdminTeamsPageDocument = gql`
+    query AdminTeamsPage($filter: TeamFilter, $first: Int, $after: String, $last: Int, $before: String) {
+  teams(
+    filter: $filter
+    first: $first
+    after: $after
+    last: $last
+    before: $before
+  ) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        id
+        name
+        description
+        members {
+          id
+        }
+        parentProject {
+          id
+          name
+        }
+        superTeam {
+          id
+          name
+        }
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminTeamsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminTeamsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminTeamsPageQuery, AdminTeamsPageQueryVariables | undefined>({ query: AdminTeamsPageDocument, variables: undefined, ...options });
 };
 export const AdminUserPageDocument = gql`
     query AdminUserPage($id: ID!) {

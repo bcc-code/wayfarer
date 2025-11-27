@@ -220,6 +220,7 @@ func (c *CacheWithRegistry) InvalidateTeam(teamID string) {
 	c.Delete(TeamKey(teamID))
 	c.Delete(TeamMembersByTeamKey(teamID))
 	c.Delete(TeamMemberLeaderboardKey(teamID))
+	c.Delete(UsersByTeamKey(teamID))
 	c.DeletePrefix("team:" + teamID)
 }
 

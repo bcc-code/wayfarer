@@ -29,10 +29,10 @@ type Query {
     events(filter: EventFilter, first: Int, after: String, last: Int, before: String): EventConnection!
 
     team(id: ID!): Team!
-    teams(filter: TeamFilter, first: Int, after: String, last: Int, before: String): TeamConnection! @requireRole(roles: ["user"])
+    teams(filter: TeamFilter, first: Int, after: String, last: Int, before: String): TeamConnection!
 
     superteam(id: ID!): SuperTeam!
-    superteams(filter: SuperTeamFilter, first: Int, after: String, last: Int, before: String): SuperTeamConnection! @requireRole(roles: ["user"])
+    superteams(filter: SuperTeamFilter, first: Int, after: String, last: Int, before: String): SuperTeamConnection!
 
     achievement(id: ID!): Achievement!
     achievements(filter: AchievementFilter!, first: Int, after: String, last: Int, before: String): AchievementConnection!

@@ -51,8 +51,14 @@ const links = computed<NavigationMenuItem[]>(() => [
     to: '/admin/projects',
   },
   {
+    label: 'Teams',
+    icon: 'lucide:users-round',
+    active: route.fullPath.includes('/teams'),
+    to: '/admin/teams',
+  },
+  {
     label: 'Users',
-    icon: 'lucide:users',
+    icon: 'lucide:user',
     active: route.fullPath.includes('/users'),
     to: '/admin/users',
   },
