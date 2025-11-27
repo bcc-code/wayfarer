@@ -458,6 +458,7 @@ export type ListeningAchievement = Achievement & {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  _empty?: Maybe<Scalars['Boolean']['output']>;
   addTeamMembers: Team;
   archiveProject: Scalars['Boolean']['output'];
   assignChallengeToEvent: Challenge;
