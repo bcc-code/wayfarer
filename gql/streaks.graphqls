@@ -1,0 +1,12 @@
+# Streak queries and mutations
+
+extend type Query {
+    streak(id: ID!): Streak!
+    streaks(filter: StreakFilter, first: Int, after: String, last: Int, before: String): StreakConnection!
+}
+
+extend type Mutation {
+    createStreak(input: CreateStreakInput!): Streak! @requireRole(roles: ["admin", "superadmin"])
+    updateStreak(id: ID!, input: UpdateStreakInput!): Streak! @requireRole(roles: ["admin", "superadmin"])
+    deleteStreak(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+}

@@ -1,0 +1,37 @@
+# Team and SuperTeam queries and mutations
+
+extend type Query {
+    team(id: ID!): Team!
+    teams(filter: TeamFilter, first: Int, after: String, last: Int, before: String): TeamConnection! @requireRole(roles: ["user"])
+
+    superteam(id: ID!): SuperTeam!
+    superteams(filter: SuperTeamFilter, first: Int, after: String, last: Int, before: String): SuperTeamConnection! @requireRole(roles: ["user"])
+}
+
+extend type Mutation {
+    # User participation
+    joinTeam(code: ID!): Team! @requireRole(roles: ["user"])
+
+    # Team management
+    createTeam(projectId: ID!, input: CreateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin"])
+    updateTeam(id: ID!, input: UpdateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin"])
+    deleteTeam(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    addTeamMembers(teamId: ID!, userIds: [ID!]!, force: Boolean): Team! @requireRole(roles: ["admin", "superadmin"])
+    removeTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin"])
+    regenerateJoinCode(teamId: ID!): Team! @requireRole(roles: ["admin", "superadmin"])
+    assignTeamLead(teamId: ID!, userId: ID!): Team! @requireRole(roles: ["admin", "superadmin"])
+
+    # SuperTeam management
+    createSuperTeam(projectId: ID!, input: CreateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
+    updateSuperTeam(id: ID!, input: UpdateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
+    deleteSuperTeam(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    assignTeamsToSuperTeam(superTeamId: ID!, teamIds: [ID!]!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
+
+    # Team achievements (M2M)
+    awardTeamAchievement(teamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    revokeTeamAchievement(teamId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
+
+    # SuperTeam achievements (M2M)
+    awardSuperTeamAchievement(superTeamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    revokeSuperTeamAchievement(superTeamId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
+}

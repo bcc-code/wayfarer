@@ -2,6 +2,16 @@
 schema:
   - ../gql/shared.graphqls
   - ../gql/schema.graphqls
+  - ../gql/projects.graphqls
+  - ../gql/events.graphqls
+  - ../gql/teams.graphqls
+  - ../gql/achievements.graphqls
+  - ../gql/challenges.graphqls
+  - ../gql/streaks.graphqls
+  - ../gql/users.graphqls
+  - ../gql/roles.graphqls
+  - ../gql/churches.graphqls
+  - ../gql/scoring.graphqls
 
 # Generated code locations
 exec:

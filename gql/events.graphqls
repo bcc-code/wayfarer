@@ -1,0 +1,20 @@
+# Event-related queries and mutations
+
+extend type Query {
+    event(id: ID!): Event!
+    events(filter: EventFilter, first: Int, after: String, last: Int, before: String): EventConnection!
+    myEvents(project: ID): [Event!]!
+    myCurrentEvent: Event!
+    currentEvent: Event!
+}
+
+extend type Mutation {
+    # User participation
+    joinEvent(eventId: ID!): Event! @requireRole(roles: ["user"])
+
+    # Admin management
+    createEvent(projectId: ID!, input: CreateEventInput!): Event! @requireRole(roles: ["admin", "superadmin"])
+    updateEvent(id: ID!, input: UpdateEventInput!): Event! @requireRole(roles: ["admin", "superadmin"])
+    deleteEvent(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    moveEvent(id: ID!, newProjectId: ID!): Event! @requireRole(roles: ["admin", "superadmin"])
+}

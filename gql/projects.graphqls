@@ -1,0 +1,20 @@
+# Project-related queries and mutations
+
+extend type Query {
+    project(id: ID!): Project!
+    projects(filter: ProjectFilter, first: Int, after: String, last: Int, before: String): ProjectConnection!
+    myProjects: [Project!]!
+    myCurrentProject: Project!
+    currentProject: Project!
+}
+
+extend type Mutation {
+    # User participation
+    joinProject(projectId: ID!): Project! @requireRole(roles: ["user"])
+
+    # Admin management
+    createProject(input: CreateProjectInput!): Project! @requireRole(roles: ["admin", "superadmin"])
+    updateProject(id: ID!, input: UpdateProjectInput!): Project! @requireRole(roles: ["admin", "superadmin", "project_admin"])
+    deleteProject(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    archiveProject(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+}

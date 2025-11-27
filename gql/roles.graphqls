@@ -1,0 +1,11 @@
+# Role management queries and mutations
+
+extend type Query {
+    userRoles(userId: ID!): [UserRole!]!
+    usersWithRole(role: RoleType!, scopeType: ScopeType, scopeId: ID): [User!]!
+}
+
+extend type Mutation {
+    assignRole(input: AssignRoleInput!): UserRole! @requireRole(roles: ["admin", "superadmin"])
+    revokeRole(input: RevokeRoleInput!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+}

@@ -1,0 +1,16 @@
+# User queries and mutations
+
+extend type Query {
+    user(id: ID!): User!
+    users(filter: UserFilter, first: Int, after: String, last: Int, before: String): UserConnection!
+}
+
+extend type Mutation {
+    # Profile management
+    updateAvatar(file: Upload!): User! @requireRole(roles: ["user"])
+
+    # Admin user management
+    assignUserToProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
+    removeUserFromProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
+    assignUserToEvent(userId: ID!, eventId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
+}
