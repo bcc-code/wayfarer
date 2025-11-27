@@ -1,7 +1,13 @@
 <script setup lang="ts">
-defineProps<{
-  title: string
-}>()
+withDefaults(
+  defineProps<{
+    title: string
+    bottomPadding?: boolean
+  }>(),
+  {
+    bottomPadding: true,
+  },
+)
 
 const { y } = useWindowScroll()
 const hasScrolled = computed(() => y.value > 25)
@@ -47,7 +53,9 @@ const hasScrolled = computed(() => y.value > 25)
         </header>
       </ProgressiveBlur>
     </div>
-    <div class="p-list-outside grow">
+    <div
+      :class="['p-list-outside flex grow flex-col', { 'pb-28': bottomPadding }]"
+    >
       <slot />
     </div>
   </div>

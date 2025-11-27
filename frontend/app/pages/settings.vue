@@ -16,10 +16,12 @@ const localeComp = computed({
 
 const colorMode = useColorMode()
 const colorModes = ['system', 'dark', 'light']
+
+const { me } = useAuth()
 </script>
 
 <template>
-  <PageLayout :title="$t('pages.settings')">
+  <PageLayout :title="$t('pages.settings')" :bottom-padding="false">
     <template #action>
       <NuxtLink :to="{ name: 'index' }">
         <DesignIconButton icon="lucide:x" />
@@ -77,5 +79,13 @@ const colorModes = ['system', 'dark', 'light']
         </div>
       </UDropdownMenu>
     </DesignPanel>
+
+    <div
+      v-if="me"
+      class="text-text-hint text-caption p-medium mt-auto text-center"
+    >
+      <p>{{ me.id }}</p>
+      <p>{{ me.church.id }}</p>
+    </div>
   </PageLayout>
 </template>
