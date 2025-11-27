@@ -4,7 +4,7 @@
  * This stylesheet contains the base theme styles for the user-facing interface.
  * It sets up default text colors and background colors based on the design system.
  *
- * Note: Dynamic project-specific colors (like --color-accent-base) are set
+ * Note: Dynamic project-specific colors (like --color-accent) are set
  * programmatically in the layout based on the current project's branding.
  *
  * Used by: frontend/app/layouts/default.vue

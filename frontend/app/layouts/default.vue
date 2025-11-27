@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 import '~/assets/styles/user.css'
-import { getContrastColor } from '~/utils/colors'
 
 const { t } = useI18n()
 
@@ -29,8 +28,35 @@ gql(`
     myCurrentProject {
       branding {
         logo
-        colors {
-          primary
+        colors{
+          dark{
+            accent
+            accentContrast
+            onAccent
+            backgroundDefault
+            backgroundRaised
+            backgroundIndent
+            textDefault
+            textMuted
+            textHint
+            shadowDefault
+            shadowBlank
+            borderDefault
+          }
+          light{
+            accent
+            accentContrast
+            onAccent
+            backgroundDefault
+            backgroundRaised
+            backgroundIndent
+            textDefault
+            textMuted
+            textHint
+            shadowDefault
+            shadowBlank
+            borderDefault
+          }
         }
         rounding
       }
@@ -43,21 +69,45 @@ const { data } = useCurrentProjectQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
-// watch(data, (newData) => {
-//   if (!newData) return
+watch(data, (newData) => {
+  if (!newData) return
 
-//   const primaryColor = newData.myCurrentProject.branding.colors.primary
+  const style = `
+  <style id="theme">
+  :root {
+    --color-accent: ${newData.myCurrentProject.branding.colors.light.accent};
+    --color-accent-contrast: ${newData.myCurrentProject.branding.colors.light.accentContrast};
+    --color-on-accent: ${newData.myCurrentProject.branding.colors.light.onAccent};
+    --color-background-default: ${newData.myCurrentProject.branding.colors.light.backgroundDefault};
+    --color-background-raised: ${newData.myCurrentProject.branding.colors.light.backgroundRaised};
+    --color-background-indent: ${newData.myCurrentProject.branding.colors.light.backgroundIndent};
+    --color-text-default: ${newData.myCurrentProject.branding.colors.light.textDefault};
+    --color-text-muted: ${newData.myCurrentProject.branding.colors.light.textMuted};
+    --color-text-hint: ${newData.myCurrentProject.branding.colors.light.textHint};
+    --color-shadow-default: ${newData.myCurrentProject.branding.colors.light.shadowDefault};
+    --color-shadow-blank: ${newData.myCurrentProject.branding.colors.light.shadowBlank};
+    --color-border-default: ${newData.myCurrentProject.branding.colors.light.borderDefault};
+  }
 
-//   // Set dynamic project theme color
-//   document.documentElement.style.setProperty(
-//     '--color-accent-base',
-//     primaryColor,
-//   )
+  .dark {
+    --color-accent: ${newData.myCurrentProject.branding.colors.dark.accent};
+    --color-accent-contrast: ${newData.myCurrentProject.branding.colors.dark.accentContrast};
+    --color-on-accent: ${newData.myCurrentProject.branding.colors.dark.onAccent};
+    --color-background-default: ${newData.myCurrentProject.branding.colors.dark.backgroundDefault};
+    --color-background-raised: ${newData.myCurrentProject.branding.colors.dark.backgroundRaised};
+    --color-background-indent: ${newData.myCurrentProject.branding.colors.dark.backgroundIndent};
+    --color-text-default: ${newData.myCurrentProject.branding.colors.dark.textDefault};
+    --color-text-muted: ${newData.myCurrentProject.branding.colors.dark.textMuted};
+    --color-text-hint: ${newData.myCurrentProject.branding.colors.dark.textHint};
+    --color-shadow-default: ${newData.myCurrentProject.branding.colors.dark.shadowDefault};
+    --color-shadow-blank: ${newData.myCurrentProject.branding.colors.dark.shadowBlank};
+    --color-border-default: ${newData.myCurrentProject.branding.colors.dark.borderDefault};
+  }
+  </style>
+  `
 
-//   // Calculate and set the on-accent contrast color
-//   const contrastColor = getContrastColor(primaryColor)
-//   document.documentElement.style.setProperty('--color-on-accent', contrastColor)
-// })
+  document.head.insertAdjacentHTML('beforeend', style)
+})
 
 const route = useRoute()
 const activeMenuItem = ref()

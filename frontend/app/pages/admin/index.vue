@@ -22,9 +22,12 @@ gql(`
             logo
             rounding
             colors {
-              primary
-              secondary
-              tertiary
+              light {
+                accent
+              }
+              dark {
+                accent
+              }
             }
           }
         }

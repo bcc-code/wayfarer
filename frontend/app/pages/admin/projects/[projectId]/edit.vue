@@ -20,7 +20,12 @@ gql(`
         logo
         rounding
         colors {
-          primary
+          light {
+            accent
+          }
+          dark {
+            accent
+          }
         }
       }
     }

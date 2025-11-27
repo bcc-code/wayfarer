@@ -17,7 +17,12 @@ gql(`
           branding {
             logo
             colors {
-              primary
+              light {
+                accent
+              }
+              dark {
+                accent
+              }
             }
           }
         }

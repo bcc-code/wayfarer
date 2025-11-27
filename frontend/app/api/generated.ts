@@ -167,17 +167,46 @@ export type ChurchFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
+export type ColorSet = {
+  __typename?: 'ColorSet';
+  accent: Scalars['String']['output'];
+  accentContrast: Scalars['String']['output'];
+  backgroundDefault: Scalars['String']['output'];
+  backgroundIndent: Scalars['String']['output'];
+  backgroundRaised: Scalars['String']['output'];
+  borderDefault: Scalars['String']['output'];
+  onAccent: Scalars['String']['output'];
+  shadowBlank: Scalars['String']['output'];
+  shadowDefault: Scalars['String']['output'];
+  textDefault: Scalars['String']['output'];
+  textHint: Scalars['String']['output'];
+  textMuted: Scalars['String']['output'];
+};
+
+export type ColorSetInput = {
+  accent: Scalars['String']['input'];
+  accentContrast: Scalars['String']['input'];
+  backgroundDefault: Scalars['String']['input'];
+  backgroundIndent: Scalars['String']['input'];
+  backgroundRaised: Scalars['String']['input'];
+  borderDefault: Scalars['String']['input'];
+  onAccent: Scalars['String']['input'];
+  shadowBlank: Scalars['String']['input'];
+  shadowDefault: Scalars['String']['input'];
+  textDefault: Scalars['String']['input'];
+  textHint: Scalars['String']['input'];
+  textMuted: Scalars['String']['input'];
+};
+
 export type Colors = {
   __typename?: 'Colors';
-  primary: Scalars['String']['output'];
-  secondary: Scalars['String']['output'];
-  tertiary: Scalars['String']['output'];
+  dark: ColorSet;
+  light: ColorSet;
 };
 
 export type ColorsInput = {
-  primary: Scalars['String']['input'];
-  secondary: Scalars['String']['input'];
-  tertiary: Scalars['String']['input'];
+  dark: ColorSetInput;
+  light: ColorSetInput;
 };
 
 export type CreateChallengeInput = {
@@ -1720,12 +1749,12 @@ export type AdminSidebarQuery = { __typename?: 'Query', projects: { __typename?:
 export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', primary: string } } } };
+export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } };
 
 export type AdminHomePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminHomePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', primary: string, secondary: string, tertiary: string } } } }> } };
+export type AdminHomePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } } }> } };
 
 export type AdminProjectAchievementPageQueryVariables = Exact<{
   achievementId: Scalars['ID']['input'];
@@ -1765,7 +1794,7 @@ export type AdminProjectEditPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectEditPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, archivedAt?: boolean | null, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', primary: string } } } };
+export type AdminProjectEditPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, archivedAt?: boolean | null, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } } };
 
 export type AdminProjectEventPageQueryVariables = Exact<{
   eventId: Scalars['ID']['input'];
@@ -1779,7 +1808,7 @@ export type AdminProjectPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', primary: string } } }, achievements: { __typename?: 'AchievementConnection', edges: Array<{ __typename?: 'AchievementEdge', node:
+export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } }, achievements: { __typename?: 'AchievementConnection', edges: Array<{ __typename?: 'AchievementEdge', node:
         | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
         | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
         | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
@@ -1796,7 +1825,7 @@ export type AdminProjectStreakPageQuery = { __typename?: 'Query', streak: { __ty
 export type AdminProjectsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminProjectsPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, colors: { __typename?: 'Colors', primary: string } } } }> } };
+export type AdminProjectsPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } } }> } };
 
 export type AdminUserPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -2217,7 +2246,34 @@ export const CurrentProjectDocument = gql`
     branding {
       logo
       colors {
-        primary
+        dark {
+          accent
+          accentContrast
+          onAccent
+          backgroundDefault
+          backgroundRaised
+          backgroundIndent
+          textDefault
+          textMuted
+          textHint
+          shadowDefault
+          shadowBlank
+          borderDefault
+        }
+        light {
+          accent
+          accentContrast
+          onAccent
+          backgroundDefault
+          backgroundRaised
+          backgroundIndent
+          textDefault
+          textMuted
+          textHint
+          shadowDefault
+          shadowBlank
+          borderDefault
+        }
       }
       rounding
     }
@@ -2246,9 +2302,12 @@ export const AdminHomePageDocument = gql`
           logo
           rounding
           colors {
-            primary
-            secondary
-            tertiary
+            light {
+              accent
+            }
+            dark {
+              accent
+            }
           }
         }
       }
@@ -2348,7 +2407,12 @@ export const AdminProjectEditPageDocument = gql`
       logo
       rounding
       colors {
-        primary
+        light {
+          accent
+        }
+        dark {
+          accent
+        }
       }
     }
   }
@@ -2389,7 +2453,12 @@ export const AdminProjectPageDocument = gql`
       logo
       rounding
       colors {
-        primary
+        light {
+          accent
+        }
+        dark {
+          accent
+        }
       }
     }
   }
@@ -2474,7 +2543,12 @@ export const AdminProjectsPageDocument = gql`
         branding {
           logo
           colors {
-            primary
+            light {
+              accent
+            }
+            dark {
+              accent
+            }
           }
         }
       }
