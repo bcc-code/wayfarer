@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { RoleType, ScopeType } from '~/api/generated'
+
 definePageMeta({
   layout: 'admin',
   middleware: 'admin',
@@ -34,12 +36,109 @@ gql(`
 const route = useRoute('admin-users-userId')
 
 const { isAuthReady } = useAuthReady()
-const { data, fetching, error } = useAdminUserPageQuery({
+const {
+  data,
+  fetching,
+  error,
+  executeQuery: refetch,
+} = useAdminUserPageQuery({
   variables: {
     id: route.params.userId,
   },
   pause: computed(() => !isAuthReady.value),
 })
+
+const { executeMutation: assignRole } = useAssignRoleMutation()
+const { executeMutation: revokeRole } = useRevokeRoleMutation()
+const toast = useToast()
+
+const roleOptions = [
+  { label: 'User', value: RoleType.User },
+  { label: 'Admin', value: RoleType.Admin },
+  { label: 'Superadmin', value: RoleType.Superadmin },
+  { label: 'Church Admin', value: RoleType.ChurchAdmin },
+  { label: 'Project Admin', value: RoleType.ProjectAdmin },
+  { label: 'Team Lead', value: RoleType.TeamLead },
+  { label: 'M2M', value: RoleType.M2M },
+]
+
+const scopeTypeOptions = [
+  { label: 'None (Global)', value: null },
+  { label: 'Church', value: ScopeType.Church },
+  { label: 'Project', value: ScopeType.Project },
+  { label: 'Team', value: ScopeType.Team },
+]
+
+const showAddRoleModal = ref(false)
+const newRole = reactive({
+  role: RoleType.User as RoleType,
+  scopeType: null as ScopeType | null,
+  scopeId: '',
+})
+
+function resetNewRoleForm() {
+  newRole.role = RoleType.User
+  newRole.scopeType = null
+  newRole.scopeId = ''
+}
+
+async function handleAssignRole() {
+  const result = await assignRole({
+    input: {
+      userId: route.params.userId,
+      role: newRole.role,
+      scopeType: newRole.scopeType,
+      scopeId: newRole.scopeType && newRole.scopeId ? newRole.scopeId : undefined,
+    },
+  })
+
+  if (result.error) {
+    toast.add({
+      title: 'Failed to assign role',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({
+    title: 'Role assigned',
+    description: `Successfully assigned ${newRole.role} role`,
+    color: 'success',
+  })
+
+  showAddRoleModal.value = false
+  resetNewRoleForm()
+  refetch({ requestPolicy: 'network-only' })
+}
+
+async function handleRevokeRole(roleId: string, role: RoleType, scopeType?: ScopeType | null, scopeId?: string | null) {
+  const result = await revokeRole({
+    input: {
+      userId: route.params.userId,
+      role,
+      scopeType: scopeType ?? undefined,
+      scopeId: scopeId ?? undefined,
+    },
+  })
+
+  if (result.error) {
+    toast.add({
+      title: 'Failed to revoke role',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({
+    title: 'Role revoked',
+    description: `Successfully revoked ${role} role`,
+    color: 'success',
+  })
+
+  refetch({ requestPolicy: 'network-only' })
+}
 </script>
 
 <template>
@@ -134,7 +233,16 @@ const { data, fetching, error } = useAdminUserPageQuery({
           <!-- Roles Card -->
           <UCard class="md:col-span-2">
             <template #header>
-              <h2 class="text-xl font-semibold">Roles & Permissions</h2>
+              <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold">Roles & Permissions</h2>
+                <UButton
+                  icon="i-lucide-plus"
+                  size="sm"
+                  @click="showAddRoleModal = true"
+                >
+                  Add Role
+                </UButton>
+              </div>
             </template>
 
             <div v-if="data.user.roles.length > 0" class="space-y-3">
@@ -157,6 +265,13 @@ const { data, fetching, error } = useAdminUserPageQuery({
                     </span>
                   </div>
                 </div>
+                <UButton
+                  icon="i-lucide-trash-2"
+                  color="error"
+                  variant="ghost"
+                  size="sm"
+                  @click="handleRevokeRole(role.id, role.role, role.scope?.type, role.scope?.id)"
+                />
               </div>
             </div>
             <div v-else class="text-dimmed">No roles assigned</div>
@@ -164,5 +279,56 @@ const { data, fetching, error } = useAdminUserPageQuery({
         </div>
       </div>
     </UContainer>
+
+    <!-- Add Role Modal -->
+    <UModal v-model:open="showAddRoleModal">
+      <template #header>
+        <h3 class="text-lg font-semibold">Add Role</h3>
+      </template>
+
+      <template #body>
+        <div class="space-y-4">
+          <UFormField label="Role">
+            <USelect
+              v-model="newRole.role"
+              :items="roleOptions"
+              value-key="value"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField label="Scope Type">
+            <USelect
+              v-model="newRole.scopeType"
+              :items="scopeTypeOptions"
+              value-key="value"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField v-if="newRole.scopeType" label="Scope ID">
+            <UInput
+              v-model="newRole.scopeId"
+              :placeholder="`Enter ${newRole.scopeType.toLowerCase()} ID`"
+              class="w-full"
+            />
+          </UFormField>
+        </div>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UButton
+            variant="ghost"
+            @click="showAddRoleModal = false; resetNewRoleForm()"
+          >
+            Cancel
+          </UButton>
+          <UButton @click="handleAssignRole">
+            Assign Role
+          </UButton>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

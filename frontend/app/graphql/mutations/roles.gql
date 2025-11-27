@@ -1,0 +1,14 @@
+mutation AssignRole($input: AssignRoleInput!) {
+  assignRole(input: $input) {
+    id
+    role
+    scope {
+      id
+      type
+    }
+  }
+}
+
+mutation RevokeRole($input: RevokeRoleInput!) {
+  revokeRole(input: $input)
+}

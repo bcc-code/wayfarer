@@ -1711,6 +1711,20 @@ export type DeleteProjectMutationVariables = Exact<{
 
 export type DeleteProjectMutation = { __typename?: 'Mutation', deleteProject: boolean };
 
+export type AssignRoleMutationVariables = Exact<{
+  input: AssignRoleInput;
+}>;
+
+
+export type AssignRoleMutation = { __typename?: 'Mutation', assignRole: { __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType } | null } };
+
+export type RevokeRoleMutationVariables = Exact<{
+  input: RevokeRoleInput;
+}>;
+
+
+export type RevokeRoleMutation = { __typename?: 'Mutation', revokeRole: boolean };
+
 export type DeleteStreakMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -2179,6 +2193,31 @@ export const DeleteProjectDocument = gql`
 
 export function useDeleteProjectMutation() {
   return Urql.useMutation<DeleteProjectMutation, DeleteProjectMutationVariables>(DeleteProjectDocument);
+};
+export const AssignRoleDocument = gql`
+    mutation AssignRole($input: AssignRoleInput!) {
+  assignRole(input: $input) {
+    id
+    role
+    scope {
+      id
+      type
+    }
+  }
+}
+    `;
+
+export function useAssignRoleMutation() {
+  return Urql.useMutation<AssignRoleMutation, AssignRoleMutationVariables>(AssignRoleDocument);
+};
+export const RevokeRoleDocument = gql`
+    mutation RevokeRole($input: RevokeRoleInput!) {
+  revokeRole(input: $input)
+}
+    `;
+
+export function useRevokeRoleMutation() {
+  return Urql.useMutation<RevokeRoleMutation, RevokeRoleMutationVariables>(RevokeRoleDocument);
 };
 export const DeleteStreakDocument = gql`
     mutation DeleteStreak($id: ID!) {
