@@ -5,7 +5,9 @@
     "profile": "Din profil",
     "challenges": "Oppgaver",
     "challenge": "Oppgave",
-    "settings": "Innstillinger"
+    "settings": "Innstillinger",
+    "pointHistory": "Poenghistorikk",
+    "getPoints": "Få poeng"
   },
   "navigation": {
     "standings": "Ledertavle",
@@ -27,8 +29,8 @@
     "unit": "Din unit",
     "local": "Lokalt",
     "you": "Deg",
-    "pointsHistoryButton": "Poenghistorikk",
-    "pointsExplainerButton": "Få poeng"
+    "pointHistoryButton": "Poenghistorikk",
+    "getPointsButton": "Få poeng"
   },
   "unit": {
     "editUnit": "Rediger unit",

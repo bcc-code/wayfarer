@@ -1524,6 +1524,20 @@ export type UserRole = {
   user: User;
 };
 
+export type PointHistoryQueryVariables = Exact<{
+  first?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type PointHistoryQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', journal: { __typename?: 'ScoreJournalConnection', edges: Array<{ __typename?: 'ScoreJournalEdge', node: { __typename?: 'ScoreJournal', id: string, sourceType: ScoreSourceType, reason?: string | null, points: number, createdAt: any, challenge?: { __typename?: 'Challenge', name: string } | null, source?:
+            | { __typename: 'Challenge' }
+            | { __typename: 'Event' }
+            | { __typename: 'ListeningAchievement' }
+            | { __typename: 'ReadingAchievement' }
+            | { __typename: 'SimpleAchievement' }
+            | { __typename: 'StreakAchievement' }
+           | null } }> } } };
+
 export type StandingsGlobalPageQueryVariables = Exact<{
   entityType: LeaderboardEntityType;
   filter?: InputMaybe<LeaderboardFilter>;
@@ -1531,7 +1545,7 @@ export type StandingsGlobalPageQueryVariables = Exact<{
 }>;
 
 
-export type StandingsGlobalPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, image?: string | null, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag>, image?: string | null } | null } } };
+export type StandingsGlobalPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null } } };
 
 export type StandingsLocalPageQueryVariables = Exact<{
   entityType: LeaderboardEntityType;
@@ -1539,7 +1553,7 @@ export type StandingsLocalPageQueryVariables = Exact<{
 }>;
 
 
-export type StandingsLocalPageQuery = { __typename?: 'Query', me: { __typename?: 'User', church: { __typename?: 'Church', id: string, name: string } }, myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, image?: string | null, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag>, image?: string | null } | null } } };
+export type StandingsLocalPageQuery = { __typename?: 'Query', me: { __typename?: 'User', church: { __typename?: 'Church', id: string, name: string } }, myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null } } };
 
 export type StandingsUnitPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1825,6 +1839,33 @@ export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User'
     >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank?: number | null } | null } } };
 
 
+export const PointHistoryDocument = gql`
+    query PointHistory($first: Int) {
+  myCurrentProject {
+    journal(first: $first) {
+      edges {
+        node {
+          id
+          sourceType
+          challenge {
+            name
+          }
+          source {
+            __typename
+          }
+          reason
+          points
+          createdAt
+        }
+      }
+    }
+  }
+}
+    `;
+
+export function usePointHistoryQuery(options?: Omit<Urql.UseQueryArgs<never, PointHistoryQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<PointHistoryQuery, PointHistoryQueryVariables | undefined>({ query: PointHistoryDocument, variables: undefined, ...options });
+};
 export const StandingsGlobalPageDocument = gql`
     query StandingsGlobalPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter, $first: Int) {
   myCurrentProject {
@@ -1836,7 +1877,6 @@ export const StandingsGlobalPageDocument = gql`
           name
           description
           score
-          image
           rank
           tags
         }
@@ -1848,7 +1888,6 @@ export const StandingsGlobalPageDocument = gql`
         score
         rank
         tags
-        image
       }
     }
   }
@@ -1874,7 +1913,6 @@ export const StandingsLocalPageDocument = gql`
           id
           name
           score
-          image
           rank
           tags
         }
@@ -1885,7 +1923,6 @@ export const StandingsLocalPageDocument = gql`
         score
         rank
         tags
-        image
       }
     }
   }

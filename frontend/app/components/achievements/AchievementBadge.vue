@@ -39,9 +39,12 @@ const open = ref(false)
             <DesignIconButton icon="lucide:x" @click="close" />
           </template>
 
-          <div class="flex h-full flex-col items-center justify-center gap-4">
+          <div class="flex h-full flex-col items-center justify-center gap-6">
             <div
-              class="grid aspect-square size-55 place-items-center overflow-hidden rounded-full"
+              :class="[
+                'grid aspect-square size-55 place-items-center overflow-hidden rounded-full',
+                { 'shadow-large': achievement.achievedAt },
+              ]"
             >
               <NuxtImg
                 v-if="achievement.image && achievement.achievedAt != null"

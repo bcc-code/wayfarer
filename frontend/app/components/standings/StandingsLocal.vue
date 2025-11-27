@@ -15,7 +15,6 @@ gql(`
             id
             name
             score
-            image
             rank
             tags
           }
@@ -26,7 +25,6 @@ gql(`
           score
           rank
           tags
-          image
         }
       }
     }

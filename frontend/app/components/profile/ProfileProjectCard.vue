@@ -2,7 +2,7 @@
 defineProps<{
   projectName: string
   score?: number
-  rank?: number
+  rank?: number | null
   achievements?: Partial<Achievement>[]
 }>()
 </script>
@@ -22,12 +22,16 @@ defineProps<{
         </div>
       </div>
       <div class="gap-medium grid grid-cols-2">
-        <DesignButton variant="secondary">
-          {{ $t('standings.pointsHistoryButton') }}
-        </DesignButton>
-        <DesignButton variant="secondary">
-          {{ $t('standings.pointsExplainerButton') }}
-        </DesignButton>
+        <ProfilePointHistory>
+          <DesignButton variant="secondary">
+            {{ $t('standings.pointHistoryButton') }}
+          </DesignButton>
+        </ProfilePointHistory>
+        <ProfileGetPoints>
+          <DesignButton variant="secondary">
+            {{ $t('standings.getPointsButton') }}
+          </DesignButton>
+        </ProfileGetPoints>
       </div>
     </div>
     <div class="p-medium gap-medium grid grid-cols-4">

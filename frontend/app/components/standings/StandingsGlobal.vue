@@ -10,7 +10,6 @@ gql(`
             name
             description
             score
-            image
             rank
             tags
           }
@@ -22,7 +21,6 @@ gql(`
           score
           rank
           tags
-          image
         }
       }
     }

@@ -31,15 +31,27 @@ const teamLeader = computed(() => {
 })
 
 // Update team
+const form = reactive({
+  name: '',
+})
+watch(
+  () => data.value,
+  (d) => {
+    if (d) {
+      form.name = d.myCurrentProject.myTeam?.name ?? ''
+    }
+  },
+  { once: true },
+)
 const { executeMutation } = useUpdateTeamMutation()
 function saveChanges() {
   const id = data.value?.myCurrentProject.myTeam?.id
   if (!id) return
 
-  // executeMutation({
-  //   id,
-  //   input: { name: data.value?.myCurrentProject.myTeam?.name },
-  // })
+  executeMutation({
+    id,
+    input: { name: form.name },
+  })
 }
 </script>
 
@@ -66,15 +78,12 @@ function saveChanges() {
             {{ $t('unit.editUnit') }}
           </DesignButton>
           <template #content="{ close }">
-            <PageLayout :title="$t('unit.editUnit')">
+            <PageLayout :title="$t('unit.editUnit')" :bottom-padding="false">
               <template #action>
                 <DesignIconButton icon="lucide:x" @click="close" />
               </template>
               <div class="gap-list-section-gap flex h-full flex-col">
-                <DesignInput
-                  v-model="data.myCurrentProject.myTeam.name"
-                  :label="$t('unit.unitName')"
-                />
+                <DesignInput v-model="form.name" :label="$t('unit.unitName')" />
                 <DesignPanel>
                   <div class="flex items-center gap-2.5 px-3 py-2">
                     <Icon name="lucide:badge-check" class="size-6" />

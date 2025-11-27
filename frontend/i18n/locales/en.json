@@ -5,7 +5,9 @@
     "profile": "My profile",
     "challenges": "Challenges",
     "challenge": "Challenge",
-    "settings": "Settings"
+    "settings": "Settings",
+    "pointHistory": "Point history",
+    "getPoints": "Get points"
   },
   "navigation": {
     "standings": "Standings",
@@ -27,8 +29,8 @@
     "unit": "Your unit",
     "local": "Local",
     "you": "You",
-    "pointsHistoryButton": "Points history",
-    "pointsExplainerButton": "Get points"
+    "pointHistoryButton": "Point history",
+    "getPointsButton": "Get points"
   },
   "unit": {
     "unitLeader": "Unit leader",
