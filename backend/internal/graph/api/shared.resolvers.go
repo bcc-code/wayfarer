@@ -38,10 +38,11 @@ func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]mod
 		return nil, err
 	}
 
-	// Convert []*model.Challenge to []model.Challenge
+	// Convert []*model.Challenge to []model.Challenge and apply translations
 	challenges := make([]model.Challenge, len(challengePointers))
 	for i, cp := range challengePointers {
-		challenges[i] = *cp
+		translated := r.ApplyTranslationToChallenge(ctx, cp)
+		challenges[i] = *translated
 	}
 
 	return challenges, nil
@@ -114,7 +115,14 @@ func (r *listeningAchievementResolver) Tracks(ctx context.Context, obj *model.Li
 	if err != nil {
 		return nil, fmt.Errorf("failed to load tracks: %w", err)
 	}
-	return tracks, nil
+
+	// Apply translations to each track
+	result := make([]model.Track, len(tracks))
+	for i, t := range tracks {
+		result[i] = r.ApplyTranslationToTrack(ctx, t)
+	}
+
+	return result, nil
 }
 
 // Challenges is the resolver for the challenges field.
@@ -127,7 +135,8 @@ func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([
 
 	result := make([]model.Challenge, len(challenges))
 	for i, ch := range challenges {
-		result[i] = *ch
+		translated := r.ApplyTranslationToChallenge(ctx, ch)
+		result[i] = *translated
 	}
 
 	return result, nil
@@ -178,7 +187,8 @@ func (r *projectResolver) Events(ctx context.Context, obj *model.Project) ([]mod
 
 	result := make([]model.Event, len(events))
 	for i, e := range events {
-		result[i] = *e
+		translated := r.ApplyTranslationToEvent(ctx, e)
+		result[i] = *translated
 	}
 
 	return result, nil
@@ -194,7 +204,8 @@ func (r *projectResolver) Teams(ctx context.Context, obj *model.Project) ([]mode
 
 	result := make([]model.Team, len(teams))
 	for i, t := range teams {
-		result[i] = *t
+		translated := r.ApplyTranslationToTeam(ctx, t)
+		result[i] = *translated
 	}
 
 	return result, nil
@@ -231,13 +242,15 @@ func (r *projectResolver) MyTeam(ctx context.Context, obj *model.Project) (*mode
 		superTeamID = row.SuperTeamID
 	}
 
-	return &model.Team{
+	team := &model.Team{
 		ID:          row.ID,
 		ProjectID:   row.ProjectID,
 		Name:        row.Name,
 		Description: description,
 		SuperTeamID: superTeamID,
-	}, nil
+	}
+
+	return r.ApplyTranslationToTeam(ctx, team), nil
 }
 
 // Achievements is the resolver for the achievements field.
@@ -261,7 +274,8 @@ func (r *projectResolver) Streaks(ctx context.Context, obj *model.Project) ([]mo
 
 	result := make([]model.Streak, len(streaks))
 	for i, s := range streaks {
-		result[i] = *s
+		translated := r.ApplyTranslationToStreak(ctx, s)
+		result[i] = *translated
 	}
 
 	return result, nil
@@ -304,7 +318,14 @@ func (r *readingAchievementResolver) Articles(ctx context.Context, obj *model.Re
 	if err != nil {
 		return nil, fmt.Errorf("failed to load articles: %w", err)
 	}
-	return articles, nil
+
+	// Apply translations to each article
+	result := make([]model.Article, len(articles))
+	for i, a := range articles {
+		result[i] = r.ApplyTranslationToArticle(ctx, a)
+	}
+
+	return result, nil
 }
 
 // Church is the resolver for the church field.
@@ -331,14 +352,8 @@ func (r *roleScopeResolver) Project(ctx context.Context, obj *model.RoleScope) (
 		return nil, nil
 	}
 
-	// Use dataloader to fetch project
-	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, obj.ID)
-	project, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load project: %w", err)
-	}
-
-	return project, nil
+	// Use translation-aware wrapper to fetch project
+	return r.LoadProjectWithTranslation(ctx, obj.ID)
 }
 
 // Team is the resolver for the team field.
@@ -348,14 +363,8 @@ func (r *roleScopeResolver) Team(ctx context.Context, obj *model.RoleScope) (*mo
 		return nil, nil
 	}
 
-	// Use dataloader to fetch team
-	thunk := r.Loaders.TeamByIDLoader.Load(ctx, obj.ID)
-	team, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load team: %w", err)
-	}
-
-	return team, nil
+	// Use translation-aware wrapper to fetch team
+	return r.LoadTeamWithTranslation(ctx, obj.ID)
 }
 
 // Project is the resolver for the project field.
@@ -413,16 +422,14 @@ func (r *scoreJournalResolver) Source(ctx context.Context, obj *model.ScoreJourn
 		}
 
 	case model.ScoreSourceTypeChallenge:
-		thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, *obj.SourceID)
-		challenge, err := thunk()
+		challenge, err := r.LoadChallengeWithTranslation(ctx, *obj.SourceID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load challenge: %w", err)
 		}
 		return challenge, nil
 
 	case model.ScoreSourceTypeEvent:
-		thunk := r.Loaders.EventByIDLoader.Load(ctx, *obj.SourceID)
-		event, err := thunk()
+		event, err := r.LoadEventWithTranslation(ctx, *obj.SourceID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load event: %w", err)
 		}
@@ -661,12 +668,7 @@ func (r *streakAchievementResolver) AchievedAt(ctx context.Context, obj *model.S
 
 // Streak is the resolver for the streak field.
 func (r *streakAchievementResolver) Streak(ctx context.Context, obj *model.StreakAchievement) (*model.Streak, error) {
-	thunk := r.Loaders.StreakByIDLoader.Load(ctx, obj.StreakID)
-	streak, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load streak: %w", err)
-	}
-	return streak, nil
+	return r.LoadStreakWithTranslation(ctx, obj.StreakID)
 }
 
 // Members is the resolver for the members field.
@@ -800,10 +802,11 @@ func (r *superTeamResolver) Teams(ctx context.Context, obj *model.SuperTeam) ([]
 		return nil, fmt.Errorf("failed to load teams: %w", err)
 	}
 
-	// Convert []*model.Team to []model.Team
+	// Convert []*model.Team to []model.Team and apply translations
 	result := make([]model.Team, len(teams))
 	for i, team := range teams {
-		result[i] = *team
+		translated := r.ApplyTranslationToTeam(ctx, team)
+		result[i] = *translated
 	}
 
 	return result, nil
@@ -912,14 +915,8 @@ func (r *teamResolver) SuperTeam(ctx context.Context, obj *model.Team) (*model.S
 		return nil, nil
 	}
 
-	// Use dataloader to fetch super team
-	thunk := r.Loaders.SuperTeamByIDLoader.Load(ctx, *obj.SuperTeamID)
-	superTeam, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load super team: %w", err)
-	}
-
-	return superTeam, nil
+	// Use translation-aware wrapper to fetch super team
+	return r.LoadSuperTeamWithTranslation(ctx, *obj.SuperTeamID)
 }
 
 // Church is the resolver for the church field.
@@ -990,10 +987,11 @@ func (r *userResolver) Projects(ctx context.Context, obj *model.User) ([]model.P
 		return nil, fmt.Errorf("failed to load projects: %w", err)
 	}
 
-	// Convert []*model.Project to []model.Project
+	// Convert []*model.Project to []model.Project and apply translations
 	result := make([]model.Project, len(projects))
 	for i, p := range projects {
-		result[i] = *p
+		translated := r.ApplyTranslationToProject(ctx, p)
+		result[i] = *translated
 	}
 
 	return result, nil
@@ -1008,10 +1006,11 @@ func (r *userResolver) Events(ctx context.Context, obj *model.User) ([]model.Eve
 		return nil, fmt.Errorf("failed to load events: %w", err)
 	}
 
-	// Convert []*model.Event to []model.Event
+	// Convert []*model.Event to []model.Event and apply translations
 	result := make([]model.Event, len(events))
 	for i, e := range events {
-		result[i] = *e
+		translated := r.ApplyTranslationToEvent(ctx, e)
+		result[i] = *translated
 	}
 
 	return result, nil
@@ -1026,10 +1025,11 @@ func (r *userResolver) Teams(ctx context.Context, obj *model.User) ([]model.Team
 		return nil, fmt.Errorf("failed to load teams: %w", err)
 	}
 
-	// Convert []*model.Team to []model.Team
+	// Convert []*model.Team to []model.Team and apply translations
 	result := make([]model.Team, len(teams))
 	for i, t := range teams {
-		result[i] = *t
+		translated := r.ApplyTranslationToTeam(ctx, t)
+		result[i] = *translated
 	}
 
 	return result, nil
@@ -1044,10 +1044,11 @@ func (r *userResolver) SuperTeams(ctx context.Context, obj *model.User) ([]model
 		return nil, fmt.Errorf("failed to load super teams: %w", err)
 	}
 
-	// Convert []*model.SuperTeam to []model.SuperTeam
+	// Convert []*model.SuperTeam to []model.SuperTeam and apply translations
 	result := make([]model.SuperTeam, len(superTeams))
 	for i, st := range superTeams {
-		result[i] = *st
+		translated := r.ApplyTranslationToSuperTeam(ctx, st)
+		result[i] = *translated
 	}
 
 	return result, nil

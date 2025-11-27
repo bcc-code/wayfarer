@@ -23,6 +23,15 @@ type Achievement struct {
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 }
 
+type AchievementTranslation struct {
+	AchievementID string             `json:"achievement_id"`
+	LanguageCode  string             `json:"language_code"`
+	Name          *string            `json:"name"`
+	Description   *string            `json:"description"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Challenge struct {
 	ID          string             `json:"id"`
 	ProjectID   string             `json:"project_id"`
@@ -36,6 +45,16 @@ type Challenge struct {
 	EndTime     pgtype.Timestamptz `json:"end_time"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ChallengeTranslation struct {
+	ChallengeID  string             `json:"challenge_id"`
+	LanguageCode string             `json:"language_code"`
+	Name         *string            `json:"name"`
+	Description  *string            `json:"description"`
+	ButtonText   *string            `json:"button_text"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Church struct {
@@ -57,6 +76,15 @@ type Event struct {
 	EndDate     pgtype.Timestamptz `json:"end_date"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type EventTranslation struct {
+	EventID      string             `json:"event_id"`
+	LanguageCode string             `json:"language_code"`
+	Name         *string            `json:"name"`
+	Description  *string            `json:"description"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 // Stores content completion events from external systems
@@ -144,6 +172,15 @@ type ListeningAchievementTrack struct {
 	ImageUrl      *string `json:"image_url"`
 }
 
+type ListeningAchievementTrackTranslation struct {
+	TrackID      string             `json:"track_id"`
+	LanguageCode string             `json:"language_code"`
+	Name         *string            `json:"name"`
+	Description  *string            `json:"description"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Project struct {
 	ID                          string             `json:"id"`
 	Name                        string             `json:"name"`
@@ -181,6 +218,15 @@ type Project struct {
 	ColorDarkBorderDefault      string             `json:"color_dark_border_default"`
 }
 
+type ProjectTranslation struct {
+	ProjectID    string             `json:"project_id"`
+	LanguageCode string             `json:"language_code"`
+	Name         *string            `json:"name"`
+	Description  *string            `json:"description"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
 type ReadingAchievement struct {
 	AchievementID string `json:"achievement_id"`
 }
@@ -192,6 +238,15 @@ type ReadingAchievementArticle struct {
 	Title         string  `json:"title"`
 	Author        string  `json:"author"`
 	Url           *string `json:"url"`
+}
+
+type ReadingAchievementArticleTranslation struct {
+	ArticleID    string             `json:"article_id"`
+	LanguageCode string             `json:"language_code"`
+	Title        *string            `json:"title"`
+	Author       *string            `json:"author"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 type ScoreJournal struct {
@@ -230,6 +285,15 @@ type StreakRelevantDay struct {
 	EndDate   pgtype.Date `json:"end_date"`
 }
 
+type StreakTranslation struct {
+	StreakID     string             `json:"streak_id"`
+	LanguageCode string             `json:"language_code"`
+	Name         *string            `json:"name"`
+	Description  *string            `json:"description"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
 type SuperTeam struct {
 	ID          string             `json:"id"`
 	ProjectID   string             `json:"project_id"`
@@ -237,6 +301,15 @@ type SuperTeam struct {
 	Description *string            `json:"description"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SuperTeamTranslation struct {
+	SuperTeamID  string             `json:"super_team_id"`
+	LanguageCode string             `json:"language_code"`
+	Name         *string            `json:"name"`
+	Description  *string            `json:"description"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Team struct {
@@ -254,6 +327,15 @@ type TeamMember struct {
 	TeamID   string             `json:"team_id"`
 	UserID   string             `json:"user_id"`
 	JoinedAt pgtype.Timestamptz `json:"joined_at"`
+}
+
+type TeamTranslation struct {
+	TeamID       string             `json:"team_id"`
+	LanguageCode string             `json:"language_code"`
+	Name         *string            `json:"name"`
+	Description  *string            `json:"description"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 type User struct {

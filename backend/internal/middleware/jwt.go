@@ -20,6 +20,8 @@ const (
 	UserIDKey contextKey = "user_id"
 	// UserRolesKey is the context key for user roles (array)
 	UserRolesKey contextKey = "user_roles"
+	// LanguageKey is the context key for the preferred language
+	LanguageKey contextKey = "language"
 )
 
 // WayfarerClaims represents the JWT claims issued by Wayfarer

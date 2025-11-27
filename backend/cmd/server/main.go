@@ -263,7 +263,7 @@ func main() {
 	router.POST("/api/v1/content-events", middleware.APIKeyAuth(cfg.APIKey), webhookHandler.HandleContentEvent)
 
 	// GraphQL API endpoint
-	router.POST("/graphql", middleware.JWTAuth(cfg.JWT), graphqlHandler(apiHandler))
+	router.POST("/graphql", middleware.LanguageExtractor(), middleware.JWTAuth(cfg.JWT), graphqlHandler(apiHandler))
 	if cfg.Server.Environment != "production" {
 		router.GET("/graphql", gin.WrapH(playground.Handler("GraphQL API", "/graphql")))
 	}
@@ -327,6 +327,11 @@ func graphqlHandler(h *handler.Server) gin.HandlerFunc {
 		// Transfer user_roles if present
 		if userRoles, exists := c.Get("user_roles"); exists {
 			ctx = context.WithValue(ctx, middleware.UserRolesKey, userRoles)
+		}
+
+		// Transfer language if present
+		if language, exists := c.Get("language"); exists {
+			ctx = context.WithValue(ctx, middleware.LanguageKey, language)
 		}
 
 		// Create new request with updated context

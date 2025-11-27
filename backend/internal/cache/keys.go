@@ -67,6 +67,9 @@ const (
 	PrefixHasRoleInChurch  = "hasroleinchurch:"
 	PrefixHasRoleInProject = "hasroleinproject:"
 	PrefixHasRoleInTeam    = "hasroleinteam:"
+
+	// Translations
+	PrefixTranslation = "translation:"
 )
 
 // Key builders for different entity types
@@ -1002,4 +1005,12 @@ func FullLeaderboardKey(context, contextID, entityType string, params map[string
 	}
 
 	return fmt.Sprintf("%sfull:%s:%s:%s:%s", PrefixLeaderboard, context, contextID, entityType, paramsHash)
+}
+
+// TranslationKey builds a cache key for a translation
+// entityType: "project", "event", "team", "challenge", etc.
+// entityID: the ID of the entity being translated
+// langCode: the language code (e.g., "no", "de", "fr")
+func TranslationKey(entityType, entityID, langCode string) string {
+	return fmt.Sprintf("%s%s:%s:%s", PrefixTranslation, entityType, entityID, langCode)
 }

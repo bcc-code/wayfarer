@@ -51,7 +51,8 @@ func (r *mutationResolver) JoinProject(ctx context.Context, projectID string) (*
 		return nil, fmt.Errorf("failed to join project: %w", err)
 	}
 
-	return project, nil
+	// Apply translations to the returned project
+	return r.ApplyTranslationToProject(ctx, project), nil
 }
 
 // JoinEvent is the resolver for the joinEvent field.
@@ -90,7 +91,8 @@ func (r *mutationResolver) JoinEvent(ctx context.Context, eventID string) (*mode
 		return nil, fmt.Errorf("failed to join event: %w", err)
 	}
 
-	return event, nil
+	// Apply translations to the returned event
+	return r.ApplyTranslationToEvent(ctx, event), nil
 }
 
 // JoinTeam is the resolver for the joinTeam field.
@@ -173,12 +175,15 @@ func (r *mutationResolver) JoinTeam(ctx context.Context, code string) (*model.Te
 		description = *team.Description
 	}
 
-	return &model.Team{
+	teamModel := &model.Team{
 		ID:          team.ID,
 		Name:        team.Name,
 		Description: description,
 		JoinCode:    team.JoinCode,
-	}, nil
+	}
+
+	// Apply translations to the returned team
+	return r.ApplyTranslationToTeam(ctx, teamModel), nil
 }
 
 // UpdateAvatar is the resolver for the updateAvatar field.
@@ -3033,9 +3038,8 @@ func (r *queryResolver) MyProjects(ctx context.Context) ([]model.Project, error)
 	// Hardcoded project ID for now
 	projectID := "PR01K9VZ8684DP9R4W3ZEV526E5X"
 
-	// Use dataloader to fetch project
-	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
-	project, err := thunk()
+	// Use translation-aware wrapper to fetch project
+	project, err := r.LoadProjectWithTranslation(ctx, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load projects: %w", err)
 	}
@@ -3048,9 +3052,8 @@ func (r *queryResolver) MyEvents(ctx context.Context, project *string) ([]model.
 	// Hardcoded event ID for now
 	eventID := "EV01K9Q3TSXDMF2FX52XCGAAFDE5"
 
-	// Use dataloader to fetch event
-	thunk := r.Loaders.EventByIDLoader.Load(ctx, eventID)
-	event, err := thunk()
+	// Use translation-aware wrapper to fetch event
+	event, err := r.LoadEventWithTranslation(ctx, eventID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load events: %w", err)
 	}
@@ -3063,14 +3066,8 @@ func (r *queryResolver) MyCurrentProject(ctx context.Context) (*model.Project, e
 	// Hardcoded project ID for now
 	projectID := "PR01K9VZ8684DP9R4W3ZEV526E5X"
 
-	// Use dataloader to fetch project
-	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
-	project, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load current project: %w", err)
-	}
-
-	return project, nil
+	// Use translation-aware wrapper to fetch project
+	return r.LoadProjectWithTranslation(ctx, projectID)
 }
 
 // MyCurrentEvent is the resolver for the myCurrentEvent field.
@@ -3078,14 +3075,8 @@ func (r *queryResolver) MyCurrentEvent(ctx context.Context) (*model.Event, error
 	// Hardcoded event ID for now
 	eventID := "EV01K9Q3TSXDMF2FX52XCGAAFDE5"
 
-	// Use dataloader to fetch event
-	thunk := r.Loaders.EventByIDLoader.Load(ctx, eventID)
-	event, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load current event: %w", err)
-	}
-
-	return event, nil
+	// Use translation-aware wrapper to fetch event
+	return r.LoadEventWithTranslation(ctx, eventID)
 }
 
 // User is the resolver for the user field.
@@ -3262,14 +3253,8 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, fir
 
 // Project is the resolver for the project field.
 func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project, error) {
-	// Use dataloader to fetch project
-	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, id)
-	project, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load project: %w", err)
-	}
-
-	return project, nil
+	// Use translation-aware wrapper to fetch project
+	return r.LoadProjectWithTranslation(ctx, id)
 }
 
 // Projects is the resolver for the projects field.
@@ -3424,14 +3409,8 @@ func (r *queryResolver) Projects(ctx context.Context, filter *model.ProjectFilte
 
 // Event is the resolver for the event field.
 func (r *queryResolver) Event(ctx context.Context, id string) (*model.Event, error) {
-	// Use dataloader to fetch event
-	thunk := r.Loaders.EventByIDLoader.Load(ctx, id)
-	event, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load event: %w", err)
-	}
-
-	return event, nil
+	// Use translation-aware wrapper to fetch event
+	return r.LoadEventWithTranslation(ctx, id)
 }
 
 // Events is the resolver for the events field.
@@ -3588,14 +3567,8 @@ func (r *queryResolver) Events(ctx context.Context, filter *model.EventFilter, f
 
 // Team is the resolver for the team field.
 func (r *queryResolver) Team(ctx context.Context, id string) (*model.Team, error) {
-	// Use dataloader to fetch team
-	thunk := r.Loaders.TeamByIDLoader.Load(ctx, id)
-	team, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load team: %w", err)
-	}
-
-	return team, nil
+	// Use translation-aware wrapper to fetch team
+	return r.LoadTeamWithTranslation(ctx, id)
 }
 
 // Teams is the resolver for the teams field.
@@ -3726,14 +3699,8 @@ func (r *queryResolver) Teams(ctx context.Context, filter *model.TeamFilter, fir
 
 // Superteam is the resolver for the superteam field.
 func (r *queryResolver) Superteam(ctx context.Context, id string) (*model.SuperTeam, error) {
-	// Use dataloader to fetch super team
-	thunk := r.Loaders.SuperTeamByIDLoader.Load(ctx, id)
-	superTeam, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load super team: %w", err)
-	}
-
-	return superTeam, nil
+	// Use translation-aware wrapper to fetch super team
+	return r.LoadSuperTeamWithTranslation(ctx, id)
 }
 
 // Superteams is the resolver for the superteams field.
@@ -3984,14 +3951,8 @@ func (r *queryResolver) Achievements(ctx context.Context, filter model.Achieveme
 
 // Challenge is the resolver for the challenge field.
 func (r *queryResolver) Challenge(ctx context.Context, id string) (*model.Challenge, error) {
-	// Use dataloader to fetch challenge
-	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, id)
-	challenge, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load challenge: %w", err)
-	}
-
-	return challenge, nil
+	// Use translation-aware wrapper to fetch challenge
+	return r.LoadChallengeWithTranslation(ctx, id)
 }
 
 // Challenges is the resolver for the challenges field.
@@ -4234,14 +4195,8 @@ func (r *queryResolver) Churches(ctx context.Context, filter *model.ChurchFilter
 
 // Streak is the resolver for the streak field.
 func (r *queryResolver) Streak(ctx context.Context, id string) (*model.Streak, error) {
-	// Use dataloader to fetch streak
-	thunk := r.Loaders.StreakByIDLoader.Load(ctx, id)
-	streak, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load streak: %w", err)
-	}
-
-	return streak, nil
+	// Use translation-aware wrapper to fetch streak
+	return r.LoadStreakWithTranslation(ctx, id)
 }
 
 // Streaks is the resolver for the streaks field.
@@ -4364,14 +4319,8 @@ func (r *queryResolver) CurrentProject(ctx context.Context) (*model.Project, err
 	// Hardcoded project ID for now
 	projectID := "PR01K9VZ8684DP9R4W3ZEV526E5X"
 
-	// Use dataloader to fetch project
-	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
-	project, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load current project: %w", err)
-	}
-
-	return project, nil
+	// Use translation-aware wrapper to fetch project
+	return r.LoadProjectWithTranslation(ctx, projectID)
 }
 
 // CurrentEvent is the resolver for the currentEvent field.
@@ -4379,14 +4328,8 @@ func (r *queryResolver) CurrentEvent(ctx context.Context) (*model.Event, error) 
 	// Hardcoded event ID for now
 	eventID := "EV01K9Q3TSXDMF2FX52XCGAAFDE5"
 
-	// Use dataloader to fetch event
-	thunk := r.Loaders.EventByIDLoader.Load(ctx, eventID)
-	event, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load current event: %w", err)
-	}
-
-	return event, nil
+	// Use translation-aware wrapper to fetch event
+	return r.LoadEventWithTranslation(ctx, eventID)
 }
 
 // ScoreJournal is the resolver for the scoreJournal field.

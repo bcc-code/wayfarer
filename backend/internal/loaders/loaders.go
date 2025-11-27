@@ -42,6 +42,7 @@ type Loaders struct {
 	RelevantDaysByStreakLoader       *dataloader.Loader[string, []model.DateRange]
 	UserStreakActivityLoader         *dataloader.Loader[UserStreakActivityKey, []*sqlc.UserStreakActivity]
 	UserAchievementTimestampLoader   *dataloader.Loader[UserAchievementKey, *time.Time]
+	TranslationLoader                *dataloader.Loader[TranslationKey, *Translation]
 }
 
 // newBatchedLoader creates a new batched dataloader with standard configuration:
@@ -90,5 +91,6 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		RelevantDaysByStreakLoader:       newBatchedLoader(relevantDaysByStreakBatchFunc(db, cache)),
 		UserStreakActivityLoader:         newBatchedLoader(userStreakActivityBatchFunc(db, cache)),
 		UserAchievementTimestampLoader:   newBatchedLoader(userAchievementTimestampBatchFunc(db, cache)),
+		TranslationLoader:                newBatchedLoader(translationBatchFunc(db, cache)),
 	}
 }
