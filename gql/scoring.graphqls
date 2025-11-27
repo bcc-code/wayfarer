@@ -1,7 +1,7 @@
 # Score journal queries and mutations
 
 extend type Query {
-    scoreJournal(projectId: ID!, userId: ID!, filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection! @requireRole(roles: ["admin", "m2m", "superadmin"])
+    scoreJournal(projectId: ID!, userId: ID!, filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection!
 }
 
 extend type Mutation {
