@@ -176,62 +176,40 @@ async function handleRevokeRole(roleId: string, role: RoleType, scopeType?: Scop
           </div>
         </div>
 
-        <!-- User Info Below Here -->
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <!-- Personal Information Card -->
-          <UCard>
-            <template #header>
-              <h2 class="text-xl font-semibold">Personal Information</h2>
-            </template>
+        <!-- User Info -->
+        <dl class="text-sm">
+          <div class="flex gap-6 border-b border-default py-2">
+            <dt class="text-muted w-24 shrink-0">Members ID</dt>
+            <dd class="font-medium">{{ data.user.membersId }}</dd>
+          </div>
+          <div class="flex gap-6 border-b border-default py-2">
+            <dt class="text-muted w-24 shrink-0">User ID</dt>
+            <dd class="font-mono">{{ data.user.id }}</dd>
+          </div>
+          <div class="flex gap-6 border-b border-default py-2">
+            <dt class="text-muted w-24 shrink-0">Gender</dt>
+            <dd class="font-medium">{{ capitalizeFirst(data.user.gender) }}</dd>
+          </div>
+          <div class="flex gap-6 border-b border-default py-2">
+            <dt class="text-muted w-24 shrink-0">Age</dt>
+            <dd class="font-medium">{{ data.user.age }} years</dd>
+          </div>
+          <div class="flex gap-6 border-b border-default py-2">
+            <dt class="text-muted w-24 shrink-0">Birthdate</dt>
+            <dd class="font-medium">{{ formatDate(data.user.birthdate) }}</dd>
+          </div>
+          <div class="flex gap-6 border-b border-default py-2">
+            <dt class="text-muted w-24 shrink-0">Church</dt>
+            <dd class="font-medium">{{ data.user.church.name }}</dd>
+          </div>
+          <div class="flex gap-6 py-2">
+            <dt class="text-muted w-24 shrink-0">Church ID</dt>
+            <dd class="font-mono">{{ data.user.church.id }}</dd>
+          </div>
+        </dl>
 
-            <dl class="space-y-4">
-              <div>
-                <dt class="text-dimmed text-sm">Members ID</dt>
-                <dd class="text-base font-medium">{{ data.user.membersId }}</dd>
-              </div>
-              <div>
-                <dt class="text-dimmed text-sm">Gender</dt>
-                <dd class="text-base font-medium">
-                  {{ capitalizeFirst(data.user.gender) }}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-dimmed text-sm">Birthdate</dt>
-                <dd class="text-base font-medium">
-                  {{ formatDate(data.user.birthdate) }}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-dimmed text-sm">Age</dt>
-                <dd class="text-base font-medium">{{ data.user.age }} years</dd>
-              </div>
-            </dl>
-          </UCard>
-
-          <!-- Church Information Card -->
-          <UCard>
-            <template #header>
-              <h2 class="text-xl font-semibold">Church</h2>
-            </template>
-
-            <dl class="space-y-4">
-              <div>
-                <dt class="text-dimmed text-sm">Church Name</dt>
-                <dd class="font-medium">
-                  {{ data.user.church.name }}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-dimmed text-sm">Church ID</dt>
-                <dd class="font-mono text-sm">
-                  {{ data.user.church.id }}
-                </dd>
-              </div>
-            </dl>
-          </UCard>
-
-          <!-- Roles Card -->
-          <UCard class="md:col-span-2">
+        <!-- Roles Card -->
+        <UCard>
             <template #header>
               <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold">Roles & Permissions</h2>
@@ -275,8 +253,7 @@ async function handleRevokeRole(roleId: string, role: RoleType, scopeType?: Scop
               </div>
             </div>
             <div v-else class="text-dimmed">No roles assigned</div>
-          </UCard>
-        </div>
+        </UCard>
       </div>
     </UContainer>
 
