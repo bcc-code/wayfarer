@@ -17,21 +17,51 @@ SET
     archived = true,
     updated_at = now()
 WHERE id = $1::text
-RETURNING id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived
+RETURNING id, name, description, start_date, end_date, logo_url,
+    color_light_accent, color_light_accent_contrast, color_light_on_accent,
+    color_light_background_default, color_light_background_raised, color_light_background_indent,
+    color_light_text_default, color_light_text_muted, color_light_text_hint,
+    color_light_shadow_default, color_light_shadow_blank, color_light_border_default,
+    color_dark_accent, color_dark_accent_contrast, color_dark_on_accent,
+    color_dark_background_default, color_dark_background_raised, color_dark_background_indent,
+    color_dark_text_default, color_dark_text_muted, color_dark_text_hint,
+    color_dark_shadow_default, color_dark_shadow_blank, color_dark_border_default,
+    rounding, archived
 `
 
 type ArchiveProjectRow struct {
-	ID             string             `json:"id"`
-	Name           string             `json:"name"`
-	Description    string             `json:"description"`
-	StartDate      pgtype.Timestamptz `json:"start_date"`
-	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        *string            `json:"logo_url"`
-	ColorPrimary   string             `json:"color_primary"`
-	ColorSecondary string             `json:"color_secondary"`
-	ColorTertiary  string             `json:"color_tertiary"`
-	Rounding       int32              `json:"rounding"`
-	Archived       *bool              `json:"archived"`
+	ID                          string             `json:"id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	StartDate                   pgtype.Timestamptz `json:"start_date"`
+	EndDate                     pgtype.Timestamptz `json:"end_date"`
+	LogoUrl                     *string            `json:"logo_url"`
+	ColorLightAccent            string             `json:"color_light_accent"`
+	ColorLightAccentContrast    string             `json:"color_light_accent_contrast"`
+	ColorLightOnAccent          string             `json:"color_light_on_accent"`
+	ColorLightBackgroundDefault string             `json:"color_light_background_default"`
+	ColorLightBackgroundRaised  string             `json:"color_light_background_raised"`
+	ColorLightBackgroundIndent  string             `json:"color_light_background_indent"`
+	ColorLightTextDefault       string             `json:"color_light_text_default"`
+	ColorLightTextMuted         string             `json:"color_light_text_muted"`
+	ColorLightTextHint          string             `json:"color_light_text_hint"`
+	ColorLightShadowDefault     string             `json:"color_light_shadow_default"`
+	ColorLightShadowBlank       string             `json:"color_light_shadow_blank"`
+	ColorLightBorderDefault     string             `json:"color_light_border_default"`
+	ColorDarkAccent             string             `json:"color_dark_accent"`
+	ColorDarkAccentContrast     string             `json:"color_dark_accent_contrast"`
+	ColorDarkOnAccent           string             `json:"color_dark_on_accent"`
+	ColorDarkBackgroundDefault  string             `json:"color_dark_background_default"`
+	ColorDarkBackgroundRaised   string             `json:"color_dark_background_raised"`
+	ColorDarkBackgroundIndent   string             `json:"color_dark_background_indent"`
+	ColorDarkTextDefault        string             `json:"color_dark_text_default"`
+	ColorDarkTextMuted          string             `json:"color_dark_text_muted"`
+	ColorDarkTextHint           string             `json:"color_dark_text_hint"`
+	ColorDarkShadowDefault      string             `json:"color_dark_shadow_default"`
+	ColorDarkShadowBlank        string             `json:"color_dark_shadow_blank"`
+	ColorDarkBorderDefault      string             `json:"color_dark_border_default"`
+	Rounding                    int32              `json:"rounding"`
+	Archived                    *bool              `json:"archived"`
 }
 
 func (q *Queries) ArchiveProject(ctx context.Context, id string) (*ArchiveProjectRow, error) {
@@ -44,9 +74,30 @@ func (q *Queries) ArchiveProject(ctx context.Context, id string) (*ArchiveProjec
 		&i.StartDate,
 		&i.EndDate,
 		&i.LogoUrl,
-		&i.ColorPrimary,
-		&i.ColorSecondary,
-		&i.ColorTertiary,
+		&i.ColorLightAccent,
+		&i.ColorLightAccentContrast,
+		&i.ColorLightOnAccent,
+		&i.ColorLightBackgroundDefault,
+		&i.ColorLightBackgroundRaised,
+		&i.ColorLightBackgroundIndent,
+		&i.ColorLightTextDefault,
+		&i.ColorLightTextMuted,
+		&i.ColorLightTextHint,
+		&i.ColorLightShadowDefault,
+		&i.ColorLightShadowBlank,
+		&i.ColorLightBorderDefault,
+		&i.ColorDarkAccent,
+		&i.ColorDarkAccentContrast,
+		&i.ColorDarkOnAccent,
+		&i.ColorDarkBackgroundDefault,
+		&i.ColorDarkBackgroundRaised,
+		&i.ColorDarkBackgroundIndent,
+		&i.ColorDarkTextDefault,
+		&i.ColorDarkTextMuted,
+		&i.ColorDarkTextHint,
+		&i.ColorDarkShadowDefault,
+		&i.ColorDarkShadowBlank,
+		&i.ColorDarkBorderDefault,
 		&i.Rounding,
 		&i.Archived,
 	)
@@ -96,9 +147,30 @@ INSERT INTO projects (
     start_date,
     end_date,
     logo_url,
-    color_primary,
-    color_secondary,
-    color_tertiary,
+    color_light_accent,
+    color_light_accent_contrast,
+    color_light_on_accent,
+    color_light_background_default,
+    color_light_background_raised,
+    color_light_background_indent,
+    color_light_text_default,
+    color_light_text_muted,
+    color_light_text_hint,
+    color_light_shadow_default,
+    color_light_shadow_blank,
+    color_light_border_default,
+    color_dark_accent,
+    color_dark_accent_contrast,
+    color_dark_on_accent,
+    color_dark_background_default,
+    color_dark_background_raised,
+    color_dark_background_indent,
+    color_dark_text_default,
+    color_dark_text_muted,
+    color_dark_text_hint,
+    color_dark_shadow_default,
+    color_dark_shadow_blank,
+    color_dark_border_default,
     rounding
 )
 VALUES (
@@ -111,36 +183,108 @@ VALUES (
     $7::text,
     $8::text,
     $9::text,
-    $10::int
+    $10::text,
+    $11::text,
+    $12::text,
+    $13::text,
+    $14::text,
+    $15::text,
+    $16::text,
+    $17::text,
+    $18::text,
+    $19::text,
+    $20::text,
+    $21::text,
+    $22::text,
+    $23::text,
+    $24::text,
+    $25::text,
+    $26::text,
+    $27::text,
+    $28::text,
+    $29::text,
+    $30::text,
+    $31::int
 )
-RETURNING id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived
+RETURNING id, name, description, start_date, end_date, logo_url,
+    color_light_accent, color_light_accent_contrast, color_light_on_accent,
+    color_light_background_default, color_light_background_raised, color_light_background_indent,
+    color_light_text_default, color_light_text_muted, color_light_text_hint,
+    color_light_shadow_default, color_light_shadow_blank, color_light_border_default,
+    color_dark_accent, color_dark_accent_contrast, color_dark_on_accent,
+    color_dark_background_default, color_dark_background_raised, color_dark_background_indent,
+    color_dark_text_default, color_dark_text_muted, color_dark_text_hint,
+    color_dark_shadow_default, color_dark_shadow_blank, color_dark_border_default,
+    rounding, archived
 `
 
 type CreateProjectParams struct {
-	ID             string             `json:"id"`
-	Name           string             `json:"name"`
-	Description    string             `json:"description"`
-	Startdate      pgtype.Timestamptz `json:"startdate"`
-	Enddate        pgtype.Timestamptz `json:"enddate"`
-	Logourl        *string            `json:"logourl"`
-	Colorprimary   string             `json:"colorprimary"`
-	Colorsecondary string             `json:"colorsecondary"`
-	Colortertiary  string             `json:"colortertiary"`
-	Rounding       int32              `json:"rounding"`
+	ID                          string             `json:"id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	Startdate                   pgtype.Timestamptz `json:"startdate"`
+	Enddate                     pgtype.Timestamptz `json:"enddate"`
+	Logourl                     *string            `json:"logourl"`
+	Colorlightaccent            string             `json:"colorlightaccent"`
+	Colorlightaccentcontrast    string             `json:"colorlightaccentcontrast"`
+	Colorlightonaccent          string             `json:"colorlightonaccent"`
+	Colorlightbackgrounddefault string             `json:"colorlightbackgrounddefault"`
+	Colorlightbackgroundraised  string             `json:"colorlightbackgroundraised"`
+	Colorlightbackgroundindent  string             `json:"colorlightbackgroundindent"`
+	Colorlighttextdefault       string             `json:"colorlighttextdefault"`
+	Colorlighttextmuted         string             `json:"colorlighttextmuted"`
+	Colorlighttexthint          string             `json:"colorlighttexthint"`
+	Colorlightshadowdefault     string             `json:"colorlightshadowdefault"`
+	Colorlightshadowblank       string             `json:"colorlightshadowblank"`
+	Colorlightborderdefault     string             `json:"colorlightborderdefault"`
+	Colordarkaccent             string             `json:"colordarkaccent"`
+	Colordarkaccentcontrast     string             `json:"colordarkaccentcontrast"`
+	Colordarkonaccent           string             `json:"colordarkonaccent"`
+	Colordarkbackgrounddefault  string             `json:"colordarkbackgrounddefault"`
+	Colordarkbackgroundraised   string             `json:"colordarkbackgroundraised"`
+	Colordarkbackgroundindent   string             `json:"colordarkbackgroundindent"`
+	Colordarktextdefault        string             `json:"colordarktextdefault"`
+	Colordarktextmuted          string             `json:"colordarktextmuted"`
+	Colordarktexthint           string             `json:"colordarktexthint"`
+	Colordarkshadowdefault      string             `json:"colordarkshadowdefault"`
+	Colordarkshadowblank        string             `json:"colordarkshadowblank"`
+	Colordarkborderdefault      string             `json:"colordarkborderdefault"`
+	Rounding                    int32              `json:"rounding"`
 }
 
 type CreateProjectRow struct {
-	ID             string             `json:"id"`
-	Name           string             `json:"name"`
-	Description    string             `json:"description"`
-	StartDate      pgtype.Timestamptz `json:"start_date"`
-	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        *string            `json:"logo_url"`
-	ColorPrimary   string             `json:"color_primary"`
-	ColorSecondary string             `json:"color_secondary"`
-	ColorTertiary  string             `json:"color_tertiary"`
-	Rounding       int32              `json:"rounding"`
-	Archived       *bool              `json:"archived"`
+	ID                          string             `json:"id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	StartDate                   pgtype.Timestamptz `json:"start_date"`
+	EndDate                     pgtype.Timestamptz `json:"end_date"`
+	LogoUrl                     *string            `json:"logo_url"`
+	ColorLightAccent            string             `json:"color_light_accent"`
+	ColorLightAccentContrast    string             `json:"color_light_accent_contrast"`
+	ColorLightOnAccent          string             `json:"color_light_on_accent"`
+	ColorLightBackgroundDefault string             `json:"color_light_background_default"`
+	ColorLightBackgroundRaised  string             `json:"color_light_background_raised"`
+	ColorLightBackgroundIndent  string             `json:"color_light_background_indent"`
+	ColorLightTextDefault       string             `json:"color_light_text_default"`
+	ColorLightTextMuted         string             `json:"color_light_text_muted"`
+	ColorLightTextHint          string             `json:"color_light_text_hint"`
+	ColorLightShadowDefault     string             `json:"color_light_shadow_default"`
+	ColorLightShadowBlank       string             `json:"color_light_shadow_blank"`
+	ColorLightBorderDefault     string             `json:"color_light_border_default"`
+	ColorDarkAccent             string             `json:"color_dark_accent"`
+	ColorDarkAccentContrast     string             `json:"color_dark_accent_contrast"`
+	ColorDarkOnAccent           string             `json:"color_dark_on_accent"`
+	ColorDarkBackgroundDefault  string             `json:"color_dark_background_default"`
+	ColorDarkBackgroundRaised   string             `json:"color_dark_background_raised"`
+	ColorDarkBackgroundIndent   string             `json:"color_dark_background_indent"`
+	ColorDarkTextDefault        string             `json:"color_dark_text_default"`
+	ColorDarkTextMuted          string             `json:"color_dark_text_muted"`
+	ColorDarkTextHint           string             `json:"color_dark_text_hint"`
+	ColorDarkShadowDefault      string             `json:"color_dark_shadow_default"`
+	ColorDarkShadowBlank        string             `json:"color_dark_shadow_blank"`
+	ColorDarkBorderDefault      string             `json:"color_dark_border_default"`
+	Rounding                    int32              `json:"rounding"`
+	Archived                    *bool              `json:"archived"`
 }
 
 func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (*CreateProjectRow, error) {
@@ -151,9 +295,30 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (*
 		arg.Startdate,
 		arg.Enddate,
 		arg.Logourl,
-		arg.Colorprimary,
-		arg.Colorsecondary,
-		arg.Colortertiary,
+		arg.Colorlightaccent,
+		arg.Colorlightaccentcontrast,
+		arg.Colorlightonaccent,
+		arg.Colorlightbackgrounddefault,
+		arg.Colorlightbackgroundraised,
+		arg.Colorlightbackgroundindent,
+		arg.Colorlighttextdefault,
+		arg.Colorlighttextmuted,
+		arg.Colorlighttexthint,
+		arg.Colorlightshadowdefault,
+		arg.Colorlightshadowblank,
+		arg.Colorlightborderdefault,
+		arg.Colordarkaccent,
+		arg.Colordarkaccentcontrast,
+		arg.Colordarkonaccent,
+		arg.Colordarkbackgrounddefault,
+		arg.Colordarkbackgroundraised,
+		arg.Colordarkbackgroundindent,
+		arg.Colordarktextdefault,
+		arg.Colordarktextmuted,
+		arg.Colordarktexthint,
+		arg.Colordarkshadowdefault,
+		arg.Colordarkshadowblank,
+		arg.Colordarkborderdefault,
 		arg.Rounding,
 	)
 	var i CreateProjectRow
@@ -164,9 +329,30 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (*
 		&i.StartDate,
 		&i.EndDate,
 		&i.LogoUrl,
-		&i.ColorPrimary,
-		&i.ColorSecondary,
-		&i.ColorTertiary,
+		&i.ColorLightAccent,
+		&i.ColorLightAccentContrast,
+		&i.ColorLightOnAccent,
+		&i.ColorLightBackgroundDefault,
+		&i.ColorLightBackgroundRaised,
+		&i.ColorLightBackgroundIndent,
+		&i.ColorLightTextDefault,
+		&i.ColorLightTextMuted,
+		&i.ColorLightTextHint,
+		&i.ColorLightShadowDefault,
+		&i.ColorLightShadowBlank,
+		&i.ColorLightBorderDefault,
+		&i.ColorDarkAccent,
+		&i.ColorDarkAccentContrast,
+		&i.ColorDarkOnAccent,
+		&i.ColorDarkBackgroundDefault,
+		&i.ColorDarkBackgroundRaised,
+		&i.ColorDarkBackgroundIndent,
+		&i.ColorDarkTextDefault,
+		&i.ColorDarkTextMuted,
+		&i.ColorDarkTextHint,
+		&i.ColorDarkShadowDefault,
+		&i.ColorDarkShadowBlank,
+		&i.ColorDarkBorderDefault,
 		&i.Rounding,
 		&i.Archived,
 	)
@@ -184,23 +370,53 @@ func (q *Queries) DeleteProject(ctx context.Context, id string) error {
 }
 
 const GetAllProjects = `-- name: GetAllProjects :many
-SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived
+SELECT id, name, description, start_date, end_date, logo_url,
+    color_light_accent, color_light_accent_contrast, color_light_on_accent,
+    color_light_background_default, color_light_background_raised, color_light_background_indent,
+    color_light_text_default, color_light_text_muted, color_light_text_hint,
+    color_light_shadow_default, color_light_shadow_blank, color_light_border_default,
+    color_dark_accent, color_dark_accent_contrast, color_dark_on_accent,
+    color_dark_background_default, color_dark_background_raised, color_dark_background_indent,
+    color_dark_text_default, color_dark_text_muted, color_dark_text_hint,
+    color_dark_shadow_default, color_dark_shadow_blank, color_dark_border_default,
+    rounding, archived
 FROM projects
 ORDER BY start_date DESC
 `
 
 type GetAllProjectsRow struct {
-	ID             string             `json:"id"`
-	Name           string             `json:"name"`
-	Description    string             `json:"description"`
-	StartDate      pgtype.Timestamptz `json:"start_date"`
-	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        *string            `json:"logo_url"`
-	ColorPrimary   string             `json:"color_primary"`
-	ColorSecondary string             `json:"color_secondary"`
-	ColorTertiary  string             `json:"color_tertiary"`
-	Rounding       int32              `json:"rounding"`
-	Archived       *bool              `json:"archived"`
+	ID                          string             `json:"id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	StartDate                   pgtype.Timestamptz `json:"start_date"`
+	EndDate                     pgtype.Timestamptz `json:"end_date"`
+	LogoUrl                     *string            `json:"logo_url"`
+	ColorLightAccent            string             `json:"color_light_accent"`
+	ColorLightAccentContrast    string             `json:"color_light_accent_contrast"`
+	ColorLightOnAccent          string             `json:"color_light_on_accent"`
+	ColorLightBackgroundDefault string             `json:"color_light_background_default"`
+	ColorLightBackgroundRaised  string             `json:"color_light_background_raised"`
+	ColorLightBackgroundIndent  string             `json:"color_light_background_indent"`
+	ColorLightTextDefault       string             `json:"color_light_text_default"`
+	ColorLightTextMuted         string             `json:"color_light_text_muted"`
+	ColorLightTextHint          string             `json:"color_light_text_hint"`
+	ColorLightShadowDefault     string             `json:"color_light_shadow_default"`
+	ColorLightShadowBlank       string             `json:"color_light_shadow_blank"`
+	ColorLightBorderDefault     string             `json:"color_light_border_default"`
+	ColorDarkAccent             string             `json:"color_dark_accent"`
+	ColorDarkAccentContrast     string             `json:"color_dark_accent_contrast"`
+	ColorDarkOnAccent           string             `json:"color_dark_on_accent"`
+	ColorDarkBackgroundDefault  string             `json:"color_dark_background_default"`
+	ColorDarkBackgroundRaised   string             `json:"color_dark_background_raised"`
+	ColorDarkBackgroundIndent   string             `json:"color_dark_background_indent"`
+	ColorDarkTextDefault        string             `json:"color_dark_text_default"`
+	ColorDarkTextMuted          string             `json:"color_dark_text_muted"`
+	ColorDarkTextHint           string             `json:"color_dark_text_hint"`
+	ColorDarkShadowDefault      string             `json:"color_dark_shadow_default"`
+	ColorDarkShadowBlank        string             `json:"color_dark_shadow_blank"`
+	ColorDarkBorderDefault      string             `json:"color_dark_border_default"`
+	Rounding                    int32              `json:"rounding"`
+	Archived                    *bool              `json:"archived"`
 }
 
 func (q *Queries) GetAllProjects(ctx context.Context) ([]*GetAllProjectsRow, error) {
@@ -219,9 +435,30 @@ func (q *Queries) GetAllProjects(ctx context.Context) ([]*GetAllProjectsRow, err
 			&i.StartDate,
 			&i.EndDate,
 			&i.LogoUrl,
-			&i.ColorPrimary,
-			&i.ColorSecondary,
-			&i.ColorTertiary,
+			&i.ColorLightAccent,
+			&i.ColorLightAccentContrast,
+			&i.ColorLightOnAccent,
+			&i.ColorLightBackgroundDefault,
+			&i.ColorLightBackgroundRaised,
+			&i.ColorLightBackgroundIndent,
+			&i.ColorLightTextDefault,
+			&i.ColorLightTextMuted,
+			&i.ColorLightTextHint,
+			&i.ColorLightShadowDefault,
+			&i.ColorLightShadowBlank,
+			&i.ColorLightBorderDefault,
+			&i.ColorDarkAccent,
+			&i.ColorDarkAccentContrast,
+			&i.ColorDarkOnAccent,
+			&i.ColorDarkBackgroundDefault,
+			&i.ColorDarkBackgroundRaised,
+			&i.ColorDarkBackgroundIndent,
+			&i.ColorDarkTextDefault,
+			&i.ColorDarkTextMuted,
+			&i.ColorDarkTextHint,
+			&i.ColorDarkShadowDefault,
+			&i.ColorDarkShadowBlank,
+			&i.ColorDarkBorderDefault,
 			&i.Rounding,
 			&i.Archived,
 		); err != nil {
@@ -236,23 +473,53 @@ func (q *Queries) GetAllProjects(ctx context.Context) ([]*GetAllProjectsRow, err
 }
 
 const GetProjectByID = `-- name: GetProjectByID :one
-SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived
+SELECT id, name, description, start_date, end_date, logo_url,
+    color_light_accent, color_light_accent_contrast, color_light_on_accent,
+    color_light_background_default, color_light_background_raised, color_light_background_indent,
+    color_light_text_default, color_light_text_muted, color_light_text_hint,
+    color_light_shadow_default, color_light_shadow_blank, color_light_border_default,
+    color_dark_accent, color_dark_accent_contrast, color_dark_on_accent,
+    color_dark_background_default, color_dark_background_raised, color_dark_background_indent,
+    color_dark_text_default, color_dark_text_muted, color_dark_text_hint,
+    color_dark_shadow_default, color_dark_shadow_blank, color_dark_border_default,
+    rounding, archived
 FROM projects
 WHERE id = $1
 `
 
 type GetProjectByIDRow struct {
-	ID             string             `json:"id"`
-	Name           string             `json:"name"`
-	Description    string             `json:"description"`
-	StartDate      pgtype.Timestamptz `json:"start_date"`
-	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        *string            `json:"logo_url"`
-	ColorPrimary   string             `json:"color_primary"`
-	ColorSecondary string             `json:"color_secondary"`
-	ColorTertiary  string             `json:"color_tertiary"`
-	Rounding       int32              `json:"rounding"`
-	Archived       *bool              `json:"archived"`
+	ID                          string             `json:"id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	StartDate                   pgtype.Timestamptz `json:"start_date"`
+	EndDate                     pgtype.Timestamptz `json:"end_date"`
+	LogoUrl                     *string            `json:"logo_url"`
+	ColorLightAccent            string             `json:"color_light_accent"`
+	ColorLightAccentContrast    string             `json:"color_light_accent_contrast"`
+	ColorLightOnAccent          string             `json:"color_light_on_accent"`
+	ColorLightBackgroundDefault string             `json:"color_light_background_default"`
+	ColorLightBackgroundRaised  string             `json:"color_light_background_raised"`
+	ColorLightBackgroundIndent  string             `json:"color_light_background_indent"`
+	ColorLightTextDefault       string             `json:"color_light_text_default"`
+	ColorLightTextMuted         string             `json:"color_light_text_muted"`
+	ColorLightTextHint          string             `json:"color_light_text_hint"`
+	ColorLightShadowDefault     string             `json:"color_light_shadow_default"`
+	ColorLightShadowBlank       string             `json:"color_light_shadow_blank"`
+	ColorLightBorderDefault     string             `json:"color_light_border_default"`
+	ColorDarkAccent             string             `json:"color_dark_accent"`
+	ColorDarkAccentContrast     string             `json:"color_dark_accent_contrast"`
+	ColorDarkOnAccent           string             `json:"color_dark_on_accent"`
+	ColorDarkBackgroundDefault  string             `json:"color_dark_background_default"`
+	ColorDarkBackgroundRaised   string             `json:"color_dark_background_raised"`
+	ColorDarkBackgroundIndent   string             `json:"color_dark_background_indent"`
+	ColorDarkTextDefault        string             `json:"color_dark_text_default"`
+	ColorDarkTextMuted          string             `json:"color_dark_text_muted"`
+	ColorDarkTextHint           string             `json:"color_dark_text_hint"`
+	ColorDarkShadowDefault      string             `json:"color_dark_shadow_default"`
+	ColorDarkShadowBlank        string             `json:"color_dark_shadow_blank"`
+	ColorDarkBorderDefault      string             `json:"color_dark_border_default"`
+	Rounding                    int32              `json:"rounding"`
+	Archived                    *bool              `json:"archived"`
 }
 
 func (q *Queries) GetProjectByID(ctx context.Context, id string) (*GetProjectByIDRow, error) {
@@ -265,9 +532,30 @@ func (q *Queries) GetProjectByID(ctx context.Context, id string) (*GetProjectByI
 		&i.StartDate,
 		&i.EndDate,
 		&i.LogoUrl,
-		&i.ColorPrimary,
-		&i.ColorSecondary,
-		&i.ColorTertiary,
+		&i.ColorLightAccent,
+		&i.ColorLightAccentContrast,
+		&i.ColorLightOnAccent,
+		&i.ColorLightBackgroundDefault,
+		&i.ColorLightBackgroundRaised,
+		&i.ColorLightBackgroundIndent,
+		&i.ColorLightTextDefault,
+		&i.ColorLightTextMuted,
+		&i.ColorLightTextHint,
+		&i.ColorLightShadowDefault,
+		&i.ColorLightShadowBlank,
+		&i.ColorLightBorderDefault,
+		&i.ColorDarkAccent,
+		&i.ColorDarkAccentContrast,
+		&i.ColorDarkOnAccent,
+		&i.ColorDarkBackgroundDefault,
+		&i.ColorDarkBackgroundRaised,
+		&i.ColorDarkBackgroundIndent,
+		&i.ColorDarkTextDefault,
+		&i.ColorDarkTextMuted,
+		&i.ColorDarkTextHint,
+		&i.ColorDarkShadowDefault,
+		&i.ColorDarkShadowBlank,
+		&i.ColorDarkBorderDefault,
 		&i.Rounding,
 		&i.Archived,
 	)
@@ -275,23 +563,53 @@ func (q *Queries) GetProjectByID(ctx context.Context, id string) (*GetProjectByI
 }
 
 const GetProjectsByIDs = `-- name: GetProjectsByIDs :many
-SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived
+SELECT id, name, description, start_date, end_date, logo_url,
+    color_light_accent, color_light_accent_contrast, color_light_on_accent,
+    color_light_background_default, color_light_background_raised, color_light_background_indent,
+    color_light_text_default, color_light_text_muted, color_light_text_hint,
+    color_light_shadow_default, color_light_shadow_blank, color_light_border_default,
+    color_dark_accent, color_dark_accent_contrast, color_dark_on_accent,
+    color_dark_background_default, color_dark_background_raised, color_dark_background_indent,
+    color_dark_text_default, color_dark_text_muted, color_dark_text_hint,
+    color_dark_shadow_default, color_dark_shadow_blank, color_dark_border_default,
+    rounding, archived
 FROM projects
 WHERE id = ANY($1::text[])
 `
 
 type GetProjectsByIDsRow struct {
-	ID             string             `json:"id"`
-	Name           string             `json:"name"`
-	Description    string             `json:"description"`
-	StartDate      pgtype.Timestamptz `json:"start_date"`
-	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        *string            `json:"logo_url"`
-	ColorPrimary   string             `json:"color_primary"`
-	ColorSecondary string             `json:"color_secondary"`
-	ColorTertiary  string             `json:"color_tertiary"`
-	Rounding       int32              `json:"rounding"`
-	Archived       *bool              `json:"archived"`
+	ID                          string             `json:"id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	StartDate                   pgtype.Timestamptz `json:"start_date"`
+	EndDate                     pgtype.Timestamptz `json:"end_date"`
+	LogoUrl                     *string            `json:"logo_url"`
+	ColorLightAccent            string             `json:"color_light_accent"`
+	ColorLightAccentContrast    string             `json:"color_light_accent_contrast"`
+	ColorLightOnAccent          string             `json:"color_light_on_accent"`
+	ColorLightBackgroundDefault string             `json:"color_light_background_default"`
+	ColorLightBackgroundRaised  string             `json:"color_light_background_raised"`
+	ColorLightBackgroundIndent  string             `json:"color_light_background_indent"`
+	ColorLightTextDefault       string             `json:"color_light_text_default"`
+	ColorLightTextMuted         string             `json:"color_light_text_muted"`
+	ColorLightTextHint          string             `json:"color_light_text_hint"`
+	ColorLightShadowDefault     string             `json:"color_light_shadow_default"`
+	ColorLightShadowBlank       string             `json:"color_light_shadow_blank"`
+	ColorLightBorderDefault     string             `json:"color_light_border_default"`
+	ColorDarkAccent             string             `json:"color_dark_accent"`
+	ColorDarkAccentContrast     string             `json:"color_dark_accent_contrast"`
+	ColorDarkOnAccent           string             `json:"color_dark_on_accent"`
+	ColorDarkBackgroundDefault  string             `json:"color_dark_background_default"`
+	ColorDarkBackgroundRaised   string             `json:"color_dark_background_raised"`
+	ColorDarkBackgroundIndent   string             `json:"color_dark_background_indent"`
+	ColorDarkTextDefault        string             `json:"color_dark_text_default"`
+	ColorDarkTextMuted          string             `json:"color_dark_text_muted"`
+	ColorDarkTextHint           string             `json:"color_dark_text_hint"`
+	ColorDarkShadowDefault      string             `json:"color_dark_shadow_default"`
+	ColorDarkShadowBlank        string             `json:"color_dark_shadow_blank"`
+	ColorDarkBorderDefault      string             `json:"color_dark_border_default"`
+	Rounding                    int32              `json:"rounding"`
+	Archived                    *bool              `json:"archived"`
 }
 
 func (q *Queries) GetProjectsByIDs(ctx context.Context, ids []string) ([]*GetProjectsByIDsRow, error) {
@@ -310,9 +628,30 @@ func (q *Queries) GetProjectsByIDs(ctx context.Context, ids []string) ([]*GetPro
 			&i.StartDate,
 			&i.EndDate,
 			&i.LogoUrl,
-			&i.ColorPrimary,
-			&i.ColorSecondary,
-			&i.ColorTertiary,
+			&i.ColorLightAccent,
+			&i.ColorLightAccentContrast,
+			&i.ColorLightOnAccent,
+			&i.ColorLightBackgroundDefault,
+			&i.ColorLightBackgroundRaised,
+			&i.ColorLightBackgroundIndent,
+			&i.ColorLightTextDefault,
+			&i.ColorLightTextMuted,
+			&i.ColorLightTextHint,
+			&i.ColorLightShadowDefault,
+			&i.ColorLightShadowBlank,
+			&i.ColorLightBorderDefault,
+			&i.ColorDarkAccent,
+			&i.ColorDarkAccentContrast,
+			&i.ColorDarkOnAccent,
+			&i.ColorDarkBackgroundDefault,
+			&i.ColorDarkBackgroundRaised,
+			&i.ColorDarkBackgroundIndent,
+			&i.ColorDarkTextDefault,
+			&i.ColorDarkTextMuted,
+			&i.ColorDarkTextHint,
+			&i.ColorDarkShadowDefault,
+			&i.ColorDarkShadowBlank,
+			&i.ColorDarkBorderDefault,
 			&i.Rounding,
 			&i.Archived,
 		); err != nil {
@@ -334,9 +673,30 @@ SELECT
     p.start_date,
     p.end_date,
     p.logo_url,
-    p.color_primary,
-    p.color_secondary,
-    p.color_tertiary,
+    p.color_light_accent,
+    p.color_light_accent_contrast,
+    p.color_light_on_accent,
+    p.color_light_background_default,
+    p.color_light_background_raised,
+    p.color_light_background_indent,
+    p.color_light_text_default,
+    p.color_light_text_muted,
+    p.color_light_text_hint,
+    p.color_light_shadow_default,
+    p.color_light_shadow_blank,
+    p.color_light_border_default,
+    p.color_dark_accent,
+    p.color_dark_accent_contrast,
+    p.color_dark_on_accent,
+    p.color_dark_background_default,
+    p.color_dark_background_raised,
+    p.color_dark_background_indent,
+    p.color_dark_text_default,
+    p.color_dark_text_muted,
+    p.color_dark_text_hint,
+    p.color_dark_shadow_default,
+    p.color_dark_shadow_blank,
+    p.color_dark_border_default,
     p.rounding,
     p.archived,
     up.user_id
@@ -347,18 +707,39 @@ ORDER BY up.user_id, p.start_date DESC
 `
 
 type GetProjectsByUserIDsRow struct {
-	ID             string             `json:"id"`
-	Name           string             `json:"name"`
-	Description    string             `json:"description"`
-	StartDate      pgtype.Timestamptz `json:"start_date"`
-	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        *string            `json:"logo_url"`
-	ColorPrimary   string             `json:"color_primary"`
-	ColorSecondary string             `json:"color_secondary"`
-	ColorTertiary  string             `json:"color_tertiary"`
-	Rounding       int32              `json:"rounding"`
-	Archived       *bool              `json:"archived"`
-	UserID         string             `json:"user_id"`
+	ID                          string             `json:"id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	StartDate                   pgtype.Timestamptz `json:"start_date"`
+	EndDate                     pgtype.Timestamptz `json:"end_date"`
+	LogoUrl                     *string            `json:"logo_url"`
+	ColorLightAccent            string             `json:"color_light_accent"`
+	ColorLightAccentContrast    string             `json:"color_light_accent_contrast"`
+	ColorLightOnAccent          string             `json:"color_light_on_accent"`
+	ColorLightBackgroundDefault string             `json:"color_light_background_default"`
+	ColorLightBackgroundRaised  string             `json:"color_light_background_raised"`
+	ColorLightBackgroundIndent  string             `json:"color_light_background_indent"`
+	ColorLightTextDefault       string             `json:"color_light_text_default"`
+	ColorLightTextMuted         string             `json:"color_light_text_muted"`
+	ColorLightTextHint          string             `json:"color_light_text_hint"`
+	ColorLightShadowDefault     string             `json:"color_light_shadow_default"`
+	ColorLightShadowBlank       string             `json:"color_light_shadow_blank"`
+	ColorLightBorderDefault     string             `json:"color_light_border_default"`
+	ColorDarkAccent             string             `json:"color_dark_accent"`
+	ColorDarkAccentContrast     string             `json:"color_dark_accent_contrast"`
+	ColorDarkOnAccent           string             `json:"color_dark_on_accent"`
+	ColorDarkBackgroundDefault  string             `json:"color_dark_background_default"`
+	ColorDarkBackgroundRaised   string             `json:"color_dark_background_raised"`
+	ColorDarkBackgroundIndent   string             `json:"color_dark_background_indent"`
+	ColorDarkTextDefault        string             `json:"color_dark_text_default"`
+	ColorDarkTextMuted          string             `json:"color_dark_text_muted"`
+	ColorDarkTextHint           string             `json:"color_dark_text_hint"`
+	ColorDarkShadowDefault      string             `json:"color_dark_shadow_default"`
+	ColorDarkShadowBlank        string             `json:"color_dark_shadow_blank"`
+	ColorDarkBorderDefault      string             `json:"color_dark_border_default"`
+	Rounding                    int32              `json:"rounding"`
+	Archived                    *bool              `json:"archived"`
+	UserID                      string             `json:"user_id"`
 }
 
 func (q *Queries) GetProjectsByUserIDs(ctx context.Context, userIds []string) ([]*GetProjectsByUserIDsRow, error) {
@@ -377,9 +758,30 @@ func (q *Queries) GetProjectsByUserIDs(ctx context.Context, userIds []string) ([
 			&i.StartDate,
 			&i.EndDate,
 			&i.LogoUrl,
-			&i.ColorPrimary,
-			&i.ColorSecondary,
-			&i.ColorTertiary,
+			&i.ColorLightAccent,
+			&i.ColorLightAccentContrast,
+			&i.ColorLightOnAccent,
+			&i.ColorLightBackgroundDefault,
+			&i.ColorLightBackgroundRaised,
+			&i.ColorLightBackgroundIndent,
+			&i.ColorLightTextDefault,
+			&i.ColorLightTextMuted,
+			&i.ColorLightTextHint,
+			&i.ColorLightShadowDefault,
+			&i.ColorLightShadowBlank,
+			&i.ColorLightBorderDefault,
+			&i.ColorDarkAccent,
+			&i.ColorDarkAccentContrast,
+			&i.ColorDarkOnAccent,
+			&i.ColorDarkBackgroundDefault,
+			&i.ColorDarkBackgroundRaised,
+			&i.ColorDarkBackgroundIndent,
+			&i.ColorDarkTextDefault,
+			&i.ColorDarkTextMuted,
+			&i.ColorDarkTextHint,
+			&i.ColorDarkShadowDefault,
+			&i.ColorDarkShadowBlank,
+			&i.ColorDarkBorderDefault,
 			&i.Rounding,
 			&i.Archived,
 			&i.UserID,
@@ -395,7 +797,16 @@ func (q *Queries) GetProjectsByUserIDs(ctx context.Context, userIds []string) ([
 }
 
 const GetProjectsFilteredCursor = `-- name: GetProjectsFilteredCursor :many
-SELECT id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived
+SELECT id, name, description, start_date, end_date, logo_url,
+    color_light_accent, color_light_accent_contrast, color_light_on_accent,
+    color_light_background_default, color_light_background_raised, color_light_background_indent,
+    color_light_text_default, color_light_text_muted, color_light_text_hint,
+    color_light_shadow_default, color_light_shadow_blank, color_light_border_default,
+    color_dark_accent, color_dark_accent_contrast, color_dark_on_accent,
+    color_dark_background_default, color_dark_background_raised, color_dark_background_indent,
+    color_dark_text_default, color_dark_text_muted, color_dark_text_hint,
+    color_dark_shadow_default, color_dark_shadow_blank, color_dark_border_default,
+    rounding, archived
 FROM projects
 WHERE
     ($1::text[] IS NULL OR id = ANY($1::text[]))
@@ -426,17 +837,38 @@ type GetProjectsFilteredCursorParams struct {
 }
 
 type GetProjectsFilteredCursorRow struct {
-	ID             string             `json:"id"`
-	Name           string             `json:"name"`
-	Description    string             `json:"description"`
-	StartDate      pgtype.Timestamptz `json:"start_date"`
-	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        *string            `json:"logo_url"`
-	ColorPrimary   string             `json:"color_primary"`
-	ColorSecondary string             `json:"color_secondary"`
-	ColorTertiary  string             `json:"color_tertiary"`
-	Rounding       int32              `json:"rounding"`
-	Archived       *bool              `json:"archived"`
+	ID                          string             `json:"id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	StartDate                   pgtype.Timestamptz `json:"start_date"`
+	EndDate                     pgtype.Timestamptz `json:"end_date"`
+	LogoUrl                     *string            `json:"logo_url"`
+	ColorLightAccent            string             `json:"color_light_accent"`
+	ColorLightAccentContrast    string             `json:"color_light_accent_contrast"`
+	ColorLightOnAccent          string             `json:"color_light_on_accent"`
+	ColorLightBackgroundDefault string             `json:"color_light_background_default"`
+	ColorLightBackgroundRaised  string             `json:"color_light_background_raised"`
+	ColorLightBackgroundIndent  string             `json:"color_light_background_indent"`
+	ColorLightTextDefault       string             `json:"color_light_text_default"`
+	ColorLightTextMuted         string             `json:"color_light_text_muted"`
+	ColorLightTextHint          string             `json:"color_light_text_hint"`
+	ColorLightShadowDefault     string             `json:"color_light_shadow_default"`
+	ColorLightShadowBlank       string             `json:"color_light_shadow_blank"`
+	ColorLightBorderDefault     string             `json:"color_light_border_default"`
+	ColorDarkAccent             string             `json:"color_dark_accent"`
+	ColorDarkAccentContrast     string             `json:"color_dark_accent_contrast"`
+	ColorDarkOnAccent           string             `json:"color_dark_on_accent"`
+	ColorDarkBackgroundDefault  string             `json:"color_dark_background_default"`
+	ColorDarkBackgroundRaised   string             `json:"color_dark_background_raised"`
+	ColorDarkBackgroundIndent   string             `json:"color_dark_background_indent"`
+	ColorDarkTextDefault        string             `json:"color_dark_text_default"`
+	ColorDarkTextMuted          string             `json:"color_dark_text_muted"`
+	ColorDarkTextHint           string             `json:"color_dark_text_hint"`
+	ColorDarkShadowDefault      string             `json:"color_dark_shadow_default"`
+	ColorDarkShadowBlank        string             `json:"color_dark_shadow_blank"`
+	ColorDarkBorderDefault      string             `json:"color_dark_border_default"`
+	Rounding                    int32              `json:"rounding"`
+	Archived                    *bool              `json:"archived"`
 }
 
 func (q *Queries) GetProjectsFilteredCursor(ctx context.Context, arg GetProjectsFilteredCursorParams) ([]*GetProjectsFilteredCursorRow, error) {
@@ -466,9 +898,30 @@ func (q *Queries) GetProjectsFilteredCursor(ctx context.Context, arg GetProjects
 			&i.StartDate,
 			&i.EndDate,
 			&i.LogoUrl,
-			&i.ColorPrimary,
-			&i.ColorSecondary,
-			&i.ColorTertiary,
+			&i.ColorLightAccent,
+			&i.ColorLightAccentContrast,
+			&i.ColorLightOnAccent,
+			&i.ColorLightBackgroundDefault,
+			&i.ColorLightBackgroundRaised,
+			&i.ColorLightBackgroundIndent,
+			&i.ColorLightTextDefault,
+			&i.ColorLightTextMuted,
+			&i.ColorLightTextHint,
+			&i.ColorLightShadowDefault,
+			&i.ColorLightShadowBlank,
+			&i.ColorLightBorderDefault,
+			&i.ColorDarkAccent,
+			&i.ColorDarkAccentContrast,
+			&i.ColorDarkOnAccent,
+			&i.ColorDarkBackgroundDefault,
+			&i.ColorDarkBackgroundRaised,
+			&i.ColorDarkBackgroundIndent,
+			&i.ColorDarkTextDefault,
+			&i.ColorDarkTextMuted,
+			&i.ColorDarkTextHint,
+			&i.ColorDarkShadowDefault,
+			&i.ColorDarkShadowBlank,
+			&i.ColorDarkBorderDefault,
 			&i.Rounding,
 			&i.Archived,
 		); err != nil {
@@ -490,40 +943,112 @@ SET
     start_date = COALESCE($3::timestamptz, start_date),
     end_date = COALESCE($4::timestamptz, end_date),
     logo_url = COALESCE($5::text, logo_url),
-    color_primary = COALESCE($6::text, color_primary),
-    color_secondary = COALESCE($7::text, color_secondary),
-    color_tertiary = COALESCE($8::text, color_tertiary),
-    rounding = COALESCE($9::int, rounding),
+    color_light_accent = COALESCE($6::text, color_light_accent),
+    color_light_accent_contrast = COALESCE($7::text, color_light_accent_contrast),
+    color_light_on_accent = COALESCE($8::text, color_light_on_accent),
+    color_light_background_default = COALESCE($9::text, color_light_background_default),
+    color_light_background_raised = COALESCE($10::text, color_light_background_raised),
+    color_light_background_indent = COALESCE($11::text, color_light_background_indent),
+    color_light_text_default = COALESCE($12::text, color_light_text_default),
+    color_light_text_muted = COALESCE($13::text, color_light_text_muted),
+    color_light_text_hint = COALESCE($14::text, color_light_text_hint),
+    color_light_shadow_default = COALESCE($15::text, color_light_shadow_default),
+    color_light_shadow_blank = COALESCE($16::text, color_light_shadow_blank),
+    color_light_border_default = COALESCE($17::text, color_light_border_default),
+    color_dark_accent = COALESCE($18::text, color_dark_accent),
+    color_dark_accent_contrast = COALESCE($19::text, color_dark_accent_contrast),
+    color_dark_on_accent = COALESCE($20::text, color_dark_on_accent),
+    color_dark_background_default = COALESCE($21::text, color_dark_background_default),
+    color_dark_background_raised = COALESCE($22::text, color_dark_background_raised),
+    color_dark_background_indent = COALESCE($23::text, color_dark_background_indent),
+    color_dark_text_default = COALESCE($24::text, color_dark_text_default),
+    color_dark_text_muted = COALESCE($25::text, color_dark_text_muted),
+    color_dark_text_hint = COALESCE($26::text, color_dark_text_hint),
+    color_dark_shadow_default = COALESCE($27::text, color_dark_shadow_default),
+    color_dark_shadow_blank = COALESCE($28::text, color_dark_shadow_blank),
+    color_dark_border_default = COALESCE($29::text, color_dark_border_default),
+    rounding = COALESCE($30::int, rounding),
     updated_at = now()
-WHERE id = $10::text
-RETURNING id, name, description, start_date, end_date, logo_url, color_primary, color_secondary, color_tertiary, rounding, archived
+WHERE id = $31::text
+RETURNING id, name, description, start_date, end_date, logo_url,
+    color_light_accent, color_light_accent_contrast, color_light_on_accent,
+    color_light_background_default, color_light_background_raised, color_light_background_indent,
+    color_light_text_default, color_light_text_muted, color_light_text_hint,
+    color_light_shadow_default, color_light_shadow_blank, color_light_border_default,
+    color_dark_accent, color_dark_accent_contrast, color_dark_on_accent,
+    color_dark_background_default, color_dark_background_raised, color_dark_background_indent,
+    color_dark_text_default, color_dark_text_muted, color_dark_text_hint,
+    color_dark_shadow_default, color_dark_shadow_blank, color_dark_border_default,
+    rounding, archived
 `
 
 type UpdateProjectParams struct {
-	Name           string             `json:"name"`
-	Description    *string            `json:"description"`
-	Startdate      pgtype.Timestamptz `json:"startdate"`
-	Enddate        pgtype.Timestamptz `json:"enddate"`
-	Logourl        *string            `json:"logourl"`
-	Colorprimary   string             `json:"colorprimary"`
-	Colorsecondary string             `json:"colorsecondary"`
-	Colortertiary  string             `json:"colortertiary"`
-	Rounding       int32              `json:"rounding"`
-	ID             string             `json:"id"`
+	Name                        string             `json:"name"`
+	Description                 *string            `json:"description"`
+	Startdate                   pgtype.Timestamptz `json:"startdate"`
+	Enddate                     pgtype.Timestamptz `json:"enddate"`
+	Logourl                     *string            `json:"logourl"`
+	Colorlightaccent            string             `json:"colorlightaccent"`
+	Colorlightaccentcontrast    string             `json:"colorlightaccentcontrast"`
+	Colorlightonaccent          string             `json:"colorlightonaccent"`
+	Colorlightbackgrounddefault string             `json:"colorlightbackgrounddefault"`
+	Colorlightbackgroundraised  string             `json:"colorlightbackgroundraised"`
+	Colorlightbackgroundindent  string             `json:"colorlightbackgroundindent"`
+	Colorlighttextdefault       string             `json:"colorlighttextdefault"`
+	Colorlighttextmuted         string             `json:"colorlighttextmuted"`
+	Colorlighttexthint          string             `json:"colorlighttexthint"`
+	Colorlightshadowdefault     string             `json:"colorlightshadowdefault"`
+	Colorlightshadowblank       string             `json:"colorlightshadowblank"`
+	Colorlightborderdefault     string             `json:"colorlightborderdefault"`
+	Colordarkaccent             string             `json:"colordarkaccent"`
+	Colordarkaccentcontrast     string             `json:"colordarkaccentcontrast"`
+	Colordarkonaccent           string             `json:"colordarkonaccent"`
+	Colordarkbackgrounddefault  string             `json:"colordarkbackgrounddefault"`
+	Colordarkbackgroundraised   string             `json:"colordarkbackgroundraised"`
+	Colordarkbackgroundindent   string             `json:"colordarkbackgroundindent"`
+	Colordarktextdefault        string             `json:"colordarktextdefault"`
+	Colordarktextmuted          string             `json:"colordarktextmuted"`
+	Colordarktexthint           string             `json:"colordarktexthint"`
+	Colordarkshadowdefault      string             `json:"colordarkshadowdefault"`
+	Colordarkshadowblank        string             `json:"colordarkshadowblank"`
+	Colordarkborderdefault      string             `json:"colordarkborderdefault"`
+	Rounding                    int32              `json:"rounding"`
+	ID                          string             `json:"id"`
 }
 
 type UpdateProjectRow struct {
-	ID             string             `json:"id"`
-	Name           string             `json:"name"`
-	Description    string             `json:"description"`
-	StartDate      pgtype.Timestamptz `json:"start_date"`
-	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        *string            `json:"logo_url"`
-	ColorPrimary   string             `json:"color_primary"`
-	ColorSecondary string             `json:"color_secondary"`
-	ColorTertiary  string             `json:"color_tertiary"`
-	Rounding       int32              `json:"rounding"`
-	Archived       *bool              `json:"archived"`
+	ID                          string             `json:"id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	StartDate                   pgtype.Timestamptz `json:"start_date"`
+	EndDate                     pgtype.Timestamptz `json:"end_date"`
+	LogoUrl                     *string            `json:"logo_url"`
+	ColorLightAccent            string             `json:"color_light_accent"`
+	ColorLightAccentContrast    string             `json:"color_light_accent_contrast"`
+	ColorLightOnAccent          string             `json:"color_light_on_accent"`
+	ColorLightBackgroundDefault string             `json:"color_light_background_default"`
+	ColorLightBackgroundRaised  string             `json:"color_light_background_raised"`
+	ColorLightBackgroundIndent  string             `json:"color_light_background_indent"`
+	ColorLightTextDefault       string             `json:"color_light_text_default"`
+	ColorLightTextMuted         string             `json:"color_light_text_muted"`
+	ColorLightTextHint          string             `json:"color_light_text_hint"`
+	ColorLightShadowDefault     string             `json:"color_light_shadow_default"`
+	ColorLightShadowBlank       string             `json:"color_light_shadow_blank"`
+	ColorLightBorderDefault     string             `json:"color_light_border_default"`
+	ColorDarkAccent             string             `json:"color_dark_accent"`
+	ColorDarkAccentContrast     string             `json:"color_dark_accent_contrast"`
+	ColorDarkOnAccent           string             `json:"color_dark_on_accent"`
+	ColorDarkBackgroundDefault  string             `json:"color_dark_background_default"`
+	ColorDarkBackgroundRaised   string             `json:"color_dark_background_raised"`
+	ColorDarkBackgroundIndent   string             `json:"color_dark_background_indent"`
+	ColorDarkTextDefault        string             `json:"color_dark_text_default"`
+	ColorDarkTextMuted          string             `json:"color_dark_text_muted"`
+	ColorDarkTextHint           string             `json:"color_dark_text_hint"`
+	ColorDarkShadowDefault      string             `json:"color_dark_shadow_default"`
+	ColorDarkShadowBlank        string             `json:"color_dark_shadow_blank"`
+	ColorDarkBorderDefault      string             `json:"color_dark_border_default"`
+	Rounding                    int32              `json:"rounding"`
+	Archived                    *bool              `json:"archived"`
 }
 
 func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (*UpdateProjectRow, error) {
@@ -533,9 +1058,30 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (*
 		arg.Startdate,
 		arg.Enddate,
 		arg.Logourl,
-		arg.Colorprimary,
-		arg.Colorsecondary,
-		arg.Colortertiary,
+		arg.Colorlightaccent,
+		arg.Colorlightaccentcontrast,
+		arg.Colorlightonaccent,
+		arg.Colorlightbackgrounddefault,
+		arg.Colorlightbackgroundraised,
+		arg.Colorlightbackgroundindent,
+		arg.Colorlighttextdefault,
+		arg.Colorlighttextmuted,
+		arg.Colorlighttexthint,
+		arg.Colorlightshadowdefault,
+		arg.Colorlightshadowblank,
+		arg.Colorlightborderdefault,
+		arg.Colordarkaccent,
+		arg.Colordarkaccentcontrast,
+		arg.Colordarkonaccent,
+		arg.Colordarkbackgrounddefault,
+		arg.Colordarkbackgroundraised,
+		arg.Colordarkbackgroundindent,
+		arg.Colordarktextdefault,
+		arg.Colordarktextmuted,
+		arg.Colordarktexthint,
+		arg.Colordarkshadowdefault,
+		arg.Colordarkshadowblank,
+		arg.Colordarkborderdefault,
 		arg.Rounding,
 		arg.ID,
 	)
@@ -547,9 +1093,30 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (*
 		&i.StartDate,
 		&i.EndDate,
 		&i.LogoUrl,
-		&i.ColorPrimary,
-		&i.ColorSecondary,
-		&i.ColorTertiary,
+		&i.ColorLightAccent,
+		&i.ColorLightAccentContrast,
+		&i.ColorLightOnAccent,
+		&i.ColorLightBackgroundDefault,
+		&i.ColorLightBackgroundRaised,
+		&i.ColorLightBackgroundIndent,
+		&i.ColorLightTextDefault,
+		&i.ColorLightTextMuted,
+		&i.ColorLightTextHint,
+		&i.ColorLightShadowDefault,
+		&i.ColorLightShadowBlank,
+		&i.ColorLightBorderDefault,
+		&i.ColorDarkAccent,
+		&i.ColorDarkAccentContrast,
+		&i.ColorDarkOnAccent,
+		&i.ColorDarkBackgroundDefault,
+		&i.ColorDarkBackgroundRaised,
+		&i.ColorDarkBackgroundIndent,
+		&i.ColorDarkTextDefault,
+		&i.ColorDarkTextMuted,
+		&i.ColorDarkTextHint,
+		&i.ColorDarkShadowDefault,
+		&i.ColorDarkShadowBlank,
+		&i.ColorDarkBorderDefault,
 		&i.Rounding,
 		&i.Archived,
 	)

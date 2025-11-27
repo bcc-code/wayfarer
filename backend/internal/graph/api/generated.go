@@ -135,10 +135,24 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	ColorSet struct {
+		Accent            func(childComplexity int) int
+		AccentContrast    func(childComplexity int) int
+		BackgroundDefault func(childComplexity int) int
+		BackgroundIndent  func(childComplexity int) int
+		BackgroundRaised  func(childComplexity int) int
+		BorderDefault     func(childComplexity int) int
+		OnAccent          func(childComplexity int) int
+		ShadowBlank       func(childComplexity int) int
+		ShadowDefault     func(childComplexity int) int
+		TextDefault       func(childComplexity int) int
+		TextHint          func(childComplexity int) int
+		TextMuted         func(childComplexity int) int
+	}
+
 	Colors struct {
-		Primary   func(childComplexity int) int
-		Secondary func(childComplexity int) int
-		Tertiary  func(childComplexity int) int
+		Dark  func(childComplexity int) int
+		Light func(childComplexity int) int
 	}
 
 	DateRange struct {
@@ -1001,24 +1015,91 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ChurchEdge.Node(childComplexity), true
 
-	case "Colors.primary":
-		if e.complexity.Colors.Primary == nil {
+	case "ColorSet.accent":
+		if e.complexity.ColorSet.Accent == nil {
 			break
 		}
 
-		return e.complexity.Colors.Primary(childComplexity), true
-	case "Colors.secondary":
-		if e.complexity.Colors.Secondary == nil {
+		return e.complexity.ColorSet.Accent(childComplexity), true
+	case "ColorSet.accentContrast":
+		if e.complexity.ColorSet.AccentContrast == nil {
 			break
 		}
 
-		return e.complexity.Colors.Secondary(childComplexity), true
-	case "Colors.tertiary":
-		if e.complexity.Colors.Tertiary == nil {
+		return e.complexity.ColorSet.AccentContrast(childComplexity), true
+	case "ColorSet.backgroundDefault":
+		if e.complexity.ColorSet.BackgroundDefault == nil {
 			break
 		}
 
-		return e.complexity.Colors.Tertiary(childComplexity), true
+		return e.complexity.ColorSet.BackgroundDefault(childComplexity), true
+	case "ColorSet.backgroundIndent":
+		if e.complexity.ColorSet.BackgroundIndent == nil {
+			break
+		}
+
+		return e.complexity.ColorSet.BackgroundIndent(childComplexity), true
+	case "ColorSet.backgroundRaised":
+		if e.complexity.ColorSet.BackgroundRaised == nil {
+			break
+		}
+
+		return e.complexity.ColorSet.BackgroundRaised(childComplexity), true
+	case "ColorSet.borderDefault":
+		if e.complexity.ColorSet.BorderDefault == nil {
+			break
+		}
+
+		return e.complexity.ColorSet.BorderDefault(childComplexity), true
+	case "ColorSet.onAccent":
+		if e.complexity.ColorSet.OnAccent == nil {
+			break
+		}
+
+		return e.complexity.ColorSet.OnAccent(childComplexity), true
+	case "ColorSet.shadowBlank":
+		if e.complexity.ColorSet.ShadowBlank == nil {
+			break
+		}
+
+		return e.complexity.ColorSet.ShadowBlank(childComplexity), true
+	case "ColorSet.shadowDefault":
+		if e.complexity.ColorSet.ShadowDefault == nil {
+			break
+		}
+
+		return e.complexity.ColorSet.ShadowDefault(childComplexity), true
+	case "ColorSet.textDefault":
+		if e.complexity.ColorSet.TextDefault == nil {
+			break
+		}
+
+		return e.complexity.ColorSet.TextDefault(childComplexity), true
+	case "ColorSet.textHint":
+		if e.complexity.ColorSet.TextHint == nil {
+			break
+		}
+
+		return e.complexity.ColorSet.TextHint(childComplexity), true
+	case "ColorSet.textMuted":
+		if e.complexity.ColorSet.TextMuted == nil {
+			break
+		}
+
+		return e.complexity.ColorSet.TextMuted(childComplexity), true
+
+	case "Colors.dark":
+		if e.complexity.Colors.Dark == nil {
+			break
+		}
+
+		return e.complexity.Colors.Dark(childComplexity), true
+	case "Colors.light":
+		if e.complexity.Colors.Light == nil {
+			break
+		}
+
+		return e.complexity.Colors.Light(childComplexity), true
 
 	case "DateRange.end":
 		if e.complexity.DateRange.End == nil {
@@ -3237,6 +3318,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputBrandingInput,
 		ec.unmarshalInputChallengeFilter,
 		ec.unmarshalInputChurchFilter,
+		ec.unmarshalInputColorSetInput,
 		ec.unmarshalInputColorsInput,
 		ec.unmarshalInputCreateChallengeInput,
 		ec.unmarshalInputCreateChurchInput,
@@ -3466,10 +3548,24 @@ type Branding {
     rounding: Int! # border-radius in pixels
 }
 
+type ColorSet {
+    accent: String!
+    accentContrast: String!
+    onAccent: String!
+    backgroundDefault: String!
+    backgroundRaised: String!
+    backgroundIndent: String!
+    textDefault: String!
+    textMuted: String!
+    textHint: String!
+    shadowDefault: String!
+    shadowBlank: String!
+    borderDefault: String!
+}
+
 type Colors {
-    primary: String!
-    secondary: String!
-    tertiary: String!
+    dark: ColorSet!
+    light: ColorSet!
 }
 
 type LeaderboardEntry {
@@ -3735,10 +3831,24 @@ input BrandingInput {
     rounding: Int!
 }
 
+input ColorSetInput {
+    accent: String!
+    accentContrast: String!
+    onAccent: String!
+    backgroundDefault: String!
+    backgroundRaised: String!
+    backgroundIndent: String!
+    textDefault: String!
+    textMuted: String!
+    textHint: String!
+    shadowDefault: String!
+    shadowBlank: String!
+    borderDefault: String!
+}
+
 input ColorsInput {
-    primary: String!
-    secondary: String!
-    tertiary: String!
+    dark: ColorSetInput!
+    light: ColorSetInput!
 }
 
 input ArticleInput {
@@ -6426,12 +6536,10 @@ func (ec *executionContext) fieldContext_Branding_colors(_ context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "primary":
-				return ec.fieldContext_Colors_primary(ctx, field)
-			case "secondary":
-				return ec.fieldContext_Colors_secondary(ctx, field)
-			case "tertiary":
-				return ec.fieldContext_Colors_tertiary(ctx, field)
+			case "dark":
+				return ec.fieldContext_Colors_dark(ctx, field)
+			case "light":
+				return ec.fieldContext_Colors_light(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Colors", field.Name)
 		},
@@ -7309,14 +7417,14 @@ func (ec *executionContext) fieldContext_ChurchEdge_node(_ context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _Colors_primary(ctx context.Context, field graphql.CollectedField, obj *model.Colors) (ret graphql.Marshaler) {
+func (ec *executionContext) _ColorSet_accent(ctx context.Context, field graphql.CollectedField, obj *model.ColorSet) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Colors_primary,
+		ec.fieldContext_ColorSet_accent,
 		func(ctx context.Context) (any, error) {
-			return obj.Primary, nil
+			return obj.Accent, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -7325,9 +7433,9 @@ func (ec *executionContext) _Colors_primary(ctx context.Context, field graphql.C
 	)
 }
 
-func (ec *executionContext) fieldContext_Colors_primary(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ColorSet_accent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Colors",
+		Object:     "ColorSet",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -7338,14 +7446,14 @@ func (ec *executionContext) fieldContext_Colors_primary(_ context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Colors_secondary(ctx context.Context, field graphql.CollectedField, obj *model.Colors) (ret graphql.Marshaler) {
+func (ec *executionContext) _ColorSet_accentContrast(ctx context.Context, field graphql.CollectedField, obj *model.ColorSet) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Colors_secondary,
+		ec.fieldContext_ColorSet_accentContrast,
 		func(ctx context.Context) (any, error) {
-			return obj.Secondary, nil
+			return obj.AccentContrast, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -7354,9 +7462,9 @@ func (ec *executionContext) _Colors_secondary(ctx context.Context, field graphql
 	)
 }
 
-func (ec *executionContext) fieldContext_Colors_secondary(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ColorSet_accentContrast(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Colors",
+		Object:     "ColorSet",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -7367,14 +7475,14 @@ func (ec *executionContext) fieldContext_Colors_secondary(_ context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _Colors_tertiary(ctx context.Context, field graphql.CollectedField, obj *model.Colors) (ret graphql.Marshaler) {
+func (ec *executionContext) _ColorSet_onAccent(ctx context.Context, field graphql.CollectedField, obj *model.ColorSet) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Colors_tertiary,
+		ec.fieldContext_ColorSet_onAccent,
 		func(ctx context.Context) (any, error) {
-			return obj.Tertiary, nil
+			return obj.OnAccent, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -7383,14 +7491,385 @@ func (ec *executionContext) _Colors_tertiary(ctx context.Context, field graphql.
 	)
 }
 
-func (ec *executionContext) fieldContext_Colors_tertiary(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ColorSet_onAccent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ColorSet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ColorSet_backgroundDefault(ctx context.Context, field graphql.CollectedField, obj *model.ColorSet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ColorSet_backgroundDefault,
+		func(ctx context.Context) (any, error) {
+			return obj.BackgroundDefault, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ColorSet_backgroundDefault(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ColorSet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ColorSet_backgroundRaised(ctx context.Context, field graphql.CollectedField, obj *model.ColorSet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ColorSet_backgroundRaised,
+		func(ctx context.Context) (any, error) {
+			return obj.BackgroundRaised, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ColorSet_backgroundRaised(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ColorSet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ColorSet_backgroundIndent(ctx context.Context, field graphql.CollectedField, obj *model.ColorSet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ColorSet_backgroundIndent,
+		func(ctx context.Context) (any, error) {
+			return obj.BackgroundIndent, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ColorSet_backgroundIndent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ColorSet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ColorSet_textDefault(ctx context.Context, field graphql.CollectedField, obj *model.ColorSet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ColorSet_textDefault,
+		func(ctx context.Context) (any, error) {
+			return obj.TextDefault, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ColorSet_textDefault(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ColorSet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ColorSet_textMuted(ctx context.Context, field graphql.CollectedField, obj *model.ColorSet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ColorSet_textMuted,
+		func(ctx context.Context) (any, error) {
+			return obj.TextMuted, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ColorSet_textMuted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ColorSet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ColorSet_textHint(ctx context.Context, field graphql.CollectedField, obj *model.ColorSet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ColorSet_textHint,
+		func(ctx context.Context) (any, error) {
+			return obj.TextHint, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ColorSet_textHint(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ColorSet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ColorSet_shadowDefault(ctx context.Context, field graphql.CollectedField, obj *model.ColorSet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ColorSet_shadowDefault,
+		func(ctx context.Context) (any, error) {
+			return obj.ShadowDefault, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ColorSet_shadowDefault(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ColorSet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ColorSet_shadowBlank(ctx context.Context, field graphql.CollectedField, obj *model.ColorSet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ColorSet_shadowBlank,
+		func(ctx context.Context) (any, error) {
+			return obj.ShadowBlank, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ColorSet_shadowBlank(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ColorSet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ColorSet_borderDefault(ctx context.Context, field graphql.CollectedField, obj *model.ColorSet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ColorSet_borderDefault,
+		func(ctx context.Context) (any, error) {
+			return obj.BorderDefault, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ColorSet_borderDefault(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ColorSet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Colors_dark(ctx context.Context, field graphql.CollectedField, obj *model.Colors) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Colors_dark,
+		func(ctx context.Context) (any, error) {
+			return obj.Dark, nil
+		},
+		nil,
+		ec.marshalNColorSet2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColorSet,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Colors_dark(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Colors",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			switch field.Name {
+			case "accent":
+				return ec.fieldContext_ColorSet_accent(ctx, field)
+			case "accentContrast":
+				return ec.fieldContext_ColorSet_accentContrast(ctx, field)
+			case "onAccent":
+				return ec.fieldContext_ColorSet_onAccent(ctx, field)
+			case "backgroundDefault":
+				return ec.fieldContext_ColorSet_backgroundDefault(ctx, field)
+			case "backgroundRaised":
+				return ec.fieldContext_ColorSet_backgroundRaised(ctx, field)
+			case "backgroundIndent":
+				return ec.fieldContext_ColorSet_backgroundIndent(ctx, field)
+			case "textDefault":
+				return ec.fieldContext_ColorSet_textDefault(ctx, field)
+			case "textMuted":
+				return ec.fieldContext_ColorSet_textMuted(ctx, field)
+			case "textHint":
+				return ec.fieldContext_ColorSet_textHint(ctx, field)
+			case "shadowDefault":
+				return ec.fieldContext_ColorSet_shadowDefault(ctx, field)
+			case "shadowBlank":
+				return ec.fieldContext_ColorSet_shadowBlank(ctx, field)
+			case "borderDefault":
+				return ec.fieldContext_ColorSet_borderDefault(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ColorSet", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Colors_light(ctx context.Context, field graphql.CollectedField, obj *model.Colors) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Colors_light,
+		func(ctx context.Context) (any, error) {
+			return obj.Light, nil
+		},
+		nil,
+		ec.marshalNColorSet2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColorSet,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Colors_light(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Colors",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "accent":
+				return ec.fieldContext_ColorSet_accent(ctx, field)
+			case "accentContrast":
+				return ec.fieldContext_ColorSet_accentContrast(ctx, field)
+			case "onAccent":
+				return ec.fieldContext_ColorSet_onAccent(ctx, field)
+			case "backgroundDefault":
+				return ec.fieldContext_ColorSet_backgroundDefault(ctx, field)
+			case "backgroundRaised":
+				return ec.fieldContext_ColorSet_backgroundRaised(ctx, field)
+			case "backgroundIndent":
+				return ec.fieldContext_ColorSet_backgroundIndent(ctx, field)
+			case "textDefault":
+				return ec.fieldContext_ColorSet_textDefault(ctx, field)
+			case "textMuted":
+				return ec.fieldContext_ColorSet_textMuted(ctx, field)
+			case "textHint":
+				return ec.fieldContext_ColorSet_textHint(ctx, field)
+			case "shadowDefault":
+				return ec.fieldContext_ColorSet_shadowDefault(ctx, field)
+			case "shadowBlank":
+				return ec.fieldContext_ColorSet_shadowBlank(ctx, field)
+			case "borderDefault":
+				return ec.fieldContext_ColorSet_borderDefault(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ColorSet", field.Name)
 		},
 	}
 	return fc, nil
@@ -22764,6 +23243,110 @@ func (ec *executionContext) unmarshalInputChurchFilter(ctx context.Context, obj 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputColorSetInput(ctx context.Context, obj any) (model.ColorSetInput, error) {
+	var it model.ColorSetInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"accent", "accentContrast", "onAccent", "backgroundDefault", "backgroundRaised", "backgroundIndent", "textDefault", "textMuted", "textHint", "shadowDefault", "shadowBlank", "borderDefault"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "accent":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accent"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Accent = data
+		case "accentContrast":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accentContrast"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccentContrast = data
+		case "onAccent":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("onAccent"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OnAccent = data
+		case "backgroundDefault":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("backgroundDefault"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BackgroundDefault = data
+		case "backgroundRaised":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("backgroundRaised"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BackgroundRaised = data
+		case "backgroundIndent":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("backgroundIndent"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BackgroundIndent = data
+		case "textDefault":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("textDefault"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TextDefault = data
+		case "textMuted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("textMuted"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TextMuted = data
+		case "textHint":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("textHint"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TextHint = data
+		case "shadowDefault":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("shadowDefault"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ShadowDefault = data
+		case "shadowBlank":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("shadowBlank"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ShadowBlank = data
+		case "borderDefault":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("borderDefault"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BorderDefault = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputColorsInput(ctx context.Context, obj any) (model.ColorsInput, error) {
 	var it model.ColorsInput
 	asMap := map[string]any{}
@@ -22771,34 +23354,27 @@ func (ec *executionContext) unmarshalInputColorsInput(ctx context.Context, obj a
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"primary", "secondary", "tertiary"}
+	fieldsInOrder := [...]string{"dark", "light"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "primary":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("primary"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+		case "dark":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dark"))
+			data, err := ec.unmarshalNColorSetInput2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColorSetInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Primary = data
-		case "secondary":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("secondary"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			it.Dark = data
+		case "light":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("light"))
+			data, err := ec.unmarshalNColorSetInput2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColorSetInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Secondary = data
-		case "tertiary":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tertiary"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Tertiary = data
+			it.Light = data
 		}
 	}
 
@@ -25534,6 +26110,100 @@ func (ec *executionContext) _ChurchEdge(ctx context.Context, sel ast.SelectionSe
 	return out
 }
 
+var colorSetImplementors = []string{"ColorSet"}
+
+func (ec *executionContext) _ColorSet(ctx context.Context, sel ast.SelectionSet, obj *model.ColorSet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, colorSetImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ColorSet")
+		case "accent":
+			out.Values[i] = ec._ColorSet_accent(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "accentContrast":
+			out.Values[i] = ec._ColorSet_accentContrast(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "onAccent":
+			out.Values[i] = ec._ColorSet_onAccent(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "backgroundDefault":
+			out.Values[i] = ec._ColorSet_backgroundDefault(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "backgroundRaised":
+			out.Values[i] = ec._ColorSet_backgroundRaised(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "backgroundIndent":
+			out.Values[i] = ec._ColorSet_backgroundIndent(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "textDefault":
+			out.Values[i] = ec._ColorSet_textDefault(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "textMuted":
+			out.Values[i] = ec._ColorSet_textMuted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "textHint":
+			out.Values[i] = ec._ColorSet_textHint(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "shadowDefault":
+			out.Values[i] = ec._ColorSet_shadowDefault(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "shadowBlank":
+			out.Values[i] = ec._ColorSet_shadowBlank(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "borderDefault":
+			out.Values[i] = ec._ColorSet_borderDefault(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var colorsImplementors = []string{"Colors"}
 
 func (ec *executionContext) _Colors(ctx context.Context, sel ast.SelectionSet, obj *model.Colors) graphql.Marshaler {
@@ -25545,18 +26215,13 @@ func (ec *executionContext) _Colors(ctx context.Context, sel ast.SelectionSet, o
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Colors")
-		case "primary":
-			out.Values[i] = ec._Colors_primary(ctx, field, obj)
+		case "dark":
+			out.Values[i] = ec._Colors_dark(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "secondary":
-			out.Values[i] = ec._Colors_secondary(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "tertiary":
-			out.Values[i] = ec._Colors_tertiary(ctx, field, obj)
+		case "light":
+			out.Values[i] = ec._Colors_light(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -31451,6 +32116,21 @@ func (ec *executionContext) marshalNChurchEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋw
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNColorSet2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColorSet(ctx context.Context, sel ast.SelectionSet, v *model.ColorSet) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ColorSet(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNColorSetInput2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColorSetInput(ctx context.Context, v any) (*model.ColorSetInput, error) {
+	res, err := ec.unmarshalInputColorSetInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNColors2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColors(ctx context.Context, sel ast.SelectionSet, v *model.Colors) graphql.Marshaler {

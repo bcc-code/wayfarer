@@ -94,10 +94,24 @@ type Branding {
     rounding: Int! # border-radius in pixels
 }
 
+type ColorSet {
+    accent: String!
+    accentContrast: String!
+    onAccent: String!
+    backgroundDefault: String!
+    backgroundRaised: String!
+    backgroundIndent: String!
+    textDefault: String!
+    textMuted: String!
+    textHint: String!
+    shadowDefault: String!
+    shadowBlank: String!
+    borderDefault: String!
+}
+
 type Colors {
-    primary: String!
-    secondary: String!
-    tertiary: String!
+    dark: ColorSet!
+    light: ColorSet!
 }
 
 type LeaderboardEntry {
@@ -363,10 +377,24 @@ input BrandingInput {
     rounding: Int!
 }
 
+input ColorSetInput {
+    accent: String!
+    accentContrast: String!
+    onAccent: String!
+    backgroundDefault: String!
+    backgroundRaised: String!
+    backgroundIndent: String!
+    textDefault: String!
+    textMuted: String!
+    textHint: String!
+    shadowDefault: String!
+    shadowBlank: String!
+    borderDefault: String!
+}
+
 input ColorsInput {
-    primary: String!
-    secondary: String!
-    tertiary: String!
+    dark: ColorSetInput!
+    light: ColorSetInput!
 }
 
 input ArticleInput {

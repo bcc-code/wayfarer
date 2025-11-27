@@ -204,16 +204,37 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.Create
 
 	// Create project in database
 	row, err := r.DB.Queries.CreateProject(ctx, sqlc.CreateProjectParams{
-		ID:             projectID,
-		Name:           input.Name,
-		Description:    description,
-		Startdate:      pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true},
-		Enddate:        pgtype.Timestamptz{Time: input.EndDate.Time, Valid: true},
-		Logourl:        input.Branding.Logo,
-		Colorprimary:   input.Branding.Colors.Primary,
-		Colorsecondary: input.Branding.Colors.Secondary,
-		Colortertiary:  input.Branding.Colors.Tertiary,
-		Rounding:       int32(input.Branding.Rounding),
+		ID:                          projectID,
+		Name:                        input.Name,
+		Description:                 description,
+		Startdate:                   pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true},
+		Enddate:                     pgtype.Timestamptz{Time: input.EndDate.Time, Valid: true},
+		Logourl:                     input.Branding.Logo,
+		Colorlightaccent:            input.Branding.Colors.Light.Accent,
+		Colorlightaccentcontrast:    input.Branding.Colors.Light.AccentContrast,
+		Colorlightonaccent:          input.Branding.Colors.Light.OnAccent,
+		Colorlightbackgrounddefault: input.Branding.Colors.Light.BackgroundDefault,
+		Colorlightbackgroundraised:  input.Branding.Colors.Light.BackgroundRaised,
+		Colorlightbackgroundindent:  input.Branding.Colors.Light.BackgroundIndent,
+		Colorlighttextdefault:       input.Branding.Colors.Light.TextDefault,
+		Colorlighttextmuted:         input.Branding.Colors.Light.TextMuted,
+		Colorlighttexthint:          input.Branding.Colors.Light.TextHint,
+		Colorlightshadowdefault:     input.Branding.Colors.Light.ShadowDefault,
+		Colorlightshadowblank:       input.Branding.Colors.Light.ShadowBlank,
+		Colorlightborderdefault:     input.Branding.Colors.Light.BorderDefault,
+		Colordarkaccent:             input.Branding.Colors.Dark.Accent,
+		Colordarkaccentcontrast:     input.Branding.Colors.Dark.AccentContrast,
+		Colordarkonaccent:           input.Branding.Colors.Dark.OnAccent,
+		Colordarkbackgrounddefault:  input.Branding.Colors.Dark.BackgroundDefault,
+		Colordarkbackgroundraised:   input.Branding.Colors.Dark.BackgroundRaised,
+		Colordarkbackgroundindent:   input.Branding.Colors.Dark.BackgroundIndent,
+		Colordarktextdefault:        input.Branding.Colors.Dark.TextDefault,
+		Colordarktextmuted:          input.Branding.Colors.Dark.TextMuted,
+		Colordarktexthint:           input.Branding.Colors.Dark.TextHint,
+		Colordarkshadowdefault:      input.Branding.Colors.Dark.ShadowDefault,
+		Colordarkshadowblank:        input.Branding.Colors.Dark.ShadowBlank,
+		Colordarkborderdefault:      input.Branding.Colors.Dark.BorderDefault,
+		Rounding:                    int32(input.Branding.Rounding),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create project: %w", err)
@@ -234,9 +255,34 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.Create
 		Branding: &model.Branding{
 			Logo: logo,
 			Colors: &model.Colors{
-				Primary:   row.ColorPrimary,
-				Secondary: row.ColorSecondary,
-				Tertiary:  row.ColorTertiary,
+				Light: &model.ColorSet{
+					Accent:            row.ColorLightAccent,
+					AccentContrast:    row.ColorLightAccentContrast,
+					OnAccent:          row.ColorLightOnAccent,
+					BackgroundDefault: row.ColorLightBackgroundDefault,
+					BackgroundRaised:  row.ColorLightBackgroundRaised,
+					BackgroundIndent:  row.ColorLightBackgroundIndent,
+					TextDefault:       row.ColorLightTextDefault,
+					TextMuted:         row.ColorLightTextMuted,
+					TextHint:          row.ColorLightTextHint,
+					ShadowDefault:     row.ColorLightShadowDefault,
+					ShadowBlank:       row.ColorLightShadowBlank,
+					BorderDefault:     row.ColorLightBorderDefault,
+				},
+				Dark: &model.ColorSet{
+					Accent:            row.ColorDarkAccent,
+					AccentContrast:    row.ColorDarkAccentContrast,
+					OnAccent:          row.ColorDarkOnAccent,
+					BackgroundDefault: row.ColorDarkBackgroundDefault,
+					BackgroundRaised:  row.ColorDarkBackgroundRaised,
+					BackgroundIndent:  row.ColorDarkBackgroundIndent,
+					TextDefault:       row.ColorDarkTextDefault,
+					TextMuted:         row.ColorDarkTextMuted,
+					TextHint:          row.ColorDarkTextHint,
+					ShadowDefault:     row.ColorDarkShadowDefault,
+					ShadowBlank:       row.ColorDarkShadowBlank,
+					BorderDefault:     row.ColorDarkBorderDefault,
+				},
 			},
 			Rounding: int(row.Rounding),
 		},
@@ -296,14 +342,33 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 			params.Logourl = input.Branding.Logo
 		}
 		if input.Branding.Colors != nil {
-			if input.Branding.Colors.Primary != "" {
-				params.Colorprimary = input.Branding.Colors.Primary
+			if input.Branding.Colors.Light != nil {
+				params.Colorlightaccent = input.Branding.Colors.Light.Accent
+				params.Colorlightaccentcontrast = input.Branding.Colors.Light.AccentContrast
+				params.Colorlightonaccent = input.Branding.Colors.Light.OnAccent
+				params.Colorlightbackgrounddefault = input.Branding.Colors.Light.BackgroundDefault
+				params.Colorlightbackgroundraised = input.Branding.Colors.Light.BackgroundRaised
+				params.Colorlightbackgroundindent = input.Branding.Colors.Light.BackgroundIndent
+				params.Colorlighttextdefault = input.Branding.Colors.Light.TextDefault
+				params.Colorlighttextmuted = input.Branding.Colors.Light.TextMuted
+				params.Colorlighttexthint = input.Branding.Colors.Light.TextHint
+				params.Colorlightshadowdefault = input.Branding.Colors.Light.ShadowDefault
+				params.Colorlightshadowblank = input.Branding.Colors.Light.ShadowBlank
+				params.Colorlightborderdefault = input.Branding.Colors.Light.BorderDefault
 			}
-			if input.Branding.Colors.Secondary != "" {
-				params.Colorsecondary = input.Branding.Colors.Secondary
-			}
-			if input.Branding.Colors.Tertiary != "" {
-				params.Colortertiary = input.Branding.Colors.Tertiary
+			if input.Branding.Colors.Dark != nil {
+				params.Colordarkaccent = input.Branding.Colors.Dark.Accent
+				params.Colordarkaccentcontrast = input.Branding.Colors.Dark.AccentContrast
+				params.Colordarkonaccent = input.Branding.Colors.Dark.OnAccent
+				params.Colordarkbackgrounddefault = input.Branding.Colors.Dark.BackgroundDefault
+				params.Colordarkbackgroundraised = input.Branding.Colors.Dark.BackgroundRaised
+				params.Colordarkbackgroundindent = input.Branding.Colors.Dark.BackgroundIndent
+				params.Colordarktextdefault = input.Branding.Colors.Dark.TextDefault
+				params.Colordarktextmuted = input.Branding.Colors.Dark.TextMuted
+				params.Colordarktexthint = input.Branding.Colors.Dark.TextHint
+				params.Colordarkshadowdefault = input.Branding.Colors.Dark.ShadowDefault
+				params.Colordarkshadowblank = input.Branding.Colors.Dark.ShadowBlank
+				params.Colordarkborderdefault = input.Branding.Colors.Dark.BorderDefault
 			}
 		}
 		if input.Branding.Rounding != 0 {
@@ -335,9 +400,34 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 		Branding: &model.Branding{
 			Logo: logo,
 			Colors: &model.Colors{
-				Primary:   row.ColorPrimary,
-				Secondary: row.ColorSecondary,
-				Tertiary:  row.ColorTertiary,
+				Light: &model.ColorSet{
+					Accent:            row.ColorLightAccent,
+					AccentContrast:    row.ColorLightAccentContrast,
+					OnAccent:          row.ColorLightOnAccent,
+					BackgroundDefault: row.ColorLightBackgroundDefault,
+					BackgroundRaised:  row.ColorLightBackgroundRaised,
+					BackgroundIndent:  row.ColorLightBackgroundIndent,
+					TextDefault:       row.ColorLightTextDefault,
+					TextMuted:         row.ColorLightTextMuted,
+					TextHint:          row.ColorLightTextHint,
+					ShadowDefault:     row.ColorLightShadowDefault,
+					ShadowBlank:       row.ColorLightShadowBlank,
+					BorderDefault:     row.ColorLightBorderDefault,
+				},
+				Dark: &model.ColorSet{
+					Accent:            row.ColorDarkAccent,
+					AccentContrast:    row.ColorDarkAccentContrast,
+					OnAccent:          row.ColorDarkOnAccent,
+					BackgroundDefault: row.ColorDarkBackgroundDefault,
+					BackgroundRaised:  row.ColorDarkBackgroundRaised,
+					BackgroundIndent:  row.ColorDarkBackgroundIndent,
+					TextDefault:       row.ColorDarkTextDefault,
+					TextMuted:         row.ColorDarkTextMuted,
+					TextHint:          row.ColorDarkTextHint,
+					ShadowDefault:     row.ColorDarkShadowDefault,
+					ShadowBlank:       row.ColorDarkShadowBlank,
+					BorderDefault:     row.ColorDarkBorderDefault,
+				},
 			},
 			Rounding: int(row.Rounding),
 		},
@@ -3281,9 +3371,34 @@ func (r *queryResolver) Projects(ctx context.Context, filter *model.ProjectFilte
 			Branding: &model.Branding{
 				Logo: row.LogoUrl,
 				Colors: &model.Colors{
-					Primary:   row.ColorPrimary,
-					Secondary: row.ColorSecondary,
-					Tertiary:  row.ColorTertiary,
+					Light: &model.ColorSet{
+						Accent:            row.ColorLightAccent,
+						AccentContrast:    row.ColorLightAccentContrast,
+						OnAccent:          row.ColorLightOnAccent,
+						BackgroundDefault: row.ColorLightBackgroundDefault,
+						BackgroundRaised:  row.ColorLightBackgroundRaised,
+						BackgroundIndent:  row.ColorLightBackgroundIndent,
+						TextDefault:       row.ColorLightTextDefault,
+						TextMuted:         row.ColorLightTextMuted,
+						TextHint:          row.ColorLightTextHint,
+						ShadowDefault:     row.ColorLightShadowDefault,
+						ShadowBlank:       row.ColorLightShadowBlank,
+						BorderDefault:     row.ColorLightBorderDefault,
+					},
+					Dark: &model.ColorSet{
+						Accent:            row.ColorDarkAccent,
+						AccentContrast:    row.ColorDarkAccentContrast,
+						OnAccent:          row.ColorDarkOnAccent,
+						BackgroundDefault: row.ColorDarkBackgroundDefault,
+						BackgroundRaised:  row.ColorDarkBackgroundRaised,
+						BackgroundIndent:  row.ColorDarkBackgroundIndent,
+						TextDefault:       row.ColorDarkTextDefault,
+						TextMuted:         row.ColorDarkTextMuted,
+						TextHint:          row.ColorDarkTextHint,
+						ShadowDefault:     row.ColorDarkShadowDefault,
+						ShadowBlank:       row.ColorDarkShadowBlank,
+						BorderDefault:     row.ColorDarkBorderDefault,
+					},
 				},
 				Rounding: int(row.Rounding),
 			},

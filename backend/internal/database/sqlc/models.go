@@ -145,19 +145,40 @@ type ListeningAchievementTrack struct {
 }
 
 type Project struct {
-	ID             string             `json:"id"`
-	Name           string             `json:"name"`
-	Description    string             `json:"description"`
-	StartDate      pgtype.Timestamptz `json:"start_date"`
-	EndDate        pgtype.Timestamptz `json:"end_date"`
-	LogoUrl        *string            `json:"logo_url"`
-	ColorPrimary   string             `json:"color_primary"`
-	ColorSecondary string             `json:"color_secondary"`
-	ColorTertiary  string             `json:"color_tertiary"`
-	Archived       *bool              `json:"archived"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
-	Rounding       int32              `json:"rounding"`
+	ID                          string             `json:"id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	StartDate                   pgtype.Timestamptz `json:"start_date"`
+	EndDate                     pgtype.Timestamptz `json:"end_date"`
+	LogoUrl                     *string            `json:"logo_url"`
+	Archived                    *bool              `json:"archived"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+	Rounding                    int32              `json:"rounding"`
+	ColorLightAccent            string             `json:"color_light_accent"`
+	ColorLightAccentContrast    string             `json:"color_light_accent_contrast"`
+	ColorLightOnAccent          string             `json:"color_light_on_accent"`
+	ColorLightBackgroundDefault string             `json:"color_light_background_default"`
+	ColorLightBackgroundRaised  string             `json:"color_light_background_raised"`
+	ColorLightBackgroundIndent  string             `json:"color_light_background_indent"`
+	ColorLightTextDefault       string             `json:"color_light_text_default"`
+	ColorLightTextMuted         string             `json:"color_light_text_muted"`
+	ColorLightTextHint          string             `json:"color_light_text_hint"`
+	ColorLightShadowDefault     string             `json:"color_light_shadow_default"`
+	ColorLightShadowBlank       string             `json:"color_light_shadow_blank"`
+	ColorLightBorderDefault     string             `json:"color_light_border_default"`
+	ColorDarkAccent             string             `json:"color_dark_accent"`
+	ColorDarkAccentContrast     string             `json:"color_dark_accent_contrast"`
+	ColorDarkOnAccent           string             `json:"color_dark_on_accent"`
+	ColorDarkBackgroundDefault  string             `json:"color_dark_background_default"`
+	ColorDarkBackgroundRaised   string             `json:"color_dark_background_raised"`
+	ColorDarkBackgroundIndent   string             `json:"color_dark_background_indent"`
+	ColorDarkTextDefault        string             `json:"color_dark_text_default"`
+	ColorDarkTextMuted          string             `json:"color_dark_text_muted"`
+	ColorDarkTextHint           string             `json:"color_dark_text_hint"`
+	ColorDarkShadowDefault      string             `json:"color_dark_shadow_default"`
+	ColorDarkShadowBlank        string             `json:"color_dark_shadow_blank"`
+	ColorDarkBorderDefault      string             `json:"color_dark_border_default"`
 }
 
 type ReadingAchievement struct {

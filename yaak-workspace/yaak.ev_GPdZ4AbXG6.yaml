@@ -3,7 +3,7 @@ model: environment
 id: ev_GPdZ4AbXG6
 workspaceId: wk_XKsmbMdFg7
 createdAt: 2025-11-25T12:37:04.349121
-updatedAt: 2025-11-26T13:38:07.382573
+updatedAt: 2025-11-27T13:49:15.955645
 name: Local
 public: true
 base: false
@@ -16,7 +16,7 @@ variables:
   id: PR8gW4seez
 - enabled: true
   name: TOKEN
-  value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVMwMUs5VzFZNEQyUEM5TTVESEZWVlBBMTNTOCIsInVzZXJfcm9sZXMiOlsidXNlciIsImFkbWluIiwic3VwZXJhZG1pbiJdLCJpc3MiOiJ3YXlmYXJlciIsImV4cCI6MTc2NDI1MDY4MCwiaWF0IjoxNzY0MTY0MjgwfQ.W0SpK0ZVvLKL3c6aSLQDpxnR-g_4GRwn9sM7-lVmhU0
+  value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVMwMUs5VzFZNEQyUEM5TTVESEZWVlBBMTNTOCIsInVzZXJfcm9sZXMiOlsidXNlciIsImFkbWluIiwic3VwZXJhZG1pbiJdLCJpc3MiOiJ3YXlmYXJlciIsImV4cCI6MTc2NDMzNzczNSwiaWF0IjoxNzY0MjUxMzM1fQ.Xd3SB6EVU_UwB7GDFww65LR8TrMjfB59t_YSZq3UC50
   id: IrVp557pTp
 color: var(--success)
 sortPriority: 0.0

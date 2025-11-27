@@ -149,16 +149,44 @@ type ChurchFilter struct {
 	Category *ChurchCategory `json:"category,omitempty"`
 }
 
+type ColorSet struct {
+	Accent            string `json:"accent"`
+	AccentContrast    string `json:"accentContrast"`
+	OnAccent          string `json:"onAccent"`
+	BackgroundDefault string `json:"backgroundDefault"`
+	BackgroundRaised  string `json:"backgroundRaised"`
+	BackgroundIndent  string `json:"backgroundIndent"`
+	TextDefault       string `json:"textDefault"`
+	TextMuted         string `json:"textMuted"`
+	TextHint          string `json:"textHint"`
+	ShadowDefault     string `json:"shadowDefault"`
+	ShadowBlank       string `json:"shadowBlank"`
+	BorderDefault     string `json:"borderDefault"`
+}
+
+type ColorSetInput struct {
+	Accent            string `json:"accent"`
+	AccentContrast    string `json:"accentContrast"`
+	OnAccent          string `json:"onAccent"`
+	BackgroundDefault string `json:"backgroundDefault"`
+	BackgroundRaised  string `json:"backgroundRaised"`
+	BackgroundIndent  string `json:"backgroundIndent"`
+	TextDefault       string `json:"textDefault"`
+	TextMuted         string `json:"textMuted"`
+	TextHint          string `json:"textHint"`
+	ShadowDefault     string `json:"shadowDefault"`
+	ShadowBlank       string `json:"shadowBlank"`
+	BorderDefault     string `json:"borderDefault"`
+}
+
 type Colors struct {
-	Primary   string `json:"primary"`
-	Secondary string `json:"secondary"`
-	Tertiary  string `json:"tertiary"`
+	Dark  *ColorSet `json:"dark"`
+	Light *ColorSet `json:"light"`
 }
 
 type ColorsInput struct {
-	Primary   string `json:"primary"`
-	Secondary string `json:"secondary"`
-	Tertiary  string `json:"tertiary"`
+	Dark  *ColorSetInput `json:"dark"`
+	Light *ColorSetInput `json:"light"`
 }
 
 type CreateChallengeInput struct {

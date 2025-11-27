@@ -1,0 +1,71 @@
+type: http_request
+model: http_request
+id: rq_NCEhrSBAti
+createdAt: 2025-11-27T13:48:40.376201
+updatedAt: 2025-11-27T13:51:22.045816
+workspaceId: wk_XKsmbMdFg7
+folderId: null
+authentication: {}
+authenticationType: null
+body:
+  query: |-
+    query {
+      projects{
+        edges{
+          node{
+            branding{
+              colors{
+                dark{
+                  accent
+                  accentContrast
+                  onAccent
+                  backgroundDefault
+                  backgroundRaised
+                  backgroundIndent
+                  textDefault
+                  textMuted
+                  textHint
+                  shadowDefault
+                  shadowBlank
+                  borderDefault
+                }
+                light{
+                  accent
+                  accentContrast
+                  onAccent
+                  backgroundDefault
+                  backgroundRaised
+                  backgroundIndent
+                  textDefault
+                  textMuted
+                  textHint
+                  shadowDefault
+                  shadowBlank
+                  borderDefault
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: ykj3tfsHHJ
+- enabled: true
+  name: ''
+  value: ''
+  id: YGdtvWfsZs
+- enabled: true
+  name: ''
+  value: ''
+  id: 0s4xJY0Rq9
+method: POST
+name: ProjectColors
+sortPriority: -1764074288098.997
+url: ${[ HOST ]}/graphql
+urlParameters: []
