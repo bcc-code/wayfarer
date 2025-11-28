@@ -1,4 +1,8 @@
 <script setup lang="ts">
+const props = defineProps<{
+  projectName: string
+}>()
+
 const modelValue = defineModel<Colors>({ required: true })
 
 const toast = useToast()
@@ -30,6 +34,10 @@ function toCamelCase(str: string): string {
   return str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
 }
 
+function toFileName(str: string): string {
+  return str.split(' ').join('-').toLowerCase()
+}
+
 // Export theme as JSON file
 function exportTheme() {
   const themeJson = {
@@ -52,7 +60,7 @@ function exportTheme() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `theme.json`
+  a.download = `${toFileName(props.projectName)}.theme.json`
   a.click()
   URL.revokeObjectURL(url)
 }

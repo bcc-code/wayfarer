@@ -51,6 +51,8 @@ function saveChanges() {
   executeMutation({
     id,
     input: { name: form.name },
+  }).then(() => {
+    reloadNuxtApp()
   })
 }
 </script>

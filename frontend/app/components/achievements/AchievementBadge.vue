@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { DevOnly } from '#components'
+
 defineProps<{
   achievement: Partial<Achievement>
 }>()
@@ -66,6 +68,11 @@ const open = ref(false)
               <p class="text-label">
                 {{ achievement.description }}
               </p>
+              <DevOnly>
+                <p class="text-caption text-muted mt-default">
+                  {{ achievement.id }}
+                </p>
+              </DevOnly>
             </div>
           </div>
         </PageLayout>

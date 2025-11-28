@@ -239,8 +239,11 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
           v-model:start="state.startDate"
           v-model:end="state.endDate"
         />
-        <UFormField label="Color Theme">
-          <AdminProjectThemeEditor v-model="state.branding.colors" />
+        <UFormField v-if="data?.project" label="Color Theme">
+          <AdminProjectThemeEditor
+            v-model="state.branding.colors"
+            :project-name="data?.project.name"
+          />
         </UFormField>
         <UButton type="submit" size="lg" block>Save changes</UButton>
       </UForm>
