@@ -1559,13 +1559,13 @@ export type PointHistoryQueryVariables = Exact<{
 }>;
 
 
-export type PointHistoryQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', journal: { __typename?: 'ScoreJournalConnection', edges: Array<{ __typename?: 'ScoreJournalEdge', node: { __typename?: 'ScoreJournal', id: string, sourceType: ScoreSourceType, reason?: string | null, points: number, createdAt: any, challenge?: { __typename?: 'Challenge', name: string } | null, source?:
-            | { __typename: 'Challenge' }
-            | { __typename: 'Event' }
-            | { __typename: 'ListeningAchievement' }
-            | { __typename: 'ReadingAchievement' }
-            | { __typename: 'SimpleAchievement' }
-            | { __typename: 'StreakAchievement' }
+export type PointHistoryQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', journal: { __typename?: 'ScoreJournalConnection', edges: Array<{ __typename?: 'ScoreJournalEdge', node: { __typename?: 'ScoreJournal', id: string, sourceType: ScoreSourceType, reason?: string | null, points: number, createdAt: any, source?:
+            | { __typename: 'Challenge', id: string, name: string }
+            | { __typename: 'Event', id: string, name: string }
+            | { __typename: 'ListeningAchievement', id: string, name: string }
+            | { __typename: 'ReadingAchievement', id: string, name: string }
+            | { __typename: 'SimpleAchievement', id: string, name: string }
+            | { __typename: 'StreakAchievement', id: string, name: string }
            | null } }> } } };
 
 export type StandingsGlobalPageQueryVariables = Exact<{
@@ -1956,13 +1956,22 @@ export const PointHistoryDocument = gql`
         node {
           id
           sourceType
-          challenge {
-            name
-          }
+          reason
           source {
             __typename
+            ... on Achievement {
+              id
+              name
+            }
+            ... on Challenge {
+              id
+              name
+            }
+            ... on Event {
+              id
+              name
+            }
           }
-          reason
           points
           createdAt
         }

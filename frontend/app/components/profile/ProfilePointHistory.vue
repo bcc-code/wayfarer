@@ -7,13 +7,22 @@ gql(`
           node {
             id
             sourceType
-            challenge {
-              name
-            }
+            reason
             source {
               __typename
+              ... on Achievement {
+                id
+                name
+              }
+              ... on Challenge {
+                id
+                name
+              }
+              ... on Event {
+                id
+                name
+              }
             }
-            reason
             points
             createdAt
           }
@@ -30,6 +39,21 @@ const { data, fetching, error } = usePointHistoryQuery({
   variables: { first: 100 },
   pause: computed(() => !isAuthReady.value || !open.value),
 })
+
+function getScoreJournalName(journal: Partial<ScoreJournal>) {
+  switch (journal.sourceType) {
+    case ScoreSourceType.Achievement:
+      return journal.source?.name
+    case ScoreSourceType.Challenge:
+      return journal.source?.name
+    case ScoreSourceType.Event:
+      return journal.source?.name
+    case ScoreSourceType.Manual:
+      return journal.reason
+    default:
+      return journal.reason
+  }
+}
 </script>
 
 <template>
@@ -49,18 +73,44 @@ const { data, fetching, error } = usePointHistoryQuery({
 
         <LoadingState v-if="fetching" />
         <ErrorState v-else-if="error" :error />
-        <div
+        <DesignPanel
           v-else-if="data?.myCurrentProject.journal.edges.length"
-          class="space-y-list-section-gap"
+          class="space-y-list-section-inset p-list-section-inset"
         >
-          <div
-            v-for="journal in data.myCurrentProject.journal.edges"
+          <template
+            v-for="(journal, index) in data.myCurrentProject.journal.edges"
             :key="journal.node.id"
           >
-            <span>{{ journal.node.reason }}</span>
-            <span>{{ journal.node.points }}</span>
-          </div>
-        </div>
+            <div
+              class="px-3 py-2 rounded-list-inset flex gap-2.5 items-center justify-between"
+            >
+              <div>
+                <p class="text-label">
+                  {{ getScoreJournalName(journal.node) }}
+                </p>
+                <span class="text-caption text-text-muted">
+                  {{ formatDate(journal.node.createdAt) }}
+                </span>
+              </div>
+              <span
+                :class="[
+                  'text-label',
+                  {
+                    'text-accent-contrast': journal.node.points > 0,
+                    'text-text-hint': journal.node.points < 0,
+                  },
+                ]"
+              >
+                {{ journal.node.points > 0 ? '+' : '-' }}
+                {{ journal.node.points }}
+              </span>
+            </div>
+            <hr
+              v-if="index < data.myCurrentProject.journal.edges.length - 1"
+              class="mx-3 border-border-default"
+            />
+          </template>
+        </DesignPanel>
         <EmptyState v-else />
       </PageLayout>
     </template>

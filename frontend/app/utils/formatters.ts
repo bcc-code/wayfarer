@@ -20,9 +20,17 @@ export function capitalizeFirst(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
+/**
+ * Get the current locale from i18n
+ */
+function getLocale(): string {
+  const nuxtApp = useNuxtApp()
+  return nuxtApp.$i18n?.locale?.value || 'en'
+}
+
 export function formatDate(dateString: string) {
   const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(getLocale(), {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -30,26 +38,14 @@ export function formatDate(dateString: string) {
 }
 
 export function formatDateRange(startDate: string, endDate: string) {
+  const locale = getLocale()
   const start = new Date(startDate)
   const end = new Date(endDate)
 
-  const startMonth = start.toLocaleDateString('en-US', { month: 'short' })
-  const endMonth = end.toLocaleDateString('en-US', { month: 'short' })
-  const startDay = start.getDate()
-  const endDay = end.getDate()
-  const startYear = start.getFullYear()
-  const endYear = end.getFullYear()
-
-  // Same month and year
-  if (startMonth === endMonth && startYear === endYear) {
-    return `${startMonth} ${startDay}-${endDay}, ${startYear}`
-  }
-
-  // Same year, different months
-  if (startYear === endYear) {
-    return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${startYear}`
-  }
-
-  // Different years
-  return `${startMonth} ${startDay}, ${startYear} - ${endMonth} ${endDay}, ${endYear}`
+  const formatter = new Intl.DateTimeFormat(locale, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+  return formatter.formatRange(start, end)
 }

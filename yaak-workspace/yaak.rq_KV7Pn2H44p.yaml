@@ -1,0 +1,53 @@
+type: http_request
+model: http_request
+id: rq_KV7Pn2H44p
+createdAt: 2025-11-27T13:05:40.352277
+updatedAt: 2025-11-28T11:32:28.873110
+workspaceId: wk_XKsmbMdFg7
+folderId: null
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query ScoreJournal {
+      myCurrentProject {
+        journal(first: 100) {
+          edges {
+            node {
+              id
+              sourceType
+              source {
+                __typename
+                ... on Achievement {
+                  id
+                  name
+                }
+                ... on Challenge {
+                  id
+                  name
+                }
+                ... on Event {
+                  id
+                  name
+                }
+              }
+              points
+              createdAt
+              reason
+            }
+          }
+        }
+      }
+    }
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: zNW4Vjp7UA
+method: POST
+name: ''
+sortPriority: -1764248740350.0
+url: ${[ HOST ]}/graphql
+urlParameters: []
