@@ -30,7 +30,9 @@
     "local": "Local",
     "you": "You",
     "pointHistoryButton": "Point history",
-    "getPointsButton": "Get points"
+    "getPointsButton": "Get points",
+    "units": "Units",
+    "personal": "Personal"
   },
   "unit": {
     "unitLeader": "Unit leader",

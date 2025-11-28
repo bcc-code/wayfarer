@@ -12,7 +12,10 @@ const colorClasses = [
   { light: 'text-[#C47E49]!', dark: 'text-[#512012]!' },
 ]
 
-const getColorClasses = (rank: number | undefined, mode: 'dark' | 'light') => {
+const getColorClasses = (
+  rank: number | undefined | null,
+  mode: 'dark' | 'light',
+) => {
   if (!rank) return
   const color = colorClasses[rank - 1]
   if (color) {
@@ -45,11 +48,11 @@ const getColorClasses = (rank: number | undefined, mode: 'dark' | 'light') => {
       />
       <span class="col-span-full row-span-full">{{ item.rank }}</span>
     </div>
-    <div class="grow">
+    <div class="grow truncate">
       <div class="flex gap-2">
         <p
           :class="[
-            'text-label',
+            'text-label truncate',
             { 'text-accent-contrast': isMe, 'text-text-default': !isMe },
           ]"
         >
@@ -70,7 +73,7 @@ const getColorClasses = (rank: number | undefined, mode: 'dark' | 'light') => {
         <Icon name="lucide:badge-check" class="size-3.5" />
         <span>{{ badge }}</span>
       </p>
-      <p v-else-if="item.description" class="text-caption text-muted">
+      <p v-else-if="item.description" class="text-caption text-muted truncate">
         {{ item.description }}
       </p>
     </div>

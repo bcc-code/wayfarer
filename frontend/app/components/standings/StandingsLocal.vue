@@ -77,12 +77,12 @@ const leaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
         v-model="entityType"
         :tabs="[
           {
-            label: 'People',
+            label: $t('standings.personal'),
             value: LeaderboardEntityType.Persons,
             icon: 'IconUser',
           },
           {
-            label: 'Units',
+            label: $t('standings.units'),
             value: LeaderboardEntityType.Teams,
             icon: 'IconUsers',
           },
