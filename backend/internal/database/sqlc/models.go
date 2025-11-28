@@ -216,6 +216,7 @@ type Project struct {
 	ColorDarkShadowDefault      string             `json:"color_dark_shadow_default"`
 	ColorDarkShadowBlank        string             `json:"color_dark_shadow_blank"`
 	ColorDarkBorderDefault      string             `json:"color_dark_border_default"`
+	Rules                       *string            `json:"rules"`
 }
 
 type ProjectTranslation struct {
@@ -225,6 +226,7 @@ type ProjectTranslation struct {
 	Description  *string            `json:"description"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	Rules        *string            `json:"rules"`
 }
 
 type ReadingAchievement struct {

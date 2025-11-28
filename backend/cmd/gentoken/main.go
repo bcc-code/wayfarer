@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -16,12 +17,22 @@ type WayfarerClaims struct {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: go run main.go <user_id>")
+		fmt.Println("Usage: go run main.go <user_id> (<valid days>)")
 		os.Exit(1)
 	}
 
 	userID := os.Args[1]
 	secret := "your-secret-key-for-signing-wayfarer-jwts"
+
+	validDays := 5
+	if len(os.Args) >= 3 {
+		v, err := strconv.ParseUint(os.Args[2], 10, 32)
+		if err != nil {
+			panic("bad number")
+		}
+
+		validDays = int(v)
+	}
 
 	now := time.Now()
 	claims := WayfarerClaims{
@@ -30,7 +41,7 @@ func main() {
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "wayfarer",
 			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(now.Add(24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(validDays) * 24 * time.Hour)),
 		},
 	}
 

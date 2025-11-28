@@ -3,6 +3,7 @@ SELECT
     p.id,
     p.name,
     p.description,
+    p.rules,
     p.start_date,
     p.end_date,
     p.logo_url,
@@ -39,7 +40,7 @@ WHERE up.user_id = ANY(@user_ids::text[])
 ORDER BY up.user_id, p.start_date DESC;
 
 -- name: GetProjectByID :one
-SELECT id, name, description, start_date, end_date, logo_url,
+SELECT id, name, description, rules, start_date, end_date, logo_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -53,7 +54,7 @@ FROM projects
 WHERE id = @id;
 
 -- name: GetProjectsByIDs :many
-SELECT id, name, description, start_date, end_date, logo_url,
+SELECT id, name, description, rules, start_date, end_date, logo_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -67,7 +68,7 @@ FROM projects
 WHERE id = ANY(@ids::text[]);
 
 -- name: GetAllProjects :many
-SELECT id, name, description, start_date, end_date, logo_url,
+SELECT id, name, description, rules, start_date, end_date, logo_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -81,7 +82,7 @@ FROM projects
 ORDER BY start_date DESC;
 
 -- name: GetProjectsFilteredCursor :many
-SELECT id, name, description, start_date, end_date, logo_url,
+SELECT id, name, description, rules, start_date, end_date, logo_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -122,6 +123,7 @@ INSERT INTO projects (
     id,
     name,
     description,
+    rules,
     start_date,
     end_date,
     logo_url,
@@ -155,6 +157,7 @@ VALUES (
     @id::text,
     @name::text,
     @description::text,
+    sqlc.narg('rules')::text,
     @startdate::timestamptz,
     @enddate::timestamptz,
     sqlc.narg('logourl')::text,
@@ -184,7 +187,7 @@ VALUES (
     @colordarkborderdefault::text,
     @rounding::int
 )
-RETURNING id, name, description, start_date, end_date, logo_url,
+RETURNING id, name, description, rules, start_date, end_date, logo_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -200,6 +203,7 @@ UPDATE projects
 SET
     name = COALESCE(@name::text, name),
     description = COALESCE(sqlc.narg('description')::text, description),
+    rules = COALESCE(sqlc.narg('rules')::text, rules),
     start_date = COALESCE(@startdate::timestamptz, start_date),
     end_date = COALESCE(@enddate::timestamptz, end_date),
     logo_url = COALESCE(sqlc.narg('logourl')::text, logo_url),
@@ -230,7 +234,7 @@ SET
     rounding = COALESCE(@rounding::int, rounding),
     updated_at = now()
 WHERE id = @id::text
-RETURNING id, name, description, start_date, end_date, logo_url,
+RETURNING id, name, description, rules, start_date, end_date, logo_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -251,7 +255,7 @@ SET
     archived = true,
     updated_at = now()
 WHERE id = @id::text
-RETURNING id, name, description, start_date, end_date, logo_url,
+RETURNING id, name, description, rules, start_date, end_date, logo_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,

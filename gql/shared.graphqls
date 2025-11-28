@@ -69,6 +69,11 @@ enum LeaderboardEntryTag {
 
 # ==================== Supporting Types ====================
 
+type MarkdownText {
+    markdown: String!
+    html: String! @goField(forceResolver: true)
+}
+
 type AgeRange {
     min: Int!
     max: Int!
@@ -179,6 +184,7 @@ type Project {
     id: ID!
     name: String!
     description: String!
+    rules: MarkdownText @goField(forceResolver: true)
     challenges: [Challenge!]! @goField(forceResolver: true)
     leaderboard(
         entityType: LeaderboardEntityType!
@@ -412,6 +418,7 @@ input TrackInput {
 input CreateProjectInput {
     name: String!
     description: String
+    rules: String
     startDate: DateTime!
     endDate: DateTime!
     branding: BrandingInput!
@@ -420,6 +427,7 @@ input CreateProjectInput {
 input UpdateProjectInput {
     name: String
     description: String
+    rules: String
     startDate: DateTime
     endDate: DateTime
     branding: BrandingInput

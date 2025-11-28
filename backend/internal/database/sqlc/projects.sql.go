@@ -17,7 +17,7 @@ SET
     archived = true,
     updated_at = now()
 WHERE id = $1::text
-RETURNING id, name, description, start_date, end_date, logo_url,
+RETURNING id, name, description, rules, start_date, end_date, logo_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -33,6 +33,7 @@ type ArchiveProjectRow struct {
 	ID                          string             `json:"id"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
+	Rules                       *string            `json:"rules"`
 	StartDate                   pgtype.Timestamptz `json:"start_date"`
 	EndDate                     pgtype.Timestamptz `json:"end_date"`
 	LogoUrl                     *string            `json:"logo_url"`
@@ -71,6 +72,7 @@ func (q *Queries) ArchiveProject(ctx context.Context, id string) (*ArchiveProjec
 		&i.ID,
 		&i.Name,
 		&i.Description,
+		&i.Rules,
 		&i.StartDate,
 		&i.EndDate,
 		&i.LogoUrl,
@@ -144,6 +146,7 @@ INSERT INTO projects (
     id,
     name,
     description,
+    rules,
     start_date,
     end_date,
     logo_url,
@@ -177,9 +180,9 @@ VALUES (
     $1::text,
     $2::text,
     $3::text,
-    $4::timestamptz,
+    $4::text,
     $5::timestamptz,
-    $6::text,
+    $6::timestamptz,
     $7::text,
     $8::text,
     $9::text,
@@ -204,9 +207,10 @@ VALUES (
     $28::text,
     $29::text,
     $30::text,
-    $31::int
+    $31::text,
+    $32::int
 )
-RETURNING id, name, description, start_date, end_date, logo_url,
+RETURNING id, name, description, rules, start_date, end_date, logo_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -222,6 +226,7 @@ type CreateProjectParams struct {
 	ID                          string             `json:"id"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
+	Rules                       *string            `json:"rules"`
 	Startdate                   pgtype.Timestamptz `json:"startdate"`
 	Enddate                     pgtype.Timestamptz `json:"enddate"`
 	Logourl                     *string            `json:"logourl"`
@@ -256,6 +261,7 @@ type CreateProjectRow struct {
 	ID                          string             `json:"id"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
+	Rules                       *string            `json:"rules"`
 	StartDate                   pgtype.Timestamptz `json:"start_date"`
 	EndDate                     pgtype.Timestamptz `json:"end_date"`
 	LogoUrl                     *string            `json:"logo_url"`
@@ -292,6 +298,7 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (*
 		arg.ID,
 		arg.Name,
 		arg.Description,
+		arg.Rules,
 		arg.Startdate,
 		arg.Enddate,
 		arg.Logourl,
@@ -326,6 +333,7 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (*
 		&i.ID,
 		&i.Name,
 		&i.Description,
+		&i.Rules,
 		&i.StartDate,
 		&i.EndDate,
 		&i.LogoUrl,
@@ -370,7 +378,7 @@ func (q *Queries) DeleteProject(ctx context.Context, id string) error {
 }
 
 const GetAllProjects = `-- name: GetAllProjects :many
-SELECT id, name, description, start_date, end_date, logo_url,
+SELECT id, name, description, rules, start_date, end_date, logo_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -388,6 +396,7 @@ type GetAllProjectsRow struct {
 	ID                          string             `json:"id"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
+	Rules                       *string            `json:"rules"`
 	StartDate                   pgtype.Timestamptz `json:"start_date"`
 	EndDate                     pgtype.Timestamptz `json:"end_date"`
 	LogoUrl                     *string            `json:"logo_url"`
@@ -432,6 +441,7 @@ func (q *Queries) GetAllProjects(ctx context.Context) ([]*GetAllProjectsRow, err
 			&i.ID,
 			&i.Name,
 			&i.Description,
+			&i.Rules,
 			&i.StartDate,
 			&i.EndDate,
 			&i.LogoUrl,
@@ -473,7 +483,7 @@ func (q *Queries) GetAllProjects(ctx context.Context) ([]*GetAllProjectsRow, err
 }
 
 const GetProjectByID = `-- name: GetProjectByID :one
-SELECT id, name, description, start_date, end_date, logo_url,
+SELECT id, name, description, rules, start_date, end_date, logo_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -491,6 +501,7 @@ type GetProjectByIDRow struct {
 	ID                          string             `json:"id"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
+	Rules                       *string            `json:"rules"`
 	StartDate                   pgtype.Timestamptz `json:"start_date"`
 	EndDate                     pgtype.Timestamptz `json:"end_date"`
 	LogoUrl                     *string            `json:"logo_url"`
@@ -529,6 +540,7 @@ func (q *Queries) GetProjectByID(ctx context.Context, id string) (*GetProjectByI
 		&i.ID,
 		&i.Name,
 		&i.Description,
+		&i.Rules,
 		&i.StartDate,
 		&i.EndDate,
 		&i.LogoUrl,
@@ -563,7 +575,7 @@ func (q *Queries) GetProjectByID(ctx context.Context, id string) (*GetProjectByI
 }
 
 const GetProjectsByIDs = `-- name: GetProjectsByIDs :many
-SELECT id, name, description, start_date, end_date, logo_url,
+SELECT id, name, description, rules, start_date, end_date, logo_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -581,6 +593,7 @@ type GetProjectsByIDsRow struct {
 	ID                          string             `json:"id"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
+	Rules                       *string            `json:"rules"`
 	StartDate                   pgtype.Timestamptz `json:"start_date"`
 	EndDate                     pgtype.Timestamptz `json:"end_date"`
 	LogoUrl                     *string            `json:"logo_url"`
@@ -625,6 +638,7 @@ func (q *Queries) GetProjectsByIDs(ctx context.Context, ids []string) ([]*GetPro
 			&i.ID,
 			&i.Name,
 			&i.Description,
+			&i.Rules,
 			&i.StartDate,
 			&i.EndDate,
 			&i.LogoUrl,
@@ -670,6 +684,7 @@ SELECT
     p.id,
     p.name,
     p.description,
+    p.rules,
     p.start_date,
     p.end_date,
     p.logo_url,
@@ -710,6 +725,7 @@ type GetProjectsByUserIDsRow struct {
 	ID                          string             `json:"id"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
+	Rules                       *string            `json:"rules"`
 	StartDate                   pgtype.Timestamptz `json:"start_date"`
 	EndDate                     pgtype.Timestamptz `json:"end_date"`
 	LogoUrl                     *string            `json:"logo_url"`
@@ -755,6 +771,7 @@ func (q *Queries) GetProjectsByUserIDs(ctx context.Context, userIds []string) ([
 			&i.ID,
 			&i.Name,
 			&i.Description,
+			&i.Rules,
 			&i.StartDate,
 			&i.EndDate,
 			&i.LogoUrl,
@@ -797,7 +814,7 @@ func (q *Queries) GetProjectsByUserIDs(ctx context.Context, userIds []string) ([
 }
 
 const GetProjectsFilteredCursor = `-- name: GetProjectsFilteredCursor :many
-SELECT id, name, description, start_date, end_date, logo_url,
+SELECT id, name, description, rules, start_date, end_date, logo_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -840,6 +857,7 @@ type GetProjectsFilteredCursorRow struct {
 	ID                          string             `json:"id"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
+	Rules                       *string            `json:"rules"`
 	StartDate                   pgtype.Timestamptz `json:"start_date"`
 	EndDate                     pgtype.Timestamptz `json:"end_date"`
 	LogoUrl                     *string            `json:"logo_url"`
@@ -895,6 +913,7 @@ func (q *Queries) GetProjectsFilteredCursor(ctx context.Context, arg GetProjects
 			&i.ID,
 			&i.Name,
 			&i.Description,
+			&i.Rules,
 			&i.StartDate,
 			&i.EndDate,
 			&i.LogoUrl,
@@ -940,37 +959,38 @@ UPDATE projects
 SET
     name = COALESCE($1::text, name),
     description = COALESCE($2::text, description),
-    start_date = COALESCE($3::timestamptz, start_date),
-    end_date = COALESCE($4::timestamptz, end_date),
-    logo_url = COALESCE($5::text, logo_url),
-    color_light_accent = COALESCE($6::text, color_light_accent),
-    color_light_accent_contrast = COALESCE($7::text, color_light_accent_contrast),
-    color_light_on_accent = COALESCE($8::text, color_light_on_accent),
-    color_light_background_default = COALESCE($9::text, color_light_background_default),
-    color_light_background_raised = COALESCE($10::text, color_light_background_raised),
-    color_light_background_indent = COALESCE($11::text, color_light_background_indent),
-    color_light_text_default = COALESCE($12::text, color_light_text_default),
-    color_light_text_muted = COALESCE($13::text, color_light_text_muted),
-    color_light_text_hint = COALESCE($14::text, color_light_text_hint),
-    color_light_shadow_default = COALESCE($15::text, color_light_shadow_default),
-    color_light_shadow_blank = COALESCE($16::text, color_light_shadow_blank),
-    color_light_border_default = COALESCE($17::text, color_light_border_default),
-    color_dark_accent = COALESCE($18::text, color_dark_accent),
-    color_dark_accent_contrast = COALESCE($19::text, color_dark_accent_contrast),
-    color_dark_on_accent = COALESCE($20::text, color_dark_on_accent),
-    color_dark_background_default = COALESCE($21::text, color_dark_background_default),
-    color_dark_background_raised = COALESCE($22::text, color_dark_background_raised),
-    color_dark_background_indent = COALESCE($23::text, color_dark_background_indent),
-    color_dark_text_default = COALESCE($24::text, color_dark_text_default),
-    color_dark_text_muted = COALESCE($25::text, color_dark_text_muted),
-    color_dark_text_hint = COALESCE($26::text, color_dark_text_hint),
-    color_dark_shadow_default = COALESCE($27::text, color_dark_shadow_default),
-    color_dark_shadow_blank = COALESCE($28::text, color_dark_shadow_blank),
-    color_dark_border_default = COALESCE($29::text, color_dark_border_default),
-    rounding = COALESCE($30::int, rounding),
+    rules = COALESCE($3::text, rules),
+    start_date = COALESCE($4::timestamptz, start_date),
+    end_date = COALESCE($5::timestamptz, end_date),
+    logo_url = COALESCE($6::text, logo_url),
+    color_light_accent = COALESCE($7::text, color_light_accent),
+    color_light_accent_contrast = COALESCE($8::text, color_light_accent_contrast),
+    color_light_on_accent = COALESCE($9::text, color_light_on_accent),
+    color_light_background_default = COALESCE($10::text, color_light_background_default),
+    color_light_background_raised = COALESCE($11::text, color_light_background_raised),
+    color_light_background_indent = COALESCE($12::text, color_light_background_indent),
+    color_light_text_default = COALESCE($13::text, color_light_text_default),
+    color_light_text_muted = COALESCE($14::text, color_light_text_muted),
+    color_light_text_hint = COALESCE($15::text, color_light_text_hint),
+    color_light_shadow_default = COALESCE($16::text, color_light_shadow_default),
+    color_light_shadow_blank = COALESCE($17::text, color_light_shadow_blank),
+    color_light_border_default = COALESCE($18::text, color_light_border_default),
+    color_dark_accent = COALESCE($19::text, color_dark_accent),
+    color_dark_accent_contrast = COALESCE($20::text, color_dark_accent_contrast),
+    color_dark_on_accent = COALESCE($21::text, color_dark_on_accent),
+    color_dark_background_default = COALESCE($22::text, color_dark_background_default),
+    color_dark_background_raised = COALESCE($23::text, color_dark_background_raised),
+    color_dark_background_indent = COALESCE($24::text, color_dark_background_indent),
+    color_dark_text_default = COALESCE($25::text, color_dark_text_default),
+    color_dark_text_muted = COALESCE($26::text, color_dark_text_muted),
+    color_dark_text_hint = COALESCE($27::text, color_dark_text_hint),
+    color_dark_shadow_default = COALESCE($28::text, color_dark_shadow_default),
+    color_dark_shadow_blank = COALESCE($29::text, color_dark_shadow_blank),
+    color_dark_border_default = COALESCE($30::text, color_dark_border_default),
+    rounding = COALESCE($31::int, rounding),
     updated_at = now()
-WHERE id = $31::text
-RETURNING id, name, description, start_date, end_date, logo_url,
+WHERE id = $32::text
+RETURNING id, name, description, rules, start_date, end_date, logo_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -985,6 +1005,7 @@ RETURNING id, name, description, start_date, end_date, logo_url,
 type UpdateProjectParams struct {
 	Name                        string             `json:"name"`
 	Description                 *string            `json:"description"`
+	Rules                       *string            `json:"rules"`
 	Startdate                   pgtype.Timestamptz `json:"startdate"`
 	Enddate                     pgtype.Timestamptz `json:"enddate"`
 	Logourl                     *string            `json:"logourl"`
@@ -1020,6 +1041,7 @@ type UpdateProjectRow struct {
 	ID                          string             `json:"id"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
+	Rules                       *string            `json:"rules"`
 	StartDate                   pgtype.Timestamptz `json:"start_date"`
 	EndDate                     pgtype.Timestamptz `json:"end_date"`
 	LogoUrl                     *string            `json:"logo_url"`
@@ -1055,6 +1077,7 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (*
 	row := q.db.QueryRow(ctx, UpdateProject,
 		arg.Name,
 		arg.Description,
+		arg.Rules,
 		arg.Startdate,
 		arg.Enddate,
 		arg.Logourl,
@@ -1090,6 +1113,7 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (*
 		&i.ID,
 		&i.Name,
 		&i.Description,
+		&i.Rules,
 		&i.StartDate,
 		&i.EndDate,
 		&i.LogoUrl,

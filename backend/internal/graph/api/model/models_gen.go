@@ -226,6 +226,7 @@ type CreateListeningAchievementInput struct {
 type CreateProjectInput struct {
 	Name        string           `json:"name"`
 	Description *string          `json:"description,omitempty"`
+	Rules       *string          `json:"rules,omitempty"`
 	StartDate   scalars.DateTime `json:"startDate"`
 	EndDate     scalars.DateTime `json:"endDate"`
 	Branding    *BrandingInput   `json:"branding"`
@@ -428,6 +429,7 @@ type Project struct {
 	ID           string                  `json:"id"`
 	Name         string                  `json:"name"`
 	Description  string                  `json:"description"`
+	Rules        *MarkdownText           `json:"rules,omitempty"`
 	Challenges   []Challenge             `json:"challenges"`
 	Leaderboard  *LeaderboardConnection  `json:"leaderboard"`
 	Events       []Event                 `json:"events"`
@@ -440,6 +442,7 @@ type Project struct {
 	Streaks      []Streak                `json:"streaks"`
 	Journal      *ScoreJournalConnection `json:"journal"`
 	ArchivedAt   *bool                   `json:"archivedAt,omitempty"`
+	RulesRaw     *string                 `json:"-"`
 }
 
 type ProjectConnection struct {
@@ -780,6 +783,7 @@ type UpdateListeningAchievementInput struct {
 type UpdateProjectInput struct {
 	Name        *string           `json:"name,omitempty"`
 	Description *string           `json:"description,omitempty"`
+	Rules       *string           `json:"rules,omitempty"`
 	StartDate   *scalars.DateTime `json:"startDate,omitempty"`
 	EndDate     *scalars.DateTime `json:"endDate,omitempty"`
 	Branding    *BrandingInput    `json:"branding,omitempty"`

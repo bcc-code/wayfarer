@@ -46,6 +46,21 @@ models:
     model:
       - github.com/99designs/gqlgen/graphql.Upload
 
+  MarkdownText:
+    model:
+      - github.com/bcc-media/wayfarer/internal/graph/api/model.MarkdownText
+    fields:
+      html:
+        resolver: true
+
+  Project:
+    fields:
+      rules:
+        resolver: true
+    extraFields:
+      RulesRaw:
+        type: "*string"
+
   # Add ProjectID field to types that have project relationships
   Challenge:
     fields:

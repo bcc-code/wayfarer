@@ -272,7 +272,7 @@ func (q *Queries) GetEventTranslationsByIDs(ctx context.Context, arg GetEventTra
 
 const GetProjectTranslationsByIDs = `-- name: GetProjectTranslationsByIDs :many
 
-SELECT project_id, language_code, name, description
+SELECT project_id, language_code, name, description, rules
 FROM project_translations
 WHERE project_id = ANY($1::text[])
   AND language_code = $2::text
@@ -288,6 +288,7 @@ type GetProjectTranslationsByIDsRow struct {
 	LanguageCode string  `json:"language_code"`
 	Name         *string `json:"name"`
 	Description  *string `json:"description"`
+	Rules        *string `json:"rules"`
 }
 
 // Translation queries for i18n support
@@ -306,6 +307,7 @@ func (q *Queries) GetProjectTranslationsByIDs(ctx context.Context, arg GetProjec
 			&i.LanguageCode,
 			&i.Name,
 			&i.Description,
+			&i.Rules,
 		); err != nil {
 			return nil, err
 		}

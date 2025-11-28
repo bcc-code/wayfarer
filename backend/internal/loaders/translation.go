@@ -28,6 +28,7 @@ type Translation struct {
 	LangCode    string
 	Name        *string
 	Description *string
+	Rules       *string // Only for projects
 	ButtonText  *string // Only for challenges
 	Title       *string // Only for articles
 	Author      *string // Only for articles
@@ -122,6 +123,7 @@ func queryTranslations(ctx context.Context, db *database.DB, entityType string, 
 				LangCode:    row.LanguageCode,
 				Name:        row.Name,
 				Description: row.Description,
+				Rules:       row.Rules,
 			}
 		}
 		return translations, nil

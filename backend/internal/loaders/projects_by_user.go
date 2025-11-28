@@ -50,6 +50,7 @@ func projectsByUserBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(c
 					ID:          row.ID,
 					Name:        row.Name,
 					Description: row.Description,
+					RulesRaw:    row.Rules,
 					StartDate:   scalars.DateTime{Time: row.StartDate.Time},
 					EndDate:     scalars.DateTime{Time: row.EndDate.Time},
 					Branding: &model.Branding{

@@ -42,6 +42,7 @@ type ResolverRoot interface {
 	Challenge() ChallengeResolver
 	Event() EventResolver
 	ListeningAchievement() ListeningAchievementResolver
+	MarkdownText() MarkdownTextResolver
 	Mutation() MutationResolver
 	Project() ProjectResolver
 	Query() QueryResolver
@@ -220,6 +221,11 @@ type ComplexityRoot struct {
 		UserHasListened func(childComplexity int) int
 	}
 
+	MarkdownText struct {
+		HTML     func(childComplexity int) int
+		Markdown func(childComplexity int) int
+	}
+
 	Mutation struct {
 		AddTeamMembers             func(childComplexity int, teamID string, userIds []string, force *bool) int
 		ArchiveProject             func(childComplexity int, id string) int
@@ -308,6 +314,7 @@ type ComplexityRoot struct {
 		Leaderboard  func(childComplexity int, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) int
 		MyTeam       func(childComplexity int) int
 		Name         func(childComplexity int) int
+		Rules        func(childComplexity int) int
 		StartDate    func(childComplexity int) int
 		Streaks      func(childComplexity int) int
 		Teams        func(childComplexity int) int
@@ -570,6 +577,9 @@ type ListeningAchievementResolver interface {
 	AchievedAt(ctx context.Context, obj *model.ListeningAchievement) (*scalars.DateTime, error)
 	Tracks(ctx context.Context, obj *model.ListeningAchievement) ([]model.Track, error)
 }
+type MarkdownTextResolver interface {
+	HTML(ctx context.Context, obj *model.MarkdownText) (string, error)
+}
 type MutationResolver interface {
 	Empty(ctx context.Context) (*bool, error)
 	JoinProject(ctx context.Context, projectID string) (*model.Project, error)
@@ -638,6 +648,7 @@ type MutationResolver interface {
 	CreateScoreAdjustment(ctx context.Context, input model.CreateScoreAdjustmentInput) (*model.ScoreJournal, error)
 }
 type ProjectResolver interface {
+	Rules(ctx context.Context, obj *model.Project) (*model.MarkdownText, error)
 	Challenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error)
 	Leaderboard(ctx context.Context, obj *model.Project, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) (*model.LeaderboardConnection, error)
 	Events(ctx context.Context, obj *model.Project) ([]model.Event, error)
@@ -1361,6 +1372,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ListeningAchievement.UserHasListened(childComplexity), true
+
+	case "MarkdownText.html":
+		if e.complexity.MarkdownText.HTML == nil {
+			break
+		}
+
+		return e.complexity.MarkdownText.HTML(childComplexity), true
+	case "MarkdownText.markdown":
+		if e.complexity.MarkdownText.Markdown == nil {
+			break
+		}
+
+		return e.complexity.MarkdownText.Markdown(childComplexity), true
 
 	case "Mutation.addTeamMembers":
 		if e.complexity.Mutation.AddTeamMembers == nil {
@@ -2180,6 +2204,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Project.Name(childComplexity), true
+	case "Project.rules":
+		if e.complexity.Project.Rules == nil {
+			break
+		}
+
+		return e.complexity.Project.Rules(childComplexity), true
 	case "Project.startDate":
 		if e.complexity.Project.StartDate == nil {
 			break
@@ -3531,6 +3561,11 @@ enum LeaderboardEntryTag {
 
 # ==================== Supporting Types ====================
 
+type MarkdownText {
+    markdown: String!
+    html: String! @goField(forceResolver: true)
+}
+
 type AgeRange {
     min: Int!
     max: Int!
@@ -3641,6 +3676,7 @@ type Project {
     id: ID!
     name: String!
     description: String!
+    rules: MarkdownText @goField(forceResolver: true)
     challenges: [Challenge!]! @goField(forceResolver: true)
     leaderboard(
         entityType: LeaderboardEntityType!
@@ -3874,6 +3910,7 @@ input TrackInput {
 input CreateProjectInput {
     name: String!
     description: String
+    rules: String
     startDate: DateTime!
     endDate: DateTime!
     branding: BrandingInput!
@@ -3882,6 +3919,7 @@ input CreateProjectInput {
 input UpdateProjectInput {
     name: String
     description: String
+    rules: String
     startDate: DateTime
     endDate: DateTime
     branding: BrandingInput
@@ -6771,6 +6809,8 @@ func (ec *executionContext) fieldContext_Challenge_project(_ context.Context, fi
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -8261,6 +8301,8 @@ func (ec *executionContext) fieldContext_Event_parentProject(_ context.Context, 
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -9042,6 +9084,8 @@ func (ec *executionContext) fieldContext_ListeningAchievement_project(_ context.
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -9377,6 +9421,64 @@ func (ec *executionContext) fieldContext_ListeningAchievement_hidden(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _MarkdownText_markdown(ctx context.Context, field graphql.CollectedField, obj *model.MarkdownText) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MarkdownText_markdown,
+		func(ctx context.Context) (any, error) {
+			return obj.Markdown, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MarkdownText_markdown(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MarkdownText",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MarkdownText_html(ctx context.Context, field graphql.CollectedField, obj *model.MarkdownText) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MarkdownText_html,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.MarkdownText().HTML(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MarkdownText_html(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MarkdownText",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation__empty(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -9455,6 +9557,8 @@ func (ec *executionContext) fieldContext_Mutation_joinProject(ctx context.Contex
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -9546,6 +9650,8 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -9637,6 +9743,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -14431,6 +14539,41 @@ func (ec *executionContext) fieldContext_Project_description(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Project_rules(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_rules,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Project().Rules(ctx, obj)
+		},
+		nil,
+		ec.marshalOMarkdownText2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMarkdownText,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_rules(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "markdown":
+				return ec.fieldContext_MarkdownText_markdown(ctx, field)
+			case "html":
+				return ec.fieldContext_MarkdownText_html(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MarkdownText", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Project_challenges(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -15085,6 +15228,8 @@ func (ec *executionContext) fieldContext_ProjectEdge_node(_ context.Context, fie
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -15208,6 +15353,8 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -15329,6 +15476,8 @@ func (ec *executionContext) fieldContext_Query_myProjects(_ context.Context, fie
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -15390,6 +15539,8 @@ func (ec *executionContext) fieldContext_Query_myCurrentProject(_ context.Contex
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -15451,6 +15602,8 @@ func (ec *executionContext) fieldContext_Query_currentProject(_ context.Context,
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -16914,6 +17067,8 @@ func (ec *executionContext) fieldContext_ReadingAchievement_project(_ context.Co
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -17376,6 +17531,8 @@ func (ec *executionContext) fieldContext_RoleScope_project(_ context.Context, fi
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -17513,6 +17670,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_project(_ context.Context,
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -18242,6 +18401,8 @@ func (ec *executionContext) fieldContext_SimpleAchievement_project(_ context.Con
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -18688,6 +18849,8 @@ func (ec *executionContext) fieldContext_Streak_project(_ context.Context, field
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -18865,6 +19028,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_project(_ context.Con
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -19558,6 +19723,8 @@ func (ec *executionContext) fieldContext_SuperTeam_parentProject(_ context.Conte
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -20045,6 +20212,8 @@ func (ec *executionContext) fieldContext_Team_parentProject(_ context.Context, f
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -20960,6 +21129,8 @@ func (ec *executionContext) fieldContext_User_projects(_ context.Context, field 
 				return ec.fieldContext_Project_name(ctx, field)
 			case "description":
 				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -23646,7 +23817,7 @@ func (ec *executionContext) unmarshalInputCreateProjectInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "startDate", "endDate", "branding"}
+	fieldsInOrder := [...]string{"name", "description", "rules", "startDate", "endDate", "branding"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -23667,6 +23838,13 @@ func (ec *executionContext) unmarshalInputCreateProjectInput(ctx context.Context
 				return it, err
 			}
 			it.Description = data
+		case "rules":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rules"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Rules = data
 		case "startDate":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startDate"))
 			data, err := ec.unmarshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
@@ -25036,7 +25214,7 @@ func (ec *executionContext) unmarshalInputUpdateProjectInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "startDate", "endDate", "branding"}
+	fieldsInOrder := [...]string{"name", "description", "rules", "startDate", "endDate", "branding"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -25057,6 +25235,13 @@ func (ec *executionContext) unmarshalInputUpdateProjectInput(ctx context.Context
 				return it, err
 			}
 			it.Description = data
+		case "rules":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rules"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Rules = data
 		case "startDate":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startDate"))
 			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
@@ -26976,6 +27161,81 @@ func (ec *executionContext) _ListeningAchievement(ctx context.Context, sel ast.S
 	return out
 }
 
+var markdownTextImplementors = []string{"MarkdownText"}
+
+func (ec *executionContext) _MarkdownText(ctx context.Context, sel ast.SelectionSet, obj *model.MarkdownText) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, markdownTextImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MarkdownText")
+		case "markdown":
+			out.Values[i] = ec._MarkdownText_markdown(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "html":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MarkdownText_html(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -27544,6 +27804,39 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "rules":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_rules(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "challenges":
 			field := field
 
@@ -31708,7 +32001,7 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 func (ec *executionContext) marshalNAchievement2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievement(ctx context.Context, sel ast.SelectionSet, v model.Achievement) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -31766,7 +32059,7 @@ func (ec *executionContext) marshalNAchievementConnection2githubᚗcomᚋbccᚑm
 func (ec *executionContext) marshalNAchievementConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievementConnection(ctx context.Context, sel ast.SelectionSet, v *model.AchievementConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -31877,7 +32170,7 @@ func (ec *executionContext) marshalNArticle2ᚕgithubᚗcomᚋbccᚑmediaᚋwayf
 func (ec *executionContext) marshalNArticle2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐArticle(ctx context.Context, sel ast.SelectionSet, v *model.Article) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -31919,7 +32212,7 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	res := graphql.MarshalBoolean(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -31928,7 +32221,7 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 func (ec *executionContext) marshalNBranding2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBranding(ctx context.Context, sel ast.SelectionSet, v *model.Branding) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -31991,7 +32284,7 @@ func (ec *executionContext) marshalNChallenge2ᚕgithubᚗcomᚋbccᚑmediaᚋwa
 func (ec *executionContext) marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge(ctx context.Context, sel ast.SelectionSet, v *model.Challenge) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32005,7 +32298,7 @@ func (ec *executionContext) marshalNChallengeConnection2githubᚗcomᚋbccᚑmed
 func (ec *executionContext) marshalNChallengeConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeConnection(ctx context.Context, sel ast.SelectionSet, v *model.ChallengeConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32067,7 +32360,7 @@ func (ec *executionContext) marshalNChurch2githubᚗcomᚋbccᚑmediaᚋwayfarer
 func (ec *executionContext) marshalNChurch2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurch(ctx context.Context, sel ast.SelectionSet, v *model.Church) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32091,7 +32384,7 @@ func (ec *executionContext) marshalNChurchConnection2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNChurchConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchConnection(ctx context.Context, sel ast.SelectionSet, v *model.ChurchConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32149,7 +32442,7 @@ func (ec *executionContext) marshalNChurchEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋw
 func (ec *executionContext) marshalNColorSet2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColorSet(ctx context.Context, sel ast.SelectionSet, v *model.ColorSet) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32164,7 +32457,7 @@ func (ec *executionContext) unmarshalNColorSetInput2ᚖgithubᚗcomᚋbccᚑmedi
 func (ec *executionContext) marshalNColors2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColors(ctx context.Context, sel ast.SelectionSet, v *model.Colors) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32385,7 +32678,7 @@ func (ec *executionContext) marshalNEvent2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfar
 func (ec *executionContext) marshalNEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEvent(ctx context.Context, sel ast.SelectionSet, v *model.Event) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32399,7 +32692,7 @@ func (ec *executionContext) marshalNEventConnection2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNEventConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEventConnection(ctx context.Context, sel ast.SelectionSet, v *model.EventConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32484,7 +32777,7 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	res := graphql.MarshalID(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -32530,7 +32823,7 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -32543,7 +32836,7 @@ func (ec *executionContext) marshalNLeaderboardConnection2githubᚗcomᚋbccᚑm
 func (ec *executionContext) marshalNLeaderboardConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardConnection(ctx context.Context, sel ast.SelectionSet, v *model.LeaderboardConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32659,7 +32952,7 @@ func (ec *executionContext) marshalNLeaderboardEntry2ᚕgithubᚗcomᚋbccᚑmed
 func (ec *executionContext) marshalNLeaderboardEntry2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntry(ctx context.Context, sel ast.SelectionSet, v *model.LeaderboardEntry) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32742,7 +33035,7 @@ func (ec *executionContext) marshalNListeningAchievement2githubᚗcomᚋbccᚑme
 func (ec *executionContext) marshalNListeningAchievement2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐListeningAchievement(ctx context.Context, sel ast.SelectionSet, v *model.ListeningAchievement) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32752,7 +33045,7 @@ func (ec *executionContext) marshalNListeningAchievement2ᚖgithubᚗcomᚋbcc�
 func (ec *executionContext) marshalNPageInfo2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v *model.PageInfo) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32810,7 +33103,7 @@ func (ec *executionContext) marshalNProject2ᚕgithubᚗcomᚋbccᚑmediaᚋwayf
 func (ec *executionContext) marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProject(ctx context.Context, sel ast.SelectionSet, v *model.Project) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32824,7 +33117,7 @@ func (ec *executionContext) marshalNProjectConnection2githubᚗcomᚋbccᚑmedia
 func (ec *executionContext) marshalNProjectConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProjectConnection(ctx context.Context, sel ast.SelectionSet, v *model.ProjectConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32886,7 +33179,7 @@ func (ec *executionContext) marshalNReadingAchievement2githubᚗcomᚋbccᚑmedi
 func (ec *executionContext) marshalNReadingAchievement2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐReadingAchievement(ctx context.Context, sel ast.SelectionSet, v *model.ReadingAchievement) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32925,7 +33218,7 @@ func (ec *executionContext) marshalNScoreJournal2githubᚗcomᚋbccᚑmediaᚋwa
 func (ec *executionContext) marshalNScoreJournal2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournal(ctx context.Context, sel ast.SelectionSet, v *model.ScoreJournal) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -32939,7 +33232,7 @@ func (ec *executionContext) marshalNScoreJournalConnection2githubᚗcomᚋbccᚑ
 func (ec *executionContext) marshalNScoreJournalConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournalConnection(ctx context.Context, sel ast.SelectionSet, v *model.ScoreJournalConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -33011,7 +33304,7 @@ func (ec *executionContext) marshalNSimpleAchievement2githubᚗcomᚋbccᚑmedia
 func (ec *executionContext) marshalNSimpleAchievement2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSimpleAchievement(ctx context.Context, sel ast.SelectionSet, v *model.SimpleAchievement) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -33069,7 +33362,7 @@ func (ec *executionContext) marshalNStreak2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfa
 func (ec *executionContext) marshalNStreak2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreak(ctx context.Context, sel ast.SelectionSet, v *model.Streak) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -33083,7 +33376,7 @@ func (ec *executionContext) marshalNStreakAchievement2githubᚗcomᚋbccᚑmedia
 func (ec *executionContext) marshalNStreakAchievement2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakAchievement(ctx context.Context, sel ast.SelectionSet, v *model.StreakAchievement) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -33097,7 +33390,7 @@ func (ec *executionContext) marshalNStreakConnection2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNStreakConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakConnection(ctx context.Context, sel ast.SelectionSet, v *model.StreakConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -33210,7 +33503,7 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -33297,7 +33590,7 @@ func (ec *executionContext) marshalNSuperTeam2ᚕgithubᚗcomᚋbccᚑmediaᚋwa
 func (ec *executionContext) marshalNSuperTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSuperTeam(ctx context.Context, sel ast.SelectionSet, v *model.SuperTeam) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -33311,7 +33604,7 @@ func (ec *executionContext) marshalNSuperTeamConnection2githubᚗcomᚋbccᚑmed
 func (ec *executionContext) marshalNSuperTeamConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSuperTeamConnection(ctx context.Context, sel ast.SelectionSet, v *model.SuperTeamConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -33417,7 +33710,7 @@ func (ec *executionContext) marshalNTeam2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfare
 func (ec *executionContext) marshalNTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeam(ctx context.Context, sel ast.SelectionSet, v *model.Team) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -33431,7 +33724,7 @@ func (ec *executionContext) marshalNTeamConnection2githubᚗcomᚋbccᚑmediaᚋ
 func (ec *executionContext) marshalNTeamConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamConnection(ctx context.Context, sel ast.SelectionSet, v *model.TeamConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -33585,7 +33878,7 @@ func (ec *executionContext) marshalNTrack2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfar
 func (ec *executionContext) marshalNTrack2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTrack(ctx context.Context, sel ast.SelectionSet, v *model.Track) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -33672,7 +33965,7 @@ func (ec *executionContext) marshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋg
 	res := graphql.MarshalUpload(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -33729,7 +34022,7 @@ func (ec *executionContext) marshalNUser2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfare
 func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -33743,7 +34036,7 @@ func (ec *executionContext) marshalNUserConnection2githubᚗcomᚋbccᚑmediaᚋ
 func (ec *executionContext) marshalNUserConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConnection(ctx context.Context, sel ast.SelectionSet, v *model.UserConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -33849,7 +34142,7 @@ func (ec *executionContext) marshalNUserRole2ᚕgithubᚗcomᚋbccᚑmediaᚋway
 func (ec *executionContext) marshalNUserRole2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserRole(ctx context.Context, sel ast.SelectionSet, v *model.UserRole) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -33914,7 +34207,7 @@ func (ec *executionContext) marshalN__DirectiveLocation2string(ctx context.Conte
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -34086,7 +34379,7 @@ func (ec *executionContext) marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgen�
 func (ec *executionContext) marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, sel ast.SelectionSet, v *introspection.Type) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -34103,7 +34396,7 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -34385,6 +34678,13 @@ func (ec *executionContext) unmarshalOLeaderboardFilter2ᚖgithubᚗcomᚋbccᚑ
 	}
 	res, err := ec.unmarshalInputLeaderboardFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMarkdownText2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMarkdownText(ctx context.Context, sel ast.SelectionSet, v *model.MarkdownText) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._MarkdownText(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProject(ctx context.Context, sel ast.SelectionSet, v *model.Project) graphql.Marshaler {
