@@ -1,6 +1,8 @@
 <script setup lang="ts">
 const modelValue = defineModel<Colors>({ required: true })
 
+const toast = useToast()
+
 const colorFields = [
   { key: 'accent', label: 'Accent' },
   { key: 'accentContrast', label: 'Accent Contrast' },
@@ -17,6 +19,98 @@ const colorFields = [
 ] as const
 
 type ColorKey = (typeof colorFields)[number]['key']
+
+// Convert camelCase to kebab-case
+function toKebabCase(str: string): string {
+  return str.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()
+}
+
+// Convert kebab-case to camelCase
+function toCamelCase(str: string): string {
+  return str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
+}
+
+// Export theme as JSON file
+function exportTheme() {
+  const themeJson = {
+    light: Object.fromEntries(
+      Object.entries(modelValue.value.light)
+        .filter(([key]) => key !== '__typename')
+        .map(([key, value]) => [toKebabCase(key), value]),
+    ),
+    dark: Object.fromEntries(
+      Object.entries(modelValue.value.dark)
+        .filter(([key]) => key !== '__typename')
+        .map(([key, value]) => [toKebabCase(key), value]),
+    ),
+  }
+  console.log(themeJson)
+
+  const blob = new Blob([JSON.stringify(themeJson, null, 2)], {
+    type: 'application/json',
+  })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `theme.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+// Import theme from JSON file
+function importTheme() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.json'
+  input.onchange = async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0]
+    if (!file) return
+
+    try {
+      const text = await file.text()
+      const json = JSON.parse(text)
+
+      if (!json.light || !json.dark) {
+        throw new Error('Invalid theme format: missing light or dark keys')
+      }
+
+      const convertColorSet = (
+        colorSet: Record<string, string>,
+      ): Record<string, string> => {
+        return Object.fromEntries(
+          Object.entries(colorSet).map(([key, value]) => [
+            toCamelCase(key),
+            value,
+          ]),
+        )
+      }
+
+      modelValue.value = {
+        ...modelValue.value,
+        light: {
+          ...modelValue.value.light,
+          ...convertColorSet(json.light),
+        },
+        dark: {
+          ...modelValue.value.dark,
+          ...convertColorSet(json.dark),
+        },
+      }
+
+      toast.add({
+        title: 'Theme imported',
+        color: 'success',
+      })
+    } catch (err) {
+      toast.add({
+        title: 'Failed to import theme',
+        description: err instanceof Error ? err.message : 'Invalid JSON file',
+        color: 'error',
+      })
+    }
+  }
+  input.click()
+}
 
 const lightStyles = computed(() => {
   return {
@@ -78,10 +172,9 @@ function updateDarkColor(key: ColorKey, value: string) {
     <UButton variant="soft" block>Open theme editor</UButton>
 
     <template #body>
-      <div class="flex gap-8">
-        <div class="grid flex-1 grid-cols-2 gap-6">
+      <div class="flex flex-col gap-6">
+        <div class="mx-auto flex gap-8">
           <div>
-            <h3 class="mb-4 text-lg font-semibold">Light Mode</h3>
             <div class="space-y-3">
               <UFormField
                 v-for="field in colorFields"
@@ -95,8 +188,17 @@ function updateDarkColor(key: ColorKey, value: string) {
               </UFormField>
             </div>
           </div>
+          <div class="flex shrink-0 gap-4">
+            <div class="text-center">
+              <p class="text-muted mb-2 text-sm">Light</p>
+              <AdminProjectThemePreview :style="lightStyles" />
+            </div>
+            <div class="text-center">
+              <p class="text-muted mb-2 text-sm">Dark</p>
+              <AdminProjectThemePreview :style="darkStyles" />
+            </div>
+          </div>
           <div>
-            <h3 class="mb-4 text-lg font-semibold">Dark Mode</h3>
             <div class="space-y-3">
               <UFormField
                 v-for="field in colorFields"
@@ -111,15 +213,13 @@ function updateDarkColor(key: ColorKey, value: string) {
             </div>
           </div>
         </div>
-        <div class="flex shrink-0 gap-4">
-          <div class="text-center">
-            <p class="text-muted mb-2 text-sm">Light</p>
-            <AdminProjectThemePreview :style="lightStyles" />
-          </div>
-          <div class="text-center">
-            <p class="text-muted mb-2 text-sm">Dark</p>
-            <AdminProjectThemePreview :style="darkStyles" />
-          </div>
+        <div class="flex justify-center gap-2">
+          <UButton variant="soft" icon="i-lucide-upload" @click="importTheme">
+            Import
+          </UButton>
+          <UButton variant="soft" icon="i-lucide-download" @click="exportTheme">
+            Export
+          </UButton>
         </div>
       </div>
     </template>
