@@ -1,0 +1,43 @@
+type: http_request
+model: http_request
+id: rq_BjKwshVcEi
+createdAt: 2025-11-28T13:57:33.413340
+updatedAt: 2025-11-28T13:59:16.084998
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_qhH6J7tuNv
+authentication: {}
+authenticationType: null
+body:
+  query: |-
+    mutation {
+      updateProject(id:"PR01K9VZ8684DP9R4W3ZEV526E5X",
+        input: {
+          rules: "# This is a rule\n\n* And a\n* Bullet"
+        }
+      ){
+        rules{
+          markdown
+          html
+        }
+      }
+    }
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: ykj3tfsHHJ
+- enabled: true
+  name: ''
+  value: ''
+  id: YGdtvWfsZs
+- enabled: true
+  name: ''
+  value: ''
+  id: 0s4xJY0Rq9
+method: POST
+name: Set Project Rules
+sortPriority: 0.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

@@ -1,0 +1,44 @@
+type: http_request
+model: http_request
+id: rq_zwQhAmibYn
+createdAt: 2025-11-28T13:49:13.623726
+updatedAt: 2025-11-28T13:57:16.252494
+workspaceId: wk_XKsmbMdFg7
+folderId: null
+authentication: {}
+authenticationType: null
+body:
+  query: |-
+    query {
+      projects{
+        edges{
+          node{
+            id
+            rules{
+              markdown
+              html
+            }
+          }
+        }
+      }
+    }
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: ykj3tfsHHJ
+- enabled: true
+  name: ''
+  value: ''
+  id: YGdtvWfsZs
+- enabled: true
+  name: ''
+  value: ''
+  id: 0s4xJY0Rq9
+method: POST
+name: ProjectRules
+sortPriority: -1764074288098.996
+url: ${[ HOST ]}/graphql
+urlParameters: []
