@@ -28,7 +28,7 @@ const hasScrolled = computed(() => y.value > 25)
         >
           <h1
             :class="[
-              'absolute transition-all duration-300 ease-out',
+              'text-text-default absolute transition-all duration-300 ease-out',
               {
                 'text-heading bottom-3 left-6 translate-x-0 translate-y-0':
                   !hasScrolled,

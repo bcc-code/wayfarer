@@ -18,7 +18,7 @@ const classes = cva(
     variants: {
       variant: {
         primary: 'bg-accent text-on-accent gradient-border',
-        secondary: 'bg-border-default text-default gradient-border',
+        secondary: 'bg-border-default text-text-default gradient-border',
         tertiary: 'text-default',
       },
       size: {

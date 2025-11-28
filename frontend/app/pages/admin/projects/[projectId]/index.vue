@@ -88,7 +88,12 @@ const state = reactive<State>({
   branding: {
     logo: '',
     colors: {
-      primary: '',
+      dark: {
+        accent: '',
+      },
+      light: {
+        accent: '',
+      },
     },
     rounding: 0,
   },

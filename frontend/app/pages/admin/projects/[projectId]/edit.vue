@@ -22,9 +22,31 @@ gql(`
         colors {
           light {
             accent
+            accentContrast
+            onAccent
+            backgroundDefault
+            backgroundRaised
+            backgroundIndent
+            textDefault
+            textMuted
+            textHint
+            shadowDefault
+            shadowBlank
+            borderDefault
           }
           dark {
             accent
+            accentContrast
+            onAccent
+            backgroundDefault
+            backgroundRaised
+            backgroundIndent
+            textDefault
+            textMuted
+            textHint
+            shadowDefault
+            shadowBlank
+            borderDefault
           }
         }
       }
@@ -50,9 +72,34 @@ const schema = z.object({
   branding: z.object({
     logo: z.string().optional(),
     colors: z.object({
-      primary: z.string(),
-      secondary: z.string(),
-      tertiary: z.string(),
+      light: z.object({
+        accent: z.string(),
+        accentContrast: z.string(),
+        onAccent: z.string(),
+        backgroundDefault: z.string(),
+        backgroundRaised: z.string(),
+        backgroundIndent: z.string(),
+        textDefault: z.string(),
+        textMuted: z.string(),
+        textHint: z.string(),
+        shadowDefault: z.string(),
+        shadowBlank: z.string(),
+        borderDefault: z.string(),
+      }),
+      dark: z.object({
+        accent: z.string(),
+        accentContrast: z.string(),
+        onAccent: z.string(),
+        backgroundDefault: z.string(),
+        backgroundRaised: z.string(),
+        backgroundIndent: z.string(),
+        textDefault: z.string(),
+        textMuted: z.string(),
+        textHint: z.string(),
+        shadowDefault: z.string(),
+        shadowBlank: z.string(),
+        borderDefault: z.string(),
+      }),
     }),
     rounding: z.number(),
   }),
@@ -67,9 +114,34 @@ const state = reactive<Schema>({
     logo: undefined,
     rounding: 0,
     colors: {
-      primary: '#000000',
-      secondary: '#000000',
-      tertiary: '#000000',
+      light: {
+        accent: '',
+        accentContrast: '',
+        onAccent: '',
+        backgroundDefault: '',
+        backgroundRaised: '',
+        backgroundIndent: '',
+        textDefault: '',
+        textMuted: '',
+        textHint: '',
+        shadowDefault: '',
+        shadowBlank: '',
+        borderDefault: '',
+      },
+      dark: {
+        accent: '',
+        accentContrast: '',
+        onAccent: '',
+        backgroundDefault: '',
+        backgroundRaised: '',
+        backgroundIndent: '',
+        textDefault: '',
+        textMuted: '',
+        textHint: '',
+        shadowDefault: '',
+        shadowBlank: '',
+        borderDefault: '',
+      },
     },
   },
 })
@@ -84,7 +156,7 @@ watch(
       state.endDate = d.project.endDate
       state.branding.logo = d.project.branding.logo ?? undefined
       state.branding.rounding = d.project.branding.rounding
-      state.branding.colors.primary = d.project.branding.colors.primary
+      state.branding.colors = d.project.branding.colors
     }
   },
   { once: true },
@@ -167,8 +239,8 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
           v-model:start="state.startDate"
           v-model:end="state.endDate"
         />
-        <UFormField label="Accent color">
-          <ColorPickerInput v-model="state.branding.colors.primary" />
+        <UFormField label="Color Theme">
+          <AdminProjectThemeEditor v-model="state.branding.colors" />
         </UFormField>
         <UButton type="submit" size="lg" block>Save changes</UButton>
       </UForm>

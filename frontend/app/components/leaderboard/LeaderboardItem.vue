@@ -7,9 +7,9 @@ defineProps<{
 }>()
 
 const colorClasses = [
-  { light: 'text-[#F2BC28]', dark: 'text-[#864802]' },
-  { light: 'text-[#D4D4D4]', dark: 'text-[#525252]' },
-  { light: 'text-[#C47E49]', dark: 'text-[#512012]' },
+  { light: 'text-[#F2BC28]!', dark: 'text-[#864802]!' },
+  { light: 'text-[#D4D4D4]!', dark: 'text-[#525252]!' },
+  { light: 'text-[#C47E49]!', dark: 'text-[#512012]!' },
 ]
 
 const getColorClasses = (rank: number | undefined, mode: 'dark' | 'light') => {
@@ -29,11 +29,11 @@ const getColorClasses = (rank: number | undefined, mode: 'dark' | 'light') => {
   >
     <div
       :class="[
-        'grid aspect-square size-10 place-items-center rounded-full',
+        'text-text-default grid aspect-square size-10 place-items-center rounded-full',
         {
           'border-border-default border':
             hideMedal || (item.rank && item.rank > 3),
-          'text-accent-contrast': isMe && hideMedal,
+          'text-accent-contrast!': isMe && hideMedal,
         },
         !hideMedal && getColorClasses(item.rank, 'dark'),
       ]"
@@ -47,7 +47,12 @@ const getColorClasses = (rank: number | undefined, mode: 'dark' | 'light') => {
     </div>
     <div class="grow">
       <div class="flex gap-2">
-        <p :class="['text-label', { 'text-accent-contrast': isMe }]">
+        <p
+          :class="[
+            'text-label',
+            { 'text-accent-contrast': isMe, 'text-text-default': !isMe },
+          ]"
+        >
           {{ item.name }}
         </p>
         <span
