@@ -30,30 +30,58 @@ const teamLeader = computed(() => {
   )
 })
 
+const teamMembers = computed(() => {
+  return data.value?.myCurrentProject.myTeam?.memberLeaderboard ?? []
+})
+
 // Update team
 const form = reactive({
   name: '',
+  teamLeadId: null as string | null,
 })
 watch(
   () => data.value,
   (d) => {
     if (d) {
       form.name = d.myCurrentProject.myTeam?.name ?? ''
+      form.teamLeadId = teamLeader.value?.id ?? null
     }
   },
   { once: true },
 )
+
+const selectedTeamLeader = computed(() => {
+  if (!form.teamLeadId) return null
+  return teamMembers.value.find((m) => m.id === form.teamLeadId)
+})
+
 const { executeMutation } = useUpdateTeamMutation()
-function saveChanges() {
+const { executeMutation: assignTeamLead } = useAssignTeamLeadMutation()
+
+async function saveChanges() {
   const id = data.value?.myCurrentProject.myTeam?.id
   if (!id) return
 
-  executeMutation({
+  // Update team name
+  await executeMutation({
     id,
     input: { name: form.name },
-  }).then(() => {
-    reloadNuxtApp()
   })
+
+  // Assign team lead if changed
+  if (form.teamLeadId && form.teamLeadId !== teamLeader.value?.id) {
+    await assignTeamLead({ teamId: id, userId: form.teamLeadId })
+  }
+
+  reloadNuxtApp()
+}
+
+// Team lead selector
+const showLeadSelector = ref(false)
+
+function selectTeamLead(userId: string) {
+  form.teamLeadId = userId
+  showLeadSelector.value = false
 }
 </script>
 
@@ -95,13 +123,54 @@ function saveChanges() {
                       size="small"
                       :class="[
                         'ml-auto grow-0',
-                        { 'text-text-hint': !teamLeader?.name },
+                        { 'text-text-hint': !selectedTeamLeader?.name },
                       ]"
+                      @click="showLeadSelector = true"
                     >
-                      {{ teamLeader?.name ?? $t('unit.noUnitLeader') }}
+                      {{ selectedTeamLeader?.name ?? $t('unit.noUnitLeader') }}
                     </DesignButton>
                   </div>
                 </DesignPanel>
+
+                <UModal
+                  v-model:open="showLeadSelector"
+                  :ui="{ content: 'bg-background-default' }"
+                  :transition="false"
+                  fullscreen
+                >
+                  <template #content="{ close: closeLeadSelector }">
+                    <PageLayout
+                      :title="$t('unit.selectUnitLeader')"
+                      :bottom-padding="false"
+                    >
+                      <template #action>
+                        <DesignIconButton
+                          icon="lucide:x"
+                          @click="closeLeadSelector"
+                        />
+                      </template>
+                      <div class="gap-list-section-gap flex flex-col">
+                        <DesignPanel
+                          v-for="member in teamMembers"
+                          :key="member.id"
+                          class="cursor-pointer"
+                          @click="selectTeamLead(member.id)"
+                        >
+                          <div class="flex items-center gap-2.5 px-3 py-2">
+                            <span class="text-label flex-1">
+                              {{ member.name }}
+                            </span>
+                            <Icon
+                              v-if="member.id === form.teamLeadId"
+                              name="lucide:check"
+                              class="text-accent size-5"
+                            />
+                          </div>
+                        </DesignPanel>
+                      </div>
+                    </PageLayout>
+                  </template>
+                </UModal>
                 <div class="p-default flex h-full flex-col justify-end">
                   <DesignButton
                     size="large"

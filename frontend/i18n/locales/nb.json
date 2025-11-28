@@ -39,7 +39,8 @@
     "unitLeader": "Unitleder",
     "saveChanges": "Lagre endringer",
     "unitName": "Unitnavn",
-    "noUnitLeader": "Ingen unitleder"
+    "noUnitLeader": "Ingen unitleder",
+    "selectUnitLeader": "Velg unitleder"
   },
   "place": "plass",
   "points": "poeng"

@@ -39,7 +39,8 @@
     "saveChanges": "Save changes",
     "unitName": "Unit name",
     "editUnit": "Edit unit",
-    "noUnitLeader": "No unit leader"
+    "noUnitLeader": "No unit leader",
+    "selectUnitLeader": "Select unit leader"
   },
   "points": "points",
   "place": "place"
