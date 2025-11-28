@@ -72,15 +72,31 @@ const leaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
         <h2 class="text-heading text-center text-balance">
           {{ data.me.church.name }}
         </h2>
-        <DesignTabs
-          v-model="entityType"
-          :tabs="[
-            { label: 'People', value: LeaderboardEntityType.Persons },
-            { label: 'Units', value: LeaderboardEntityType.Teams },
-          ]"
-          variant="secondary"
-        />
       </div>
+      <DesignTabs
+        v-model="entityType"
+        :tabs="[
+          {
+            label: 'People',
+            value: LeaderboardEntityType.Persons,
+            icon: 'IconUser',
+          },
+          {
+            label: 'Units',
+            value: LeaderboardEntityType.Teams,
+            icon: 'IconUsers',
+          },
+        ]"
+        class="mb-list-section-gap"
+        variant="secondary"
+      >
+        <template #tab="{ tab }">
+          <div class="flex flex-col items-center gap-0.5">
+            <Icon :name="tab.icon" class="size-7" />
+            <span>{{ tab.label }}</span>
+          </div>
+        </template>
+      </DesignTabs>
       <LeaderboardList
         v-if="leaderboard?.length"
         :leaderboard="leaderboard"

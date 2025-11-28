@@ -57,7 +57,7 @@ const { data, error, fetching } = useProfilePageQuery({
             :src="data.me.image"
             height="160"
             width="160"
-            class="bg-background-default text-accent-contrast size-full rounded-full"
+            class="bg-background-default text-accent-contrast size-full rounded-full object-cover object-center"
           />
           <Icon
             v-else
