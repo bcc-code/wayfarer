@@ -74,21 +74,6 @@ const toolbarItems = [
     isActive: () => editor.value?.isActive('orderedList'),
     title: 'Ordered List',
   },
-  { type: 'divider' },
-  {
-    icon: 'i-lucide-undo',
-    action: () => editor.value?.chain().focus().undo().run(),
-    isActive: () => false,
-    disabled: () => !editor.value?.can().undo(),
-    title: 'Undo',
-  },
-  {
-    icon: 'i-lucide-redo',
-    action: () => editor.value?.chain().focus().redo().run(),
-    isActive: () => false,
-    disabled: () => !editor.value?.can().redo(),
-    title: 'Redo',
-  },
 ]
 </script>
 
@@ -106,10 +91,9 @@ const toolbarItems = [
         <UButton
           v-else
           :icon="item.icon"
-          variant="ghost"
           size="xs"
-          :color="item.isActive?.() ? 'primary' : 'neutral'"
-          :disabled="item.disabled?.()"
+          square
+          :variant="item.isActive?.() ? 'soft' : 'ghost'"
           :title="item.title"
           @click="
             () => {
