@@ -44,16 +44,17 @@ const { data, fetching, error } = useProjectRulesQuery({
 </template>
 
 <style>
-#project-rules h1,
-#project-rules h2,
-#project-rules h3 {
+#project-rules :is(h1, h2, h3) {
   font-size: var(--font-size-title);
   line-height: var(--line-height-title);
   font-weight: var(--font-weight-title);
   letter-spacing: var(--letter-spacing-title);
   color: var(--color-text-default);
   margin-bottom: 4px;
-  margin-top: 16px;
+
+  &:not(:first-of-type) {
+    margin-top: 32px;
+  }
 }
 
 #project-rules p {
