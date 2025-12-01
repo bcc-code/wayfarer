@@ -50,6 +50,10 @@ gql(`
           }
         }
       }
+      rules {
+        markdown
+        html
+      }
     }
   }
 `)
@@ -103,6 +107,7 @@ const schema = z.object({
     }),
     rounding: z.number(),
   }),
+  rules: z.string().optional(),
 })
 type Schema = z.infer<typeof schema>
 const state = reactive<Schema>({
@@ -144,6 +149,7 @@ const state = reactive<Schema>({
       },
     },
   },
+  rules: '',
 })
 
 watch(
@@ -157,6 +163,7 @@ watch(
       state.branding.logo = d.project.branding.logo ?? undefined
       state.branding.rounding = d.project.branding.rounding
       state.branding.colors = d.project.branding.colors
+      state.rules = d.project.rules?.markdown
     }
   },
   { once: true },
@@ -221,7 +228,7 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
       <UForm
         :state
         :schema="schema"
-        class="flex max-w-md flex-col gap-6"
+        class="flex max-w-md flex-col gap-8"
         @submit.prevent="updateProject"
       >
         <UFormField name="name" label="Name">
@@ -244,6 +251,14 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
             v-model="state.branding.colors"
             :project-name="data?.project.name"
           />
+        </UFormField>
+        <UFormField
+          name="rules"
+          label="Project Rules"
+          hint="(optional)"
+          help="Explain how users collect points"
+        >
+          <MarkdownEditor v-model="state.rules" />
         </UFormField>
         <UButton type="submit" size="lg" block>Save changes</UButton>
       </UForm>
