@@ -1003,37 +1003,37 @@ RETURNING id, name, description, rules, start_date, end_date, logo_url,
 `
 
 type UpdateProjectParams struct {
-	Name                        string             `json:"name"`
+	Name                        *string            `json:"name"`
 	Description                 *string            `json:"description"`
 	Rules                       *string            `json:"rules"`
 	Startdate                   pgtype.Timestamptz `json:"startdate"`
 	Enddate                     pgtype.Timestamptz `json:"enddate"`
 	Logourl                     *string            `json:"logourl"`
-	Colorlightaccent            string             `json:"colorlightaccent"`
-	Colorlightaccentcontrast    string             `json:"colorlightaccentcontrast"`
-	Colorlightonaccent          string             `json:"colorlightonaccent"`
-	Colorlightbackgrounddefault string             `json:"colorlightbackgrounddefault"`
-	Colorlightbackgroundraised  string             `json:"colorlightbackgroundraised"`
-	Colorlightbackgroundindent  string             `json:"colorlightbackgroundindent"`
-	Colorlighttextdefault       string             `json:"colorlighttextdefault"`
-	Colorlighttextmuted         string             `json:"colorlighttextmuted"`
-	Colorlighttexthint          string             `json:"colorlighttexthint"`
-	Colorlightshadowdefault     string             `json:"colorlightshadowdefault"`
-	Colorlightshadowblank       string             `json:"colorlightshadowblank"`
-	Colorlightborderdefault     string             `json:"colorlightborderdefault"`
-	Colordarkaccent             string             `json:"colordarkaccent"`
-	Colordarkaccentcontrast     string             `json:"colordarkaccentcontrast"`
-	Colordarkonaccent           string             `json:"colordarkonaccent"`
-	Colordarkbackgrounddefault  string             `json:"colordarkbackgrounddefault"`
-	Colordarkbackgroundraised   string             `json:"colordarkbackgroundraised"`
-	Colordarkbackgroundindent   string             `json:"colordarkbackgroundindent"`
-	Colordarktextdefault        string             `json:"colordarktextdefault"`
-	Colordarktextmuted          string             `json:"colordarktextmuted"`
-	Colordarktexthint           string             `json:"colordarktexthint"`
-	Colordarkshadowdefault      string             `json:"colordarkshadowdefault"`
-	Colordarkshadowblank        string             `json:"colordarkshadowblank"`
-	Colordarkborderdefault      string             `json:"colordarkborderdefault"`
-	Rounding                    int32              `json:"rounding"`
+	Colorlightaccent            *string            `json:"colorlightaccent"`
+	Colorlightaccentcontrast    *string            `json:"colorlightaccentcontrast"`
+	Colorlightonaccent          *string            `json:"colorlightonaccent"`
+	Colorlightbackgrounddefault *string            `json:"colorlightbackgrounddefault"`
+	Colorlightbackgroundraised  *string            `json:"colorlightbackgroundraised"`
+	Colorlightbackgroundindent  *string            `json:"colorlightbackgroundindent"`
+	Colorlighttextdefault       *string            `json:"colorlighttextdefault"`
+	Colorlighttextmuted         *string            `json:"colorlighttextmuted"`
+	Colorlighttexthint          *string            `json:"colorlighttexthint"`
+	Colorlightshadowdefault     *string            `json:"colorlightshadowdefault"`
+	Colorlightshadowblank       *string            `json:"colorlightshadowblank"`
+	Colorlightborderdefault     *string            `json:"colorlightborderdefault"`
+	Colordarkaccent             *string            `json:"colordarkaccent"`
+	Colordarkaccentcontrast     *string            `json:"colordarkaccentcontrast"`
+	Colordarkonaccent           *string            `json:"colordarkonaccent"`
+	Colordarkbackgrounddefault  *string            `json:"colordarkbackgrounddefault"`
+	Colordarkbackgroundraised   *string            `json:"colordarkbackgroundraised"`
+	Colordarkbackgroundindent   *string            `json:"colordarkbackgroundindent"`
+	Colordarktextdefault        *string            `json:"colordarktextdefault"`
+	Colordarktextmuted          *string            `json:"colordarktextmuted"`
+	Colordarktexthint           *string            `json:"colordarktexthint"`
+	Colordarkshadowdefault      *string            `json:"colordarkshadowdefault"`
+	Colordarkshadowblank        *string            `json:"colordarkshadowblank"`
+	Colordarkborderdefault      *string            `json:"colordarkborderdefault"`
+	Rounding                    *int32             `json:"rounding"`
 	ID                          string             `json:"id"`
 }
 
