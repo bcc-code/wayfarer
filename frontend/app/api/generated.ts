@@ -248,6 +248,7 @@ export type CreateProjectInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   endDate: Scalars['DateTime']['input'];
   name: Scalars['String']['input'];
+  rules?: InputMaybe<Scalars['String']['input']>;
   startDate: Scalars['DateTime']['input'];
 };
 
@@ -454,6 +455,12 @@ export type ListeningAchievement = Achievement & {
   project: Project;
   tracks: Array<Track>;
   userHasListened: Array<Track>;
+};
+
+export type MarkdownText = {
+  __typename?: 'MarkdownText';
+  html: Scalars['String']['output'];
+  markdown: Scalars['String']['output'];
 };
 
 export type Mutation = {
@@ -919,6 +926,7 @@ export type Project = {
   leaderboard: LeaderboardConnection;
   myTeam?: Maybe<Team>;
   name: Scalars['String']['output'];
+  rules?: Maybe<MarkdownText>;
   startDate: Scalars['DateTime']['output'];
   streaks: Array<Streak>;
   teams: Array<Team>;
@@ -1461,6 +1469,7 @@ export type UpdateProjectInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   endDate?: InputMaybe<Scalars['DateTime']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  rules?: InputMaybe<Scalars['String']['input']>;
   startDate?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
@@ -1553,6 +1562,11 @@ export type UserRole = {
   scope?: Maybe<RoleScope>;
   user: User;
 };
+
+export type ProjectRulesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ProjectRulesQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', rules?: { __typename?: 'MarkdownText', markdown: string, html: string } | null } };
 
 export type PointHistoryQueryVariables = Exact<{
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -1948,6 +1962,20 @@ export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User'
     >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank?: number | null } | null } } };
 
 
+export const ProjectRulesDocument = gql`
+    query ProjectRules {
+  myCurrentProject {
+    rules {
+      markdown
+      html
+    }
+  }
+}
+    `;
+
+export function useProjectRulesQuery(options?: Omit<Urql.UseQueryArgs<never, ProjectRulesQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ProjectRulesQuery, ProjectRulesQueryVariables | undefined>({ query: ProjectRulesDocument, variables: undefined, ...options });
+};
 export const PointHistoryDocument = gql`
     query PointHistory($first: Int) {
   myCurrentProject {
