@@ -193,7 +193,7 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 
 	// Only set fields that are provided
 	if input.Name != nil {
-		params.Name = *input.Name
+		params.Name = input.Name
 	}
 	if input.Description != nil {
 		params.Description = input.Description
@@ -213,36 +213,37 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 		}
 		if input.Branding.Colors != nil {
 			if input.Branding.Colors.Light != nil {
-				params.Colorlightaccent = input.Branding.Colors.Light.Accent
-				params.Colorlightaccentcontrast = input.Branding.Colors.Light.AccentContrast
-				params.Colorlightonaccent = input.Branding.Colors.Light.OnAccent
-				params.Colorlightbackgrounddefault = input.Branding.Colors.Light.BackgroundDefault
-				params.Colorlightbackgroundraised = input.Branding.Colors.Light.BackgroundRaised
-				params.Colorlightbackgroundindent = input.Branding.Colors.Light.BackgroundIndent
-				params.Colorlighttextdefault = input.Branding.Colors.Light.TextDefault
-				params.Colorlighttextmuted = input.Branding.Colors.Light.TextMuted
-				params.Colorlighttexthint = input.Branding.Colors.Light.TextHint
-				params.Colorlightshadowdefault = input.Branding.Colors.Light.ShadowDefault
-				params.Colorlightshadowblank = input.Branding.Colors.Light.ShadowBlank
-				params.Colorlightborderdefault = input.Branding.Colors.Light.BorderDefault
+				params.Colorlightaccent = &input.Branding.Colors.Light.Accent
+				params.Colorlightaccentcontrast = &input.Branding.Colors.Light.AccentContrast
+				params.Colorlightonaccent = &input.Branding.Colors.Light.OnAccent
+				params.Colorlightbackgrounddefault = &input.Branding.Colors.Light.BackgroundDefault
+				params.Colorlightbackgroundraised = &input.Branding.Colors.Light.BackgroundRaised
+				params.Colorlightbackgroundindent = &input.Branding.Colors.Light.BackgroundIndent
+				params.Colorlighttextdefault = &input.Branding.Colors.Light.TextDefault
+				params.Colorlighttextmuted = &input.Branding.Colors.Light.TextMuted
+				params.Colorlighttexthint = &input.Branding.Colors.Light.TextHint
+				params.Colorlightshadowdefault = &input.Branding.Colors.Light.ShadowDefault
+				params.Colorlightshadowblank = &input.Branding.Colors.Light.ShadowBlank
+				params.Colorlightborderdefault = &input.Branding.Colors.Light.BorderDefault
 			}
 			if input.Branding.Colors.Dark != nil {
-				params.Colordarkaccent = input.Branding.Colors.Dark.Accent
-				params.Colordarkaccentcontrast = input.Branding.Colors.Dark.AccentContrast
-				params.Colordarkonaccent = input.Branding.Colors.Dark.OnAccent
-				params.Colordarkbackgrounddefault = input.Branding.Colors.Dark.BackgroundDefault
-				params.Colordarkbackgroundraised = input.Branding.Colors.Dark.BackgroundRaised
-				params.Colordarkbackgroundindent = input.Branding.Colors.Dark.BackgroundIndent
-				params.Colordarktextdefault = input.Branding.Colors.Dark.TextDefault
-				params.Colordarktextmuted = input.Branding.Colors.Dark.TextMuted
-				params.Colordarktexthint = input.Branding.Colors.Dark.TextHint
-				params.Colordarkshadowdefault = input.Branding.Colors.Dark.ShadowDefault
-				params.Colordarkshadowblank = input.Branding.Colors.Dark.ShadowBlank
-				params.Colordarkborderdefault = input.Branding.Colors.Dark.BorderDefault
+				params.Colordarkaccent = &input.Branding.Colors.Dark.Accent
+				params.Colordarkaccentcontrast = &input.Branding.Colors.Dark.AccentContrast
+				params.Colordarkonaccent = &input.Branding.Colors.Dark.OnAccent
+				params.Colordarkbackgrounddefault = &input.Branding.Colors.Dark.BackgroundDefault
+				params.Colordarkbackgroundraised = &input.Branding.Colors.Dark.BackgroundRaised
+				params.Colordarkbackgroundindent = &input.Branding.Colors.Dark.BackgroundIndent
+				params.Colordarktextdefault = &input.Branding.Colors.Dark.TextDefault
+				params.Colordarktextmuted = &input.Branding.Colors.Dark.TextMuted
+				params.Colordarktexthint = &input.Branding.Colors.Dark.TextHint
+				params.Colordarkshadowdefault = &input.Branding.Colors.Dark.ShadowDefault
+				params.Colordarkshadowblank = &input.Branding.Colors.Dark.ShadowBlank
+				params.Colordarkborderdefault = &input.Branding.Colors.Dark.BorderDefault
 			}
 		}
 		if input.Branding.Rounding != 0 {
-			params.Rounding = int32(input.Branding.Rounding)
+			rounding := int32(input.Branding.Rounding)
+			params.Rounding = &rounding
 		}
 	}
 
