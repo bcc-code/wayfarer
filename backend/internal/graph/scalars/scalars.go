@@ -99,3 +99,21 @@ func (h *HTML) UnmarshalGQL(v interface{}) error {
 	*h = HTML(str)
 	return nil
 }
+
+// Markdown scalar representing markdown content
+type Markdown string
+
+// MarshalGQL implements the graphql.Marshaler interface
+func (m Markdown) MarshalGQL(w io.Writer) {
+	graphql.MarshalString(string(m)).MarshalGQL(w)
+}
+
+// UnmarshalGQL implements the graphql.Unmarshaler interface
+func (m *Markdown) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("Markdown must be a string")
+	}
+	*m = Markdown(str)
+	return nil
+}

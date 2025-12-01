@@ -12,6 +12,7 @@ schema:
   - ../gql/roles.graphqls
   - ../gql/churches.graphqls
   - ../gql/scoring.graphqls
+  - ../gql/consents.graphqls
 
 # Generated code locations
 exec:
@@ -42,6 +43,9 @@ models:
   HTML:
     model:
       - github.com/bcc-media/wayfarer/internal/graph/scalars.HTML
+  Markdown:
+    model:
+      - github.com/bcc-media/wayfarer/internal/graph/scalars.Markdown
   Upload:
     model:
       - github.com/99designs/gqlgen/graphql.Upload
@@ -225,6 +229,22 @@ models:
         type: "*string"
       AwardedByID:
         type: "*string"
+
+  Consent:
+    fields:
+      body:
+        resolver: true
+    extraFields:
+      BodyMarkdown:
+        type: string
+
+  UserConsent:
+    fields:
+      consent:
+        resolver: true
+    extraFields:
+      ConsentID:
+        type: string
 
 # Autobind - automatically bind Go types to GraphQL types if they match by name
 autobind:

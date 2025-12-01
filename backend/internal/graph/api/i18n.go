@@ -28,6 +28,14 @@ func applyHTMLTranslation(translated *string, base scalars.HTML) scalars.HTML {
 	return base
 }
 
+// applyMarkdownTranslation returns the translated value as Markdown if non-nil and non-empty, otherwise the base value
+func applyMarkdownTranslation(translated *string, base scalars.Markdown) scalars.Markdown {
+	if translated != nil && *translated != "" {
+		return scalars.Markdown(*translated)
+	}
+	return base
+}
+
 // LoadProjectWithTranslation loads a project and applies translation for the requested language
 func (r *Resolver) LoadProjectWithTranslation(ctx context.Context, id string) (*model.Project, error) {
 	project, err := r.Loaders.ProjectByIDLoader.Load(ctx, id)()
@@ -405,4 +413,60 @@ func (r *Resolver) ApplyTranslationToTrack(ctx context.Context, track model.Trac
 	translated.Name = applyStringTranslation(trans.Name, track.Name)
 	translated.Description = applyStringTranslation(trans.Description, track.Description)
 	return translated
+}
+
+// LoadConsentWithTranslation loads a consent and applies translation for the requested language
+func (r *Resolver) LoadConsentWithTranslation(ctx context.Context, id string) (*model.Consent, error) {
+	consent, err := r.Loaders.ConsentByIDLoader.Load(ctx, id)()
+	if err != nil {
+		return nil, err
+	}
+
+	lang := middleware.GetLanguage(ctx)
+	if lang == middleware.DefaultLanguage {
+		return consent, nil
+	}
+
+	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
+		EntityType: "consent",
+		EntityID:   id,
+		LangCode:   lang,
+	})()
+
+	if trans == nil {
+		return consent, nil
+	}
+
+	// Create copy with translations applied
+	translated := *consent
+	translated.Title = applyStringTranslation(trans.Title, consent.Title)
+	translated.BodyMarkdown = applyStringTranslation(trans.Body, consent.BodyMarkdown)
+	return &translated, nil
+}
+
+// ApplyTranslationToConsent applies translation to an already-loaded consent
+func (r *Resolver) ApplyTranslationToConsent(ctx context.Context, consent *model.Consent) *model.Consent {
+	if consent == nil {
+		return nil
+	}
+
+	lang := middleware.GetLanguage(ctx)
+	if lang == middleware.DefaultLanguage {
+		return consent
+	}
+
+	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
+		EntityType: "consent",
+		EntityID:   consent.ID,
+		LangCode:   lang,
+	})()
+
+	if trans == nil {
+		return consent
+	}
+
+	translated := *consent
+	translated.Title = applyStringTranslation(trans.Title, consent.Title)
+	translated.BodyMarkdown = applyStringTranslation(trans.Body, consent.BodyMarkdown)
+	return &translated
 }

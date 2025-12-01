@@ -1,0 +1,28 @@
+type: http_request
+model: http_request
+id: rq_gBUG2YT4jH
+createdAt: 2025-12-01T11:12:36.840904
+updatedAt: 2025-12-01T11:18:20.485655
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_WoXqzhPmBJ
+authentication: {}
+authenticationType: null
+body:
+  query: |-
+    mutation {
+      createConsent(key:"C1", title:"testing", body:"#Consent\nDo you?\n\n* Yes\n*Noes"){
+        id
+      }
+    }
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: kP4exh6s9m
+method: POST
+name: Create Consent
+sortPriority: -0.0001
+url: ${[ HOST ]}/graphql
+urlParameters: []

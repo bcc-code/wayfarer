@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_BjKwshVcEi
 createdAt: 2025-11-28T13:57:33.413340
-updatedAt: 2025-11-28T13:59:16.084998
+updatedAt: 2025-12-01T10:21:45.413510
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_qhH6J7tuNv
 authentication: {}
@@ -15,6 +15,7 @@ body:
           rules: "# This is a rule\n\n* And a\n* Bullet"
         }
       ){
+        name
         rules{
           markdown
           html

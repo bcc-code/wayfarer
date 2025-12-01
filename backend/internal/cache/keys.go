@@ -70,6 +70,11 @@ const (
 
 	// Translations
 	PrefixTranslation = "translation:"
+
+	// Consents
+	PrefixConsent         = "consent:"
+	PrefixUserConsents    = "userconsents:"
+	PrefixLatestConsents  = "latestconsents"
 )
 
 // Key builders for different entity types
@@ -1013,4 +1018,19 @@ func FullLeaderboardKey(context, contextID, entityType string, params map[string
 // langCode: the language code (e.g., "no", "de", "fr")
 func TranslationKey(entityType, entityID, langCode string) string {
 	return fmt.Sprintf("%s%s:%s:%s", PrefixTranslation, entityType, entityID, langCode)
+}
+
+// ConsentKey builds a cache key for a consent by ID
+func ConsentKey(consentID string) string {
+	return PrefixConsent + consentID
+}
+
+// UserConsentsKey builds a cache key for a user's accepted consents
+func UserConsentsKey(userID string) string {
+	return PrefixUserConsents + userID
+}
+
+// LatestConsentsKey builds a cache key for all latest published consents
+func LatestConsentsKey() string {
+	return PrefixLatestConsents
 }

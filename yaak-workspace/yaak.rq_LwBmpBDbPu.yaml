@@ -1,0 +1,43 @@
+type: http_request
+model: http_request
+id: rq_LwBmpBDbPu
+createdAt: 2025-12-01T10:57:23.142038
+updatedAt: 2025-12-01T11:12:32.003874
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_WoXqzhPmBJ
+authentication: {}
+authenticationType: null
+body:
+  query: |-
+    query {
+      me {
+        consentStatus{
+          pendingConsents{
+            id
+            key
+            version
+            title
+            body{
+              html
+              markdown
+            }
+            publishedAt
+          }
+          acceptedConsents {
+            id
+          }
+        }
+      }
+    }
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: 0nCcBqVP0M
+method: POST
+name: Me-Consents
+sortPriority: 0.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

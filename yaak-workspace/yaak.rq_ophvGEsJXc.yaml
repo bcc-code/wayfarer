@@ -1,0 +1,29 @@
+type: http_request
+model: http_request
+id: rq_ophvGEsJXc
+createdAt: 2025-12-01T11:24:23.595173
+updatedAt: 2025-12-01T11:24:59.048602
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_WoXqzhPmBJ
+authentication: {}
+authenticationType: null
+body:
+  query: |-
+    mutation {
+      acceptConsent(consentId:"CN01KBCSXJM5J03GZZM0481W781Z"){
+        id
+        acceptedAt
+      }
+    }
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: 3xP8GFvkE2
+method: POST
+name: Accept Consent
+sortPriority: -0.0001
+url: ${[ HOST ]}/graphql
+urlParameters: []

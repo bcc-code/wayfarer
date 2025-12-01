@@ -27,6 +27,8 @@ const (
 	PrefixListeningAchievement = "LT" // Listening Achievement Tracks
 	PrefixScoreJournal         = "SJ" // Score Journal
 	PrefixContentEvent         = "CE" // External Content Events
+	PrefixConsent              = "CN" // Consents
+	PrefixUserConsent          = "UC" // User Consent Acceptances
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -121,6 +123,16 @@ func NewScoreJournalID() string {
 // NewContentEventID generates a new ID for an external content event (CE prefix)
 func NewContentEventID() string {
 	return newID(PrefixContentEvent)
+}
+
+// NewConsentID generates a new ID for a consent (CN prefix)
+func NewConsentID() string {
+	return newID(PrefixConsent)
+}
+
+// NewUserConsentID generates a new ID for a user consent acceptance (UC prefix)
+func NewUserConsentID() string {
+	return newID(PrefixUserConsent)
 }
 
 // Validation functions
@@ -229,4 +241,14 @@ func IsScoreJournalID(id string) bool {
 // IsContentEventID validates a content event ID
 func IsContentEventID(id string) bool {
 	return IsValidID(id, PrefixContentEvent)
+}
+
+// IsConsentID validates a consent ID
+func IsConsentID(id string) bool {
+	return IsValidID(id, PrefixConsent)
+}
+
+// IsUserConsentID validates a user consent ID
+func IsUserConsentID(id string) bool {
+	return IsValidID(id, PrefixUserConsent)
 }

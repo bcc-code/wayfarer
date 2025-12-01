@@ -8,6 +8,7 @@ directive @requireRole(roles: [String!]!) on FIELD_DEFINITION
 # ==================== Scalars ====================
 
 scalar HTML
+scalar Markdown
 scalar DateTime
 scalar Date
 scalar Upload
@@ -171,6 +172,7 @@ type User {
     teams: [Team!]! @goField(forceResolver: true)
     superTeams: [SuperTeam!]! @goField(forceResolver: true)
     roles: [UserRole!]! @goField(forceResolver: true)
+    consentStatus: ConsentStatus!
 }
 
 type Church {

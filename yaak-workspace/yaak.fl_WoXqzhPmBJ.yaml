@@ -1,13 +1,13 @@
 type: folder
 model: folder
-id: fl_qhH6J7tuNv
-createdAt: 2025-11-28T13:57:28.811164
-updatedAt: 2025-12-01T11:12:30.430397
+id: fl_WoXqzhPmBJ
+createdAt: 2025-12-01T11:12:28.115941
+updatedAt: 2025-12-01T11:12:30.428804
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
 authenticationType: null
 description: ''
 headers: []
-name: Mutations - Project
-sortPriority: 2000.0
+name: Consents
+sortPriority: 1000.0

@@ -1,0 +1,57 @@
+# ==================== Consent Types ====================
+
+type Consent {
+    id: ID!
+    key: String!
+    version: Int!
+    title: String!
+    body: MarkdownText!
+    publishedAt: DateTime
+}
+
+type UserConsent {
+    id: ID!
+    consent: Consent! @goField(forceResolver: true)
+    acceptedAt: DateTime!
+}
+
+type ConsentStatus {
+    pendingConsents: [Consent!]!
+    acceptedConsents: [UserConsent!]!
+}
+
+# ==================== Consent Queries ====================
+
+extend type Query {
+    # Get all latest published consents
+    consents: [Consent!]!
+
+    # Get a specific consent by ID
+    consent(id: ID!): Consent!
+
+    # Get pending consents for the current user
+    pendingConsents: [Consent!]! @requireRole(roles: ["user"])
+}
+
+# ==================== Consent Mutations ====================
+
+extend type Mutation {
+    # Accept a consent (user action)
+    acceptConsent(consentId: ID!): UserConsent! @requireRole(roles: ["user"])
+
+    # Create a new consent or new version of existing consent (admin action)
+    createConsent(
+        key: String!
+        title: String!
+        body: String!
+        publishedAt: DateTime
+    ): Consent! @requireRole(roles: ["admin", "superadmin"])
+
+    # Update an existing consent (admin action)
+    updateConsent(
+        id: ID!
+        title: String
+        body: String
+        publishedAt: DateTime
+    ): Consent! @requireRole(roles: ["admin", "superadmin"])
+}

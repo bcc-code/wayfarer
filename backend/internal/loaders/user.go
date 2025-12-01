@@ -7,6 +7,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/graph-gophers/dataloader/v7"
 )
 
@@ -40,20 +41,27 @@ func userByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 				return results
 			}
 
+			// Fetch consent data for all users
+			latestConsents, userConsentsMap := fetchConsentDataForUsers(ctx, db, c, missingIDs)
+
 			// Convert to GraphQL model and populate cache
 			for _, row := range rows {
 				// Convert birthdate to string (always valid since birthdate is required)
 				birthdateStr := row.Birthdate.Time.Format("2006-01-02")
 
+				// Build consent status for this user
+				consentStatus := buildConsentStatus(row.ID, latestConsents, userConsentsMap)
+
 				user := &model.User{
-					ID:        row.ID,
-					MembersID: row.MembersID,
-					Gender:    model.Gender(row.Gender),
-					ChurchID:  row.ChurchID,
-					Birthdate: birthdateStr,
-					Email:     row.Email,
-					Name:      row.Name,
-					Image:     row.AvatarUrl,
+					ID:            row.ID,
+					MembersID:     row.MembersID,
+					Gender:        model.Gender(row.Gender),
+					ChurchID:      row.ChurchID,
+					Birthdate:     birthdateStr,
+					Email:         row.Email,
+					Name:          row.Name,
+					Image:         row.AvatarUrl,
+					ConsentStatus: consentStatus,
 				}
 
 				userMap[row.ID] = user
@@ -74,5 +82,94 @@ func userByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 			}
 		}
 		return results
+	}
+}
+
+// fetchConsentDataForUsers fetches all consent data needed to build ConsentStatus for users
+// Returns: latestConsents (map of consent ID -> Consent), userConsentsMap (map of userID -> map of consentID -> UserConsent)
+func fetchConsentDataForUsers(ctx context.Context, db *database.DB, c *cache.CacheWithRegistry, userIDs []string) (map[string]*model.Consent, map[string]map[string]*model.UserConsent) {
+	// 1. Get all latest published consents (cached globally)
+	latestConsents := make(map[string]*model.Consent)
+	cacheKey := cache.LatestConsentsKey()
+	if cached, ok := c.Get(cacheKey); ok {
+		if consents, ok := cached.(map[string]*model.Consent); ok {
+			latestConsents = consents
+		}
+	} else {
+		// Query latest consents from DB
+		rows, err := db.Queries.GetAllLatestPublishedConsents(ctx)
+		if err == nil {
+			for _, row := range rows {
+				var publishedAt *scalars.DateTime
+				if row.PublishedAt.Valid {
+					dt := scalars.DateTime{Time: row.PublishedAt.Time}
+					publishedAt = &dt
+				}
+
+				consent := &model.Consent{
+					ID:          row.ID,
+					Key:         row.Key,
+					Version:     int(row.Version),
+					Title:       row.Title,
+					BodyMarkdown: row.Body,
+					PublishedAt: publishedAt,
+				}
+				latestConsents[row.ID] = consent
+			}
+			// Cache for 15 minutes
+			c.Set(cacheKey, latestConsents)
+		}
+	}
+
+	// 2. Get user consents for all users
+	userConsentsMap := make(map[string]map[string]*model.UserConsent)
+	if len(userIDs) > 0 {
+		rows, err := db.Queries.GetUserConsentsByUserIDs(ctx, userIDs)
+		if err == nil {
+			for _, row := range rows {
+				acceptedAt := scalars.DateTime{Time: row.AcceptedAt.Time}
+
+				userConsent := &model.UserConsent{
+					ID:         row.ID,
+					ConsentID:  row.ConsentID,
+					AcceptedAt: acceptedAt,
+					// Consent will be resolved via resolver using ConsentByIDLoader
+				}
+
+				if userConsentsMap[row.UserID] == nil {
+					userConsentsMap[row.UserID] = make(map[string]*model.UserConsent)
+				}
+				userConsentsMap[row.UserID][row.ConsentID] = userConsent
+			}
+		}
+	}
+
+	return latestConsents, userConsentsMap
+}
+
+// buildConsentStatus builds the ConsentStatus for a user
+func buildConsentStatus(userID string, latestConsents map[string]*model.Consent, userConsentsMap map[string]map[string]*model.UserConsent) *model.ConsentStatus {
+	userConsents := userConsentsMap[userID]
+	if userConsents == nil {
+		userConsents = make(map[string]*model.UserConsent)
+	}
+
+	pendingConsents := make([]model.Consent, 0)
+	acceptedConsents := make([]model.UserConsent, 0)
+
+	// Iterate through all latest published consents
+	for consentID, consent := range latestConsents {
+		if userConsent, accepted := userConsents[consentID]; accepted {
+			// User has accepted this consent
+			acceptedConsents = append(acceptedConsents, *userConsent)
+		} else {
+			// User hasn't accepted this consent yet
+			pendingConsents = append(pendingConsents, *consent)
+		}
+	}
+
+	return &model.ConsentStatus{
+		PendingConsents:  pendingConsents,
+		AcceptedConsents: acceptedConsents,
 	}
 }

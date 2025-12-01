@@ -67,6 +67,26 @@ type Church struct {
 	ExternalID *int32             `json:"external_id"`
 }
 
+type Consent struct {
+	ID          string             `json:"id"`
+	Key         string             `json:"key"`
+	Version     int32              `json:"version"`
+	Title       string             `json:"title"`
+	Body        string             `json:"body"`
+	PublishedAt pgtype.Timestamptz `json:"published_at"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ConsentTranslation struct {
+	ConsentID    string             `json:"consent_id"`
+	LanguageCode string             `json:"language_code"`
+	Title        *string            `json:"title"`
+	Body         *string            `json:"body"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Event struct {
 	ID          string             `json:"id"`
 	ProjectID   string             `json:"project_id"`
@@ -363,6 +383,14 @@ type UserChallengeCompletion struct {
 	UserID      string             `json:"user_id"`
 	ChallengeID string             `json:"challenge_id"`
 	CompletedAt pgtype.Timestamptz `json:"completed_at"`
+}
+
+type UserConsent struct {
+	ID         string             `json:"id"`
+	UserID     string             `json:"user_id"`
+	ConsentID  string             `json:"consent_id"`
+	AcceptedAt pgtype.Timestamptz `json:"accepted_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 }
 
 type UserEvent struct {

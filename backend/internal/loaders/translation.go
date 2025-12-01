@@ -30,8 +30,9 @@ type Translation struct {
 	Description *string
 	Rules       *string // Only for projects
 	ButtonText  *string // Only for challenges
-	Title       *string // Only for articles
+	Title       *string // Only for articles and consents
 	Author      *string // Only for articles
+	Body        *string // Only for consents
 }
 
 // translationBatchFunc batches loading translations by entity type, ID, and language code
@@ -277,6 +278,25 @@ func queryTranslations(ctx context.Context, db *database.DB, entityType string, 
 				LangCode:    row.LanguageCode,
 				Name:        row.Name,
 				Description: row.Description,
+			}
+		}
+		return translations, nil
+
+	case "consent":
+		rows, err := db.Queries.GetConsentTranslationsByIDs(ctx, sqlc.GetConsentTranslationsByIDsParams{
+			EntityIds:    entityIDs,
+			LanguageCode: langCode,
+		})
+		if err != nil {
+			return nil, err
+		}
+		translations := make([]*Translation, len(rows))
+		for i, row := range rows {
+			translations[i] = &Translation{
+				EntityID: row.ConsentID,
+				LangCode: row.LanguageCode,
+				Title:    row.Title,
+				Body:     row.Body,
 			}
 		}
 		return translations, nil

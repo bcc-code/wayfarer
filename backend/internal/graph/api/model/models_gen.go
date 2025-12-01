@@ -189,6 +189,21 @@ type ColorsInput struct {
 	Light *ColorSetInput `json:"light"`
 }
 
+type Consent struct {
+	ID           string            `json:"id"`
+	Key          string            `json:"key"`
+	Version      int               `json:"version"`
+	Title        string            `json:"title"`
+	Body         *MarkdownText     `json:"body"`
+	PublishedAt  *scalars.DateTime `json:"publishedAt,omitempty"`
+	BodyMarkdown string            `json:"-"`
+}
+
+type ConsentStatus struct {
+	PendingConsents  []Consent     `json:"pendingConsents"`
+	AcceptedConsents []UserConsent `json:"acceptedConsents"`
+}
+
 type CreateChallengeInput struct {
 	Name        string            `json:"name"`
 	Description *scalars.HTML     `json:"description,omitempty"`
@@ -829,27 +844,35 @@ type UpdateTeamInput struct {
 }
 
 type User struct {
-	ID         string      `json:"id"`
-	MembersID  string      `json:"membersId"`
-	Gender     Gender      `json:"gender"`
-	ChurchID   string      `json:"churchId"`
-	Church     *Church     `json:"church"`
-	Birthdate  string      `json:"birthdate"`
-	Age        *int        `json:"age,omitempty"`
-	Email      string      `json:"email"`
-	Name       string      `json:"name"`
-	Image      *string     `json:"image,omitempty"`
-	Projects   []Project   `json:"projects"`
-	Events     []Event     `json:"events"`
-	Teams      []Team      `json:"teams"`
-	SuperTeams []SuperTeam `json:"superTeams"`
-	Roles      []UserRole  `json:"roles"`
+	ID            string         `json:"id"`
+	MembersID     string         `json:"membersId"`
+	Gender        Gender         `json:"gender"`
+	ChurchID      string         `json:"churchId"`
+	Church        *Church        `json:"church"`
+	Birthdate     string         `json:"birthdate"`
+	Age           *int           `json:"age,omitempty"`
+	Email         string         `json:"email"`
+	Name          string         `json:"name"`
+	Image         *string        `json:"image,omitempty"`
+	Projects      []Project      `json:"projects"`
+	Events        []Event        `json:"events"`
+	Teams         []Team         `json:"teams"`
+	SuperTeams    []SuperTeam    `json:"superTeams"`
+	Roles         []UserRole     `json:"roles"`
+	ConsentStatus *ConsentStatus `json:"consentStatus"`
 }
 
 type UserConnection struct {
 	Edges      []UserEdge `json:"edges"`
 	PageInfo   *PageInfo  `json:"pageInfo"`
 	TotalCount int        `json:"totalCount"`
+}
+
+type UserConsent struct {
+	ID         string           `json:"id"`
+	Consent    *Consent         `json:"consent"`
+	AcceptedAt scalars.DateTime `json:"acceptedAt"`
+	ConsentID  string           `json:"-"`
 }
 
 type UserEdge struct {

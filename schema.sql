@@ -453,3 +453,42 @@ CREATE TABLE listening_achievement_track_translations (
     updated_at TIMESTAMPTZ DEFAULT now(),
     PRIMARY KEY (track_id, language_code)
 );
+
+-- ==================== Consent Tables ====================
+-- Global user consent management (system-wide, not project-scoped)
+-- Consents are versioned to support re-acceptance on updates
+
+CREATE TABLE consents (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^CN[0-9A-Z]{26}$'),
+    key VARCHAR(100) NOT NULL,
+    version INT NOT NULL DEFAULT 1,
+    title VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+    published_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE (key, version),
+    INDEX idx_consents_key (key),
+    INDEX idx_consents_published (published_at) WHERE published_at IS NOT NULL
+);
+
+CREATE TABLE consent_translations (
+    consent_id CHAR(28) NOT NULL REFERENCES consents(id) ON DELETE CASCADE,
+    language_code VARCHAR(10) NOT NULL,
+    title VARCHAR(255),
+    body TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (consent_id, language_code)
+);
+
+CREATE TABLE user_consents (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^UC[0-9A-Z]{26}$'),
+    user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    consent_id CHAR(28) NOT NULL REFERENCES consents(id) ON DELETE RESTRICT,
+    accepted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE (user_id, consent_id),
+    INDEX idx_user_consents_user (user_id),
+    INDEX idx_user_consents_consent (consent_id)
+);
