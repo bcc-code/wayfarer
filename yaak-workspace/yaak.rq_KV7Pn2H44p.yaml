@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_KV7Pn2H44p
 createdAt: 2025-11-27T13:05:40.352277
-updatedAt: 2025-12-01T11:12:30.431908
+updatedAt: 2025-12-02T10:16:56.479451
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -39,6 +39,7 @@ body:
         }
       }
     }
+  variables: ''
 bodyType: graphql
 description: ''
 headers:

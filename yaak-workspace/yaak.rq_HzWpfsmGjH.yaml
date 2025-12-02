@@ -2,13 +2,13 @@ type: http_request
 model: http_request
 id: rq_HzWpfsmGjH
 createdAt: 2025-12-01T11:18:28.365951
-updatedAt: 2025-12-01T11:24:07.364440
+updatedAt: 2025-12-02T10:16:03.331242
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_WoXqzhPmBJ
 authentication: {}
 authenticationType: null
 body:
-  query: |-
+  query: |
     mutation {
       updateConsent(id: "CN01KBCSXJM5J03GZZM0481W781Z", publishedAt: "2025-01-01") {
         id
@@ -20,6 +20,7 @@ body:
         }
       }
     }
+  variables: ''
 bodyType: graphql
 description: ''
 headers:

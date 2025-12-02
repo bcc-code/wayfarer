@@ -2,18 +2,23 @@ type: http_request
 model: http_request
 id: rq_gBUG2YT4jH
 createdAt: 2025-12-01T11:12:36.840904
-updatedAt: 2025-12-01T11:18:20.485655
+updatedAt: 2025-12-02T10:16:00.886610
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_WoXqzhPmBJ
 authentication: {}
 authenticationType: null
 body:
-  query: |-
+  query: |
     mutation {
-      createConsent(key:"C1", title:"testing", body:"#Consent\nDo you?\n\n* Yes\n*Noes"){
+      createConsent(
+        key: "C1"
+        title: "testing"
+        body: "#Consent\nDo you?\n\n* Yes\n*Noes"
+      ) {
         id
       }
     }
+  variables: ''
 bodyType: graphql
 description: ''
 headers:

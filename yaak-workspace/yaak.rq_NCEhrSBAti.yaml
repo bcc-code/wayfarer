@@ -2,20 +2,20 @@ type: http_request
 model: http_request
 id: rq_NCEhrSBAti
 createdAt: 2025-11-27T13:48:40.376201
-updatedAt: 2025-12-01T11:12:30.438034
+updatedAt: 2025-12-02T10:16:22.172956
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
 authenticationType: null
 body:
-  query: |-
-    query {
-      projects{
-        edges{
-          node{
-            branding{
-              colors{
-                dark{
+  query: |
+    {
+      projects {
+        edges {
+          node {
+            branding {
+              colors {
+                dark {
                   accent
                   accentContrast
                   onAccent
@@ -29,7 +29,7 @@ body:
                   shadowBlank
                   borderDefault
                 }
-                light{
+                light {
                   accent
                   accentContrast
                   onAccent
@@ -49,6 +49,7 @@ body:
         }
       }
     }
+  variables: ''
 bodyType: graphql
 description: ''
 headers:

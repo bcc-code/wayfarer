@@ -2,26 +2,26 @@ type: http_request
 model: http_request
 id: rq_BjKwshVcEi
 createdAt: 2025-11-28T13:57:33.413340
-updatedAt: 2025-12-01T10:21:45.413510
+updatedAt: 2025-12-02T10:16:10.066297
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_qhH6J7tuNv
 authentication: {}
 authenticationType: null
 body:
-  query: |-
+  query: |
     mutation {
-      updateProject(id:"PR01K9VZ8684DP9R4W3ZEV526E5X",
-        input: {
-          rules: "# This is a rule\n\n* And a\n* Bullet"
-        }
-      ){
+      updateProject(
+        id: "PR01K9VZ8684DP9R4W3ZEV526E5X"
+        input: {rules: "# This is a rule\n\n* And a\n* Bullet"}
+      ) {
         name
-        rules{
+        rules {
           markdown
           html
         }
       }
     }
+  variables: ''
 bodyType: graphql
 description: ''
 headers:

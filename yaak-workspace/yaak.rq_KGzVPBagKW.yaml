@@ -2,26 +2,26 @@ type: http_request
 model: http_request
 id: rq_KGzVPBagKW
 createdAt: 2025-11-25T13:22:34.139477
-updatedAt: 2025-12-01T11:12:30.435459
+updatedAt: 2025-12-02T10:16:16.428068
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
 authenticationType: null
 body:
-  query: |-
+  query: |
     query TestTeamLeaderboard {
-      projects(first:3){
-        edges{
-          node{
+      projects(first: 3) {
+        edges {
+          node {
             name
-            leaderboard(entityType:PERSONS){
-              me{
+            leaderboard(entityType: PERSONS) {
+              me {
                 score
                 rank
                 name
               }
-              edges{
-                node{
+              edges {
+                node {
                   id
                   rank
                   score
@@ -34,30 +34,31 @@ body:
           }
         }
       }
-        team(id: "TM01K9VZ86X3GX5N7W3MMC65GJMJ") {
+      team(id: "TM01K9VZ86X3GX5N7W3MMC65GJMJ") {
+        id
+        name
+        memberLeaderboard {
           id
+          rank
+          score
           name
-          memberLeaderboard {
-            id
-            rank
-            score
-            name
-            description
-            tags
-          }
+          description
+          tags
         }
+      }
       me {
         name
-        roles{
+        roles {
           role
-          scope{
-            team{
+          scope {
+            team {
               id
             }
           }
         }
       }
-      }
+    }
+  variables: ''
 bodyType: graphql
 description: ''
 headers:

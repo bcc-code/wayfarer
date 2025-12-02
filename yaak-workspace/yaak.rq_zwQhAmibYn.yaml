@@ -2,19 +2,19 @@ type: http_request
 model: http_request
 id: rq_zwQhAmibYn
 createdAt: 2025-11-28T13:49:13.623726
-updatedAt: 2025-12-01T11:12:30.438960
+updatedAt: 2025-12-02T10:16:25.438869
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
 authenticationType: null
 body:
-  query: |-
-    query {
-      projects{
-        edges{
-          node{
+  query: |
+    {
+      projects {
+        edges {
+          node {
             id
-            rules{
+            rules {
               markdown
               html
             }
@@ -22,6 +22,7 @@ body:
         }
       }
     }
+  variables: ''
 bodyType: graphql
 description: ''
 headers:

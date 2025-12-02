@@ -2,19 +2,20 @@ type: http_request
 model: http_request
 id: rq_ophvGEsJXc
 createdAt: 2025-12-01T11:24:23.595173
-updatedAt: 2025-12-01T11:24:59.048602
+updatedAt: 2025-12-02T10:15:58.142225
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_WoXqzhPmBJ
 authentication: {}
 authenticationType: null
 body:
-  query: |-
+  query: |
     mutation {
-      acceptConsent(consentId:"CN01KBCSXJM5J03GZZM0481W781Z"){
+      acceptConsent(consentId: "CN01KBCSXJM5J03GZZM0481W781Z") {
         id
         acceptedAt
       }
     }
+  variables: ''
 bodyType: graphql
 description: ''
 headers:
