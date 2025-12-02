@@ -18,6 +18,7 @@ export type Scalars = {
   Date: { input: any; output: any; }
   DateTime: { input: any; output: any; }
   HTML: { input: any; output: any; }
+  Markdown: { input: any; output: any; }
   Upload: { input: any; output: any; }
 };
 
@@ -207,6 +208,22 @@ export type Colors = {
 export type ColorsInput = {
   dark: ColorSetInput;
   light: ColorSetInput;
+};
+
+export type Consent = {
+  __typename?: 'Consent';
+  body: MarkdownText;
+  id: Scalars['ID']['output'];
+  key: Scalars['String']['output'];
+  publishedAt?: Maybe<Scalars['DateTime']['output']>;
+  title: Scalars['String']['output'];
+  version: Scalars['Int']['output'];
+};
+
+export type ConsentStatus = {
+  __typename?: 'ConsentStatus';
+  acceptedConsents: Array<UserConsent>;
+  pendingConsents: Array<Consent>;
 };
 
 export type CreateChallengeInput = {
@@ -466,6 +483,7 @@ export type MarkdownText = {
 export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['Boolean']['output']>;
+  acceptConsent: UserConsent;
   addTeamMembers: Team;
   archiveProject: Scalars['Boolean']['output'];
   assignChallengeToEvent: Challenge;
@@ -483,6 +501,7 @@ export type Mutation = {
   bulkPublishChallenges: Array<Challenge>;
   completeChallenge: Challenge;
   createChallenge: Challenge;
+  createConsent: Consent;
   createEvent: Event;
   createListeningAchievement: ListeningAchievement;
   createProject: Project;
@@ -522,6 +541,7 @@ export type Mutation = {
   updateAchievement: Achievement;
   updateAvatar: User;
   updateChallenge: Challenge;
+  updateConsent: Consent;
   updateEvent: Event;
   updateListeningAchievement: ListeningAchievement;
   updateProject: Project;
@@ -530,6 +550,11 @@ export type Mutation = {
   updateStreakAchievement: StreakAchievement;
   updateSuperTeam: SuperTeam;
   updateTeam: Team;
+};
+
+
+export type MutationAcceptConsentArgs = {
+  consentId: Scalars['ID']['input'];
 };
 
 
@@ -635,6 +660,14 @@ export type MutationCreateChallengeArgs = {
   eventId: Scalars['ID']['input'];
   input: CreateChallengeInput;
   projectId: Scalars['ID']['input'];
+};
+
+
+export type MutationCreateConsentArgs = {
+  body: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
+  title: Scalars['String']['input'];
 };
 
 
@@ -857,6 +890,14 @@ export type MutationUpdateChallengeArgs = {
 };
 
 
+export type MutationUpdateConsentArgs = {
+  body?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
+  title?: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type MutationUpdateEventArgs = {
   id: Scalars['ID']['input'];
   input: UpdateEventInput;
@@ -981,6 +1022,8 @@ export type Query = {
   challenges: ChallengeConnection;
   church: Church;
   churches: ChurchConnection;
+  consent: Consent;
+  consents: Array<Consent>;
   currentEvent: Event;
   currentProject: Project;
   event: Event;
@@ -990,6 +1033,7 @@ export type Query = {
   myCurrentProject: Project;
   myEvents: Array<Event>;
   myProjects: Array<Project>;
+  pendingConsents: Array<Consent>;
   project: Project;
   projects: ProjectConnection;
   scoreJournal: ScoreJournalConnection;
@@ -1045,6 +1089,11 @@ export type QueryChurchesArgs = {
   filter?: InputMaybe<ChurchFilter>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryConsentArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1518,6 +1567,7 @@ export type User = {
   birthdate: Scalars['String']['output'];
   church: Church;
   churchId: Scalars['ID']['output'];
+  consentStatus: ConsentStatus;
   email: Scalars['String']['output'];
   events: Array<Event>;
   gender: Gender;
@@ -1536,6 +1586,13 @@ export type UserConnection = {
   edges: Array<UserEdge>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
+};
+
+export type UserConsent = {
+  __typename?: 'UserConsent';
+  acceptedAt: Scalars['DateTime']['output'];
+  consent: Consent;
+  id: Scalars['ID']['output'];
 };
 
 export type UserEdge = {

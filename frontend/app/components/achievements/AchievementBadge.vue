@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { DevOnly } from '#components'
-
 defineProps<{
   achievement: Partial<Achievement>
 }>()
@@ -11,7 +9,6 @@ const open = ref(false)
 <template>
   <div>
     <button
-      v-if="!achievement.hidden"
       class="grid aspect-square place-items-center overflow-hidden rounded-full"
       @click="open = true"
     >
@@ -68,11 +65,18 @@ const open = ref(false)
               <p class="text-label">
                 {{ achievement.description }}
               </p>
-              <DevOnly>
-                <p class="text-caption text-muted mt-default">
-                  {{ achievement.id }}
-                </p>
-              </DevOnly>
+            </div>
+            <div
+              v-if="achievement.achievedAt"
+              class="rounded-full bg-background-indent py-2 px-3 text-label text-accent-contrast"
+            >
+              +{{ achievement.points }} {{ $t('points') }}
+            </div>
+            <div
+              v-else-if="achievement.points"
+              class="rounded-full bg-background-indent py-2 px-3 text-label text-text-muted"
+            >
+              {{ $t('givesYouXPoints', { points: achievement.points }) }}
             </div>
           </div>
         </PageLayout>

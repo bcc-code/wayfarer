@@ -43,5 +43,6 @@
     "selectUnitLeader": "Select unit leader"
   },
   "points": "points",
-  "place": "place"
+  "place": "place",
+  "givesYouXPoints": "Gives you {points} points"
 }

@@ -43,5 +43,6 @@
     "selectUnitLeader": "Velg unitleder"
   },
   "place": "plass",
-  "points": "poeng"
+  "points": "poeng",
+  "givesYouXPoints": "Gir deg {points} poeng"
 }
