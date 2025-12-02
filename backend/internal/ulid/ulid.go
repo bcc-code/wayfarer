@@ -28,7 +28,8 @@ const (
 	PrefixScoreJournal         = "SJ" // Score Journal
 	PrefixContentEvent         = "CE" // External Content Events
 	PrefixConsent              = "CN" // Consents
-	PrefixUserConsent          = "UC" // User Consent Acceptances
+	PrefixUserConsent          = "UC" // User Consent Acceptances (deprecated, use PrefixUserConsentHistory)
+	PrefixUserConsentHistory   = "UH" // User Consent History
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -131,8 +132,14 @@ func NewConsentID() string {
 }
 
 // NewUserConsentID generates a new ID for a user consent acceptance (UC prefix)
+// Deprecated: use NewUserConsentHistoryID instead
 func NewUserConsentID() string {
 	return newID(PrefixUserConsent)
+}
+
+// NewUserConsentHistoryID generates a new ID for user consent history (UH prefix)
+func NewUserConsentHistoryID() string {
+	return newID(PrefixUserConsentHistory)
 }
 
 // Validation functions
@@ -249,6 +256,12 @@ func IsConsentID(id string) bool {
 }
 
 // IsUserConsentID validates a user consent ID
+// Deprecated: use IsUserConsentHistoryID instead
 func IsUserConsentID(id string) bool {
 	return IsValidID(id, PrefixUserConsent)
+}
+
+// IsUserConsentHistoryID validates a user consent history ID
+func IsUserConsentHistoryID(id string) bool {
+	return IsValidID(id, PrefixUserConsentHistory)
 }

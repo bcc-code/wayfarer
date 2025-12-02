@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_gBUG2YT4jH
 createdAt: 2025-12-01T11:12:36.840904
-updatedAt: 2025-12-02T10:16:00.886610
+updatedAt: 2025-12-02T16:25:12.637764
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_WoXqzhPmBJ
 authentication: {}
@@ -14,11 +14,13 @@ body:
         key: "C1"
         title: "testing"
         body: "#Consent\nDo you?\n\n* Yes\n*Noes"
+        url: "https://bcc.no/privacy"
+        isRemote: false
+        managedBy: "BCC Media"
       ) {
         id
       }
     }
-  variables: ''
 bodyType: graphql
 description: ''
 headers:

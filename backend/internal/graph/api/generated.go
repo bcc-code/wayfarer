@@ -58,6 +58,7 @@ type ResolverRoot interface {
 	TeamMember() TeamMemberResolver
 	User() UserResolver
 	UserConsent() UserConsentResolver
+	UserConsentHistoryEntry() UserConsentHistoryEntryResolver
 	UserRole() UserRoleResolver
 }
 
@@ -159,17 +160,22 @@ type ComplexityRoot struct {
 	}
 
 	Consent struct {
-		Body        func(childComplexity int) int
-		ID          func(childComplexity int) int
-		Key         func(childComplexity int) int
-		PublishedAt func(childComplexity int) int
-		Title       func(childComplexity int) int
-		Version     func(childComplexity int) int
+		Body           func(childComplexity int) int
+		ID             func(childComplexity int) int
+		Key            func(childComplexity int) int
+		ManagedBy      func(childComplexity int) int
+		ManagementType func(childComplexity int) int
+		PublishedAt    func(childComplexity int) int
+		Title          func(childComplexity int) int
+		URL            func(childComplexity int) int
+		UserHistory    func(childComplexity int) int
+		Version        func(childComplexity int) int
 	}
 
 	ConsentStatus struct {
 		AcceptedConsents func(childComplexity int) int
 		PendingConsents  func(childComplexity int) int
+		RejectedConsents func(childComplexity int) int
 	}
 
 	DateRange struct {
@@ -261,7 +267,7 @@ type ComplexityRoot struct {
 		BulkPublishChallenges      func(childComplexity int, ids []string, publishedAt scalars.DateTime) int
 		CompleteChallenge          func(childComplexity int, userID string, challengeID string, completedAt *scalars.DateTime) int
 		CreateChallenge            func(childComplexity int, projectID string, eventID string, input model.CreateChallengeInput) int
-		CreateConsent              func(childComplexity int, key string, title string, body string, publishedAt *scalars.DateTime) int
+		CreateConsent              func(childComplexity int, key string, title string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) int
 		CreateEvent                func(childComplexity int, projectID string, input model.CreateEventInput) int
 		CreateListeningAchievement func(childComplexity int, input model.CreateListeningAchievementInput) int
 		CreateProject              func(childComplexity int, input model.CreateProjectInput) int
@@ -290,6 +296,7 @@ type ComplexityRoot struct {
 		PublishChallenge           func(childComplexity int, id string, publishedAt scalars.DateTime) int
 		RecordStreakActivity       func(childComplexity int, userID string, achievementID string, currentStreak int) int
 		RegenerateJoinCode         func(childComplexity int, teamID string) int
+		RejectConsent              func(childComplexity int, consentID string) int
 		RemoveTeamMembers          func(childComplexity int, teamID string, userIds []string) int
 		RemoveUserFromProject      func(childComplexity int, userID string, projectID string) int
 		RevokeAchievement          func(childComplexity int, userID string, achievementID string) int
@@ -302,7 +309,7 @@ type ComplexityRoot struct {
 		UpdateAchievement          func(childComplexity int, id string, input model.UpdateAchievementInput) int
 		UpdateAvatar               func(childComplexity int, file graphql.Upload) int
 		UpdateChallenge            func(childComplexity int, id string, input model.UpdateChallengeInput) int
-		UpdateConsent              func(childComplexity int, id string, title *string, body *string, publishedAt *scalars.DateTime) int
+		UpdateConsent              func(childComplexity int, id string, title *string, body *string, url *string, publishedAt *scalars.DateTime) int
 		UpdateEvent                func(childComplexity int, id string, input model.UpdateEventInput) int
 		UpdateListeningAchievement func(childComplexity int, id string, input model.UpdateListeningAchievementInput) int
 		UpdateProject              func(childComplexity int, id string, input model.UpdateProjectInput) int
@@ -571,9 +578,20 @@ type ComplexityRoot struct {
 	}
 
 	UserConsent struct {
-		AcceptedAt func(childComplexity int) int
+		Action     func(childComplexity int) int
+		ActionDate func(childComplexity int) int
 		Consent    func(childComplexity int) int
 		ID         func(childComplexity int) int
+	}
+
+	UserConsentHistoryEntry struct {
+		Action            func(childComplexity int) int
+		Consent           func(childComplexity int) int
+		ExternalConsentID func(childComplexity int) int
+		ExternalTimestamp func(childComplexity int) int
+		ID                func(childComplexity int) int
+		OccurredAt        func(childComplexity int) int
+		Source            func(childComplexity int) int
 	}
 
 	UserEdge struct {
@@ -595,6 +613,8 @@ type ChallengeResolver interface {
 }
 type ConsentResolver interface {
 	Body(ctx context.Context, obj *model.Consent) (*model.MarkdownText, error)
+
+	UserHistory(ctx context.Context, obj *model.Consent) ([]model.UserConsentHistoryEntry, error)
 }
 type EventResolver interface {
 	Challenges(ctx context.Context, obj *model.Event) ([]model.Challenge, error)
@@ -679,8 +699,9 @@ type MutationResolver interface {
 	RevokeRole(ctx context.Context, input model.RevokeRoleInput) (bool, error)
 	CreateScoreAdjustment(ctx context.Context, input model.CreateScoreAdjustmentInput) (*model.ScoreJournal, error)
 	AcceptConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
-	CreateConsent(ctx context.Context, key string, title string, body string, publishedAt *scalars.DateTime) (*model.Consent, error)
-	UpdateConsent(ctx context.Context, id string, title *string, body *string, publishedAt *scalars.DateTime) (*model.Consent, error)
+	RejectConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
+	CreateConsent(ctx context.Context, key string, title string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) (*model.Consent, error)
+	UpdateConsent(ctx context.Context, id string, title *string, body *string, url *string, publishedAt *scalars.DateTime) (*model.Consent, error)
 }
 type ProjectResolver interface {
 	Rules(ctx context.Context, obj *model.Project) (*model.MarkdownText, error)
@@ -798,6 +819,9 @@ type UserResolver interface {
 }
 type UserConsentResolver interface {
 	Consent(ctx context.Context, obj *model.UserConsent) (*model.Consent, error)
+}
+type UserConsentHistoryEntryResolver interface {
+	Consent(ctx context.Context, obj *model.UserConsentHistoryEntry) (*model.Consent, error)
 }
 type UserRoleResolver interface {
 	User(ctx context.Context, obj *model.UserRole) (*model.User, error)
@@ -1173,6 +1197,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Consent.Key(childComplexity), true
+	case "Consent.managedBy":
+		if e.complexity.Consent.ManagedBy == nil {
+			break
+		}
+
+		return e.complexity.Consent.ManagedBy(childComplexity), true
+	case "Consent.managementType":
+		if e.complexity.Consent.ManagementType == nil {
+			break
+		}
+
+		return e.complexity.Consent.ManagementType(childComplexity), true
 	case "Consent.publishedAt":
 		if e.complexity.Consent.PublishedAt == nil {
 			break
@@ -1185,6 +1221,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Consent.Title(childComplexity), true
+	case "Consent.url":
+		if e.complexity.Consent.URL == nil {
+			break
+		}
+
+		return e.complexity.Consent.URL(childComplexity), true
+	case "Consent.userHistory":
+		if e.complexity.Consent.UserHistory == nil {
+			break
+		}
+
+		return e.complexity.Consent.UserHistory(childComplexity), true
 	case "Consent.version":
 		if e.complexity.Consent.Version == nil {
 			break
@@ -1204,6 +1252,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ConsentStatus.PendingConsents(childComplexity), true
+	case "ConsentStatus.rejectedConsents":
+		if e.complexity.ConsentStatus.RejectedConsents == nil {
+			break
+		}
+
+		return e.complexity.ConsentStatus.RejectedConsents(childComplexity), true
 
 	case "DateRange.end":
 		if e.complexity.DateRange.End == nil {
@@ -1685,7 +1739,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateConsent(childComplexity, args["key"].(string), args["title"].(string), args["body"].(string), args["publishedAt"].(*scalars.DateTime)), true
+		return e.complexity.Mutation.CreateConsent(childComplexity, args["key"].(string), args["title"].(string), args["body"].(string), args["url"].(*string), args["publishedAt"].(*scalars.DateTime), args["isRemote"].(*bool), args["managedBy"].(*string)), true
 	case "Mutation.createEvent":
 		if e.complexity.Mutation.CreateEvent == nil {
 			break
@@ -1989,6 +2043,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.RegenerateJoinCode(childComplexity, args["teamId"].(string)), true
+	case "Mutation.rejectConsent":
+		if e.complexity.Mutation.RejectConsent == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_rejectConsent_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RejectConsent(childComplexity, args["consentId"].(string)), true
 	case "Mutation.removeTeamMembers":
 		if e.complexity.Mutation.RemoveTeamMembers == nil {
 			break
@@ -2131,7 +2196,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateConsent(childComplexity, args["id"].(string), args["title"].(*string), args["body"].(*string), args["publishedAt"].(*scalars.DateTime)), true
+		return e.complexity.Mutation.UpdateConsent(childComplexity, args["id"].(string), args["title"].(*string), args["body"].(*string), args["url"].(*string), args["publishedAt"].(*scalars.DateTime)), true
 	case "Mutation.updateEvent":
 		if e.complexity.Mutation.UpdateEvent == nil {
 			break
@@ -3456,12 +3521,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UserConnection.TotalCount(childComplexity), true
 
-	case "UserConsent.acceptedAt":
-		if e.complexity.UserConsent.AcceptedAt == nil {
+	case "UserConsent.action":
+		if e.complexity.UserConsent.Action == nil {
 			break
 		}
 
-		return e.complexity.UserConsent.AcceptedAt(childComplexity), true
+		return e.complexity.UserConsent.Action(childComplexity), true
+	case "UserConsent.actionDate":
+		if e.complexity.UserConsent.ActionDate == nil {
+			break
+		}
+
+		return e.complexity.UserConsent.ActionDate(childComplexity), true
 	case "UserConsent.consent":
 		if e.complexity.UserConsent.Consent == nil {
 			break
@@ -3474,6 +3545,49 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UserConsent.ID(childComplexity), true
+
+	case "UserConsentHistoryEntry.action":
+		if e.complexity.UserConsentHistoryEntry.Action == nil {
+			break
+		}
+
+		return e.complexity.UserConsentHistoryEntry.Action(childComplexity), true
+	case "UserConsentHistoryEntry.consent":
+		if e.complexity.UserConsentHistoryEntry.Consent == nil {
+			break
+		}
+
+		return e.complexity.UserConsentHistoryEntry.Consent(childComplexity), true
+	case "UserConsentHistoryEntry.externalConsentId":
+		if e.complexity.UserConsentHistoryEntry.ExternalConsentID == nil {
+			break
+		}
+
+		return e.complexity.UserConsentHistoryEntry.ExternalConsentID(childComplexity), true
+	case "UserConsentHistoryEntry.externalTimestamp":
+		if e.complexity.UserConsentHistoryEntry.ExternalTimestamp == nil {
+			break
+		}
+
+		return e.complexity.UserConsentHistoryEntry.ExternalTimestamp(childComplexity), true
+	case "UserConsentHistoryEntry.id":
+		if e.complexity.UserConsentHistoryEntry.ID == nil {
+			break
+		}
+
+		return e.complexity.UserConsentHistoryEntry.ID(childComplexity), true
+	case "UserConsentHistoryEntry.occurredAt":
+		if e.complexity.UserConsentHistoryEntry.OccurredAt == nil {
+			break
+		}
+
+		return e.complexity.UserConsentHistoryEntry.OccurredAt(childComplexity), true
+	case "UserConsentHistoryEntry.source":
+		if e.complexity.UserConsentHistoryEntry.Source == nil {
+			break
+		}
+
+		return e.complexity.UserConsentHistoryEntry.Source(childComplexity), true
 
 	case "UserEdge.cursor":
 		if e.complexity.UserEdge.Cursor == nil {
@@ -3730,6 +3844,16 @@ enum LeaderboardEntryTag {
     TEAM_LEAD
     ME
     ADMIN
+}
+
+enum ConsentAction {
+    ACCEPTED
+    REJECTED
+}
+
+enum ConsentManagementType {
+    LOCAL
+    REMOTE
 }
 
 # ==================== Supporting Types ====================
@@ -4770,18 +4894,34 @@ type Consent {
     version: Int!
     title: String!
     body: MarkdownText!
+    url: String
     publishedAt: DateTime
+    managementType: ConsentManagementType!
+    managedBy: String
+    userHistory: [UserConsentHistoryEntry!]! @goField(forceResolver: true)
 }
 
 type UserConsent {
     id: ID!
     consent: Consent! @goField(forceResolver: true)
-    acceptedAt: DateTime!
+    action: ConsentAction!
+    actionDate: DateTime!
+}
+
+type UserConsentHistoryEntry {
+    id: ID!
+    consent: Consent! @goField(forceResolver: true)
+    action: ConsentAction!
+    occurredAt: DateTime!
+    source: String
+    externalConsentId: String
+    externalTimestamp: DateTime
 }
 
 type ConsentStatus {
     pendingConsents: [Consent!]!
     acceptedConsents: [UserConsent!]!
+    rejectedConsents: [UserConsent!]!
 }
 
 # ==================== Consent Queries ====================
@@ -4803,12 +4943,18 @@ extend type Mutation {
     # Accept a consent (user action)
     acceptConsent(consentId: ID!): UserConsent! @requireRole(roles: ["user"])
 
+    # Reject a consent (user action)
+    rejectConsent(consentId: ID!): UserConsent! @requireRole(roles: ["user"])
+
     # Create a new consent or new version of existing consent (admin action)
     createConsent(
         key: String!
         title: String!
         body: String!
+        url: String
         publishedAt: DateTime
+        isRemote: Boolean
+        managedBy: String
     ): Consent! @requireRole(roles: ["admin", "superadmin"])
 
     # Update an existing consent (admin action)
@@ -4816,6 +4962,7 @@ extend type Mutation {
         id: ID!
         title: String
         body: String
+        url: String
         publishedAt: DateTime
     ): Consent! @requireRole(roles: ["admin", "superadmin"])
 }
@@ -5190,11 +5337,26 @@ func (ec *executionContext) field_Mutation_createConsent_args(ctx context.Contex
 		return nil, err
 	}
 	args["body"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "publishedAt", ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime)
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "url", ec.unmarshalOString2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
-	args["publishedAt"] = arg3
+	args["url"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "publishedAt", ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime)
+	if err != nil {
+		return nil, err
+	}
+	args["publishedAt"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "isRemote", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["isRemote"] = arg5
+	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "managedBy", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["managedBy"] = arg6
 	return args, nil
 }
 
@@ -5555,6 +5717,17 @@ func (ec *executionContext) field_Mutation_regenerateJoinCode_args(ctx context.C
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_rejectConsent_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "consentId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["consentId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_removeTeamMembers_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -5765,11 +5938,16 @@ func (ec *executionContext) field_Mutation_updateConsent_args(ctx context.Contex
 		return nil, err
 	}
 	args["body"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "publishedAt", ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime)
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "url", ec.unmarshalOString2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
-	args["publishedAt"] = arg3
+	args["url"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "publishedAt", ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime)
+	if err != nil {
+		return nil, err
+	}
+	args["publishedAt"] = arg4
 	return args, nil
 }
 
@@ -8421,6 +8599,35 @@ func (ec *executionContext) fieldContext_Consent_body(_ context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Consent_url(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Consent_url,
+		func(ctx context.Context) (any, error) {
+			return obj.URL, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Consent_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Consent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Consent_publishedAt(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -8445,6 +8652,109 @@ func (ec *executionContext) fieldContext_Consent_publishedAt(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Consent_managementType(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Consent_managementType,
+		func(ctx context.Context) (any, error) {
+			return obj.ManagementType, nil
+		},
+		nil,
+		ec.marshalNConsentManagementType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsentManagementType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Consent_managementType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Consent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ConsentManagementType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Consent_managedBy(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Consent_managedBy,
+		func(ctx context.Context) (any, error) {
+			return obj.ManagedBy, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Consent_managedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Consent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Consent_userHistory(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Consent_userHistory,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Consent().UserHistory(ctx, obj)
+		},
+		nil,
+		ec.marshalNUserConsentHistoryEntry2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConsentHistoryEntryᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Consent_userHistory(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Consent",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserConsentHistoryEntry_id(ctx, field)
+			case "consent":
+				return ec.fieldContext_UserConsentHistoryEntry_consent(ctx, field)
+			case "action":
+				return ec.fieldContext_UserConsentHistoryEntry_action(ctx, field)
+			case "occurredAt":
+				return ec.fieldContext_UserConsentHistoryEntry_occurredAt(ctx, field)
+			case "source":
+				return ec.fieldContext_UserConsentHistoryEntry_source(ctx, field)
+			case "externalConsentId":
+				return ec.fieldContext_UserConsentHistoryEntry_externalConsentId(ctx, field)
+			case "externalTimestamp":
+				return ec.fieldContext_UserConsentHistoryEntry_externalTimestamp(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserConsentHistoryEntry", field.Name)
 		},
 	}
 	return fc, nil
@@ -8484,8 +8794,16 @@ func (ec *executionContext) fieldContext_ConsentStatus_pendingConsents(_ context
 				return ec.fieldContext_Consent_title(ctx, field)
 			case "body":
 				return ec.fieldContext_Consent_body(ctx, field)
+			case "url":
+				return ec.fieldContext_Consent_url(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_Consent_publishedAt(ctx, field)
+			case "managementType":
+				return ec.fieldContext_Consent_managementType(ctx, field)
+			case "managedBy":
+				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "userHistory":
+				return ec.fieldContext_Consent_userHistory(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
@@ -8521,8 +8839,49 @@ func (ec *executionContext) fieldContext_ConsentStatus_acceptedConsents(_ contex
 				return ec.fieldContext_UserConsent_id(ctx, field)
 			case "consent":
 				return ec.fieldContext_UserConsent_consent(ctx, field)
-			case "acceptedAt":
-				return ec.fieldContext_UserConsent_acceptedAt(ctx, field)
+			case "action":
+				return ec.fieldContext_UserConsent_action(ctx, field)
+			case "actionDate":
+				return ec.fieldContext_UserConsent_actionDate(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserConsent", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConsentStatus_rejectedConsents(ctx context.Context, field graphql.CollectedField, obj *model.ConsentStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConsentStatus_rejectedConsents,
+		func(ctx context.Context) (any, error) {
+			return obj.RejectedConsents, nil
+		},
+		nil,
+		ec.marshalNUserConsent2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConsentᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConsentStatus_rejectedConsents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConsentStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserConsent_id(ctx, field)
+			case "consent":
+				return ec.fieldContext_UserConsent_consent(ctx, field)
+			case "action":
+				return ec.fieldContext_UserConsent_action(ctx, field)
+			case "actionDate":
+				return ec.fieldContext_UserConsent_actionDate(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserConsent", field.Name)
 		},
@@ -14957,8 +15316,10 @@ func (ec *executionContext) fieldContext_Mutation_acceptConsent(ctx context.Cont
 				return ec.fieldContext_UserConsent_id(ctx, field)
 			case "consent":
 				return ec.fieldContext_UserConsent_consent(ctx, field)
-			case "acceptedAt":
-				return ec.fieldContext_UserConsent_acceptedAt(ctx, field)
+			case "action":
+				return ec.fieldContext_UserConsent_action(ctx, field)
+			case "actionDate":
+				return ec.fieldContext_UserConsent_actionDate(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserConsent", field.Name)
 		},
@@ -14977,6 +15338,75 @@ func (ec *executionContext) fieldContext_Mutation_acceptConsent(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_rejectConsent(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_rejectConsent,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().RejectConsent(ctx, fc.Args["consentId"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
+				if err != nil {
+					var zeroVal *model.UserConsent
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.UserConsent
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNUserConsent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConsent,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_rejectConsent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserConsent_id(ctx, field)
+			case "consent":
+				return ec.fieldContext_UserConsent_consent(ctx, field)
+			case "action":
+				return ec.fieldContext_UserConsent_action(ctx, field)
+			case "actionDate":
+				return ec.fieldContext_UserConsent_actionDate(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserConsent", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_rejectConsent_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createConsent(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -14985,7 +15415,7 @@ func (ec *executionContext) _Mutation_createConsent(ctx context.Context, field g
 		ec.fieldContext_Mutation_createConsent,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().CreateConsent(ctx, fc.Args["key"].(string), fc.Args["title"].(string), fc.Args["body"].(string), fc.Args["publishedAt"].(*scalars.DateTime))
+			return ec.resolvers.Mutation().CreateConsent(ctx, fc.Args["key"].(string), fc.Args["title"].(string), fc.Args["body"].(string), fc.Args["url"].(*string), fc.Args["publishedAt"].(*scalars.DateTime), fc.Args["isRemote"].(*bool), fc.Args["managedBy"].(*string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -15030,8 +15460,16 @@ func (ec *executionContext) fieldContext_Mutation_createConsent(ctx context.Cont
 				return ec.fieldContext_Consent_title(ctx, field)
 			case "body":
 				return ec.fieldContext_Consent_body(ctx, field)
+			case "url":
+				return ec.fieldContext_Consent_url(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_Consent_publishedAt(ctx, field)
+			case "managementType":
+				return ec.fieldContext_Consent_managementType(ctx, field)
+			case "managedBy":
+				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "userHistory":
+				return ec.fieldContext_Consent_userHistory(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
@@ -15058,7 +15496,7 @@ func (ec *executionContext) _Mutation_updateConsent(ctx context.Context, field g
 		ec.fieldContext_Mutation_updateConsent,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateConsent(ctx, fc.Args["id"].(string), fc.Args["title"].(*string), fc.Args["body"].(*string), fc.Args["publishedAt"].(*scalars.DateTime))
+			return ec.resolvers.Mutation().UpdateConsent(ctx, fc.Args["id"].(string), fc.Args["title"].(*string), fc.Args["body"].(*string), fc.Args["url"].(*string), fc.Args["publishedAt"].(*scalars.DateTime))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -15103,8 +15541,16 @@ func (ec *executionContext) fieldContext_Mutation_updateConsent(ctx context.Cont
 				return ec.fieldContext_Consent_title(ctx, field)
 			case "body":
 				return ec.fieldContext_Consent_body(ctx, field)
+			case "url":
+				return ec.fieldContext_Consent_url(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_Consent_publishedAt(ctx, field)
+			case "managementType":
+				return ec.fieldContext_Consent_managementType(ctx, field)
+			case "managedBy":
+				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "userHistory":
+				return ec.fieldContext_Consent_userHistory(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
@@ -17640,8 +18086,16 @@ func (ec *executionContext) fieldContext_Query_consents(_ context.Context, field
 				return ec.fieldContext_Consent_title(ctx, field)
 			case "body":
 				return ec.fieldContext_Consent_body(ctx, field)
+			case "url":
+				return ec.fieldContext_Consent_url(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_Consent_publishedAt(ctx, field)
+			case "managementType":
+				return ec.fieldContext_Consent_managementType(ctx, field)
+			case "managedBy":
+				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "userHistory":
+				return ec.fieldContext_Consent_userHistory(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
@@ -17684,8 +18138,16 @@ func (ec *executionContext) fieldContext_Query_consent(ctx context.Context, fiel
 				return ec.fieldContext_Consent_title(ctx, field)
 			case "body":
 				return ec.fieldContext_Consent_body(ctx, field)
+			case "url":
+				return ec.fieldContext_Consent_url(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_Consent_publishedAt(ctx, field)
+			case "managementType":
+				return ec.fieldContext_Consent_managementType(ctx, field)
+			case "managedBy":
+				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "userHistory":
+				return ec.fieldContext_Consent_userHistory(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
@@ -17756,8 +18218,16 @@ func (ec *executionContext) fieldContext_Query_pendingConsents(_ context.Context
 				return ec.fieldContext_Consent_title(ctx, field)
 			case "body":
 				return ec.fieldContext_Consent_body(ctx, field)
+			case "url":
+				return ec.fieldContext_Consent_url(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_Consent_publishedAt(ctx, field)
+			case "managementType":
+				return ec.fieldContext_Consent_managementType(ctx, field)
+			case "managedBy":
+				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "userHistory":
+				return ec.fieldContext_Consent_userHistory(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
@@ -22324,6 +22794,8 @@ func (ec *executionContext) fieldContext_User_consentStatus(_ context.Context, f
 				return ec.fieldContext_ConsentStatus_pendingConsents(ctx, field)
 			case "acceptedConsents":
 				return ec.fieldContext_ConsentStatus_acceptedConsents(ctx, field)
+			case "rejectedConsents":
+				return ec.fieldContext_ConsentStatus_rejectedConsents(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ConsentStatus", field.Name)
 		},
@@ -22497,8 +22969,16 @@ func (ec *executionContext) fieldContext_UserConsent_consent(_ context.Context, 
 				return ec.fieldContext_Consent_title(ctx, field)
 			case "body":
 				return ec.fieldContext_Consent_body(ctx, field)
+			case "url":
+				return ec.fieldContext_Consent_url(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_Consent_publishedAt(ctx, field)
+			case "managementType":
+				return ec.fieldContext_Consent_managementType(ctx, field)
+			case "managedBy":
+				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "userHistory":
+				return ec.fieldContext_Consent_userHistory(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
 		},
@@ -22506,14 +22986,43 @@ func (ec *executionContext) fieldContext_UserConsent_consent(_ context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _UserConsent_acceptedAt(ctx context.Context, field graphql.CollectedField, obj *model.UserConsent) (ret graphql.Marshaler) {
+func (ec *executionContext) _UserConsent_action(ctx context.Context, field graphql.CollectedField, obj *model.UserConsent) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_UserConsent_acceptedAt,
+		ec.fieldContext_UserConsent_action,
 		func(ctx context.Context) (any, error) {
-			return obj.AcceptedAt, nil
+			return obj.Action, nil
+		},
+		nil,
+		ec.marshalNConsentAction2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsentAction,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserConsent_action(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserConsent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ConsentAction does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserConsent_actionDate(ctx context.Context, field graphql.CollectedField, obj *model.UserConsent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserConsent_actionDate,
+		func(ctx context.Context) (any, error) {
+			return obj.ActionDate, nil
 		},
 		nil,
 		ec.marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
@@ -22522,9 +23031,234 @@ func (ec *executionContext) _UserConsent_acceptedAt(ctx context.Context, field g
 	)
 }
 
-func (ec *executionContext) fieldContext_UserConsent_acceptedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UserConsent_actionDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UserConsent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserConsentHistoryEntry_id(ctx context.Context, field graphql.CollectedField, obj *model.UserConsentHistoryEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserConsentHistoryEntry_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserConsentHistoryEntry_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserConsentHistoryEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserConsentHistoryEntry_consent(ctx context.Context, field graphql.CollectedField, obj *model.UserConsentHistoryEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserConsentHistoryEntry_consent,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.UserConsentHistoryEntry().Consent(ctx, obj)
+		},
+		nil,
+		ec.marshalNConsent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsent,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserConsentHistoryEntry_consent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserConsentHistoryEntry",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Consent_id(ctx, field)
+			case "key":
+				return ec.fieldContext_Consent_key(ctx, field)
+			case "version":
+				return ec.fieldContext_Consent_version(ctx, field)
+			case "title":
+				return ec.fieldContext_Consent_title(ctx, field)
+			case "body":
+				return ec.fieldContext_Consent_body(ctx, field)
+			case "url":
+				return ec.fieldContext_Consent_url(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_Consent_publishedAt(ctx, field)
+			case "managementType":
+				return ec.fieldContext_Consent_managementType(ctx, field)
+			case "managedBy":
+				return ec.fieldContext_Consent_managedBy(ctx, field)
+			case "userHistory":
+				return ec.fieldContext_Consent_userHistory(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Consent", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserConsentHistoryEntry_action(ctx context.Context, field graphql.CollectedField, obj *model.UserConsentHistoryEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserConsentHistoryEntry_action,
+		func(ctx context.Context) (any, error) {
+			return obj.Action, nil
+		},
+		nil,
+		ec.marshalNConsentAction2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsentAction,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserConsentHistoryEntry_action(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserConsentHistoryEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ConsentAction does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserConsentHistoryEntry_occurredAt(ctx context.Context, field graphql.CollectedField, obj *model.UserConsentHistoryEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserConsentHistoryEntry_occurredAt,
+		func(ctx context.Context) (any, error) {
+			return obj.OccurredAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserConsentHistoryEntry_occurredAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserConsentHistoryEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserConsentHistoryEntry_source(ctx context.Context, field graphql.CollectedField, obj *model.UserConsentHistoryEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserConsentHistoryEntry_source,
+		func(ctx context.Context) (any, error) {
+			return obj.Source, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserConsentHistoryEntry_source(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserConsentHistoryEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserConsentHistoryEntry_externalConsentId(ctx context.Context, field graphql.CollectedField, obj *model.UserConsentHistoryEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserConsentHistoryEntry_externalConsentId,
+		func(ctx context.Context) (any, error) {
+			return obj.ExternalConsentID, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserConsentHistoryEntry_externalConsentId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserConsentHistoryEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserConsentHistoryEntry_externalTimestamp(ctx context.Context, field graphql.CollectedField, obj *model.UserConsentHistoryEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserConsentHistoryEntry_externalTimestamp,
+		func(ctx context.Context) (any, error) {
+			return obj.ExternalTimestamp, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserConsentHistoryEntry_externalTimestamp(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserConsentHistoryEntry",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -27622,8 +28356,53 @@ func (ec *executionContext) _Consent(ctx context.Context, sel ast.SelectionSet, 
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "url":
+			out.Values[i] = ec._Consent_url(ctx, field, obj)
 		case "publishedAt":
 			out.Values[i] = ec._Consent_publishedAt(ctx, field, obj)
+		case "managementType":
+			out.Values[i] = ec._Consent_managementType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "managedBy":
+			out.Values[i] = ec._Consent_managedBy(ctx, field, obj)
+		case "userHistory":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Consent_userHistory(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -27665,6 +28444,11 @@ func (ec *executionContext) _ConsentStatus(ctx context.Context, sel ast.Selectio
 			}
 		case "acceptedConsents":
 			out.Values[i] = ec._ConsentStatus_acceptedConsents(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "rejectedConsents":
+			out.Values[i] = ec._ConsentStatus_rejectedConsents(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -28944,6 +29728,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "acceptConsent":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_acceptConsent(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "rejectConsent":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_rejectConsent(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -32884,11 +33675,107 @@ func (ec *executionContext) _UserConsent(ctx context.Context, sel ast.SelectionS
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "acceptedAt":
-			out.Values[i] = ec._UserConsent_acceptedAt(ctx, field, obj)
+		case "action":
+			out.Values[i] = ec._UserConsent_action(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "actionDate":
+			out.Values[i] = ec._UserConsent_actionDate(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var userConsentHistoryEntryImplementors = []string{"UserConsentHistoryEntry"}
+
+func (ec *executionContext) _UserConsentHistoryEntry(ctx context.Context, sel ast.SelectionSet, obj *model.UserConsentHistoryEntry) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userConsentHistoryEntryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserConsentHistoryEntry")
+		case "id":
+			out.Values[i] = ec._UserConsentHistoryEntry_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "consent":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UserConsentHistoryEntry_consent(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "action":
+			out.Values[i] = ec._UserConsentHistoryEntry_action(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "occurredAt":
+			out.Values[i] = ec._UserConsentHistoryEntry_occurredAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "source":
+			out.Values[i] = ec._UserConsentHistoryEntry_source(ctx, field, obj)
+		case "externalConsentId":
+			out.Values[i] = ec._UserConsentHistoryEntry_externalConsentId(ctx, field, obj)
+		case "externalTimestamp":
+			out.Values[i] = ec._UserConsentHistoryEntry_externalTimestamp(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -33931,6 +34818,26 @@ func (ec *executionContext) marshalNConsent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayf
 		return graphql.Null
 	}
 	return ec._Consent(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNConsentAction2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsentAction(ctx context.Context, v any) (model.ConsentAction, error) {
+	var res model.ConsentAction
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNConsentAction2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsentAction(ctx context.Context, sel ast.SelectionSet, v model.ConsentAction) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNConsentManagementType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsentManagementType(ctx context.Context, v any) (model.ConsentManagementType, error) {
+	var res model.ConsentManagementType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNConsentManagementType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsentManagementType(ctx context.Context, sel ast.SelectionSet, v model.ConsentManagementType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNConsentStatus2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsentStatus(ctx context.Context, sel ast.SelectionSet, v *model.ConsentStatus) graphql.Marshaler {
@@ -35587,6 +36494,54 @@ func (ec *executionContext) marshalNUserConsent2ᚖgithubᚗcomᚋbccᚑmediaᚋ
 		return graphql.Null
 	}
 	return ec._UserConsent(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUserConsentHistoryEntry2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConsentHistoryEntry(ctx context.Context, sel ast.SelectionSet, v model.UserConsentHistoryEntry) graphql.Marshaler {
+	return ec._UserConsentHistoryEntry(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUserConsentHistoryEntry2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConsentHistoryEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []model.UserConsentHistoryEntry) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUserConsentHistoryEntry2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConsentHistoryEntry(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNUserEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserEdge(ctx context.Context, sel ast.SelectionSet, v model.UserEdge) graphql.Marshaler {

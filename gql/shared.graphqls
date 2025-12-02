@@ -68,6 +68,16 @@ enum LeaderboardEntryTag {
     ADMIN
 }
 
+enum ConsentAction {
+    ACCEPTED
+    REJECTED
+}
+
+enum ConsentManagementType {
+    LOCAL
+    REMOTE
+}
+
 # ==================== Supporting Types ====================
 
 type MarkdownText {

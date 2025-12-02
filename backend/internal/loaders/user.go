@@ -106,13 +106,21 @@ func fetchConsentDataForUsers(ctx context.Context, db *database.DB, c *cache.Cac
 					publishedAt = &dt
 				}
 
+				managementType := model.ConsentManagementTypeLocal
+				if row.IsRemote {
+					managementType = model.ConsentManagementTypeRemote
+				}
+
 				consent := &model.Consent{
-					ID:          row.ID,
-					Key:         row.Key,
-					Version:     int(row.Version),
-					Title:       row.Title,
-					BodyMarkdown: row.Body,
-					PublishedAt: publishedAt,
+					ID:             row.ID,
+					Key:            row.Key,
+					Version:        int(row.Version),
+					Title:          row.Title,
+					BodyMarkdown:   row.Body,
+					URL:            row.Url,
+					PublishedAt:    publishedAt,
+					ManagementType: managementType,
+					ManagedBy:      row.ManagedBy,
 				}
 				latestConsents[row.ID] = consent
 			}
@@ -121,25 +129,30 @@ func fetchConsentDataForUsers(ctx context.Context, db *database.DB, c *cache.Cac
 		}
 	}
 
-	// 2. Get user consents for all users
+	// 2. Get current user consent statuses for all users
 	userConsentsMap := make(map[string]map[string]*model.UserConsent)
 	if len(userIDs) > 0 {
-		rows, err := db.Queries.GetUserConsentsByUserIDs(ctx, userIDs)
+		rows, err := db.Queries.GetCurrentUserConsentStatusesByUsers(ctx, userIDs)
 		if err == nil {
 			for _, row := range rows {
-				acceptedAt := scalars.DateTime{Time: row.AcceptedAt.Time}
+				action := model.ConsentActionAccepted
+				if row.Action == "REJECTED" {
+					action = model.ConsentActionRejected
+				}
 
 				userConsent := &model.UserConsent{
 					ID:         row.ID,
 					ConsentID:  row.ConsentID,
-					AcceptedAt: acceptedAt,
+					Action:     action,
+					ActionDate: scalars.DateTime{Time: row.OccurredAt.Time},
 					// Consent will be resolved via resolver using ConsentByIDLoader
 				}
 
 				if userConsentsMap[row.UserID] == nil {
 					userConsentsMap[row.UserID] = make(map[string]*model.UserConsent)
 				}
-				userConsentsMap[row.UserID][row.ConsentID] = userConsent
+				// Index by consent_key, not consent_id, to handle version changes
+				userConsentsMap[row.UserID][row.ConsentKey] = userConsent
 			}
 		}
 	}
@@ -156,14 +169,20 @@ func buildConsentStatus(userID string, latestConsents map[string]*model.Consent,
 
 	pendingConsents := make([]model.Consent, 0)
 	acceptedConsents := make([]model.UserConsent, 0)
+	rejectedConsents := make([]model.UserConsent, 0)
 
 	// Iterate through all latest published consents
-	for consentID, consent := range latestConsents {
-		if userConsent, accepted := userConsents[consentID]; accepted {
-			// User has accepted this consent
-			acceptedConsents = append(acceptedConsents, *userConsent)
+	for _, consent := range latestConsents {
+		// Check by consent key (to handle rejection persistence across versions)
+		if userConsent, hasAction := userConsents[consent.Key]; hasAction {
+			// User has taken action on this consent
+			if userConsent.Action == model.ConsentActionAccepted {
+				acceptedConsents = append(acceptedConsents, *userConsent)
+			} else if userConsent.Action == model.ConsentActionRejected {
+				rejectedConsents = append(rejectedConsents, *userConsent)
+			}
 		} else {
-			// User hasn't accepted this consent yet
+			// User hasn't taken any action yet
 			pendingConsents = append(pendingConsents, *consent)
 		}
 	}
@@ -171,5 +190,6 @@ func buildConsentStatus(userID string, latestConsents map[string]*model.Consent,
 	return &model.ConsentStatus{
 		PendingConsents:  pendingConsents,
 		AcceptedConsents: acceptedConsents,
+		RejectedConsents: rejectedConsents,
 	}
 }

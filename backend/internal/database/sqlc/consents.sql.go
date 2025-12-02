@@ -12,9 +12,9 @@ import (
 )
 
 const CreateConsent = `-- name: CreateConsent :one
-INSERT INTO consents (id, key, version, title, body, published_at)
-VALUES ($1::text, $2::text, $3::int, $4::text, $5::text, $6)
-RETURNING id, key, version, title, body, published_at, created_at, updated_at
+INSERT INTO consents (id, key, version, title, body, url, published_at, is_remote, managed_by)
+VALUES ($1::text, $2::text, $3::int, $4::text, $5::text, $6, $7, $8::bool, $9)
+RETURNING id, key, version, title, body, url, published_at, is_remote, managed_by, created_at, updated_at
 `
 
 type CreateConsentParams struct {
@@ -23,59 +23,117 @@ type CreateConsentParams struct {
 	Version     int32              `json:"version"`
 	Title       string             `json:"title"`
 	Body        string             `json:"body"`
+	Url         *string            `json:"url"`
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
+	IsRemote    bool               `json:"is_remote"`
+	ManagedBy   *string            `json:"managed_by"`
 }
 
-func (q *Queries) CreateConsent(ctx context.Context, arg CreateConsentParams) (*Consent, error) {
+type CreateConsentRow struct {
+	ID          string             `json:"id"`
+	Key         string             `json:"key"`
+	Version     int32              `json:"version"`
+	Title       string             `json:"title"`
+	Body        string             `json:"body"`
+	Url         *string            `json:"url"`
+	PublishedAt pgtype.Timestamptz `json:"published_at"`
+	IsRemote    bool               `json:"is_remote"`
+	ManagedBy   *string            `json:"managed_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) CreateConsent(ctx context.Context, arg CreateConsentParams) (*CreateConsentRow, error) {
 	row := q.db.QueryRow(ctx, CreateConsent,
 		arg.ID,
 		arg.Key,
 		arg.Version,
 		arg.Title,
 		arg.Body,
+		arg.Url,
 		arg.PublishedAt,
+		arg.IsRemote,
+		arg.ManagedBy,
 	)
-	var i Consent
+	var i CreateConsentRow
 	err := row.Scan(
 		&i.ID,
 		&i.Key,
 		&i.Version,
 		&i.Title,
 		&i.Body,
+		&i.Url,
 		&i.PublishedAt,
+		&i.IsRemote,
+		&i.ManagedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return &i, err
 }
 
-const CreateUserConsent = `-- name: CreateUserConsent :one
-INSERT INTO user_consents (id, user_id, consent_id, accepted_at)
-VALUES ($1::text, $2::text, $3::text, $4)
-RETURNING id, user_id, consent_id, accepted_at, created_at
+const CreateUserConsentHistory = `-- name: CreateUserConsentHistory :one
+
+INSERT INTO user_consent_history (
+    id, user_id, consent_id, consent_key, action, occurred_at,
+    source, external_consent_id, external_timestamp
+)
+VALUES (
+    $1::text, $2::text, $3::text, $4::text,
+    $5::text, $6, $7, $8, $9
+)
+RETURNING id, user_id, consent_id, consent_key, action, occurred_at,
+          source, external_consent_id, external_timestamp
 `
 
-type CreateUserConsentParams struct {
-	ID         string             `json:"id"`
-	UserID     string             `json:"user_id"`
-	ConsentID  string             `json:"consent_id"`
-	AcceptedAt pgtype.Timestamptz `json:"accepted_at"`
+type CreateUserConsentHistoryParams struct {
+	ID                string             `json:"id"`
+	UserID            string             `json:"user_id"`
+	ConsentID         string             `json:"consent_id"`
+	ConsentKey        string             `json:"consent_key"`
+	Action            string             `json:"action"`
+	OccurredAt        pgtype.Timestamptz `json:"occurred_at"`
+	Source            *string            `json:"source"`
+	ExternalConsentID *string            `json:"external_consent_id"`
+	ExternalTimestamp pgtype.Timestamptz `json:"external_timestamp"`
 }
 
-func (q *Queries) CreateUserConsent(ctx context.Context, arg CreateUserConsentParams) (*UserConsent, error) {
-	row := q.db.QueryRow(ctx, CreateUserConsent,
+type CreateUserConsentHistoryRow struct {
+	ID                string             `json:"id"`
+	UserID            string             `json:"user_id"`
+	ConsentID         string             `json:"consent_id"`
+	ConsentKey        string             `json:"consent_key"`
+	Action            string             `json:"action"`
+	OccurredAt        pgtype.Timestamptz `json:"occurred_at"`
+	Source            *string            `json:"source"`
+	ExternalConsentID *string            `json:"external_consent_id"`
+	ExternalTimestamp pgtype.Timestamptz `json:"external_timestamp"`
+}
+
+// User consent history queries
+func (q *Queries) CreateUserConsentHistory(ctx context.Context, arg CreateUserConsentHistoryParams) (*CreateUserConsentHistoryRow, error) {
+	row := q.db.QueryRow(ctx, CreateUserConsentHistory,
 		arg.ID,
 		arg.UserID,
 		arg.ConsentID,
-		arg.AcceptedAt,
+		arg.ConsentKey,
+		arg.Action,
+		arg.OccurredAt,
+		arg.Source,
+		arg.ExternalConsentID,
+		arg.ExternalTimestamp,
 	)
-	var i UserConsent
+	var i CreateUserConsentHistoryRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
 		&i.ConsentID,
-		&i.AcceptedAt,
-		&i.CreatedAt,
+		&i.ConsentKey,
+		&i.Action,
+		&i.OccurredAt,
+		&i.Source,
+		&i.ExternalConsentID,
+		&i.ExternalTimestamp,
 	)
 	return &i, err
 }
@@ -90,28 +148,45 @@ func (q *Queries) DeleteConsentTranslations(ctx context.Context, consentID strin
 }
 
 const GetAllLatestPublishedConsents = `-- name: GetAllLatestPublishedConsents :many
-SELECT DISTINCT ON (key) id, key, version, title, body, published_at, created_at, updated_at
+SELECT DISTINCT ON (key) id, key, version, title, body, url, published_at, is_remote, managed_by, created_at, updated_at
 FROM consents
 WHERE published_at IS NOT NULL AND published_at <= now()
 ORDER BY key, version DESC
 `
 
-func (q *Queries) GetAllLatestPublishedConsents(ctx context.Context) ([]*Consent, error) {
+type GetAllLatestPublishedConsentsRow struct {
+	ID          string             `json:"id"`
+	Key         string             `json:"key"`
+	Version     int32              `json:"version"`
+	Title       string             `json:"title"`
+	Body        string             `json:"body"`
+	Url         *string            `json:"url"`
+	PublishedAt pgtype.Timestamptz `json:"published_at"`
+	IsRemote    bool               `json:"is_remote"`
+	ManagedBy   *string            `json:"managed_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetAllLatestPublishedConsents(ctx context.Context) ([]*GetAllLatestPublishedConsentsRow, error) {
 	rows, err := q.db.Query(ctx, GetAllLatestPublishedConsents)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*Consent{}
+	items := []*GetAllLatestPublishedConsentsRow{}
 	for rows.Next() {
-		var i Consent
+		var i GetAllLatestPublishedConsentsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Key,
 			&i.Version,
 			&i.Title,
 			&i.Body,
+			&i.Url,
 			&i.PublishedAt,
+			&i.IsRemote,
+			&i.ManagedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -127,21 +202,38 @@ func (q *Queries) GetAllLatestPublishedConsents(ctx context.Context) ([]*Consent
 
 const GetConsentByID = `-- name: GetConsentByID :one
 
-SELECT id, key, version, title, body, published_at, created_at, updated_at
+SELECT id, key, version, title, body, url, published_at, is_remote, managed_by, created_at, updated_at
 FROM consents WHERE id = $1::text
 `
 
+type GetConsentByIDRow struct {
+	ID          string             `json:"id"`
+	Key         string             `json:"key"`
+	Version     int32              `json:"version"`
+	Title       string             `json:"title"`
+	Body        string             `json:"body"`
+	Url         *string            `json:"url"`
+	PublishedAt pgtype.Timestamptz `json:"published_at"`
+	IsRemote    bool               `json:"is_remote"`
+	ManagedBy   *string            `json:"managed_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
 // Consent queries
-func (q *Queries) GetConsentByID(ctx context.Context, id string) (*Consent, error) {
+func (q *Queries) GetConsentByID(ctx context.Context, id string) (*GetConsentByIDRow, error) {
 	row := q.db.QueryRow(ctx, GetConsentByID, id)
-	var i Consent
+	var i GetConsentByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.Key,
 		&i.Version,
 		&i.Title,
 		&i.Body,
+		&i.Url,
 		&i.PublishedAt,
+		&i.IsRemote,
+		&i.ManagedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -195,26 +287,43 @@ func (q *Queries) GetConsentTranslationsByIDs(ctx context.Context, arg GetConsen
 }
 
 const GetConsentsByIDs = `-- name: GetConsentsByIDs :many
-SELECT id, key, version, title, body, published_at, created_at, updated_at
+SELECT id, key, version, title, body, url, published_at, is_remote, managed_by, created_at, updated_at
 FROM consents WHERE id = ANY($1::text[])
 `
 
-func (q *Queries) GetConsentsByIDs(ctx context.Context, ids []string) ([]*Consent, error) {
+type GetConsentsByIDsRow struct {
+	ID          string             `json:"id"`
+	Key         string             `json:"key"`
+	Version     int32              `json:"version"`
+	Title       string             `json:"title"`
+	Body        string             `json:"body"`
+	Url         *string            `json:"url"`
+	PublishedAt pgtype.Timestamptz `json:"published_at"`
+	IsRemote    bool               `json:"is_remote"`
+	ManagedBy   *string            `json:"managed_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetConsentsByIDs(ctx context.Context, ids []string) ([]*GetConsentsByIDsRow, error) {
 	rows, err := q.db.Query(ctx, GetConsentsByIDs, ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*Consent{}
+	items := []*GetConsentsByIDsRow{}
 	for rows.Next() {
-		var i Consent
+		var i GetConsentsByIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Key,
 			&i.Version,
 			&i.Title,
 			&i.Body,
+			&i.Url,
 			&i.PublishedAt,
+			&i.IsRemote,
+			&i.ManagedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -228,58 +337,228 @@ func (q *Queries) GetConsentsByIDs(ctx context.Context, ids []string) ([]*Consen
 	return items, nil
 }
 
-const GetLatestPublishedConsentByKey = `-- name: GetLatestPublishedConsentByKey :one
-SELECT id, key, version, title, body, published_at, created_at, updated_at
-FROM consents
-WHERE key = $1::text AND published_at IS NOT NULL AND published_at <= now()
-ORDER BY version DESC LIMIT 1
+const GetCurrentUserConsentStatusesByUsers = `-- name: GetCurrentUserConsentStatusesByUsers :many
+SELECT DISTINCT ON (user_id, consent_key)
+    id, user_id, consent_id, consent_key, action, occurred_at, source
+FROM user_consent_history
+WHERE user_id = ANY($1::text[])
+ORDER BY user_id, consent_key, occurred_at DESC
 `
 
-func (q *Queries) GetLatestPublishedConsentByKey(ctx context.Context, key string) (*Consent, error) {
-	row := q.db.QueryRow(ctx, GetLatestPublishedConsentByKey, key)
-	var i Consent
+type GetCurrentUserConsentStatusesByUsersRow struct {
+	ID         string             `json:"id"`
+	UserID     string             `json:"user_id"`
+	ConsentID  string             `json:"consent_id"`
+	ConsentKey string             `json:"consent_key"`
+	Action     string             `json:"action"`
+	OccurredAt pgtype.Timestamptz `json:"occurred_at"`
+	Source     *string            `json:"source"`
+}
+
+// Gets the latest action for each consent key for multiple users
+func (q *Queries) GetCurrentUserConsentStatusesByUsers(ctx context.Context, userIds []string) ([]*GetCurrentUserConsentStatusesByUsersRow, error) {
+	rows, err := q.db.Query(ctx, GetCurrentUserConsentStatusesByUsers, userIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetCurrentUserConsentStatusesByUsersRow{}
+	for rows.Next() {
+		var i GetCurrentUserConsentStatusesByUsersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.ConsentID,
+			&i.ConsentKey,
+			&i.Action,
+			&i.OccurredAt,
+			&i.Source,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetLatestConsentByKey = `-- name: GetLatestConsentByKey :one
+SELECT id, key, version, title, body, url, published_at, is_remote, managed_by, created_at, updated_at
+FROM consents
+WHERE key = $1::text
+ORDER BY version DESC
+LIMIT 1
+`
+
+type GetLatestConsentByKeyRow struct {
+	ID          string             `json:"id"`
+	Key         string             `json:"key"`
+	Version     int32              `json:"version"`
+	Title       string             `json:"title"`
+	Body        string             `json:"body"`
+	Url         *string            `json:"url"`
+	PublishedAt pgtype.Timestamptz `json:"published_at"`
+	IsRemote    bool               `json:"is_remote"`
+	ManagedBy   *string            `json:"managed_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetLatestConsentByKey(ctx context.Context, key string) (*GetLatestConsentByKeyRow, error) {
+	row := q.db.QueryRow(ctx, GetLatestConsentByKey, key)
+	var i GetLatestConsentByKeyRow
 	err := row.Scan(
 		&i.ID,
 		&i.Key,
 		&i.Version,
 		&i.Title,
 		&i.Body,
+		&i.Url,
 		&i.PublishedAt,
+		&i.IsRemote,
+		&i.ManagedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return &i, err
 }
 
-const GetMissingConsentsForUser = `-- name: GetMissingConsentsForUser :many
-SELECT c.id, c.key, c.version, c.title, c.body, c.published_at, c.created_at, c.updated_at
+const GetLatestPublishedConsentByKey = `-- name: GetLatestPublishedConsentByKey :one
+SELECT id, key, version, title, body, url, published_at, is_remote, managed_by, created_at, updated_at
+FROM consents
+WHERE key = $1::text AND published_at IS NOT NULL AND published_at <= now()
+ORDER BY version DESC LIMIT 1
+`
+
+type GetLatestPublishedConsentByKeyRow struct {
+	ID          string             `json:"id"`
+	Key         string             `json:"key"`
+	Version     int32              `json:"version"`
+	Title       string             `json:"title"`
+	Body        string             `json:"body"`
+	Url         *string            `json:"url"`
+	PublishedAt pgtype.Timestamptz `json:"published_at"`
+	IsRemote    bool               `json:"is_remote"`
+	ManagedBy   *string            `json:"managed_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetLatestPublishedConsentByKey(ctx context.Context, key string) (*GetLatestPublishedConsentByKeyRow, error) {
+	row := q.db.QueryRow(ctx, GetLatestPublishedConsentByKey, key)
+	var i GetLatestPublishedConsentByKeyRow
+	err := row.Scan(
+		&i.ID,
+		&i.Key,
+		&i.Version,
+		&i.Title,
+		&i.Body,
+		&i.Url,
+		&i.PublishedAt,
+		&i.IsRemote,
+		&i.ManagedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const GetLatestUserConsentActionByKey = `-- name: GetLatestUserConsentActionByKey :one
+SELECT id, user_id, consent_id, consent_key, action, occurred_at,
+       source, external_consent_id, external_timestamp
+FROM user_consent_history
+WHERE user_id = $1::text AND consent_key = $2::text
+ORDER BY occurred_at DESC
+LIMIT 1
+`
+
+type GetLatestUserConsentActionByKeyParams struct {
+	UserID     string `json:"user_id"`
+	ConsentKey string `json:"consent_key"`
+}
+
+type GetLatestUserConsentActionByKeyRow struct {
+	ID                string             `json:"id"`
+	UserID            string             `json:"user_id"`
+	ConsentID         string             `json:"consent_id"`
+	ConsentKey        string             `json:"consent_key"`
+	Action            string             `json:"action"`
+	OccurredAt        pgtype.Timestamptz `json:"occurred_at"`
+	Source            *string            `json:"source"`
+	ExternalConsentID *string            `json:"external_consent_id"`
+	ExternalTimestamp pgtype.Timestamptz `json:"external_timestamp"`
+}
+
+func (q *Queries) GetLatestUserConsentActionByKey(ctx context.Context, arg GetLatestUserConsentActionByKeyParams) (*GetLatestUserConsentActionByKeyRow, error) {
+	row := q.db.QueryRow(ctx, GetLatestUserConsentActionByKey, arg.UserID, arg.ConsentKey)
+	var i GetLatestUserConsentActionByKeyRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.ConsentID,
+		&i.ConsentKey,
+		&i.Action,
+		&i.OccurredAt,
+		&i.Source,
+		&i.ExternalConsentID,
+		&i.ExternalTimestamp,
+	)
+	return &i, err
+}
+
+const GetMissingConsentsForUserWithRejections = `-- name: GetMissingConsentsForUserWithRejections :many
+SELECT c.id, c.key, c.version, c.title, c.body, c.url, c.published_at,
+       c.is_remote, c.managed_by, c.created_at, c.updated_at
 FROM (
-    SELECT DISTINCT ON (key) id, key, version, title, body, published_at, created_at, updated_at
+    SELECT DISTINCT ON (key) id, key, version, title, body, url, published_at,
+           is_remote, managed_by, created_at, updated_at
     FROM consents
     WHERE published_at IS NOT NULL AND published_at <= now()
     ORDER BY key, version DESC
 ) c
 WHERE NOT EXISTS (
-    SELECT 1 FROM user_consents uc WHERE uc.user_id = $1::text AND uc.consent_id = c.id
+    SELECT 1 FROM user_consent_history uch
+    WHERE uch.user_id = $1::text
+    AND uch.consent_key = c.key
 )
 `
 
-func (q *Queries) GetMissingConsentsForUser(ctx context.Context, userID string) ([]*Consent, error) {
-	rows, err := q.db.Query(ctx, GetMissingConsentsForUser, userID)
+type GetMissingConsentsForUserWithRejectionsRow struct {
+	ID          string             `json:"id"`
+	Key         string             `json:"key"`
+	Version     int32              `json:"version"`
+	Title       string             `json:"title"`
+	Body        string             `json:"body"`
+	Url         *string            `json:"url"`
+	PublishedAt pgtype.Timestamptz `json:"published_at"`
+	IsRemote    bool               `json:"is_remote"`
+	ManagedBy   *string            `json:"managed_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+// Gets consents that user has never acted upon (no history)
+func (q *Queries) GetMissingConsentsForUserWithRejections(ctx context.Context, userID string) ([]*GetMissingConsentsForUserWithRejectionsRow, error) {
+	rows, err := q.db.Query(ctx, GetMissingConsentsForUserWithRejections, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*Consent{}
+	items := []*GetMissingConsentsForUserWithRejectionsRow{}
 	for rows.Next() {
-		var i Consent
+		var i GetMissingConsentsForUserWithRejectionsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Key,
 			&i.Version,
 			&i.Title,
 			&i.Body,
+			&i.Url,
 			&i.PublishedAt,
+			&i.IsRemote,
+			&i.ManagedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -304,66 +583,45 @@ func (q *Queries) GetNextVersionForConsentKey(ctx context.Context, key string) (
 	return next_version, err
 }
 
-const GetUserConsentByUserAndConsent = `-- name: GetUserConsentByUserAndConsent :one
-SELECT id, user_id, consent_id, accepted_at, created_at
-FROM user_consents WHERE user_id = $1::text AND consent_id = $2::text
+const GetUserConsentHistoryByUser = `-- name: GetUserConsentHistoryByUser :many
+SELECT id, user_id, consent_id, consent_key, action, occurred_at,
+       source, external_consent_id, external_timestamp
+FROM user_consent_history
+WHERE user_id = $1::text
+ORDER BY occurred_at DESC
 `
 
-type GetUserConsentByUserAndConsentParams struct {
-	UserID    string `json:"user_id"`
-	ConsentID string `json:"consent_id"`
+type GetUserConsentHistoryByUserRow struct {
+	ID                string             `json:"id"`
+	UserID            string             `json:"user_id"`
+	ConsentID         string             `json:"consent_id"`
+	ConsentKey        string             `json:"consent_key"`
+	Action            string             `json:"action"`
+	OccurredAt        pgtype.Timestamptz `json:"occurred_at"`
+	Source            *string            `json:"source"`
+	ExternalConsentID *string            `json:"external_consent_id"`
+	ExternalTimestamp pgtype.Timestamptz `json:"external_timestamp"`
 }
 
-func (q *Queries) GetUserConsentByUserAndConsent(ctx context.Context, arg GetUserConsentByUserAndConsentParams) (*UserConsent, error) {
-	row := q.db.QueryRow(ctx, GetUserConsentByUserAndConsent, arg.UserID, arg.ConsentID)
-	var i UserConsent
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.ConsentID,
-		&i.AcceptedAt,
-		&i.CreatedAt,
-	)
-	return &i, err
-}
-
-const GetUserConsentsByUserID = `-- name: GetUserConsentsByUserID :many
-
-SELECT uc.id, uc.user_id, uc.consent_id, uc.accepted_at, uc.created_at,
-       c.key as consent_key, c.version as consent_version
-FROM user_consents uc
-INNER JOIN consents c ON uc.consent_id = c.id
-WHERE uc.user_id = $1::text
-`
-
-type GetUserConsentsByUserIDRow struct {
-	ID             string             `json:"id"`
-	UserID         string             `json:"user_id"`
-	ConsentID      string             `json:"consent_id"`
-	AcceptedAt     pgtype.Timestamptz `json:"accepted_at"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	ConsentKey     string             `json:"consent_key"`
-	ConsentVersion int32              `json:"consent_version"`
-}
-
-// User consent queries
-func (q *Queries) GetUserConsentsByUserID(ctx context.Context, userID string) ([]*GetUserConsentsByUserIDRow, error) {
-	rows, err := q.db.Query(ctx, GetUserConsentsByUserID, userID)
+func (q *Queries) GetUserConsentHistoryByUser(ctx context.Context, userID string) ([]*GetUserConsentHistoryByUserRow, error) {
+	rows, err := q.db.Query(ctx, GetUserConsentHistoryByUser, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*GetUserConsentsByUserIDRow{}
+	items := []*GetUserConsentHistoryByUserRow{}
 	for rows.Next() {
-		var i GetUserConsentsByUserIDRow
+		var i GetUserConsentHistoryByUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
 			&i.ConsentID,
-			&i.AcceptedAt,
-			&i.CreatedAt,
 			&i.ConsentKey,
-			&i.ConsentVersion,
+			&i.Action,
+			&i.OccurredAt,
+			&i.Source,
+			&i.ExternalConsentID,
+			&i.ExternalTimestamp,
 		); err != nil {
 			return nil, err
 		}
@@ -375,41 +633,100 @@ func (q *Queries) GetUserConsentsByUserID(ctx context.Context, userID string) ([
 	return items, nil
 }
 
-const GetUserConsentsByUserIDs = `-- name: GetUserConsentsByUserIDs :many
-SELECT uc.id, uc.user_id, uc.consent_id, uc.accepted_at, uc.created_at,
-       c.key as consent_key, c.version as consent_version
-FROM user_consents uc
-INNER JOIN consents c ON uc.consent_id = c.id
-WHERE uc.user_id = ANY($1::text[])
+const GetUserConsentHistoryByUserAndKey = `-- name: GetUserConsentHistoryByUserAndKey :many
+SELECT id, user_id, consent_id, consent_key, action, occurred_at,
+       source, external_consent_id, external_timestamp
+FROM user_consent_history
+WHERE user_id = $1::text AND consent_key = $2::text
+ORDER BY occurred_at DESC
 `
 
-type GetUserConsentsByUserIDsRow struct {
-	ID             string             `json:"id"`
-	UserID         string             `json:"user_id"`
-	ConsentID      string             `json:"consent_id"`
-	AcceptedAt     pgtype.Timestamptz `json:"accepted_at"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	ConsentKey     string             `json:"consent_key"`
-	ConsentVersion int32              `json:"consent_version"`
+type GetUserConsentHistoryByUserAndKeyParams struct {
+	UserID     string `json:"user_id"`
+	ConsentKey string `json:"consent_key"`
 }
 
-func (q *Queries) GetUserConsentsByUserIDs(ctx context.Context, userIds []string) ([]*GetUserConsentsByUserIDsRow, error) {
-	rows, err := q.db.Query(ctx, GetUserConsentsByUserIDs, userIds)
+type GetUserConsentHistoryByUserAndKeyRow struct {
+	ID                string             `json:"id"`
+	UserID            string             `json:"user_id"`
+	ConsentID         string             `json:"consent_id"`
+	ConsentKey        string             `json:"consent_key"`
+	Action            string             `json:"action"`
+	OccurredAt        pgtype.Timestamptz `json:"occurred_at"`
+	Source            *string            `json:"source"`
+	ExternalConsentID *string            `json:"external_consent_id"`
+	ExternalTimestamp pgtype.Timestamptz `json:"external_timestamp"`
+}
+
+func (q *Queries) GetUserConsentHistoryByUserAndKey(ctx context.Context, arg GetUserConsentHistoryByUserAndKeyParams) ([]*GetUserConsentHistoryByUserAndKeyRow, error) {
+	rows, err := q.db.Query(ctx, GetUserConsentHistoryByUserAndKey, arg.UserID, arg.ConsentKey)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*GetUserConsentsByUserIDsRow{}
+	items := []*GetUserConsentHistoryByUserAndKeyRow{}
 	for rows.Next() {
-		var i GetUserConsentsByUserIDsRow
+		var i GetUserConsentHistoryByUserAndKeyRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
 			&i.ConsentID,
-			&i.AcceptedAt,
-			&i.CreatedAt,
 			&i.ConsentKey,
-			&i.ConsentVersion,
+			&i.Action,
+			&i.OccurredAt,
+			&i.Source,
+			&i.ExternalConsentID,
+			&i.ExternalTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUserConsentHistoryByUsers = `-- name: GetUserConsentHistoryByUsers :many
+SELECT id, user_id, consent_id, consent_key, action, occurred_at,
+       source, external_consent_id, external_timestamp
+FROM user_consent_history
+WHERE user_id = ANY($1::text[])
+ORDER BY user_id, occurred_at DESC
+`
+
+type GetUserConsentHistoryByUsersRow struct {
+	ID                string             `json:"id"`
+	UserID            string             `json:"user_id"`
+	ConsentID         string             `json:"consent_id"`
+	ConsentKey        string             `json:"consent_key"`
+	Action            string             `json:"action"`
+	OccurredAt        pgtype.Timestamptz `json:"occurred_at"`
+	Source            *string            `json:"source"`
+	ExternalConsentID *string            `json:"external_consent_id"`
+	ExternalTimestamp pgtype.Timestamptz `json:"external_timestamp"`
+}
+
+func (q *Queries) GetUserConsentHistoryByUsers(ctx context.Context, userIds []string) ([]*GetUserConsentHistoryByUsersRow, error) {
+	rows, err := q.db.Query(ctx, GetUserConsentHistoryByUsers, userIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUserConsentHistoryByUsersRow{}
+	for rows.Next() {
+		var i GetUserConsentHistoryByUsersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.ConsentID,
+			&i.ConsentKey,
+			&i.Action,
+			&i.OccurredAt,
+			&i.Source,
+			&i.ExternalConsentID,
+			&i.ExternalTimestamp,
 		); err != nil {
 			return nil, err
 		}
@@ -425,34 +742,54 @@ const UpdateConsent = `-- name: UpdateConsent :one
 UPDATE consents SET
     title = CASE WHEN $1::text = '' THEN title ELSE $1::text END,
     body = CASE WHEN $2::text = '' THEN body ELSE $2::text END,
-    published_at = $3,
+    url = CASE WHEN $3::text = '' THEN url ELSE $3::text END,
+    published_at = $4,
     updated_at = now()
-WHERE id = $4::text
-RETURNING id, key, version, title, body, published_at, created_at, updated_at
+WHERE id = $5::text
+RETURNING id, key, version, title, body, url, published_at, is_remote, managed_by, created_at, updated_at
 `
 
 type UpdateConsentParams struct {
 	Title       string             `json:"title"`
 	Body        string             `json:"body"`
+	Url         string             `json:"url"`
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
 	ID          string             `json:"id"`
 }
 
-func (q *Queries) UpdateConsent(ctx context.Context, arg UpdateConsentParams) (*Consent, error) {
+type UpdateConsentRow struct {
+	ID          string             `json:"id"`
+	Key         string             `json:"key"`
+	Version     int32              `json:"version"`
+	Title       string             `json:"title"`
+	Body        string             `json:"body"`
+	Url         *string            `json:"url"`
+	PublishedAt pgtype.Timestamptz `json:"published_at"`
+	IsRemote    bool               `json:"is_remote"`
+	ManagedBy   *string            `json:"managed_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) UpdateConsent(ctx context.Context, arg UpdateConsentParams) (*UpdateConsentRow, error) {
 	row := q.db.QueryRow(ctx, UpdateConsent,
 		arg.Title,
 		arg.Body,
+		arg.Url,
 		arg.PublishedAt,
 		arg.ID,
 	)
-	var i Consent
+	var i UpdateConsentRow
 	err := row.Scan(
 		&i.ID,
 		&i.Key,
 		&i.Version,
 		&i.Title,
 		&i.Body,
+		&i.Url,
 		&i.PublishedAt,
+		&i.IsRemote,
+		&i.ManagedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

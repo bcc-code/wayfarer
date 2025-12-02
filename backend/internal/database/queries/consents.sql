@@ -1,77 +1,116 @@
 -- Consent queries
 
 -- name: GetConsentByID :one
-SELECT id, key, version, title, body, published_at, created_at, updated_at
+SELECT id, key, version, title, body, url, published_at, is_remote, managed_by, created_at, updated_at
 FROM consents WHERE id = @id::text;
 
 -- name: GetConsentsByIDs :many
-SELECT id, key, version, title, body, published_at, created_at, updated_at
+SELECT id, key, version, title, body, url, published_at, is_remote, managed_by, created_at, updated_at
 FROM consents WHERE id = ANY(@ids::text[]);
 
 -- name: GetLatestPublishedConsentByKey :one
-SELECT id, key, version, title, body, published_at, created_at, updated_at
+SELECT id, key, version, title, body, url, published_at, is_remote, managed_by, created_at, updated_at
 FROM consents
 WHERE key = @key::text AND published_at IS NOT NULL AND published_at <= now()
 ORDER BY version DESC LIMIT 1;
 
 -- name: GetAllLatestPublishedConsents :many
-SELECT DISTINCT ON (key) id, key, version, title, body, published_at, created_at, updated_at
+SELECT DISTINCT ON (key) id, key, version, title, body, url, published_at, is_remote, managed_by, created_at, updated_at
 FROM consents
 WHERE published_at IS NOT NULL AND published_at <= now()
 ORDER BY key, version DESC;
 
+-- name: GetLatestConsentByKey :one
+SELECT id, key, version, title, body, url, published_at, is_remote, managed_by, created_at, updated_at
+FROM consents
+WHERE key = @key::text
+ORDER BY version DESC
+LIMIT 1;
+
 -- name: CreateConsent :one
-INSERT INTO consents (id, key, version, title, body, published_at)
-VALUES (@id::text, @key::text, @version::int, @title::text, @body::text, @published_at)
-RETURNING id, key, version, title, body, published_at, created_at, updated_at;
+INSERT INTO consents (id, key, version, title, body, url, published_at, is_remote, managed_by)
+VALUES (@id::text, @key::text, @version::int, @title::text, @body::text, @url, @published_at, @is_remote::bool, @managed_by)
+RETURNING id, key, version, title, body, url, published_at, is_remote, managed_by, created_at, updated_at;
 
 -- name: UpdateConsent :one
 UPDATE consents SET
     title = CASE WHEN @title::text = '' THEN title ELSE @title::text END,
     body = CASE WHEN @body::text = '' THEN body ELSE @body::text END,
+    url = CASE WHEN @url::text = '' THEN url ELSE @url::text END,
     published_at = @published_at,
     updated_at = now()
 WHERE id = @id::text
-RETURNING id, key, version, title, body, published_at, created_at, updated_at;
+RETURNING id, key, version, title, body, url, published_at, is_remote, managed_by, created_at, updated_at;
 
 -- name: GetNextVersionForConsentKey :one
 SELECT COALESCE(MAX(version), 0) + 1 as next_version FROM consents WHERE key = @key::text;
 
--- User consent queries
+-- User consent history queries
 
--- name: GetUserConsentsByUserID :many
-SELECT uc.id, uc.user_id, uc.consent_id, uc.accepted_at, uc.created_at,
-       c.key as consent_key, c.version as consent_version
-FROM user_consents uc
-INNER JOIN consents c ON uc.consent_id = c.id
-WHERE uc.user_id = @user_id::text;
+-- name: CreateUserConsentHistory :one
+INSERT INTO user_consent_history (
+    id, user_id, consent_id, consent_key, action, occurred_at,
+    source, external_consent_id, external_timestamp
+)
+VALUES (
+    @id::text, @user_id::text, @consent_id::text, @consent_key::text,
+    @action::text, @occurred_at, @source, @external_consent_id, @external_timestamp
+)
+RETURNING id, user_id, consent_id, consent_key, action, occurred_at,
+          source, external_consent_id, external_timestamp;
 
--- name: GetUserConsentsByUserIDs :many
-SELECT uc.id, uc.user_id, uc.consent_id, uc.accepted_at, uc.created_at,
-       c.key as consent_key, c.version as consent_version
-FROM user_consents uc
-INNER JOIN consents c ON uc.consent_id = c.id
-WHERE uc.user_id = ANY(@user_ids::text[]);
+-- name: GetLatestUserConsentActionByKey :one
+SELECT id, user_id, consent_id, consent_key, action, occurred_at,
+       source, external_consent_id, external_timestamp
+FROM user_consent_history
+WHERE user_id = @user_id::text AND consent_key = @consent_key::text
+ORDER BY occurred_at DESC
+LIMIT 1;
 
--- name: GetUserConsentByUserAndConsent :one
-SELECT id, user_id, consent_id, accepted_at, created_at
-FROM user_consents WHERE user_id = @user_id::text AND consent_id = @consent_id::text;
+-- name: GetCurrentUserConsentStatusesByUsers :many
+-- Gets the latest action for each consent key for multiple users
+SELECT DISTINCT ON (user_id, consent_key)
+    id, user_id, consent_id, consent_key, action, occurred_at, source
+FROM user_consent_history
+WHERE user_id = ANY(@user_ids::text[])
+ORDER BY user_id, consent_key, occurred_at DESC;
 
--- name: CreateUserConsent :one
-INSERT INTO user_consents (id, user_id, consent_id, accepted_at)
-VALUES (@id::text, @user_id::text, @consent_id::text, @accepted_at)
-RETURNING id, user_id, consent_id, accepted_at, created_at;
+-- name: GetUserConsentHistoryByUserAndKey :many
+SELECT id, user_id, consent_id, consent_key, action, occurred_at,
+       source, external_consent_id, external_timestamp
+FROM user_consent_history
+WHERE user_id = @user_id::text AND consent_key = @consent_key::text
+ORDER BY occurred_at DESC;
 
--- name: GetMissingConsentsForUser :many
-SELECT c.id, c.key, c.version, c.title, c.body, c.published_at, c.created_at, c.updated_at
+-- name: GetUserConsentHistoryByUser :many
+SELECT id, user_id, consent_id, consent_key, action, occurred_at,
+       source, external_consent_id, external_timestamp
+FROM user_consent_history
+WHERE user_id = @user_id::text
+ORDER BY occurred_at DESC;
+
+-- name: GetUserConsentHistoryByUsers :many
+SELECT id, user_id, consent_id, consent_key, action, occurred_at,
+       source, external_consent_id, external_timestamp
+FROM user_consent_history
+WHERE user_id = ANY(@user_ids::text[])
+ORDER BY user_id, occurred_at DESC;
+
+-- name: GetMissingConsentsForUserWithRejections :many
+-- Gets consents that user has never acted upon (no history)
+SELECT c.id, c.key, c.version, c.title, c.body, c.url, c.published_at,
+       c.is_remote, c.managed_by, c.created_at, c.updated_at
 FROM (
-    SELECT DISTINCT ON (key) id, key, version, title, body, published_at, created_at, updated_at
+    SELECT DISTINCT ON (key) id, key, version, title, body, url, published_at,
+           is_remote, managed_by, created_at, updated_at
     FROM consents
     WHERE published_at IS NOT NULL AND published_at <= now()
     ORDER BY key, version DESC
 ) c
 WHERE NOT EXISTS (
-    SELECT 1 FROM user_consents uc WHERE uc.user_id = @user_id::text AND uc.consent_id = c.id
+    SELECT 1 FROM user_consent_history uch
+    WHERE uch.user_id = @user_id::text
+    AND uch.consent_key = c.key
 );
 
 -- Translation queries

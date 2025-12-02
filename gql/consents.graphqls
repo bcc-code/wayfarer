@@ -6,18 +6,34 @@ type Consent {
     version: Int!
     title: String!
     body: MarkdownText!
+    url: String
     publishedAt: DateTime
+    managementType: ConsentManagementType!
+    managedBy: String
+    userHistory: [UserConsentHistoryEntry!]! @goField(forceResolver: true)
 }
 
 type UserConsent {
     id: ID!
     consent: Consent! @goField(forceResolver: true)
-    acceptedAt: DateTime!
+    action: ConsentAction!
+    actionDate: DateTime!
+}
+
+type UserConsentHistoryEntry {
+    id: ID!
+    consent: Consent! @goField(forceResolver: true)
+    action: ConsentAction!
+    occurredAt: DateTime!
+    source: String
+    externalConsentId: String
+    externalTimestamp: DateTime
 }
 
 type ConsentStatus {
     pendingConsents: [Consent!]!
     acceptedConsents: [UserConsent!]!
+    rejectedConsents: [UserConsent!]!
 }
 
 # ==================== Consent Queries ====================
@@ -39,12 +55,18 @@ extend type Mutation {
     # Accept a consent (user action)
     acceptConsent(consentId: ID!): UserConsent! @requireRole(roles: ["user"])
 
+    # Reject a consent (user action)
+    rejectConsent(consentId: ID!): UserConsent! @requireRole(roles: ["user"])
+
     # Create a new consent or new version of existing consent (admin action)
     createConsent(
         key: String!
         title: String!
         body: String!
+        url: String
         publishedAt: DateTime
+        isRemote: Boolean
+        managedBy: String
     ): Consent! @requireRole(roles: ["admin", "superadmin"])
 
     # Update an existing consent (admin action)
@@ -52,6 +74,7 @@ extend type Mutation {
         id: ID!
         title: String
         body: String
+        url: String
         publishedAt: DateTime
     ): Consent! @requireRole(roles: ["admin", "superadmin"])
 }

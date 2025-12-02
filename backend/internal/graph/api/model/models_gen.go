@@ -190,18 +190,23 @@ type ColorsInput struct {
 }
 
 type Consent struct {
-	ID           string            `json:"id"`
-	Key          string            `json:"key"`
-	Version      int               `json:"version"`
-	Title        string            `json:"title"`
-	Body         *MarkdownText     `json:"body"`
-	PublishedAt  *scalars.DateTime `json:"publishedAt,omitempty"`
-	BodyMarkdown string            `json:"-"`
+	ID             string                    `json:"id"`
+	Key            string                    `json:"key"`
+	Version        int                       `json:"version"`
+	Title          string                    `json:"title"`
+	Body           *MarkdownText             `json:"body"`
+	URL            *string                   `json:"url,omitempty"`
+	PublishedAt    *scalars.DateTime         `json:"publishedAt,omitempty"`
+	ManagementType ConsentManagementType     `json:"managementType"`
+	ManagedBy      *string                   `json:"managedBy,omitempty"`
+	UserHistory    []UserConsentHistoryEntry `json:"userHistory"`
+	BodyMarkdown   string                    `json:"-"`
 }
 
 type ConsentStatus struct {
 	PendingConsents  []Consent     `json:"pendingConsents"`
 	AcceptedConsents []UserConsent `json:"acceptedConsents"`
+	RejectedConsents []UserConsent `json:"rejectedConsents"`
 }
 
 type CreateChallengeInput struct {
@@ -871,8 +876,19 @@ type UserConnection struct {
 type UserConsent struct {
 	ID         string           `json:"id"`
 	Consent    *Consent         `json:"consent"`
-	AcceptedAt scalars.DateTime `json:"acceptedAt"`
+	Action     ConsentAction    `json:"action"`
+	ActionDate scalars.DateTime `json:"actionDate"`
 	ConsentID  string           `json:"-"`
+}
+
+type UserConsentHistoryEntry struct {
+	ID                string            `json:"id"`
+	Consent           *Consent          `json:"consent"`
+	Action            ConsentAction     `json:"action"`
+	OccurredAt        scalars.DateTime  `json:"occurredAt"`
+	Source            *string           `json:"source,omitempty"`
+	ExternalConsentID *string           `json:"externalConsentId,omitempty"`
+	ExternalTimestamp *scalars.DateTime `json:"externalTimestamp,omitempty"`
 }
 
 type UserEdge struct {
@@ -950,6 +966,116 @@ func (e *ChurchCategory) UnmarshalJSON(b []byte) error {
 }
 
 func (e ChurchCategory) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type ConsentAction string
+
+const (
+	ConsentActionAccepted ConsentAction = "ACCEPTED"
+	ConsentActionRejected ConsentAction = "REJECTED"
+)
+
+var AllConsentAction = []ConsentAction{
+	ConsentActionAccepted,
+	ConsentActionRejected,
+}
+
+func (e ConsentAction) IsValid() bool {
+	switch e {
+	case ConsentActionAccepted, ConsentActionRejected:
+		return true
+	}
+	return false
+}
+
+func (e ConsentAction) String() string {
+	return string(e)
+}
+
+func (e *ConsentAction) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ConsentAction(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ConsentAction", str)
+	}
+	return nil
+}
+
+func (e ConsentAction) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ConsentAction) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ConsentAction) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type ConsentManagementType string
+
+const (
+	ConsentManagementTypeLocal  ConsentManagementType = "LOCAL"
+	ConsentManagementTypeRemote ConsentManagementType = "REMOTE"
+)
+
+var AllConsentManagementType = []ConsentManagementType{
+	ConsentManagementTypeLocal,
+	ConsentManagementTypeRemote,
+}
+
+func (e ConsentManagementType) IsValid() bool {
+	switch e {
+	case ConsentManagementTypeLocal, ConsentManagementTypeRemote:
+		return true
+	}
+	return false
+}
+
+func (e ConsentManagementType) String() string {
+	return string(e)
+}
+
+func (e *ConsentManagementType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ConsentManagementType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ConsentManagementType", str)
+	}
+	return nil
+}
+
+func (e ConsentManagementType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ConsentManagementType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ConsentManagementType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

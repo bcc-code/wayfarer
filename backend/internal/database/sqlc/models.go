@@ -76,6 +76,9 @@ type Consent struct {
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Url         *string            `json:"url"`
+	ManagedBy   *string            `json:"managed_by"`
+	IsRemote    bool               `json:"is_remote"`
 }
 
 type ConsentTranslation struct {
@@ -385,12 +388,16 @@ type UserChallengeCompletion struct {
 	CompletedAt pgtype.Timestamptz `json:"completed_at"`
 }
 
-type UserConsent struct {
-	ID         string             `json:"id"`
-	UserID     string             `json:"user_id"`
-	ConsentID  string             `json:"consent_id"`
-	AcceptedAt pgtype.Timestamptz `json:"accepted_at"`
-	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+type UserConsentHistory struct {
+	ID                string             `json:"id"`
+	UserID            string             `json:"user_id"`
+	ConsentID         string             `json:"consent_id"`
+	Action            string             `json:"action"`
+	ConsentKey        string             `json:"consent_key"`
+	OccurredAt        pgtype.Timestamptz `json:"occurred_at"`
+	Source            *string            `json:"source"`
+	ExternalConsentID *string            `json:"external_consent_id"`
+	ExternalTimestamp pgtype.Timestamptz `json:"external_timestamp"`
 }
 
 type UserEvent struct {

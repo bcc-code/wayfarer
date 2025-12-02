@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_HzWpfsmGjH
 createdAt: 2025-12-01T11:18:28.365951
-updatedAt: 2025-12-02T10:16:03.331242
+updatedAt: 2025-12-02T16:25:34.908389
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_WoXqzhPmBJ
 authentication: {}
@@ -10,7 +10,7 @@ authenticationType: null
 body:
   query: |
     mutation {
-      updateConsent(id: "CN01KBCSXJM5J03GZZM0481W781Z", publishedAt: "2025-01-01") {
+      updateConsent(id: "CN01KBFY3S1JSQQ9EFM5MSYPP5G8", publishedAt: "2025-01-01") {
         id
         publishedAt
         title
@@ -20,7 +20,6 @@ body:
         }
       }
     }
-  variables: ''
 bodyType: graphql
 description: ''
 headers:

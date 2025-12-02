@@ -464,12 +464,16 @@ CREATE TABLE consents (
     version INT NOT NULL DEFAULT 1,
     title VARCHAR(255) NOT NULL,
     body TEXT NOT NULL,
+    url VARCHAR(500),
     published_at TIMESTAMPTZ,
+    managed_by VARCHAR(100),
+    is_remote BOOLEAN DEFAULT false NOT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     UNIQUE (key, version),
     INDEX idx_consents_key (key),
-    INDEX idx_consents_published (published_at) WHERE published_at IS NOT NULL
+    INDEX idx_consents_published (published_at) WHERE published_at IS NOT NULL,
+    INDEX idx_consents_is_remote (is_remote) WHERE is_remote = true
 );
 
 CREATE TABLE consent_translations (
@@ -482,13 +486,20 @@ CREATE TABLE consent_translations (
     PRIMARY KEY (consent_id, language_code)
 );
 
-CREATE TABLE user_consents (
-    id CHAR(28) PRIMARY KEY CHECK (id ~ '^UC[0-9A-Z]{26}$'),
+CREATE TABLE user_consent_history (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^UH[0-9A-Z]{26}$'),
     user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     consent_id CHAR(28) NOT NULL REFERENCES consents(id) ON DELETE RESTRICT,
-    accepted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    created_at TIMESTAMPTZ DEFAULT now(),
-    UNIQUE (user_id, consent_id),
-    INDEX idx_user_consents_user (user_id),
-    INDEX idx_user_consents_consent (consent_id)
+    consent_key VARCHAR(100) NOT NULL,
+    action VARCHAR(20) NOT NULL CHECK (action IN ('ACCEPTED', 'REJECTED')),
+    occurred_at TIMESTAMPTZ NOT NULL,
+    source VARCHAR(100),
+    external_consent_id VARCHAR(255),
+    external_timestamp TIMESTAMPTZ,
+    INDEX idx_user_consent_history_user (user_id),
+    INDEX idx_user_consent_history_consent (consent_id),
+    INDEX idx_user_consent_history_key (consent_key),
+    INDEX idx_user_consent_history_user_key (user_id, consent_key),
+    INDEX idx_user_consent_history_occurred (occurred_at),
+    UNIQUE INDEX idx_user_consent_history_remote_idempotent (user_id, consent_key, external_consent_id) WHERE external_consent_id IS NOT NULL
 );

@@ -25,6 +25,59 @@ func (r *consentResolver) Body(ctx context.Context, obj *model.Consent) (*model.
 	}, nil
 }
 
+// UserHistory is the resolver for the userHistory field.
+func (r *consentResolver) UserHistory(ctx context.Context, obj *model.Consent) ([]model.UserConsentHistoryEntry, error) {
+	// Get user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		// No authenticated user, return empty history
+		return []model.UserConsentHistoryEntry{}, nil
+	}
+
+	// Get history for this consent key for the current user
+	rows, err := r.DB.Queries.GetUserConsentHistoryByUserAndKey(ctx, sqlc.GetUserConsentHistoryByUserAndKeyParams{
+		UserID:     userID,
+		ConsentKey: obj.Key,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user consent history: %w", err)
+	}
+
+	historyEntries := make([]model.UserConsentHistoryEntry, len(rows))
+	for i, row := range rows {
+		action := model.ConsentActionAccepted
+		if row.Action == "REJECTED" {
+			action = model.ConsentActionRejected
+		}
+
+		var externalTimestamp *scalars.DateTime
+		if row.ExternalTimestamp.Valid {
+			dt := scalars.DateTime{Time: row.ExternalTimestamp.Time}
+			externalTimestamp = &dt
+		}
+
+		// Load the consent for this history entry
+		consent, err := r.LoadConsentWithTranslation(ctx, row.ConsentID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load consent: %w", err)
+		}
+
+		entry := model.UserConsentHistoryEntry{
+			ID:                row.ID,
+			Consent:           consent,
+			Action:            action,
+			OccurredAt:        scalars.DateTime{Time: row.OccurredAt.Time},
+			Source:            row.Source,
+			ExternalConsentID: row.ExternalConsentID,
+			ExternalTimestamp: externalTimestamp,
+		}
+
+		historyEntries[i] = entry
+	}
+
+	return historyEntries, nil
+}
+
 // AcceptConsent is the resolver for the acceptConsent field.
 func (r *mutationResolver) AcceptConsent(ctx context.Context, consentID string) (*model.UserConsent, error) {
 	// Get current user from context
@@ -43,27 +96,38 @@ func (r *mutationResolver) AcceptConsent(ctx context.Context, consentID string) 
 		return nil, fmt.Errorf("consent is not published yet")
 	}
 
-	// Check if user already accepted this consent
-	existing, err := r.DB.Queries.GetUserConsentByUserAndConsent(ctx, sqlc.GetUserConsentByUserAndConsentParams{
-		UserID:    userID,
-		ConsentID: consentID,
+	// Block if consent is remote (must be accepted externally)
+	if consent.IsRemote {
+		return nil, fmt.Errorf("cannot accept remote consent locally, must be accepted via external system")
+	}
+
+	// Check if user already has an action on this consent
+	existing, err := r.DB.Queries.GetLatestUserConsentActionByKey(ctx, sqlc.GetLatestUserConsentActionByKeyParams{
+		UserID:     userID,
+		ConsentKey: consent.Key,
 	})
-	if err == nil && existing != nil {
+	if err == nil && existing.Action == "ACCEPTED" {
 		// User already accepted this consent
 		return &model.UserConsent{
 			ID:         existing.ID,
 			ConsentID:  existing.ConsentID,
-			AcceptedAt: scalars.DateTime{Time: existing.AcceptedAt.Time},
+			Action:     model.ConsentActionAccepted,
+			ActionDate: scalars.DateTime{Time: existing.OccurredAt.Time},
 		}, nil
 	}
 
-	// Create new user consent acceptance
-	acceptedAt := pgtype.Timestamptz{Time: time.Now(), Valid: true}
-	userConsent, err := r.DB.Queries.CreateUserConsent(ctx, sqlc.CreateUserConsentParams{
-		ID:         ulid.NewUserConsentID(),
-		UserID:     userID,
-		ConsentID:  consentID,
-		AcceptedAt: acceptedAt,
+	// Create new user consent history entry
+	occurredAt := pgtype.Timestamptz{Time: time.Now(), Valid: true}
+	historyEntry, err := r.DB.Queries.CreateUserConsentHistory(ctx, sqlc.CreateUserConsentHistoryParams{
+		ID:                ulid.NewUserConsentHistoryID(),
+		UserID:            userID,
+		ConsentID:         consentID,
+		ConsentKey:        consent.Key,
+		Action:            "ACCEPTED",
+		OccurredAt:        occurredAt,
+		Source:            nil, // NULL for local
+		ExternalConsentID: nil,
+		ExternalTimestamp: pgtype.Timestamptz{},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to accept consent: %w", err)
@@ -73,14 +137,81 @@ func (r *mutationResolver) AcceptConsent(ctx context.Context, consentID string) 
 	r.Cache.Delete(cache.UserKey(userID))
 
 	return &model.UserConsent{
-		ID:         userConsent.ID,
-		ConsentID:  userConsent.ConsentID,
-		AcceptedAt: scalars.DateTime{Time: userConsent.AcceptedAt.Time},
+		ID:         historyEntry.ID,
+		ConsentID:  historyEntry.ConsentID,
+		Action:     model.ConsentActionAccepted,
+		ActionDate: scalars.DateTime{Time: historyEntry.OccurredAt.Time},
+	}, nil
+}
+
+// RejectConsent is the resolver for the rejectConsent field.
+func (r *mutationResolver) RejectConsent(ctx context.Context, consentID string) (*model.UserConsent, error) {
+	// Get current user from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Verify consent exists and is published
+	consent, err := r.DB.Queries.GetConsentByID(ctx, consentID)
+	if err != nil {
+		return nil, fmt.Errorf("consent not found: %w", err)
+	}
+
+	if !consent.PublishedAt.Valid || consent.PublishedAt.Time.After(time.Now()) {
+		return nil, fmt.Errorf("consent is not published yet")
+	}
+
+	// Block if consent is remote (must be rejected externally)
+	if consent.IsRemote {
+		return nil, fmt.Errorf("cannot reject remote consent locally, must be managed via external system")
+	}
+
+	// Check if user already rejected this consent
+	existing, err := r.DB.Queries.GetLatestUserConsentActionByKey(ctx, sqlc.GetLatestUserConsentActionByKeyParams{
+		UserID:     userID,
+		ConsentKey: consent.Key,
+	})
+	if err == nil && existing.Action == "REJECTED" {
+		// User already rejected this consent
+		return &model.UserConsent{
+			ID:         existing.ID,
+			ConsentID:  existing.ConsentID,
+			Action:     model.ConsentActionRejected,
+			ActionDate: scalars.DateTime{Time: existing.OccurredAt.Time},
+		}, nil
+	}
+
+	// Create new user consent history entry
+	occurredAt := pgtype.Timestamptz{Time: time.Now(), Valid: true}
+	historyEntry, err := r.DB.Queries.CreateUserConsentHistory(ctx, sqlc.CreateUserConsentHistoryParams{
+		ID:                ulid.NewUserConsentHistoryID(),
+		UserID:            userID,
+		ConsentID:         consentID,
+		ConsentKey:        consent.Key,
+		Action:            "REJECTED",
+		OccurredAt:        occurredAt,
+		Source:            nil, // NULL for local
+		ExternalConsentID: nil,
+		ExternalTimestamp: pgtype.Timestamptz{},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to reject consent: %w", err)
+	}
+
+	// Invalidate user cache
+	r.Cache.Delete(cache.UserKey(userID))
+
+	return &model.UserConsent{
+		ID:         historyEntry.ID,
+		ConsentID:  historyEntry.ConsentID,
+		Action:     model.ConsentActionRejected,
+		ActionDate: scalars.DateTime{Time: historyEntry.OccurredAt.Time},
 	}, nil
 }
 
 // CreateConsent is the resolver for the createConsent field.
-func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title string, body string, publishedAt *scalars.DateTime) (*model.Consent, error) {
+func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) (*model.Consent, error) {
 	// Get next version for this consent key
 	nextVersion, err := r.DB.Queries.GetNextVersionForConsentKey(ctx, key)
 	if err != nil {
@@ -92,6 +223,11 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 		publishedAtPG = pgtype.Timestamptz{Time: publishedAt.Time, Valid: true}
 	}
 
+	var isRemoteBool bool
+	if isRemote != nil {
+		isRemoteBool = *isRemote
+	}
+
 	// Create consent
 	consent, err := r.DB.Queries.CreateConsent(ctx, sqlc.CreateConsentParams{
 		ID:          ulid.NewConsentID(),
@@ -99,7 +235,10 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 		Version:     nextVersion,
 		Title:       title,
 		Body:        string(body),
+		Url:         url,
 		PublishedAt: publishedAtPG,
+		IsRemote:    isRemoteBool,
+		ManagedBy:   managedBy,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create consent: %w", err)
@@ -114,24 +253,35 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 		publishedAtOut = &dt
 	}
 
+	managementType := model.ConsentManagementTypeLocal
+	if consent.IsRemote {
+		managementType = model.ConsentManagementTypeRemote
+	}
+
 	return &model.Consent{
-		ID:           consent.ID,
-		Key:          consent.Key,
-		Version:      int(consent.Version),
-		Title:        consent.Title,
-		BodyMarkdown: consent.Body,
-		PublishedAt:  publishedAtOut,
+		ID:             consent.ID,
+		Key:            consent.Key,
+		Version:        int(consent.Version),
+		Title:          consent.Title,
+		BodyMarkdown:   consent.Body,
+		URL:            consent.Url,
+		PublishedAt:    publishedAtOut,
+		ManagementType: managementType,
+		ManagedBy:      consent.ManagedBy,
 	}, nil
 }
 
 // UpdateConsent is the resolver for the updateConsent field.
-func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *string, body *string, publishedAt *scalars.DateTime) (*model.Consent, error) {
-	var titleStr, bodyStr string
+func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *string, body *string, url *string, publishedAt *scalars.DateTime) (*model.Consent, error) {
+	var titleStr, bodyStr, urlStr string
 	if title != nil {
 		titleStr = *title
 	}
 	if body != nil {
 		bodyStr = string(*body)
+	}
+	if url != nil {
+		urlStr = *url
 	}
 
 	var publishedAtPG pgtype.Timestamptz
@@ -143,6 +293,7 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 		ID:          id,
 		Title:       titleStr,
 		Body:        bodyStr,
+		Url:         urlStr,
 		PublishedAt: publishedAtPG,
 	})
 	if err != nil {
@@ -159,13 +310,21 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 		publishedAtOut = &dt
 	}
 
+	managementType := model.ConsentManagementTypeLocal
+	if consent.IsRemote {
+		managementType = model.ConsentManagementTypeRemote
+	}
+
 	return &model.Consent{
-		ID:           consent.ID,
-		Key:          consent.Key,
-		Version:      int(consent.Version),
-		Title:        consent.Title,
-		BodyMarkdown: consent.Body,
-		PublishedAt:  publishedAtOut,
+		ID:             consent.ID,
+		Key:            consent.Key,
+		Version:        int(consent.Version),
+		Title:          consent.Title,
+		BodyMarkdown:   consent.Body,
+		URL:            consent.Url,
+		PublishedAt:    publishedAtOut,
+		ManagementType: managementType,
+		ManagedBy:      consent.ManagedBy,
 	}, nil
 }
 
@@ -184,13 +343,21 @@ func (r *queryResolver) Consents(ctx context.Context) ([]model.Consent, error) {
 			publishedAt = &dt
 		}
 
+		managementType := model.ConsentManagementTypeLocal
+		if row.IsRemote {
+			managementType = model.ConsentManagementTypeRemote
+		}
+
 		consent := model.Consent{
-			ID:           row.ID,
-			Key:          row.Key,
-			Version:      int(row.Version),
-			Title:        row.Title,
-			BodyMarkdown: row.Body,
-			PublishedAt:  publishedAt,
+			ID:             row.ID,
+			Key:            row.Key,
+			Version:        int(row.Version),
+			Title:          row.Title,
+			BodyMarkdown:   row.Body,
+			URL:            row.Url,
+			PublishedAt:    publishedAt,
+			ManagementType: managementType,
+			ManagedBy:      row.ManagedBy,
 		}
 
 		// Apply translation
@@ -212,7 +379,7 @@ func (r *queryResolver) PendingConsents(ctx context.Context) ([]model.Consent, e
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	rows, err := r.DB.Queries.GetMissingConsentsForUser(ctx, userID)
+	rows, err := r.DB.Queries.GetMissingConsentsForUserWithRejections(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pending consents: %w", err)
 	}
@@ -225,13 +392,21 @@ func (r *queryResolver) PendingConsents(ctx context.Context) ([]model.Consent, e
 			publishedAt = &dt
 		}
 
+		managementType := model.ConsentManagementTypeLocal
+		if row.IsRemote {
+			managementType = model.ConsentManagementTypeRemote
+		}
+
 		consent := model.Consent{
-			ID:           row.ID,
-			Key:          row.Key,
-			Version:      int(row.Version),
-			Title:        row.Title,
-			BodyMarkdown: row.Body,
-			PublishedAt:  publishedAt,
+			ID:             row.ID,
+			Key:            row.Key,
+			Version:        int(row.Version),
+			Title:          row.Title,
+			BodyMarkdown:   row.Body,
+			URL:            row.Url,
+			PublishedAt:    publishedAt,
+			ManagementType: managementType,
+			ManagedBy:      row.ManagedBy,
 		}
 
 		// Apply translation
@@ -246,11 +421,55 @@ func (r *userConsentResolver) Consent(ctx context.Context, obj *model.UserConsen
 	return r.LoadConsentWithTranslation(ctx, obj.ConsentID)
 }
 
+// Consent resolver for UserConsentHistoryEntry - returns already populated field
+func (r *userConsentHistoryEntryResolver) Consent(ctx context.Context, obj *model.UserConsentHistoryEntry) (*model.Consent, error) {
+	return obj.Consent, nil
+}
+
 // Consent returns ConsentResolver implementation.
 func (r *Resolver) Consent() ConsentResolver { return &consentResolver{r} }
 
 // UserConsent returns UserConsentResolver implementation.
 func (r *Resolver) UserConsent() UserConsentResolver { return &userConsentResolver{r} }
 
+// UserConsentHistoryEntry returns UserConsentHistoryEntryResolver implementation.
+func (r *Resolver) UserConsentHistoryEntry() UserConsentHistoryEntryResolver {
+	return &userConsentHistoryEntryResolver{r}
+}
+
 type consentResolver struct{ *Resolver }
 type userConsentResolver struct{ *Resolver }
+type userConsentHistoryEntryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func consentRowToModel(row sqlc.Consent) model.Consent {
+	var publishedAt *scalars.DateTime
+	if row.PublishedAt.Valid {
+		dt := scalars.DateTime{Time: row.PublishedAt.Time}
+		publishedAt = &dt
+	}
+
+	managementType := model.ConsentManagementTypeLocal
+	if row.IsRemote {
+		managementType = model.ConsentManagementTypeRemote
+	}
+
+	return model.Consent{
+		ID:             row.ID,
+		Key:            row.Key,
+		Version:        int(row.Version),
+		Title:          row.Title,
+		BodyMarkdown:   row.Body,
+		URL:            row.Url,
+		PublishedAt:    publishedAt,
+		ManagementType: managementType,
+		ManagedBy:      row.ManagedBy,
+	}
+}
+*/
