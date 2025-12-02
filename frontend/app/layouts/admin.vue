@@ -3,7 +3,7 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 import '~/assets/styles/admin.css'
 
 useHead({
-  title: 'Wayfarer Admin',
+  title: 'Interact Admin',
 })
 
 gql(`

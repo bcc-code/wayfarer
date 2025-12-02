@@ -6,6 +6,7 @@ export default defineNuxtConfig({
     '@nuxt/image',
     '@vueuse/nuxt',
     '@nuxtjs/i18n',
+    '@vite-pwa/nuxt',
   ],
   devtools: { enabled: false },
   ssr: false,
@@ -16,7 +17,7 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      title: 'Wayfarer',
+      title: 'Interact',
       meta: [
         {
           name: 'viewport',
@@ -70,5 +71,12 @@ export default defineNuxtConfig({
       },
     ],
     strategy: 'no_prefix',
+  },
+
+  pwa: {
+    registerType: 'autoUpdate',
+    devOptions: {
+      enabled: true,
+    },
   },
 })

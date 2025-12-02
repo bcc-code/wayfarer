@@ -27,6 +27,7 @@
     "@tiptap/vue-3": "^3.11.1",
     "@urql/exchange-auth": "^3.0.0",
     "@urql/vue": "^2.0.0",
+    "@vite-pwa/nuxt": "^1.1.0",
     "@vueuse/core": "^14.1.0",
     "@vueuse/nuxt": "14.0.0",
     "cva": "npm:class-variance-authority@^0.7.1",
