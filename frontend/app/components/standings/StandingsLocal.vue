@@ -40,6 +40,7 @@ const { data, error, fetching } = useStandingsLocalPageQuery({
     entityType: entityType.value,
     filter: {
       churchId: me.value?.church.id,
+      ageRange: { min: 14, max: 36 },
     },
   })),
   pause: computed(() => !isAuthReady.value || !me.value?.church.id),

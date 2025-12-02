@@ -32,6 +32,9 @@ const { data, error, fetching } = useStandingsGlobalPageQuery({
   variables: computed(() => ({
     entityType: LeaderboardEntityType.Persons,
     first: 20,
+    filter: {
+      ageRange: { min: 14, max: 26 },
+    },
   })),
   pause: computed(() => !isAuthReady.value),
 })
