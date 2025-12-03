@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_KGzVPBagKW
 createdAt: 2025-11-25T13:22:34.139477
-updatedAt: 2025-12-02T10:16:16.428068
+updatedAt: 2025-12-03T04:16:30.256049
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -14,11 +14,14 @@ body:
         edges {
           node {
             name
-            leaderboard(entityType: PERSONS) {
+            leaderboard(entityType: TEAMS, first: 30) {
               me {
                 score
                 rank
                 name
+              }
+              pageInfo{
+                endCursor
               }
               edges {
                 node {
@@ -58,7 +61,6 @@ body:
         }
       }
     }
-  variables: ''
 bodyType: graphql
 description: ''
 headers:

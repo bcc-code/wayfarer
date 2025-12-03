@@ -75,6 +75,13 @@ func (r *eventResolver) Leaderboard(ctx context.Context, obj *model.Event, entit
 		return nil, fmt.Errorf("failed to get event leaderboard: %w", err)
 	}
 
+	// Apply PERSONS leaderboard restrictions - limit to first 20 entries
+	if entityType == model.LeaderboardEntityTypePersons {
+		result := FilterPersonLeaderboardEntries(entries, first, after)
+		entries = result.Entries
+		first = result.AdjustedFirst
+	}
+
 	// Build connection
 	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, entityType, obj.ProjectID, r.Loaders, first, last, after, before)
 	if err != nil {
@@ -197,6 +204,13 @@ func (r *projectResolver) Leaderboard(ctx context.Context, obj *model.Project, e
 	entries, meEntry, totalCount, err := r.LeaderboardService.GetProjectLeaderboard(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get project leaderboard: %w", err)
+	}
+
+	// Apply PERSONS leaderboard restrictions - limit to first 20 entries
+	if entityType == model.LeaderboardEntityTypePersons {
+		result := FilterPersonLeaderboardEntries(entries, first, after)
+		entries = result.Entries
+		first = result.AdjustedFirst
 	}
 
 	// Build connection

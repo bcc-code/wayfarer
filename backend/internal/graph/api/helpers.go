@@ -272,3 +272,69 @@ func buildLeaderboardConnection(
 		Me:         me,
 	}, nil
 }
+
+// MaxPersonLeaderboardEntries is the maximum number of entries a normal user can see
+// in a PERSONS type leaderboard
+const MaxPersonLeaderboardEntries = 20
+
+// PersonLeaderboardFilterResult contains the result of filtering person leaderboard entries
+type PersonLeaderboardFilterResult struct {
+	Entries      []services.LeaderboardEntry
+	AdjustedFirst *int
+}
+
+// FilterPersonLeaderboardEntries filters leaderboard entries for normal users
+// to only include entries with rank <= MaxPersonLeaderboardEntries.
+// It also adjusts the 'first' pagination parameter accordingly.
+func FilterPersonLeaderboardEntries(
+	entries []services.LeaderboardEntry,
+	first *int,
+	after *string,
+) PersonLeaderboardFilterResult {
+	// Filter entries to only include those with rank <= max
+	filteredEntries := make([]services.LeaderboardEntry, 0, len(entries))
+	for _, entry := range entries {
+		if entry.Rank <= int64(MaxPersonLeaderboardEntries) {
+			filteredEntries = append(filteredEntries, entry)
+		}
+	}
+
+	adjustedFirst := first
+
+	// Adjust first param to cap at remaining entries up to max rank
+	if after != nil && *after != "" {
+		afterRank, err := parseRankCursor(*after)
+		if err == nil {
+			remaining := MaxPersonLeaderboardEntries - int(afterRank)
+			if remaining <= 0 {
+				// All entries beyond limit, return empty
+				return PersonLeaderboardFilterResult{
+					Entries:       nil,
+					AdjustedFirst: first,
+				}
+			}
+			if first != nil && *first > remaining {
+				cappedFirst := remaining
+				adjustedFirst = &cappedFirst
+			}
+		}
+	} else {
+		// No after cursor, cap first at max
+		if first == nil || *first > MaxPersonLeaderboardEntries {
+			cappedFirst := MaxPersonLeaderboardEntries
+			adjustedFirst = &cappedFirst
+		}
+	}
+
+	return PersonLeaderboardFilterResult{
+		Entries:       filteredEntries,
+		AdjustedFirst: adjustedFirst,
+	}
+}
+
+// parseRankCursor parses a rank cursor string to int64
+func parseRankCursor(cursor string) (int64, error) {
+	var rank int64
+	_, err := fmt.Sscanf(cursor, "%d", &rank)
+	return rank, err
+}
