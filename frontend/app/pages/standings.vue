@@ -1,12 +1,16 @@
 <script setup lang="ts">
+const { track } = useAnalytics()
+
 const params = useUrlSearchParams('history')
 const tab = computed({
   get() {
     if (typeof params.tab === 'string') return params.tab
     return 'global'
   },
-  set(tab: 'global' | 'unit' | 'local') {
-    params.tab = tab
+  set(newTab: 'global' | 'unit' | 'local') {
+    const oldTab = tab.value
+    track(AnalyticsEvent.LeaderboardTabChanged, { from: oldTab, to: newTab })
+    params.tab = newTab
   },
 })
 </script>
