@@ -84,7 +84,7 @@ func TestFilterPersonLeaderboardEntries(t *testing.T) {
 			entries:          createEntries(30),
 			first:            intPtr(10),
 			after:            stringPtr("15"),
-			expectedCount:    20, // All entries with rank <= 20 pass filter
+			expectedCount:    20,        // All entries with rank <= 20 pass filter
 			expectedFirstVal: intPtr(5), // Can only return 5 more (15+5=20)
 		},
 		{
@@ -92,7 +92,7 @@ func TestFilterPersonLeaderboardEntries(t *testing.T) {
 			entries:          createEntries(30),
 			first:            intPtr(5),
 			after:            stringPtr("5"),
-			expectedCount:    20, // All entries with rank <= 20 pass filter
+			expectedCount:    20,        // All entries with rank <= 20 pass filter
 			expectedFirstVal: intPtr(5), // 5+5=10, which is within 20
 		},
 		{

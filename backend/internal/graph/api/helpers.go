@@ -279,7 +279,7 @@ const MaxPersonLeaderboardEntries = 20
 
 // PersonLeaderboardFilterResult contains the result of filtering person leaderboard entries
 type PersonLeaderboardFilterResult struct {
-	Entries      []services.LeaderboardEntry
+	Entries       []services.LeaderboardEntry
 	AdjustedFirst *int
 }
 

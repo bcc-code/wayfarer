@@ -36,11 +36,11 @@ const (
 	PrefixUserStreakActivity       = "userstreak:"
 
 	// Computed data
-	PrefixLeaderboard             = "leaderboard:"
-	PrefixLeaderboardPosition     = "leaderboard:position:"
-	PrefixLeaderboardCount        = "leaderboard:count:"
-	PrefixTeamLeaderboardTags     = "team:leaderboard:tags:"
-	PrefixScore                   = "score:"
+	PrefixLeaderboard         = "leaderboard:"
+	PrefixLeaderboardPosition = "leaderboard:position:"
+	PrefixLeaderboardCount    = "leaderboard:count:"
+	PrefixTeamLeaderboardTags = "team:leaderboard:tags:"
+	PrefixScore               = "score:"
 
 	// Query results
 	PrefixUsersFilter        = "usersfilter:"
@@ -72,9 +72,9 @@ const (
 	PrefixTranslation = "translation:"
 
 	// Consents
-	PrefixConsent         = "consent:"
-	PrefixUserConsents    = "userconsents:"
-	PrefixLatestConsents  = "latestconsents"
+	PrefixConsent        = "consent:"
+	PrefixUserConsents   = "userconsents:"
+	PrefixLatestConsents = "latestconsents"
 )
 
 // Key builders for different entity types

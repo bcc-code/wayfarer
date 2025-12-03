@@ -50,12 +50,12 @@ func consentByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(cont
 				}
 
 				consent := &model.Consent{
-					ID:          row.ID,
-					Key:         row.Key,
-					Version:     int(row.Version),
-					Title:       row.Title,
+					ID:           row.ID,
+					Key:          row.Key,
+					Version:      int(row.Version),
+					Title:        row.Title,
 					BodyMarkdown: row.Body,
-					PublishedAt: publishedAt,
+					PublishedAt:  publishedAt,
 				}
 
 				consentMap[row.ID] = consent

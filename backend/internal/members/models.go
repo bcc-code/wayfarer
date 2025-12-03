@@ -42,7 +42,7 @@ type OrganizationAddress struct {
 // Organization contains organizational data
 type Organization struct {
 	OrgID           int
-	Name            string              `json:"districtName"`
+	Name            string `json:"districtName"`
 	Type            string
 	Uid             uuid.UUID
 	VisitingAddress OrganizationAddress `json:"visitingAddress"`

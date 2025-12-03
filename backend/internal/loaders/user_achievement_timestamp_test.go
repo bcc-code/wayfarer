@@ -109,19 +109,19 @@ func TestMultipleUserAchievementTimestampsInCache(t *testing.T) {
 
 	userID := "US01K8XV6VK9ED2GBZSQ2VDTAT8T"
 	achievements := []struct {
-		id        string
+		id         string
 		achievedAt *time.Time
 	}{
 		{
-			id:        "AC01K8XV6VK9ED2GBZSQ2VDTAT8T",
+			id:         "AC01K8XV6VK9ED2GBZSQ2VDTAT8T",
 			achievedAt: func() *time.Time { t := time.Now().Add(-24 * time.Hour); return &t }(),
 		},
 		{
-			id:        "AC01K8XV6VK9ED2GBZSQ2VDTAT9T",
+			id:         "AC01K8XV6VK9ED2GBZSQ2VDTAT9T",
 			achievedAt: func() *time.Time { t := time.Now().Add(-48 * time.Hour); return &t }(),
 		},
 		{
-			id:        "AC01K8XV6VK9ED2GBZSQ2VDTATZZ",
+			id:         "AC01K8XV6VK9ED2GBZSQ2VDTATZZ",
 			achievedAt: nil, // Not achieved
 		},
 	}
