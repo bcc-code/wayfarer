@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_KV7Pn2H44p
 createdAt: 2025-11-27T13:05:40.352277
-updatedAt: 2025-12-02T10:16:56.479451
+updatedAt: 2025-12-03T09:19:48.602556
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -11,11 +11,12 @@ body:
   query: |
     query ScoreJournal {
       myCurrentProject {
-        journal(first: 100) {
+        journal {
           edges {
             node {
               id
               sourceType
+              reason
               source {
                 __typename
                 ... on Achievement {
@@ -30,10 +31,25 @@ body:
                   id
                   name
                 }
+                ... on SimpleAchievement {
+                  id
+                  name
+                }
+                ... on ReadingAchievement {
+                  id
+                  name
+                }
+                ... on ListeningAchievement {
+                  id
+                  name
+                }
+                ... on StreakAchievement {
+                  id
+                  name
+                }
               }
               points
               createdAt
-              reason
             }
           }
         }
@@ -48,7 +64,7 @@ headers:
   value: application/json
   id: zNW4Vjp7UA
 method: POST
-name: ''
-sortPriority: 3000.0
+name: ScoreJournal
+sortPriority: 7000.0
 url: ${[ HOST ]}/graphql
 urlParameters: []

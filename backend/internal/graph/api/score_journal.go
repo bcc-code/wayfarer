@@ -107,13 +107,6 @@ func (r *Resolver) getScoreJournal(ctx context.Context, projectID string, userID
 		entries = rows[:requestedLimit]
 	}
 
-	// If backward pagination, reverse the results
-	if last != nil {
-		for i, j := 0, len(entries)-1; i < j; i, j = i+1, j-1 {
-			entries[i], entries[j] = entries[j], entries[i]
-		}
-	}
-
 	// Convert to GraphQL model
 	modelEntries := make([]*model.ScoreJournal, len(entries))
 	for i, entry := range entries {

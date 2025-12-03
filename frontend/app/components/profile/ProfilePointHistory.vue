@@ -1,8 +1,8 @@
 <script setup lang="ts">
 gql(`
-	query PointHistory($first: Int) {
+	query PointHistory($last: Int) {
     myCurrentProject {
-      journal(first: $first) {
+      journal(last: $last) {
         edges {
           node {
             id
@@ -22,6 +22,22 @@ gql(`
                 id
                 name
               }
+              ... on SimpleAchievement {
+                id
+                name
+              }
+              ... on ReadingAchievement {
+                id
+                name
+              }
+              ... on ListeningAchievement {
+                id
+                name
+              }
+              ... on StreakAchievement {
+                id
+                name
+              }
             }
             points
             createdAt
@@ -36,11 +52,13 @@ const open = ref(false)
 
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = usePointHistoryQuery({
-  variables: { first: 100 },
+  variables: { last: 100 },
   pause: computed(() => !isAuthReady.value || !open.value),
 })
 
-function getScoreJournalName(journal: Partial<ScoreJournal>) {
+function getScoreJournalName(
+  journal: PointHistoryQuery['myCurrentProject']['journal']['edges'][number]['node'],
+) {
   switch (journal.sourceType) {
     case ScoreSourceType.Achievement:
       return journal.source?.name

@@ -215,15 +215,30 @@ export type Consent = {
   body: MarkdownText;
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
+  managedBy?: Maybe<Scalars['String']['output']>;
+  managementType: ConsentManagementType;
   publishedAt?: Maybe<Scalars['DateTime']['output']>;
   title: Scalars['String']['output'];
+  url?: Maybe<Scalars['String']['output']>;
+  userHistory: Array<UserConsentHistoryEntry>;
   version: Scalars['Int']['output'];
 };
+
+export enum ConsentAction {
+  Accepted = 'ACCEPTED',
+  Rejected = 'REJECTED'
+}
+
+export enum ConsentManagementType {
+  Local = 'LOCAL',
+  Remote = 'REMOTE'
+}
 
 export type ConsentStatus = {
   __typename?: 'ConsentStatus';
   acceptedConsents: Array<UserConsent>;
   pendingConsents: Array<Consent>;
+  rejectedConsents: Array<UserConsent>;
 };
 
 export type CreateChallengeInput = {
@@ -529,6 +544,7 @@ export type Mutation = {
   publishChallenge: Challenge;
   recordStreakActivity: StreakAchievement;
   regenerateJoinCode: Team;
+  rejectConsent: UserConsent;
   removeTeamMembers: Team;
   removeUserFromProject: User;
   revokeAchievement: Scalars['Boolean']['output'];
@@ -665,9 +681,12 @@ export type MutationCreateChallengeArgs = {
 
 export type MutationCreateConsentArgs = {
   body: Scalars['String']['input'];
+  isRemote?: InputMaybe<Scalars['Boolean']['input']>;
   key: Scalars['String']['input'];
+  managedBy?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   title: Scalars['String']['input'];
+  url?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -818,6 +837,11 @@ export type MutationRegenerateJoinCodeArgs = {
 };
 
 
+export type MutationRejectConsentArgs = {
+  consentId: Scalars['ID']['input'];
+};
+
+
 export type MutationRemoveTeamMembersArgs = {
   teamId: Scalars['ID']['input'];
   userIds: Array<Scalars['ID']['input']>;
@@ -895,6 +919,7 @@ export type MutationUpdateConsentArgs = {
   id: Scalars['ID']['input'];
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   title?: InputMaybe<Scalars['String']['input']>;
+  url?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -1590,9 +1615,21 @@ export type UserConnection = {
 
 export type UserConsent = {
   __typename?: 'UserConsent';
-  acceptedAt: Scalars['DateTime']['output'];
+  action: ConsentAction;
+  actionDate: Scalars['DateTime']['output'];
   consent: Consent;
   id: Scalars['ID']['output'];
+};
+
+export type UserConsentHistoryEntry = {
+  __typename?: 'UserConsentHistoryEntry';
+  action: ConsentAction;
+  consent: Consent;
+  externalConsentId?: Maybe<Scalars['String']['output']>;
+  externalTimestamp?: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['ID']['output'];
+  occurredAt: Scalars['DateTime']['output'];
+  source?: Maybe<Scalars['String']['output']>;
 };
 
 export type UserEdge = {
@@ -1626,7 +1663,7 @@ export type ProjectRulesQueryVariables = Exact<{ [key: string]: never; }>;
 export type ProjectRulesQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', rules?: { __typename?: 'MarkdownText', markdown: string, html: string } | null } };
 
 export type PointHistoryQueryVariables = Exact<{
-  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
@@ -2034,9 +2071,9 @@ export function useProjectRulesQuery(options?: Omit<Urql.UseQueryArgs<never, Pro
   return Urql.useQuery<ProjectRulesQuery, ProjectRulesQueryVariables | undefined>({ query: ProjectRulesDocument, variables: undefined, ...options });
 };
 export const PointHistoryDocument = gql`
-    query PointHistory($first: Int) {
+    query PointHistory($last: Int) {
   myCurrentProject {
-    journal(first: $first) {
+    journal(last: $last) {
       edges {
         node {
           id
@@ -2053,6 +2090,22 @@ export const PointHistoryDocument = gql`
               name
             }
             ... on Event {
+              id
+              name
+            }
+            ... on SimpleAchievement {
+              id
+              name
+            }
+            ... on ReadingAchievement {
+              id
+              name
+            }
+            ... on ListeningAchievement {
+              id
+              name
+            }
+            ... on StreakAchievement {
               id
               name
             }
