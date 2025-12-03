@@ -8,6 +8,7 @@ definePageMeta({
 
 const config = useRuntimeConfig()
 const { setAccessToken } = useAuth()
+const { track } = useAnalytics()
 
 // Use a global state to prevent multiple concurrent callbacks across component re-mounts
 const processing = useState('callback-processing', () => false)
@@ -34,6 +35,7 @@ onMounted(async () => {
 
     if (response && response.token) {
       setAccessToken(response.token)
+      track(AnalyticsEvent.LoginCompleted)
 
       const redirectPath =
         redirect && typeof redirect === 'string' ? redirect : '/'

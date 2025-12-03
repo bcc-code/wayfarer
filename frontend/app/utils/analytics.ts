@@ -1,4 +1,6 @@
 export enum AnalyticsEvent {
+  LoginCompleted = 'login_completed',
+  LogoutCompleted = 'logout_completed',
   ChallengeLinkClicked = 'challenge_link_clicked',
   LeaderboardTabChanged = 'leaderboard_tab_changed',
   PointsHistoryOpened = 'points_history_opened',
