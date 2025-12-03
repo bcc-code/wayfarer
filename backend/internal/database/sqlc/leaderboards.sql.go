@@ -290,11 +290,11 @@ const FindMyEventPersonPosition = `-- name: FindMyEventPersonPosition :one
 WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
-        u.name,
+        COALESCE(u.display_name, u.name) AS name,
         c.name AS church_name,
         u.avatar_url AS image,
         lep.score,
-        RANK() OVER (ORDER BY lep.score DESC, u.name ASC) AS rank
+        RANK() OVER (ORDER BY lep.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON lep.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -527,11 +527,11 @@ const FindMyProjectPersonPosition = `-- name: FindMyProjectPersonPosition :one
 WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
-        u.name,
+        COALESCE(u.display_name, u.name) AS name,
         c.name AS church_name,
         u.avatar_url AS image,
         lpp.score,
-        RANK() OVER (ORDER BY lpp.score DESC, u.name ASC) AS rank
+        RANK() OVER (ORDER BY lpp.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON lpp.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -801,7 +801,7 @@ const GetEventPersonLeaderboard = `-- name: GetEventPersonLeaderboard :many
 WITH person_scores AS (
     SELECT
         u.id AS entity_id,
-        u.name,
+        COALESCE(u.display_name, u.name) AS name,
         c.name AS church_name,
         u.avatar_url AS image,
         COALESCE(SUM(sj.points), 0)::bigint AS score
@@ -821,7 +821,7 @@ WITH person_scores AS (
         AND ($10::text = '' OR u.gender = $10::text)
         AND ($11::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $11::int)
         AND ($12::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $12::int)
-    GROUP BY u.id, u.name, c.name, u.avatar_url
+    GROUP BY u.id, u.display_name, u.name, c.name, u.avatar_url
 ),
 ranked_scores AS (
     SELECT
@@ -1160,11 +1160,11 @@ const GetFullEventPersonLeaderboard = `-- name: GetFullEventPersonLeaderboard :m
 WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
-        u.name,
+        COALESCE(u.display_name, u.name) AS name,
         c.name AS church_name,
         u.avatar_url AS image,
         lep.score,
-        RANK() OVER (ORDER BY lep.score DESC, u.name ASC) AS rank
+        RANK() OVER (ORDER BY lep.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON lep.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -1407,11 +1407,11 @@ const GetFullProjectPersonLeaderboard = `-- name: GetFullProjectPersonLeaderboar
 WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
-        u.name,
+        COALESCE(u.display_name, u.name) AS name,
         c.name AS church_name,
         u.avatar_url AS image,
         lpp.score,
-        RANK() OVER (ORDER BY lpp.score DESC, u.name ASC) AS rank
+        RANK() OVER (ORDER BY lpp.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON lpp.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -1690,7 +1690,14 @@ const GetProjectPersonLeaderboard = `-- name: GetProjectPersonLeaderboard :many
 WITH project_users AS MATERIALIZED (
     -- Start with users in THIS project (huge performance win)
     -- MATERIALIZED forces execution order to avoid scanning all users
-    SELECT DISTINCT u.id, u.name, u.avatar_url, u.birthdate, u.church_id, u.gender, c.name AS church_name
+    SELECT DISTINCT
+        u.id,
+        COALESCE(u.display_name, u.name) AS name,
+        u.avatar_url,
+        u.birthdate,
+        u.church_id,
+        u.gender,
+        c.name AS church_name
     FROM user_projects up
     INNER JOIN users u ON up.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id

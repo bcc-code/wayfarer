@@ -276,7 +276,7 @@ func (q *Queries) GetScoreJournalFiltered(ctx context.Context, arg GetScoreJourn
 }
 
 const GetUserScore = `-- name: GetUserScore :one
-SELECT COALESCE(SUM(points), 0) AS total_score
+SELECT COALESCE(SUM(points), 0)::bigint AS total_score
 FROM score_journal
 WHERE user_id = $1::text
     AND project_id = $2::text
@@ -289,9 +289,9 @@ type GetUserScoreParams struct {
 	EventID   string `json:"event_id"`
 }
 
-func (q *Queries) GetUserScore(ctx context.Context, arg GetUserScoreParams) (interface{}, error) {
+func (q *Queries) GetUserScore(ctx context.Context, arg GetUserScoreParams) (int64, error) {
 	row := q.db.QueryRow(ctx, GetUserScore, arg.UserID, arg.ProjectID, arg.EventID)
-	var total_score interface{}
+	var total_score int64
 	err := row.Scan(&total_score)
 	return total_score, err
 }

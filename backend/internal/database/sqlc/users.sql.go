@@ -74,31 +74,39 @@ func (q *Queries) CountUsersFiltered(ctx context.Context, arg CountUsersFiltered
 }
 
 const CreateUser = `-- name: CreateUser :one
-INSERT INTO users (id, members_id, email, name, gender, birthdate, church_id, avatar_url)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, members_id, gender, church_id, birthdate, email, name, avatar_url
+INSERT INTO users (id, members_id, email, name, first_name, last_name, middle_name, display_name, gender, birthdate, church_id, avatar_url)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+RETURNING id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
 `
 
 type CreateUserParams struct {
-	ID        string      `json:"id"`
-	MembersID string      `json:"members_id"`
-	Email     string      `json:"email"`
-	Name      string      `json:"name"`
-	Gender    string      `json:"gender"`
-	Birthdate pgtype.Date `json:"birthdate"`
-	ChurchID  string      `json:"church_id"`
-	AvatarUrl *string     `json:"avatar_url"`
+	ID          string      `json:"id"`
+	MembersID   string      `json:"members_id"`
+	Email       string      `json:"email"`
+	Name        string      `json:"name"`
+	FirstName   *string     `json:"first_name"`
+	LastName    *string     `json:"last_name"`
+	MiddleName  *string     `json:"middle_name"`
+	DisplayName *string     `json:"display_name"`
+	Gender      string      `json:"gender"`
+	Birthdate   pgtype.Date `json:"birthdate"`
+	ChurchID    string      `json:"church_id"`
+	AvatarUrl   *string     `json:"avatar_url"`
 }
 
 type CreateUserRow struct {
-	ID        string      `json:"id"`
-	MembersID string      `json:"members_id"`
-	Gender    string      `json:"gender"`
-	ChurchID  string      `json:"church_id"`
-	Birthdate pgtype.Date `json:"birthdate"`
-	Email     string      `json:"email"`
-	Name      string      `json:"name"`
-	AvatarUrl *string     `json:"avatar_url"`
+	ID          string      `json:"id"`
+	MembersID   string      `json:"members_id"`
+	Gender      string      `json:"gender"`
+	ChurchID    string      `json:"church_id"`
+	Birthdate   pgtype.Date `json:"birthdate"`
+	Email       string      `json:"email"`
+	Name        string      `json:"name"`
+	FirstName   *string     `json:"first_name"`
+	LastName    *string     `json:"last_name"`
+	MiddleName  *string     `json:"middle_name"`
+	DisplayName *string     `json:"display_name"`
+	AvatarUrl   *string     `json:"avatar_url"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*CreateUserRow, error) {
@@ -107,6 +115,10 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*Create
 		arg.MembersID,
 		arg.Email,
 		arg.Name,
+		arg.FirstName,
+		arg.LastName,
+		arg.MiddleName,
+		arg.DisplayName,
 		arg.Gender,
 		arg.Birthdate,
 		arg.ChurchID,
@@ -121,26 +133,34 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*Create
 		&i.Birthdate,
 		&i.Email,
 		&i.Name,
+		&i.FirstName,
+		&i.LastName,
+		&i.MiddleName,
+		&i.DisplayName,
 		&i.AvatarUrl,
 	)
 	return &i, err
 }
 
 const GetUserByID = `-- name: GetUserByID :one
-SELECT id, members_id, gender, church_id, birthdate, email, name, avatar_url
+SELECT id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
 FROM users
 WHERE id = $1
 `
 
 type GetUserByIDRow struct {
-	ID        string      `json:"id"`
-	MembersID string      `json:"members_id"`
-	Gender    string      `json:"gender"`
-	ChurchID  string      `json:"church_id"`
-	Birthdate pgtype.Date `json:"birthdate"`
-	Email     string      `json:"email"`
-	Name      string      `json:"name"`
-	AvatarUrl *string     `json:"avatar_url"`
+	ID          string      `json:"id"`
+	MembersID   string      `json:"members_id"`
+	Gender      string      `json:"gender"`
+	ChurchID    string      `json:"church_id"`
+	Birthdate   pgtype.Date `json:"birthdate"`
+	Email       string      `json:"email"`
+	Name        string      `json:"name"`
+	FirstName   *string     `json:"first_name"`
+	LastName    *string     `json:"last_name"`
+	MiddleName  *string     `json:"middle_name"`
+	DisplayName *string     `json:"display_name"`
+	AvatarUrl   *string     `json:"avatar_url"`
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, id string) (*GetUserByIDRow, error) {
@@ -154,26 +174,34 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (*GetUserByIDRow, 
 		&i.Birthdate,
 		&i.Email,
 		&i.Name,
+		&i.FirstName,
+		&i.LastName,
+		&i.MiddleName,
+		&i.DisplayName,
 		&i.AvatarUrl,
 	)
 	return &i, err
 }
 
 const GetUserByMembersID = `-- name: GetUserByMembersID :one
-SELECT id, members_id, gender, church_id, birthdate, email, name, avatar_url
+SELECT id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
 FROM users
 WHERE members_id = $1
 `
 
 type GetUserByMembersIDRow struct {
-	ID        string      `json:"id"`
-	MembersID string      `json:"members_id"`
-	Gender    string      `json:"gender"`
-	ChurchID  string      `json:"church_id"`
-	Birthdate pgtype.Date `json:"birthdate"`
-	Email     string      `json:"email"`
-	Name      string      `json:"name"`
-	AvatarUrl *string     `json:"avatar_url"`
+	ID          string      `json:"id"`
+	MembersID   string      `json:"members_id"`
+	Gender      string      `json:"gender"`
+	ChurchID    string      `json:"church_id"`
+	Birthdate   pgtype.Date `json:"birthdate"`
+	Email       string      `json:"email"`
+	Name        string      `json:"name"`
+	FirstName   *string     `json:"first_name"`
+	LastName    *string     `json:"last_name"`
+	MiddleName  *string     `json:"middle_name"`
+	DisplayName *string     `json:"display_name"`
+	AvatarUrl   *string     `json:"avatar_url"`
 }
 
 func (q *Queries) GetUserByMembersID(ctx context.Context, membersID string) (*GetUserByMembersIDRow, error) {
@@ -187,26 +215,34 @@ func (q *Queries) GetUserByMembersID(ctx context.Context, membersID string) (*Ge
 		&i.Birthdate,
 		&i.Email,
 		&i.Name,
+		&i.FirstName,
+		&i.LastName,
+		&i.MiddleName,
+		&i.DisplayName,
 		&i.AvatarUrl,
 	)
 	return &i, err
 }
 
 const GetUsersByIDs = `-- name: GetUsersByIDs :many
-SELECT id, members_id, gender, church_id, birthdate, email, name, avatar_url
+SELECT id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
 FROM users
 WHERE id = ANY($1::text[])
 `
 
 type GetUsersByIDsRow struct {
-	ID        string      `json:"id"`
-	MembersID string      `json:"members_id"`
-	Gender    string      `json:"gender"`
-	ChurchID  string      `json:"church_id"`
-	Birthdate pgtype.Date `json:"birthdate"`
-	Email     string      `json:"email"`
-	Name      string      `json:"name"`
-	AvatarUrl *string     `json:"avatar_url"`
+	ID          string      `json:"id"`
+	MembersID   string      `json:"members_id"`
+	Gender      string      `json:"gender"`
+	ChurchID    string      `json:"church_id"`
+	Birthdate   pgtype.Date `json:"birthdate"`
+	Email       string      `json:"email"`
+	Name        string      `json:"name"`
+	FirstName   *string     `json:"first_name"`
+	LastName    *string     `json:"last_name"`
+	MiddleName  *string     `json:"middle_name"`
+	DisplayName *string     `json:"display_name"`
+	AvatarUrl   *string     `json:"avatar_url"`
 }
 
 func (q *Queries) GetUsersByIDs(ctx context.Context, ids []string) ([]*GetUsersByIDsRow, error) {
@@ -226,6 +262,10 @@ func (q *Queries) GetUsersByIDs(ctx context.Context, ids []string) ([]*GetUsersB
 			&i.Birthdate,
 			&i.Email,
 			&i.Name,
+			&i.FirstName,
+			&i.LastName,
+			&i.MiddleName,
+			&i.DisplayName,
 			&i.AvatarUrl,
 		); err != nil {
 			return nil, err
@@ -246,7 +286,7 @@ WITH distinct_user_ids AS (
     INNER JOIN teams t ON tm.team_id = t.id
     WHERE t.super_team_id = $5::text
 )
-SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.avatar_url
+SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
 FROM distinct_user_ids du
 INNER JOIN users u ON du.id = u.id
 WHERE ($1::text = '' OR u.id > $1::text)
@@ -266,14 +306,18 @@ type GetUsersBySuperTeamIDCursorParams struct {
 }
 
 type GetUsersBySuperTeamIDCursorRow struct {
-	ID        string      `json:"id"`
-	MembersID string      `json:"members_id"`
-	Gender    string      `json:"gender"`
-	ChurchID  string      `json:"church_id"`
-	Birthdate pgtype.Date `json:"birthdate"`
-	Email     string      `json:"email"`
-	Name      string      `json:"name"`
-	AvatarUrl *string     `json:"avatar_url"`
+	ID          string      `json:"id"`
+	MembersID   string      `json:"members_id"`
+	Gender      string      `json:"gender"`
+	ChurchID    string      `json:"church_id"`
+	Birthdate   pgtype.Date `json:"birthdate"`
+	Email       string      `json:"email"`
+	Name        string      `json:"name"`
+	FirstName   *string     `json:"first_name"`
+	LastName    *string     `json:"last_name"`
+	MiddleName  *string     `json:"middle_name"`
+	DisplayName *string     `json:"display_name"`
+	AvatarUrl   *string     `json:"avatar_url"`
 }
 
 func (q *Queries) GetUsersBySuperTeamIDCursor(ctx context.Context, arg GetUsersBySuperTeamIDCursorParams) ([]*GetUsersBySuperTeamIDCursorRow, error) {
@@ -299,6 +343,10 @@ func (q *Queries) GetUsersBySuperTeamIDCursor(ctx context.Context, arg GetUsersB
 			&i.Birthdate,
 			&i.Email,
 			&i.Name,
+			&i.FirstName,
+			&i.LastName,
+			&i.MiddleName,
+			&i.DisplayName,
 			&i.AvatarUrl,
 		); err != nil {
 			return nil, err
@@ -312,7 +360,7 @@ func (q *Queries) GetUsersBySuperTeamIDCursor(ctx context.Context, arg GetUsersB
 }
 
 const GetUsersBySuperTeamIDs = `-- name: GetUsersBySuperTeamIDs :many
-SELECT DISTINCT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.avatar_url
+SELECT DISTINCT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
 FROM users u
 INNER JOIN team_members tm ON u.id = tm.user_id
 INNER JOIN teams t ON tm.team_id = t.id
@@ -321,14 +369,18 @@ ORDER BY u.id
 `
 
 type GetUsersBySuperTeamIDsRow struct {
-	ID        string      `json:"id"`
-	MembersID string      `json:"members_id"`
-	Gender    string      `json:"gender"`
-	ChurchID  string      `json:"church_id"`
-	Birthdate pgtype.Date `json:"birthdate"`
-	Email     string      `json:"email"`
-	Name      string      `json:"name"`
-	AvatarUrl *string     `json:"avatar_url"`
+	ID          string      `json:"id"`
+	MembersID   string      `json:"members_id"`
+	Gender      string      `json:"gender"`
+	ChurchID    string      `json:"church_id"`
+	Birthdate   pgtype.Date `json:"birthdate"`
+	Email       string      `json:"email"`
+	Name        string      `json:"name"`
+	FirstName   *string     `json:"first_name"`
+	LastName    *string     `json:"last_name"`
+	MiddleName  *string     `json:"middle_name"`
+	DisplayName *string     `json:"display_name"`
+	AvatarUrl   *string     `json:"avatar_url"`
 }
 
 func (q *Queries) GetUsersBySuperTeamIDs(ctx context.Context, superteamids []string) ([]*GetUsersBySuperTeamIDsRow, error) {
@@ -348,6 +400,10 @@ func (q *Queries) GetUsersBySuperTeamIDs(ctx context.Context, superteamids []str
 			&i.Birthdate,
 			&i.Email,
 			&i.Name,
+			&i.FirstName,
+			&i.LastName,
+			&i.MiddleName,
+			&i.DisplayName,
 			&i.AvatarUrl,
 		); err != nil {
 			return nil, err
@@ -369,6 +425,10 @@ SELECT
     u.birthdate,
     u.email,
     u.name,
+    u.first_name,
+    u.last_name,
+    u.middle_name,
+    u.display_name,
     u.avatar_url,
     tm.team_id,
     tm.joined_at,
@@ -386,17 +446,21 @@ ORDER BY tm.team_id, tm.joined_at
 `
 
 type GetUsersByTeamIDsRow struct {
-	ID         string             `json:"id"`
-	MembersID  string             `json:"members_id"`
-	Gender     string             `json:"gender"`
-	ChurchID   string             `json:"church_id"`
-	Birthdate  pgtype.Date        `json:"birthdate"`
-	Email      string             `json:"email"`
-	Name       string             `json:"name"`
-	AvatarUrl  *string            `json:"avatar_url"`
-	TeamID     string             `json:"team_id"`
-	JoinedAt   pgtype.Timestamptz `json:"joined_at"`
-	IsTeamLead bool               `json:"is_team_lead"`
+	ID          string             `json:"id"`
+	MembersID   string             `json:"members_id"`
+	Gender      string             `json:"gender"`
+	ChurchID    string             `json:"church_id"`
+	Birthdate   pgtype.Date        `json:"birthdate"`
+	Email       string             `json:"email"`
+	Name        string             `json:"name"`
+	FirstName   *string            `json:"first_name"`
+	LastName    *string            `json:"last_name"`
+	MiddleName  *string            `json:"middle_name"`
+	DisplayName *string            `json:"display_name"`
+	AvatarUrl   *string            `json:"avatar_url"`
+	TeamID      string             `json:"team_id"`
+	JoinedAt    pgtype.Timestamptz `json:"joined_at"`
+	IsTeamLead  bool               `json:"is_team_lead"`
 }
 
 func (q *Queries) GetUsersByTeamIDs(ctx context.Context, teamids []string) ([]*GetUsersByTeamIDsRow, error) {
@@ -416,6 +480,10 @@ func (q *Queries) GetUsersByTeamIDs(ctx context.Context, teamids []string) ([]*G
 			&i.Birthdate,
 			&i.Email,
 			&i.Name,
+			&i.FirstName,
+			&i.LastName,
+			&i.MiddleName,
+			&i.DisplayName,
 			&i.AvatarUrl,
 			&i.TeamID,
 			&i.JoinedAt,
@@ -432,7 +500,7 @@ func (q *Queries) GetUsersByTeamIDs(ctx context.Context, teamids []string) ([]*G
 }
 
 const GetUsersFiltered = `-- name: GetUsersFiltered :many
-SELECT DISTINCT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.avatar_url
+SELECT DISTINCT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
 FROM users u
 LEFT JOIN user_projects up ON u.id = up.user_id AND $1::text IS NOT NULL
 LEFT JOIN user_events ue ON u.id = ue.user_id AND $2::text IS NOT NULL
@@ -465,14 +533,18 @@ type GetUsersFilteredParams struct {
 }
 
 type GetUsersFilteredRow struct {
-	ID        string      `json:"id"`
-	MembersID string      `json:"members_id"`
-	Gender    string      `json:"gender"`
-	ChurchID  string      `json:"church_id"`
-	Birthdate pgtype.Date `json:"birthdate"`
-	Email     string      `json:"email"`
-	Name      string      `json:"name"`
-	AvatarUrl *string     `json:"avatar_url"`
+	ID          string      `json:"id"`
+	MembersID   string      `json:"members_id"`
+	Gender      string      `json:"gender"`
+	ChurchID    string      `json:"church_id"`
+	Birthdate   pgtype.Date `json:"birthdate"`
+	Email       string      `json:"email"`
+	Name        string      `json:"name"`
+	FirstName   *string     `json:"first_name"`
+	LastName    *string     `json:"last_name"`
+	MiddleName  *string     `json:"middle_name"`
+	DisplayName *string     `json:"display_name"`
+	AvatarUrl   *string     `json:"avatar_url"`
 }
 
 func (q *Queries) GetUsersFiltered(ctx context.Context, arg GetUsersFilteredParams) ([]*GetUsersFilteredRow, error) {
@@ -503,6 +575,10 @@ func (q *Queries) GetUsersFiltered(ctx context.Context, arg GetUsersFilteredPara
 			&i.Birthdate,
 			&i.Email,
 			&i.Name,
+			&i.FirstName,
+			&i.LastName,
+			&i.MiddleName,
+			&i.DisplayName,
 			&i.AvatarUrl,
 		); err != nil {
 			return nil, err
@@ -516,7 +592,7 @@ func (q *Queries) GetUsersFiltered(ctx context.Context, arg GetUsersFilteredPara
 }
 
 const GetUsersFilteredCursor = `-- name: GetUsersFilteredCursor :many
-SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.avatar_url
+SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
 FROM users u
 WHERE
     ($1::text = '' OR u.church_id = $1::text)
@@ -557,14 +633,18 @@ type GetUsersFilteredCursorParams struct {
 }
 
 type GetUsersFilteredCursorRow struct {
-	ID        string      `json:"id"`
-	MembersID string      `json:"members_id"`
-	Gender    string      `json:"gender"`
-	ChurchID  string      `json:"church_id"`
-	Birthdate pgtype.Date `json:"birthdate"`
-	Email     string      `json:"email"`
-	Name      string      `json:"name"`
-	AvatarUrl *string     `json:"avatar_url"`
+	ID          string      `json:"id"`
+	MembersID   string      `json:"members_id"`
+	Gender      string      `json:"gender"`
+	ChurchID    string      `json:"church_id"`
+	Birthdate   pgtype.Date `json:"birthdate"`
+	Email       string      `json:"email"`
+	Name        string      `json:"name"`
+	FirstName   *string     `json:"first_name"`
+	LastName    *string     `json:"last_name"`
+	MiddleName  *string     `json:"middle_name"`
+	DisplayName *string     `json:"display_name"`
+	AvatarUrl   *string     `json:"avatar_url"`
 }
 
 func (q *Queries) GetUsersFilteredCursor(ctx context.Context, arg GetUsersFilteredCursorParams) ([]*GetUsersFilteredCursorRow, error) {
@@ -597,6 +677,10 @@ func (q *Queries) GetUsersFilteredCursor(ctx context.Context, arg GetUsersFilter
 			&i.Birthdate,
 			&i.Email,
 			&i.Name,
+			&i.FirstName,
+			&i.LastName,
+			&i.MiddleName,
+			&i.DisplayName,
 			&i.AvatarUrl,
 		); err != nil {
 			return nil, err

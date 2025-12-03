@@ -61,18 +61,11 @@ func teamMemberLeaderboardBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 				// Convert database rows to cached entries (without tags)
 				entries := make([]cachedLeaderboardEntry, len(rows))
 				for i, row := range rows {
-					score := 0
-					if row.Score != nil {
-						if scoreInt64, ok := row.Score.(int64); ok {
-							score = int(scoreInt64)
-						}
-					}
-
 					entries[i] = cachedLeaderboardEntry{
 						ID:          row.UserID,
 						Name:        row.UserName,
 						Description: row.ChurchName,
-						Score:       score,
+						Score:       int(row.Score),
 						Rank:        int(row.Rank),
 						Image:       row.AvatarUrl,
 					}

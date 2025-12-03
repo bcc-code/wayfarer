@@ -4,7 +4,14 @@
 WITH project_users AS MATERIALIZED (
     -- Start with users in THIS project (huge performance win)
     -- MATERIALIZED forces execution order to avoid scanning all users
-    SELECT DISTINCT u.id, u.name, u.avatar_url, u.birthdate, u.church_id, u.gender, c.name AS church_name
+    SELECT DISTINCT
+        u.id,
+        COALESCE(u.display_name, u.name) AS name,
+        u.avatar_url,
+        u.birthdate,
+        u.church_id,
+        u.gender,
+        c.name AS church_name
     FROM user_projects up
     INNER JOIN users u ON up.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -72,11 +79,11 @@ LIMIT @querylimit::int;
 WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
-        u.name,
+        COALESCE(u.display_name, u.name) AS name,
         c.name AS church_name,
         u.avatar_url AS image,
         lpp.score,
-        RANK() OVER (ORDER BY lpp.score DESC, u.name ASC) AS rank
+        RANK() OVER (ORDER BY lpp.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON lpp.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -93,11 +100,11 @@ WHERE entity_id = @userid::text;
 WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
-        u.name,
+        COALESCE(u.display_name, u.name) AS name,
         c.name AS church_name,
         u.avatar_url AS image,
         lpp.score,
-        RANK() OVER (ORDER BY lpp.score DESC, u.name ASC) AS rank
+        RANK() OVER (ORDER BY lpp.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON lpp.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -414,7 +421,7 @@ WHERE
 WITH person_scores AS (
     SELECT
         u.id AS entity_id,
-        u.name,
+        COALESCE(u.display_name, u.name) AS name,
         c.name AS church_name,
         u.avatar_url AS image,
         COALESCE(SUM(sj.points), 0)::bigint AS score
@@ -434,7 +441,7 @@ WITH person_scores AS (
         AND (@gender::text = '' OR u.gender = @gender::text)
         AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
         AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)
-    GROUP BY u.id, u.name, c.name, u.avatar_url
+    GROUP BY u.id, u.display_name, u.name, c.name, u.avatar_url
 ),
 ranked_scores AS (
     SELECT
@@ -461,11 +468,11 @@ LIMIT @querylimit::int;
 WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
-        u.name,
+        COALESCE(u.display_name, u.name) AS name,
         c.name AS church_name,
         u.avatar_url AS image,
         lep.score,
-        RANK() OVER (ORDER BY lep.score DESC, u.name ASC) AS rank
+        RANK() OVER (ORDER BY lep.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON lep.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -482,11 +489,11 @@ WHERE entity_id = @userid::text;
 WITH ranked_scores AS (
     SELECT
         u.id AS entity_id,
-        u.name,
+        COALESCE(u.display_name, u.name) AS name,
         c.name AS church_name,
         u.avatar_url AS image,
         lep.score,
-        RANK() OVER (ORDER BY lep.score DESC, u.name ASC) AS rank
+        RANK() OVER (ORDER BY lep.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON lep.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id

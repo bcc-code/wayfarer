@@ -17,6 +17,8 @@ type Member struct {
 	EmailVerified bool   `json:"emailVerified"`
 	DisplayName   string `json:"displayName"`
 	FirstName     string `json:"firstName"`
+	LastName      string `json:"lastName"`
+	MiddleName    string `json:"middleName"`
 	Gender        string `json:"gender"`
 	Affiliations  []Affiliation
 }

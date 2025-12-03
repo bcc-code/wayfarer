@@ -171,8 +171,8 @@ SELECT
     u.birthdate,
     u.email,
     u.avatar_url,
-    COALESCE(SUM(sj.points), 0) AS score,
-    RANK() OVER (ORDER BY COALESCE(SUM(sj.points), 0) DESC) AS rank
+    COALESCE(SUM(sj.points), 0)::bigint AS score,
+    RANK() OVER (ORDER BY COALESCE(SUM(sj.points), 0)::bigint DESC) AS rank
 FROM team_members tm
 INNER JOIN users u ON tm.user_id = u.id
 INNER JOIN teams t ON tm.team_id = t.id

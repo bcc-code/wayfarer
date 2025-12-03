@@ -364,16 +364,20 @@ type TeamTranslation struct {
 }
 
 type User struct {
-	ID        string             `json:"id"`
-	MembersID string             `json:"members_id"`
-	Email     string             `json:"email"`
-	Name      string             `json:"name"`
-	Gender    string             `json:"gender"`
-	ChurchID  string             `json:"church_id"`
-	AvatarUrl *string            `json:"avatar_url"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	Birthdate pgtype.Date        `json:"birthdate"`
+	ID          string             `json:"id"`
+	MembersID   string             `json:"members_id"`
+	Email       string             `json:"email"`
+	Name        string             `json:"name"`
+	Gender      string             `json:"gender"`
+	ChurchID    string             `json:"church_id"`
+	AvatarUrl   *string            `json:"avatar_url"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Birthdate   pgtype.Date        `json:"birthdate"`
+	FirstName   *string            `json:"first_name"`
+	LastName    *string            `json:"last_name"`
+	MiddleName  *string            `json:"middle_name"`
+	DisplayName *string            `json:"display_name"`
 }
 
 type UserAchievement struct {

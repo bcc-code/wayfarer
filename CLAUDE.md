@@ -124,3 +124,4 @@ Each project can contain multiple events, which usually is some form of in-perso
 - Put notes into notes folder. Before doing a big investigation check if we already have notes on the system.
 - Update the notes if you make changes to schemas and other things that invalidate the notes.
 - Do not EVER automatically run the seed script!
+- NEVER SEED WITHOUT EXPLICIT PERMISSION

@@ -25,12 +25,15 @@ func (s *Seeder) SeedUsers(stats *Stats) error {
 			gender := genders[rand.Intn(len(genders))]
 
 			// Generate realistic name based on gender
-			var name string
+			var firstName string
+			var lastName string
 			if gender == "MALE" {
-				name = s.Fake.Person().FirstNameMale() + " " + s.Fake.Person().LastName()
+				firstName = s.Fake.Person().FirstNameMale()
 			} else {
-				name = s.Fake.Person().FirstNameFemale() + " " + s.Fake.Person().LastName()
+				firstName = s.Fake.Person().FirstNameFemale()
 			}
+			lastName = s.Fake.Person().LastName()
+			displayName := firstName + " " + lastName
 
 			// Random age between 13 and 80 - convert to birthdate
 			age := 13 + rand.Intn(68)
@@ -50,7 +53,7 @@ func (s *Seeder) SeedUsers(stats *Stats) error {
 			avatarURL := fmt.Sprintf("https://i.pravatar.cc/150?img=%d", (userIndex%70)+1)
 
 			id := ulid.NewUserID()
-			batchRows = append(batchRows, []interface{}{id, membersID, email, name, gender, birthdate, churchID, avatarURL})
+			batchRows = append(batchRows, []interface{}{id, membersID, email, displayName, firstName, lastName, nil, displayName, gender, birthdate, churchID, avatarURL})
 			s.Data.UserIDs = append(s.Data.UserIDs, id)
 		}
 
@@ -58,7 +61,7 @@ func (s *Seeder) SeedUsers(stats *Stats) error {
 		_, err := s.DB.Pool.CopyFrom(
 			s.Ctx,
 			pgx.Identifier{"users"},
-			[]string{"id", "members_id", "email", "name", "gender", "birthdate", "church_id", "avatar_url"},
+			[]string{"id", "members_id", "email", "name", "first_name", "last_name", "middle_name", "display_name", "gender", "birthdate", "church_id", "avatar_url"},
 			pgx.CopyFromRows(batchRows),
 		)
 		if err != nil {
@@ -78,12 +81,15 @@ func (s *Seeder) SeedUsers(stats *Stats) error {
 			userIndex := (s.Config.NumUsers/batchSize)*batchSize + i
 
 			gender := genders[rand.Intn(len(genders))]
-			var name string
+			var firstName string
+			var lastName string
 			if gender == "MALE" {
-				name = s.Fake.Person().FirstNameMale() + " " + s.Fake.Person().LastName()
+				firstName = s.Fake.Person().FirstNameMale()
 			} else {
-				name = s.Fake.Person().FirstNameFemale() + " " + s.Fake.Person().LastName()
+				firstName = s.Fake.Person().FirstNameFemale()
 			}
+			lastName = s.Fake.Person().LastName()
+			displayName := firstName + " " + lastName
 
 			age := 13 + rand.Intn(68)
 			now := time.Now()
@@ -94,14 +100,14 @@ func (s *Seeder) SeedUsers(stats *Stats) error {
 			avatarURL := fmt.Sprintf("https://i.pravatar.cc/150?img=%d", (userIndex%70)+1)
 
 			id := ulid.NewUserID()
-			batchRows = append(batchRows, []interface{}{id, membersID, email, name, gender, birthdate, churchID, avatarURL})
+			batchRows = append(batchRows, []interface{}{id, membersID, email, displayName, firstName, lastName, nil, displayName, gender, birthdate, churchID, avatarURL})
 			s.Data.UserIDs = append(s.Data.UserIDs, id)
 		}
 
 		_, err := s.DB.Pool.CopyFrom(
 			s.Ctx,
 			pgx.Identifier{"users"},
-			[]string{"id", "members_id", "email", "name", "gender", "birthdate", "church_id", "avatar_url"},
+			[]string{"id", "members_id", "email", "name", "first_name", "last_name", "middle_name", "display_name", "gender", "birthdate", "church_id", "avatar_url"},
 			pgx.CopyFromRows(batchRows),
 		)
 		if err != nil {

@@ -230,7 +230,11 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 
 	// Fetch member data from Members API
 	var email string
+	var firstName string
+	var lastName string
+	var middleName string
 	var displayName string
+	var computedName string
 	var birthdate pgtype.Date
 
 	personID, err := strconv.Atoi(claims.PersonID)
@@ -246,10 +250,18 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 		} else {
 			// Use member data from API
 			email = member.Email
-			if member.DisplayName != "" {
-				displayName = member.DisplayName
-			} else {
-				displayName = member.FirstName
+			firstName = member.FirstName
+			lastName = member.LastName
+			middleName = member.MiddleName
+			displayName = member.DisplayName
+
+			// Compute name for backward compatibility
+			if displayName != "" {
+				computedName = displayName
+			} else if firstName != "" && lastName != "" {
+				computedName = firstName + " " + lastName
+			} else if firstName != "" {
+				computedName = firstName
 			}
 
 			// Parse birthdate if available
@@ -292,23 +304,36 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 	}
 
 	// Fallback to JWT claims if Members API data not available
-	if displayName == "" {
-		displayName = claims.FirstName
+	if computedName == "" {
+		computedName = claims.FirstName
+		firstName = claims.FirstName
 	}
 
 	// Normalize gender to match database constraint (MALE, FEMALE)
 	gender := normalizeGender(claims.Gender)
 
+	// Helper function to convert string to *string
+	toStringPtr := func(s string) *string {
+		if s == "" {
+			return nil
+		}
+		return &s
+	}
+
 	// Create new user
 	newUser, err := h.DB.Queries.CreateUser(ctx, sqlc.CreateUserParams{
-		ID:        ulid.NewUserID(),
-		MembersID: claims.PersonID,
-		Email:     email,
-		Name:      displayName,
-		Gender:    gender,
-		Birthdate: birthdate,
-		ChurchID:  churchID,
-		AvatarUrl: nil,
+		ID:          ulid.NewUserID(),
+		MembersID:   claims.PersonID,
+		Email:       email,
+		Name:        computedName,
+		FirstName:   toStringPtr(firstName),
+		LastName:    toStringPtr(lastName),
+		MiddleName:  toStringPtr(middleName),
+		DisplayName: toStringPtr(displayName),
+		Gender:      gender,
+		Birthdate:   birthdate,
+		ChurchID:    churchID,
+		AvatarUrl:   nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
@@ -316,14 +341,18 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 
 	// Convert CreateUserRow to GetUserByMembersIDRow
 	return &sqlc.GetUserByMembersIDRow{
-		ID:        newUser.ID,
-		MembersID: newUser.MembersID,
-		Gender:    newUser.Gender,
-		ChurchID:  newUser.ChurchID,
-		Birthdate: newUser.Birthdate,
-		Email:     newUser.Email,
-		Name:      newUser.Name,
-		AvatarUrl: newUser.AvatarUrl,
+		ID:          newUser.ID,
+		MembersID:   newUser.MembersID,
+		Gender:      newUser.Gender,
+		ChurchID:    newUser.ChurchID,
+		Birthdate:   newUser.Birthdate,
+		Email:       newUser.Email,
+		Name:        newUser.Name,
+		FirstName:   newUser.FirstName,
+		LastName:    newUser.LastName,
+		MiddleName:  newUser.MiddleName,
+		DisplayName: newUser.DisplayName,
+		AvatarUrl:   newUser.AvatarUrl,
 	}, nil
 }
 

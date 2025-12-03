@@ -80,7 +80,7 @@ WHERE id = ANY(@ids::text[])
 ORDER BY created_at DESC;
 
 -- name: GetUserScore :one
-SELECT COALESCE(SUM(points), 0) AS total_score
+SELECT COALESCE(SUM(points), 0)::bigint AS total_score
 FROM score_journal
 WHERE user_id = @user_id::text
     AND project_id = @project_id::text
