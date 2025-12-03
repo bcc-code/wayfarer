@@ -1,0 +1,15 @@
+mutation AcceptConsent($consentId: ID!) {
+  acceptConsent(consentId: $consentId) {
+    id
+    action
+    actionDate
+  }
+}
+
+mutation RejectConsent($consentId: ID!) {
+  rejectConsent(consentId: $consentId) {
+    id
+    action
+    actionDate
+  }
+}

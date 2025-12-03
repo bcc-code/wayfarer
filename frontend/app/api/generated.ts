@@ -1657,6 +1657,11 @@ export type UserRole = {
   user: User;
 };
 
+export type ConsentsDialogQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ConsentsDialogQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
+
 export type ProjectRulesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1774,6 +1779,20 @@ export type CreateChallengeMutationVariables = Exact<{
 
 
 export type CreateChallengeMutation = { __typename?: 'Mutation', createChallenge: { __typename?: 'Challenge', id: string } };
+
+export type AcceptConsentMutationVariables = Exact<{
+  consentId: Scalars['ID']['input'];
+}>;
+
+
+export type AcceptConsentMutation = { __typename?: 'Mutation', acceptConsent: { __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any } };
+
+export type RejectConsentMutationVariables = Exact<{
+  consentId: Scalars['ID']['input'];
+}>;
+
+
+export type RejectConsentMutation = { __typename?: 'Mutation', rejectConsent: { __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any } };
 
 export type DeleteEventMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -2056,6 +2075,61 @@ export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User'
     >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank?: number | null } | null } } };
 
 
+export const ConsentsDialogDocument = gql`
+    query ConsentsDialog {
+  me {
+    consentStatus {
+      pendingConsents {
+        __typename
+        id
+        key
+        version
+        title
+        body {
+          html
+        }
+        publishedAt
+        managedBy
+        managementType
+      }
+      acceptedConsents {
+        __typename
+        id
+        consent {
+          title
+          body {
+            html
+          }
+          managedBy
+          managementType
+          url
+        }
+        action
+        actionDate
+      }
+      rejectedConsents {
+        __typename
+        id
+        consent {
+          title
+          body {
+            html
+          }
+          managedBy
+          managementType
+          url
+        }
+        action
+        actionDate
+      }
+    }
+  }
+}
+    `;
+
+export function useConsentsDialogQuery(options?: Omit<Urql.UseQueryArgs<never, ConsentsDialogQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ConsentsDialogQuery, ConsentsDialogQueryVariables | undefined>({ query: ConsentsDialogDocument, variables: undefined, ...options });
+};
 export const ProjectRulesDocument = gql`
     query ProjectRules {
   myCurrentProject {
@@ -2344,6 +2418,32 @@ export const CreateChallengeDocument = gql`
 
 export function useCreateChallengeMutation() {
   return Urql.useMutation<CreateChallengeMutation, CreateChallengeMutationVariables>(CreateChallengeDocument);
+};
+export const AcceptConsentDocument = gql`
+    mutation AcceptConsent($consentId: ID!) {
+  acceptConsent(consentId: $consentId) {
+    id
+    action
+    actionDate
+  }
+}
+    `;
+
+export function useAcceptConsentMutation() {
+  return Urql.useMutation<AcceptConsentMutation, AcceptConsentMutationVariables>(AcceptConsentDocument);
+};
+export const RejectConsentDocument = gql`
+    mutation RejectConsent($consentId: ID!) {
+  rejectConsent(consentId: $consentId) {
+    id
+    action
+    actionDate
+  }
+}
+    `;
+
+export function useRejectConsentMutation() {
+  return Urql.useMutation<RejectConsentMutation, RejectConsentMutationVariables>(RejectConsentDocument);
 };
 export const DeleteEventDocument = gql`
     mutation DeleteEvent($id: ID!) {

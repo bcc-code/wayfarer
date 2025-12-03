@@ -7,7 +7,8 @@
     "challenge": "Challenge",
     "settings": "Settings",
     "pointHistory": "Point history",
-    "getPoints": "Get points"
+    "getPoints": "Get points",
+    "consents": "Consents"
   },
   "navigation": {
     "standings": "Standings",
@@ -22,7 +23,8 @@
       "system": "System",
       "light": "Light",
       "dark": "Dark"
-    }
+    },
+    "consents": "Consents"
   },
   "standings": {
     "global": "Top 20",
@@ -44,5 +46,12 @@
   },
   "points": "points",
   "place": "place",
-  "givesYouXPoints": "Gives you {points} points"
+  "givesYouXPoints": "Gives you {points} points",
+  "consent": {
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "rejected": "Rejected",
+    "acceptButton": "Accept",
+    "rejectButton": "Reject"
+  }
 }

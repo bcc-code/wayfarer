@@ -6,7 +6,7 @@ defineProps<{
 
 <template>
   <button
-    class="rounded-button-medium bg-border-default gradient-border grid size-11 place-items-center"
+    class="rounded-button-medium bg-border-default gradient-border relative grid size-11 place-items-center"
   >
     <Icon :name="icon" />
   </button>

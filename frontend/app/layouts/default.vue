@@ -163,5 +163,6 @@ const { left, height, width, top } = useElementBounding(activeMenuItem)
         </ul>
       </ProgressiveBlur>
     </div>
+    <ConsentDialog />
   </div>
 </template>

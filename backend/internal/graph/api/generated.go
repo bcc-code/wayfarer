@@ -4941,10 +4941,10 @@ extend type Query {
 
 extend type Mutation {
     # Accept a consent (user action)
-    acceptConsent(consentId: ID!): UserConsent! @requireRole(roles: ["user"])
+    acceptConsent(consentId: ID!): UserConsent!
 
     # Reject a consent (user action)
-    rejectConsent(consentId: ID!): UserConsent! @requireRole(roles: ["user"])
+    rejectConsent(consentId: ID!): UserConsent!
 
     # Create a new consent or new version of existing consent (admin action)
     createConsent(
@@ -15279,25 +15279,7 @@ func (ec *executionContext) _Mutation_acceptConsent(ctx context.Context, field g
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().AcceptConsent(ctx, fc.Args["consentId"].(string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal *model.UserConsent
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.UserConsent
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNUserConsent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConsent,
 		true,
 		true,
@@ -15348,25 +15330,7 @@ func (ec *executionContext) _Mutation_rejectConsent(ctx context.Context, field g
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().RejectConsent(ctx, fc.Args["consentId"].(string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal *model.UserConsent
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.UserConsent
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNUserConsent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConsent,
 		true,
 		true,

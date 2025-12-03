@@ -136,6 +136,20 @@
     font-weight: var(--font-weight-tiny);
     letter-spacing: var(--letter-spacing-tiny);
   }
+
+  /* Tailwind Typography */
+  .prose {
+    --tw-prose-headings: var(--color-text-default);
+    --tw-prose-lead: var(--color-text-default);
+    --tw-prose-links: var(--color-accent-contrast);
+    --tw-prose-bold: var(--color-text-default);
+    --tw-prose-counters: var(--color-text-default);
+    --tw-prose-bullets: var(--color-text-default);
+    --tw-prose-hr: var(--color-text-default);
+    --tw-prose-quotes: var(--color-text-default);
+    --tw-prose-quote-borders: var(--color-text-default);
+    --tw-prose-captions: var(--color-text-default);
+  }
 }
 
 html,

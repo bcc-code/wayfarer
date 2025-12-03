@@ -18,6 +18,7 @@ const colorMode = useColorMode()
 const colorModes = ['system', 'dark', 'light']
 
 const { me } = useAuth()
+const { open: consentsOpen } = useConsentsDialog()
 </script>
 
 <template>
@@ -78,6 +79,14 @@ const { me } = useAuth()
           </DesignButton>
         </div>
       </UDropdownMenu>
+      <hr class="border-border-default mx-3" />
+      <button
+        class="flex items-center justify-between gap-2.5 px-3 py-2"
+        @click="consentsOpen = true"
+      >
+        <p class="text-label">{{ $t('settings.consents') }}</p>
+        <DesignIconButton icon="lucide:chevron-right" />
+      </button>
     </DesignPanel>
 
     <div

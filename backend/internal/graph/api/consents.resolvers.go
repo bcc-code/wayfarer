@@ -440,36 +440,3 @@ func (r *Resolver) UserConsentHistoryEntry() UserConsentHistoryEntryResolver {
 type consentResolver struct{ *Resolver }
 type userConsentResolver struct{ *Resolver }
 type userConsentHistoryEntryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func consentRowToModel(row sqlc.Consent) model.Consent {
-	var publishedAt *scalars.DateTime
-	if row.PublishedAt.Valid {
-		dt := scalars.DateTime{Time: row.PublishedAt.Time}
-		publishedAt = &dt
-	}
-
-	managementType := model.ConsentManagementTypeLocal
-	if row.IsRemote {
-		managementType = model.ConsentManagementTypeRemote
-	}
-
-	return model.Consent{
-		ID:             row.ID,
-		Key:            row.Key,
-		Version:        int(row.Version),
-		Title:          row.Title,
-		BodyMarkdown:   row.Body,
-		URL:            row.Url,
-		PublishedAt:    publishedAt,
-		ManagementType: managementType,
-		ManagedBy:      row.ManagedBy,
-	}
-}
-*/

@@ -7,7 +7,8 @@
     "challenge": "Oppgave",
     "settings": "Innstillinger",
     "pointHistory": "Poenghistorikk",
-    "getPoints": "Få poeng"
+    "getPoints": "Få poeng",
+    "consents": "Samtykke"
   },
   "navigation": {
     "standings": "Ledertavle",
@@ -22,7 +23,8 @@
       "system": "System",
       "light": "Lys",
       "dark": "Mørk"
-    }
+    },
+    "consents": "Samtykke"
   },
   "standings": {
     "global": "Topp 20",
@@ -44,5 +46,12 @@
   },
   "place": "plass",
   "points": "poeng",
-  "givesYouXPoints": "Gir deg {points} poeng"
+  "givesYouXPoints": "Gir deg {points} poeng",
+  "consent": {
+    "pending": "Ventende",
+    "accepted": "Akseptert",
+    "rejected": "Avslått",
+    "acceptButton": "Aksepter",
+    "rejectButton": "Avslå"
+  }
 }
