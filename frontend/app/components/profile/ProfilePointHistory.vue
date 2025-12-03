@@ -48,7 +48,15 @@ gql(`
   }
 `)
 
+const { track } = useAnalytics()
+
 const open = ref(false)
+
+watch(open, (isOpen) => {
+  if (isOpen) {
+    track(AnalyticsEvent.PointsHistoryOpened)
+  }
+})
 
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = usePointHistoryQuery({

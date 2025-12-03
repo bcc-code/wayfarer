@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { track } = useAnalytics()
 const { locale, locales, setLocale } = useI18n()
 
 const localeName = computed(() => {
@@ -10,12 +11,22 @@ const localeComp = computed({
     return locale.value
   },
   set(v) {
+    track(AnalyticsEvent.LanguageChanged, { from: locale.value, to: v })
     setLocale(v)
   },
 })
 
 const colorMode = useColorMode()
 const colorModes = ['system', 'dark', 'light']
+
+watch(
+  () => colorMode.preference,
+  (newMode, oldMode) => {
+    if (oldMode) {
+      track(AnalyticsEvent.ColorModeChanged, { from: oldMode, to: newMode })
+    }
+  },
+)
 
 const { me } = useAuth()
 const { open: consentsOpen } = useConsentsDialog()

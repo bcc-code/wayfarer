@@ -10,6 +10,16 @@ gql(`
   }
 `)
 
+const { track } = useAnalytics()
+
+const open = ref(false)
+
+watch(open, (isOpen) => {
+  if (isOpen) {
+    track(AnalyticsEvent.HowToGetPointsOpened)
+  }
+})
+
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useProjectRulesQuery({
   pause: computed(() => !isAuthReady.value),
@@ -18,6 +28,7 @@ const { data, fetching, error } = useProjectRulesQuery({
 
 <template>
   <UModal
+    v-model:open="open"
     :ui="{ content: 'bg-background-default' }"
     :transition="false"
     fullscreen

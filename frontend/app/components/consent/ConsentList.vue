@@ -17,6 +17,7 @@ const emit = defineEmits<{
   (e: 'update'): void
 }>()
 
+const { track } = useAnalytics()
 const { executeMutation: acceptConsent } = useAcceptConsentMutation()
 const { executeMutation: rejectConsent } = useRejectConsentMutation()
 
@@ -26,6 +27,7 @@ function handleAccept(consentId: string, close: () => void) {
       console.error(error)
       return
     }
+    track(AnalyticsEvent.ConsentAccepted, { consent_id: consentId })
     close()
     emit('update')
   })
@@ -37,6 +39,7 @@ function handleReject(consentId: string, close: () => void) {
       console.error(error)
       return
     }
+    track(AnalyticsEvent.ConsentRejected, { consent_id: consentId })
     close()
     emit('update')
   })

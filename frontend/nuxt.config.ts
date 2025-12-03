@@ -53,6 +53,8 @@ export default defineNuxtConfig({
       apiUrl: 'http://localhost:8080/graphql',
       callbackUrl: 'http://localhost:8080/callback',
       loginUrl: 'https://app.bcc.media/r/sigve-test',
+      posthogKey: '',
+      posthogHost: 'https://eu.i.posthog.com',
     },
   },
 

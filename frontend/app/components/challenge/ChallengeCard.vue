@@ -1,7 +1,17 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   challenge: ChallengesPageQuery['myCurrentProject']['challenges'][number]
 }>()
+
+const { track } = useAnalytics()
+
+function onChallengeClick() {
+  track(AnalyticsEvent.ChallengeLinkClicked, {
+    challenge_id: props.challenge.id,
+    challenge_name: props.challenge.name,
+    is_external: !!props.challenge.url,
+  })
+}
 </script>
 
 <template>
@@ -27,6 +37,7 @@ defineProps<{
             }
           "
           class="contents"
+          @click="onChallengeClick"
         >
           <DesignButton size="large">
             {{ challenge.buttonText }}

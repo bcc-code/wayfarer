@@ -1,28 +1,25 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   achievement: Partial<Achievement>
 }>()
 
+const { track } = useAnalytics()
+
 const open = ref(false)
+
+watch(open, (isOpen) => {
+  if (isOpen) {
+    track(AnalyticsEvent.AchievementClicked, {
+      achievement_id: props.achievement.id,
+      achievement_name: props.achievement.name,
+      is_unlocked: !!props.achievement.achievedAt,
+    })
+  }
+})
 </script>
 
 <template>
   <div>
-    <button
-      class="grid aspect-square place-items-center overflow-hidden rounded-full"
-      @click="open = true"
-    >
-      <NuxtImg
-        v-if="achievement.image && achievement.achievedAt != null"
-        :src="achievement.image"
-        class="size-full object-cover"
-      />
-      <NuxtImg
-        v-else
-        src="/images/achievement-placeholder.png"
-        class="size-full object-cover"
-      />
-    </button>
     <UModal
       v-model:open="open"
       :ui="{ content: 'bg-background-default' }"
@@ -30,6 +27,20 @@ const open = ref(false)
       modal
       fullscreen
     >
+      <button
+        class="grid aspect-square place-items-center overflow-hidden rounded-full"
+      >
+        <NuxtImg
+          v-if="achievement.image && achievement.achievedAt != null"
+          :src="achievement.image"
+          class="size-full object-cover"
+        />
+        <NuxtImg
+          v-else
+          src="/images/achievement-placeholder.png"
+          class="size-full object-cover"
+        />
+      </button>
       <template #content="{ close }">
         <PageLayout
           :title="achievement.achievedAt ? 'Unlocked!' : 'Achievement'"
