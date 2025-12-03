@@ -19,10 +19,11 @@ type WebhookHandler struct {
 
 // ContentEventRequest represents the incoming webhook payload for content events
 type ContentEventRequest struct {
-	PersonID        string   `json:"person_id" binding:"required"`
-	ContentID       string   `json:"content_id" binding:"required"`
-	ReadingPlanID   *string  `json:"reading_plan_id"`
-	ContentProgress *float64 `json:"content_progress"`
+	PersonID        string    `json:"person_id" binding:"required"`
+	TaskID          string    `json:"task_id" binding:"required"`
+	PlanID          *string   `json:"plan_id"`
+	Timestamp       time.Time `json:"timestamp" binding:"required"`
+	ContentProgress *float64  `json:"content_progress"`
 }
 
 // HandleContentEvent handles POST requests for external content completion events
@@ -81,7 +82,7 @@ func (h *WebhookHandler) HandleContentEvent(c *gin.Context) {
 	slog.Info("webhook: creating content event",
 		"event_id", eventID,
 		"person_id", req.PersonID,
-		"content_id", req.ContentID,
+		"task_id", req.TaskID,
 		"source", sourceStr,
 	)
 
@@ -93,21 +94,30 @@ func (h *WebhookHandler) HandleContentEvent(c *gin.Context) {
 		return
 	}
 
-	// Prepare reading_plan_id (nullable)
-	readingPlanID := ""
-	if req.ReadingPlanID != nil {
-		readingPlanID = *req.ReadingPlanID
+	// Prepare plan_id (nullable)
+	planID := ""
+	if req.PlanID != nil {
+		planID = *req.PlanID
+	}
+
+	// Convert consumed_at timestamp to pgtype.Timestamptz
+	var consumedAtPg pgtype.Timestamptz
+	if err := consumedAtPg.Scan(req.Timestamp); err != nil {
+		slog.Error("webhook: failed to convert consumed_at timestamp", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
 	}
 
 	// Insert event into database
 	event, err := h.DB.Queries.CreateExternalContentEvent(ctx, sqlc.CreateExternalContentEventParams{
 		ID:              eventID,
 		Personid:        personPgUUID,
-		Contentid:       req.ContentID,
-		Readingplanid:   readingPlanID,
+		Taskid:          req.TaskID,
+		Planid:          planID,
 		Source:          sourceStr,
 		Receivedat:      receivedAtPg,
 		Contentprogress: contentProgress,
+		Consumedat:      consumedAtPg,
 	})
 	if err != nil {
 		slog.Error("webhook: failed to create content event",

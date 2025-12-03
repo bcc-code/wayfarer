@@ -116,14 +116,15 @@ type ExternalContentEvent struct {
 	// Brunstad TV person_id (UUID)
 	PersonID pgtype.UUID `json:"person_id"`
 	// External content identifier
-	ContentID string `json:"content_id"`
+	TaskID string `json:"task_id"`
 	// External reading plan identifier (nullable)
-	ReadingPlanID *string `json:"reading_plan_id"`
+	PlanID *string `json:"plan_id"`
 	// API key identifier that submitted this event
 	Source     string             `json:"source"`
 	ReceivedAt pgtype.Timestamptz `json:"received_at"`
 	// Content completion progress (0.01 to 1.1, where 1.0 = 100%)
-	ContentProgress *float32 `json:"content_progress"`
+	ContentProgress *float32           `json:"content_progress"`
+	ConsumedAt      pgtype.Timestamptz `json:"consumed_at"`
 }
 
 type LeaderboardEventChurch struct {

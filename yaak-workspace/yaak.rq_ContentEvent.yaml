@@ -1,0 +1,32 @@
+type: http_request
+model: http_request
+id: rq_ContentEvent
+createdAt: 2025-12-03T10:15:00
+updatedAt: 2025-12-03T09:18:19.268239
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_ContentEvents
+authentication:
+  key: Bearer
+  token: example-api-key-12345
+authenticationType: bearer
+body:
+  text: |
+    {
+      "person_id": "550e8400-e29b-41d4-a716-446655440000",
+      "task_id": "article-123",
+      "plan_id": "plan-456",
+      "timestamp": "2025-01-15T14:30:00Z",
+      "content_progress": 0.75
+    }
+bodyType: application/json
+description: Submit a content completion event from an external system
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_ContentType
+method: POST
+name: Submit Content Event
+sortPriority: 0.0
+url: ${[ HOST ]}/api/v1/content-events
+urlParameters: []

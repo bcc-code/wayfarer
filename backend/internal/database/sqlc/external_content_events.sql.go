@@ -12,46 +12,49 @@ import (
 )
 
 const CreateExternalContentEvent = `-- name: CreateExternalContentEvent :one
-INSERT INTO external_content_events (id, person_id, content_id, reading_plan_id, source, received_at, content_progress)
-VALUES ($1, $2::uuid, $3::text, $4::text, $5::text, $6::timestamptz, $7)
-RETURNING id, person_id, content_id, reading_plan_id, source, received_at, content_progress
+INSERT INTO external_content_events (id, person_id, task_id, plan_id, source, received_at, content_progress, consumed_at)
+VALUES ($1, $2::uuid, $3::text, $4::text, $5::text, $6::timestamptz, $7, $8::timestamptz)
+RETURNING id, person_id, task_id, plan_id, source, received_at, content_progress, consumed_at
 `
 
 type CreateExternalContentEventParams struct {
 	ID              string             `json:"id"`
 	Personid        pgtype.UUID        `json:"personid"`
-	Contentid       string             `json:"contentid"`
-	Readingplanid   string             `json:"readingplanid"`
+	Taskid          string             `json:"taskid"`
+	Planid          string             `json:"planid"`
 	Source          string             `json:"source"`
 	Receivedat      pgtype.Timestamptz `json:"receivedat"`
 	Contentprogress *float32           `json:"contentprogress"`
+	Consumedat      pgtype.Timestamptz `json:"consumedat"`
 }
 
 func (q *Queries) CreateExternalContentEvent(ctx context.Context, arg CreateExternalContentEventParams) (*ExternalContentEvent, error) {
 	row := q.db.QueryRow(ctx, CreateExternalContentEvent,
 		arg.ID,
 		arg.Personid,
-		arg.Contentid,
-		arg.Readingplanid,
+		arg.Taskid,
+		arg.Planid,
 		arg.Source,
 		arg.Receivedat,
 		arg.Contentprogress,
+		arg.Consumedat,
 	)
 	var i ExternalContentEvent
 	err := row.Scan(
 		&i.ID,
 		&i.PersonID,
-		&i.ContentID,
-		&i.ReadingPlanID,
+		&i.TaskID,
+		&i.PlanID,
 		&i.Source,
 		&i.ReceivedAt,
 		&i.ContentProgress,
+		&i.ConsumedAt,
 	)
 	return &i, err
 }
 
 const GetExternalContentEventByID = `-- name: GetExternalContentEventByID :one
-SELECT id, person_id, content_id, reading_plan_id, source, received_at, content_progress
+SELECT id, person_id, task_id, plan_id, source, received_at, content_progress, consumed_at
 FROM external_content_events
 WHERE id = $1
 `
@@ -62,17 +65,18 @@ func (q *Queries) GetExternalContentEventByID(ctx context.Context, id string) (*
 	err := row.Scan(
 		&i.ID,
 		&i.PersonID,
-		&i.ContentID,
-		&i.ReadingPlanID,
+		&i.TaskID,
+		&i.PlanID,
 		&i.Source,
 		&i.ReceivedAt,
 		&i.ContentProgress,
+		&i.ConsumedAt,
 	)
 	return &i, err
 }
 
 const GetExternalContentEventsByPersonID = `-- name: GetExternalContentEventsByPersonID :many
-SELECT id, person_id, content_id, reading_plan_id, source, received_at, content_progress
+SELECT id, person_id, task_id, plan_id, source, received_at, content_progress, consumed_at
 FROM external_content_events
 WHERE person_id = $1::uuid
 ORDER BY received_at DESC
@@ -98,11 +102,12 @@ func (q *Queries) GetExternalContentEventsByPersonID(ctx context.Context, arg Ge
 		if err := rows.Scan(
 			&i.ID,
 			&i.PersonID,
-			&i.ContentID,
-			&i.ReadingPlanID,
+			&i.TaskID,
+			&i.PlanID,
 			&i.Source,
 			&i.ReceivedAt,
 			&i.ContentProgress,
+			&i.ConsumedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -115,7 +120,7 @@ func (q *Queries) GetExternalContentEventsByPersonID(ctx context.Context, arg Ge
 }
 
 const GetExternalContentEventsBySource = `-- name: GetExternalContentEventsBySource :many
-SELECT id, person_id, content_id, reading_plan_id, source, received_at, content_progress
+SELECT id, person_id, task_id, plan_id, source, received_at, content_progress, consumed_at
 FROM external_content_events
 WHERE source = $1::text
 ORDER BY received_at DESC
@@ -141,11 +146,12 @@ func (q *Queries) GetExternalContentEventsBySource(ctx context.Context, arg GetE
 		if err := rows.Scan(
 			&i.ID,
 			&i.PersonID,
-			&i.ContentID,
-			&i.ReadingPlanID,
+			&i.TaskID,
+			&i.PlanID,
 			&i.Source,
 			&i.ReceivedAt,
 			&i.ContentProgress,
+			&i.ConsumedAt,
 		); err != nil {
 			return nil, err
 		}

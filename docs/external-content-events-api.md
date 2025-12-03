@@ -40,8 +40,9 @@ Submit a new content completion event.
 ```json
 {
   "person_id": "550e8400-e29b-41d4-a716-446655440000",
-  "content_id": "article-123",
-  "reading_plan_id": "plan-456",
+  "task_id": "article-123",
+  "plan_id": "plan-456",
+  "timestamp": "2025-01-15T14:30:00Z",
   "content_progress": 0.75
 }
 ```
@@ -51,8 +52,9 @@ Submit a new content completion event.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | person_id | string (UUID) | Yes | The Brunstad TV person_id (UUID format) |
-| content_id | string | Yes | External content identifier |
-| reading_plan_id | string | No | External reading plan identifier (optional) |
+| task_id | string | Yes | External task identifier |
+| plan_id | string | No | External plan identifier (optional) |
+| timestamp | string (ISO8601) | Yes | When the content was consumed (RFC3339/ISO8601 format) |
 | content_progress | float | No | Content completion progress (0.01 to 1.1, where 1.0 = 100%). Values outside this range are ignored and stored as NULL. |
 
 #### Success Response
