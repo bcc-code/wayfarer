@@ -48,7 +48,6 @@ async function createProject(event: FormSubmitEvent<Schema>) {
   }
 
   executeMutation({ input: event.data }).then((response) => {
-    console.log(response)
     if (response.error) {
       toast.add({
         title: response.error.name,

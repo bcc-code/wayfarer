@@ -52,7 +52,6 @@ function exportTheme() {
         .map(([key, value]) => [toKebabCase(key), value]),
     ),
   }
-  console.log(themeJson)
 
   const blob = new Blob([JSON.stringify(themeJson, null, 2)], {
     type: 'application/json',
