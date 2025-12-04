@@ -2,7 +2,7 @@ type: folder
 model: folder
 id: fl_ContentEvents
 createdAt: 2025-12-03T10:15:00
-updatedAt: 2025-12-03T10:15:00
+updatedAt: 2025-12-03T10:01:13.200963
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -10,4 +10,4 @@ authenticationType: null
 description: ''
 headers: []
 name: Webhooks
-sortPriority: 3000.0
+sortPriority: 2000.0

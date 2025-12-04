@@ -30,6 +30,7 @@ const (
 	PrefixConsent              = "CN" // Consents
 	PrefixUserConsent          = "UC" // User Consent Acceptances (deprecated, use PrefixUserConsentHistory)
 	PrefixUserConsentHistory   = "UH" // User Consent History
+	PrefixExternalContent      = "EC" // External Content (synced from external sources like SSF)
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -140,6 +141,11 @@ func NewUserConsentID() string {
 // NewUserConsentHistoryID generates a new ID for user consent history (UH prefix)
 func NewUserConsentHistoryID() string {
 	return newID(PrefixUserConsentHistory)
+}
+
+// NewExternalContentID generates a new ID for external content (EC prefix)
+func NewExternalContentID() string {
+	return newID(PrefixExternalContent)
 }
 
 // Validation functions
@@ -264,4 +270,9 @@ func IsUserConsentID(id string) bool {
 // IsUserConsentHistoryID validates a user consent history ID
 func IsUserConsentHistoryID(id string) bool {
 	return IsValidID(id, PrefixUserConsentHistory)
+}
+
+// IsExternalContentID validates an external content ID
+func IsExternalContentID(id string) bool {
+	return IsValidID(id, PrefixExternalContent)
 }

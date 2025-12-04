@@ -21,6 +21,7 @@ type Config struct {
 	Members  MembersConfig
 	Auth0    Auth0Config
 	OTEL     OTELConfig
+	SSF      SSFConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -84,6 +85,15 @@ type OTELConfig struct {
 	SamplingRatio    float64 // Sampling ratio (0.0 to 1.0)
 }
 
+// SSFConfig holds SSF API configuration
+type SSFConfig struct {
+	BaseURL   string        // SSF API base URL
+	APIKey    string        // Bearer token for authentication
+	DebugMode bool          // Enable verbose request/response logging
+	Timeout   time.Duration // Request timeout
+	SyncKey   string        // Static key for sync endpoint authentication
+}
+
 // Load reads all environment variables and returns a Config struct
 // This should be called once at application startup
 func Load() (*Config, error) {
@@ -135,6 +145,13 @@ func Load() (*Config, error) {
 			ExporterEndpoint: getEnv("OTEL_EXPORTER_ENDPOINT", "localhost:4317"),
 			ExporterInsecure: getEnvAsBool("OTEL_EXPORTER_INSECURE", true),
 			SamplingRatio:    getEnvAsFloat("OTEL_SAMPLING_RATIO", 1.0),
+		},
+		SSF: SSFConfig{
+			BaseURL:   getEnv("SSF_API_BASE_URL", "https://api.sssf.life"),
+			APIKey:    getEnv("SSF_API_KEY", ""),
+			DebugMode: getEnvAsBool("SSF_DEBUG_MODE", false),
+			Timeout:   getEnvAsDuration("SSF_API_TIMEOUT", 10*time.Second),
+			SyncKey:   getEnv("SSF_SYNC_KEY", ""),
 		},
 	}
 

@@ -1,0 +1,22 @@
+type: folder
+model: folder
+id: fl_sxWSDw9Ja4
+createdAt: 2025-12-03T10:01:10.676208
+updatedAt: 2025-12-03T10:05:46.544525
+workspaceId: wk_XKsmbMdFg7
+folderId: null
+authentication:
+  token: ${[ HT_TOKEN ]}
+authenticationType: bearer
+description: ''
+headers:
+- enabled: true
+  name: Accept-Language
+  value: no
+  id: x5tZchNiyP
+- enabled: true
+  name: ''
+  value: ''
+  id: BHXKEYQ2dz
+name: HiddenTreasures API
+sortPriority: 10000.0

@@ -3,7 +3,7 @@ model: environment
 id: ev_GPdZ4AbXG6
 workspaceId: wk_XKsmbMdFg7
 createdAt: 2025-11-25T12:37:04.349121
-updatedAt: 2025-11-28T14:01:22.228110
+updatedAt: 2025-12-04T12:47:40.563453
 name: Local
 public: true
 base: false
@@ -18,5 +18,13 @@ variables:
   name: TOKEN
   value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVMwMUs5VzFZNE0xUjE5WUNEWDRZU0FDVDBCSyIsInVzZXJfcm9sZXMiOlsidXNlciIsImFkbWluIiwic3VwZXJhZG1pbiJdLCJpc3MiOiJ3YXlmYXJlciIsImV4cCI6MTc5MDI1ODQzMCwiaWF0IjoxNzY0MzM4NDMwfQ.QQx4rpLMv159nUNRPGRV38OFNppo28Qt5bF5ArZTCKE
   id: IrVp557pTp
+- enabled: true
+  name: HT_HOST
+  value: https://api.sssf.life
+  id: AvuM0VpM0K
+- enabled: true
+  name: HT_TOKEN
+  value: REPLACE
+  id: Syd8Dp8ybI
 color: var(--success)
 sortPriority: 0.0

@@ -110,6 +110,26 @@ type EventTranslation struct {
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
+// Stores content items synced from external sources (SSF, etc.)
+type ExternalContent struct {
+	ID string `json:"id"`
+	// External plan identifier
+	PlanID string `json:"plan_id"`
+	// External item ID (unique within plan)
+	TaskID string `json:"task_id"`
+	// Nested content ID (MediaEpisode, Song, BookChapter, etc.)
+	ContentID *string `json:"content_id"`
+	// Type of content: media_episode, song, book_chapter, periodical_article, bible_chapter, bible_verses
+	ContentType string `json:"content_type"`
+	// Content publication date
+	PublishedAt pgtype.Timestamptz `json:"published_at"`
+	SyncedAt    pgtype.Timestamptz `json:"synced_at"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	// Content source identifier (e.g., ssf)
+	Source string `json:"source"`
+}
+
 // Stores content completion events from external systems
 type ExternalContentEvent struct {
 	ID string `json:"id"`
@@ -125,6 +145,14 @@ type ExternalContentEvent struct {
 	// Content completion progress (0.01 to 1.1, where 1.0 = 100%)
 	ContentProgress *float32           `json:"content_progress"`
 	ConsumedAt      pgtype.Timestamptz `json:"consumed_at"`
+}
+
+type ExternalContentTranslation struct {
+	ExternalContentID string             `json:"external_content_id"`
+	LanguageCode      string             `json:"language_code"`
+	Title             *string            `json:"title"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
 }
 
 type LeaderboardEventChurch struct {

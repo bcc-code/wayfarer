@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_UoznZfyyMQ
 createdAt: 2025-12-02T17:09:43.355455
-updatedAt: 2025-12-02T17:10:15.045067
+updatedAt: 2025-12-03T10:01:13.211340
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -37,6 +37,6 @@ headers:
   id: 0s4xJY0Rq9
 method: POST
 name: ME
-sortPriority: 8000.001
+sortPriority: 9000.0
 url: ${[ HOST ]}/graphql
 urlParameters: []

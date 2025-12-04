@@ -2,7 +2,7 @@ type: folder
 model: folder
 id: fl_qhH6J7tuNv
 createdAt: 2025-11-28T13:57:28.811164
-updatedAt: 2025-12-01T11:12:30.430397
+updatedAt: 2025-12-03T10:01:13.199015
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -10,4 +10,4 @@ authenticationType: null
 description: ''
 headers: []
 name: Mutations - Project
-sortPriority: 2000.0
+sortPriority: 1000.0

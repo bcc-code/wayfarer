@@ -1,0 +1,23 @@
+type: http_request
+model: http_request
+id: rq_SSFSyncBySlug
+createdAt: 2025-12-04T11:00:00
+updatedAt: 2025-12-04T11:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_SSFSync
+authentication: {}
+authenticationType: null
+body:
+  text: ''
+bodyType: null
+description: 'Sync any SSF plan by slug (replace :slug in URL)'
+headers:
+- enabled: true
+  name: X-Sync-Key
+  value: dev-sync-key-12345
+  id: hdr_SSFSyncKey
+method: POST
+name: Sync SSF Plan by Slug
+sortPriority: 1000.0
+url: ${[ HOST ]}/ssf/sync/:slug
+urlParameters: []

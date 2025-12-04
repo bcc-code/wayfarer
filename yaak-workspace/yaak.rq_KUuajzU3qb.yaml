@@ -1,0 +1,31 @@
+type: http_request
+model: http_request
+id: rq_KUuajzU3qb
+createdAt: 2025-12-03T10:01:16.884690
+updatedAt: 2025-12-04T08:57:49.610229
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_sxWSDw9Ja4
+authentication: {}
+authenticationType: null
+body:
+  text: ''
+bodyType: null
+description: ''
+headers: []
+method: POST
+name: HTP Reading Plan
+sortPriority: 8999.9999
+url: ${[ HT_HOST ]}/v1/plans/slug/hidden-treasures-podcast/
+urlParameters:
+- enabled: true
+  name: offset
+  value: '0'
+  id: YkadgzvIcI
+- enabled: true
+  name: limit
+  value: '100'
+  id: 39byYUW6b4
+- enabled: true
+  name: ''
+  value: ''
+  id: QXtGqmJ7Uf

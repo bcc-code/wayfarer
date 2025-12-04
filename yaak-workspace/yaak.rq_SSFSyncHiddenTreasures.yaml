@@ -1,0 +1,23 @@
+type: http_request
+model: http_request
+id: rq_SSFSyncHiddenTreasures
+createdAt: 2025-12-04T11:00:00
+updatedAt: 2025-12-04T11:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_SSFSync
+authentication: {}
+authenticationType: null
+body:
+  text: ''
+bodyType: null
+description: Sync Hidden Treasures Podcast from SSF API
+headers:
+- enabled: true
+  name: X-Sync-Key
+  value: dev-sync-key-12345
+  id: hdr_SSFSyncKey
+method: POST
+name: Sync Hidden Treasures Podcast
+sortPriority: 0.0
+url: ${[ HOST ]}/ssf/sync/hidden-treasures-podcast
+urlParameters: []

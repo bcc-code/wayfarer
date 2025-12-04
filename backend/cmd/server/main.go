@@ -30,6 +30,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/ssf"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/ravilushqa/otelgqlgen"
@@ -116,6 +117,25 @@ func main() {
 		slog.Info("Members API client initialized", "domain", cfg.Members.Domain)
 	} else {
 		slog.Warn("Members API client not initialized - missing configuration")
+	}
+
+	// Initialize SSF client and sync service
+	var ssfSyncService *ssf.SyncService
+	if cfg.SSF.APIKey != "" {
+		ssfClient := ssf.New(ssf.Config{
+			BaseURL:   cfg.SSF.BaseURL,
+			APIKey:    cfg.SSF.APIKey,
+			DebugMode: cfg.SSF.DebugMode,
+			Timeout:   cfg.SSF.Timeout,
+		}, lgr)
+		slog.Info("SSF API client initialized",
+			"base_url", cfg.SSF.BaseURL,
+			"debug_mode", cfg.SSF.DebugMode,
+		)
+
+		ssfSyncService = ssf.NewSyncService(ssfClient, db.Queries, lgr)
+	} else {
+		slog.Warn("SSF API client not initialized - missing API key")
 	}
 
 	// Initialize cache with default configuration
@@ -262,6 +282,16 @@ func main() {
 	}
 	router.POST("/api/v1/content-events", middleware.APIKeyAuth(cfg.APIKey), webhookHandler.HandleContentEvent)
 
+	// SSF sync endpoint (triggered by external cron/scheduler)
+	if ssfSyncService != nil && cfg.SSF.SyncKey != "" {
+		ssfHandler := &handlers.SSFHandler{
+			SyncService: ssfSyncService,
+			SyncKey:     cfg.SSF.SyncKey,
+		}
+		router.POST("/ssf/sync/:slug", ssfHandler.HandleSyncPlan)
+		slog.Info("SSF sync endpoint registered at POST /ssf/sync/:slug")
+	}
+
 	// GraphQL API endpoint
 	router.POST("/graphql", middleware.LanguageExtractor(), middleware.JWTAuth(cfg.JWT), graphqlHandler(apiHandler))
 	if cfg.Server.Environment != "production" {
@@ -302,10 +332,10 @@ func main() {
 	slog.Info("Shutting down server...")
 
 	// Graceful shutdown with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(shutdownCtx); err != nil {
 		slog.Error("Server forced to shutdown", "error", err)
 		os.Exit(1)
 	}
