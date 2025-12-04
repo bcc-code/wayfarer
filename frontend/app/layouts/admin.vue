@@ -82,7 +82,13 @@ const groups = computed(() => [
   <div>
     <header class="border-default border-b">
       <UContainer class="flex items-center gap-6 lg:gap-12">
-        <NuxtLink to="/admin" class="font-serif text-xl">Interact</NuxtLink>
+        <NuxtLink to="/admin" class="font-serif text-xl">
+          <UColorModeImage
+            light="/images/logo/logo.svg"
+            dark="/images/logo/logo-light.svg"
+            class="h-6"
+          />
+        </NuxtLink>
         <UNavigationMenu
           :items="links"
           highlight

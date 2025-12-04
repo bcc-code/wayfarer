@@ -13,7 +13,8 @@
     "test:unit": "vitest run --project=unit",
     "test:watch": "vitest --project=unit",
     "format": "prettier --write .",
-    "lint": "eslint . --fix"
+    "lint": "eslint . --fix",
+    "pwa-assets-generator": "pwa-assets-generator --preset minimal-2023 public/app-icon.png"
   },
   "dependencies": {
     "@internationalized/date": "^3.10.0",
@@ -48,6 +49,7 @@
     "@nuxt/eslint": "^1.11.0",
     "@nuxt/test-utils": "^3.20.1",
     "@tailwindcss/typography": "^0.5.19",
+    "@vite-pwa/assets-generator": "^1.0.2",
     "@vue/test-utils": "^2.4.6",
     "eslint": "^9.39.1",
     "happy-dom": "^20.0.11",

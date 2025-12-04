@@ -27,8 +27,19 @@ export default defineNuxtConfig({
       link: [
         {
           rel: 'icon',
+          href: '/favicon.ico',
+          sizes: '32x32',
+        },
+        {
+          rel: 'icon',
           type: 'image/svg+xml',
           href: '/favicon.svg',
+          sizes: 'any',
+        },
+        {
+          rel: 'apple-touch-icon',
+          href: '/apple-touch-icon-180x180.png',
+          sizes: '180x180',
         },
       ],
     },
@@ -79,6 +90,36 @@ export default defineNuxtConfig({
     registerType: 'autoUpdate',
     devOptions: {
       enabled: true,
+    },
+    manifest: {
+      theme_color: '#ffaedf',
+      name: 'Interact by BCC Media',
+      short_name: 'Interact',
+      orientation: 'portrait',
+      icons: [
+        {
+          src: 'pwa-64x64.png',
+          sizes: '64x64',
+          type: 'image/png',
+        },
+        {
+          src: 'pwa-192x192.png',
+          sizes: '192x192',
+          type: 'image/png',
+        },
+        {
+          src: 'pwa-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any',
+        },
+        {
+          src: 'maskable-icon-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'maskable',
+        },
+      ],
     },
   },
 })

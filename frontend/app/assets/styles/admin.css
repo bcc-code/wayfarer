@@ -8,10 +8,10 @@
  */
 
 :root {
-  --ui-primary: black;
+  --ui-primary: #5d0045;
   --ui-radius: 0.3rem;
 }
 
 .dark {
-  --ui-primary: white;
+  --ui-primary: #ffaedf;
 }
