@@ -14,6 +14,7 @@ gql(`
       }
       gender
       birthdate
+      age
       roles {
         id
         role
@@ -36,6 +37,7 @@ gql(`
 `)
 
 export function useAuth() {
+  const { reset } = useAnalytics()
   const token = useCookie('token')
   const isLoading = useState('isLoading', () => true)
   const me = useState<GetMeQuery['me'] | null | undefined>('me', () => null)
@@ -75,6 +77,7 @@ export function useAuth() {
       me.value = newMe
       isLoading.value = false
     },
+    { immediate: true },
   )
 
   const getAccessToken = async () => {
@@ -98,6 +101,7 @@ export function useAuth() {
   }
 
   const config = useRuntimeConfig()
+  const { track } = useAnalytics()
 
   function loginWithRedirect() {
     return navigateTo(
@@ -106,6 +110,14 @@ export function useAuth() {
         external: true,
       },
     )
+  }
+
+  function logout() {
+    track(AnalyticsEvent.LogoutCompleted)
+    reset()
+    token.value = null
+    me.value = null
+    return navigateTo('/')
   }
 
   // Authorization
@@ -133,6 +145,7 @@ export function useAuth() {
     getAccessToken,
     setAccessToken,
     loginWithRedirect,
+    logout,
     isLoading,
     me,
     token,

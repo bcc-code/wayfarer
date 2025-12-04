@@ -24,7 +24,11 @@
       "light": "Lys",
       "dark": "Mørk"
     },
-    "consents": "Samtykke"
+    "consents": "Samtykke",
+    "notifications": "Varslinger",
+    "notificationsEnabled": "På",
+    "notificationsDisabled": "Av",
+    "addToHomeScreen": "Legg til app på hjem skjerm"
   },
   "standings": {
     "global": "Topp 20",

@@ -24,7 +24,11 @@
       "light": "Light",
       "dark": "Dark"
     },
-    "consents": "Consents"
+    "consents": "Consents",
+    "notifications": "Notifications",
+    "notificationsEnabled": "On",
+    "notificationsDisabled": "Off",
+    "addToHomeScreen": "Add app to home screen"
   },
   "standings": {
     "global": "Top 20",

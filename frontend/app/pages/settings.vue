@@ -40,7 +40,9 @@ const { open: consentsOpen } = useConsentsDialog()
       </NuxtLink>
     </template>
 
-    <DesignPanel class="gap-list-section-inset flex flex-col">
+    <DesignPanel
+      class="gap-list-section-inset flex flex-col mb-list-section-gap"
+    >
       <UDropdownMenu
         :ui="{
           content:
@@ -91,12 +93,26 @@ const { open: consentsOpen } = useConsentsDialog()
         </div>
       </UDropdownMenu>
       <hr class="border-border-default mx-3" />
+      <button class="flex items-center justify-between gap-2.5 px-3 py-2">
+        <p class="text-label">{{ $t('settings.notifications') }}</p>
+        <DesignButton size="small" variant="secondary" class="grow-0">
+          {{ $t('settings.notificationsEnabled') }}
+        </DesignButton>
+      </button>
+    </DesignPanel>
+
+    <DesignPanel class="gap-list-section-inset flex flex-col">
+      <button class="flex items-center justify-between gap-2.5 px-3 py-2 h-12">
+        <p class="text-label">{{ $t('settings.addToHomeScreen') }}</p>
+        <Icon name="lucide:chevron-right" class="size-6" />
+      </button>
+      <hr class="border-border-default mx-3" />
       <button
-        class="flex items-center justify-between gap-2.5 px-3 py-2"
+        class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
         @click="consentsOpen = true"
       >
         <p class="text-label">{{ $t('settings.consents') }}</p>
-        <DesignIconButton icon="lucide:chevron-right" />
+        <Icon name="lucide:chevron-right" class="size-6" />
       </button>
     </DesignPanel>
 
