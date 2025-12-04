@@ -15,9 +15,34 @@ const schema = z.object({
   branding: z.object({
     logo: z.string().optional(),
     colors: z.object({
-      primary: z.string(),
-      secondary: z.string(),
-      tertiary: z.string(),
+      light: z.object({
+        accent: z.string(),
+        accentContrast: z.string(),
+        onAccent: z.string(),
+        backgroundDefault: z.string(),
+        backgroundRaised: z.string(),
+        backgroundIndent: z.string(),
+        textDefault: z.string(),
+        textMuted: z.string(),
+        textHint: z.string(),
+        shadowDefault: z.string(),
+        shadowBlank: z.string(),
+        borderDefault: z.string(),
+      }),
+      dark: z.object({
+        accent: z.string(),
+        accentContrast: z.string(),
+        onAccent: z.string(),
+        backgroundDefault: z.string(),
+        backgroundRaised: z.string(),
+        backgroundIndent: z.string(),
+        textDefault: z.string(),
+        textMuted: z.string(),
+        textHint: z.string(),
+        shadowDefault: z.string(),
+        shadowBlank: z.string(),
+        borderDefault: z.string(),
+      }),
     }),
     rounding: z.number(),
   }),
@@ -32,9 +57,34 @@ const state = reactive<Schema>({
     logo: undefined,
     rounding: 0,
     colors: {
-      primary: '#000000',
-      secondary: '#000000',
-      tertiary: '#000000',
+      light: {
+        accent: '#ffaedf',
+        accentContrast: '#5d0045',
+        onAccent: '#5d0045',
+        backgroundDefault: '#efefef',
+        backgroundRaised: '#ffffff',
+        backgroundIndent: 'rgb(0 0 0 / 0.05)',
+        textDefault: '#202020',
+        textMuted: 'rgb(32 32 32 / 0.7)',
+        textHint: 'rgb(32 32 32 / 0.4)',
+        shadowDefault: 'rgb(0 0 0 / 0.1)',
+        shadowBlank: 'rgb(0 0 0 / 0)',
+        borderDefault: 'rgb(0 0 0 / 0.15)',
+      },
+      dark: {
+        accent: '#ffaedf',
+        accentContrast: '#ffaedf',
+        onAccent: '#5d0045',
+        backgroundDefault: '#222222',
+        backgroundRaised: '#343434',
+        backgroundIndent: 'rgb(0 0 0 / 0.25)',
+        textDefault: '#f5f5f5',
+        textMuted: 'rgb(255 255 255 / 0.7)',
+        textHint: 'rgb(255 255 255 / 0.4)',
+        shadowDefault: 'rgb(0 0 0 / 0.3)',
+        shadowBlank: 'rgb(0 0 0 / 0)',
+        borderDefault: 'rgb(255 255 255 / 0.09)',
+      },
     },
   },
 })
@@ -103,8 +153,11 @@ async function createProject(event: FormSubmitEvent<Schema>) {
           v-model:start="state.startDate"
           v-model:end="state.endDate"
         />
-        <UFormField label="Accent color">
-          <ColorPickerInput v-model="state.branding.colors.primary" />
+        <UFormField label="Color Theme">
+          <AdminProjectThemeEditor
+            v-model="state.branding.colors"
+            :project-name="state.name || 'New Project'"
+          />
         </UFormField>
         <UButton type="submit" size="lg" block>Create project</UButton>
       </UForm>

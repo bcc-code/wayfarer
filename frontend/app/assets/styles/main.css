@@ -8,18 +8,18 @@
   --font-serif: 'Noto Serif', serif;
 
   /* Colors */
-  --color-accent: #e8dfa7;
-  --color-accent-contrast: #938636;
-  --color-on-accent: #01121a;
-  --color-background-default: #f3ede5;
+  --color-accent: #ffaedf;
+  --color-accent-contrast: #5d0045;
+  --color-on-accent: #5d0045;
+  --color-background-default: #efefef;
   --color-background-raised: #ffffff;
-  --color-background-indent: rgb(99 56 1 / 0.05);
-  --color-text-default: #282521;
-  --color-text-muted: rgb(40 37 33 / 0.65);
-  --color-text-hint: rgb(40 37 33 / 0.4);
-  --color-shadow-default: rgb(40 37 33 / 0.1);
-  --color-shadow-blank: rgb(40 37 33 / 0);
-  --color-border-default: rgb(40 37 33 / 0.15);
+  --color-background-indent: rgb(0 0 0 / 0.05);
+  --color-text-default: #202020;
+  --color-text-muted: rgb(32 32 32 / 0.7);
+  --color-text-hint: rgb(32 32 32 / 0.4);
+  --color-shadow-default: rgb(0 0 0 / 0.1);
+  --color-shadow-blank: rgb(0 0 0 / 0);
+  --color-border-default: rgb(0 0 0 / 0.15);
 
   /* Border radius */
   --radius-multiplier: 1;
@@ -86,18 +86,18 @@
 
 /* Dark mode */
 .dark {
-  --color-accent: #e8dfa7;
-  --color-accent-contrast: #e8dfa7;
-  --color-on-accent: #1a1401;
-  --color-background-default: #122026;
-  --color-background-raised: #0a3644;
-  --color-background-indent: rgb(0 9 13 / 0.25);
-  --color-text-default: #f3ede5;
-  --color-text-muted: rgb(243 237 229 / 0.7);
-  --color-text-hint: rgb(243 237 229 / 0.4);
-  --color-shadow-default: rgb(18 32 38 / 0.3);
-  --color-shadow-blank: rgb(18 32 38 / 0);
-  --color-border-default: rgb(156 214 243 / 0.09);
+  --color-accent: #ffaedf;
+  --color-accent-contrast: #ffaedf;
+  --color-on-accent: #5d0045;
+  --color-background-default: #222222;
+  --color-background-raised: #343434;
+  --color-background-indent: rgb(0 0 0 / 0.25);
+  --color-text-default: #f5f5f5;
+  --color-text-muted: rgb(255 255 255 / 0.7);
+  --color-text-hint: rgb(255 255 255 / 0.4);
+  --color-shadow-default: rgb(0 0 0 / 0.3);
+  --color-shadow-blank: rgb(0 0 0 / 0);
+  --color-border-default: rgb(255 255 255 / 0.09);
 }
 
 /* Semantic Typography Classes */
