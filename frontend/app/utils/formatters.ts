@@ -24,8 +24,13 @@ export function capitalizeFirst(str: string): string {
  * Get the current locale from i18n
  */
 function getLocale(): string {
-  const nuxtApp = useNuxtApp()
-  return nuxtApp.$i18n?.locale?.value || 'en'
+  try {
+    const nuxtApp = useNuxtApp()
+    return nuxtApp.$i18n?.locale?.value || 'en'
+  } catch {
+    // Fallback for non-Nuxt environments (e.g., unit tests)
+    return 'en'
+  }
 }
 
 export function formatDate(dateString: string) {

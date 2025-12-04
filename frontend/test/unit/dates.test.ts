@@ -25,27 +25,27 @@ describe('dates utilities', () => {
   describe('formatDateRange', () => {
     it('should format same month and year dates', () => {
       const result = formatDateRange('2024-03-15', '2024-03-20')
-      expect(result).toBe('Mar 15-20, 2024')
+      expect(result).toBe('Mar 15\u2009\u2013\u200920, 2024')
     })
 
     it('should format different months same year', () => {
       const result = formatDateRange('2024-03-15', '2024-05-20')
-      expect(result).toBe('Mar 15 - May 20, 2024')
+      expect(result).toBe('Mar 15\u2009\u2013\u2009May 20, 2024')
     })
 
     it('should format different years', () => {
       const result = formatDateRange('2024-12-15', '2025-01-20')
-      expect(result).toBe('Dec 15, 2024 - Jan 20, 2025')
+      expect(result).toBe('Dec 15, 2024\u2009\u2013\u2009Jan 20, 2025')
     })
 
     it('should handle year boundaries', () => {
       const result = formatDateRange('2023-11-28', '2024-02-14')
-      expect(result).toBe('Nov 28, 2023 - Feb 14, 2024')
+      expect(result).toBe('Nov 28, 2023\u2009\u2013\u2009Feb 14, 2024')
     })
 
     it('should handle single day ranges (same start and end)', () => {
       const result = formatDateRange('2024-05-15', '2024-05-15')
-      expect(result).toBe('May 15-15, 2024')
+      expect(result).toBe('May 15, 2024')
     })
   })
 
