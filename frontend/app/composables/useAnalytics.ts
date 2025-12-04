@@ -1,17 +1,16 @@
 export function useAnalytics() {
-  const nuxtApp = useNuxtApp()
-  const posthog = nuxtApp.$posthog
+  const { $posthog } = useNuxtApp()
 
   function track(event: AnalyticsEvent, properties?: Record<string, unknown>) {
-    posthog?.capture(event, properties)
+    $posthog().capture(event, properties)
   }
 
   function identify(userId: string, properties?: Record<string, unknown>) {
-    posthog?.identify(userId, properties)
+    $posthog().identify(userId, properties)
   }
 
   function reset() {
-    posthog?.reset()
+    $posthog().reset()
   }
 
   return {
