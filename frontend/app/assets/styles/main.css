@@ -11,6 +11,8 @@
   --color-accent: #ffaedf;
   --color-accent-contrast: #5d0045;
   --color-on-accent: #5d0045;
+  --color-accent-positive: #9ed63c;
+  --color-accent-negative: #e86a4a;
   --color-background-default: #efefef;
   --color-background-raised: #ffffff;
   --color-background-indent: rgb(0 0 0 / 0.05);
@@ -89,6 +91,8 @@
   --color-accent: #ffaedf;
   --color-accent-contrast: #ffaedf;
   --color-on-accent: #5d0045;
+  --color-accent-positive: #c6ff62;
+  --color-accent-negative: #e86a4a;
   --color-background-default: #222222;
   --color-background-raised: #343434;
   --color-background-indent: rgb(0 0 0 / 0.25);

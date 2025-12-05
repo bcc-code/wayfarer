@@ -36,6 +36,19 @@ const { data, fetching, error } = useChallengePageQuery({
 
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
-    <pre v-else-if="data">{{ data.challenge }}</pre>
+    <div v-else-if="data" class="gap-medium flex flex-col">
+      <QuizAlternative text="This is an alternative" />
+      <QuizAlternative text="This is a highlighted alternative" highlighted />
+      <QuizAlternative
+        text="This is a confirmed and wrong alternative"
+        confirmed
+        wrong
+      />
+      <QuizAlternative
+        text="This is a confirmed and correct alternative"
+        confirmed
+        correct
+      />
+    </div>
   </PageLayout>
 </template>
