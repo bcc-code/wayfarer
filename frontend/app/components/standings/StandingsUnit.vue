@@ -97,22 +97,20 @@ function selectTeamLead(userId: string) {
         <h2 class="text-heading text-balance">
           {{ data.myCurrentProject.myTeam.name }}
         </h2>
-        <UModal
-          v-if="isTeamLead"
-          :ui="{ content: 'bg-background-default' }"
-          :transition="false"
-          modal
-          fullscreen
-        >
+        <DesignDrawer v-if="isTeamLead">
           <DesignButton variant="secondary" size="medium">
             {{ $t('unit.editUnit') }}
           </DesignButton>
           <template #content="{ close }">
-            <PageLayout :title="$t('unit.editUnit')" :bottom-padding="false">
+            <PageLayout
+              :title="$t('unit.editUnit')"
+              :bottom-padding="false"
+              class="min-h-0! grow"
+            >
               <template #action>
                 <DesignIconButton icon="lucide:x" @click="close" />
               </template>
-              <div class="gap-list-section-gap flex h-full flex-col">
+              <div class="gap-list-section-gap flex grow flex-col">
                 <DesignInput v-model="form.name" :label="$t('unit.unitName')" />
                 <DesignPanel>
                   <div class="flex items-center gap-2.5 px-3 py-2">
@@ -132,16 +130,11 @@ function selectTeamLead(userId: string) {
                   </div>
                 </DesignPanel>
 
-                <UModal
-                  v-model:open="showLeadSelector"
-                  :ui="{ content: 'bg-background-default' }"
-                  :transition="false"
-                  fullscreen
-                >
+                <DesignDrawer v-model:open="showLeadSelector">
                   <template #content="{ close: closeLeadSelector }">
                     <PageLayout
                       :title="$t('unit.selectUnitLeader')"
-                      :bottom-padding="false"
+                      :shadow="false"
                     >
                       <template #action>
                         <DesignIconButton
@@ -170,8 +163,8 @@ function selectTeamLead(userId: string) {
                       </div>
                     </PageLayout>
                   </template>
-                </UModal>
-                <div class="p-default flex h-full flex-col justify-end">
+                </DesignDrawer>
+                <div class="p-default flex grow flex-col justify-end">
                   <DesignButton
                     size="large"
                     class="grow-0"
@@ -183,7 +176,7 @@ function selectTeamLead(userId: string) {
               </div>
             </PageLayout>
           </template>
-        </UModal>
+        </DesignDrawer>
       </div>
       <LeaderboardList
         v-if="data.myCurrentProject.myTeam?.memberLeaderboard?.length"

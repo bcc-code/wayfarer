@@ -1,5 +1,15 @@
 <script setup lang="ts">
+withDefaults(
+  defineProps<{
+    dismissible?: boolean
+  }>(),
+  {
+    dismissible: true,
+  },
+)
+
 const open = defineModel<boolean>('open')
+
 const close = () => {
   open.value = false
 }
@@ -10,12 +20,13 @@ const close = () => {
     v-model:open="open"
     :ui="{
       content:
-        'bg-background-raised rounded-t-list ring-border-default h-[95%]',
+        'bg-background-default rounded-t-list ring-border-default h-full',
       overlay: 'bg-black/50',
       handle: 'bg-border-default!',
     }"
     should-scale-background
     :set-background-color-on-scale="false"
+    :dismissible
   >
     <template #default>
       <slot />

@@ -83,16 +83,10 @@ function getScoreJournalName(
 </script>
 
 <template>
-  <UModal
-    v-model:open="open"
-    :ui="{ content: 'bg-background-default' }"
-    :transition="false"
-    fullscreen
-    modal
-  >
+  <DesignDrawer v-model:open="open">
     <slot />
     <template #content="{ close }">
-      <PageLayout :title="$t('pages.pointHistory')">
+      <PageLayout :title="$t('pages.pointHistory')" :shadow="false">
         <template #action>
           <DesignIconButton icon="lucide:x" @click="close" />
         </template>
@@ -140,5 +134,5 @@ function getScoreJournalName(
         <EmptyState v-else />
       </PageLayout>
     </template>
-  </UModal>
+  </DesignDrawer>
 </template>

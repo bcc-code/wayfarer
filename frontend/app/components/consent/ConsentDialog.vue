@@ -70,16 +70,9 @@ watch(canClose, (cc) => {
 </script>
 
 <template>
-  <UModal
-    v-model:open="open"
-    :ui="{ content: 'bg-background-default' }"
-    fullscreen
-    modal
-    :close="canClose"
-    :dismissible="canClose"
-  >
+  <DesignDrawer v-model:open="open" :dismissible="canClose">
     <template #content="{ close }">
-      <PageLayout :title="$t('pages.consents')">
+      <PageLayout :title="$t('pages.consents')" :shadow="false">
         <template v-if="canClose" #action>
           <DesignIconButton icon="lucide:x" @click="close" />
         </template>
@@ -108,5 +101,5 @@ watch(canClose, (cc) => {
         </template>
       </PageLayout>
     </template>
-  </UModal>
+  </DesignDrawer>
 </template>

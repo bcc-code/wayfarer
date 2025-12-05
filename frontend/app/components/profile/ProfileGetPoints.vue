@@ -27,16 +27,10 @@ const { data, fetching, error } = useProjectRulesQuery({
 </script>
 
 <template>
-  <UModal
-    v-model:open="open"
-    :ui="{ content: 'bg-background-default' }"
-    :transition="false"
-    fullscreen
-    modal
-  >
+  <DesignDrawer v-model:open="open">
     <slot />
     <template #content="{ close }">
-      <PageLayout :title="$t('pages.getPoints')">
+      <PageLayout :title="$t('pages.getPoints')" :shadow="false">
         <template #action>
           <DesignIconButton icon="lucide:x" @click="close" />
         </template>
@@ -51,7 +45,7 @@ const { data, fetching, error } = useProjectRulesQuery({
         />
       </PageLayout>
     </template>
-  </UModal>
+  </DesignDrawer>
 </template>
 
 <style>
