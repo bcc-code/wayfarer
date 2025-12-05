@@ -20,13 +20,7 @@ watch(open, (isOpen) => {
 
 <template>
   <div>
-    <UModal
-      v-model:open="open"
-      :ui="{ content: 'bg-background-default' }"
-      :transition="false"
-      modal
-      fullscreen
-    >
+    <DesignDrawer v-model:open="open">
       <button
         class="grid aspect-square place-items-center overflow-hidden rounded-full"
       >
@@ -44,6 +38,7 @@ watch(open, (isOpen) => {
       <template #content="{ close }">
         <PageLayout
           :title="achievement.achievedAt ? 'Unlocked!' : 'Achievement'"
+          :shadow="false"
         >
           <template #action>
             <DesignIconButton icon="lucide:x" @click="close" />
@@ -92,6 +87,6 @@ watch(open, (isOpen) => {
           </div>
         </PageLayout>
       </template>
-    </UModal>
+    </DesignDrawer>
   </div>
 </template>

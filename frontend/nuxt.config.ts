@@ -17,6 +17,9 @@ export default defineNuxtConfig({
     typedPages: true,
   },
   app: {
+    rootAttrs: {
+      'data-vaul-drawer-wrapper': '',
+    },
     head: {
       title: 'Interact',
       meta: [

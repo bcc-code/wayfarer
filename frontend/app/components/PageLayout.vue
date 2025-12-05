@@ -3,9 +3,11 @@ withDefaults(
   defineProps<{
     title: string
     bottomPadding?: boolean
+    shadow?: boolean
   }>(),
   {
     bottomPadding: true,
+    shadow: true,
   },
 )
 
@@ -18,7 +20,9 @@ const hasScrolled = computed(() => y.value > 25)
     <div class="sticky top-0 z-10">
       <ProgressiveBlur
         direction="up"
-        class="from-shadow-blank/0 to-shadow-default bg-linear-to-t"
+        :class="[
+          shadow && 'from-shadow-blank/0 to-shadow-default bg-linear-to-t',
+        ]"
       >
         <header
           :class="[
