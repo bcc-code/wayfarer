@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
@@ -39,6 +40,14 @@ func (r *challengeResolver) UserCompletedAt(ctx context.Context, obj *model.Chal
 		return nil, nil // Not authenticated, return nil
 	}
 
+	// Check cache first
+	cacheKey := cache.UserChallengeCompletionKey(userID, obj.ID)
+	if cached, ok := r.Cache.Get(cacheKey); ok {
+		if ts, ok := cached.(*time.Time); ok {
+			return &scalars.DateTime{Time: *ts}, nil
+		}
+	}
+
 	// Query database for completion timestamp
 	completion, err := r.DB.Queries.GetUserCompletionTimestamp(ctx, sqlc.GetUserCompletionTimestampParams{
 		Userid:      userID,
@@ -53,6 +62,10 @@ func (r *challengeResolver) UserCompletedAt(ctx context.Context, obj *model.Chal
 		return nil, nil
 	}
 
+	// Cache the result
+	ts := completion.Time
+	r.Cache.Set(cacheKey, &ts)
+
 	return &scalars.DateTime{Time: completion.Time}, nil
 }
 
@@ -62,6 +75,14 @@ func (r *challengeResolver) UserEnrolledAt(ctx context.Context, obj *model.Chall
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
 		return nil, nil // Not authenticated, return nil
+	}
+
+	// Check cache first
+	cacheKey := cache.UserChallengeEnrollmentKey(userID, obj.ID)
+	if cached, ok := r.Cache.Get(cacheKey); ok {
+		if ts, ok := cached.(*time.Time); ok {
+			return &scalars.DateTime{Time: *ts}, nil
+		}
 	}
 
 	// Query database for enrollment timestamp
@@ -77,6 +98,10 @@ func (r *challengeResolver) UserEnrolledAt(ctx context.Context, obj *model.Chall
 	if !enrollment.Valid {
 		return nil, nil
 	}
+
+	// Cache the result
+	ts := enrollment.Time
+	r.Cache.Set(cacheKey, &ts)
 
 	return &scalars.DateTime{Time: enrollment.Time}, nil
 }
