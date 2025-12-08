@@ -1,0 +1,44 @@
+type: http_request
+model: http_request
+id: rq_SubmitQuizAnswerNumber
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+      submitQuizAnswer(submissionId: $submissionId, input: $input) {
+        id
+        numberResponse
+        answeredAt
+        timeSpentSeconds
+        question {
+          id
+          questionText
+        }
+      }
+    }
+  variables: |
+    {
+      "submissionId": "QS01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "input": {
+        "questionId": "QQ01ARZ3NDEKTSV4RRFFQ69G5FAV",
+        "numberResponse": 66,
+        "timeSpentSeconds": 10
+      }
+    }
+bodyType: graphql
+description: Submit a number answer (user)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_SubmitQuizAnswerNumber
+method: POST
+name: Submit Quiz Answer (Number)
+sortPriority: 4300.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

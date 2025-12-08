@@ -387,6 +387,120 @@ type StreakAchievement implements Achievement {
     streak: Streak! @goField(forceResolver: true)
 }
 
+type QuizAchievement implements Achievement {
+    id: ID!
+    name: String!
+    description: String!
+    image: String
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
+    achievedAt: DateTime @goField(forceResolver: true)
+    points: Int!
+    hidden: Boolean!
+    quiz: Quiz! @goField(forceResolver: true)
+    minScorePercentage: Int
+    requireCompletion: Boolean!
+}
+
+# ==================== Quiz Types ====================
+
+enum QuizQuestionType {
+    PREDEFINED
+    FREE_TEXT
+    NUMBER
+    JSON
+}
+
+type Quiz {
+    id: ID!
+    name: String!
+    description: String!
+    image: String
+    project: Project! @goField(forceResolver: true)
+    challenge: Challenge! @goField(forceResolver: true)
+
+    timeoutSeconds: Int
+    questionTimeoutSeconds: Int
+    randomizeQuestions: Boolean!
+    revealCorrectAnswers: Boolean!
+    allowRetakes: Boolean!
+    completionPoints: Int!
+
+    questions: [QuizQuestion!]! @goField(forceResolver: true)
+
+    publishedAt: DateTime
+    endTime: DateTime
+
+    # User-specific fields
+    userSubmissions: [QuizSubmission!]! @goField(forceResolver: true)
+    userCanStart: Boolean! @goField(forceResolver: true)
+    userActiveSubmission: QuizSubmission @goField(forceResolver: true)
+}
+
+type QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionType: QuizQuestionType!
+    questionText: String!
+    questionOrder: Int!
+
+    allowMultipleSelection: Boolean
+    predefinedAnswers: [QuizPredefinedAnswer!] @goField(forceResolver: true)
+
+    minValue: Float
+    maxValue: Float
+    stepValue: Float
+}
+
+type QuizPredefinedAnswer {
+    id: ID!
+    question: QuizQuestion! @goField(forceResolver: true)
+    answerText: String!
+    answerOrder: Int!
+    isCorrect: Boolean @goField(forceResolver: true)
+}
+
+type QuizSubmission {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    user: User! @goField(forceResolver: true)
+
+    startedAt: DateTime!
+    completedAt: DateTime
+    expiresAt: DateTime
+    isExpired: Boolean! @goField(forceResolver: true)
+
+    questionOrder: [ID!]!
+    orderedQuestions: [QuizQuestion!]! @goField(forceResolver: true)
+
+    responses: [QuizResponse!]! @goField(forceResolver: true)
+
+    score: Int
+    maxScore: Int
+    scorePercentage: Float @goField(forceResolver: true)
+    pointsAwarded: Int
+}
+
+type QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+
+    selectedAnswerIds: [ID!]
+    selectedAnswers: [QuizPredefinedAnswer!] @goField(forceResolver: true)
+    textResponse: String
+    numberResponse: Float
+    jsonResponse: JSON
+
+    isCorrect: Boolean
+
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+}
+
+scalar JSON
+
 # ==================== Input Types ====================
 
 input AgeRangeInput {
@@ -536,6 +650,105 @@ input CreateStreakAchievementInput {
     hidden: Boolean!
     neededStreak: Int!
     streakId: ID!
+}
+
+input CreateQuizAchievementInput {
+    name: String!
+    description: String!
+    image: String
+    projectId: ID!
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+    quizId: ID!
+    minScorePercentage: Int
+    requireCompletion: Boolean!
+}
+
+input CreateQuizInput {
+    name: String!
+    description: String!
+    image: String
+    projectId: ID!
+    challengeId: ID!
+
+    timeoutSeconds: Int
+    questionTimeoutSeconds: Int
+
+    randomizeQuestions: Boolean!
+    revealCorrectAnswers: Boolean!
+    allowRetakes: Boolean!
+    completionPoints: Int!
+
+    publishedAt: DateTime
+    endTime: DateTime
+}
+
+input UpdateQuizInput {
+    name: String
+    description: String
+    image: String
+
+    timeoutSeconds: Int
+    questionTimeoutSeconds: Int
+
+    randomizeQuestions: Boolean
+    revealCorrectAnswers: Boolean
+    allowRetakes: Boolean
+    completionPoints: Int
+
+    publishedAt: DateTime
+    endTime: DateTime
+}
+
+input CreateQuizQuestionInput {
+    questionType: QuizQuestionType!
+    questionText: String!
+    questionOrder: Int!
+
+    allowMultipleSelection: Boolean
+    predefinedAnswers: [CreatePredefinedAnswerInput!]
+
+    minValue: Float
+    maxValue: Float
+    stepValue: Float
+}
+
+input CreatePredefinedAnswerInput {
+    answerText: String!
+    isCorrect: Boolean!
+    answerOrder: Int!
+}
+
+input UpdateQuizQuestionInput {
+    questionText: String
+    questionOrder: Int
+
+    allowMultipleSelection: Boolean
+    predefinedAnswers: [CreatePredefinedAnswerInput!]
+
+    minValue: Float
+    maxValue: Float
+    stepValue: Float
+}
+
+input SubmitQuizAnswerInput {
+    questionId: ID!
+
+    selectedAnswerIds: [ID!]
+    textResponse: String
+    numberResponse: Float
+    jsonResponse: JSON
+
+    timeSpentSeconds: Int
+}
+
+input QuizFilter {
+    projectId: ID
+    challengeId: ID
+    ids: [ID!]
+    publishedAfter: DateTime
+    publishedBefore: DateTime
 }
 
 input UpdateAchievementInput {
@@ -897,6 +1110,28 @@ type StreakEdge {
 
 type StreakConnection {
     edges: [StreakEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type QuizEdge {
+    cursor: String!
+    node: Quiz!
+}
+
+type QuizConnection {
+    edges: [QuizEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type QuizSubmissionEdge {
+    cursor: String!
+    node: QuizSubmission!
+}
+
+type QuizSubmissionConnection {
+    edges: [QuizSubmissionEdge!]!
     pageInfo: PageInfo!
     totalCount: Int!
 }

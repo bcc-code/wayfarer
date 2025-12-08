@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_NCEhrSBAti
 createdAt: 2025-11-27T13:48:40.376201
-updatedAt: 2025-12-08T08:19:33.362877
+updatedAt: 2025-12-08T19:36:51.868127
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -13,6 +13,7 @@ body:
       projects {
         edges {
           node {
+            id
             branding {
               colors {
                 dark {
@@ -49,7 +50,6 @@ body:
         }
       }
     }
-  variables: ''
 bodyType: graphql
 description: ''
 headers:

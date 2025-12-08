@@ -1,0 +1,53 @@
+type: http_request
+model: http_request
+id: rq_FinalizeQuiz
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T21:08:57.793144
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation FinalizeQuiz($submissionId: ID!) {
+      finalizeQuiz(submissionId: $submissionId) {
+        id
+        startedAt
+        completedAt
+        score
+        maxScore
+        scorePercentage
+        pointsAwarded
+        responses {
+          id
+          question {
+            id
+            questionText
+          }
+          selectedAnswers {
+            id
+            answerText
+            isCorrect
+          }
+          textResponse
+          numberResponse
+          isCorrect
+        }
+      }
+    }
+  variables: |
+    {
+      "submissionId": "QS01KBZWP1V6MVTYSSDZF9C388K9"
+    }
+bodyType: graphql
+description: Finalize and score a quiz submission (user)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_FinalizeQuiz
+method: POST
+name: Finalize Quiz
+sortPriority: 4400.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

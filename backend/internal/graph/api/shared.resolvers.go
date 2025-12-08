@@ -411,6 +411,376 @@ func (r *projectResolver) Journal(ctx context.Context, obj *model.Project, filte
 	return r.Resolver.getScoreJournal(ctx, obj.ID, userID, filter, first, after, last, before)
 }
 
+// Project is the resolver for the project field on Quiz.
+func (r *quizResolver) Project(ctx context.Context, obj *model.Quiz) (*model.Project, error) {
+	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, obj.ProjectID)
+	return thunk()
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *quizResolver) Challenge(ctx context.Context, obj *model.Quiz) (*model.Challenge, error) {
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, obj.ChallengeID)
+	return thunk()
+}
+
+// Questions is the resolver for the questions field on Quiz.
+func (r *quizResolver) Questions(ctx context.Context, obj *model.Quiz) ([]model.QuizQuestion, error) {
+	thunk := r.Loaders.QuizQuestionsByQuizLoader.Load(ctx, obj.ID)
+	questions, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	result := make([]model.QuizQuestion, len(questions))
+	for i, q := range questions {
+		result[i] = *q
+	}
+	return result, nil
+}
+
+// UserSubmissions is the resolver for the userSubmissions field on Quiz.
+func (r *quizResolver) UserSubmissions(ctx context.Context, obj *model.Quiz) ([]model.QuizSubmission, error) {
+	// Get authenticated user ID
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return []model.QuizSubmission{}, nil
+	}
+
+	// Load all submissions for this user
+	thunk := r.Loaders.QuizSubmissionsByUserLoader.Load(ctx, userID)
+	allSubmissions, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user submissions: %w", err)
+	}
+
+	// Filter to submissions for this quiz
+	var quizSubmissions []model.QuizSubmission
+	for _, sub := range allSubmissions {
+		if sub.QuizID == obj.ID {
+			quizSubmissions = append(quizSubmissions, *sub)
+		}
+	}
+
+	return quizSubmissions, nil
+}
+
+// UserCanStart is the resolver for the userCanStart field on Quiz.
+func (r *quizResolver) UserCanStart(ctx context.Context, obj *model.Quiz) (bool, error) {
+	// Get authenticated user ID
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return false, nil
+	}
+
+	// Check if quiz is published
+	if obj.PublishedAt == nil || obj.PublishedAt.Time.After(time.Now()) {
+		return false, nil
+	}
+
+	// Check if quiz has ended
+	if obj.EndTime != nil && obj.EndTime.Time.Before(time.Now()) {
+		return false, nil
+	}
+
+	// Load user submissions for this quiz
+	thunk := r.Loaders.QuizSubmissionsByUserLoader.Load(ctx, userID)
+	allSubmissions, err := thunk()
+	if err != nil {
+		return false, fmt.Errorf("failed to load user submissions: %w", err)
+	}
+
+	// Filter to submissions for this quiz
+	var quizSubmissions []*model.QuizSubmission
+	for _, sub := range allSubmissions {
+		if sub.QuizID == obj.ID {
+			quizSubmissions = append(quizSubmissions, sub)
+		}
+	}
+
+	// Check if retakes are allowed
+	if !obj.AllowRetakes {
+		// Check if user has any completed submissions
+		for _, sub := range quizSubmissions {
+			if sub.CompletedAt != nil {
+				return false, nil // Already completed, no retakes allowed
+			}
+		}
+	}
+
+	// Check if there's an active (non-completed, non-expired) submission
+	for _, sub := range quizSubmissions {
+		if sub.CompletedAt == nil {
+			// Check if expired
+			if sub.ExpiresAt != nil && sub.ExpiresAt.Time.Before(time.Now()) {
+				continue // This one is expired, keep looking
+			}
+			return false, nil // Active submission exists
+		}
+	}
+
+	return true, nil
+}
+
+// UserActiveSubmission is the resolver for the userActiveSubmission field on Quiz.
+func (r *quizResolver) UserActiveSubmission(ctx context.Context, obj *model.Quiz) (*model.QuizSubmission, error) {
+	// Get authenticated user ID
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, nil
+	}
+
+	// Load user submissions for this quiz
+	thunk := r.Loaders.QuizSubmissionsByUserLoader.Load(ctx, userID)
+	allSubmissions, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user submissions: %w", err)
+	}
+
+	// Find active submission (not completed, not expired)
+	for _, sub := range allSubmissions {
+		if sub.QuizID == obj.ID && sub.CompletedAt == nil {
+			// Check if expired
+			if sub.ExpiresAt != nil && sub.ExpiresAt.Time.Before(time.Now()) {
+				continue
+			}
+			return sub, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// Project is the resolver for the project field.
+func (r *quizAchievementResolver) Project(ctx context.Context, obj *model.QuizAchievement) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *quizAchievementResolver) Event(ctx context.Context, obj *model.QuizAchievement) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *quizAchievementResolver) Challenge(ctx context.Context, obj *model.QuizAchievement) (*model.Challenge, error) {
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// AchievedAt is the resolver for the achievedAt field.
+func (r *quizAchievementResolver) AchievedAt(ctx context.Context, obj *model.QuizAchievement) (*scalars.DateTime, error) {
+	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// Quiz is the resolver for the quiz field.
+func (r *quizAchievementResolver) Quiz(ctx context.Context, obj *model.QuizAchievement) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	return thunk()
+}
+
+// Question is the resolver for the question field on QuizPredefinedAnswer.
+func (r *quizPredefinedAnswerResolver) Question(ctx context.Context, obj *model.QuizPredefinedAnswer) (*model.QuizQuestion, error) {
+	// Need to create a QuizQuestionByID loader
+	// For now, query directly
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertCreateQuizQuestionRowToQuizQuestion(row), nil
+}
+
+// IsCorrect is the resolver for the isCorrect field on QuizPredefinedAnswer.
+func (r *quizPredefinedAnswerResolver) IsCorrect(ctx context.Context, obj *model.QuizPredefinedAnswer) (*bool, error) {
+	// Load question to get quiz ID
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+
+	// Load quiz to check reveal setting
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, row.QuizID)
+	quiz, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load quiz: %w", err)
+	}
+
+	// Check if user is authenticated
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, nil // Not authenticated
+	}
+
+	// Admins can always see correct answers for quizzes they manage
+	if r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
+		return &obj.IsCorrectValue, nil
+	}
+
+	// If reveal_correct_answers is false, never reveal to regular users
+	if !quiz.RevealCorrectAnswers {
+		return nil, nil
+	}
+
+	// Check if user has completed the quiz
+	submissionsThunk := r.Loaders.QuizSubmissionsByUserLoader.Load(ctx, userID)
+	submissions, err := submissionsThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submissions: %w", err)
+	}
+
+	var userCompleted bool
+	for _, sub := range submissions {
+		if sub.QuizID == quiz.ID && sub.CompletedAt != nil {
+			userCompleted = true
+			break
+		}
+	}
+
+	// Only reveal if user completed the quiz
+	if userCompleted {
+		return &obj.IsCorrectValue, nil
+	}
+
+	return nil, nil
+}
+
+// Quiz is the resolver for the quiz field on QuizQuestion.
+func (r *quizQuestionResolver) Quiz(ctx context.Context, obj *model.QuizQuestion) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	return thunk()
+}
+
+// PredefinedAnswers is the resolver for the predefinedAnswers field on QuizQuestion.
+func (r *quizQuestionResolver) PredefinedAnswers(ctx context.Context, obj *model.QuizQuestion) ([]model.QuizPredefinedAnswer, error) {
+	if obj.QuestionType != model.QuizQuestionTypePredefined {
+		return []model.QuizPredefinedAnswer{}, nil
+	}
+	thunk := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, obj.ID)
+	answers, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	result := make([]model.QuizPredefinedAnswer, len(answers))
+	for i, a := range answers {
+		result[i] = *a
+	}
+	return result, nil
+}
+
+// Submission is the resolver for the submission field on QuizResponse.
+func (r *quizResponseResolver) Submission(ctx context.Context, obj *model.QuizResponse) (*model.QuizSubmission, error) {
+	// Query directly since we don't have a submission by ID loader
+	row, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+	return convertSubmissionRowToModel(row), nil
+}
+
+// Question is the resolver for the question field on QuizResponse.
+func (r *quizResponseResolver) Question(ctx context.Context, obj *model.QuizResponse) (*model.QuizQuestion, error) {
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertCreateQuizQuestionRowToQuizQuestion(row), nil
+}
+
+// SelectedAnswers is the resolver for the selectedAnswers field on QuizResponse.
+func (r *quizResponseResolver) SelectedAnswers(ctx context.Context, obj *model.QuizResponse) ([]model.QuizPredefinedAnswer, error) {
+	if len(obj.SelectedAnswerIds) == 0 {
+		return []model.QuizPredefinedAnswer{}, nil
+	}
+
+	// Load answers using batch loader
+	thunk := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, obj.QuestionID)
+	allAnswers, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load answers: %w", err)
+	}
+
+	// Filter to selected answers
+	selectedMap := make(map[string]bool)
+	for _, id := range obj.SelectedAnswerIds {
+		selectedMap[id] = true
+	}
+
+	var selectedAnswers []model.QuizPredefinedAnswer
+	for _, answer := range allAnswers {
+		if selectedMap[answer.ID] {
+			selectedAnswers = append(selectedAnswers, *answer)
+		}
+	}
+
+	return selectedAnswers, nil
+}
+
+// Quiz is the resolver for the quiz field on QuizSubmission.
+func (r *quizSubmissionResolver) Quiz(ctx context.Context, obj *model.QuizSubmission) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	return thunk()
+}
+
+// User is the resolver for the user field on QuizSubmission.
+func (r *quizSubmissionResolver) User(ctx context.Context, obj *model.QuizSubmission) (*model.User, error) {
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
+	return thunk()
+}
+
+// IsExpired is the resolver for the isExpired field on QuizSubmission.
+func (r *quizSubmissionResolver) IsExpired(ctx context.Context, obj *model.QuizSubmission) (bool, error) {
+	if obj.ExpiresAt == nil {
+		return false, nil
+	}
+	return obj.ExpiresAt.Time.Before(time.Now()), nil
+}
+
+// OrderedQuestions is the resolver for the orderedQuestions field on QuizSubmission.
+func (r *quizSubmissionResolver) OrderedQuestions(ctx context.Context, obj *model.QuizSubmission) ([]model.QuizQuestion, error) {
+	// Load all questions for the quiz
+	thunk := r.Loaders.QuizQuestionsByQuizLoader.Load(ctx, obj.QuizID)
+	allQuestions, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load questions: %w", err)
+	}
+
+	// Build map of questions by ID
+	questionMap := make(map[string]*model.QuizQuestion)
+	for _, q := range allQuestions {
+		questionMap[q.ID] = q
+	}
+
+	// Order questions according to submission's question_order
+	orderedQuestions := make([]model.QuizQuestion, 0, len(obj.QuestionOrder))
+	for _, questionID := range obj.QuestionOrder {
+		if q, ok := questionMap[questionID]; ok {
+			orderedQuestions = append(orderedQuestions, *q)
+		}
+	}
+
+	return orderedQuestions, nil
+}
+
+// Responses is the resolver for the responses field on QuizSubmission.
+func (r *quizSubmissionResolver) Responses(ctx context.Context, obj *model.QuizSubmission) ([]model.QuizResponse, error) {
+	thunk := r.Loaders.QuizResponsesBySubmissionLoader.Load(ctx, obj.ID)
+	responses, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	result := make([]model.QuizResponse, len(responses))
+	for i, r := range responses {
+		result[i] = *r
+	}
+	return result, nil
+}
+
+// ScorePercentage is the resolver for the scorePercentage field on QuizSubmission.
+func (r *quizSubmissionResolver) ScorePercentage(ctx context.Context, obj *model.QuizSubmission) (*float64, error) {
+	if obj.Score == nil || obj.MaxScore == nil || *obj.MaxScore == 0 {
+		return nil, nil
+	}
+
+	percentage := (float64(*obj.Score) / float64(*obj.MaxScore)) * 100
+	return &percentage, nil
+}
+
 // Project is the resolver for the project field.
 func (r *readingAchievementResolver) Project(ctx context.Context, obj *model.ReadingAchievement) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
@@ -1232,6 +1602,26 @@ func (r *Resolver) MarkdownText() MarkdownTextResolver { return &markdownTextRes
 // Project returns ProjectResolver implementation.
 func (r *Resolver) Project() ProjectResolver { return &projectResolver{r} }
 
+// Quiz returns QuizResolver implementation.
+func (r *Resolver) Quiz() QuizResolver { return &quizResolver{r} }
+
+// QuizAchievement returns QuizAchievementResolver implementation.
+func (r *Resolver) QuizAchievement() QuizAchievementResolver { return &quizAchievementResolver{r} }
+
+// QuizPredefinedAnswer returns QuizPredefinedAnswerResolver implementation.
+func (r *Resolver) QuizPredefinedAnswer() QuizPredefinedAnswerResolver {
+	return &quizPredefinedAnswerResolver{r}
+}
+
+// QuizQuestion returns QuizQuestionResolver implementation.
+func (r *Resolver) QuizQuestion() QuizQuestionResolver { return &quizQuestionResolver{r} }
+
+// QuizResponse returns QuizResponseResolver implementation.
+func (r *Resolver) QuizResponse() QuizResponseResolver { return &quizResponseResolver{r} }
+
+// QuizSubmission returns QuizSubmissionResolver implementation.
+func (r *Resolver) QuizSubmission() QuizSubmissionResolver { return &quizSubmissionResolver{r} }
+
 // ReadingAchievement returns ReadingAchievementResolver implementation.
 func (r *Resolver) ReadingAchievement() ReadingAchievementResolver {
 	return &readingAchievementResolver{r}
@@ -1276,6 +1666,12 @@ type eventResolver struct{ *Resolver }
 type listeningAchievementResolver struct{ *Resolver }
 type markdownTextResolver struct{ *Resolver }
 type projectResolver struct{ *Resolver }
+type quizResolver struct{ *Resolver }
+type quizAchievementResolver struct{ *Resolver }
+type quizPredefinedAnswerResolver struct{ *Resolver }
+type quizQuestionResolver struct{ *Resolver }
+type quizResponseResolver struct{ *Resolver }
+type quizSubmissionResolver struct{ *Resolver }
 type readingAchievementResolver struct{ *Resolver }
 type roleScopeResolver struct{ *Resolver }
 type scoreJournalResolver struct{ *Resolver }

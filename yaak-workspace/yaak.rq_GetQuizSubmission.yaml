@@ -1,0 +1,68 @@
+type: http_request
+model: http_request
+id: rq_GetQuizSubmission
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query GetQuizSubmission($id: ID!) {
+      quizSubmission(id: $id) {
+        id
+        startedAt
+        completedAt
+        expiresAt
+        isExpired
+        score
+        maxScore
+        scorePercentage
+        pointsAwarded
+        questionOrder
+        quiz {
+          id
+          name
+        }
+        user {
+          id
+          name
+        }
+        responses {
+          id
+          question {
+            id
+            questionText
+            questionType
+          }
+          selectedAnswers {
+            id
+            answerText
+            isCorrect
+          }
+          textResponse
+          numberResponse
+          jsonResponse
+          isCorrect
+          answeredAt
+          timeSpentSeconds
+        }
+      }
+    }
+  variables: |
+    {
+      "id": "QS01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    }
+bodyType: graphql
+description: Get a quiz submission by ID
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_GetQuizSubmission
+method: POST
+name: Get Quiz Submission
+sortPriority: 5000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

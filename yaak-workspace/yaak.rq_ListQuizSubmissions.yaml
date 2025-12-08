@@ -1,0 +1,55 @@
+type: http_request
+model: http_request
+id: rq_ListQuizSubmissions
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query ListQuizSubmissions($quizId: ID!, $userId: ID, $first: Int, $after: String) {
+      quizSubmissions(quizId: $quizId, userId: $userId, first: $first, after: $after) {
+        edges {
+          cursor
+          node {
+            id
+            startedAt
+            completedAt
+            score
+            maxScore
+            scorePercentage
+            pointsAwarded
+            user {
+              id
+              name
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
+        totalCount
+      }
+    }
+  variables: |
+    {
+      "quizId": "QZ01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "first": 10
+    }
+bodyType: graphql
+description: List quiz submissions (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_ListQuizSubmissions
+method: POST
+name: List Quiz Submissions
+sortPriority: 5100.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

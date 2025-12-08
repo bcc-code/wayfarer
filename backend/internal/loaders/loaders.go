@@ -44,6 +44,11 @@ type Loaders struct {
 	UserAchievementTimestampLoader   *dataloader.Loader[UserAchievementKey, *time.Time]
 	TranslationLoader                *dataloader.Loader[TranslationKey, *Translation]
 	ConsentByIDLoader                *dataloader.Loader[string, *model.Consent]
+	QuizByIDLoader                   *dataloader.Loader[string, *model.Quiz]
+	QuizQuestionsByQuizLoader        *dataloader.Loader[string, []*model.QuizQuestion]
+	QuizAnswersByQuestionLoader      *dataloader.Loader[string, []*model.QuizPredefinedAnswer]
+	QuizSubmissionsByUserLoader      *dataloader.Loader[string, []*model.QuizSubmission]
+	QuizResponsesBySubmissionLoader  *dataloader.Loader[string, []*model.QuizResponse]
 }
 
 // newBatchedLoader creates a new batched dataloader with standard configuration:
@@ -94,5 +99,10 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		UserAchievementTimestampLoader:   newBatchedLoader(userAchievementTimestampBatchFunc(db, cache)),
 		TranslationLoader:                newBatchedLoader(translationBatchFunc(db, cache)),
 		ConsentByIDLoader:                newBatchedLoader(consentByIDBatchFunc(db, cache)),
+		QuizByIDLoader:                   newBatchedLoader(quizByIDBatchFunc(db, cache)),
+		QuizQuestionsByQuizLoader:        newBatchedLoader(quizQuestionsByQuizBatchFunc(db, cache)),
+		QuizAnswersByQuestionLoader:      newBatchedLoader(quizAnswersByQuestionBatchFunc(db, cache)),
+		QuizSubmissionsByUserLoader:      newBatchedLoader(quizSubmissionsByUserBatchFunc(db, cache)),
+		QuizResponsesBySubmissionLoader:  newBatchedLoader(quizResponsesBySubmissionBatchFunc(db, cache)),
 	}
 }

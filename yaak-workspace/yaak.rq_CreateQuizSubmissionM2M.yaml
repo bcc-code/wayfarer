@@ -1,0 +1,82 @@
+type: http_request
+model: http_request
+id: rq_CreateQuizSubmissionM2M
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation CreateQuizSubmission(
+      $quizId: ID!
+      $userId: ID!
+      $responses: [SubmitQuizAnswerInput!]!
+      $completedAt: DateTime
+    ) {
+      createQuizSubmission(
+        quizId: $quizId
+        userId: $userId
+        responses: $responses
+        completedAt: $completedAt
+      ) {
+        id
+        startedAt
+        completedAt
+        score
+        maxScore
+        scorePercentage
+        pointsAwarded
+        user {
+          id
+          name
+        }
+        responses {
+          id
+          question {
+            id
+            questionText
+          }
+          selectedAnswerIds
+          textResponse
+          numberResponse
+          isCorrect
+        }
+      }
+    }
+  variables: |
+    {
+      "quizId": "QZ01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "userId": "US01K9W1Y4M1R19YCDX4YSACT0BK",
+      "responses": [
+        {
+          "questionId": "QQ01ARZ3NDEKTSV4RRFFQ69G5FA1",
+          "selectedAnswerIds": ["QA01ARZ3NDEKTSV4RRFFQ69G5FAV"],
+          "timeSpentSeconds": 10
+        },
+        {
+          "questionId": "QQ01ARZ3NDEKTSV4RRFFQ69G5FA2",
+          "textResponse": "Sample free text response",
+          "timeSpentSeconds": 30
+        },
+        {
+          "questionId": "QQ01ARZ3NDEKTSV4RRFFQ69G5FA3",
+          "numberResponse": 66,
+          "timeSpentSeconds": 5
+        }
+      ],
+      "completedAt": "2025-12-08T12:30:00Z"
+    }
+bodyType: graphql
+description: Create a quiz submission externally (M2M API)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_CreateQuizSubmissionM2M
+method: POST
+name: Create Quiz Submission (M2M)
+sortPriority: 5200.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

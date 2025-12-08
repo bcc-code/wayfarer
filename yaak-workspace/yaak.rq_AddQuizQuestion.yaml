@@ -1,0 +1,73 @@
+type: http_request
+model: http_request
+id: rq_AddQuizQuestion
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T21:07:58.825836
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation AddQuizQuestion($quizId: ID!, $input: CreateQuizQuestionInput!) {
+      addQuizQuestion(quizId: $quizId, input: $input) {
+        id
+        questionType
+        questionText
+        questionOrder
+        allowMultipleSelection
+        predefinedAnswers {
+          id
+          answerText
+          answerOrder
+          isCorrect
+        }
+        minValue
+        maxValue
+        stepValue
+      }
+    }
+  variables: |
+    {
+      "quizId": "QZ01KBZWN4PRARY23WRKV63CTYRG",
+      "input": {
+        "questionType": "PREDEFINED",
+        "questionText": "What is the capital of Norway?",
+        "questionOrder": 1,
+        "allowMultipleSelection": false,
+        "predefinedAnswers": [
+          {
+            "answerText": "Oslo",
+            "isCorrect": true,
+            "answerOrder": 1
+          },
+          {
+            "answerText": "Bergen",
+            "isCorrect": false,
+            "answerOrder": 2
+          },
+          {
+            "answerText": "Trondheim",
+            "isCorrect": false,
+            "answerOrder": 3
+          },
+          {
+            "answerText": "Stavanger",
+            "isCorrect": false,
+            "answerOrder": 4
+          }
+        ]
+      }
+    }
+bodyType: graphql
+description: Add a question to a quiz (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_AddQuizQuestion
+method: POST
+name: Add Quiz Question (Predefined)
+sortPriority: 3000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

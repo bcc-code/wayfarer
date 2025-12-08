@@ -31,6 +31,11 @@ const (
 	PrefixUserConsent          = "UC" // User Consent Acceptances (deprecated, use PrefixUserConsentHistory)
 	PrefixUserConsentHistory   = "UH" // User Consent History
 	PrefixExternalContent      = "EC" // External Content (synced from external sources like SSF)
+	PrefixQuiz                 = "QZ" // Quizzes
+	PrefixQuizQuestion         = "QQ" // Quiz Questions
+	PrefixQuizAnswer           = "QA" // Quiz Predefined Answers
+	PrefixQuizSubmission       = "QS" // Quiz Submissions
+	PrefixQuizResponse         = "QR" // Quiz Responses
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -146,6 +151,31 @@ func NewUserConsentHistoryID() string {
 // NewExternalContentID generates a new ID for external content (EC prefix)
 func NewExternalContentID() string {
 	return newID(PrefixExternalContent)
+}
+
+// NewQuizID generates a new ID for a quiz (QZ prefix)
+func NewQuizID() string {
+	return newID(PrefixQuiz)
+}
+
+// NewQuizQuestionID generates a new ID for a quiz question (QQ prefix)
+func NewQuizQuestionID() string {
+	return newID(PrefixQuizQuestion)
+}
+
+// NewQuizAnswerID generates a new ID for a quiz predefined answer (QA prefix)
+func NewQuizAnswerID() string {
+	return newID(PrefixQuizAnswer)
+}
+
+// NewQuizSubmissionID generates a new ID for a quiz submission (QS prefix)
+func NewQuizSubmissionID() string {
+	return newID(PrefixQuizSubmission)
+}
+
+// NewQuizResponseID generates a new ID for a quiz response (QR prefix)
+func NewQuizResponseID() string {
+	return newID(PrefixQuizResponse)
 }
 
 // Validation functions
@@ -275,4 +305,29 @@ func IsUserConsentHistoryID(id string) bool {
 // IsExternalContentID validates an external content ID
 func IsExternalContentID(id string) bool {
 	return IsValidID(id, PrefixExternalContent)
+}
+
+// IsQuizID validates a quiz ID
+func IsQuizID(id string) bool {
+	return IsValidID(id, PrefixQuiz)
+}
+
+// IsQuizQuestionID validates a quiz question ID
+func IsQuizQuestionID(id string) bool {
+	return IsValidID(id, PrefixQuizQuestion)
+}
+
+// IsQuizAnswerID validates a quiz predefined answer ID
+func IsQuizAnswerID(id string) bool {
+	return IsValidID(id, PrefixQuizAnswer)
+}
+
+// IsQuizSubmissionID validates a quiz submission ID
+func IsQuizSubmissionID(id string) bool {
+	return IsValidID(id, PrefixQuizSubmission)
+}
+
+// IsQuizResponseID validates a quiz response ID
+func IsQuizResponseID(id string) bool {
+	return IsValidID(id, PrefixQuizResponse)
 }

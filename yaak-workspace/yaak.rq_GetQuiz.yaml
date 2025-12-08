@@ -1,0 +1,74 @@
+type: http_request
+model: http_request
+id: rq_GetQuiz
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query GetQuiz($id: ID!) {
+      quiz(id: $id) {
+        id
+        name
+        description
+        image
+        timeoutSeconds
+        questionTimeoutSeconds
+        randomizeQuestions
+        revealCorrectAnswers
+        allowRetakes
+        completionPoints
+        publishedAt
+        endTime
+        userCanStart
+        userActiveSubmission {
+          id
+          startedAt
+          expiresAt
+          isExpired
+        }
+        questions {
+          id
+          questionType
+          questionText
+          questionOrder
+          allowMultipleSelection
+          predefinedAnswers {
+            id
+            answerText
+            answerOrder
+            isCorrect
+          }
+          minValue
+          maxValue
+          stepValue
+        }
+        project {
+          id
+          name
+        }
+        event {
+          id
+          name
+        }
+      }
+    }
+  variables: |
+    {
+      "id": "QZ01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    }
+bodyType: graphql
+description: Get a quiz by ID with all questions
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_GetQuiz
+method: POST
+name: Get Quiz
+sortPriority: 1000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

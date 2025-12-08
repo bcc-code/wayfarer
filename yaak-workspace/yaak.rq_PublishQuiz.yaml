@@ -1,0 +1,35 @@
+type: http_request
+model: http_request
+id: rq_PublishQuiz
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation PublishQuiz($id: ID!, $publishedAt: DateTime!) {
+      publishQuiz(id: $id, publishedAt: $publishedAt) {
+        id
+        name
+        publishedAt
+      }
+    }
+  variables: |
+    {
+      "id": "QZ01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "publishedAt": "2025-12-08T12:00:00Z"
+    }
+bodyType: graphql
+description: Publish a quiz (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_PublishQuiz
+method: POST
+name: Publish Quiz
+sortPriority: 2300.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

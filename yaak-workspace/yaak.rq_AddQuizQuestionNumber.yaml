@@ -1,0 +1,46 @@
+type: http_request
+model: http_request
+id: rq_AddQuizQuestionNumber
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation AddQuizQuestion($quizId: ID!, $input: CreateQuizQuestionInput!) {
+      addQuizQuestion(quizId: $quizId, input: $input) {
+        id
+        questionType
+        questionText
+        questionOrder
+        minValue
+        maxValue
+        stepValue
+      }
+    }
+  variables: |
+    {
+      "quizId": "QZ01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "input": {
+        "questionType": "NUMBER",
+        "questionText": "How many books are in the Bible?",
+        "questionOrder": 3,
+        "minValue": 1,
+        "maxValue": 100,
+        "stepValue": 1
+      }
+    }
+bodyType: graphql
+description: Add a number question to a quiz (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_AddQuizQuestionNumber
+method: POST
+name: Add Quiz Question (Number)
+sortPriority: 3200.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

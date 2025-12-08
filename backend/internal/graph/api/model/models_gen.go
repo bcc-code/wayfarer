@@ -256,6 +256,12 @@ type CreateListeningAchievementInput struct {
 	Tracks      []TrackInput `json:"tracks"`
 }
 
+type CreatePredefinedAnswerInput struct {
+	AnswerText  string `json:"answerText"`
+	IsCorrect   bool   `json:"isCorrect"`
+	AnswerOrder int    `json:"answerOrder"`
+}
+
 type CreateProjectInput struct {
 	Name        string           `json:"name"`
 	Description *string          `json:"description,omitempty"`
@@ -263,6 +269,46 @@ type CreateProjectInput struct {
 	StartDate   scalars.DateTime `json:"startDate"`
 	EndDate     scalars.DateTime `json:"endDate"`
 	Branding    *BrandingInput   `json:"branding"`
+}
+
+type CreateQuizAchievementInput struct {
+	Name               string  `json:"name"`
+	Description        string  `json:"description"`
+	Image              *string `json:"image,omitempty"`
+	ProjectID          string  `json:"projectId"`
+	ChallengeID        *string `json:"challengeId,omitempty"`
+	Points             int     `json:"points"`
+	Hidden             bool    `json:"hidden"`
+	QuizID             string  `json:"quizId"`
+	MinScorePercentage *int    `json:"minScorePercentage,omitempty"`
+	RequireCompletion  bool    `json:"requireCompletion"`
+}
+
+type CreateQuizInput struct {
+	Name                   string            `json:"name"`
+	Description            string            `json:"description"`
+	Image                  *string           `json:"image,omitempty"`
+	ProjectID              string            `json:"projectId"`
+	ChallengeID            string            `json:"challengeId"`
+	TimeoutSeconds         *int              `json:"timeoutSeconds,omitempty"`
+	QuestionTimeoutSeconds *int              `json:"questionTimeoutSeconds,omitempty"`
+	RandomizeQuestions     bool              `json:"randomizeQuestions"`
+	RevealCorrectAnswers   bool              `json:"revealCorrectAnswers"`
+	AllowRetakes           bool              `json:"allowRetakes"`
+	CompletionPoints       int               `json:"completionPoints"`
+	PublishedAt            *scalars.DateTime `json:"publishedAt,omitempty"`
+	EndTime                *scalars.DateTime `json:"endTime,omitempty"`
+}
+
+type CreateQuizQuestionInput struct {
+	QuestionType           QuizQuestionType              `json:"questionType"`
+	QuestionText           string                        `json:"questionText"`
+	QuestionOrder          int                           `json:"questionOrder"`
+	AllowMultipleSelection *bool                         `json:"allowMultipleSelection,omitempty"`
+	PredefinedAnswers      []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
+	MinValue               *float64                      `json:"minValue,omitempty"`
+	MaxValue               *float64                      `json:"maxValue,omitempty"`
+	StepValue              *float64                      `json:"stepValue,omitempty"`
 }
 
 type CreateReadingAchievementInput struct {
@@ -509,6 +555,150 @@ type ProjectFilter struct {
 type Query struct {
 }
 
+type Quiz struct {
+	ID                     string            `json:"id"`
+	Name                   string            `json:"name"`
+	Description            string            `json:"description"`
+	Image                  *string           `json:"image,omitempty"`
+	Project                *Project          `json:"project"`
+	Challenge              *Challenge        `json:"challenge"`
+	TimeoutSeconds         *int              `json:"timeoutSeconds,omitempty"`
+	QuestionTimeoutSeconds *int              `json:"questionTimeoutSeconds,omitempty"`
+	RandomizeQuestions     bool              `json:"randomizeQuestions"`
+	RevealCorrectAnswers   bool              `json:"revealCorrectAnswers"`
+	AllowRetakes           bool              `json:"allowRetakes"`
+	CompletionPoints       int               `json:"completionPoints"`
+	Questions              []QuizQuestion    `json:"questions"`
+	PublishedAt            *scalars.DateTime `json:"publishedAt,omitempty"`
+	EndTime                *scalars.DateTime `json:"endTime,omitempty"`
+	UserSubmissions        []QuizSubmission  `json:"userSubmissions"`
+	UserCanStart           bool              `json:"userCanStart"`
+	UserActiveSubmission   *QuizSubmission   `json:"userActiveSubmission,omitempty"`
+	ChallengeID            string            `json:"-"`
+	ProjectID              string            `json:"-"`
+}
+
+type QuizAchievement struct {
+	ID                 string            `json:"id"`
+	Name               string            `json:"name"`
+	Description        string            `json:"description"`
+	Image              *string           `json:"image,omitempty"`
+	Project            *Project          `json:"project"`
+	Event              *Event            `json:"event,omitempty"`
+	Challenge          *Challenge        `json:"challenge,omitempty"`
+	AchievedAt         *scalars.DateTime `json:"achievedAt,omitempty"`
+	Points             int               `json:"points"`
+	Hidden             bool              `json:"hidden"`
+	Quiz               *Quiz             `json:"quiz"`
+	MinScorePercentage *int              `json:"minScorePercentage,omitempty"`
+	RequireCompletion  bool              `json:"requireCompletion"`
+	ChallengeID        *string           `json:"-"`
+	EventID            *string           `json:"-"`
+	ProjectID          string            `json:"-"`
+	QuizID             string            `json:"-"`
+}
+
+func (QuizAchievement) IsAchievement()                        {}
+func (this QuizAchievement) GetID() string                    { return this.ID }
+func (this QuizAchievement) GetName() string                  { return this.Name }
+func (this QuizAchievement) GetDescription() string           { return this.Description }
+func (this QuizAchievement) GetImage() *string                { return this.Image }
+func (this QuizAchievement) GetProject() *Project             { return this.Project }
+func (this QuizAchievement) GetEvent() *Event                 { return this.Event }
+func (this QuizAchievement) GetChallenge() *Challenge         { return this.Challenge }
+func (this QuizAchievement) GetAchievedAt() *scalars.DateTime { return this.AchievedAt }
+func (this QuizAchievement) GetPoints() int                   { return this.Points }
+func (this QuizAchievement) GetHidden() bool                  { return this.Hidden }
+
+type QuizConnection struct {
+	Edges      []QuizEdge `json:"edges"`
+	PageInfo   *PageInfo  `json:"pageInfo"`
+	TotalCount int        `json:"totalCount"`
+}
+
+type QuizEdge struct {
+	Cursor string `json:"cursor"`
+	Node   *Quiz  `json:"node"`
+}
+
+type QuizFilter struct {
+	ProjectID       *string           `json:"projectId,omitempty"`
+	ChallengeID     *string           `json:"challengeId,omitempty"`
+	Ids             []string          `json:"ids,omitempty"`
+	PublishedAfter  *scalars.DateTime `json:"publishedAfter,omitempty"`
+	PublishedBefore *scalars.DateTime `json:"publishedBefore,omitempty"`
+}
+
+type QuizPredefinedAnswer struct {
+	ID             string        `json:"id"`
+	Question       *QuizQuestion `json:"question"`
+	AnswerText     string        `json:"answerText"`
+	AnswerOrder    int           `json:"answerOrder"`
+	IsCorrect      *bool         `json:"isCorrect,omitempty"`
+	IsCorrectValue bool          `json:"-"`
+	QuestionID     string        `json:"-"`
+}
+
+type QuizQuestion struct {
+	ID                     string                 `json:"id"`
+	Quiz                   *Quiz                  `json:"quiz"`
+	QuestionType           QuizQuestionType       `json:"questionType"`
+	QuestionText           string                 `json:"questionText"`
+	QuestionOrder          int                    `json:"questionOrder"`
+	AllowMultipleSelection *bool                  `json:"allowMultipleSelection,omitempty"`
+	PredefinedAnswers      []QuizPredefinedAnswer `json:"predefinedAnswers,omitempty"`
+	MinValue               *float64               `json:"minValue,omitempty"`
+	MaxValue               *float64               `json:"maxValue,omitempty"`
+	StepValue              *float64               `json:"stepValue,omitempty"`
+	QuizID                 string                 `json:"-"`
+}
+
+type QuizResponse struct {
+	ID                string                 `json:"id"`
+	Submission        *QuizSubmission        `json:"submission"`
+	Question          *QuizQuestion          `json:"question"`
+	SelectedAnswerIds []string               `json:"selectedAnswerIds,omitempty"`
+	SelectedAnswers   []QuizPredefinedAnswer `json:"selectedAnswers,omitempty"`
+	TextResponse      *string                `json:"textResponse,omitempty"`
+	NumberResponse    *float64               `json:"numberResponse,omitempty"`
+	JSONResponse      *string                `json:"jsonResponse,omitempty"`
+	IsCorrect         *bool                  `json:"isCorrect,omitempty"`
+	AnsweredAt        *scalars.DateTime      `json:"answeredAt,omitempty"`
+	TimeSpentSeconds  *int                   `json:"timeSpentSeconds,omitempty"`
+	QuestionID        string                 `json:"-"`
+	SubmissionID      string                 `json:"-"`
+}
+
+type QuizSubmission struct {
+	ID               string            `json:"id"`
+	Quiz             *Quiz             `json:"quiz"`
+	User             *User             `json:"user"`
+	StartedAt        scalars.DateTime  `json:"startedAt"`
+	CompletedAt      *scalars.DateTime `json:"completedAt,omitempty"`
+	ExpiresAt        *scalars.DateTime `json:"expiresAt,omitempty"`
+	IsExpired        bool              `json:"isExpired"`
+	QuestionOrder    []string          `json:"questionOrder"`
+	OrderedQuestions []QuizQuestion    `json:"orderedQuestions"`
+	Responses        []QuizResponse    `json:"responses"`
+	Score            *int              `json:"score,omitempty"`
+	MaxScore         *int              `json:"maxScore,omitempty"`
+	ScorePercentage  *float64          `json:"scorePercentage,omitempty"`
+	PointsAwarded    *int              `json:"pointsAwarded,omitempty"`
+	QuizID           string            `json:"-"`
+	UserID           string            `json:"-"`
+}
+
+type QuizSubmissionConnection struct {
+	Edges      []QuizSubmissionEdge `json:"edges"`
+	PageInfo   *PageInfo            `json:"pageInfo"`
+	TotalCount int                  `json:"totalCount"`
+}
+
+type QuizSubmissionEdge struct {
+	Cursor string          `json:"cursor"`
+	Node   *QuizSubmission `json:"node"`
+}
+
 type ReadingAchievement struct {
 	ID          string            `json:"id"`
 	Name        string            `json:"name"`
@@ -690,6 +880,15 @@ type StreakFilter struct {
 	Ids       []string `json:"ids,omitempty"`
 }
 
+type SubmitQuizAnswerInput struct {
+	QuestionID        string   `json:"questionId"`
+	SelectedAnswerIds []string `json:"selectedAnswerIds,omitempty"`
+	TextResponse      *string  `json:"textResponse,omitempty"`
+	NumberResponse    *float64 `json:"numberResponse,omitempty"`
+	JSONResponse      *string  `json:"jsonResponse,omitempty"`
+	TimeSpentSeconds  *int     `json:"timeSpentSeconds,omitempty"`
+}
+
 type SuperTeam struct {
 	ID            string          `json:"id"`
 	Name          string          `json:"name"`
@@ -832,6 +1031,30 @@ type UpdateProjectInput struct {
 	StartDate   *scalars.DateTime `json:"startDate,omitempty"`
 	EndDate     *scalars.DateTime `json:"endDate,omitempty"`
 	Branding    *BrandingInput    `json:"branding,omitempty"`
+}
+
+type UpdateQuizInput struct {
+	Name                   *string           `json:"name,omitempty"`
+	Description            *string           `json:"description,omitempty"`
+	Image                  *string           `json:"image,omitempty"`
+	TimeoutSeconds         *int              `json:"timeoutSeconds,omitempty"`
+	QuestionTimeoutSeconds *int              `json:"questionTimeoutSeconds,omitempty"`
+	RandomizeQuestions     *bool             `json:"randomizeQuestions,omitempty"`
+	RevealCorrectAnswers   *bool             `json:"revealCorrectAnswers,omitempty"`
+	AllowRetakes           *bool             `json:"allowRetakes,omitempty"`
+	CompletionPoints       *int              `json:"completionPoints,omitempty"`
+	PublishedAt            *scalars.DateTime `json:"publishedAt,omitempty"`
+	EndTime                *scalars.DateTime `json:"endTime,omitempty"`
+}
+
+type UpdateQuizQuestionInput struct {
+	QuestionText           *string                       `json:"questionText,omitempty"`
+	QuestionOrder          *int                          `json:"questionOrder,omitempty"`
+	AllowMultipleSelection *bool                         `json:"allowMultipleSelection,omitempty"`
+	PredefinedAnswers      []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
+	MinValue               *float64                      `json:"minValue,omitempty"`
+	MaxValue               *float64                      `json:"maxValue,omitempty"`
+	StepValue              *float64                      `json:"stepValue,omitempty"`
 }
 
 type UpdateReadingAchievementInput struct {
@@ -1329,6 +1552,65 @@ func (e *LeaderboardEntryTag) UnmarshalJSON(b []byte) error {
 }
 
 func (e LeaderboardEntryTag) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type QuizQuestionType string
+
+const (
+	QuizQuestionTypePredefined QuizQuestionType = "PREDEFINED"
+	QuizQuestionTypeFreeText   QuizQuestionType = "FREE_TEXT"
+	QuizQuestionTypeNumber     QuizQuestionType = "NUMBER"
+	QuizQuestionTypeJSON       QuizQuestionType = "JSON"
+)
+
+var AllQuizQuestionType = []QuizQuestionType{
+	QuizQuestionTypePredefined,
+	QuizQuestionTypeFreeText,
+	QuizQuestionTypeNumber,
+	QuizQuestionTypeJSON,
+}
+
+func (e QuizQuestionType) IsValid() bool {
+	switch e {
+	case QuizQuestionTypePredefined, QuizQuestionTypeFreeText, QuizQuestionTypeNumber, QuizQuestionTypeJSON:
+		return true
+	}
+	return false
+}
+
+func (e QuizQuestionType) String() string {
+	return string(e)
+}
+
+func (e *QuizQuestionType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = QuizQuestionType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid QuizQuestionType", str)
+	}
+	return nil
+}
+
+func (e QuizQuestionType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *QuizQuestionType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e QuizQuestionType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
