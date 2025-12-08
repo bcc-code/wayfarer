@@ -1,0 +1,32 @@
+type: http_request
+model: http_request
+id: rq_BulkEnrollUsersInChallenge
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T12:00:16.352378
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_ChallengeEnroll
+authentication: {}
+authenticationType: null
+body:
+  query: "mutation BulkEnrollUsersInChallenge($userIds: [ID!]!, $challengeId: ID!) {\n  bulkEnrollUsersInChallenge(target:{\n    \n  })\n}\n"
+  variables: |
+    {
+      "userIds": [
+        "US01ARZ3NDEKTSV4RRFFQ69G5FAV",
+        "US02BRZ3NDEKTSV4RRFFQ69G5FAV",
+        "US03CRZ3NDEKTSV4RRFFQ69G5FAV"
+      ],
+      "challengeId": "CL01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    }
+bodyType: graphql
+description: Bulk enrollment of multiple users in a challenge
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_BulkEnrollUsersInChallenge
+method: POST
+name: Bulk Enroll Users In Challenge (Admin/M2M)
+sortPriority: 5000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

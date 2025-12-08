@@ -31,6 +31,56 @@ func (r *challengeResolver) Event(ctx context.Context, obj *model.Challenge) (*m
 	return resolveEventByID(ctx, r.Resolver, obj.EventID)
 }
 
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *challengeResolver) UserCompletedAt(ctx context.Context, obj *model.Challenge) (*scalars.DateTime, error) {
+	// Get authenticated user ID
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, nil // Not authenticated, return nil
+	}
+
+	// Query database for completion timestamp
+	completion, err := r.DB.Queries.GetUserCompletionTimestamp(ctx, sqlc.GetUserCompletionTimestampParams{
+		Userid:      userID,
+		Challengeid: obj.ID,
+	})
+	if err != nil {
+		// Not completed, return nil
+		return nil, nil
+	}
+
+	if !completion.Valid {
+		return nil, nil
+	}
+
+	return &scalars.DateTime{Time: completion.Time}, nil
+}
+
+// UserEnrolledAt resolver for Challenge type
+func (r *challengeResolver) UserEnrolledAt(ctx context.Context, obj *model.Challenge) (*scalars.DateTime, error) {
+	// Get authenticated user ID
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, nil // Not authenticated, return nil
+	}
+
+	// Query database for enrollment timestamp
+	enrollment, err := r.DB.Queries.GetUserEnrollmentTimestamp(ctx, sqlc.GetUserEnrollmentTimestampParams{
+		Userid:      userID,
+		Challengeid: obj.ID,
+	})
+	if err != nil {
+		// Not enrolled, return nil
+		return nil, nil
+	}
+
+	if !enrollment.Valid {
+		return nil, nil
+	}
+
+	return &scalars.DateTime{Time: enrollment.Time}, nil
+}
+
 // Challenges is the resolver for the challenges field.
 func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]model.Challenge, error) {
 	thunk := r.Loaders.ChallengesByEventLoader.Load(ctx, obj.ID)

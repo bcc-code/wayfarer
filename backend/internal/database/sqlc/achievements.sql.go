@@ -718,6 +718,39 @@ func (q *Queries) GetArticlesByAchievementIDs(ctx context.Context, achievementId
 	return items, nil
 }
 
+const GetBulkUserAchievementTimestamps = `-- name: GetBulkUserAchievementTimestamps :many
+SELECT user_id, achievement_id, achieved_at
+FROM user_achievements
+WHERE (user_id, achievement_id) IN (
+    SELECT unnest($1::text[]), unnest($2::text[])
+)
+`
+
+type GetBulkUserAchievementTimestampsParams struct {
+	UserIds        []string `json:"user_ids"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+func (q *Queries) GetBulkUserAchievementTimestamps(ctx context.Context, arg GetBulkUserAchievementTimestampsParams) ([]*UserAchievement, error) {
+	rows, err := q.db.Query(ctx, GetBulkUserAchievementTimestamps, arg.UserIds, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*UserAchievement{}
+	for rows.Next() {
+		var i UserAchievement
+		if err := rows.Scan(&i.UserID, &i.AchievementID, &i.AchievedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetTracksByAchievementIDs = `-- name: GetTracksByAchievementIDs :many
 SELECT id, achievement_id, track_id, name, description, image_url
 FROM listening_achievement_tracks

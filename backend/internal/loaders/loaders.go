@@ -40,10 +40,10 @@ type Loaders struct {
 	StreakByIDLoader               *dataloader.Loader[string, *model.Streak]
 	StreaksByProjectLoader         *dataloader.Loader[string, []*model.Streak]
 	RelevantDaysByStreakLoader     *dataloader.Loader[string, []model.DateRange]
-	UserStreakActivityLoader       *dataloader.Loader[UserStreakActivityKey, []*sqlc.UserStreakActivity]
-	UserAchievementTimestampLoader *dataloader.Loader[UserAchievementKey, *time.Time]
-	TranslationLoader              *dataloader.Loader[TranslationKey, *Translation]
-	ConsentByIDLoader              *dataloader.Loader[string, *model.Consent]
+	UserStreakActivityLoader         *dataloader.Loader[UserStreakActivityKey, []*sqlc.UserStreakActivity]
+	UserAchievementTimestampLoader   *dataloader.Loader[UserAchievementKey, *time.Time]
+	TranslationLoader                *dataloader.Loader[TranslationKey, *Translation]
+	ConsentByIDLoader                *dataloader.Loader[string, *model.Consent]
 }
 
 // newBatchedLoader creates a new batched dataloader with standard configuration:
@@ -90,9 +90,9 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		StreakByIDLoader:               newBatchedLoader(streakByIDBatchFunc(db, cache)),
 		StreaksByProjectLoader:         newBatchedLoader(streaksByProjectBatchFunc(db, cache)),
 		RelevantDaysByStreakLoader:     newBatchedLoader(relevantDaysByStreakBatchFunc(db, cache)),
-		UserStreakActivityLoader:       newBatchedLoader(userStreakActivityBatchFunc(db, cache)),
-		UserAchievementTimestampLoader: newBatchedLoader(userAchievementTimestampBatchFunc(db, cache)),
-		TranslationLoader:              newBatchedLoader(translationBatchFunc(db, cache)),
-		ConsentByIDLoader:              newBatchedLoader(consentByIDBatchFunc(db, cache)),
+		UserStreakActivityLoader:         newBatchedLoader(userStreakActivityBatchFunc(db, cache)),
+		UserAchievementTimestampLoader:   newBatchedLoader(userAchievementTimestampBatchFunc(db, cache)),
+		TranslationLoader:                newBatchedLoader(translationBatchFunc(db, cache)),
+		ConsentByIDLoader:                newBatchedLoader(consentByIDBatchFunc(db, cache)),
 	}
 }

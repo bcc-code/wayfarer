@@ -30,6 +30,45 @@ func (q *Queries) CountUserStreakActivities(ctx context.Context, arg CountUserSt
 	return count, err
 }
 
+const GetBulkUserStreakActivities = `-- name: GetBulkUserStreakActivities :many
+SELECT user_id, streak_id, activity_date, created_at
+FROM user_streak_activity
+WHERE (user_id, streak_id) IN (
+    SELECT unnest($1::text[]), unnest($2::text[])
+)
+ORDER BY user_id, streak_id, activity_date DESC
+`
+
+type GetBulkUserStreakActivitiesParams struct {
+	UserIds   []string `json:"user_ids"`
+	StreakIds []string `json:"streak_ids"`
+}
+
+func (q *Queries) GetBulkUserStreakActivities(ctx context.Context, arg GetBulkUserStreakActivitiesParams) ([]*UserStreakActivity, error) {
+	rows, err := q.db.Query(ctx, GetBulkUserStreakActivities, arg.UserIds, arg.StreakIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*UserStreakActivity{}
+	for rows.Next() {
+		var i UserStreakActivity
+		if err := rows.Scan(
+			&i.UserID,
+			&i.StreakID,
+			&i.ActivityDate,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetLatestActivityDate = `-- name: GetLatestActivityDate :one
 SELECT activity_date
 FROM user_streak_activity

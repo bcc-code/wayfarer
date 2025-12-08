@@ -302,9 +302,14 @@ type Challenge {
     event: Event @goField(forceResolver: true)
     url: String
     buttonText: String!
-    publishedAt: DateTime!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
     endTime: DateTime
-    userCompletedAt: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
 }
 
 interface Achievement {
@@ -465,7 +470,10 @@ input CreateChallengeInput {
     image: String
     url: String
     buttonText: String!
+    visibleAt: DateTime
     endTime: DateTime
+    requiresTeamMembership: Boolean
+    requiresSuperTeamMembership: Boolean
 }
 
 input UpdateChallengeInput {
@@ -475,7 +483,11 @@ input UpdateChallengeInput {
     eventId: ID
     url: String
     buttonText: String
+    visibleAt: DateTime
+    startedAt: DateTime
     endTime: DateTime
+    requiresTeamMembership: Boolean
+    requiresSuperTeamMembership: Boolean
 }
 
 input CreateSimpleAchievementInput {

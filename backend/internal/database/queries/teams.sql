@@ -191,3 +191,33 @@ GROUP BY
     u.email,
     u.avatar_url
 ORDER BY score DESC, u.name ASC;
+
+-- name: IsUserInAnyTeamInProject :one
+SELECT EXISTS(
+    SELECT 1
+    FROM team_members tm
+    INNER JOIN teams t ON tm.team_id = t.id
+    WHERE tm.user_id = @userid::text
+      AND t.project_id = @projectid::text
+) AS is_member;
+
+-- name: IsUserInAnySuperTeamInProject :one
+SELECT EXISTS(
+    SELECT 1
+    FROM team_members tm
+    INNER JOIN teams t ON tm.team_id = t.id
+    INNER JOIN super_teams st ON t.super_team_id = st.id
+    WHERE tm.user_id = @userid::text
+      AND st.project_id = @projectid::text
+) AS is_member;
+
+-- name: GetUserIDsInTeams :many
+SELECT DISTINCT user_id
+FROM team_members
+WHERE team_id = ANY(@teamids::text[]);
+
+-- name: GetUserIDsInSuperTeams :many
+SELECT DISTINCT tm.user_id
+FROM team_members tm
+JOIN teams t ON t.id = tm.team_id
+WHERE t.super_team_id = ANY(@superteamids::text[]);

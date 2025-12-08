@@ -81,6 +81,7 @@ func extractPrefixes(key string) []string {
 		PrefixUser, PrefixChurch, PrefixProject, PrefixEvent, PrefixTeam,
 		PrefixSuperTeam, PrefixChallenge, PrefixAchievement, PrefixStreak,
 		PrefixUserProjects, PrefixUserEvents, PrefixTeamMembers, PrefixUserRoles,
+		PrefixUserChallengeEnrollments, PrefixUserChallengeCompletions,
 		PrefixUsersFilter, PrefixUsersCount,
 		PrefixProjectsFilter, PrefixProjectsCount,
 		PrefixEventsFilter, PrefixEventsCount,
@@ -176,6 +177,9 @@ func (c *CacheWithRegistry) InvalidateUser(userID string) {
 	c.Delete(ProjectsByUserKey(userID))
 	c.Delete(UserRolesKey(userID))
 	c.DeletePrefix("user:" + userID)
+	// Invalidate enrollment and completion data
+	c.DeletePrefix(PrefixUserChallengeEnrollments + userID)
+	c.DeletePrefix(PrefixUserChallengeCompletions + userID)
 }
 
 // InvalidateProject invalidates all cache entries related to a project
@@ -239,6 +243,11 @@ func (c *CacheWithRegistry) InvalidateChallenge(challengeID string) {
 	// These are invalidated globally since filter query cache keys are hashed
 	c.DeletePrefix(PrefixChallengesFilter)
 	c.DeletePrefix(PrefixChallengesCount)
+
+	// Invalidate enrollment and completion data for this challenge
+	// This is more aggressive but necessary since we don't track reverse index
+	c.DeletePrefix(PrefixUserChallengeEnrollments)
+	c.DeletePrefix(PrefixUserChallengeCompletions)
 }
 
 // InvalidateAchievement invalidates all cache entries related to an achievement

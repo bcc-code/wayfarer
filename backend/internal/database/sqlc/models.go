@@ -33,18 +33,22 @@ type AchievementTranslation struct {
 }
 
 type Challenge struct {
-	ID          string             `json:"id"`
-	ProjectID   string             `json:"project_id"`
-	EventID     *string            `json:"event_id"`
-	Name        string             `json:"name"`
-	Description string             `json:"description"`
-	ImageUrl    *string            `json:"image_url"`
-	Url         *string            `json:"url"`
-	ButtonText  string             `json:"button_text"`
-	PublishedAt pgtype.Timestamptz `json:"published_at"`
-	EndTime     pgtype.Timestamptz `json:"end_time"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID                          string             `json:"id"`
+	ProjectID                   string             `json:"project_id"`
+	EventID                     *string            `json:"event_id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	ImageUrl                    *string            `json:"image_url"`
+	Url                         *string            `json:"url"`
+	ButtonText                  string             `json:"button_text"`
+	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
+	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
+	StartedAt                   pgtype.Timestamptz `json:"started_at"`
+	RequiresTeamMembership      bool               `json:"requires_team_membership"`
+	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
 }
 
 type ChallengeTranslation struct {
@@ -419,6 +423,12 @@ type UserChallengeCompletion struct {
 	UserID      string             `json:"user_id"`
 	ChallengeID string             `json:"challenge_id"`
 	CompletedAt pgtype.Timestamptz `json:"completed_at"`
+}
+
+type UserChallengeEnrollment struct {
+	UserID      string             `json:"user_id"`
+	ChallengeID string             `json:"challenge_id"`
+	EnrolledAt  pgtype.Timestamptz `json:"enrolled_at"`
 }
 
 type UserConsentHistory struct {

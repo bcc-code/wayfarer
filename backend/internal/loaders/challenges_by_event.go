@@ -46,17 +46,36 @@ func challengesByEventBatchFunc(db *database.DB, c *cache.CacheWithRegistry) fun
 					endTime = &scalars.DateTime{Time: row.EndTime.Time}
 				}
 
+				var publishedAt *scalars.DateTime
+				if row.PublishedAt.Valid {
+					publishedAt = &scalars.DateTime{Time: row.PublishedAt.Time}
+				}
+
+				var visibleAt *scalars.DateTime
+				if row.VisibleAt.Valid {
+					visibleAt = &scalars.DateTime{Time: row.VisibleAt.Time}
+				}
+
+				var startedAt *scalars.DateTime
+				if row.StartedAt.Valid {
+					startedAt = &scalars.DateTime{Time: row.StartedAt.Time}
+				}
+
 				challenge := &model.Challenge{
-					ID:          row.ID,
-					Name:        row.Name,
-					Description: scalars.HTML(row.Description),
-					Image:       row.ImageUrl,
-					ProjectID:   row.ProjectID,
-					EventID:     row.EventID,
-					URL:         row.Url,
-					ButtonText:  row.ButtonText,
-					PublishedAt: scalars.DateTime{Time: row.PublishedAt.Time},
-					EndTime:     endTime,
+					ID:                          row.ID,
+					Name:                        row.Name,
+					Description:                 scalars.HTML(row.Description),
+					Image:                       row.ImageUrl,
+					ProjectID:                   row.ProjectID,
+					EventID:                     row.EventID,
+					URL:                         row.Url,
+					ButtonText:                  row.ButtonText,
+					PublishedAt:                 publishedAt,
+					VisibleAt:                   visibleAt,
+					StartedAt:                   startedAt,
+					EndTime:                     endTime,
+					RequiresTeamMembership:      row.RequiresTeamMembership,
+					RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
 				}
 				challengesByEvent[*row.EventID] = append(challengesByEvent[*row.EventID], challenge)
 			}

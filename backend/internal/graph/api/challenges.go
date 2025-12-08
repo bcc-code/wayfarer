@@ -156,18 +156,31 @@ func buildChallengeCacheKeyParams(filter *model.ChallengeFilter, first *int, aft
 // convertRowToChallenge converts a database row to a Challenge model
 func convertRowToChallenge(row *sqlc.Challenge) *model.Challenge {
 	challenge := &model.Challenge{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: scalars.HTML(row.Description),
-		Image:       row.ImageUrl,
-		URL:         row.Url,
-		ButtonText:  row.ButtonText,
-		ProjectID:   row.ProjectID,
-		EventID:     row.EventID,
+		ID:                          row.ID,
+		Name:                        row.Name,
+		Description:                 scalars.HTML(row.Description),
+		Image:                       row.ImageUrl,
+		URL:                         row.Url,
+		ButtonText:                  row.ButtonText,
+		ProjectID:                   row.ProjectID,
+		EventID:                     row.EventID,
+		RequiresTeamMembership:      row.RequiresTeamMembership,
+		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
 	}
 
 	if row.PublishedAt.Valid {
-		challenge.PublishedAt = scalars.DateTime{Time: row.PublishedAt.Time}
+		publishedAt := scalars.DateTime{Time: row.PublishedAt.Time}
+		challenge.PublishedAt = &publishedAt
+	}
+
+	if row.VisibleAt.Valid {
+		visibleAt := scalars.DateTime{Time: row.VisibleAt.Time}
+		challenge.VisibleAt = &visibleAt
+	}
+
+	if row.StartedAt.Valid {
+		startedAt := scalars.DateTime{Time: row.StartedAt.Time}
+		challenge.StartedAt = &startedAt
 	}
 
 	if row.EndTime.Valid {
@@ -176,4 +189,153 @@ func convertRowToChallenge(row *sqlc.Challenge) *model.Challenge {
 	}
 
 	return challenge
+}
+
+// Helper conversion functions for different row types
+
+func convertCreateChallengeRowToChallenge(row *sqlc.CreateChallengeRow) *model.Challenge {
+	return convertRowToChallenge(&sqlc.Challenge{
+		ID:                          row.ID,
+		ProjectID:                   row.ProjectID,
+		EventID:                     row.EventID,
+		Name:                        row.Name,
+		Description:                 row.Description,
+		ImageUrl:                    row.ImageUrl,
+		Url:                         row.Url,
+		ButtonText:                  row.ButtonText,
+		PublishedAt:                 row.PublishedAt,
+		VisibleAt:                   row.VisibleAt,
+		StartedAt:                   row.StartedAt,
+		EndTime:                     row.EndTime,
+		RequiresTeamMembership:      row.RequiresTeamMembership,
+		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		CreatedAt:                   row.CreatedAt,
+		UpdatedAt:                   row.UpdatedAt,
+	})
+}
+
+func convertUpdateChallengeRowToChallenge(row *sqlc.UpdateChallengeRow) *model.Challenge {
+	return convertRowToChallenge(&sqlc.Challenge{
+		ID:                          row.ID,
+		ProjectID:                   row.ProjectID,
+		EventID:                     row.EventID,
+		Name:                        row.Name,
+		Description:                 row.Description,
+		ImageUrl:                    row.ImageUrl,
+		Url:                         row.Url,
+		ButtonText:                  row.ButtonText,
+		PublishedAt:                 row.PublishedAt,
+		VisibleAt:                   row.VisibleAt,
+		StartedAt:                   row.StartedAt,
+		EndTime:                     row.EndTime,
+		RequiresTeamMembership:      row.RequiresTeamMembership,
+		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		CreatedAt:                   row.CreatedAt,
+		UpdatedAt:                   row.UpdatedAt,
+	})
+}
+
+func convertPublishChallengeRowToChallenge(row *sqlc.PublishChallengeRow) *model.Challenge {
+	return convertRowToChallenge(&sqlc.Challenge{
+		ID:                          row.ID,
+		ProjectID:                   row.ProjectID,
+		EventID:                     row.EventID,
+		Name:                        row.Name,
+		Description:                 row.Description,
+		ImageUrl:                    row.ImageUrl,
+		Url:                         row.Url,
+		ButtonText:                  row.ButtonText,
+		PublishedAt:                 row.PublishedAt,
+		VisibleAt:                   row.VisibleAt,
+		StartedAt:                   row.StartedAt,
+		EndTime:                     row.EndTime,
+		RequiresTeamMembership:      row.RequiresTeamMembership,
+		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		CreatedAt:                   row.CreatedAt,
+		UpdatedAt:                   row.UpdatedAt,
+	})
+}
+
+func convertAssignChallengeToEventRowToChallenge(row *sqlc.AssignChallengeToEventRow) *model.Challenge {
+	return convertRowToChallenge(&sqlc.Challenge{
+		ID:                          row.ID,
+		ProjectID:                   row.ProjectID,
+		EventID:                     row.EventID,
+		Name:                        row.Name,
+		Description:                 row.Description,
+		ImageUrl:                    row.ImageUrl,
+		Url:                         row.Url,
+		ButtonText:                  row.ButtonText,
+		PublishedAt:                 row.PublishedAt,
+		VisibleAt:                   row.VisibleAt,
+		StartedAt:                   row.StartedAt,
+		EndTime:                     row.EndTime,
+		RequiresTeamMembership:      row.RequiresTeamMembership,
+		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		CreatedAt:                   row.CreatedAt,
+		UpdatedAt:                   row.UpdatedAt,
+	})
+}
+
+func convertBulkPublishChallengesRowToChallenge(row *sqlc.BulkPublishChallengesRow) *model.Challenge {
+	return convertRowToChallenge(&sqlc.Challenge{
+		ID:                          row.ID,
+		ProjectID:                   row.ProjectID,
+		EventID:                     row.EventID,
+		Name:                        row.Name,
+		Description:                 row.Description,
+		ImageUrl:                    row.ImageUrl,
+		Url:                         row.Url,
+		ButtonText:                  row.ButtonText,
+		PublishedAt:                 row.PublishedAt,
+		VisibleAt:                   row.VisibleAt,
+		StartedAt:                   row.StartedAt,
+		EndTime:                     row.EndTime,
+		RequiresTeamMembership:      row.RequiresTeamMembership,
+		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		CreatedAt:                   row.CreatedAt,
+		UpdatedAt:                   row.UpdatedAt,
+	})
+}
+
+func convertBulkCreateChallengesRowToChallenge(row *sqlc.BulkCreateChallengesRow) *model.Challenge {
+	return convertRowToChallenge(&sqlc.Challenge{
+		ID:                          row.ID,
+		ProjectID:                   row.ProjectID,
+		EventID:                     row.EventID,
+		Name:                        row.Name,
+		Description:                 row.Description,
+		ImageUrl:                    row.ImageUrl,
+		Url:                         row.Url,
+		ButtonText:                  row.ButtonText,
+		PublishedAt:                 row.PublishedAt,
+		VisibleAt:                   row.VisibleAt,
+		StartedAt:                   row.StartedAt,
+		EndTime:                     row.EndTime,
+		RequiresTeamMembership:      row.RequiresTeamMembership,
+		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		CreatedAt:                   row.CreatedAt,
+		UpdatedAt:                   row.UpdatedAt,
+	})
+}
+
+func convertGetChallengesFilteredCursorRowToChallenge(row *sqlc.GetChallengesFilteredCursorRow) *model.Challenge {
+	return convertRowToChallenge(&sqlc.Challenge{
+		ID:                          row.ID,
+		ProjectID:                   row.ProjectID,
+		EventID:                     row.EventID,
+		Name:                        row.Name,
+		Description:                 row.Description,
+		ImageUrl:                    row.ImageUrl,
+		Url:                         row.Url,
+		ButtonText:                  row.ButtonText,
+		PublishedAt:                 row.PublishedAt,
+		VisibleAt:                   row.VisibleAt,
+		StartedAt:                   row.StartedAt,
+		EndTime:                     row.EndTime,
+		RequiresTeamMembership:      row.RequiresTeamMembership,
+		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		CreatedAt:                   row.CreatedAt,
+		UpdatedAt:                   row.UpdatedAt,
+	})
 }

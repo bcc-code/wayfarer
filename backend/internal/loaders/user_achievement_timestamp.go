@@ -28,10 +28,8 @@ func (k UserAchievementKey) Raw() interface{} {
 // userAchievementTimestampBatchFunc batches loading user achievement timestamps by user ID and achievement ID
 func userAchievementTimestampBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context.Context, []UserAchievementKey) []*dataloader.Result[*time.Time] {
 	return func(ctx context.Context, keys []UserAchievementKey) []*dataloader.Result[*time.Time] {
-		// Group keys by user ID to optimize queries
 		timestampsByKey := make(map[string]*time.Time)
 		missingKeys := []UserAchievementKey{}
-		keysByUser := make(map[string][]UserAchievementKey)
 
 		for _, key := range keys {
 			cacheKey := cache.UserAchievementTimestampKey(key.UserID, key.AchievementID)
@@ -49,45 +47,44 @@ func userAchievementTimestampBatchFunc(db *database.DB, c *cache.CacheWithRegist
 			}
 
 			missingKeys = append(missingKeys, key)
-			keysByUser[key.UserID] = append(keysByUser[key.UserID], key)
 		}
 
-		// Query database for each user with missing keys
+		// Query database for all missing keys in a single bulk query
 		if len(missingKeys) > 0 {
-			for userID, userKeys := range keysByUser {
-				achievementIDs := make([]string, len(userKeys))
-				for i, key := range userKeys {
-					achievementIDs[i] = key.AchievementID
-				}
+			userIDs := make([]string, len(missingKeys))
+			achievementIDs := make([]string, len(missingKeys))
+			for i, key := range missingKeys {
+				userIDs[i] = key.UserID
+				achievementIDs[i] = key.AchievementID
+			}
 
-				rows, err := db.Queries.GetUserAchievementTimestamps(ctx, sqlc.GetUserAchievementTimestampsParams{
-					Userid:         userID,
-					AchievementIds: achievementIDs,
-				})
-				if err != nil {
-					// Return error for all keys
-					results := make([]*dataloader.Result[*time.Time], len(keys))
-					for i := range results {
-						results[i] = &dataloader.Result[*time.Time]{Error: err}
-					}
-					return results
+			rows, err := db.Queries.GetBulkUserAchievementTimestamps(ctx, sqlc.GetBulkUserAchievementTimestampsParams{
+				UserIds:        userIDs,
+				AchievementIds: achievementIDs,
+			})
+			if err != nil {
+				results := make([]*dataloader.Result[*time.Time], len(keys))
+				for i := range results {
+					results[i] = &dataloader.Result[*time.Time]{Error: err}
 				}
+				return results
+			}
 
-				// Map results by achievement ID
-				achievedAtByAchievement := make(map[string]*time.Time)
-				for _, row := range rows {
-					if row.AchievedAt.Valid {
-						ts := row.AchievedAt.Time
-						achievedAtByAchievement[row.AchievementID] = &ts
-					}
+			// Map results by (user_id, achievement_id) pair
+			achievementByKey := make(map[string]*time.Time)
+			for _, row := range rows {
+				key := fmt.Sprintf("%s:%s", row.UserID, row.AchievementID)
+				if row.AchievedAt.Valid {
+					ts := row.AchievedAt.Time
+					achievementByKey[key] = &ts
 				}
+			}
 
-				// Populate cache and result map for each key
-				for _, key := range userKeys {
-					ts := achievedAtByAchievement[key.AchievementID] // nil if not achieved
-					timestampsByKey[key.String()] = ts
-					c.Set(cache.UserAchievementTimestampKey(key.UserID, key.AchievementID), ts)
-				}
+			// Populate cache and result map for all missing keys
+			for _, key := range missingKeys {
+				ts := achievementByKey[key.String()] // nil if not achieved
+				timestampsByKey[key.String()] = ts
+				c.Set(cache.UserAchievementTimestampKey(key.UserID, key.AchievementID), ts)
 			}
 		}
 

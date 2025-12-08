@@ -29,11 +29,12 @@ const (
 	PrefixUserRoles    = "userroles:"
 
 	// Progress tracking
-	PrefixUserAchievements         = "userachievements:"
-	PrefixUserChallengeCompletions = "userchallenges:"
-	PrefixUserReadingProgress      = "userreading:"
-	PrefixUserListeningProgress    = "userlistening:"
-	PrefixUserStreakActivity       = "userstreak:"
+	PrefixUserAchievements           = "userachievements:"
+	PrefixUserChallengeCompletions   = "userchallenges:"
+	PrefixUserChallengeEnrollments   = "userchallengeenrollments:"
+	PrefixUserReadingProgress        = "userreading:"
+	PrefixUserListeningProgress      = "userlistening:"
+	PrefixUserStreakActivity         = "userstreak:"
 
 	// Computed data
 	PrefixLeaderboard         = "leaderboard:"
@@ -224,6 +225,16 @@ func UserStreakActivityKey(userID string, streakID string) string {
 // UserAchievementTimestampKey builds a cache key for user achievement timestamp (achievedAt)
 func UserAchievementTimestampKey(userID string, achievementID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixUserAchievements, userID, achievementID)
+}
+
+// UserChallengeEnrollmentKey builds a cache key for user challenge enrollment timestamp
+func UserChallengeEnrollmentKey(userID string, challengeID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserChallengeEnrollments, userID, challengeID)
+}
+
+// UserChallengeCompletionKey builds a cache key for user challenge completion timestamp
+func UserChallengeCompletionKey(userID string, challengeID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserChallengeCompletions, userID, challengeID)
 }
 
 // TeamMembersByTeamKey builds a cache key for team members

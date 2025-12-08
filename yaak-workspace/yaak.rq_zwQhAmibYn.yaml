@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_zwQhAmibYn
 createdAt: 2025-11-28T13:49:13.623726
-updatedAt: 2025-12-03T10:01:13.210198
+updatedAt: 2025-12-08T08:19:57.813351
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -18,11 +18,14 @@ body:
               markdown
               html
             }
+            challenges{
+              id
+              name
+            }
           }
         }
       }
     }
-  variables: ''
 bodyType: graphql
 description: ''
 headers:
@@ -40,6 +43,6 @@ headers:
   id: 0s4xJY0Rq9
 method: POST
 name: ProjectRules
-sortPriority: 8000.0
+sortPriority: 11000.0
 url: ${[ HOST ]}/graphql
 urlParameters: []

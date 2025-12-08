@@ -17,7 +17,7 @@ SET
     event_id = $1::text,
     updated_at = now()
 WHERE id = $2::text
-RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
 `
 
 type AssignChallengeToEventParams struct {
@@ -25,9 +25,28 @@ type AssignChallengeToEventParams struct {
 	ID      string `json:"id"`
 }
 
-func (q *Queries) AssignChallengeToEvent(ctx context.Context, arg AssignChallengeToEventParams) (*Challenge, error) {
+type AssignChallengeToEventRow struct {
+	ID                          string             `json:"id"`
+	ProjectID                   string             `json:"project_id"`
+	EventID                     *string            `json:"event_id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	ImageUrl                    *string            `json:"image_url"`
+	Url                         *string            `json:"url"`
+	ButtonText                  string             `json:"button_text"`
+	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
+	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
+	StartedAt                   pgtype.Timestamptz `json:"started_at"`
+	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	RequiresTeamMembership      bool               `json:"requires_team_membership"`
+	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) AssignChallengeToEvent(ctx context.Context, arg AssignChallengeToEventParams) (*AssignChallengeToEventRow, error) {
 	row := q.db.QueryRow(ctx, AssignChallengeToEvent, arg.Eventid, arg.ID)
-	var i Challenge
+	var i AssignChallengeToEventRow
 	err := row.Scan(
 		&i.ID,
 		&i.ProjectID,
@@ -38,7 +57,11 @@ func (q *Queries) AssignChallengeToEvent(ctx context.Context, arg AssignChalleng
 		&i.Url,
 		&i.ButtonText,
 		&i.PublishedAt,
+		&i.VisibleAt,
+		&i.StartedAt,
 		&i.EndTime,
+		&i.RequiresTeamMembership,
+		&i.RequiresSuperTeamMembership,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -56,7 +79,10 @@ INSERT INTO challenges (
     url,
     button_text,
     published_at,
-    end_time
+    visible_at,
+    end_time,
+    requires_team_membership,
+    requires_super_team_membership
 )
 SELECT
     unnest($1::text[]),
@@ -68,24 +94,49 @@ SELECT
     unnest($7::text[]),
     unnest($8::text[]),
     unnest($9::timestamptz[]),
-    unnest($10::timestamptz[])
-RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+    unnest($10::timestamptz[]),
+    unnest($11::timestamptz[]),
+    unnest($12::bool[]),
+    unnest($13::bool[])
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
 `
 
 type BulkCreateChallengesParams struct {
-	Ids          []string             `json:"ids"`
-	Projectids   []string             `json:"projectids"`
-	Eventids     []string             `json:"eventids"`
-	Names        []string             `json:"names"`
-	Descriptions []string             `json:"descriptions"`
-	Imageurls    []string             `json:"imageurls"`
-	Urls         []string             `json:"urls"`
-	Buttontexts  []string             `json:"buttontexts"`
-	Publishedats []pgtype.Timestamptz `json:"publishedats"`
-	Endtimes     []pgtype.Timestamptz `json:"endtimes"`
+	Ids                          []string             `json:"ids"`
+	Projectids                   []string             `json:"projectids"`
+	Eventids                     []string             `json:"eventids"`
+	Names                        []string             `json:"names"`
+	Descriptions                 []string             `json:"descriptions"`
+	Imageurls                    []string             `json:"imageurls"`
+	Urls                         []string             `json:"urls"`
+	Buttontexts                  []string             `json:"buttontexts"`
+	Publishedats                 []pgtype.Timestamptz `json:"publishedats"`
+	Visibleats                   []pgtype.Timestamptz `json:"visibleats"`
+	Endtimes                     []pgtype.Timestamptz `json:"endtimes"`
+	Requiresteammemberships      []bool               `json:"requiresteammemberships"`
+	Requiressuperteammemberships []bool               `json:"requiressuperteammemberships"`
 }
 
-func (q *Queries) BulkCreateChallenges(ctx context.Context, arg BulkCreateChallengesParams) ([]*Challenge, error) {
+type BulkCreateChallengesRow struct {
+	ID                          string             `json:"id"`
+	ProjectID                   string             `json:"project_id"`
+	EventID                     *string            `json:"event_id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	ImageUrl                    *string            `json:"image_url"`
+	Url                         *string            `json:"url"`
+	ButtonText                  string             `json:"button_text"`
+	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
+	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
+	StartedAt                   pgtype.Timestamptz `json:"started_at"`
+	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	RequiresTeamMembership      bool               `json:"requires_team_membership"`
+	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) BulkCreateChallenges(ctx context.Context, arg BulkCreateChallengesParams) ([]*BulkCreateChallengesRow, error) {
 	rows, err := q.db.Query(ctx, BulkCreateChallenges,
 		arg.Ids,
 		arg.Projectids,
@@ -96,15 +147,18 @@ func (q *Queries) BulkCreateChallenges(ctx context.Context, arg BulkCreateChalle
 		arg.Urls,
 		arg.Buttontexts,
 		arg.Publishedats,
+		arg.Visibleats,
 		arg.Endtimes,
+		arg.Requiresteammemberships,
+		arg.Requiressuperteammemberships,
 	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*Challenge{}
+	items := []*BulkCreateChallengesRow{}
 	for rows.Next() {
-		var i Challenge
+		var i BulkCreateChallengesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProjectID,
@@ -115,7 +169,11 @@ func (q *Queries) BulkCreateChallenges(ctx context.Context, arg BulkCreateChalle
 			&i.Url,
 			&i.ButtonText,
 			&i.PublishedAt,
+			&i.VisibleAt,
+			&i.StartedAt,
 			&i.EndTime,
+			&i.RequiresTeamMembership,
+			&i.RequiresSuperTeamMembership,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -135,7 +193,7 @@ SET
     published_at = $1::timestamptz,
     updated_at = now()
 WHERE id = ANY($2::text[])
-RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
 `
 
 type BulkPublishChallengesParams struct {
@@ -143,15 +201,34 @@ type BulkPublishChallengesParams struct {
 	Ids         []string           `json:"ids"`
 }
 
-func (q *Queries) BulkPublishChallenges(ctx context.Context, arg BulkPublishChallengesParams) ([]*Challenge, error) {
+type BulkPublishChallengesRow struct {
+	ID                          string             `json:"id"`
+	ProjectID                   string             `json:"project_id"`
+	EventID                     *string            `json:"event_id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	ImageUrl                    *string            `json:"image_url"`
+	Url                         *string            `json:"url"`
+	ButtonText                  string             `json:"button_text"`
+	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
+	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
+	StartedAt                   pgtype.Timestamptz `json:"started_at"`
+	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	RequiresTeamMembership      bool               `json:"requires_team_membership"`
+	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) BulkPublishChallenges(ctx context.Context, arg BulkPublishChallengesParams) ([]*BulkPublishChallengesRow, error) {
 	rows, err := q.db.Query(ctx, BulkPublishChallenges, arg.Publishedat, arg.Ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*Challenge{}
+	items := []*BulkPublishChallengesRow{}
 	for rows.Next() {
-		var i Challenge
+		var i BulkPublishChallengesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProjectID,
@@ -162,7 +239,11 @@ func (q *Queries) BulkPublishChallenges(ctx context.Context, arg BulkPublishChal
 			&i.Url,
 			&i.ButtonText,
 			&i.PublishedAt,
+			&i.VisibleAt,
+			&i.StartedAt,
 			&i.EndTime,
+			&i.RequiresTeamMembership,
+			&i.RequiresSuperTeamMembership,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -219,7 +300,10 @@ INSERT INTO challenges (
     url,
     button_text,
     published_at,
-    end_time
+    visible_at,
+    end_time,
+    requires_team_membership,
+    requires_super_team_membership
 )
 VALUES (
     $1::text,
@@ -231,25 +315,50 @@ VALUES (
     $7::text,
     $8::text,
     $9::timestamptz,
-    $10::timestamptz
+    $10::timestamptz,
+    $11::timestamptz,
+    COALESCE($12::bool, false),
+    COALESCE($13::bool, false)
 )
-RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
 `
 
 type CreateChallengeParams struct {
-	ID          string             `json:"id"`
-	Projectid   string             `json:"projectid"`
-	Eventid     string             `json:"eventid"`
-	Name        string             `json:"name"`
-	Description string             `json:"description"`
-	Imageurl    *string            `json:"imageurl"`
-	Url         *string            `json:"url"`
-	Buttontext  string             `json:"buttontext"`
-	Publishedat pgtype.Timestamptz `json:"publishedat"`
-	Endtime     pgtype.Timestamptz `json:"endtime"`
+	ID                          string             `json:"id"`
+	Projectid                   string             `json:"projectid"`
+	Eventid                     string             `json:"eventid"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	Imageurl                    *string            `json:"imageurl"`
+	Url                         *string            `json:"url"`
+	Buttontext                  string             `json:"buttontext"`
+	Publishedat                 pgtype.Timestamptz `json:"publishedat"`
+	Visibleat                   pgtype.Timestamptz `json:"visibleat"`
+	Endtime                     pgtype.Timestamptz `json:"endtime"`
+	Requiresteammembership      *bool              `json:"requiresteammembership"`
+	Requiressuperteammembership *bool              `json:"requiressuperteammembership"`
 }
 
-func (q *Queries) CreateChallenge(ctx context.Context, arg CreateChallengeParams) (*Challenge, error) {
+type CreateChallengeRow struct {
+	ID                          string             `json:"id"`
+	ProjectID                   string             `json:"project_id"`
+	EventID                     *string            `json:"event_id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	ImageUrl                    *string            `json:"image_url"`
+	Url                         *string            `json:"url"`
+	ButtonText                  string             `json:"button_text"`
+	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
+	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
+	StartedAt                   pgtype.Timestamptz `json:"started_at"`
+	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	RequiresTeamMembership      bool               `json:"requires_team_membership"`
+	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) CreateChallenge(ctx context.Context, arg CreateChallengeParams) (*CreateChallengeRow, error) {
 	row := q.db.QueryRow(ctx, CreateChallenge,
 		arg.ID,
 		arg.Projectid,
@@ -260,9 +369,12 @@ func (q *Queries) CreateChallenge(ctx context.Context, arg CreateChallengeParams
 		arg.Url,
 		arg.Buttontext,
 		arg.Publishedat,
+		arg.Visibleat,
 		arg.Endtime,
+		arg.Requiresteammembership,
+		arg.Requiressuperteammembership,
 	)
-	var i Challenge
+	var i CreateChallengeRow
 	err := row.Scan(
 		&i.ID,
 		&i.ProjectID,
@@ -273,7 +385,11 @@ func (q *Queries) CreateChallenge(ctx context.Context, arg CreateChallengeParams
 		&i.Url,
 		&i.ButtonText,
 		&i.PublishedAt,
+		&i.VisibleAt,
+		&i.StartedAt,
 		&i.EndTime,
+		&i.RequiresTeamMembership,
+		&i.RequiresSuperTeamMembership,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -291,7 +407,7 @@ func (q *Queries) DeleteChallenge(ctx context.Context, id string) error {
 }
 
 const GetChallengesByEventIDs = `-- name: GetChallengesByEventIDs :many
-SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
 FROM challenges
 WHERE event_id = ANY($1::text[])
     AND published_at IS NOT NULL
@@ -299,15 +415,34 @@ WHERE event_id = ANY($1::text[])
 ORDER BY event_id, published_at DESC
 `
 
-func (q *Queries) GetChallengesByEventIDs(ctx context.Context, eventIds []string) ([]*Challenge, error) {
+type GetChallengesByEventIDsRow struct {
+	ID                          string             `json:"id"`
+	ProjectID                   string             `json:"project_id"`
+	EventID                     *string            `json:"event_id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	ImageUrl                    *string            `json:"image_url"`
+	Url                         *string            `json:"url"`
+	ButtonText                  string             `json:"button_text"`
+	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
+	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
+	StartedAt                   pgtype.Timestamptz `json:"started_at"`
+	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	RequiresTeamMembership      bool               `json:"requires_team_membership"`
+	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetChallengesByEventIDs(ctx context.Context, eventIds []string) ([]*GetChallengesByEventIDsRow, error) {
 	rows, err := q.db.Query(ctx, GetChallengesByEventIDs, eventIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*Challenge{}
+	items := []*GetChallengesByEventIDsRow{}
 	for rows.Next() {
-		var i Challenge
+		var i GetChallengesByEventIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProjectID,
@@ -318,7 +453,11 @@ func (q *Queries) GetChallengesByEventIDs(ctx context.Context, eventIds []string
 			&i.Url,
 			&i.ButtonText,
 			&i.PublishedAt,
+			&i.VisibleAt,
+			&i.StartedAt,
 			&i.EndTime,
+			&i.RequiresTeamMembership,
+			&i.RequiresSuperTeamMembership,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -333,20 +472,39 @@ func (q *Queries) GetChallengesByEventIDs(ctx context.Context, eventIds []string
 }
 
 const GetChallengesByIDs = `-- name: GetChallengesByIDs :many
-SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
 FROM challenges
 WHERE id = ANY($1::text[])
 `
 
-func (q *Queries) GetChallengesByIDs(ctx context.Context, ids []string) ([]*Challenge, error) {
+type GetChallengesByIDsRow struct {
+	ID                          string             `json:"id"`
+	ProjectID                   string             `json:"project_id"`
+	EventID                     *string            `json:"event_id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	ImageUrl                    *string            `json:"image_url"`
+	Url                         *string            `json:"url"`
+	ButtonText                  string             `json:"button_text"`
+	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
+	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
+	StartedAt                   pgtype.Timestamptz `json:"started_at"`
+	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	RequiresTeamMembership      bool               `json:"requires_team_membership"`
+	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetChallengesByIDs(ctx context.Context, ids []string) ([]*GetChallengesByIDsRow, error) {
 	rows, err := q.db.Query(ctx, GetChallengesByIDs, ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*Challenge{}
+	items := []*GetChallengesByIDsRow{}
 	for rows.Next() {
-		var i Challenge
+		var i GetChallengesByIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProjectID,
@@ -357,7 +515,11 @@ func (q *Queries) GetChallengesByIDs(ctx context.Context, ids []string) ([]*Chal
 			&i.Url,
 			&i.ButtonText,
 			&i.PublishedAt,
+			&i.VisibleAt,
+			&i.StartedAt,
 			&i.EndTime,
+			&i.RequiresTeamMembership,
+			&i.RequiresSuperTeamMembership,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -372,7 +534,7 @@ func (q *Queries) GetChallengesByIDs(ctx context.Context, ids []string) ([]*Chal
 }
 
 const GetChallengesByProjectIDs = `-- name: GetChallengesByProjectIDs :many
-SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
 FROM challenges
 WHERE project_id = ANY($1::text[])
     AND published_at IS NOT NULL
@@ -380,15 +542,34 @@ WHERE project_id = ANY($1::text[])
 ORDER BY project_id, published_at DESC
 `
 
-func (q *Queries) GetChallengesByProjectIDs(ctx context.Context, projectIds []string) ([]*Challenge, error) {
+type GetChallengesByProjectIDsRow struct {
+	ID                          string             `json:"id"`
+	ProjectID                   string             `json:"project_id"`
+	EventID                     *string            `json:"event_id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	ImageUrl                    *string            `json:"image_url"`
+	Url                         *string            `json:"url"`
+	ButtonText                  string             `json:"button_text"`
+	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
+	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
+	StartedAt                   pgtype.Timestamptz `json:"started_at"`
+	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	RequiresTeamMembership      bool               `json:"requires_team_membership"`
+	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetChallengesByProjectIDs(ctx context.Context, projectIds []string) ([]*GetChallengesByProjectIDsRow, error) {
 	rows, err := q.db.Query(ctx, GetChallengesByProjectIDs, projectIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*Challenge{}
+	items := []*GetChallengesByProjectIDsRow{}
 	for rows.Next() {
-		var i Challenge
+		var i GetChallengesByProjectIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProjectID,
@@ -399,7 +580,11 @@ func (q *Queries) GetChallengesByProjectIDs(ctx context.Context, projectIds []st
 			&i.Url,
 			&i.ButtonText,
 			&i.PublishedAt,
+			&i.VisibleAt,
+			&i.StartedAt,
 			&i.EndTime,
+			&i.RequiresTeamMembership,
+			&i.RequiresSuperTeamMembership,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -414,7 +599,7 @@ func (q *Queries) GetChallengesByProjectIDs(ctx context.Context, projectIds []st
 }
 
 const GetChallengesFilteredCursor = `-- name: GetChallengesFilteredCursor :many
-SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
 FROM challenges
 WHERE
     ($1::text[] IS NULL OR id = ANY($1::text[]))
@@ -442,7 +627,26 @@ type GetChallengesFilteredCursorParams struct {
 	Querylimit      int32              `json:"querylimit"`
 }
 
-func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChallengesFilteredCursorParams) ([]*Challenge, error) {
+type GetChallengesFilteredCursorRow struct {
+	ID                          string             `json:"id"`
+	ProjectID                   string             `json:"project_id"`
+	EventID                     *string            `json:"event_id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	ImageUrl                    *string            `json:"image_url"`
+	Url                         *string            `json:"url"`
+	ButtonText                  string             `json:"button_text"`
+	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
+	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
+	StartedAt                   pgtype.Timestamptz `json:"started_at"`
+	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	RequiresTeamMembership      bool               `json:"requires_team_membership"`
+	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChallengesFilteredCursorParams) ([]*GetChallengesFilteredCursorRow, error) {
 	rows, err := q.db.Query(ctx, GetChallengesFilteredCursor,
 		arg.Ids,
 		arg.Projectid,
@@ -458,9 +662,9 @@ func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChalle
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*Challenge{}
+	items := []*GetChallengesFilteredCursorRow{}
 	for rows.Next() {
-		var i Challenge
+		var i GetChallengesFilteredCursorRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProjectID,
@@ -471,7 +675,11 @@ func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChalle
 			&i.Url,
 			&i.ButtonText,
 			&i.PublishedAt,
+			&i.VisibleAt,
+			&i.StartedAt,
 			&i.EndTime,
+			&i.RequiresTeamMembership,
+			&i.RequiresSuperTeamMembership,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -491,7 +699,7 @@ SET
     published_at = $1::timestamptz,
     updated_at = now()
 WHERE id = $2::text
-RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
 `
 
 type PublishChallengeParams struct {
@@ -499,9 +707,28 @@ type PublishChallengeParams struct {
 	ID          string             `json:"id"`
 }
 
-func (q *Queries) PublishChallenge(ctx context.Context, arg PublishChallengeParams) (*Challenge, error) {
+type PublishChallengeRow struct {
+	ID                          string             `json:"id"`
+	ProjectID                   string             `json:"project_id"`
+	EventID                     *string            `json:"event_id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	ImageUrl                    *string            `json:"image_url"`
+	Url                         *string            `json:"url"`
+	ButtonText                  string             `json:"button_text"`
+	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
+	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
+	StartedAt                   pgtype.Timestamptz `json:"started_at"`
+	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	RequiresTeamMembership      bool               `json:"requires_team_membership"`
+	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) PublishChallenge(ctx context.Context, arg PublishChallengeParams) (*PublishChallengeRow, error) {
 	row := q.db.QueryRow(ctx, PublishChallenge, arg.Publishedat, arg.ID)
-	var i Challenge
+	var i PublishChallengeRow
 	err := row.Scan(
 		&i.ID,
 		&i.ProjectID,
@@ -512,7 +739,11 @@ func (q *Queries) PublishChallenge(ctx context.Context, arg PublishChallengePara
 		&i.Url,
 		&i.ButtonText,
 		&i.PublishedAt,
+		&i.VisibleAt,
+		&i.StartedAt,
 		&i.EndTime,
+		&i.RequiresTeamMembership,
+		&i.RequiresSuperTeamMembership,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -528,24 +759,51 @@ SET
     url = COALESCE($4::text, url),
     button_text = COALESCE($5::text, button_text),
     event_id = COALESCE($6::text, event_id),
-    end_time = COALESCE($7::timestamptz, end_time),
+    visible_at = COALESCE($7::timestamptz, visible_at),
+    started_at = COALESCE($8::timestamptz, started_at),
+    end_time = COALESCE($9::timestamptz, end_time),
+    requires_team_membership = COALESCE($10::bool, requires_team_membership),
+    requires_super_team_membership = COALESCE($11::bool, requires_super_team_membership),
     updated_at = now()
-WHERE id = $8::text
-RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, end_time, created_at, updated_at
+WHERE id = $12::text
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
 `
 
 type UpdateChallengeParams struct {
-	Name        *string            `json:"name"`
-	Description *string            `json:"description"`
-	Imageurl    *string            `json:"imageurl"`
-	Url         *string            `json:"url"`
-	Buttontext  *string            `json:"buttontext"`
-	Eventid     *string            `json:"eventid"`
-	Endtime     pgtype.Timestamptz `json:"endtime"`
-	ID          string             `json:"id"`
+	Name                        *string            `json:"name"`
+	Description                 *string            `json:"description"`
+	Imageurl                    *string            `json:"imageurl"`
+	Url                         *string            `json:"url"`
+	Buttontext                  *string            `json:"buttontext"`
+	Eventid                     *string            `json:"eventid"`
+	Visibleat                   pgtype.Timestamptz `json:"visibleat"`
+	Startedat                   pgtype.Timestamptz `json:"startedat"`
+	Endtime                     pgtype.Timestamptz `json:"endtime"`
+	Requiresteammembership      *bool              `json:"requiresteammembership"`
+	Requiressuperteammembership *bool              `json:"requiressuperteammembership"`
+	ID                          string             `json:"id"`
 }
 
-func (q *Queries) UpdateChallenge(ctx context.Context, arg UpdateChallengeParams) (*Challenge, error) {
+type UpdateChallengeRow struct {
+	ID                          string             `json:"id"`
+	ProjectID                   string             `json:"project_id"`
+	EventID                     *string            `json:"event_id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	ImageUrl                    *string            `json:"image_url"`
+	Url                         *string            `json:"url"`
+	ButtonText                  string             `json:"button_text"`
+	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
+	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
+	StartedAt                   pgtype.Timestamptz `json:"started_at"`
+	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	RequiresTeamMembership      bool               `json:"requires_team_membership"`
+	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) UpdateChallenge(ctx context.Context, arg UpdateChallengeParams) (*UpdateChallengeRow, error) {
 	row := q.db.QueryRow(ctx, UpdateChallenge,
 		arg.Name,
 		arg.Description,
@@ -553,10 +811,14 @@ func (q *Queries) UpdateChallenge(ctx context.Context, arg UpdateChallengeParams
 		arg.Url,
 		arg.Buttontext,
 		arg.Eventid,
+		arg.Visibleat,
+		arg.Startedat,
 		arg.Endtime,
+		arg.Requiresteammembership,
+		arg.Requiressuperteammembership,
 		arg.ID,
 	)
-	var i Challenge
+	var i UpdateChallengeRow
 	err := row.Scan(
 		&i.ID,
 		&i.ProjectID,
@@ -567,7 +829,129 @@ func (q *Queries) UpdateChallenge(ctx context.Context, arg UpdateChallengeParams
 		&i.Url,
 		&i.ButtonText,
 		&i.PublishedAt,
+		&i.VisibleAt,
+		&i.StartedAt,
 		&i.EndTime,
+		&i.RequiresTeamMembership,
+		&i.RequiresSuperTeamMembership,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const UpdateChallengeRequirements = `-- name: UpdateChallengeRequirements :one
+UPDATE challenges
+SET
+    requires_team_membership = COALESCE($1::bool, requires_team_membership),
+    requires_super_team_membership = COALESCE($2::bool, requires_super_team_membership),
+    updated_at = now()
+WHERE id = $3::text
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
+`
+
+type UpdateChallengeRequirementsParams struct {
+	Requiresteammembership      *bool  `json:"requiresteammembership"`
+	Requiressuperteammembership *bool  `json:"requiressuperteammembership"`
+	ID                          string `json:"id"`
+}
+
+type UpdateChallengeRequirementsRow struct {
+	ID                          string             `json:"id"`
+	ProjectID                   string             `json:"project_id"`
+	EventID                     *string            `json:"event_id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	ImageUrl                    *string            `json:"image_url"`
+	Url                         *string            `json:"url"`
+	ButtonText                  string             `json:"button_text"`
+	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
+	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
+	StartedAt                   pgtype.Timestamptz `json:"started_at"`
+	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	RequiresTeamMembership      bool               `json:"requires_team_membership"`
+	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) UpdateChallengeRequirements(ctx context.Context, arg UpdateChallengeRequirementsParams) (*UpdateChallengeRequirementsRow, error) {
+	row := q.db.QueryRow(ctx, UpdateChallengeRequirements, arg.Requiresteammembership, arg.Requiressuperteammembership, arg.ID)
+	var i UpdateChallengeRequirementsRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.EventID,
+		&i.Name,
+		&i.Description,
+		&i.ImageUrl,
+		&i.Url,
+		&i.ButtonText,
+		&i.PublishedAt,
+		&i.VisibleAt,
+		&i.StartedAt,
+		&i.EndTime,
+		&i.RequiresTeamMembership,
+		&i.RequiresSuperTeamMembership,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const UpdateChallengeTimestamps = `-- name: UpdateChallengeTimestamps :one
+UPDATE challenges
+SET
+    visible_at = COALESCE($1::timestamptz, visible_at),
+    started_at = COALESCE($2::timestamptz, started_at),
+    updated_at = now()
+WHERE id = $3::text
+RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
+`
+
+type UpdateChallengeTimestampsParams struct {
+	Visibleat pgtype.Timestamptz `json:"visibleat"`
+	Startedat pgtype.Timestamptz `json:"startedat"`
+	ID        string             `json:"id"`
+}
+
+type UpdateChallengeTimestampsRow struct {
+	ID                          string             `json:"id"`
+	ProjectID                   string             `json:"project_id"`
+	EventID                     *string            `json:"event_id"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	ImageUrl                    *string            `json:"image_url"`
+	Url                         *string            `json:"url"`
+	ButtonText                  string             `json:"button_text"`
+	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
+	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
+	StartedAt                   pgtype.Timestamptz `json:"started_at"`
+	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	RequiresTeamMembership      bool               `json:"requires_team_membership"`
+	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) UpdateChallengeTimestamps(ctx context.Context, arg UpdateChallengeTimestampsParams) (*UpdateChallengeTimestampsRow, error) {
+	row := q.db.QueryRow(ctx, UpdateChallengeTimestamps, arg.Visibleat, arg.Startedat, arg.ID)
+	var i UpdateChallengeTimestampsRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.EventID,
+		&i.Name,
+		&i.Description,
+		&i.ImageUrl,
+		&i.Url,
+		&i.ButtonText,
+		&i.PublishedAt,
+		&i.VisibleAt,
+		&i.StartedAt,
+		&i.EndTime,
+		&i.RequiresTeamMembership,
+		&i.RequiresSuperTeamMembership,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

@@ -1,0 +1,37 @@
+type: http_request
+model: http_request
+id: rq_EnrollInChallenge
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T08:36:16.607357
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_ChallengeEnroll
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation EnrollInChallenge($challengeId: ID!) {
+      enrollInChallenge(challengeId: $challengeId) {
+        id
+        name
+        userEnrolledAt
+        description
+        userEnrolledAt
+        userCompletedAt
+      }
+    }
+  variables: |
+    {
+      "challengeId": "CL01K9VZ87EPZMZMK17E9KM7ZH8Z"
+    }
+bodyType: graphql
+description: User self-enrollment in a challenge
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_EnrollInChallenge
+method: POST
+name: Enroll In Challenge (User)
+sortPriority: 1000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

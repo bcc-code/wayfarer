@@ -11,6 +11,65 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const GetUserIDsInChurchAndProject = `-- name: GetUserIDsInChurchAndProject :many
+SELECT DISTINCT up.user_id
+FROM user_projects up
+JOIN users u ON u.id = up.user_id
+WHERE u.church_id = $1::text
+  AND up.project_id = $2::text
+`
+
+type GetUserIDsInChurchAndProjectParams struct {
+	Churchid  string `json:"churchid"`
+	Projectid string `json:"projectid"`
+}
+
+func (q *Queries) GetUserIDsInChurchAndProject(ctx context.Context, arg GetUserIDsInChurchAndProjectParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetUserIDsInChurchAndProject, arg.Churchid, arg.Projectid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var user_id string
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUserIDsInProject = `-- name: GetUserIDsInProject :many
+SELECT DISTINCT user_id
+FROM user_projects
+WHERE project_id = $1::text
+`
+
+func (q *Queries) GetUserIDsInProject(ctx context.Context, projectid string) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetUserIDsInProject, projectid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var user_id string
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUserProjects = `-- name: GetUserProjects :many
 SELECT project_id, joined_at
 FROM user_projects

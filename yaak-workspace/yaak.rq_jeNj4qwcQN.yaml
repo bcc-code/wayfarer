@@ -1,0 +1,37 @@
+type: http_request
+model: http_request
+id: rq_jeNj4qwcQN
+createdAt: 2025-12-08T08:28:18.920390
+updatedAt: 2025-12-08T11:40:55.014808
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_U4FqjQ2Ma5
+authentication: {}
+authenticationType: null
+body:
+  query: |-
+    query {
+      me {
+        id
+      }
+      challenge(id:"CL01K9VZ87EPZMZMK17E9KM7ZH8Z") {
+        id
+        name
+        id
+        image
+        visibleAt
+        userEnrolledAt
+        userCompletedAt
+      }
+    }
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: xraigN0HxK
+method: POST
+name: Challenge Details For user
+sortPriority: 999.9999
+url: ${[ HOST ]}/graphql
+urlParameters: []

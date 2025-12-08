@@ -37,7 +37,7 @@ func TestChallengeCacheBehavior(t *testing.T) {
 		EventID:     nil,
 		URL:         stringPtr("https://example.com/challenge"),
 		ButtonText:  "Start Challenge",
-		PublishedAt: scalars.DateTime{Time: publishedAt},
+		PublishedAt: &scalars.DateTime{Time: publishedAt},
 		EndTime:     &scalars.DateTime{Time: endTime},
 	}
 
@@ -78,7 +78,7 @@ func TestChallengeCacheExpiry(t *testing.T) {
 		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
 		URL:         stringPtr("https://example.com/challenge"),
 		ButtonText:  "Start Challenge",
-		PublishedAt: scalars.DateTime{Time: publishedAt},
+		PublishedAt: &scalars.DateTime{Time: publishedAt},
 	}
 
 	cacheKey := cache.ChallengeKey(challengeID)
@@ -109,7 +109,7 @@ func TestChallengeModel(t *testing.T) {
 		EventID:     &eventID,
 		URL:         stringPtr("https://example.com/bible-reading"),
 		ButtonText:  "Read Now",
-		PublishedAt: scalars.DateTime{Time: publishedAt},
+		PublishedAt: &scalars.DateTime{Time: publishedAt},
 		EndTime:     &scalars.DateTime{Time: endTime},
 	}
 
@@ -135,7 +135,7 @@ func TestChallengeModelWithoutEndTime(t *testing.T) {
 		EventID:     nil,
 		URL:         stringPtr("https://example.com/ongoing"),
 		ButtonText:  "Participate",
-		PublishedAt: scalars.DateTime{Time: publishedAt},
+		PublishedAt: &scalars.DateTime{Time: publishedAt},
 		EndTime:     nil,
 	}
 
@@ -161,7 +161,7 @@ func TestMultipleChallengesInCache(t *testing.T) {
 			ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
 			URL:         stringPtr("https://example.com/challenge1"),
 			ButtonText:  "Start",
-			PublishedAt: scalars.DateTime{Time: publishedAt},
+			PublishedAt: &scalars.DateTime{Time: publishedAt},
 			EndTime:     &scalars.DateTime{Time: endTime},
 		},
 		{
@@ -172,7 +172,7 @@ func TestMultipleChallengesInCache(t *testing.T) {
 			ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
 			URL:         stringPtr("https://example.com/challenge2"),
 			ButtonText:  "Begin",
-			PublishedAt: scalars.DateTime{Time: publishedAt},
+			PublishedAt: &scalars.DateTime{Time: publishedAt},
 			EndTime:     nil,
 		},
 		{
@@ -183,7 +183,7 @@ func TestMultipleChallengesInCache(t *testing.T) {
 			ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
 			URL:         stringPtr("https://example.com/challenge3"),
 			ButtonText:  "Go",
-			PublishedAt: scalars.DateTime{Time: publishedAt},
+			PublishedAt: &scalars.DateTime{Time: publishedAt},
 			EndTime:     &scalars.DateTime{Time: endTime},
 		},
 	}

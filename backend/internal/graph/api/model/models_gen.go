@@ -89,19 +89,24 @@ type BrandingInput struct {
 }
 
 type Challenge struct {
-	ID              string            `json:"id"`
-	Name            string            `json:"name"`
-	Description     scalars.HTML      `json:"description"`
-	Image           *string           `json:"image,omitempty"`
-	Project         *Project          `json:"project"`
-	Event           *Event            `json:"event,omitempty"`
-	URL             *string           `json:"url,omitempty"`
-	ButtonText      string            `json:"buttonText"`
-	PublishedAt     scalars.DateTime  `json:"publishedAt"`
-	EndTime         *scalars.DateTime `json:"endTime,omitempty"`
-	UserCompletedAt *scalars.DateTime `json:"userCompletedAt,omitempty"`
-	EventID         *string           `json:"-"`
-	ProjectID       string            `json:"-"`
+	ID                          string            `json:"id"`
+	Name                        string            `json:"name"`
+	Description                 scalars.HTML      `json:"description"`
+	Image                       *string           `json:"image,omitempty"`
+	Project                     *Project          `json:"project"`
+	Event                       *Event            `json:"event,omitempty"`
+	URL                         *string           `json:"url,omitempty"`
+	ButtonText                  string            `json:"buttonText"`
+	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
+	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
+	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
+	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
+	RequiresTeamMembership      bool              `json:"requiresTeamMembership"`
+	RequiresSuperTeamMembership bool              `json:"requiresSuperTeamMembership"`
+	UserCompletedAt             *scalars.DateTime `json:"userCompletedAt,omitempty"`
+	UserEnrolledAt              *scalars.DateTime `json:"userEnrolledAt,omitempty"`
+	EventID                     *string           `json:"-"`
+	ProjectID                   string            `json:"-"`
 }
 
 func (Challenge) IsScoreSource() {}
@@ -147,6 +152,11 @@ type ChurchFilter struct {
 	Ids      []string        `json:"ids,omitempty"`
 	Country  *string         `json:"country,omitempty"`
 	Category *ChurchCategory `json:"category,omitempty"`
+}
+
+type ChurchInProjectInput struct {
+	ChurchID  string `json:"churchId"`
+	ProjectID string `json:"projectId"`
 }
 
 type ColorSet struct {
@@ -210,12 +220,15 @@ type ConsentStatus struct {
 }
 
 type CreateChallengeInput struct {
-	Name        string            `json:"name"`
-	Description *scalars.HTML     `json:"description,omitempty"`
-	Image       *string           `json:"image,omitempty"`
-	URL         *string           `json:"url,omitempty"`
-	ButtonText  string            `json:"buttonText"`
-	EndTime     *scalars.DateTime `json:"endTime,omitempty"`
+	Name                        string            `json:"name"`
+	Description                 *scalars.HTML     `json:"description,omitempty"`
+	Image                       *string           `json:"image,omitempty"`
+	URL                         *string           `json:"url,omitempty"`
+	ButtonText                  string            `json:"buttonText"`
+	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
+	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
+	RequiresTeamMembership      *bool             `json:"requiresTeamMembership,omitempty"`
+	RequiresSuperTeamMembership *bool             `json:"requiresSuperTeamMembership,omitempty"`
 }
 
 type CreateChurchInput struct {
@@ -332,6 +345,14 @@ type DateRange struct {
 type DateRangeInput struct {
 	Start scalars.Date `json:"start"`
 	End   scalars.Date `json:"end"`
+}
+
+type EnrollmentTargetInput struct {
+	UserIds           []string              `json:"userIds,omitempty"`
+	ChurchInProject   *ChurchInProjectInput `json:"churchInProject,omitempty"`
+	TeamIds           []string              `json:"teamIds,omitempty"`
+	SuperTeamIds      []string              `json:"superTeamIds,omitempty"`
+	AllProjectMembers *string               `json:"allProjectMembers,omitempty"`
 }
 
 type Event struct {
@@ -767,13 +788,17 @@ type UpdateAchievementInput struct {
 }
 
 type UpdateChallengeInput struct {
-	Name        *string           `json:"name,omitempty"`
-	Description *scalars.HTML     `json:"description,omitempty"`
-	Image       *string           `json:"image,omitempty"`
-	EventID     *string           `json:"eventId,omitempty"`
-	URL         *string           `json:"url,omitempty"`
-	ButtonText  *string           `json:"buttonText,omitempty"`
-	EndTime     *scalars.DateTime `json:"endTime,omitempty"`
+	Name                        *string           `json:"name,omitempty"`
+	Description                 *scalars.HTML     `json:"description,omitempty"`
+	Image                       *string           `json:"image,omitempty"`
+	EventID                     *string           `json:"eventId,omitempty"`
+	URL                         *string           `json:"url,omitempty"`
+	ButtonText                  *string           `json:"buttonText,omitempty"`
+	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
+	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
+	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
+	RequiresTeamMembership      *bool             `json:"requiresTeamMembership,omitempty"`
+	RequiresSuperTeamMembership *bool             `json:"requiresSuperTeamMembership,omitempty"`
 }
 
 type UpdateChurchInput struct {

@@ -511,6 +511,59 @@ func (q *Queries) GetTeamsFilteredCursor(ctx context.Context, arg GetTeamsFilter
 	return items, nil
 }
 
+const GetUserIDsInSuperTeams = `-- name: GetUserIDsInSuperTeams :many
+SELECT DISTINCT tm.user_id
+FROM team_members tm
+JOIN teams t ON t.id = tm.team_id
+WHERE t.super_team_id = ANY($1::text[])
+`
+
+func (q *Queries) GetUserIDsInSuperTeams(ctx context.Context, superteamids []string) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetUserIDsInSuperTeams, superteamids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var user_id string
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUserIDsInTeams = `-- name: GetUserIDsInTeams :many
+SELECT DISTINCT user_id
+FROM team_members
+WHERE team_id = ANY($1::text[])
+`
+
+func (q *Queries) GetUserIDsInTeams(ctx context.Context, teamids []string) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetUserIDsInTeams, teamids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var user_id string
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUserTeamByProjectID = `-- name: GetUserTeamByProjectID :one
 SELECT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.created_at, t.updated_at
 FROM teams t
@@ -561,6 +614,51 @@ func (q *Queries) HasTeamMemberFromChurch(ctx context.Context, arg HasTeamMember
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const IsUserInAnySuperTeamInProject = `-- name: IsUserInAnySuperTeamInProject :one
+SELECT EXISTS(
+    SELECT 1
+    FROM team_members tm
+    INNER JOIN teams t ON tm.team_id = t.id
+    INNER JOIN super_teams st ON t.super_team_id = st.id
+    WHERE tm.user_id = $1::text
+      AND st.project_id = $2::text
+) AS is_member
+`
+
+type IsUserInAnySuperTeamInProjectParams struct {
+	Userid    string `json:"userid"`
+	Projectid string `json:"projectid"`
+}
+
+func (q *Queries) IsUserInAnySuperTeamInProject(ctx context.Context, arg IsUserInAnySuperTeamInProjectParams) (bool, error) {
+	row := q.db.QueryRow(ctx, IsUserInAnySuperTeamInProject, arg.Userid, arg.Projectid)
+	var is_member bool
+	err := row.Scan(&is_member)
+	return is_member, err
+}
+
+const IsUserInAnyTeamInProject = `-- name: IsUserInAnyTeamInProject :one
+SELECT EXISTS(
+    SELECT 1
+    FROM team_members tm
+    INNER JOIN teams t ON tm.team_id = t.id
+    WHERE tm.user_id = $1::text
+      AND t.project_id = $2::text
+) AS is_member
+`
+
+type IsUserInAnyTeamInProjectParams struct {
+	Userid    string `json:"userid"`
+	Projectid string `json:"projectid"`
+}
+
+func (q *Queries) IsUserInAnyTeamInProject(ctx context.Context, arg IsUserInAnyTeamInProjectParams) (bool, error) {
+	row := q.db.QueryRow(ctx, IsUserInAnyTeamInProject, arg.Userid, arg.Projectid)
+	var is_member bool
+	err := row.Scan(&is_member)
+	return is_member, err
 }
 
 const IsUserTeamMember = `-- name: IsUserTeamMember :one

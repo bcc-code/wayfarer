@@ -1,0 +1,30 @@
+type: http_request
+model: http_request
+id: rq_UnenrollFromChallenge
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T08:31:42.804366
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_ChallengeEnroll
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation UnenrollFromChallenge($challengeId: ID!) {
+      unenrollFromChallenge(challengeId: $challengeId)
+    }
+  variables: |
+    {
+      "challengeId": "CL01K9VZ87EPZMZMK17E9KM7ZH8Z"
+    }
+bodyType: graphql
+description: User self-unenrollment from a challenge
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_UnenrollFromChallenge
+method: POST
+name: Unenroll From Challenge (User)
+sortPriority: 2000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

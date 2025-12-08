@@ -1,0 +1,31 @@
+type: http_request
+model: http_request
+id: rq_UnenrollUserFromChallenge
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T11:41:28.805580
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_ChallengeEnroll
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation UnenrollUserFromChallenge($userId: ID!, $challengeId: ID!) {
+      unenrollUserFromChallenge(userId: $userId, challengeId: $challengeId)
+    }
+  variables: |
+    {
+      "userId": "US01K9W1Y4M1R19YCDX4YSACT0BK",
+      "challengeId": "CL01K9VZ87EPZMZMK17E9KM7ZH8Z"
+    }
+bodyType: graphql
+description: Admin unenrollment of a user from a challenge
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_UnenrollUserFromChallenge
+method: POST
+name: Unenroll User From Challenge (Admin)
+sortPriority: 4000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

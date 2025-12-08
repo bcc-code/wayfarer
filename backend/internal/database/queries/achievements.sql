@@ -342,3 +342,10 @@ SELECT achievement_id, achieved_at
 FROM user_achievements
 WHERE user_id = @userid::text
   AND achievement_id = ANY(@achievement_ids::text[]);
+
+-- name: GetBulkUserAchievementTimestamps :many
+SELECT user_id, achievement_id, achieved_at
+FROM user_achievements
+WHERE (user_id, achievement_id) IN (
+    SELECT unnest(@user_ids::text[]), unnest(@achievement_ids::text[])
+);

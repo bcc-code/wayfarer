@@ -1,5 +1,19 @@
 # Challenge queries and mutations
 
+# Enrollment target selector - specify ONE of these
+input EnrollmentTargetInput {
+    userIds: [ID!]
+    churchInProject: ChurchInProjectInput
+    teamIds: [ID!]
+    superTeamIds: [ID!]
+    allProjectMembers: ID
+}
+
+input ChurchInProjectInput {
+    churchId: ID!
+    projectId: ID!
+}
+
 extend type Query {
     challenge(id: ID!): Challenge!
     challenges(filter: ChallengeFilter, first: Int, after: String, last: Int, before: String): ChallengeConnection!
@@ -14,9 +28,23 @@ extend type Mutation {
     assignChallengeToEvent(challengeId: ID!, eventId: ID!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     bulkPublishChallenges(ids: [ID!]!, publishedAt: DateTime!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
     bulkCreateChallenges(projectId: ID!, eventId: ID!, inputs: [CreateChallengeInput!]!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
+    setChallengeVisibility(id: ID!, visibleAt: DateTime!, startedAt: DateTime): Challenge! @requireRole(roles: ["admin", "superadmin"])
+    setChallengeRequirements(id: ID!, requiresTeamMembership: Boolean, requiresSuperTeamMembership: Boolean): Challenge! @requireRole(roles: ["admin", "superadmin"])
+
+    # User self-enrollment
+    enrollInChallenge(challengeId: ID!): Challenge! @requireRole(roles: ["user"])
+    unenrollFromChallenge(challengeId: ID!): Boolean! @requireRole(roles: ["user"])
+
+    # Admin enrollment
+    enrollUserInChallenge(userId: ID!, challengeId: ID!): Challenge! @requireRole(roles: ["admin", "superadmin", "m2m"])
+    unenrollUserFromChallenge(userId: ID!, challengeId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "m2m"])
+
+    # Bulk enrollment
+    bulkEnrollUsersInChallenge(target: EnrollmentTargetInput!, challengeId: ID!): [Challenge!]! @requireRole(roles: ["admin", "superadmin", "m2m"])
+    bulkUnenrollUsersFromChallenge(target: EnrollmentTargetInput!, challengeId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "m2m"])
 
     # Completion tracking (M2M)
     completeChallenge(userId: ID!, challengeId: ID!, completedAt: DateTime): Challenge! @requireRole(roles: ["m2m", "admin", "superadmin"])
     uncompleteChallenge(userId: ID!, challengeId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    bulkCompleteChallenges(userIds: [ID!]!, challengeId: ID!, completedAt: DateTime): [Challenge!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    bulkCompleteChallenges(target: EnrollmentTargetInput!, challengeId: ID!, completedAt: DateTime): [Challenge!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 }

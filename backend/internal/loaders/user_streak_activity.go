@@ -27,10 +27,8 @@ func (k UserStreakActivityKey) Raw() interface{} {
 // userStreakActivityBatchFunc batches loading user streak activities by user ID and streak ID
 func userStreakActivityBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context.Context, []UserStreakActivityKey) []*dataloader.Result[[]*sqlc.UserStreakActivity] {
 	return func(ctx context.Context, keys []UserStreakActivityKey) []*dataloader.Result[[]*sqlc.UserStreakActivity] {
-		// Group keys by user ID to optimize queries
 		activitiesByKey := make(map[string][]*sqlc.UserStreakActivity)
 		missingKeys := []UserStreakActivityKey{}
-		keysByUser := make(map[string][]UserStreakActivityKey)
 
 		for _, key := range keys {
 			cacheKey := cache.UserStreakActivityKey(key.UserID, key.StreakID)
@@ -43,45 +41,44 @@ func userStreakActivityBatchFunc(db *database.DB, c *cache.CacheWithRegistry) fu
 			}
 
 			missingKeys = append(missingKeys, key)
-			keysByUser[key.UserID] = append(keysByUser[key.UserID], key)
 		}
 
-		// Query database for each user with missing keys
+		// Query database for all missing keys in a single bulk query
 		if len(missingKeys) > 0 {
-			for userID, userKeys := range keysByUser {
-				streakIDs := make([]string, len(userKeys))
-				for i, key := range userKeys {
-					streakIDs[i] = key.StreakID
-				}
+			userIDs := make([]string, len(missingKeys))
+			streakIDs := make([]string, len(missingKeys))
+			for i, key := range missingKeys {
+				userIDs[i] = key.UserID
+				streakIDs[i] = key.StreakID
+			}
 
-				rows, err := db.Queries.GetUserStreakActivitiesForMultipleStreaks(ctx, sqlc.GetUserStreakActivitiesForMultipleStreaksParams{
-					Userid:    userID,
-					StreakIds: streakIDs,
-				})
-				if err != nil {
-					// Return error for all keys
-					results := make([]*dataloader.Result[[]*sqlc.UserStreakActivity], len(keys))
-					for i := range results {
-						results[i] = &dataloader.Result[[]*sqlc.UserStreakActivity]{Error: err}
-					}
-					return results
+			rows, err := db.Queries.GetBulkUserStreakActivities(ctx, sqlc.GetBulkUserStreakActivitiesParams{
+				UserIds:   userIDs,
+				StreakIds: streakIDs,
+			})
+			if err != nil {
+				results := make([]*dataloader.Result[[]*sqlc.UserStreakActivity], len(keys))
+				for i := range results {
+					results[i] = &dataloader.Result[[]*sqlc.UserStreakActivity]{Error: err}
 				}
+				return results
+			}
 
-				// Group activities by streak ID
-				activitiesByStreak := make(map[string][]*sqlc.UserStreakActivity)
-				for _, row := range rows {
-					activitiesByStreak[row.StreakID] = append(activitiesByStreak[row.StreakID], row)
-				}
+			// Group activities by (user_id, streak_id) pair
+			activitiesByPair := make(map[string][]*sqlc.UserStreakActivity)
+			for _, row := range rows {
+				key := fmt.Sprintf("%s:%s", row.UserID, row.StreakID)
+				activitiesByPair[key] = append(activitiesByPair[key], row)
+			}
 
-				// Populate cache and result map for each key
-				for _, key := range userKeys {
-					activities := activitiesByStreak[key.StreakID]
-					if activities == nil {
-						activities = []*sqlc.UserStreakActivity{}
-					}
-					activitiesByKey[key.String()] = activities
-					c.Set(cache.UserStreakActivityKey(key.UserID, key.StreakID), activities)
+			// Populate cache and result map for all missing keys
+			for _, key := range missingKeys {
+				activities := activitiesByPair[key.String()]
+				if activities == nil {
+					activities = []*sqlc.UserStreakActivity{}
 				}
+				activitiesByKey[key.String()] = activities
+				c.Set(cache.UserStreakActivityKey(key.UserID, key.StreakID), activities)
 			}
 		}
 

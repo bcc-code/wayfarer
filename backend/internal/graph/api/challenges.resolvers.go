@@ -7,6 +7,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -69,7 +70,7 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 	r.Cache.InvalidateProject(projectID)
 
 	// Convert to GraphQL model
-	return convertRowToChallenge(row), nil
+	return convertCreateChallengeRowToChallenge(row), nil
 }
 
 // UpdateChallenge is the resolver for the updateChallenge field.
@@ -149,7 +150,7 @@ func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input
 	}
 
 	// Convert to GraphQL model
-	return convertRowToChallenge(row), nil
+	return convertUpdateChallengeRowToChallenge(row), nil
 }
 
 // DeleteChallenge is the resolver for the deleteChallenge field.
@@ -218,7 +219,7 @@ func (r *mutationResolver) PublishChallenge(ctx context.Context, id string, publ
 	r.Cache.InvalidateChallenge(id)
 
 	// Convert to GraphQL model
-	return convertRowToChallenge(row), nil
+	return convertPublishChallengeRowToChallenge(row), nil
 }
 
 // AssignChallengeToEvent is the resolver for the assignChallengeToEvent field.
@@ -273,7 +274,7 @@ func (r *mutationResolver) AssignChallengeToEvent(ctx context.Context, challenge
 	r.Cache.InvalidateEvent(eventID)
 
 	// Convert to GraphQL model
-	return convertRowToChallenge(row), nil
+	return convertAssignChallengeToEventRowToChallenge(row), nil
 }
 
 // BulkPublishChallenges is the resolver for the bulkPublishChallenges field.
@@ -318,7 +319,7 @@ func (r *mutationResolver) BulkPublishChallenges(ctx context.Context, ids []stri
 	// Convert to GraphQL models
 	result := make([]model.Challenge, len(rows))
 	for i, row := range rows {
-		result[i] = *convertRowToChallenge(row)
+		result[i] = *convertBulkPublishChallengesRowToChallenge(row)
 	}
 
 	return result, nil
@@ -401,25 +402,463 @@ func (r *mutationResolver) BulkCreateChallenges(ctx context.Context, projectID s
 	// Convert to GraphQL models
 	result := make([]model.Challenge, len(rows))
 	for i, row := range rows {
-		result[i] = *convertRowToChallenge(row)
+		result[i] = *convertBulkCreateChallengesRowToChallenge(row)
 	}
 
 	return result, nil
 }
 
+// SetChallengeVisibility - Admin mutation for visibility settings
+func (r *mutationResolver) SetChallengeVisibility(ctx context.Context, id string, visibleAt scalars.DateTime, startedAt *scalars.DateTime) (*model.Challenge, error) {
+	adminID, ok := middleware.GetUserID(ctx)
+	if !ok || adminID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load challenge for authorization
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, id)
+	_, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("challenge not found: %w", err)
+	}
+
+	// Build params
+	params := sqlc.UpdateChallengeTimestampsParams{
+		ID:        id,
+		Visibleat: pgtype.Timestamptz{Time: visibleAt.Time, Valid: true},
+	}
+	if startedAt != nil {
+		params.Startedat = pgtype.Timestamptz{Time: startedAt.Time, Valid: true}
+	}
+
+	// Update in database
+	row, err := r.DB.Queries.UpdateChallengeTimestamps(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update challenge visibility: %w", err)
+	}
+
+	// Cache invalidation
+	r.Cache.InvalidateChallenge(id)
+
+	// Convert and return
+	return convertUpdateChallengeTimestampsRowToChallenge(*row), nil
+}
+
+// SetChallengeRequirements - Admin mutation for team/superteam requirements
+func (r *mutationResolver) SetChallengeRequirements(ctx context.Context, id string, requiresTeamMembership *bool, requiresSuperTeamMembership *bool) (*model.Challenge, error) {
+	adminID, ok := middleware.GetUserID(ctx)
+	if !ok || adminID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load challenge for authorization
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, id)
+	_, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("challenge not found: %w", err)
+	}
+
+	// Build params
+	params := sqlc.UpdateChallengeRequirementsParams{
+		ID:                          id,
+		Requiresteammembership:      requiresTeamMembership,
+		Requiressuperteammembership: requiresSuperTeamMembership,
+	}
+
+	// Update in database
+	row, err := r.DB.Queries.UpdateChallengeRequirements(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update challenge requirements: %w", err)
+	}
+
+	// Cache invalidation
+	r.Cache.InvalidateChallenge(id)
+
+	// Convert and return
+	return convertUpdateChallengeRequirementsRowToChallenge(*row), nil
+}
+
+// EnrollInChallenge - User self-enrollment with validation
+func (r *mutationResolver) EnrollInChallenge(ctx context.Context, challengeID string) (*model.Challenge, error) {
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load challenge to verify it exists and get project ID
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
+	challenge, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("challenge not found: %w", err)
+	}
+
+	// Validation 1: Challenge must be published
+	if challenge.PublishedAt == nil || challenge.PublishedAt.Time.After(time.Now()) {
+		return nil, fmt.Errorf("challenge is not yet available for enrollment")
+	}
+
+	// Validation 2: Challenge must not be ended
+	if challenge.EndTime != nil && challenge.EndTime.Time.Before(time.Now()) {
+		return nil, fmt.Errorf("challenge enrollment has ended")
+	}
+
+	// Validation 3: Auto-enroll in project if needed (like team joining)
+	isInProject, err := r.DB.Queries.IsUserInProject(ctx, sqlc.IsUserInProjectParams{
+		Userid:    userID,
+		Projectid: challenge.ProjectID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to check project membership: %w", err)
+	}
+	if !isInProject {
+		// Automatically join the user to the project
+		err = r.DB.Queries.JoinProject(ctx, sqlc.JoinProjectParams{
+			Userid:    userID,
+			Projectid: challenge.ProjectID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to auto-enroll in project: %w", err)
+		}
+	}
+
+	// Validation 4: Check team membership requirement
+	if challenge.RequiresTeamMembership {
+		isInTeam, err := r.DB.Queries.IsUserInAnyTeamInProject(ctx, sqlc.IsUserInAnyTeamInProjectParams{
+			Userid:    userID,
+			Projectid: challenge.ProjectID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to check team membership: %w", err)
+		}
+		if !isInTeam {
+			return nil, fmt.Errorf("you must be a member of a team in this project to enroll in this challenge")
+		}
+	}
+
+	// Validation 5: Check superteam membership requirement
+	if challenge.RequiresSuperTeamMembership {
+		isInSuperTeam, err := r.DB.Queries.IsUserInAnySuperTeamInProject(ctx, sqlc.IsUserInAnySuperTeamInProjectParams{
+			Userid:    userID,
+			Projectid: challenge.ProjectID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to check super team membership: %w", err)
+		}
+		if !isInSuperTeam {
+			return nil, fmt.Errorf("you must be a member of a super team in this project to enroll in this challenge")
+		}
+	}
+
+	// Enroll user (idempotent)
+	enrolledAt, err := r.DB.Queries.EnrollUserInChallenge(ctx, sqlc.EnrollUserInChallengeParams{
+		Userid:      userID,
+		Challengeid: challengeID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to enroll in challenge: %w", err)
+	}
+
+	fmt.Printf("DEBUG: enrolledAt.Valid=%v, enrolledAt.Time=%v\n", enrolledAt.Valid, enrolledAt.Time)
+
+	// Cache invalidation
+	r.Cache.InvalidateUser(userID)
+	r.Cache.InvalidateChallenge(challengeID)
+
+	// Prime the cache with the enrollment timestamp AFTER invalidation
+	if enrolledAt.Valid {
+		ts := enrolledAt.Time
+		cacheKey := cache.UserChallengeEnrollmentKey(userID, challengeID)
+		r.Cache.Set(cacheKey, &ts)
+		fmt.Printf("DEBUG: Set cache key=%s, value=%v\n", cacheKey, ts)
+	}
+
+	// Return challenge with translations
+	return r.ApplyTranslationToChallenge(ctx, challenge), nil
+}
+
+// UnenrollFromChallenge - User self-unenrollment
+func (r *mutationResolver) UnenrollFromChallenge(ctx context.Context, challengeID string) (bool, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return false, fmt.Errorf("user not authenticated")
+	}
+
+	err := r.DB.Queries.UnenrollUserFromChallenge(ctx, sqlc.UnenrollUserFromChallengeParams{
+		Userid:      userID,
+		Challengeid: challengeID,
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to unenroll from challenge: %w", err)
+	}
+
+	r.Cache.InvalidateUser(userID)
+	r.Cache.InvalidateChallenge(challengeID)
+
+	return true, nil
+}
+
+// EnrollUserInChallenge - Admin enrollment (no validation)
+func (r *mutationResolver) EnrollUserInChallenge(ctx context.Context, userID string, challengeID string) (*model.Challenge, error) {
+	// Get authenticated admin ID for authorization check
+	adminID, ok := middleware.GetUserID(ctx)
+	if !ok || adminID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load challenge to verify it exists
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
+	challenge, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("challenge not found: %w", err)
+	}
+
+	// Enroll user (idempotent)
+	enrolledAt, err := r.DB.Queries.EnrollUserInChallenge(ctx, sqlc.EnrollUserInChallengeParams{
+		Userid:      userID,
+		Challengeid: challengeID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to enroll user in challenge: %w", err)
+	}
+
+	// Cache invalidation
+	r.Cache.InvalidateUser(userID)
+	r.Cache.InvalidateChallenge(challengeID)
+
+	// Prime the cache with the enrollment timestamp AFTER invalidation
+	if enrolledAt.Valid {
+		ts := enrolledAt.Time
+		r.Cache.Set(cache.UserChallengeEnrollmentKey(userID, challengeID), &ts)
+	}
+
+	return r.ApplyTranslationToChallenge(ctx, challenge), nil
+}
+
+// UnenrollUserFromChallenge - Admin unenrollment
+func (r *mutationResolver) UnenrollUserFromChallenge(ctx context.Context, userID string, challengeID string) (bool, error) {
+	_, ok := middleware.GetUserID(ctx)
+	if !ok {
+		return false, fmt.Errorf("user not authenticated")
+	}
+
+	err := r.DB.Queries.UnenrollUserFromChallenge(ctx, sqlc.UnenrollUserFromChallengeParams{
+		Userid:      userID,
+		Challengeid: challengeID,
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to unenroll user from challenge: %w", err)
+	}
+
+	r.Cache.InvalidateUser(userID)
+	r.Cache.InvalidateChallenge(challengeID)
+
+	return true, nil
+}
+
+// BulkEnrollUsersInChallenge - Bulk enrollment for admin/M2M
+func (r *mutationResolver) BulkEnrollUsersInChallenge(ctx context.Context, target model.EnrollmentTargetInput, challengeID string) ([]model.Challenge, error) {
+	adminID, ok := middleware.GetUserID(ctx)
+	if !ok || adminID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Resolve target to user IDs
+	userIds, err := r.resolveEnrollmentTarget(ctx, target)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(userIds) == 0 {
+		return []model.Challenge{}, nil // No users to enroll
+	}
+
+	// Load challenge for authorization
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
+	challenge, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("challenge not found: %w", err)
+	}
+
+	// Bulk enroll
+	err = r.DB.Queries.BulkEnrollUsersInChallenge(ctx, sqlc.BulkEnrollUsersInChallengeParams{
+		Userids:     userIds,
+		Challengeid: challengeID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to bulk enroll users: %w", err)
+	}
+
+	// Cache invalidation
+	for _, userID := range userIds {
+		r.Cache.InvalidateUser(userID)
+	}
+	r.Cache.InvalidateChallenge(challengeID)
+
+	// Return challenge for each user (same challenge, no dataloader needed)
+	translatedChallenge := r.ApplyTranslationToChallenge(ctx, challenge)
+	result := make([]model.Challenge, len(userIds))
+	for i := range result {
+		result[i] = *translatedChallenge
+	}
+
+	return result, nil
+}
+
+// BulkUnenrollUsersFromChallenge - Bulk unenrollment
+func (r *mutationResolver) BulkUnenrollUsersFromChallenge(ctx context.Context, target model.EnrollmentTargetInput, challengeID string) (bool, error) {
+	_, ok := middleware.GetUserID(ctx)
+	if !ok {
+		return false, fmt.Errorf("user not authenticated")
+	}
+
+	// Resolve target to user IDs
+	userIds, err := r.resolveEnrollmentTarget(ctx, target)
+	if err != nil {
+		return false, err
+	}
+
+	if len(userIds) == 0 {
+		return true, nil // No users to unenroll
+	}
+
+	err = r.DB.Queries.BulkUnenrollUsersFromChallenge(ctx, sqlc.BulkUnenrollUsersFromChallengeParams{
+		Challengeid: challengeID,
+		Userids:     userIds,
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to bulk unenroll users: %w", err)
+	}
+
+	for _, userID := range userIds {
+		r.Cache.InvalidateUser(userID)
+	}
+	r.Cache.InvalidateChallenge(challengeID)
+
+	return true, nil
+}
+
 // CompleteChallenge is the resolver for the completeChallenge field.
 func (r *mutationResolver) CompleteChallenge(ctx context.Context, userID string, challengeID string, completedAt *scalars.DateTime) (*model.Challenge, error) {
-	panic(fmt.Errorf("not implemented: CompleteChallenge - completeChallenge"))
+	// Get authenticated admin ID for authorization
+	_, ok := middleware.GetUserID(ctx)
+	if !ok {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load challenge to verify it exists
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
+	challenge, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("challenge not found: %w", err)
+	}
+
+	// Convert optional completedAt parameter
+	var completedAtTime *time.Time
+	if completedAt != nil {
+		completedAtTime = &completedAt.Time
+	}
+
+	// Complete the challenge
+	_, err = r.DB.Queries.CompleteUserChallenge(ctx, sqlc.CompleteUserChallengeParams{
+		Userid:      userID,
+		Challengeid: challengeID,
+		Completedat: completedAtTime,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to complete challenge: %w", err)
+	}
+
+	// Cache invalidation
+	r.Cache.InvalidateUser(userID)
+	r.Cache.InvalidateChallenge(challengeID)
+
+	// Return challenge with translations
+	return r.ApplyTranslationToChallenge(ctx, challenge), nil
 }
 
 // UncompleteChallenge is the resolver for the uncompleteChallenge field.
 func (r *mutationResolver) UncompleteChallenge(ctx context.Context, userID string, challengeID string) (bool, error) {
-	panic(fmt.Errorf("not implemented: UncompleteChallenge - uncompleteChallenge"))
+	// Get authenticated admin ID for authorization
+	_, ok := middleware.GetUserID(ctx)
+	if !ok {
+		return false, fmt.Errorf("user not authenticated")
+	}
+
+	// Delete the completion record
+	err := r.DB.Queries.UncompleteUserFromChallenge(ctx, sqlc.UncompleteUserFromChallengeParams{
+		Userid:      userID,
+		Challengeid: challengeID,
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to uncomplete challenge: %w", err)
+	}
+
+	// Cache invalidation
+	r.Cache.InvalidateUser(userID)
+	r.Cache.InvalidateChallenge(challengeID)
+
+	return true, nil
 }
 
 // BulkCompleteChallenges is the resolver for the bulkCompleteChallenges field.
-func (r *mutationResolver) BulkCompleteChallenges(ctx context.Context, userIds []string, challengeID string, completedAt *scalars.DateTime) ([]model.Challenge, error) {
-	panic(fmt.Errorf("not implemented: BulkCompleteChallenges - bulkCompleteChallenges"))
+func (r *mutationResolver) BulkCompleteChallenges(ctx context.Context, target model.EnrollmentTargetInput, challengeID string, completedAt *scalars.DateTime) ([]model.Challenge, error) {
+	// Get authenticated admin ID for authorization
+	_, ok := middleware.GetUserID(ctx)
+	if !ok {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Resolve target to user IDs
+	userIds, err := r.resolveEnrollmentTarget(ctx, target)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(userIds) == 0 {
+		return []model.Challenge{}, nil // No users to complete
+	}
+
+	// Load challenge to verify it exists
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
+	challenge, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("challenge not found: %w", err)
+	}
+
+	// Convert optional completedAt parameter
+	var completedAtTimestamp pgtype.Timestamptz
+	if completedAt != nil {
+		completedAtTimestamp = pgtype.Timestamptz{
+			Time:  completedAt.Time,
+			Valid: true,
+		}
+	}
+
+	// Bulk complete
+	err = r.DB.Queries.BulkCompleteChallenges(ctx, sqlc.BulkCompleteChallengesParams{
+		Userids:     userIds,
+		Challengeid: challengeID,
+		Completedat: completedAtTimestamp,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to bulk complete challenges: %w", err)
+	}
+
+	// Cache invalidation
+	for _, userID := range userIds {
+		r.Cache.InvalidateUser(userID)
+	}
+	r.Cache.InvalidateChallenge(challengeID)
+
+	// Return challenge for each user (same challenge, no dataloader needed)
+	translatedChallenge := r.ApplyTranslationToChallenge(ctx, challenge)
+	result := make([]model.Challenge, len(userIds))
+	for i := range result {
+		result[i] = *translatedChallenge
+	}
+
+	return result, nil
 }
 
 // Challenge is the resolver for the challenge field.
@@ -518,7 +957,7 @@ func (r *queryResolver) Challenges(ctx context.Context, filter *model.ChallengeF
 	// Convert to GraphQL model
 	modelChallenges := make([]model.Challenge, len(challengeRows))
 	for i, row := range challengeRows {
-		challenge := convertRowToChallenge(row)
+		challenge := convertGetChallengesFilteredCursorRowToChallenge(row)
 		modelChallenges[i] = *challenge
 	}
 
