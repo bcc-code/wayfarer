@@ -5,6 +5,13 @@ gql(`
       id
       name
       image
+      consentStatus {
+        pendingConsents {
+          id
+          key
+          version
+        }
+      }
     }
     myCurrentProject {
       id
@@ -32,10 +39,23 @@ const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useProfilePageQuery({
   pause: computed(() => !isAuthReady.value),
 })
+
+// Consent banner
+const showBanner = useLocalStorage('showBanner', false, {
+  listenToStorageChanges: true,
+})
+watch(
+  () => data.value?.me.consentStatus.pendingConsents.length,
+  (pending) => {
+    if (pending && !showBanner.value) {
+      showBanner.value = true
+    }
+  },
+)
 </script>
 
 <template>
-  <PageLayout :title="$t('pages.profile')">
+  <PageLayout :title="data?.me.name">
     <template #action>
       <NuxtLink :to="{ name: 'settings' }">
         <DesignIconButton icon="lucide:settings" />
@@ -45,28 +65,26 @@ const { data, error, fetching } = useProfilePageQuery({
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <div v-else-if="data" class="space-y-list-section-gap">
-      <div
-        v-if="data.me"
-        class="gap-medium flex flex-col items-center justify-center p-4"
+      <!-- <Transition
+        enter-from-class="opacity-0 scale-95"
+        leave-to-class="opacity-0 scale-95"
+        enter-active-class="duration-200 transition ease-out"
+        leave-active-class="duration-200 transition ease-out"
       >
-        <div
-          class="shadow-large bg-background-raised p-list-section-inset flex aspect-square size-35 items-center justify-center rounded-full"
+        <DesignBanner
+          v-if="showBanner"
+          :title="$t('consent.bannerTitle')"
+          @close="showBanner = false"
         >
-          <NuxtImg
-            v-if="data.me.image"
-            :src="data.me.image"
-            height="160"
-            width="160"
-            class="bg-background-default text-accent-contrast size-full rounded-full object-cover object-center"
-          />
-          <Icon
-            v-else
-            name="IconProfile"
-            class="text-accent-contrast size-16"
-          />
-        </div>
-        <h2 class="text-heading">{{ data.me.name }}</h2>
-      </div>
+          <template #action>
+            <NuxtLink :to="{ name: 'settings-consents' }">
+              <DesignButton size="small" variant="secondary">
+                {{ $t('consent.bannerButton') }}
+              </DesignButton>
+            </NuxtLink>
+          </template>
+        </DesignBanner>
+      </Transition> -->
 
       <ProfileProjectCard
         v-if="data.myCurrentProject"

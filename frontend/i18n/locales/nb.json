@@ -53,9 +53,15 @@
   "givesYouXPoints": "Gir deg {points} poeng",
   "consent": {
     "pending": "Ventende",
-    "accepted": "Akseptert",
+    "accepted": "Godtatt",
     "rejected": "Avslått",
     "acceptButton": "Aksepter",
-    "rejectButton": "Avslå"
+    "rejectButton": "Avslå",
+    "bannerTitle": "Du har ventende samtykker som må aksepteres",
+    "bannerButton": "Gå til samtykkeinstillinger",
+    "readButton": "Les samtykkeerklæring",
+    "iDontConsent": "Jeg vil ikke godta",
+    "giveConsent": "Gi samtykke",
+    "change": "Endre"
   }
 }

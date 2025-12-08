@@ -1657,11 +1657,6 @@ export type UserRole = {
   user: User;
 };
 
-export type ConsentsDialogQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ConsentsDialogQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
-
 export type ProjectRulesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -2067,69 +2062,19 @@ export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __
 export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, image?: string | null }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
+export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, image?: string | null, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename?: 'Consent', id: string, key: string, version: number }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
       | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
     >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank?: number | null } | null } } };
 
+export type SettingsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
-export const ConsentsDialogDocument = gql`
-    query ConsentsDialog {
-  me {
-    consentStatus {
-      pendingConsents {
-        __typename
-        id
-        key
-        version
-        title
-        body {
-          html
-        }
-        publishedAt
-        managedBy
-        managementType
-      }
-      acceptedConsents {
-        __typename
-        id
-        consent {
-          title
-          body {
-            html
-          }
-          managedBy
-          managementType
-          url
-        }
-        action
-        actionDate
-      }
-      rejectedConsents {
-        __typename
-        id
-        consent {
-          title
-          body {
-            html
-          }
-          managedBy
-          managementType
-          url
-        }
-        action
-        actionDate
-      }
-    }
-  }
-}
-    `;
 
-export function useConsentsDialogQuery(options?: Omit<Urql.UseQueryArgs<never, ConsentsDialogQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<ConsentsDialogQuery, ConsentsDialogQueryVariables | undefined>({ query: ConsentsDialogDocument, variables: undefined, ...options });
-};
+export type SettingsPageQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
+
+
 export const ProjectRulesDocument = gql`
     query ProjectRules {
   myCurrentProject {
@@ -3198,6 +3143,13 @@ export const ProfilePageDocument = gql`
     id
     name
     image
+    consentStatus {
+      pendingConsents {
+        id
+        key
+        version
+      }
+    }
   }
   myCurrentProject {
     id
@@ -3223,4 +3175,59 @@ export const ProfilePageDocument = gql`
 
 export function useProfilePageQuery(options?: Omit<Urql.UseQueryArgs<never, ProfilePageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<ProfilePageQuery, ProfilePageQueryVariables | undefined>({ query: ProfilePageDocument, variables: undefined, ...options });
+};
+export const SettingsPageDocument = gql`
+    query SettingsPage {
+  me {
+    consentStatus {
+      pendingConsents {
+        __typename
+        id
+        key
+        version
+        title
+        body {
+          html
+        }
+        publishedAt
+        managedBy
+        managementType
+      }
+      acceptedConsents {
+        __typename
+        id
+        consent {
+          title
+          body {
+            html
+          }
+          managedBy
+          managementType
+          url
+        }
+        action
+        actionDate
+      }
+      rejectedConsents {
+        __typename
+        id
+        consent {
+          title
+          body {
+            html
+          }
+          managedBy
+          managementType
+          url
+        }
+        action
+        actionDate
+      }
+    }
+  }
+}
+    `;
+
+export function useSettingsPageQuery(options?: Omit<Urql.UseQueryArgs<never, SettingsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<SettingsPageQuery, SettingsPageQueryVariables | undefined>({ query: SettingsPageDocument, variables: undefined, ...options });
 };

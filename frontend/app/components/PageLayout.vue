@@ -1,7 +1,7 @@
 <script setup lang="ts">
 withDefaults(
   defineProps<{
-    title: string
+    title?: string
     bottomPadding?: boolean
     shadow?: boolean
   }>(),
@@ -31,6 +31,7 @@ const hasScrolled = computed(() => y.value > 25)
           ]"
         >
           <h1
+            v-if="title"
             :class="[
               'text-text-default absolute transition-all duration-300 ease-out',
               {
@@ -43,6 +44,7 @@ const hasScrolled = computed(() => y.value > 25)
           >
             {{ title }}
           </h1>
+          <DesignSkeleton v-else class="h-8 w-1/2" />
           <div
             :class="[
               'absolute right-6 bottom-3 size-11 transition-all duration-300 ease-out',
