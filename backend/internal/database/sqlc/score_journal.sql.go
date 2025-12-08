@@ -75,13 +75,13 @@ type CreateScoreJournalEntryParams struct {
 	ID          string             `json:"id"`
 	ProjectID   string             `json:"project_id"`
 	UserID      string             `json:"user_id"`
-	EventID     string             `json:"event_id"`
-	ChallengeID string             `json:"challenge_id"`
+	EventID     *string            `json:"event_id"`
+	ChallengeID *string            `json:"challenge_id"`
 	Points      int32              `json:"points"`
 	SourceType  string             `json:"source_type"`
-	SourceID    string             `json:"source_id"`
-	Reason      string             `json:"reason"`
-	AwardedBy   string             `json:"awarded_by"`
+	SourceID    *string            `json:"source_id"`
+	Reason      *string            `json:"reason"`
+	AwardedBy   *string            `json:"awarded_by"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 

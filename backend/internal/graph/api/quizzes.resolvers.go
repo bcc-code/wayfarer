@@ -924,12 +924,10 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 			UserID:      userID,
 			Points:      int32(quiz.CompletionPoints),
 			SourceType:  "QUIZ",
-			SourceID:    quiz.ID,
-			Reason:      "Quiz completion: " + quiz.Name,
-			ChallengeID: quiz.ChallengeID,
-		}
-		if challenge.EventID != nil {
-			journalParams.EventID = *challenge.EventID
+			SourceID:    &quiz.ID,
+			Reason:      &quiz.Name,
+			ChallengeID: &quiz.ChallengeID,
+			EventID:     challenge.EventID,
 		}
 
 		_, err = qtx.CreateScoreJournalEntry(ctx, journalParams)
@@ -1174,9 +1172,9 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 				ProjectID:  quiz.ProjectID,
 				UserID:     userID,
 				SourceType: "QUIZ",
-				SourceID:   quizID,
+				SourceID:   &quizID,
 				Points:     int32(quiz.CompletionPoints),
-				Reason:     "Quiz completion: " + quiz.Name,
+				Reason:     &quiz.Name,
 			})
 			if err != nil {
 				return nil, fmt.Errorf("failed to create score journal entry: %w", err)
