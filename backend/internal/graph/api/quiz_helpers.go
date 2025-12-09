@@ -171,96 +171,108 @@ type createQuizQuestionRowAdapter struct {
 	*sqlc.CreateQuizQuestionRow
 }
 
-func (r createQuizQuestionRowAdapter) GetID() string                       { return r.ID }
-func (r createQuizQuestionRowAdapter) GetQuizID() string                   { return r.QuizID }
-func (r createQuizQuestionRowAdapter) GetQuestionType() string             { return r.QuestionType }
-func (r createQuizQuestionRowAdapter) GetQuestionText() string             { return r.QuestionText }
-func (r createQuizQuestionRowAdapter) GetQuestionOrder() int32             { return r.QuestionOrder }
-func (r createQuizQuestionRowAdapter) GetAllowMultipleSelection() *bool    { return r.AllowMultipleSelection }
-func (r createQuizQuestionRowAdapter) GetMinValue() pgtype.Numeric         { return r.MinValue }
-func (r createQuizQuestionRowAdapter) GetMaxValue() pgtype.Numeric         { return r.MaxValue }
-func (r createQuizQuestionRowAdapter) GetStepValue() pgtype.Numeric        { return r.StepValue }
-func (r createQuizQuestionRowAdapter) GetTimeoutSeconds() *int32           { return r.TimeoutSeconds }
+func (r createQuizQuestionRowAdapter) GetID() string           { return r.ID }
+func (r createQuizQuestionRowAdapter) GetQuizID() string       { return r.QuizID }
+func (r createQuizQuestionRowAdapter) GetQuestionType() string { return r.QuestionType }
+func (r createQuizQuestionRowAdapter) GetQuestionText() string { return r.QuestionText }
+func (r createQuizQuestionRowAdapter) GetQuestionOrder() int32 { return r.QuestionOrder }
+func (r createQuizQuestionRowAdapter) GetAllowMultipleSelection() *bool {
+	return r.AllowMultipleSelection
+}
+func (r createQuizQuestionRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
+func (r createQuizQuestionRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
+func (r createQuizQuestionRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
+func (r createQuizQuestionRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
 
 // Adapter for sqlc.UpdateQuizQuestionRow
 type updateQuizQuestionRowAdapter struct {
 	*sqlc.UpdateQuizQuestionRow
 }
 
-func (r updateQuizQuestionRowAdapter) GetID() string                       { return r.ID }
-func (r updateQuizQuestionRowAdapter) GetQuizID() string                   { return r.QuizID }
-func (r updateQuizQuestionRowAdapter) GetQuestionType() string             { return r.QuestionType }
-func (r updateQuizQuestionRowAdapter) GetQuestionText() string             { return r.QuestionText }
-func (r updateQuizQuestionRowAdapter) GetQuestionOrder() int32             { return r.QuestionOrder }
-func (r updateQuizQuestionRowAdapter) GetAllowMultipleSelection() *bool    { return r.AllowMultipleSelection }
-func (r updateQuizQuestionRowAdapter) GetMinValue() pgtype.Numeric         { return r.MinValue }
-func (r updateQuizQuestionRowAdapter) GetMaxValue() pgtype.Numeric         { return r.MaxValue }
-func (r updateQuizQuestionRowAdapter) GetStepValue() pgtype.Numeric        { return r.StepValue }
-func (r updateQuizQuestionRowAdapter) GetTimeoutSeconds() *int32           { return r.TimeoutSeconds }
+func (r updateQuizQuestionRowAdapter) GetID() string           { return r.ID }
+func (r updateQuizQuestionRowAdapter) GetQuizID() string       { return r.QuizID }
+func (r updateQuizQuestionRowAdapter) GetQuestionType() string { return r.QuestionType }
+func (r updateQuizQuestionRowAdapter) GetQuestionText() string { return r.QuestionText }
+func (r updateQuizQuestionRowAdapter) GetQuestionOrder() int32 { return r.QuestionOrder }
+func (r updateQuizQuestionRowAdapter) GetAllowMultipleSelection() *bool {
+	return r.AllowMultipleSelection
+}
+func (r updateQuizQuestionRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
+func (r updateQuizQuestionRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
+func (r updateQuizQuestionRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
+func (r updateQuizQuestionRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
 
 // Adapter for sqlc.GetQuizQuestionByIDRow
 type getQuizQuestionByIDRowAdapter struct {
 	*sqlc.GetQuizQuestionByIDRow
 }
 
-func (r getQuizQuestionByIDRowAdapter) GetID() string                       { return r.ID }
-func (r getQuizQuestionByIDRowAdapter) GetQuizID() string                   { return r.QuizID }
-func (r getQuizQuestionByIDRowAdapter) GetQuestionType() string             { return r.QuestionType }
-func (r getQuizQuestionByIDRowAdapter) GetQuestionText() string             { return r.QuestionText }
-func (r getQuizQuestionByIDRowAdapter) GetQuestionOrder() int32             { return r.QuestionOrder }
-func (r getQuizQuestionByIDRowAdapter) GetAllowMultipleSelection() *bool    { return r.AllowMultipleSelection }
-func (r getQuizQuestionByIDRowAdapter) GetMinValue() pgtype.Numeric         { return r.MinValue }
-func (r getQuizQuestionByIDRowAdapter) GetMaxValue() pgtype.Numeric         { return r.MaxValue }
-func (r getQuizQuestionByIDRowAdapter) GetStepValue() pgtype.Numeric        { return r.StepValue }
-func (r getQuizQuestionByIDRowAdapter) GetTimeoutSeconds() *int32           { return r.TimeoutSeconds }
+func (r getQuizQuestionByIDRowAdapter) GetID() string           { return r.ID }
+func (r getQuizQuestionByIDRowAdapter) GetQuizID() string       { return r.QuizID }
+func (r getQuizQuestionByIDRowAdapter) GetQuestionType() string { return r.QuestionType }
+func (r getQuizQuestionByIDRowAdapter) GetQuestionText() string { return r.QuestionText }
+func (r getQuizQuestionByIDRowAdapter) GetQuestionOrder() int32 { return r.QuestionOrder }
+func (r getQuizQuestionByIDRowAdapter) GetAllowMultipleSelection() *bool {
+	return r.AllowMultipleSelection
+}
+func (r getQuizQuestionByIDRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
+func (r getQuizQuestionByIDRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
+func (r getQuizQuestionByIDRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
+func (r getQuizQuestionByIDRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
 
 // Adapter for sqlc.GetQuizQuestionsByIDsRow
 type getQuizQuestionsByIDsRowAdapter struct {
 	*sqlc.GetQuizQuestionsByIDsRow
 }
 
-func (r getQuizQuestionsByIDsRowAdapter) GetID() string                       { return r.ID }
-func (r getQuizQuestionsByIDsRowAdapter) GetQuizID() string                   { return r.QuizID }
-func (r getQuizQuestionsByIDsRowAdapter) GetQuestionType() string             { return r.QuestionType }
-func (r getQuizQuestionsByIDsRowAdapter) GetQuestionText() string             { return r.QuestionText }
-func (r getQuizQuestionsByIDsRowAdapter) GetQuestionOrder() int32             { return r.QuestionOrder }
-func (r getQuizQuestionsByIDsRowAdapter) GetAllowMultipleSelection() *bool    { return r.AllowMultipleSelection }
-func (r getQuizQuestionsByIDsRowAdapter) GetMinValue() pgtype.Numeric         { return r.MinValue }
-func (r getQuizQuestionsByIDsRowAdapter) GetMaxValue() pgtype.Numeric         { return r.MaxValue }
-func (r getQuizQuestionsByIDsRowAdapter) GetStepValue() pgtype.Numeric        { return r.StepValue }
-func (r getQuizQuestionsByIDsRowAdapter) GetTimeoutSeconds() *int32           { return r.TimeoutSeconds }
+func (r getQuizQuestionsByIDsRowAdapter) GetID() string           { return r.ID }
+func (r getQuizQuestionsByIDsRowAdapter) GetQuizID() string       { return r.QuizID }
+func (r getQuizQuestionsByIDsRowAdapter) GetQuestionType() string { return r.QuestionType }
+func (r getQuizQuestionsByIDsRowAdapter) GetQuestionText() string { return r.QuestionText }
+func (r getQuizQuestionsByIDsRowAdapter) GetQuestionOrder() int32 { return r.QuestionOrder }
+func (r getQuizQuestionsByIDsRowAdapter) GetAllowMultipleSelection() *bool {
+	return r.AllowMultipleSelection
+}
+func (r getQuizQuestionsByIDsRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
+func (r getQuizQuestionsByIDsRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
+func (r getQuizQuestionsByIDsRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
+func (r getQuizQuestionsByIDsRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
 
 // Adapter for sqlc.GetQuizQuestionsByQuizIDRow
 type getQuizQuestionsByQuizIDRowAdapter struct {
 	*sqlc.GetQuizQuestionsByQuizIDRow
 }
 
-func (r getQuizQuestionsByQuizIDRowAdapter) GetID() string                       { return r.ID }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetQuizID() string                   { return r.QuizID }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetQuestionType() string             { return r.QuestionType }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetQuestionText() string             { return r.QuestionText }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetQuestionOrder() int32             { return r.QuestionOrder }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetAllowMultipleSelection() *bool    { return r.AllowMultipleSelection }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetMinValue() pgtype.Numeric         { return r.MinValue }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetMaxValue() pgtype.Numeric         { return r.MaxValue }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetStepValue() pgtype.Numeric        { return r.StepValue }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetTimeoutSeconds() *int32           { return r.TimeoutSeconds }
+func (r getQuizQuestionsByQuizIDRowAdapter) GetID() string           { return r.ID }
+func (r getQuizQuestionsByQuizIDRowAdapter) GetQuizID() string       { return r.QuizID }
+func (r getQuizQuestionsByQuizIDRowAdapter) GetQuestionType() string { return r.QuestionType }
+func (r getQuizQuestionsByQuizIDRowAdapter) GetQuestionText() string { return r.QuestionText }
+func (r getQuizQuestionsByQuizIDRowAdapter) GetQuestionOrder() int32 { return r.QuestionOrder }
+func (r getQuizQuestionsByQuizIDRowAdapter) GetAllowMultipleSelection() *bool {
+	return r.AllowMultipleSelection
+}
+func (r getQuizQuestionsByQuizIDRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
+func (r getQuizQuestionsByQuizIDRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
+func (r getQuizQuestionsByQuizIDRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
+func (r getQuizQuestionsByQuizIDRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
 
 // Adapter for sqlc.GetQuizQuestionsByQuizIDsRow
 type getQuizQuestionsByQuizIDsRowAdapter struct {
 	*sqlc.GetQuizQuestionsByQuizIDsRow
 }
 
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetID() string                       { return r.ID }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuizID() string                   { return r.QuizID }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuestionType() string             { return r.QuestionType }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuestionText() string             { return r.QuestionText }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuestionOrder() int32             { return r.QuestionOrder }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetAllowMultipleSelection() *bool    { return r.AllowMultipleSelection }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetMinValue() pgtype.Numeric         { return r.MinValue }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetMaxValue() pgtype.Numeric         { return r.MaxValue }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetStepValue() pgtype.Numeric        { return r.StepValue }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetTimeoutSeconds() *int32           { return r.TimeoutSeconds }
+func (r getQuizQuestionsByQuizIDsRowAdapter) GetID() string           { return r.ID }
+func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuizID() string       { return r.QuizID }
+func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuestionType() string { return r.QuestionType }
+func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuestionText() string { return r.QuestionText }
+func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuestionOrder() int32 { return r.QuestionOrder }
+func (r getQuizQuestionsByQuizIDsRowAdapter) GetAllowMultipleSelection() *bool {
+	return r.AllowMultipleSelection
+}
+func (r getQuizQuestionsByQuizIDsRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
+func (r getQuizQuestionsByQuizIDsRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
+func (r getQuizQuestionsByQuizIDsRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
+func (r getQuizQuestionsByQuizIDsRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
 
 // convertQuizQuestionRowToInterface converts a database row to the appropriate QuizQuestion implementation
 func convertQuizQuestionRowToInterface(row quizQuestionRow) model.QuizQuestion {

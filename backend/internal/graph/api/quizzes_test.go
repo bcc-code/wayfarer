@@ -127,12 +127,12 @@ func TestBuildQuizFilterParamsCursor(t *testing.T) {
 			},
 		},
 		{
-			name:   "nil filter",
-			filter: nil,
-			first:  intPtr(10),
-			after:  nil,
-			last:   nil,
-			before: nil,
+			name:        "nil filter",
+			filter:      nil,
+			first:       intPtr(10),
+			after:       nil,
+			last:        nil,
+			before:      nil,
 			expectError: false,
 			check: func(t *testing.T, params sqlc.GetQuizzesFilteredCursorParams) {
 				assert.Equal(t, int32(11), params.Querylimit)
