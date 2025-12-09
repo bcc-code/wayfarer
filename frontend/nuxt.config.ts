@@ -1,4 +1,5 @@
 export default defineNuxtConfig({
+  compatibilityDate: '2025-07-15',
   modules: [
     '@nuxt/ui',
     '@nuxt/test-utils',
@@ -12,20 +13,20 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   ssr: false,
   css: ['~/assets/styles/main.css'],
-  compatibilityDate: '2025-07-15',
-  experimental: {
-    typedPages: true,
-  },
+
   app: {
     rootAttrs: {
       'data-vaul-drawer-wrapper': '',
     },
     head: {
       title: 'Interact',
+      viewport:
+        'width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no',
+      charset: 'utf-8',
       meta: [
         {
-          name: 'viewport',
-          content: 'width=device-width, initial-scale=1, user-scalable=no',
+          name: 'apple-mobile-web-app-status-bar-style',
+          content: 'default',
         },
       ],
       link: [
@@ -70,14 +71,49 @@ export default defineNuxtConfig({
       loginUrl: 'https://app.bcc.media/r/sigve-test',
       posthogKey: '',
       posthogHost: 'https://eu.i.posthog.com',
+      vapidPublicKey: '', // Set via NUXT_PUBLIC_VAPID_PUBLIC_KEY env var
     },
+  },
+  experimental: {
+    typedPages: true,
   },
   sourcemap: {
     client: 'hidden',
   },
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@tiptap/core',
+        '@tiptap/vue-3',
+        '@tiptap/markdown',
+        '@tiptap/starter-kit',
+        'workbox-core',
+        'workbox-precaching',
+        'workbox-routing',
+        'workbox-strategies',
+        'workbox-cacheable-response',
+        'workbox-expiration',
+        '@urql/exchange-auth',
+        '@urql/vue',
+        'graphql-tag',
+        'cva',
+        'zod',
+        '@internationalized/date',
+      ],
+    },
+  },
+  routeRules: {
+    // CDN cache rules
+    '/manifest.webmanifest': {
+      headers: {
+        'Content-Type': 'application/manifest+json',
+        'Cache-Control': 'public, max-age=0, must-revalidate',
+      },
+    },
+  },
 
   i18n: {
-    defaultLocale: 'en',
+    defaultLocale: 'nb',
     locales: [
       {
         name: 'English',
@@ -94,9 +130,20 @@ export default defineNuxtConfig({
   },
 
   pwa: {
-    registerType: 'autoUpdate',
+    scope: '/',
+    srcDir: '../service-worker',
+    filename: 'service-worker.ts',
+    strategies: 'injectManifest',
+    injectRegister: false,
+    injectManifest: {
+      globPatterns: [
+        '**/*.{js,json,css,html,txt,svg,png,ico,webp,woff,woff2,ttf,eot,otf,wasm}',
+      ],
+      globIgnores: ['manifest**.webmanifest'],
+    },
     devOptions: {
       enabled: true,
+      type: 'module',
     },
     manifest: {
       theme_color: '#ffaedf',
@@ -141,5 +188,10 @@ export default defineNuxtConfig({
       personalApiKey: import.meta.env.NUXT_POSTHOG_API_KEY,
       envId: import.meta.env.NUXT_POSTHOG_PROJECT_ID,
     },
+  },
+
+  colorMode: {
+    preference: 'dark',
+    fallback: 'dark',
   },
 })
