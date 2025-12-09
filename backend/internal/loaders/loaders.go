@@ -45,10 +45,10 @@ type Loaders struct {
 	TranslationLoader                *dataloader.Loader[TranslationKey, *Translation]
 	ConsentByIDLoader                *dataloader.Loader[string, *model.Consent]
 	QuizByIDLoader                   *dataloader.Loader[string, *model.Quiz]
-	QuizQuestionsByQuizLoader        *dataloader.Loader[string, []*model.QuizQuestion]
+	QuizQuestionsByQuizLoader        *dataloader.Loader[string, []model.QuizQuestion]
 	QuizAnswersByQuestionLoader      *dataloader.Loader[string, []*model.QuizPredefinedAnswer]
 	QuizSubmissionsByUserLoader      *dataloader.Loader[string, []*model.QuizSubmission]
-	QuizResponsesBySubmissionLoader  *dataloader.Loader[string, []*model.QuizResponse]
+	QuizResponsesBySubmissionLoader  *dataloader.Loader[string, []model.QuizResponse]
 }
 
 // newBatchedLoader creates a new batched dataloader with standard configuration:

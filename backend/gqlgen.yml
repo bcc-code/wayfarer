@@ -267,11 +267,36 @@ models:
       ChallengeID:
         type: string
 
-  QuizQuestion:
+  # QuizQuestion implementations
+  PredefinedQuestion:
     fields:
       quiz:
         resolver: true
       predefinedAnswers:
+        resolver: true
+    extraFields:
+      QuizID:
+        type: string
+
+  FreeTextQuestion:
+    fields:
+      quiz:
+        resolver: true
+    extraFields:
+      QuizID:
+        type: string
+
+  NumberQuestion:
+    fields:
+      quiz:
+        resolver: true
+    extraFields:
+      QuizID:
+        type: string
+
+  JsonQuestion:
+    fields:
+      quiz:
         resolver: true
     extraFields:
       QuizID:
@@ -309,13 +334,50 @@ models:
       UserID:
         type: string
 
-  QuizResponse:
+  # QuizResponse implementations
+  PredefinedResponse:
     fields:
       submission:
         resolver: true
       question:
         resolver: true
       selectedAnswers:
+        resolver: true
+    extraFields:
+      SubmissionID:
+        type: string
+      QuestionID:
+        type: string
+
+  FreeTextResponse:
+    fields:
+      submission:
+        resolver: true
+      question:
+        resolver: true
+    extraFields:
+      SubmissionID:
+        type: string
+      QuestionID:
+        type: string
+
+  NumberResponse:
+    fields:
+      submission:
+        resolver: true
+      question:
+        resolver: true
+    extraFields:
+      SubmissionID:
+        type: string
+      QuestionID:
+        type: string
+
+  JsonResponse:
+    fields:
+      submission:
+        resolver: true
+      question:
         resolver: true
     extraFields:
       SubmissionID:

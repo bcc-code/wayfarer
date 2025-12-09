@@ -164,12 +164,47 @@ func convertFilteredCursorQuizRowToQuiz(row *sqlc.GetQuizzesFilteredCursorRow) *
 	return convertQuizRowToQuiz(filteredCursorQuizRowAdapter{row})
 }
 
-func convertCreateQuizQuestionRowToQuizQuestion(row *sqlc.QuizQuestion) *model.QuizQuestion {
-	var allowMultipleSelection *bool
-	if row.AllowMultipleSelection != nil {
-		allowMultipleSelection = row.AllowMultipleSelection
+// convertQuizQuestionRowToInterface converts a database row to the appropriate QuizQuestion implementation
+func convertQuizQuestionRowToInterface(row *sqlc.QuizQuestion) model.QuizQuestion {
+	switch row.QuestionType {
+	case "PREDEFINED":
+		return convertToPredefinedQuestion(row)
+	case "FREE_TEXT":
+		return convertToFreeTextQuestion(row)
+	case "NUMBER":
+		return convertToNumberQuestion(row)
+	case "JSON":
+		return convertToJsonQuestion(row)
+	default:
+		// Default to FreeTextQuestion for unknown types
+		return convertToFreeTextQuestion(row)
 	}
+}
 
+func convertToPredefinedQuestion(row *sqlc.QuizQuestion) *model.PredefinedQuestion {
+	allowMultiple := false
+	if row.AllowMultipleSelection != nil {
+		allowMultiple = *row.AllowMultipleSelection
+	}
+	return &model.PredefinedQuestion{
+		ID:                     row.ID,
+		QuizID:                 row.QuizID,
+		QuestionText:           row.QuestionText,
+		QuestionOrder:          int(row.QuestionOrder),
+		AllowMultipleSelection: allowMultiple,
+	}
+}
+
+func convertToFreeTextQuestion(row *sqlc.QuizQuestion) *model.FreeTextQuestion {
+	return &model.FreeTextQuestion{
+		ID:            row.ID,
+		QuizID:        row.QuizID,
+		QuestionText:  row.QuestionText,
+		QuestionOrder: int(row.QuestionOrder),
+	}
+}
+
+func convertToNumberQuestion(row *sqlc.QuizQuestion) *model.NumberQuestion {
 	var minValue, maxValue, stepValue *float64
 	if row.MinValue.Valid {
 		val, _ := row.MinValue.Float64Value()
@@ -186,17 +221,23 @@ func convertCreateQuizQuestionRowToQuizQuestion(row *sqlc.QuizQuestion) *model.Q
 		fv := val.Float64
 		stepValue = &fv
 	}
+	return &model.NumberQuestion{
+		ID:            row.ID,
+		QuizID:        row.QuizID,
+		QuestionText:  row.QuestionText,
+		QuestionOrder: int(row.QuestionOrder),
+		MinValue:      minValue,
+		MaxValue:      maxValue,
+		StepValue:     stepValue,
+	}
+}
 
-	return &model.QuizQuestion{
-		ID:                     row.ID,
-		QuizID:                 row.QuizID,
-		QuestionType:           model.QuizQuestionType(row.QuestionType),
-		QuestionText:           row.QuestionText,
-		QuestionOrder:          int(row.QuestionOrder),
-		AllowMultipleSelection: allowMultipleSelection,
-		MinValue:               minValue,
-		MaxValue:               maxValue,
-		StepValue:              stepValue,
+func convertToJsonQuestion(row *sqlc.QuizQuestion) *model.JSONQuestion {
+	return &model.JSONQuestion{
+		ID:            row.ID,
+		QuizID:        row.QuizID,
+		QuestionText:  row.QuestionText,
+		QuestionOrder: int(row.QuestionOrder),
 	}
 }
 
@@ -246,25 +287,9 @@ func convertSubmissionRowToModel(row *sqlc.QuizSubmission) *model.QuizSubmission
 	}
 }
 
-func convertResponseRowToModel(row *sqlc.QuizResponse) *model.QuizResponse {
-	var selectedAnswerIDs []string
-	if row.SelectedAnswerIds != nil {
-		_ = json.Unmarshal(row.SelectedAnswerIds, &selectedAnswerIDs)
-	}
-
-	var numberResponse *float64
-	if row.NumberResponse.Valid {
-		val, _ := row.NumberResponse.Float64Value()
-		nr := val.Float64
-		numberResponse = &nr
-	}
-
-	var jsonResponse *string
-	if row.JsonResponse != nil {
-		jsonStr := string(row.JsonResponse)
-		jsonResponse = &jsonStr
-	}
-
+// convertResponseRowToInterface converts a database row to the appropriate QuizResponse implementation
+// It determines the type based on which response field is populated
+func convertResponseRowToInterface(row *sqlc.QuizResponse, questionType string) model.QuizResponse {
 	var answeredAt *scalars.DateTime
 	if row.AnsweredAt.Valid {
 		answeredAt = &scalars.DateTime{Time: row.AnsweredAt.Time}
@@ -276,16 +301,79 @@ func convertResponseRowToModel(row *sqlc.QuizResponse) *model.QuizResponse {
 		timeSpentSeconds = &tss
 	}
 
-	return &model.QuizResponse{
+	switch questionType {
+	case "PREDEFINED":
+		return convertToPredefinedResponse(row, answeredAt, timeSpentSeconds)
+	case "FREE_TEXT":
+		return convertToFreeTextResponse(row, answeredAt, timeSpentSeconds)
+	case "NUMBER":
+		return convertToNumberResponse(row, answeredAt, timeSpentSeconds)
+	case "JSON":
+		return convertToJsonResponse(row, answeredAt, timeSpentSeconds)
+	default:
+		// Default to FreeTextResponse for unknown types
+		return convertToFreeTextResponse(row, answeredAt, timeSpentSeconds)
+	}
+}
+
+func convertToPredefinedResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int) *model.PredefinedResponse {
+	var selectedAnswerIDs []string
+	if row.SelectedAnswerIds != nil {
+		_ = json.Unmarshal(row.SelectedAnswerIds, &selectedAnswerIDs)
+	}
+	return &model.PredefinedResponse{
 		ID:                row.ID,
 		SubmissionID:      row.SubmissionID,
 		QuestionID:        row.QuestionID,
 		SelectedAnswerIds: selectedAnswerIDs,
-		TextResponse:      row.TextResponse,
-		NumberResponse:    numberResponse,
-		JSONResponse:      jsonResponse,
 		IsCorrect:         row.IsCorrect,
 		AnsweredAt:        answeredAt,
 		TimeSpentSeconds:  timeSpentSeconds,
+	}
+}
+
+func convertToFreeTextResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int) *model.FreeTextResponse {
+	textResponse := ""
+	if row.TextResponse != nil {
+		textResponse = *row.TextResponse
+	}
+	return &model.FreeTextResponse{
+		ID:               row.ID,
+		SubmissionID:     row.SubmissionID,
+		QuestionID:       row.QuestionID,
+		TextResponse:     textResponse,
+		AnsweredAt:       answeredAt,
+		TimeSpentSeconds: timeSpentSeconds,
+	}
+}
+
+func convertToNumberResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int) *model.NumberResponse {
+	var numberResponse float64
+	if row.NumberResponse.Valid {
+		val, _ := row.NumberResponse.Float64Value()
+		numberResponse = val.Float64
+	}
+	return &model.NumberResponse{
+		ID:               row.ID,
+		SubmissionID:     row.SubmissionID,
+		QuestionID:       row.QuestionID,
+		NumberResponse:   numberResponse,
+		AnsweredAt:       answeredAt,
+		TimeSpentSeconds: timeSpentSeconds,
+	}
+}
+
+func convertToJsonResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int) *model.JSONResponse {
+	jsonResponse := ""
+	if row.JsonResponse != nil {
+		jsonResponse = string(row.JsonResponse)
+	}
+	return &model.JSONResponse{
+		ID:               row.ID,
+		SubmissionID:     row.SubmissionID,
+		QuestionID:       row.QuestionID,
+		JSONResponse:     jsonResponse,
+		AnsweredAt:       answeredAt,
+		TimeSpentSeconds: timeSpentSeconds,
 	}
 }

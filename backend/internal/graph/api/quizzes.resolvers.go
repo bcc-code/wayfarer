@@ -230,7 +230,7 @@ func (r *mutationResolver) PublishQuiz(ctx context.Context, id string, published
 }
 
 // AddQuizQuestion is the resolver for the addQuizQuestion field.
-func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, input model.CreateQuizQuestionInput) (*model.QuizQuestion, error) {
+func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, input model.CreateQuizQuestionInput) (model.QuizQuestion, error) {
 	// Get authenticated user ID from context
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
@@ -317,11 +317,11 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 	r.Cache.InvalidateQuiz(quizID)
 
 	// Convert to GraphQL model
-	return convertCreateQuizQuestionRowToQuizQuestion(questionRow), nil
+	return convertQuizQuestionRowToInterface(questionRow), nil
 }
 
 // UpdateQuizQuestion is the resolver for the updateQuizQuestion field.
-func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, input model.UpdateQuizQuestionInput) (*model.QuizQuestion, error) {
+func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, input model.UpdateQuizQuestionInput) (model.QuizQuestion, error) {
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
 		return nil, fmt.Errorf("user not authenticated")
@@ -412,7 +412,7 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 
 	r.Cache.InvalidateQuiz(question.QuizID)
 
-	return convertCreateQuizQuestionRowToQuizQuestion(updatedQuestion), nil
+	return convertQuizQuestionRowToInterface(updatedQuestion), nil
 }
 
 // DeleteQuizQuestion is the resolver for the deleteQuizQuestion field.
@@ -488,12 +488,7 @@ func (r *mutationResolver) ReorderQuizQuestions(ctx context.Context, quizID stri
 		return nil, fmt.Errorf("failed to load reordered questions: %w", err)
 	}
 
-	// Convert []*model.QuizQuestion to []model.QuizQuestion
-	result := make([]model.QuizQuestion, len(questions))
-	for i, q := range questions {
-		result[i] = *q
-	}
-	return result, nil
+	return questions, nil
 }
 
 // CreateQuizAchievement is the resolver for the createQuizAchievement field.
@@ -657,7 +652,7 @@ func (r *mutationResolver) StartQuiz(ctx context.Context, quizID string) (*model
 	// Build question order
 	questionOrder := make([]string, len(questions))
 	for i, q := range questions {
-		questionOrder[i] = q.ID
+		questionOrder[i] = q.GetID()
 	}
 
 	// Randomize if configured
@@ -679,7 +674,8 @@ func (r *mutationResolver) StartQuiz(ctx context.Context, quizID string) (*model
 	maxScore := 0
 	for _, q := range questions {
 		// Only PREDEFINED and NUMBER types can be graded
-		if q.QuestionType == model.QuizQuestionTypePredefined || q.QuestionType == model.QuizQuestionTypeNumber {
+		switch q.(type) {
+		case *model.PredefinedQuestion, *model.NumberQuestion:
 			maxScore++
 		}
 	}
@@ -708,7 +704,7 @@ func (r *mutationResolver) StartQuiz(ctx context.Context, quizID string) (*model
 }
 
 // SubmitQuizAnswer is the resolver for the submitQuizAnswer field.
-func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID string, input model.SubmitQuizAnswerInput) (*model.QuizResponse, error) {
+func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID string, input model.SubmitQuizAnswerInput) (model.QuizResponse, error) {
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
 		return nil, fmt.Errorf("user not authenticated")
@@ -837,7 +833,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 
 	r.Cache.InvalidateQuizSubmission(submissionID)
 
-	return convertResponseRowToModel(response), nil
+	return convertResponseRowToInterface(response, question.QuestionType), nil
 }
 
 // FinalizeQuiz is the resolver for the finalizeQuiz field.
@@ -1001,7 +997,7 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 	// Build question order (use canonical order, no randomization for M2M submissions)
 	questionOrder := make([]string, len(questions))
 	for i, q := range questions {
-		questionOrder[i] = q.ID
+		questionOrder[i] = q.GetID()
 	}
 	questionOrderJSON, err := json.Marshal(questionOrder)
 	if err != nil {
@@ -1011,7 +1007,8 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 	// Calculate max score (count gradable questions)
 	maxScore := 0
 	for _, q := range questions {
-		if q.QuestionType == model.QuizQuestionTypePredefined || q.QuestionType == model.QuizQuestionTypeNumber {
+		switch q.(type) {
+		case *model.PredefinedQuestion, *model.NumberQuestion:
 			maxScore++
 		}
 	}
@@ -1043,20 +1040,20 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 	// Create responses for each answer
 	score := 0
 	for _, responseInput := range responses {
-		// Load question to determine type
-		var questionType model.QuizQuestionType
-		var questionID string
+		// Find question by ID
+		var foundQuestion model.QuizQuestion
 		for _, q := range questions {
-			if q.ID == responseInput.QuestionID {
-				questionType = q.QuestionType
-				questionID = q.ID
+			if q.GetID() == responseInput.QuestionID {
+				foundQuestion = q
 				break
 			}
 		}
 
-		if questionID == "" {
+		if foundQuestion == nil {
 			return nil, fmt.Errorf("question %s not found in quiz", responseInput.QuestionID)
 		}
+
+		questionID := foundQuestion.GetID()
 
 		// Create response based on question type
 		responseID := ulid.NewQuizResponseID()
@@ -1068,8 +1065,8 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 
 		var isCorrect *bool
 
-		switch questionType {
-		case model.QuizQuestionTypePredefined:
+		switch foundQuestion.(type) {
+		case *model.PredefinedQuestion:
 			if responseInput.SelectedAnswerIds == nil {
 				return nil, fmt.Errorf("selectedAnswerIds required for PREDEFINED question")
 			}
@@ -1118,19 +1115,19 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 			isCorrect = &correct
 			responseParams.Iscorrect = &correct
 
-		case model.QuizQuestionTypeFreeText:
+		case *model.FreeTextQuestion:
 			if responseInput.TextResponse == nil {
 				return nil, fmt.Errorf("textResponse required for FREE_TEXT question")
 			}
 			responseParams.Textresponse = responseInput.TextResponse
 
-		case model.QuizQuestionTypeNumber:
+		case *model.NumberQuestion:
 			if responseInput.NumberResponse == nil {
 				return nil, fmt.Errorf("numberResponse required for NUMBER question")
 			}
 			_ = responseParams.Numberresponse.Scan(*responseInput.NumberResponse)
 
-		case model.QuizQuestionTypeJSON:
+		case *model.JSONQuestion:
 			if responseInput.JSONResponse == nil {
 				return nil, fmt.Errorf("jsonResponse required for JSON question")
 			}

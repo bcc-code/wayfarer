@@ -165,21 +165,40 @@ func (q *Queries) GetQuizResponsesBySubmissionID(ctx context.Context, submission
 }
 
 const GetQuizResponsesBySubmissionIDs = `-- name: GetQuizResponsesBySubmissionIDs :many
-SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, answered_at, time_spent_seconds
-FROM quiz_responses
-WHERE submission_id = ANY($1::text[])
-ORDER BY submission_id
+SELECT
+    r.id, r.submission_id, r.question_id, r.selected_answer_ids,
+    r.text_response, r.number_response, r.json_response,
+    r.is_correct, r.answered_at, r.time_spent_seconds,
+    q.question_type
+FROM quiz_responses r
+JOIN quiz_questions q ON r.question_id = q.id
+WHERE r.submission_id = ANY($1::text[])
+ORDER BY r.submission_id
 `
 
-func (q *Queries) GetQuizResponsesBySubmissionIDs(ctx context.Context, submissionIds []string) ([]*QuizResponse, error) {
+type GetQuizResponsesBySubmissionIDsRow struct {
+	ID                string             `json:"id"`
+	SubmissionID      string             `json:"submission_id"`
+	QuestionID        string             `json:"question_id"`
+	SelectedAnswerIds []byte             `json:"selected_answer_ids"`
+	TextResponse      *string            `json:"text_response"`
+	NumberResponse    pgtype.Numeric     `json:"number_response"`
+	JsonResponse      []byte             `json:"json_response"`
+	IsCorrect         *bool              `json:"is_correct"`
+	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
+	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
+	QuestionType      string             `json:"question_type"`
+}
+
+func (q *Queries) GetQuizResponsesBySubmissionIDs(ctx context.Context, submissionIds []string) ([]*GetQuizResponsesBySubmissionIDsRow, error) {
 	rows, err := q.db.Query(ctx, GetQuizResponsesBySubmissionIDs, submissionIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*QuizResponse{}
+	items := []*GetQuizResponsesBySubmissionIDsRow{}
 	for rows.Next() {
-		var i QuizResponse
+		var i GetQuizResponsesBySubmissionIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.SubmissionID,
@@ -191,6 +210,7 @@ func (q *Queries) GetQuizResponsesBySubmissionIDs(ctx context.Context, submissio
 			&i.IsCorrect,
 			&i.AnsweredAt,
 			&i.TimeSpentSeconds,
+			&i.QuestionType,
 		); err != nil {
 			return nil, err
 		}

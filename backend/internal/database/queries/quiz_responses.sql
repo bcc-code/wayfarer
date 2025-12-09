@@ -4,10 +4,15 @@ FROM quiz_responses
 WHERE submission_id = @submissionid::text;
 
 -- name: GetQuizResponsesBySubmissionIDs :many
-SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, answered_at, time_spent_seconds
-FROM quiz_responses
-WHERE submission_id = ANY(@submission_ids::text[])
-ORDER BY submission_id;
+SELECT
+    r.id, r.submission_id, r.question_id, r.selected_answer_ids,
+    r.text_response, r.number_response, r.json_response,
+    r.is_correct, r.answered_at, r.time_spent_seconds,
+    q.question_type
+FROM quiz_responses r
+JOIN quiz_questions q ON r.question_id = q.id
+WHERE r.submission_id = ANY(@submission_ids::text[])
+ORDER BY r.submission_id;
 
 -- name: GetQuizResponseBySubmissionAndQuestion :one
 SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, answered_at, time_spent_seconds

@@ -438,19 +438,46 @@ type Quiz {
     userActiveSubmission: QuizSubmission @goField(forceResolver: true)
 }
 
-type QuizQuestion {
+# ==================== Quiz Question Interface ====================
+
+interface QuizQuestion {
     id: ID!
     quiz: Quiz! @goField(forceResolver: true)
-    questionType: QuizQuestionType!
     questionText: String!
     questionOrder: Int!
+}
 
-    allowMultipleSelection: Boolean
-    predefinedAnswers: [QuizPredefinedAnswer!] @goField(forceResolver: true)
+type PredefinedQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
+    allowMultipleSelection: Boolean!
+    predefinedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
+}
 
+type FreeTextQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
+}
+
+type NumberQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
     minValue: Float
     maxValue: Float
     stepValue: Float
+}
+
+type JsonQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
 }
 
 type QuizPredefinedAnswer {
@@ -482,21 +509,52 @@ type QuizSubmission {
     pointsAwarded: Int
 }
 
-type QuizResponse {
+# ==================== Quiz Response Interface ====================
+
+interface QuizResponse {
     id: ID!
     submission: QuizSubmission! @goField(forceResolver: true)
     question: QuizQuestion! @goField(forceResolver: true)
-
-    selectedAnswerIds: [ID!]
-    selectedAnswers: [QuizPredefinedAnswer!] @goField(forceResolver: true)
-    textResponse: String
-    numberResponse: Float
-    jsonResponse: JSON
-
-    isCorrect: Boolean
-
     answeredAt: DateTime
     timeSpentSeconds: Int
+}
+
+type PredefinedResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    selectedAnswerIds: [ID!]!
+    selectedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
+    isCorrect: Boolean
+}
+
+type FreeTextResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    textResponse: String!
+}
+
+type NumberResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    numberResponse: Float!
+}
+
+type JsonResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    jsonResponse: JSON!
 }
 
 scalar JSON

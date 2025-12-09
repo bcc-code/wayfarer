@@ -2,7 +2,7 @@ type: folder
 model: folder
 id: fl_SSFSync
 createdAt: 2025-12-04T11:00:00
-updatedAt: 2025-12-08T08:19:33.359292
+updatedAt: 2025-12-09T10:59:38.449176
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -10,4 +10,4 @@ authenticationType: null
 description: SSF content sync endpoints
 headers: []
 name: SSF Sync
-sortPriority: 6000.0
+sortPriority: 8000.0
