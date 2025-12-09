@@ -35,10 +35,13 @@
     "unit": "Din unit",
     "local": "Lokalt",
     "you": "Deg",
-    "pointHistoryButton": "Poenghistorikk",
     "getPointsButton": "Få poeng",
     "units": "Units",
     "personal": "Personlig"
+  },
+  "pointHistory": {
+    "pointHistoryButton": "Poenghistorikk",
+    "explanation": "Her kan du se hva du har fått – eller mistet – poeng for."
   },
   "unit": {
     "editUnit": "Rediger unit",

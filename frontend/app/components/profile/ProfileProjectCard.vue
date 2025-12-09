@@ -24,7 +24,7 @@ defineProps<{
       <div class="gap-medium grid grid-cols-2">
         <ProfilePointHistory>
           <DesignButton variant="secondary">
-            {{ $t('standings.pointHistoryButton') }}
+            {{ $t('pointHistory.pointHistoryButton') }}
           </DesignButton>
         </ProfilePointHistory>
         <ProfileGetPoints>

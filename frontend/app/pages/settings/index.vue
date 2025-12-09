@@ -1,56 +1,4 @@
 <script setup lang="ts">
-gql(`
-	query SettingsPage {
-		me {
-			consentStatus {
-				pendingConsents {
-					__typename
-					id
-					key
-					version
-					title
-					body {
-						html
-					}
-					publishedAt
-					managedBy
-					managementType
-				}
-				acceptedConsents {
-					__typename
-					id
-					consent {
-						title
-						body {
-							html
-						}
-						managedBy
-						managementType
-						url
-					}
-					action
-					actionDate
-				}
-				rejectedConsents {
-					__typename
-					id
-					consent {
-						title
-						body {
-							html
-						}
-						managedBy
-						managementType
-						url
-					}
-					action
-					actionDate
-				}
-			}
-		}
-	}
-`)
-
 const { track } = useAnalytics()
 const { locale, locales, setLocale } = useI18n()
 
@@ -81,8 +29,6 @@ watch(
 )
 
 const { me } = useAuth()
-
-const { data, fetching, error, executeQuery: refetch } = useSettingsPageQuery()
 </script>
 
 <template>
@@ -159,29 +105,15 @@ const { data, fetching, error, executeQuery: refetch } = useSettingsPageQuery()
           <p class="text-label">{{ $t('settings.addToHomeScreen') }}</p>
           <Icon name="lucide:chevron-right" class="size-6" />
         </button>
+        <hr class="border-border-default mx-3" />
+        <NuxtLink
+          :to="{ name: 'settings-consent' }"
+          class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
+        >
+          <p class="text-label">{{ $t('settings.consents') }}</p>
+          <Icon name="lucide:chevron-right" class="size-6" />
+        </NuxtLink>
       </DesignPanel>
-      <LoadingState v-if="fetching" />
-      <ErrorState v-else-if="error" :error />
-      <template v-else-if="data">
-        <ConsentCard
-          v-for="consent in data.me.consentStatus.pendingConsents"
-          :key="consent.id"
-          :consent
-          @update="refetch"
-        />
-        <ConsentCard
-          v-for="consent in data.me.consentStatus.acceptedConsents"
-          :key="consent.id"
-          :consent
-          @update="refetch"
-        />
-        <ConsentCard
-          v-for="consent in data.me.consentStatus.rejectedConsents"
-          :key="consent.id"
-          :consent
-          @update="refetch"
-        />
-      </template>
       <div
         v-if="me"
         class="text-text-hint text-caption p-medium mt-auto text-center"

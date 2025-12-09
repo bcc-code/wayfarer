@@ -91,6 +91,10 @@ function getScoreJournalName(
           <DesignIconButton icon="lucide:x" @click="close" />
         </template>
 
+        <p class="text-label text-text-default p-medium mb-list-section-gap">
+          {{ $t('pointHistory.explanation') }}
+        </p>
+
         <LoadingState v-if="fetching" />
         <ErrorState v-else-if="error" :error />
         <DesignPanel
