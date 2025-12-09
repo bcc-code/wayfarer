@@ -30,6 +30,7 @@
   --radius-navigation: calc(32px * var(--radius-multiplier));
   --radius-navigation-inset: calc(28px * var(--radius-multiplier));
   --radius-card: calc(48px * var(--radius-multiplier));
+  --radius-modal: calc(40px * var(--radius-multiplier));
   --radius-button-large: calc(26px * var(--radius-multiplier));
   --radius-button-medium: calc(22px * var(--radius-multiplier));
   --radius-button-small: calc(18px * var(--radius-multiplier));
@@ -91,7 +92,7 @@
   --color-accent: #ffaedf;
   --color-accent-contrast: #ffaedf;
   --color-on-accent: #5d0045;
-  --color-accent-positive: #c6ff62;
+  --color-accent-positive: #a5d357;
   --color-accent-negative: #e86a4a;
   --color-background-default: #222222;
   --color-background-raised: #343434;

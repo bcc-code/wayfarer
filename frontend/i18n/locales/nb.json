@@ -55,16 +55,18 @@
   "points": "poeng",
   "givesYouXPoints": "Gir deg {points} poeng",
   "consent": {
-    "pending": "Ventende",
     "accepted": "Godtatt",
-    "rejected": "Jeg gir ikke samtykke",
-    "acceptButton": "Aksepter",
-    "rejectButton": "Avslå",
+    "rejected": "Avslått",
+    "acceptButton": "Jeg godtar vilkårene",
+    "rejectButton": "Avslå vilkårene",
     "bannerTitle": "Du har samtykker du må ta stilling til",
-    "bannerButton": "Gå til samtykkeinstillinger",
-    "readButton": "Les samtykkeerklæring",
-    "iDontConsent": "Jeg vil ikke godta",
-    "giveConsent": "Gi samtykke",
-    "change": "Endre"
+    "bannerButton": "Gå til samtykke-instillinger",
+    "readButton": "Les alle vilkår",
+    "change": "Endre",
+    "goToConsent": "Gå til samtykke"
+  },
+  "achievement": {
+    "title": "Utmerkelse",
+    "unlocked": "Oppnådd!"
   }
 }

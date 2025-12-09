@@ -12,14 +12,8 @@ const selectedLocale = computed({
 </script>
 
 <template>
-  <DesignDrawer>
+  <DesignDrawer :title="$t('settings.language')">
     <slot :selected-locale="locales.find((l) => l.code === selectedLocale)" />
-    <template #content="{ close }">
-      <PageLayout :title="$t('settings.language')">
-        <template #action>
-          <DesignIconButton icon="lucide:x" @click="close" />
-        </template>
-      </PageLayout>
-    </template>
+    <template #content="{ close }"></template>
   </DesignDrawer>
 </template>

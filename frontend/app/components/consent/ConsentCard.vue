@@ -61,47 +61,121 @@ const status = computed(() => {
   return 'pending'
 })
 
+const managedBy = computed(() => {
+  if (props.consent.__typename == 'UserConsent') {
+    return props.consent.consent.managedBy
+  }
+  return props.consent.managedBy
+})
+
+const isRemote = computed(() => {
+  if (props.consent.__typename == 'UserConsent') {
+    return props.consent.consent.managementType === ConsentManagementType.Remote
+  }
+  return props.consent.managementType === ConsentManagementType.Remote
+})
+
+const url = computed(() => {
+  if (props.consent.__typename == 'UserConsent') {
+    return props.consent.consent.url
+  }
+  return props.consent.url
+})
+
 const changing = ref(false)
 </script>
 
 <template>
   <DesignPanel class="p-default! space-y-3">
-    <h3 class="text-title text-text-default">{{ title }}</h3>
+    <div>
+      <p v-if="managedBy" class="text-caption text-text-muted">
+        {{ managedBy }}
+      </p>
+      <h3 class="text-title text-text-default pr-2">{{ title }}</h3>
+    </div>
     <div class="text-label text-text-muted" v-html="body" />
 
-    <template v-if="status === 'pending' || changing">
-      <button
-        class="text-label text-accent-contrast py-2 flex items-center gap-1"
-        @click="handleReject"
-      >
-        {{ $t('consent.iDontConsent') }}
-        <Icon name="lucide:arrow-right" />
-      </button>
-      <DesignButton
-        variant="primary"
-        size="large"
-        class="w-full"
-        @click="handleAccept"
-      >
-        {{ $t('consent.giveConsent') }}
-      </DesignButton>
+    <template v-if="isRemote">
+      <template v-if="status === ConsentAction.Accepted">
+        <div class="flex justify-between items-center">
+          <span class="text-label text-accent-positive flex items-center gap-1">
+            <Icon name="lucide:check" class="size-6" />
+            {{ $t('consent.accepted') }}
+          </span>
+          <NuxtLink :to="url" external>
+            <DesignButton size="small" variant="secondary" class="grow-0">
+              {{ $t('consent.change') }}
+            </DesignButton>
+          </NuxtLink>
+        </div>
+      </template>
+      <template v-else>
+        <NuxtLink :to="url">
+          <DesignButton size="large" class="w-full">
+            {{ $t('consent.goToConsent') }}
+          </DesignButton>
+        </NuxtLink>
+      </template>
     </template>
-    <template v-else-if="status === ConsentAction.Accepted">
-      <div class="flex justify-between items-center">
-        <span class="text-label text-accent-contrast flex items-center gap-1">
-          <Icon name="lucide:check" class="size-6" />
-          {{ $t('consent.accepted') }}
-        </span>
+    <template v-else>
+      <template v-if="status === 'pending' || changing">
+        <ConsentDetails :consent>
+          <button
+            class="text-label text-accent-contrast py-2 flex items-center gap-1"
+          >
+            {{ $t('consent.readButton') }}
+            <Icon name="lucide:arrow-right" />
+          </button>
+        </ConsentDetails>
         <DesignButton
-          size="small"
-          variant="secondary"
-          class="grow-0"
-          @click="changing = true"
+          variant="primary"
+          size="large"
+          class="w-full"
+          @click="handleAccept"
         >
-          {{ $t('consent.change') }}
+          {{ $t('consent.acceptButton') }}
         </DesignButton>
-      </div>
+        <DesignButton
+          variant="secondary"
+          size="large"
+          class="w-full"
+          @click="handleReject"
+        >
+          {{ $t('consent.rejectButton') }}
+        </DesignButton>
+      </template>
+      <template v-else-if="status === ConsentAction.Accepted">
+        <div class="flex justify-between items-center">
+          <span class="text-label text-accent-positive flex items-center gap-1">
+            <Icon name="lucide:check" class="size-6" />
+            {{ $t('consent.accepted') }}
+          </span>
+          <DesignButton
+            size="small"
+            variant="secondary"
+            class="grow-0"
+            @click="changing = true"
+          >
+            {{ $t('consent.change') }}
+          </DesignButton>
+        </div>
+      </template>
+      <template v-else-if="status === ConsentAction.Rejected">
+        <div class="flex justify-between items-center">
+          <span class="text-label text-accent-negative flex items-center gap-1">
+            <Icon name="lucide:x" class="size-6" />
+            {{ $t('consent.rejected') }}
+          </span>
+          <DesignButton
+            size="small"
+            variant="secondary"
+            class="grow-0"
+            @click="changing = true"
+          >
+            {{ $t('consent.change') }}
+          </DesignButton>
+        </div>
+      </template>
     </template>
-    <template v-else-if="status === ConsentAction.Rejected"></template>
   </DesignPanel>
 </template>

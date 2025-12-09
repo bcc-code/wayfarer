@@ -83,60 +83,54 @@ function getScoreJournalName(
 </script>
 
 <template>
-  <DesignDrawer v-model:open="open">
+  <DesignDrawer v-model:open="open" :title="$t('pages.pointHistory')">
     <slot />
-    <template #content="{ close }">
-      <PageLayout :title="$t('pages.pointHistory')" :shadow="false">
-        <template #action>
-          <DesignIconButton icon="lucide:x" @click="close" />
-        </template>
+    <template #content>
+      <p class="text-label text-text-default p-medium mb-list-section-gap">
+        {{ $t('pointHistory.explanation') }}
+      </p>
 
-        <p class="text-label text-text-default p-medium mb-list-section-gap">
-          {{ $t('pointHistory.explanation') }}
-        </p>
-
-        <LoadingState v-if="fetching" />
-        <ErrorState v-else-if="error" :error />
-        <DesignPanel
-          v-else-if="data?.myCurrentProject.journal.edges.length"
-          class="space-y-list-section-inset p-list-section-inset"
+      <LoadingState v-if="fetching" />
+      <ErrorState v-else-if="error" :error />
+      <DesignPanel
+        v-else-if="data?.myCurrentProject.journal.edges.length"
+        class="space-y-list-section-inset p-list-section-inset"
+      >
+        <template
+          v-for="(journal, index) in data.myCurrentProject.journal.edges"
+          :key="journal.node.id"
         >
-          <template
-            v-for="(journal, index) in data.myCurrentProject.journal.edges"
-            :key="journal.node.id"
+          <div
+            class="px-3 py-2 rounded-list-inset flex gap-2.5 items-center justify-between"
           >
-            <div
-              class="px-3 py-2 rounded-list-inset flex gap-2.5 items-center justify-between"
-            >
-              <div>
-                <p class="text-label">
-                  {{ getScoreJournalName(journal.node) }}
-                </p>
-                <span class="text-caption text-text-muted">
-                  {{ formatDate(journal.node.createdAt) }}
-                </span>
-              </div>
-              <span
-                :class="[
-                  'text-label',
-                  {
-                    'text-accent-contrast': journal.node.points > 0,
-                    'text-text-hint': journal.node.points < 0,
-                  },
-                ]"
-              >
-                {{ journal.node.points > 0 ? '+' : '-' }}
-                {{ journal.node.points }}
+            <div>
+              <p class="text-label">
+                {{ getScoreJournalName(journal.node) }}
+              </p>
+              <span class="text-caption text-text-muted">
+                {{ formatDate(journal.node.createdAt) }}
               </span>
             </div>
-            <hr
-              v-if="index < data.myCurrentProject.journal.edges.length - 1"
-              class="mx-3 border-border-default"
-            />
-          </template>
-        </DesignPanel>
-        <EmptyState v-else />
-      </PageLayout>
+            <span
+              :class="[
+                'text-label',
+                {
+                  'text-accent-contrast': journal.node.points > 0,
+                  'text-text-hint': journal.node.points < 0,
+                },
+              ]"
+            >
+              {{ journal.node.points > 0 ? '+' : '-' }}
+              {{ journal.node.points }}
+            </span>
+          </div>
+          <hr
+            v-if="index < data.myCurrentProject.journal.edges.length - 1"
+            class="mx-3 border-border-default"
+          />
+        </template>
+      </DesignPanel>
+      <EmptyState v-else />
     </template>
   </DesignDrawer>
 </template>

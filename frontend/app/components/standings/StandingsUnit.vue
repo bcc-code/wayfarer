@@ -97,84 +97,63 @@ function selectTeamLead(userId: string) {
         <h2 class="text-heading text-balance">
           {{ data.myCurrentProject.myTeam.name }}
         </h2>
-        <DesignDrawer v-if="isTeamLead">
+        <DesignDrawer v-if="isTeamLead" :title="$t('unit.editUnit')">
           <DesignButton variant="secondary" size="medium">
             {{ $t('unit.editUnit') }}
           </DesignButton>
-          <template #content="{ close }">
-            <PageLayout
-              :title="$t('unit.editUnit')"
-              :bottom-padding="false"
-              class="min-h-0! grow"
-            >
-              <template #action>
-                <DesignIconButton icon="lucide:x" @click="close" />
-              </template>
-              <div class="gap-list-section-gap flex grow flex-col">
-                <DesignInput v-model="form.name" :label="$t('unit.unitName')" />
-                <DesignPanel>
-                  <div class="flex items-center gap-2.5 px-3 py-2">
-                    <Icon name="lucide:badge-check" class="size-6" />
-                    <span class="text-label">{{ $t('unit.unitLeader') }}</span>
-                    <DesignButton
-                      variant="secondary"
-                      size="small"
-                      :class="[
-                        'ml-auto grow-0',
-                        { 'text-text-hint': !selectedTeamLeader?.name },
-                      ]"
-                      @click="showLeadSelector = true"
-                    >
-                      {{ selectedTeamLeader?.name ?? $t('unit.noUnitLeader') }}
-                    </DesignButton>
-                  </div>
-                </DesignPanel>
-
-                <DesignDrawer v-model:open="showLeadSelector">
-                  <template #content="{ close: closeLeadSelector }">
-                    <PageLayout
-                      :title="$t('unit.selectUnitLeader')"
-                      :shadow="false"
-                    >
-                      <template #action>
-                        <DesignIconButton
-                          icon="lucide:x"
-                          @click="closeLeadSelector"
-                        />
-                      </template>
-                      <div class="gap-list-section-gap flex flex-col">
-                        <DesignPanel
-                          v-for="member in teamMembers"
-                          :key="member.id"
-                          class="cursor-pointer"
-                          @click="selectTeamLead(member.id)"
-                        >
-                          <div class="flex items-center gap-2.5 px-3 py-2">
-                            <span class="text-label flex-1">
-                              {{ member.name }}
-                            </span>
-                            <Icon
-                              v-if="member.id === form.teamLeadId"
-                              name="lucide:check"
-                              class="text-accent size-5"
-                            />
-                          </div>
-                        </DesignPanel>
-                      </div>
-                    </PageLayout>
-                  </template>
-                </DesignDrawer>
-                <div class="p-default flex grow flex-col justify-end">
+          <template #content>
+            <div class="gap-list-section-gap flex grow flex-col">
+              <DesignInput v-model="form.name" :label="$t('unit.unitName')" />
+              <DesignPanel>
+                <div class="flex items-center gap-2.5 px-3 py-2">
+                  <Icon name="lucide:badge-check" class="size-6" />
+                  <span class="text-label">{{ $t('unit.unitLeader') }}</span>
                   <DesignButton
-                    size="large"
-                    class="grow-0"
-                    @click="saveChanges"
+                    variant="secondary"
+                    size="small"
+                    :class="[
+                      'ml-auto grow-0',
+                      { 'text-text-hint': !selectedTeamLeader?.name },
+                    ]"
+                    @click="showLeadSelector = true"
                   >
-                    {{ $t('unit.saveChanges') }}
+                    {{ selectedTeamLeader?.name ?? $t('unit.noUnitLeader') }}
                   </DesignButton>
                 </div>
+              </DesignPanel>
+
+              <DesignDrawer
+                v-model:open="showLeadSelector"
+                :title="$t('unit.selectUnitLeader')"
+              >
+                <template #content>
+                  <div class="gap-list-section-gap flex flex-col">
+                    <DesignPanel
+                      v-for="member in teamMembers"
+                      :key="member.id"
+                      class="cursor-pointer"
+                      @click="selectTeamLead(member.id)"
+                    >
+                      <div class="flex items-center gap-2.5 px-3 py-2">
+                        <span class="text-label flex-1">
+                          {{ member.name }}
+                        </span>
+                        <Icon
+                          v-if="member.id === form.teamLeadId"
+                          name="lucide:check"
+                          class="text-accent size-5"
+                        />
+                      </div>
+                    </DesignPanel>
+                  </div>
+                </template>
+              </DesignDrawer>
+              <div class="p-default flex grow flex-col justify-end">
+                <DesignButton size="large" class="grow-0" @click="saveChanges">
+                  {{ $t('unit.saveChanges') }}
+                </DesignButton>
               </div>
-            </PageLayout>
+            </div>
           </template>
         </DesignDrawer>
       </div>

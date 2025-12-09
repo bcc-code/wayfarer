@@ -20,7 +20,14 @@ watch(open, (isOpen) => {
 
 <template>
   <div>
-    <DesignDrawer v-model:open="open">
+    <DesignDrawer
+      v-model:open="open"
+      :title="
+        achievement.achievedAt
+          ? $t('achievement.unlocked')
+          : $t('achievement.title')
+      "
+    >
       <button
         class="grid aspect-square place-items-center overflow-hidden rounded-full"
       >
@@ -35,57 +42,48 @@ watch(open, (isOpen) => {
           class="size-full object-cover"
         />
       </button>
-      <template #content="{ close }">
-        <PageLayout
-          :title="achievement.achievedAt ? 'Unlocked!' : 'Achievement'"
-          :shadow="false"
-        >
-          <template #action>
-            <DesignIconButton icon="lucide:x" @click="close" />
-          </template>
-
-          <div class="flex h-full flex-col items-center justify-center gap-6">
-            <div
-              :class="[
-                'grid aspect-square size-55 place-items-center overflow-hidden rounded-full',
-                { 'shadow-large': achievement.achievedAt },
-              ]"
-            >
-              <NuxtImg
-                v-if="achievement.image && achievement.achievedAt != null"
-                :src="achievement.image"
-                class="size-full object-cover"
-              />
-              <NuxtImg
-                v-else
-                src="/images/achievement-placeholder.png"
-                class="size-full object-cover"
-              />
-            </div>
-            <div
-              class="flex flex-col items-center gap-1 text-center text-balance"
-            >
-              <h3 class="text-heading">
-                {{ achievement.name }}
-              </h3>
-              <p class="text-label">
-                {{ achievement.description }}
-              </p>
-            </div>
-            <div
-              v-if="achievement.achievedAt"
-              class="rounded-full bg-background-indent py-2 px-3 text-label text-accent-contrast"
-            >
-              +{{ achievement.points }} {{ $t('points') }}
-            </div>
-            <div
-              v-else-if="achievement.points"
-              class="rounded-full bg-background-indent py-2 px-3 text-label text-text-muted"
-            >
-              {{ $t('givesYouXPoints', { points: achievement.points }) }}
-            </div>
+      <template #content>
+        <div class="flex h-full flex-col items-center justify-center gap-6">
+          <div
+            :class="[
+              'grid aspect-square size-55 place-items-center overflow-hidden rounded-full',
+              { 'shadow-large': achievement.achievedAt },
+            ]"
+          >
+            <NuxtImg
+              v-if="achievement.image && achievement.achievedAt != null"
+              :src="achievement.image"
+              class="size-full object-cover"
+            />
+            <NuxtImg
+              v-else
+              src="/images/achievement-placeholder.png"
+              class="size-full object-cover"
+            />
           </div>
-        </PageLayout>
+          <div
+            class="flex flex-col items-center gap-1 text-center text-balance"
+          >
+            <h3 class="text-heading">
+              {{ achievement.name }}
+            </h3>
+            <p class="text-label">
+              {{ achievement.description }}
+            </p>
+          </div>
+          <div
+            v-if="achievement.achievedAt"
+            class="rounded-full bg-background-indent py-2 px-3 text-label text-accent-contrast"
+          >
+            +{{ achievement.points }} {{ $t('points') }}
+          </div>
+          <div
+            v-else-if="achievement.points"
+            class="rounded-full bg-background-indent py-2 px-3 text-label text-text-muted"
+          >
+            {{ $t('givesYouXPoints', { points: achievement.points }) }}
+          </div>
+        </div>
       </template>
     </DesignDrawer>
   </div>

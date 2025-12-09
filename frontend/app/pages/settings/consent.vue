@@ -15,6 +15,7 @@ gql(`
 					publishedAt
 					managedBy
 					managementType
+					url
 				}
 				acceptedConsents {
 					__typename
@@ -64,7 +65,7 @@ const { data, fetching, error, executeQuery: refetch } = useConsentsPageQuery()
 
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
-    <template v-else-if="data">
+    <div v-else-if="data" class="space-y-list-section-gap">
       <ConsentCard
         v-for="consent in data.me.consentStatus.pendingConsents"
         :key="consent.id"
@@ -83,6 +84,6 @@ const { data, fetching, error, executeQuery: refetch } = useConsentsPageQuery()
         :consent
         @update="refetch"
       />
-    </template>
+    </div>
   </PageLayout>
 </template>

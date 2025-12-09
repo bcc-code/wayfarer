@@ -14,7 +14,6 @@ gql(`
       name
       description
       image
-      url
       buttonText
       publishedAt
       endTime

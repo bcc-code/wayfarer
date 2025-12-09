@@ -6,12 +6,13 @@ gql(`
         id
         name
         description
-        userCompletedAt
         image
-        url
         buttonText
         publishedAt
         endTime
+        visibleAt
+        userEnrolledAt
+        userCompletedAt
       }
     }
   }

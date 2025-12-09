@@ -3,12 +3,14 @@ interface Props {
   maxBlur?: number // Maximum blur amount in pixels
   layers?: number // Number of blur layers for smoothness
   direction?: 'up' | 'down'
+  enabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   maxBlur: 8,
   layers: 4,
   direction: 'down',
+  enabled: true,
 })
 
 // Determine gradient direction based on prop
@@ -35,17 +37,19 @@ const blurLayers = computed(() => {
 
 <template>
   <div class="progressive-blur">
-    <div
-      v-for="(layer, index) in blurLayers"
-      :key="index"
-      class="blur-layer"
-      :style="{
-        backdropFilter: `blur(${layer.blur}px)`,
-        WebkitBackdropFilter: `blur(${layer.blur}px)`,
-        maskImage: `linear-gradient(${gradientDirection}, transparent 0%, black ${layer.maskMid}%, black 100%)`,
-        WebkitMaskImage: `linear-gradient(${gradientDirection}, transparent 0%, black ${layer.maskMid}%, black 100%)`,
-      }"
-    />
+    <template v-if="enabled">
+      <div
+        v-for="(layer, index) in blurLayers"
+        :key="index"
+        class="blur-layer"
+        :style="{
+          backdropFilter: `blur(${layer.blur}px)`,
+          WebkitBackdropFilter: `blur(${layer.blur}px)`,
+          maskImage: `linear-gradient(${gradientDirection}, transparent 0%, black ${layer.maskMid}%, black 100%)`,
+          WebkitMaskImage: `linear-gradient(${gradientDirection}, transparent 0%, black ${layer.maskMid}%, black 100%)`,
+        }"
+      />
+    </template>
     <slot />
   </div>
 </template>

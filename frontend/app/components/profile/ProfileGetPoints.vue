@@ -27,23 +27,17 @@ const { data, fetching, error } = useProjectRulesQuery({
 </script>
 
 <template>
-  <DesignDrawer v-model:open="open">
+  <DesignDrawer v-model:open="open" :title="$t('pages.getPoints')">
     <slot />
-    <template #content="{ close }">
-      <PageLayout :title="$t('pages.getPoints')" :shadow="false">
-        <template #action>
-          <DesignIconButton icon="lucide:x" @click="close" />
-        </template>
-
-        <LoadingState v-if="fetching" />
-        <ErrorState v-else-if="error" :error />
-        <div
-          v-else-if="data?.myCurrentProject.rules"
-          id="project-rules"
-          class="p-default"
-          v-html="data.myCurrentProject.rules.html"
-        />
-      </PageLayout>
+    <template #content>
+      <LoadingState v-if="fetching" />
+      <ErrorState v-else-if="error" :error />
+      <div
+        v-else-if="data?.myCurrentProject.rules"
+        id="project-rules"
+        class="p-default"
+        v-html="data.myCurrentProject.rules.html"
+      />
     </template>
   </DesignDrawer>
 </template>
