@@ -17,7 +17,7 @@ SET
     event_id = $1::text,
     updated_at = now()
 WHERE id = $2::text
-RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, created_at, updated_at
 `
 
 type AssignChallengeToEventParams struct {
@@ -29,6 +29,7 @@ type AssignChallengeToEventRow struct {
 	ID                          string             `json:"id"`
 	ProjectID                   string             `json:"project_id"`
 	EventID                     *string            `json:"event_id"`
+	ChallengeType               string             `json:"challenge_type"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
 	ImageUrl                    *string            `json:"image_url"`
@@ -38,6 +39,7 @@ type AssignChallengeToEventRow struct {
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 	RequiresTeamMembership      bool               `json:"requires_team_membership"`
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
 	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
@@ -51,6 +53,7 @@ func (q *Queries) AssignChallengeToEvent(ctx context.Context, arg AssignChalleng
 		&i.ID,
 		&i.ProjectID,
 		&i.EventID,
+		&i.ChallengeType,
 		&i.Name,
 		&i.Description,
 		&i.ImageUrl,
@@ -60,6 +63,7 @@ func (q *Queries) AssignChallengeToEvent(ctx context.Context, arg AssignChalleng
 		&i.VisibleAt,
 		&i.StartedAt,
 		&i.EndTime,
+		&i.AllowSelfCompletion,
 		&i.RequiresTeamMembership,
 		&i.RequiresSuperTeamMembership,
 		&i.CreatedAt,
@@ -73,6 +77,7 @@ INSERT INTO challenges (
     id,
     project_id,
     event_id,
+    challenge_type,
     name,
     description,
     image_url,
@@ -81,6 +86,7 @@ INSERT INTO challenges (
     published_at,
     visible_at,
     end_time,
+    allow_self_completion,
     requires_team_membership,
     requires_super_team_membership
 )
@@ -93,18 +99,21 @@ SELECT
     unnest($6::text[]),
     unnest($7::text[]),
     unnest($8::text[]),
-    unnest($9::timestamptz[]),
+    unnest($9::text[]),
     unnest($10::timestamptz[]),
     unnest($11::timestamptz[]),
-    unnest($12::bool[]),
-    unnest($13::bool[])
-RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
+    unnest($12::timestamptz[]),
+    unnest($13::bool[]),
+    unnest($14::bool[]),
+    unnest($15::bool[])
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, created_at, updated_at
 `
 
 type BulkCreateChallengesParams struct {
 	Ids                          []string             `json:"ids"`
 	Projectids                   []string             `json:"projectids"`
 	Eventids                     []string             `json:"eventids"`
+	Challengetypes               []string             `json:"challengetypes"`
 	Names                        []string             `json:"names"`
 	Descriptions                 []string             `json:"descriptions"`
 	Imageurls                    []string             `json:"imageurls"`
@@ -113,6 +122,7 @@ type BulkCreateChallengesParams struct {
 	Publishedats                 []pgtype.Timestamptz `json:"publishedats"`
 	Visibleats                   []pgtype.Timestamptz `json:"visibleats"`
 	Endtimes                     []pgtype.Timestamptz `json:"endtimes"`
+	Allowselfcompletions         []bool               `json:"allowselfcompletions"`
 	Requiresteammemberships      []bool               `json:"requiresteammemberships"`
 	Requiressuperteammemberships []bool               `json:"requiressuperteammemberships"`
 }
@@ -121,6 +131,7 @@ type BulkCreateChallengesRow struct {
 	ID                          string             `json:"id"`
 	ProjectID                   string             `json:"project_id"`
 	EventID                     *string            `json:"event_id"`
+	ChallengeType               string             `json:"challenge_type"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
 	ImageUrl                    *string            `json:"image_url"`
@@ -130,6 +141,7 @@ type BulkCreateChallengesRow struct {
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 	RequiresTeamMembership      bool               `json:"requires_team_membership"`
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
 	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
@@ -141,6 +153,7 @@ func (q *Queries) BulkCreateChallenges(ctx context.Context, arg BulkCreateChalle
 		arg.Ids,
 		arg.Projectids,
 		arg.Eventids,
+		arg.Challengetypes,
 		arg.Names,
 		arg.Descriptions,
 		arg.Imageurls,
@@ -149,6 +162,7 @@ func (q *Queries) BulkCreateChallenges(ctx context.Context, arg BulkCreateChalle
 		arg.Publishedats,
 		arg.Visibleats,
 		arg.Endtimes,
+		arg.Allowselfcompletions,
 		arg.Requiresteammemberships,
 		arg.Requiressuperteammemberships,
 	)
@@ -163,6 +177,7 @@ func (q *Queries) BulkCreateChallenges(ctx context.Context, arg BulkCreateChalle
 			&i.ID,
 			&i.ProjectID,
 			&i.EventID,
+			&i.ChallengeType,
 			&i.Name,
 			&i.Description,
 			&i.ImageUrl,
@@ -172,6 +187,7 @@ func (q *Queries) BulkCreateChallenges(ctx context.Context, arg BulkCreateChalle
 			&i.VisibleAt,
 			&i.StartedAt,
 			&i.EndTime,
+			&i.AllowSelfCompletion,
 			&i.RequiresTeamMembership,
 			&i.RequiresSuperTeamMembership,
 			&i.CreatedAt,
@@ -193,7 +209,7 @@ SET
     published_at = $1::timestamptz,
     updated_at = now()
 WHERE id = ANY($2::text[])
-RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, created_at, updated_at
 `
 
 type BulkPublishChallengesParams struct {
@@ -205,6 +221,7 @@ type BulkPublishChallengesRow struct {
 	ID                          string             `json:"id"`
 	ProjectID                   string             `json:"project_id"`
 	EventID                     *string            `json:"event_id"`
+	ChallengeType               string             `json:"challenge_type"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
 	ImageUrl                    *string            `json:"image_url"`
@@ -214,6 +231,7 @@ type BulkPublishChallengesRow struct {
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 	RequiresTeamMembership      bool               `json:"requires_team_membership"`
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
 	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
@@ -233,6 +251,7 @@ func (q *Queries) BulkPublishChallenges(ctx context.Context, arg BulkPublishChal
 			&i.ID,
 			&i.ProjectID,
 			&i.EventID,
+			&i.ChallengeType,
 			&i.Name,
 			&i.Description,
 			&i.ImageUrl,
@@ -242,6 +261,7 @@ func (q *Queries) BulkPublishChallenges(ctx context.Context, arg BulkPublishChal
 			&i.VisibleAt,
 			&i.StartedAt,
 			&i.EndTime,
+			&i.AllowSelfCompletion,
 			&i.RequiresTeamMembership,
 			&i.RequiresSuperTeamMembership,
 			&i.CreatedAt,
@@ -264,14 +284,16 @@ WHERE
     ($1::text[] IS NULL OR id = ANY($1::text[]))
     AND ($2::text = '' OR project_id = $2::text)
     AND ($3::text = '' OR event_id = $3::text)
-    AND ($4::timestamptz IS NULL OR published_at >= $4::timestamptz)
-    AND ($5::timestamptz IS NULL OR published_at <= $5::timestamptz)
+    AND ($4::text = '' OR challenge_type = $4::text)
+    AND ($5::timestamptz IS NULL OR published_at >= $5::timestamptz)
+    AND ($6::timestamptz IS NULL OR published_at <= $6::timestamptz)
 `
 
 type CountChallengesFilteredParams struct {
 	Ids             []string           `json:"ids"`
 	Projectid       string             `json:"projectid"`
 	Eventid         string             `json:"eventid"`
+	Challengetype   string             `json:"challengetype"`
 	Publishedafter  pgtype.Timestamptz `json:"publishedafter"`
 	Publishedbefore pgtype.Timestamptz `json:"publishedbefore"`
 }
@@ -281,6 +303,7 @@ func (q *Queries) CountChallengesFiltered(ctx context.Context, arg CountChalleng
 		arg.Ids,
 		arg.Projectid,
 		arg.Eventid,
+		arg.Challengetype,
 		arg.Publishedafter,
 		arg.Publishedbefore,
 	)
@@ -294,6 +317,7 @@ INSERT INTO challenges (
     id,
     project_id,
     event_id,
+    challenge_type,
     name,
     description,
     image_url,
@@ -302,6 +326,7 @@ INSERT INTO challenges (
     published_at,
     visible_at,
     end_time,
+    allow_self_completion,
     requires_team_membership,
     requires_super_team_membership
 )
@@ -314,19 +339,22 @@ VALUES (
     $6::text,
     $7::text,
     $8::text,
-    $9::timestamptz,
+    $9::text,
     $10::timestamptz,
     $11::timestamptz,
-    COALESCE($12::bool, false),
-    COALESCE($13::bool, false)
+    $12::timestamptz,
+    COALESCE($13::bool, true),
+    COALESCE($14::bool, false),
+    COALESCE($15::bool, false)
 )
-RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, created_at, updated_at
 `
 
 type CreateChallengeParams struct {
 	ID                          string             `json:"id"`
 	Projectid                   string             `json:"projectid"`
 	Eventid                     string             `json:"eventid"`
+	Challengetype               string             `json:"challengetype"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
 	Imageurl                    *string            `json:"imageurl"`
@@ -335,6 +363,7 @@ type CreateChallengeParams struct {
 	Publishedat                 pgtype.Timestamptz `json:"publishedat"`
 	Visibleat                   pgtype.Timestamptz `json:"visibleat"`
 	Endtime                     pgtype.Timestamptz `json:"endtime"`
+	Allowselfcompletion         *bool              `json:"allowselfcompletion"`
 	Requiresteammembership      *bool              `json:"requiresteammembership"`
 	Requiressuperteammembership *bool              `json:"requiressuperteammembership"`
 }
@@ -343,6 +372,7 @@ type CreateChallengeRow struct {
 	ID                          string             `json:"id"`
 	ProjectID                   string             `json:"project_id"`
 	EventID                     *string            `json:"event_id"`
+	ChallengeType               string             `json:"challenge_type"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
 	ImageUrl                    *string            `json:"image_url"`
@@ -352,6 +382,7 @@ type CreateChallengeRow struct {
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 	RequiresTeamMembership      bool               `json:"requires_team_membership"`
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
 	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
@@ -363,6 +394,7 @@ func (q *Queries) CreateChallenge(ctx context.Context, arg CreateChallengeParams
 		arg.ID,
 		arg.Projectid,
 		arg.Eventid,
+		arg.Challengetype,
 		arg.Name,
 		arg.Description,
 		arg.Imageurl,
@@ -371,6 +403,7 @@ func (q *Queries) CreateChallenge(ctx context.Context, arg CreateChallengeParams
 		arg.Publishedat,
 		arg.Visibleat,
 		arg.Endtime,
+		arg.Allowselfcompletion,
 		arg.Requiresteammembership,
 		arg.Requiressuperteammembership,
 	)
@@ -379,6 +412,7 @@ func (q *Queries) CreateChallenge(ctx context.Context, arg CreateChallengeParams
 		&i.ID,
 		&i.ProjectID,
 		&i.EventID,
+		&i.ChallengeType,
 		&i.Name,
 		&i.Description,
 		&i.ImageUrl,
@@ -388,6 +422,7 @@ func (q *Queries) CreateChallenge(ctx context.Context, arg CreateChallengeParams
 		&i.VisibleAt,
 		&i.StartedAt,
 		&i.EndTime,
+		&i.AllowSelfCompletion,
 		&i.RequiresTeamMembership,
 		&i.RequiresSuperTeamMembership,
 		&i.CreatedAt,
@@ -407,7 +442,7 @@ func (q *Queries) DeleteChallenge(ctx context.Context, id string) error {
 }
 
 const GetChallengesByEventIDs = `-- name: GetChallengesByEventIDs :many
-SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
+SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, created_at, updated_at
 FROM challenges
 WHERE event_id = ANY($1::text[])
     AND published_at IS NOT NULL
@@ -419,6 +454,7 @@ type GetChallengesByEventIDsRow struct {
 	ID                          string             `json:"id"`
 	ProjectID                   string             `json:"project_id"`
 	EventID                     *string            `json:"event_id"`
+	ChallengeType               string             `json:"challenge_type"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
 	ImageUrl                    *string            `json:"image_url"`
@@ -428,6 +464,7 @@ type GetChallengesByEventIDsRow struct {
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 	RequiresTeamMembership      bool               `json:"requires_team_membership"`
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
 	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
@@ -447,6 +484,7 @@ func (q *Queries) GetChallengesByEventIDs(ctx context.Context, eventIds []string
 			&i.ID,
 			&i.ProjectID,
 			&i.EventID,
+			&i.ChallengeType,
 			&i.Name,
 			&i.Description,
 			&i.ImageUrl,
@@ -456,6 +494,7 @@ func (q *Queries) GetChallengesByEventIDs(ctx context.Context, eventIds []string
 			&i.VisibleAt,
 			&i.StartedAt,
 			&i.EndTime,
+			&i.AllowSelfCompletion,
 			&i.RequiresTeamMembership,
 			&i.RequiresSuperTeamMembership,
 			&i.CreatedAt,
@@ -472,7 +511,7 @@ func (q *Queries) GetChallengesByEventIDs(ctx context.Context, eventIds []string
 }
 
 const GetChallengesByIDs = `-- name: GetChallengesByIDs :many
-SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
+SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, created_at, updated_at
 FROM challenges
 WHERE id = ANY($1::text[])
 `
@@ -481,6 +520,7 @@ type GetChallengesByIDsRow struct {
 	ID                          string             `json:"id"`
 	ProjectID                   string             `json:"project_id"`
 	EventID                     *string            `json:"event_id"`
+	ChallengeType               string             `json:"challenge_type"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
 	ImageUrl                    *string            `json:"image_url"`
@@ -490,6 +530,7 @@ type GetChallengesByIDsRow struct {
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 	RequiresTeamMembership      bool               `json:"requires_team_membership"`
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
 	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
@@ -509,6 +550,7 @@ func (q *Queries) GetChallengesByIDs(ctx context.Context, ids []string) ([]*GetC
 			&i.ID,
 			&i.ProjectID,
 			&i.EventID,
+			&i.ChallengeType,
 			&i.Name,
 			&i.Description,
 			&i.ImageUrl,
@@ -518,6 +560,7 @@ func (q *Queries) GetChallengesByIDs(ctx context.Context, ids []string) ([]*GetC
 			&i.VisibleAt,
 			&i.StartedAt,
 			&i.EndTime,
+			&i.AllowSelfCompletion,
 			&i.RequiresTeamMembership,
 			&i.RequiresSuperTeamMembership,
 			&i.CreatedAt,
@@ -534,7 +577,7 @@ func (q *Queries) GetChallengesByIDs(ctx context.Context, ids []string) ([]*GetC
 }
 
 const GetChallengesByProjectIDs = `-- name: GetChallengesByProjectIDs :many
-SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
+SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, created_at, updated_at
 FROM challenges
 WHERE project_id = ANY($1::text[])
     AND published_at IS NOT NULL
@@ -546,6 +589,7 @@ type GetChallengesByProjectIDsRow struct {
 	ID                          string             `json:"id"`
 	ProjectID                   string             `json:"project_id"`
 	EventID                     *string            `json:"event_id"`
+	ChallengeType               string             `json:"challenge_type"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
 	ImageUrl                    *string            `json:"image_url"`
@@ -555,6 +599,7 @@ type GetChallengesByProjectIDsRow struct {
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 	RequiresTeamMembership      bool               `json:"requires_team_membership"`
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
 	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
@@ -574,6 +619,7 @@ func (q *Queries) GetChallengesByProjectIDs(ctx context.Context, projectIds []st
 			&i.ID,
 			&i.ProjectID,
 			&i.EventID,
+			&i.ChallengeType,
 			&i.Name,
 			&i.Description,
 			&i.ImageUrl,
@@ -583,6 +629,7 @@ func (q *Queries) GetChallengesByProjectIDs(ctx context.Context, projectIds []st
 			&i.VisibleAt,
 			&i.StartedAt,
 			&i.EndTime,
+			&i.AllowSelfCompletion,
 			&i.RequiresTeamMembership,
 			&i.RequiresSuperTeamMembership,
 			&i.CreatedAt,
@@ -599,26 +646,28 @@ func (q *Queries) GetChallengesByProjectIDs(ctx context.Context, projectIds []st
 }
 
 const GetChallengesFilteredCursor = `-- name: GetChallengesFilteredCursor :many
-SELECT id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
+SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, created_at, updated_at
 FROM challenges
 WHERE
     ($1::text[] IS NULL OR id = ANY($1::text[]))
     AND ($2::text = '' OR project_id = $2::text)
     AND ($3::text = '' OR event_id = $3::text)
-    AND ($4::timestamptz IS NULL OR published_at >= $4::timestamptz)
-    AND ($5::timestamptz IS NULL OR published_at <= $5::timestamptz)
-    AND ($6::text = '' OR id > $6::text)
-    AND ($7::text = '' OR id < $7::text)
+    AND ($4::text = '' OR challenge_type = $4::text)
+    AND ($5::timestamptz IS NULL OR published_at >= $5::timestamptz)
+    AND ($6::timestamptz IS NULL OR published_at <= $6::timestamptz)
+    AND ($7::text = '' OR id > $7::text)
+    AND ($8::text = '' OR id < $8::text)
 ORDER BY
-    CASE WHEN $8::bool = true THEN id END DESC,
-    CASE WHEN $8::bool = false OR $8::bool IS NULL THEN id END ASC
-LIMIT CASE WHEN $9::int IS NULL THEN NULL ELSE $9::int END
+    CASE WHEN $9::bool = true THEN id END DESC,
+    CASE WHEN $9::bool = false OR $9::bool IS NULL THEN id END ASC
+LIMIT CASE WHEN $10::int IS NULL THEN NULL ELSE $10::int END
 `
 
 type GetChallengesFilteredCursorParams struct {
 	Ids             []string           `json:"ids"`
 	Projectid       string             `json:"projectid"`
 	Eventid         string             `json:"eventid"`
+	Challengetype   string             `json:"challengetype"`
 	Publishedafter  pgtype.Timestamptz `json:"publishedafter"`
 	Publishedbefore pgtype.Timestamptz `json:"publishedbefore"`
 	Aftercursor     string             `json:"aftercursor"`
@@ -631,6 +680,7 @@ type GetChallengesFilteredCursorRow struct {
 	ID                          string             `json:"id"`
 	ProjectID                   string             `json:"project_id"`
 	EventID                     *string            `json:"event_id"`
+	ChallengeType               string             `json:"challenge_type"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
 	ImageUrl                    *string            `json:"image_url"`
@@ -640,6 +690,7 @@ type GetChallengesFilteredCursorRow struct {
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 	RequiresTeamMembership      bool               `json:"requires_team_membership"`
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
 	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
@@ -651,6 +702,7 @@ func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChalle
 		arg.Ids,
 		arg.Projectid,
 		arg.Eventid,
+		arg.Challengetype,
 		arg.Publishedafter,
 		arg.Publishedbefore,
 		arg.Aftercursor,
@@ -669,6 +721,7 @@ func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChalle
 			&i.ID,
 			&i.ProjectID,
 			&i.EventID,
+			&i.ChallengeType,
 			&i.Name,
 			&i.Description,
 			&i.ImageUrl,
@@ -678,6 +731,7 @@ func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChalle
 			&i.VisibleAt,
 			&i.StartedAt,
 			&i.EndTime,
+			&i.AllowSelfCompletion,
 			&i.RequiresTeamMembership,
 			&i.RequiresSuperTeamMembership,
 			&i.CreatedAt,
@@ -693,13 +747,41 @@ func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChalle
 	return items, nil
 }
 
+const GetQuizByChallengeID = `-- name: GetQuizByChallengeID :one
+SELECT id, project_id, name, description, image_url, timeout_seconds, question_timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at, challenge_id FROM quizzes WHERE challenge_id = $1::text
+`
+
+func (q *Queries) GetQuizByChallengeID(ctx context.Context, challengeid string) (*Quiz, error) {
+	row := q.db.QueryRow(ctx, GetQuizByChallengeID, challengeid)
+	var i Quiz
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.ImageUrl,
+		&i.TimeoutSeconds,
+		&i.QuestionTimeoutSeconds,
+		&i.RandomizeQuestions,
+		&i.RevealCorrectAnswers,
+		&i.AllowRetakes,
+		&i.CompletionPoints,
+		&i.PublishedAt,
+		&i.EndTime,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ChallengeID,
+	)
+	return &i, err
+}
+
 const PublishChallenge = `-- name: PublishChallenge :one
 UPDATE challenges
 SET
     published_at = $1::timestamptz,
     updated_at = now()
 WHERE id = $2::text
-RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, created_at, updated_at
 `
 
 type PublishChallengeParams struct {
@@ -711,6 +793,7 @@ type PublishChallengeRow struct {
 	ID                          string             `json:"id"`
 	ProjectID                   string             `json:"project_id"`
 	EventID                     *string            `json:"event_id"`
+	ChallengeType               string             `json:"challenge_type"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
 	ImageUrl                    *string            `json:"image_url"`
@@ -720,6 +803,7 @@ type PublishChallengeRow struct {
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 	RequiresTeamMembership      bool               `json:"requires_team_membership"`
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
 	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
@@ -733,6 +817,7 @@ func (q *Queries) PublishChallenge(ctx context.Context, arg PublishChallengePara
 		&i.ID,
 		&i.ProjectID,
 		&i.EventID,
+		&i.ChallengeType,
 		&i.Name,
 		&i.Description,
 		&i.ImageUrl,
@@ -742,6 +827,7 @@ func (q *Queries) PublishChallenge(ctx context.Context, arg PublishChallengePara
 		&i.VisibleAt,
 		&i.StartedAt,
 		&i.EndTime,
+		&i.AllowSelfCompletion,
 		&i.RequiresTeamMembership,
 		&i.RequiresSuperTeamMembership,
 		&i.CreatedAt,
@@ -762,11 +848,12 @@ SET
     visible_at = COALESCE($7::timestamptz, visible_at),
     started_at = COALESCE($8::timestamptz, started_at),
     end_time = COALESCE($9::timestamptz, end_time),
-    requires_team_membership = COALESCE($10::bool, requires_team_membership),
-    requires_super_team_membership = COALESCE($11::bool, requires_super_team_membership),
+    allow_self_completion = COALESCE($10::bool, allow_self_completion),
+    requires_team_membership = COALESCE($11::bool, requires_team_membership),
+    requires_super_team_membership = COALESCE($12::bool, requires_super_team_membership),
     updated_at = now()
-WHERE id = $12::text
-RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
+WHERE id = $13::text
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, created_at, updated_at
 `
 
 type UpdateChallengeParams struct {
@@ -779,6 +866,7 @@ type UpdateChallengeParams struct {
 	Visibleat                   pgtype.Timestamptz `json:"visibleat"`
 	Startedat                   pgtype.Timestamptz `json:"startedat"`
 	Endtime                     pgtype.Timestamptz `json:"endtime"`
+	Allowselfcompletion         *bool              `json:"allowselfcompletion"`
 	Requiresteammembership      *bool              `json:"requiresteammembership"`
 	Requiressuperteammembership *bool              `json:"requiressuperteammembership"`
 	ID                          string             `json:"id"`
@@ -788,6 +876,7 @@ type UpdateChallengeRow struct {
 	ID                          string             `json:"id"`
 	ProjectID                   string             `json:"project_id"`
 	EventID                     *string            `json:"event_id"`
+	ChallengeType               string             `json:"challenge_type"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
 	ImageUrl                    *string            `json:"image_url"`
@@ -797,6 +886,7 @@ type UpdateChallengeRow struct {
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 	RequiresTeamMembership      bool               `json:"requires_team_membership"`
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
 	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
@@ -814,6 +904,7 @@ func (q *Queries) UpdateChallenge(ctx context.Context, arg UpdateChallengeParams
 		arg.Visibleat,
 		arg.Startedat,
 		arg.Endtime,
+		arg.Allowselfcompletion,
 		arg.Requiresteammembership,
 		arg.Requiressuperteammembership,
 		arg.ID,
@@ -823,6 +914,7 @@ func (q *Queries) UpdateChallenge(ctx context.Context, arg UpdateChallengeParams
 		&i.ID,
 		&i.ProjectID,
 		&i.EventID,
+		&i.ChallengeType,
 		&i.Name,
 		&i.Description,
 		&i.ImageUrl,
@@ -832,6 +924,7 @@ func (q *Queries) UpdateChallenge(ctx context.Context, arg UpdateChallengeParams
 		&i.VisibleAt,
 		&i.StartedAt,
 		&i.EndTime,
+		&i.AllowSelfCompletion,
 		&i.RequiresTeamMembership,
 		&i.RequiresSuperTeamMembership,
 		&i.CreatedAt,
@@ -847,7 +940,7 @@ SET
     requires_super_team_membership = COALESCE($2::bool, requires_super_team_membership),
     updated_at = now()
 WHERE id = $3::text
-RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, created_at, updated_at
 `
 
 type UpdateChallengeRequirementsParams struct {
@@ -860,6 +953,7 @@ type UpdateChallengeRequirementsRow struct {
 	ID                          string             `json:"id"`
 	ProjectID                   string             `json:"project_id"`
 	EventID                     *string            `json:"event_id"`
+	ChallengeType               string             `json:"challenge_type"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
 	ImageUrl                    *string            `json:"image_url"`
@@ -869,6 +963,7 @@ type UpdateChallengeRequirementsRow struct {
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 	RequiresTeamMembership      bool               `json:"requires_team_membership"`
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
 	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
@@ -882,6 +977,7 @@ func (q *Queries) UpdateChallengeRequirements(ctx context.Context, arg UpdateCha
 		&i.ID,
 		&i.ProjectID,
 		&i.EventID,
+		&i.ChallengeType,
 		&i.Name,
 		&i.Description,
 		&i.ImageUrl,
@@ -891,6 +987,7 @@ func (q *Queries) UpdateChallengeRequirements(ctx context.Context, arg UpdateCha
 		&i.VisibleAt,
 		&i.StartedAt,
 		&i.EndTime,
+		&i.AllowSelfCompletion,
 		&i.RequiresTeamMembership,
 		&i.RequiresSuperTeamMembership,
 		&i.CreatedAt,
@@ -906,7 +1003,7 @@ SET
     started_at = COALESCE($2::timestamptz, started_at),
     updated_at = now()
 WHERE id = $3::text
-RETURNING id, project_id, event_id, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, requires_team_membership, requires_super_team_membership, created_at, updated_at
+RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, created_at, updated_at
 `
 
 type UpdateChallengeTimestampsParams struct {
@@ -919,6 +1016,7 @@ type UpdateChallengeTimestampsRow struct {
 	ID                          string             `json:"id"`
 	ProjectID                   string             `json:"project_id"`
 	EventID                     *string            `json:"event_id"`
+	ChallengeType               string             `json:"challenge_type"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
 	ImageUrl                    *string            `json:"image_url"`
@@ -928,6 +1026,7 @@ type UpdateChallengeTimestampsRow struct {
 	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 	RequiresTeamMembership      bool               `json:"requires_team_membership"`
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
 	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
@@ -941,6 +1040,7 @@ func (q *Queries) UpdateChallengeTimestamps(ctx context.Context, arg UpdateChall
 		&i.ID,
 		&i.ProjectID,
 		&i.EventID,
+		&i.ChallengeType,
 		&i.Name,
 		&i.Description,
 		&i.ImageUrl,
@@ -950,6 +1050,7 @@ func (q *Queries) UpdateChallengeTimestamps(ctx context.Context, arg UpdateChall
 		&i.VisibleAt,
 		&i.StartedAt,
 		&i.EndTime,
+		&i.AllowSelfCompletion,
 		&i.RequiresTeamMembership,
 		&i.RequiresSuperTeamMembership,
 		&i.CreatedAt,

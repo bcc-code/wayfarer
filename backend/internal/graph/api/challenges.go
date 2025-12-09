@@ -10,6 +10,13 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// ChallengeType constants
+const (
+	ChallengeTypeSimple   = "SIMPLE"
+	ChallengeTypeQuiz     = "QUIZ"
+	ChallengeTypeExternal = "EXTERNAL"
+)
+
 // buildChallengeFilterParamsCursor converts GraphQL filter and cursor pagination params to database query parameters
 func buildChallengeFilterParamsCursor(filter *model.ChallengeFilter, first *int, after *string, last *int, before *string) (sqlc.GetChallengesFilteredCursorParams, error) {
 	params := sqlc.GetChallengesFilteredCursorParams{}
@@ -26,6 +33,10 @@ func buildChallengeFilterParamsCursor(filter *model.ChallengeFilter, first *int,
 
 		if filter.EventID != nil {
 			params.Eventid = *filter.EventID
+		}
+
+		if filter.ChallengeType != nil {
+			params.Challengetype = string(*filter.ChallengeType)
 		}
 
 		if filter.PublishedAfter != nil {
@@ -95,6 +106,10 @@ func buildCountChallengesFilterParams(filter *model.ChallengeFilter) sqlc.CountC
 			params.Eventid = *filter.EventID
 		}
 
+		if filter.ChallengeType != nil {
+			params.Challengetype = string(*filter.ChallengeType)
+		}
+
 		if filter.PublishedAfter != nil {
 			params.Publishedafter = pgtype.Timestamptz{
 				Time:  filter.PublishedAfter.Time,
@@ -128,6 +143,9 @@ func buildChallengeCacheKeyParams(filter *model.ChallengeFilter, first *int, aft
 		if filter.EventID != nil {
 			params["eventid"] = *filter.EventID
 		}
+		if filter.ChallengeType != nil {
+			params["challengetype"] = string(*filter.ChallengeType)
+		}
 		if filter.PublishedAfter != nil {
 			params["publishedafter"] = filter.PublishedAfter.Format(time.RFC3339)
 		}
@@ -153,51 +171,211 @@ func buildChallengeCacheKeyParams(filter *model.ChallengeFilter, first *int, aft
 	return params
 }
 
-// convertRowToChallenge converts a database row to a Challenge model
-func convertRowToChallenge(row *sqlc.Challenge) *model.Challenge {
-	challenge := &model.Challenge{
+// convertRowToChallenge converts a database row to the appropriate Challenge implementation
+// based on the challenge_type column. Returns the model.Challenge interface.
+func convertRowToChallenge(row *sqlc.Challenge) model.Challenge {
+	// Set common timestamp fields
+	var publishedAt, visibleAt, startedAt, endTime *scalars.DateTime
+	if row.PublishedAt.Valid {
+		dt := scalars.DateTime{Time: row.PublishedAt.Time}
+		publishedAt = &dt
+	}
+	if row.VisibleAt.Valid {
+		dt := scalars.DateTime{Time: row.VisibleAt.Time}
+		visibleAt = &dt
+	}
+	if row.StartedAt.Valid {
+		dt := scalars.DateTime{Time: row.StartedAt.Time}
+		startedAt = &dt
+	}
+	if row.EndTime.Valid {
+		dt := scalars.DateTime{Time: row.EndTime.Time}
+		endTime = &dt
+	}
+
+	switch row.ChallengeType {
+	case ChallengeTypeQuiz:
+		return &model.QuizChallenge{
+			ID:                          row.ID,
+			Name:                        row.Name,
+			Description:                 scalars.HTML(row.Description),
+			Image:                       row.ImageUrl,
+			ButtonText:                  row.ButtonText,
+			ProjectID:                   row.ProjectID,
+			EventID:                     row.EventID,
+			PublishedAt:                 publishedAt,
+			VisibleAt:                   visibleAt,
+			StartedAt:                   startedAt,
+			EndTime:                     endTime,
+			RequiresTeamMembership:      row.RequiresTeamMembership,
+			RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		}
+	case ChallengeTypeExternal:
+		url := ""
+		if row.Url != nil {
+			url = *row.Url
+		}
+		return &model.ExternalChallenge{
+			ID:                          row.ID,
+			Name:                        row.Name,
+			Description:                 scalars.HTML(row.Description),
+			Image:                       row.ImageUrl,
+			URL:                         url,
+			ButtonText:                  row.ButtonText,
+			ProjectID:                   row.ProjectID,
+			EventID:                     row.EventID,
+			PublishedAt:                 publishedAt,
+			VisibleAt:                   visibleAt,
+			StartedAt:                   startedAt,
+			EndTime:                     endTime,
+			RequiresTeamMembership:      row.RequiresTeamMembership,
+			RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		}
+	default: // SIMPLE
+		return &model.SimpleChallenge{
+			ID:                          row.ID,
+			Name:                        row.Name,
+			Description:                 scalars.HTML(row.Description),
+			Image:                       row.ImageUrl,
+			ButtonText:                  row.ButtonText,
+			ProjectID:                   row.ProjectID,
+			EventID:                     row.EventID,
+			PublishedAt:                 publishedAt,
+			VisibleAt:                   visibleAt,
+			StartedAt:                   startedAt,
+			EndTime:                     endTime,
+			AllowSelfCompletion:         row.AllowSelfCompletion,
+			RequiresTeamMembership:      row.RequiresTeamMembership,
+			RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		}
+	}
+}
+
+// Type-specific conversion functions for returning concrete types
+
+func convertRowToSimpleChallenge(row *sqlc.Challenge) *model.SimpleChallenge {
+	var publishedAt, visibleAt, startedAt, endTime *scalars.DateTime
+	if row.PublishedAt.Valid {
+		dt := scalars.DateTime{Time: row.PublishedAt.Time}
+		publishedAt = &dt
+	}
+	if row.VisibleAt.Valid {
+		dt := scalars.DateTime{Time: row.VisibleAt.Time}
+		visibleAt = &dt
+	}
+	if row.StartedAt.Valid {
+		dt := scalars.DateTime{Time: row.StartedAt.Time}
+		startedAt = &dt
+	}
+	if row.EndTime.Valid {
+		dt := scalars.DateTime{Time: row.EndTime.Time}
+		endTime = &dt
+	}
+
+	return &model.SimpleChallenge{
 		ID:                          row.ID,
 		Name:                        row.Name,
 		Description:                 scalars.HTML(row.Description),
 		Image:                       row.ImageUrl,
-		URL:                         row.Url,
 		ButtonText:                  row.ButtonText,
 		ProjectID:                   row.ProjectID,
 		EventID:                     row.EventID,
+		PublishedAt:                 publishedAt,
+		VisibleAt:                   visibleAt,
+		StartedAt:                   startedAt,
+		EndTime:                     endTime,
+		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
 	}
+}
 
+func convertRowToQuizChallenge(row *sqlc.Challenge) *model.QuizChallenge {
+	var publishedAt, visibleAt, startedAt, endTime *scalars.DateTime
 	if row.PublishedAt.Valid {
-		publishedAt := scalars.DateTime{Time: row.PublishedAt.Time}
-		challenge.PublishedAt = &publishedAt
+		dt := scalars.DateTime{Time: row.PublishedAt.Time}
+		publishedAt = &dt
 	}
-
 	if row.VisibleAt.Valid {
-		visibleAt := scalars.DateTime{Time: row.VisibleAt.Time}
-		challenge.VisibleAt = &visibleAt
+		dt := scalars.DateTime{Time: row.VisibleAt.Time}
+		visibleAt = &dt
 	}
-
 	if row.StartedAt.Valid {
-		startedAt := scalars.DateTime{Time: row.StartedAt.Time}
-		challenge.StartedAt = &startedAt
+		dt := scalars.DateTime{Time: row.StartedAt.Time}
+		startedAt = &dt
 	}
-
 	if row.EndTime.Valid {
-		endTime := scalars.DateTime{Time: row.EndTime.Time}
-		challenge.EndTime = &endTime
+		dt := scalars.DateTime{Time: row.EndTime.Time}
+		endTime = &dt
 	}
 
-	return challenge
+	return &model.QuizChallenge{
+		ID:                          row.ID,
+		Name:                        row.Name,
+		Description:                 scalars.HTML(row.Description),
+		Image:                       row.ImageUrl,
+		ButtonText:                  row.ButtonText,
+		ProjectID:                   row.ProjectID,
+		EventID:                     row.EventID,
+		PublishedAt:                 publishedAt,
+		VisibleAt:                   visibleAt,
+		StartedAt:                   startedAt,
+		EndTime:                     endTime,
+		RequiresTeamMembership:      row.RequiresTeamMembership,
+		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+	}
+}
+
+func convertRowToExternalChallenge(row *sqlc.Challenge) *model.ExternalChallenge {
+	var publishedAt, visibleAt, startedAt, endTime *scalars.DateTime
+	if row.PublishedAt.Valid {
+		dt := scalars.DateTime{Time: row.PublishedAt.Time}
+		publishedAt = &dt
+	}
+	if row.VisibleAt.Valid {
+		dt := scalars.DateTime{Time: row.VisibleAt.Time}
+		visibleAt = &dt
+	}
+	if row.StartedAt.Valid {
+		dt := scalars.DateTime{Time: row.StartedAt.Time}
+		startedAt = &dt
+	}
+	if row.EndTime.Valid {
+		dt := scalars.DateTime{Time: row.EndTime.Time}
+		endTime = &dt
+	}
+
+	url := ""
+	if row.Url != nil {
+		url = *row.Url
+	}
+
+	return &model.ExternalChallenge{
+		ID:                          row.ID,
+		Name:                        row.Name,
+		Description:                 scalars.HTML(row.Description),
+		Image:                       row.ImageUrl,
+		URL:                         url,
+		ButtonText:                  row.ButtonText,
+		ProjectID:                   row.ProjectID,
+		EventID:                     row.EventID,
+		PublishedAt:                 publishedAt,
+		VisibleAt:                   visibleAt,
+		StartedAt:                   startedAt,
+		EndTime:                     endTime,
+		RequiresTeamMembership:      row.RequiresTeamMembership,
+		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+	}
 }
 
 // Helper conversion functions for different row types
 
-func convertCreateChallengeRowToChallenge(row *sqlc.CreateChallengeRow) *model.Challenge {
+func convertCreateChallengeRowToChallenge(row *sqlc.CreateChallengeRow) model.Challenge {
 	return convertRowToChallenge(&sqlc.Challenge{
 		ID:                          row.ID,
 		ProjectID:                   row.ProjectID,
 		EventID:                     row.EventID,
+		ChallengeType:               row.ChallengeType,
 		Name:                        row.Name,
 		Description:                 row.Description,
 		ImageUrl:                    row.ImageUrl,
@@ -207,6 +385,7 @@ func convertCreateChallengeRowToChallenge(row *sqlc.CreateChallengeRow) *model.C
 		VisibleAt:                   row.VisibleAt,
 		StartedAt:                   row.StartedAt,
 		EndTime:                     row.EndTime,
+		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
 		CreatedAt:                   row.CreatedAt,
@@ -214,11 +393,12 @@ func convertCreateChallengeRowToChallenge(row *sqlc.CreateChallengeRow) *model.C
 	})
 }
 
-func convertUpdateChallengeRowToChallenge(row *sqlc.UpdateChallengeRow) *model.Challenge {
+func convertUpdateChallengeRowToChallenge(row *sqlc.UpdateChallengeRow) model.Challenge {
 	return convertRowToChallenge(&sqlc.Challenge{
 		ID:                          row.ID,
 		ProjectID:                   row.ProjectID,
 		EventID:                     row.EventID,
+		ChallengeType:               row.ChallengeType,
 		Name:                        row.Name,
 		Description:                 row.Description,
 		ImageUrl:                    row.ImageUrl,
@@ -228,6 +408,7 @@ func convertUpdateChallengeRowToChallenge(row *sqlc.UpdateChallengeRow) *model.C
 		VisibleAt:                   row.VisibleAt,
 		StartedAt:                   row.StartedAt,
 		EndTime:                     row.EndTime,
+		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
 		CreatedAt:                   row.CreatedAt,
@@ -235,11 +416,12 @@ func convertUpdateChallengeRowToChallenge(row *sqlc.UpdateChallengeRow) *model.C
 	})
 }
 
-func convertPublishChallengeRowToChallenge(row *sqlc.PublishChallengeRow) *model.Challenge {
+func convertPublishChallengeRowToChallenge(row *sqlc.PublishChallengeRow) model.Challenge {
 	return convertRowToChallenge(&sqlc.Challenge{
 		ID:                          row.ID,
 		ProjectID:                   row.ProjectID,
 		EventID:                     row.EventID,
+		ChallengeType:               row.ChallengeType,
 		Name:                        row.Name,
 		Description:                 row.Description,
 		ImageUrl:                    row.ImageUrl,
@@ -249,6 +431,7 @@ func convertPublishChallengeRowToChallenge(row *sqlc.PublishChallengeRow) *model
 		VisibleAt:                   row.VisibleAt,
 		StartedAt:                   row.StartedAt,
 		EndTime:                     row.EndTime,
+		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
 		CreatedAt:                   row.CreatedAt,
@@ -256,11 +439,12 @@ func convertPublishChallengeRowToChallenge(row *sqlc.PublishChallengeRow) *model
 	})
 }
 
-func convertAssignChallengeToEventRowToChallenge(row *sqlc.AssignChallengeToEventRow) *model.Challenge {
+func convertAssignChallengeToEventRowToChallenge(row *sqlc.AssignChallengeToEventRow) model.Challenge {
 	return convertRowToChallenge(&sqlc.Challenge{
 		ID:                          row.ID,
 		ProjectID:                   row.ProjectID,
 		EventID:                     row.EventID,
+		ChallengeType:               row.ChallengeType,
 		Name:                        row.Name,
 		Description:                 row.Description,
 		ImageUrl:                    row.ImageUrl,
@@ -270,6 +454,7 @@ func convertAssignChallengeToEventRowToChallenge(row *sqlc.AssignChallengeToEven
 		VisibleAt:                   row.VisibleAt,
 		StartedAt:                   row.StartedAt,
 		EndTime:                     row.EndTime,
+		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
 		CreatedAt:                   row.CreatedAt,
@@ -277,11 +462,12 @@ func convertAssignChallengeToEventRowToChallenge(row *sqlc.AssignChallengeToEven
 	})
 }
 
-func convertBulkPublishChallengesRowToChallenge(row *sqlc.BulkPublishChallengesRow) *model.Challenge {
+func convertBulkPublishChallengesRowToChallenge(row *sqlc.BulkPublishChallengesRow) model.Challenge {
 	return convertRowToChallenge(&sqlc.Challenge{
 		ID:                          row.ID,
 		ProjectID:                   row.ProjectID,
 		EventID:                     row.EventID,
+		ChallengeType:               row.ChallengeType,
 		Name:                        row.Name,
 		Description:                 row.Description,
 		ImageUrl:                    row.ImageUrl,
@@ -291,6 +477,7 @@ func convertBulkPublishChallengesRowToChallenge(row *sqlc.BulkPublishChallengesR
 		VisibleAt:                   row.VisibleAt,
 		StartedAt:                   row.StartedAt,
 		EndTime:                     row.EndTime,
+		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
 		CreatedAt:                   row.CreatedAt,
@@ -298,11 +485,12 @@ func convertBulkPublishChallengesRowToChallenge(row *sqlc.BulkPublishChallengesR
 	})
 }
 
-func convertBulkCreateChallengesRowToChallenge(row *sqlc.BulkCreateChallengesRow) *model.Challenge {
+func convertBulkCreateChallengesRowToChallenge(row *sqlc.BulkCreateChallengesRow) model.Challenge {
 	return convertRowToChallenge(&sqlc.Challenge{
 		ID:                          row.ID,
 		ProjectID:                   row.ProjectID,
 		EventID:                     row.EventID,
+		ChallengeType:               row.ChallengeType,
 		Name:                        row.Name,
 		Description:                 row.Description,
 		ImageUrl:                    row.ImageUrl,
@@ -312,6 +500,7 @@ func convertBulkCreateChallengesRowToChallenge(row *sqlc.BulkCreateChallengesRow
 		VisibleAt:                   row.VisibleAt,
 		StartedAt:                   row.StartedAt,
 		EndTime:                     row.EndTime,
+		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
 		CreatedAt:                   row.CreatedAt,
@@ -319,11 +508,12 @@ func convertBulkCreateChallengesRowToChallenge(row *sqlc.BulkCreateChallengesRow
 	})
 }
 
-func convertGetChallengesFilteredCursorRowToChallenge(row *sqlc.GetChallengesFilteredCursorRow) *model.Challenge {
+func convertGetChallengesFilteredCursorRowToChallenge(row *sqlc.GetChallengesFilteredCursorRow) model.Challenge {
 	return convertRowToChallenge(&sqlc.Challenge{
 		ID:                          row.ID,
 		ProjectID:                   row.ProjectID,
 		EventID:                     row.EventID,
+		ChallengeType:               row.ChallengeType,
 		Name:                        row.Name,
 		Description:                 row.Description,
 		ImageUrl:                    row.ImageUrl,
@@ -333,9 +523,221 @@ func convertGetChallengesFilteredCursorRowToChallenge(row *sqlc.GetChallengesFil
 		VisibleAt:                   row.VisibleAt,
 		StartedAt:                   row.StartedAt,
 		EndTime:                     row.EndTime,
+		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
 		CreatedAt:                   row.CreatedAt,
 		UpdatedAt:                   row.UpdatedAt,
 	})
+}
+
+func convertUpdateChallengeTimestampsRowToChallenge(row *sqlc.UpdateChallengeTimestampsRow) model.Challenge {
+	return convertRowToChallenge(&sqlc.Challenge{
+		ID:                          row.ID,
+		ProjectID:                   row.ProjectID,
+		EventID:                     row.EventID,
+		ChallengeType:               row.ChallengeType,
+		Name:                        row.Name,
+		Description:                 row.Description,
+		ImageUrl:                    row.ImageUrl,
+		Url:                         row.Url,
+		ButtonText:                  row.ButtonText,
+		PublishedAt:                 row.PublishedAt,
+		VisibleAt:                   row.VisibleAt,
+		StartedAt:                   row.StartedAt,
+		EndTime:                     row.EndTime,
+		AllowSelfCompletion:         row.AllowSelfCompletion,
+		RequiresTeamMembership:      row.RequiresTeamMembership,
+		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		CreatedAt:                   row.CreatedAt,
+		UpdatedAt:                   row.UpdatedAt,
+	})
+}
+
+func convertUpdateChallengeRequirementsRowToChallenge(row *sqlc.UpdateChallengeRequirementsRow) model.Challenge {
+	return convertRowToChallenge(&sqlc.Challenge{
+		ID:                          row.ID,
+		ProjectID:                   row.ProjectID,
+		EventID:                     row.EventID,
+		ChallengeType:               row.ChallengeType,
+		Name:                        row.Name,
+		Description:                 row.Description,
+		ImageUrl:                    row.ImageUrl,
+		Url:                         row.Url,
+		ButtonText:                  row.ButtonText,
+		PublishedAt:                 row.PublishedAt,
+		VisibleAt:                   row.VisibleAt,
+		StartedAt:                   row.StartedAt,
+		EndTime:                     row.EndTime,
+		AllowSelfCompletion:         row.AllowSelfCompletion,
+		RequiresTeamMembership:      row.RequiresTeamMembership,
+		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		CreatedAt:                   row.CreatedAt,
+		UpdatedAt:                   row.UpdatedAt,
+	})
+}
+
+// Helper to get ProjectID from any Challenge implementation
+func getChallengeProjectID(c model.Challenge) string {
+	switch v := c.(type) {
+	case *model.SimpleChallenge:
+		return v.ProjectID
+	case *model.QuizChallenge:
+		return v.ProjectID
+	case *model.ExternalChallenge:
+		return v.ProjectID
+	default:
+		return ""
+	}
+}
+
+// Helper to get EventID from any Challenge implementation
+func getChallengeEventID(c model.Challenge) *string {
+	switch v := c.(type) {
+	case *model.SimpleChallenge:
+		return v.EventID
+	case *model.QuizChallenge:
+		return v.EventID
+	case *model.ExternalChallenge:
+		return v.EventID
+	default:
+		return nil
+	}
+}
+
+// Helper to get ID from any Challenge implementation
+func getChallengeID(c model.Challenge) string {
+	switch v := c.(type) {
+	case *model.SimpleChallenge:
+		return v.ID
+	case *model.QuizChallenge:
+		return v.ID
+	case *model.ExternalChallenge:
+		return v.ID
+	default:
+		return ""
+	}
+}
+
+// Helper to get PublishedAt from any Challenge implementation
+func getChallengePublishedAt(c model.Challenge) *scalars.DateTime {
+	switch v := c.(type) {
+	case *model.SimpleChallenge:
+		return v.PublishedAt
+	case *model.QuizChallenge:
+		return v.PublishedAt
+	case *model.ExternalChallenge:
+		return v.PublishedAt
+	default:
+		return nil
+	}
+}
+
+// Helper to get EndTime from any Challenge implementation
+func getChallengeEndTime(c model.Challenge) *scalars.DateTime {
+	switch v := c.(type) {
+	case *model.SimpleChallenge:
+		return v.EndTime
+	case *model.QuizChallenge:
+		return v.EndTime
+	case *model.ExternalChallenge:
+		return v.EndTime
+	default:
+		return nil
+	}
+}
+
+// Helper to get RequiresTeamMembership from any Challenge implementation
+func getChallengeRequiresTeamMembership(c model.Challenge) bool {
+	switch v := c.(type) {
+	case *model.SimpleChallenge:
+		return v.RequiresTeamMembership
+	case *model.QuizChallenge:
+		return v.RequiresTeamMembership
+	case *model.ExternalChallenge:
+		return v.RequiresTeamMembership
+	default:
+		return false
+	}
+}
+
+// Helper to get RequiresSuperTeamMembership from any Challenge implementation
+func getChallengeRequiresSuperTeamMembership(c model.Challenge) bool {
+	switch v := c.(type) {
+	case *model.SimpleChallenge:
+		return v.RequiresSuperTeamMembership
+	case *model.QuizChallenge:
+		return v.RequiresSuperTeamMembership
+	case *model.ExternalChallenge:
+		return v.RequiresSuperTeamMembership
+	default:
+		return false
+	}
+}
+
+// Helper to get ChallengeType from any Challenge implementation
+func getChallengeType(c model.Challenge) model.ChallengeType {
+	switch c.(type) {
+	case *model.SimpleChallenge:
+		return model.ChallengeTypeSimple
+	case *model.QuizChallenge:
+		return model.ChallengeTypeQuiz
+	case *model.ExternalChallenge:
+		return model.ChallengeTypeExternal
+	default:
+		return model.ChallengeTypeSimple
+	}
+}
+
+// validateCreateChallengeInput validates type-specific fields for CreateChallengeInput
+func validateCreateChallengeInput(input model.CreateChallengeInput) error {
+	switch input.Type {
+	case model.ChallengeTypeSimple:
+		// allowSelfCompletion is valid (optional, defaults true)
+		if input.URL != nil {
+			return fmt.Errorf("url is not allowed for SIMPLE challenges")
+		}
+	case model.ChallengeTypeQuiz:
+		if input.AllowSelfCompletion != nil {
+			return fmt.Errorf("allowSelfCompletion is not valid for QUIZ challenges")
+		}
+		if input.URL != nil {
+			return fmt.Errorf("url is not valid for QUIZ challenges")
+		}
+	case model.ChallengeTypeExternal:
+		if input.URL == nil || *input.URL == "" {
+			return fmt.Errorf("url is required for EXTERNAL challenges")
+		}
+		if input.AllowSelfCompletion != nil {
+			return fmt.Errorf("allowSelfCompletion is not valid for EXTERNAL challenges")
+		}
+	}
+	return nil
+}
+
+// validateUpdateChallengeInput validates type-specific fields for UpdateChallengeInput
+func validateUpdateChallengeInput(input model.UpdateChallengeInput, challengeType model.ChallengeType) error {
+	switch challengeType {
+	case model.ChallengeTypeSimple:
+		// allowSelfCompletion is valid
+		if input.URL != nil {
+			return fmt.Errorf("url is not allowed for SIMPLE challenges")
+		}
+	case model.ChallengeTypeQuiz:
+		if input.AllowSelfCompletion != nil {
+			return fmt.Errorf("allowSelfCompletion is not valid for QUIZ challenges")
+		}
+		if input.URL != nil {
+			return fmt.Errorf("url is not valid for QUIZ challenges")
+		}
+	case model.ChallengeTypeExternal:
+		// url is valid (but must be non-empty if provided)
+		if input.URL != nil && *input.URL == "" {
+			return fmt.Errorf("url cannot be empty for EXTERNAL challenges")
+		}
+		if input.AllowSelfCompletion != nil {
+			return fmt.Errorf("allowSelfCompletion is not valid for EXTERNAL challenges")
+		}
+	}
+	return nil
 }

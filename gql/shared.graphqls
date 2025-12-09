@@ -293,14 +293,13 @@ type SuperTeam {
 
 # ==================== Interfaces ====================
 
-type Challenge {
+interface Challenge {
     id: ID!
     name: String!
     description: HTML!
     image: String
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
-    url: String
     buttonText: String!
     publishedAt: DateTime
     visibleAt: DateTime
@@ -310,6 +309,74 @@ type Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+}
+
+# ==================== Challenge Implementations ====================
+
+enum ChallengeType {
+    SIMPLE
+    QUIZ
+    EXTERNAL
+}
+
+type SimpleChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # SimpleChallenge-specific fields
+    allowSelfCompletion: Boolean!
+}
+
+type QuizChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # QuizChallenge-specific fields - no url, linked to quiz
+    quiz: Quiz! @goField(forceResolver: true)
+}
+
+type ExternalChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # ExternalChallenge-specific fields - url is required
+    url: String!
 }
 
 interface Achievement {
@@ -636,16 +703,21 @@ input UpdateEventInput {
     endDate: DateTime
 }
 
+# ==================== Challenge Input Types ====================
+
 input CreateChallengeInput {
+    type: ChallengeType!
     name: String!
     description: HTML
     image: String
-    url: String
     buttonText: String!
     visibleAt: DateTime
     endTime: DateTime
     requiresTeamMembership: Boolean
     requiresSuperTeamMembership: Boolean
+    # Type-specific fields (validated based on type):
+    allowSelfCompletion: Boolean  # SIMPLE only, defaults true
+    url: String                   # EXTERNAL only, required
 }
 
 input UpdateChallengeInput {
@@ -653,13 +725,15 @@ input UpdateChallengeInput {
     description: HTML
     image: String
     eventId: ID
-    url: String
     buttonText: String
     visibleAt: DateTime
     startedAt: DateTime
     endTime: DateTime
     requiresTeamMembership: Boolean
     requiresSuperTeamMembership: Boolean
+    # Type-specific fields (validated based on existing challenge type):
+    allowSelfCompletion: Boolean  # SIMPLE only
+    url: String                   # EXTERNAL only
 }
 
 input CreateSimpleAchievementInput {
@@ -938,6 +1012,7 @@ input ProjectFilter {
 input ChallengeFilter {
     projectId: ID
     eventId: ID
+    challengeType: ChallengeType
     ids: [ID!]  # Support bulk ID lookup for M2M API
     publishedAfter: DateTime
     publishedBefore: DateTime
@@ -1028,7 +1103,7 @@ input RevokeRoleInput {
 
 # ==================== Score Journal ====================
 
-union ScoreSource = SimpleAchievement | ReadingAchievement | ListeningAchievement | StreakAchievement | Challenge | Event
+union ScoreSource = SimpleAchievement | ReadingAchievement | ListeningAchievement | StreakAchievement | SimpleChallenge | QuizChallenge | ExternalChallenge | Event
 
 type ScoreJournal {
     id: ID!

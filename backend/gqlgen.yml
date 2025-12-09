@@ -67,11 +67,50 @@ models:
         type: "*string"
 
   # Add ProjectID field to types that have project relationships
-  Challenge:
+  # Challenge implementations
+  SimpleChallenge:
     fields:
       project:
         resolver: true
       event:
+        resolver: true
+      userCompletedAt:
+        resolver: true
+      userEnrolledAt:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      EventID:
+        type: "*string"
+
+  QuizChallenge:
+    fields:
+      project:
+        resolver: true
+      event:
+        resolver: true
+      userCompletedAt:
+        resolver: true
+      userEnrolledAt:
+        resolver: true
+      quiz:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      EventID:
+        type: "*string"
+
+  ExternalChallenge:
+    fields:
+      project:
+        resolver: true
+      event:
+        resolver: true
+      userCompletedAt:
+        resolver: true
+      userEnrolledAt:
         resolver: true
     extraFields:
       ProjectID:

@@ -49,6 +49,8 @@ type Challenge struct {
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	RequiresTeamMembership      bool               `json:"requires_team_membership"`
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	ChallengeType               string             `json:"challenge_type"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 }
 
 type ChallengeTranslation struct {

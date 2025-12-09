@@ -28,7 +28,7 @@ func resolveEventByID(ctx context.Context, r *Resolver, eventID *string) (*model
 
 // resolveChallengeByID is a helper function to load a challenge by ID using the dataloader
 // and applies translations for the requested language
-func resolveChallengeByID(ctx context.Context, r *Resolver, challengeID *string) (*model.Challenge, error) {
+func resolveChallengeByID(ctx context.Context, r *Resolver, challengeID *string) (model.Challenge, error) {
 	if challengeID == nil {
 		return nil, nil
 	}

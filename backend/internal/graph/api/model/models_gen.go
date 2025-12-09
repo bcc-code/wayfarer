@@ -19,10 +19,29 @@ type Achievement interface {
 	GetImage() *string
 	GetProject() *Project
 	GetEvent() *Event
-	GetChallenge() *Challenge
+	GetChallenge() Challenge
 	GetAchievedAt() *scalars.DateTime
 	GetPoints() int
 	GetHidden() bool
+}
+
+type Challenge interface {
+	IsChallenge()
+	GetID() string
+	GetName() string
+	GetDescription() scalars.HTML
+	GetImage() *string
+	GetProject() *Project
+	GetEvent() *Event
+	GetButtonText() string
+	GetPublishedAt() *scalars.DateTime
+	GetVisibleAt() *scalars.DateTime
+	GetStartedAt() *scalars.DateTime
+	GetEndTime() *scalars.DateTime
+	GetRequiresTeamMembership() bool
+	GetRequiresSuperTeamMembership() bool
+	GetUserCompletedAt() *scalars.DateTime
+	GetUserEnrolledAt() *scalars.DateTime
 }
 
 type QuizQuestion interface {
@@ -105,29 +124,6 @@ type BrandingInput struct {
 	Rounding int          `json:"rounding"`
 }
 
-type Challenge struct {
-	ID                          string            `json:"id"`
-	Name                        string            `json:"name"`
-	Description                 scalars.HTML      `json:"description"`
-	Image                       *string           `json:"image,omitempty"`
-	Project                     *Project          `json:"project"`
-	Event                       *Event            `json:"event,omitempty"`
-	URL                         *string           `json:"url,omitempty"`
-	ButtonText                  string            `json:"buttonText"`
-	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
-	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
-	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
-	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
-	RequiresTeamMembership      bool              `json:"requiresTeamMembership"`
-	RequiresSuperTeamMembership bool              `json:"requiresSuperTeamMembership"`
-	UserCompletedAt             *scalars.DateTime `json:"userCompletedAt,omitempty"`
-	UserEnrolledAt              *scalars.DateTime `json:"userEnrolledAt,omitempty"`
-	EventID                     *string           `json:"-"`
-	ProjectID                   string            `json:"-"`
-}
-
-func (Challenge) IsScoreSource() {}
-
 type ChallengeConnection struct {
 	Edges      []ChallengeEdge `json:"edges"`
 	PageInfo   *PageInfo       `json:"pageInfo"`
@@ -135,13 +131,14 @@ type ChallengeConnection struct {
 }
 
 type ChallengeEdge struct {
-	Cursor string     `json:"cursor"`
-	Node   *Challenge `json:"node"`
+	Cursor string    `json:"cursor"`
+	Node   Challenge `json:"node"`
 }
 
 type ChallengeFilter struct {
 	ProjectID       *string           `json:"projectId,omitempty"`
 	EventID         *string           `json:"eventId,omitempty"`
+	ChallengeType   *ChallengeType    `json:"challengeType,omitempty"`
 	Ids             []string          `json:"ids,omitempty"`
 	PublishedAfter  *scalars.DateTime `json:"publishedAfter,omitempty"`
 	PublishedBefore *scalars.DateTime `json:"publishedBefore,omitempty"`
@@ -237,15 +234,17 @@ type ConsentStatus struct {
 }
 
 type CreateChallengeInput struct {
+	Type                        ChallengeType     `json:"type"`
 	Name                        string            `json:"name"`
 	Description                 *scalars.HTML     `json:"description,omitempty"`
 	Image                       *string           `json:"image,omitempty"`
-	URL                         *string           `json:"url,omitempty"`
 	ButtonText                  string            `json:"buttonText"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
 	RequiresTeamMembership      *bool             `json:"requiresTeamMembership,omitempty"`
 	RequiresSuperTeamMembership *bool             `json:"requiresSuperTeamMembership,omitempty"`
+	AllowSelfCompletion         *bool             `json:"allowSelfCompletion,omitempty"`
+	URL                         *string           `json:"url,omitempty"`
 }
 
 type CreateChurchInput struct {
@@ -452,6 +451,48 @@ type EventFilter struct {
 	EndDateBefore   *scalars.DateTime `json:"endDateBefore,omitempty"`
 }
 
+type ExternalChallenge struct {
+	ID                          string            `json:"id"`
+	Name                        string            `json:"name"`
+	Description                 scalars.HTML      `json:"description"`
+	Image                       *string           `json:"image,omitempty"`
+	Project                     *Project          `json:"project"`
+	Event                       *Event            `json:"event,omitempty"`
+	ButtonText                  string            `json:"buttonText"`
+	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
+	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
+	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
+	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
+	RequiresTeamMembership      bool              `json:"requiresTeamMembership"`
+	RequiresSuperTeamMembership bool              `json:"requiresSuperTeamMembership"`
+	UserCompletedAt             *scalars.DateTime `json:"userCompletedAt,omitempty"`
+	UserEnrolledAt              *scalars.DateTime `json:"userEnrolledAt,omitempty"`
+	URL                         string            `json:"url"`
+	EventID                     *string           `json:"-"`
+	ProjectID                   string            `json:"-"`
+}
+
+func (ExternalChallenge) IsChallenge()                           {}
+func (this ExternalChallenge) GetID() string                     { return this.ID }
+func (this ExternalChallenge) GetName() string                   { return this.Name }
+func (this ExternalChallenge) GetDescription() scalars.HTML      { return this.Description }
+func (this ExternalChallenge) GetImage() *string                 { return this.Image }
+func (this ExternalChallenge) GetProject() *Project              { return this.Project }
+func (this ExternalChallenge) GetEvent() *Event                  { return this.Event }
+func (this ExternalChallenge) GetButtonText() string             { return this.ButtonText }
+func (this ExternalChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
+func (this ExternalChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
+func (this ExternalChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
+func (this ExternalChallenge) GetEndTime() *scalars.DateTime     { return this.EndTime }
+func (this ExternalChallenge) GetRequiresTeamMembership() bool   { return this.RequiresTeamMembership }
+func (this ExternalChallenge) GetRequiresSuperTeamMembership() bool {
+	return this.RequiresSuperTeamMembership
+}
+func (this ExternalChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
+func (this ExternalChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+
+func (ExternalChallenge) IsScoreSource() {}
+
 type FreeTextQuestion struct {
 	ID            string `json:"id"`
 	Quiz          *Quiz  `json:"quiz"`
@@ -557,7 +598,7 @@ type ListeningAchievement struct {
 	Image           *string           `json:"image,omitempty"`
 	Project         *Project          `json:"project"`
 	Event           *Event            `json:"event,omitempty"`
-	Challenge       *Challenge        `json:"challenge,omitempty"`
+	Challenge       Challenge         `json:"challenge,omitempty"`
 	AchievedAt      *scalars.DateTime `json:"achievedAt,omitempty"`
 	Tracks          []Track           `json:"tracks"`
 	UserHasListened []Track           `json:"userHasListened"`
@@ -576,7 +617,7 @@ func (this ListeningAchievement) GetDescription() string           { return this
 func (this ListeningAchievement) GetImage() *string                { return this.Image }
 func (this ListeningAchievement) GetProject() *Project             { return this.Project }
 func (this ListeningAchievement) GetEvent() *Event                 { return this.Event }
-func (this ListeningAchievement) GetChallenge() *Challenge         { return this.Challenge }
+func (this ListeningAchievement) GetChallenge() Challenge          { return this.Challenge }
 func (this ListeningAchievement) GetAchievedAt() *scalars.DateTime { return this.AchievedAt }
 func (this ListeningAchievement) GetPoints() int                   { return this.Points }
 func (this ListeningAchievement) GetHidden() bool                  { return this.Hidden }
@@ -713,7 +754,7 @@ type Quiz struct {
 	Description            string            `json:"description"`
 	Image                  *string           `json:"image,omitempty"`
 	Project                *Project          `json:"project"`
-	Challenge              *Challenge        `json:"challenge"`
+	Challenge              Challenge         `json:"challenge"`
 	TimeoutSeconds         *int              `json:"timeoutSeconds,omitempty"`
 	QuestionTimeoutSeconds *int              `json:"questionTimeoutSeconds,omitempty"`
 	RandomizeQuestions     bool              `json:"randomizeQuestions"`
@@ -737,7 +778,7 @@ type QuizAchievement struct {
 	Image              *string           `json:"image,omitempty"`
 	Project            *Project          `json:"project"`
 	Event              *Event            `json:"event,omitempty"`
-	Challenge          *Challenge        `json:"challenge,omitempty"`
+	Challenge          Challenge         `json:"challenge,omitempty"`
 	AchievedAt         *scalars.DateTime `json:"achievedAt,omitempty"`
 	Points             int               `json:"points"`
 	Hidden             bool              `json:"hidden"`
@@ -757,10 +798,52 @@ func (this QuizAchievement) GetDescription() string           { return this.Desc
 func (this QuizAchievement) GetImage() *string                { return this.Image }
 func (this QuizAchievement) GetProject() *Project             { return this.Project }
 func (this QuizAchievement) GetEvent() *Event                 { return this.Event }
-func (this QuizAchievement) GetChallenge() *Challenge         { return this.Challenge }
+func (this QuizAchievement) GetChallenge() Challenge          { return this.Challenge }
 func (this QuizAchievement) GetAchievedAt() *scalars.DateTime { return this.AchievedAt }
 func (this QuizAchievement) GetPoints() int                   { return this.Points }
 func (this QuizAchievement) GetHidden() bool                  { return this.Hidden }
+
+type QuizChallenge struct {
+	ID                          string            `json:"id"`
+	Name                        string            `json:"name"`
+	Description                 scalars.HTML      `json:"description"`
+	Image                       *string           `json:"image,omitempty"`
+	Project                     *Project          `json:"project"`
+	Event                       *Event            `json:"event,omitempty"`
+	ButtonText                  string            `json:"buttonText"`
+	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
+	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
+	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
+	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
+	RequiresTeamMembership      bool              `json:"requiresTeamMembership"`
+	RequiresSuperTeamMembership bool              `json:"requiresSuperTeamMembership"`
+	UserCompletedAt             *scalars.DateTime `json:"userCompletedAt,omitempty"`
+	UserEnrolledAt              *scalars.DateTime `json:"userEnrolledAt,omitempty"`
+	Quiz                        *Quiz             `json:"quiz"`
+	EventID                     *string           `json:"-"`
+	ProjectID                   string            `json:"-"`
+}
+
+func (QuizChallenge) IsChallenge()                           {}
+func (this QuizChallenge) GetID() string                     { return this.ID }
+func (this QuizChallenge) GetName() string                   { return this.Name }
+func (this QuizChallenge) GetDescription() scalars.HTML      { return this.Description }
+func (this QuizChallenge) GetImage() *string                 { return this.Image }
+func (this QuizChallenge) GetProject() *Project              { return this.Project }
+func (this QuizChallenge) GetEvent() *Event                  { return this.Event }
+func (this QuizChallenge) GetButtonText() string             { return this.ButtonText }
+func (this QuizChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
+func (this QuizChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
+func (this QuizChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
+func (this QuizChallenge) GetEndTime() *scalars.DateTime     { return this.EndTime }
+func (this QuizChallenge) GetRequiresTeamMembership() bool   { return this.RequiresTeamMembership }
+func (this QuizChallenge) GetRequiresSuperTeamMembership() bool {
+	return this.RequiresSuperTeamMembership
+}
+func (this QuizChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
+func (this QuizChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+
+func (QuizChallenge) IsScoreSource() {}
 
 type QuizConnection struct {
 	Edges      []QuizEdge `json:"edges"`
@@ -828,7 +911,7 @@ type ReadingAchievement struct {
 	Image       *string           `json:"image,omitempty"`
 	Project     *Project          `json:"project"`
 	Event       *Event            `json:"event,omitempty"`
-	Challenge   *Challenge        `json:"challenge,omitempty"`
+	Challenge   Challenge         `json:"challenge,omitempty"`
 	AchievedAt  *scalars.DateTime `json:"achievedAt,omitempty"`
 	Articles    []Article         `json:"articles"`
 	UserHasRead []Article         `json:"userHasRead"`
@@ -847,7 +930,7 @@ func (this ReadingAchievement) GetDescription() string           { return this.D
 func (this ReadingAchievement) GetImage() *string                { return this.Image }
 func (this ReadingAchievement) GetProject() *Project             { return this.Project }
 func (this ReadingAchievement) GetEvent() *Event                 { return this.Event }
-func (this ReadingAchievement) GetChallenge() *Challenge         { return this.Challenge }
+func (this ReadingAchievement) GetChallenge() Challenge          { return this.Challenge }
 func (this ReadingAchievement) GetAchievedAt() *scalars.DateTime { return this.AchievedAt }
 func (this ReadingAchievement) GetPoints() int                   { return this.Points }
 func (this ReadingAchievement) GetHidden() bool                  { return this.Hidden }
@@ -874,7 +957,7 @@ type ScoreJournal struct {
 	Project     *Project         `json:"project"`
 	User        *User            `json:"user"`
 	Event       *Event           `json:"event,omitempty"`
-	Challenge   *Challenge       `json:"challenge,omitempty"`
+	Challenge   Challenge        `json:"challenge,omitempty"`
 	Points      int              `json:"points"`
 	SourceType  ScoreSourceType  `json:"sourceType"`
 	Source      ScoreSource      `json:"source,omitempty"`
@@ -914,7 +997,7 @@ type SimpleAchievement struct {
 	Image       *string           `json:"image,omitempty"`
 	Project     *Project          `json:"project"`
 	Event       *Event            `json:"event,omitempty"`
-	Challenge   *Challenge        `json:"challenge,omitempty"`
+	Challenge   Challenge         `json:"challenge,omitempty"`
 	AchievedAt  *scalars.DateTime `json:"achievedAt,omitempty"`
 	Points      int               `json:"points"`
 	Hidden      bool              `json:"hidden"`
@@ -930,12 +1013,54 @@ func (this SimpleAchievement) GetDescription() string           { return this.De
 func (this SimpleAchievement) GetImage() *string                { return this.Image }
 func (this SimpleAchievement) GetProject() *Project             { return this.Project }
 func (this SimpleAchievement) GetEvent() *Event                 { return this.Event }
-func (this SimpleAchievement) GetChallenge() *Challenge         { return this.Challenge }
+func (this SimpleAchievement) GetChallenge() Challenge          { return this.Challenge }
 func (this SimpleAchievement) GetAchievedAt() *scalars.DateTime { return this.AchievedAt }
 func (this SimpleAchievement) GetPoints() int                   { return this.Points }
 func (this SimpleAchievement) GetHidden() bool                  { return this.Hidden }
 
 func (SimpleAchievement) IsScoreSource() {}
+
+type SimpleChallenge struct {
+	ID                          string            `json:"id"`
+	Name                        string            `json:"name"`
+	Description                 scalars.HTML      `json:"description"`
+	Image                       *string           `json:"image,omitempty"`
+	Project                     *Project          `json:"project"`
+	Event                       *Event            `json:"event,omitempty"`
+	ButtonText                  string            `json:"buttonText"`
+	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
+	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
+	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
+	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
+	RequiresTeamMembership      bool              `json:"requiresTeamMembership"`
+	RequiresSuperTeamMembership bool              `json:"requiresSuperTeamMembership"`
+	UserCompletedAt             *scalars.DateTime `json:"userCompletedAt,omitempty"`
+	UserEnrolledAt              *scalars.DateTime `json:"userEnrolledAt,omitempty"`
+	AllowSelfCompletion         bool              `json:"allowSelfCompletion"`
+	EventID                     *string           `json:"-"`
+	ProjectID                   string            `json:"-"`
+}
+
+func (SimpleChallenge) IsChallenge()                           {}
+func (this SimpleChallenge) GetID() string                     { return this.ID }
+func (this SimpleChallenge) GetName() string                   { return this.Name }
+func (this SimpleChallenge) GetDescription() scalars.HTML      { return this.Description }
+func (this SimpleChallenge) GetImage() *string                 { return this.Image }
+func (this SimpleChallenge) GetProject() *Project              { return this.Project }
+func (this SimpleChallenge) GetEvent() *Event                  { return this.Event }
+func (this SimpleChallenge) GetButtonText() string             { return this.ButtonText }
+func (this SimpleChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
+func (this SimpleChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
+func (this SimpleChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
+func (this SimpleChallenge) GetEndTime() *scalars.DateTime     { return this.EndTime }
+func (this SimpleChallenge) GetRequiresTeamMembership() bool   { return this.RequiresTeamMembership }
+func (this SimpleChallenge) GetRequiresSuperTeamMembership() bool {
+	return this.RequiresSuperTeamMembership
+}
+func (this SimpleChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
+func (this SimpleChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+
+func (SimpleChallenge) IsScoreSource() {}
 
 type Streak struct {
 	ID           string      `json:"id"`
@@ -955,7 +1080,7 @@ type StreakAchievement struct {
 	Image        *string           `json:"image,omitempty"`
 	Project      *Project          `json:"project"`
 	Event        *Event            `json:"event,omitempty"`
-	Challenge    *Challenge        `json:"challenge,omitempty"`
+	Challenge    Challenge         `json:"challenge,omitempty"`
 	AchievedAt   *scalars.DateTime `json:"achievedAt,omitempty"`
 	NeededStreak int               `json:"neededStreak"`
 	Points       int               `json:"points"`
@@ -974,7 +1099,7 @@ func (this StreakAchievement) GetDescription() string           { return this.De
 func (this StreakAchievement) GetImage() *string                { return this.Image }
 func (this StreakAchievement) GetProject() *Project             { return this.Project }
 func (this StreakAchievement) GetEvent() *Event                 { return this.Event }
-func (this StreakAchievement) GetChallenge() *Challenge         { return this.Challenge }
+func (this StreakAchievement) GetChallenge() Challenge          { return this.Challenge }
 func (this StreakAchievement) GetAchievedAt() *scalars.DateTime { return this.AchievedAt }
 func (this StreakAchievement) GetPoints() int                   { return this.Points }
 func (this StreakAchievement) GetHidden() bool                  { return this.Hidden }
@@ -1113,13 +1238,14 @@ type UpdateChallengeInput struct {
 	Description                 *scalars.HTML     `json:"description,omitempty"`
 	Image                       *string           `json:"image,omitempty"`
 	EventID                     *string           `json:"eventId,omitempty"`
-	URL                         *string           `json:"url,omitempty"`
 	ButtonText                  *string           `json:"buttonText,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
 	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
 	RequiresTeamMembership      *bool             `json:"requiresTeamMembership,omitempty"`
 	RequiresSuperTeamMembership *bool             `json:"requiresSuperTeamMembership,omitempty"`
+	AllowSelfCompletion         *bool             `json:"allowSelfCompletion,omitempty"`
+	URL                         *string           `json:"url,omitempty"`
 }
 
 type UpdateChurchInput struct {
@@ -1282,6 +1408,63 @@ type UserRole struct {
 	User  *User      `json:"user"`
 	Role  RoleType   `json:"role"`
 	Scope *RoleScope `json:"scope,omitempty"`
+}
+
+type ChallengeType string
+
+const (
+	ChallengeTypeSimple   ChallengeType = "SIMPLE"
+	ChallengeTypeQuiz     ChallengeType = "QUIZ"
+	ChallengeTypeExternal ChallengeType = "EXTERNAL"
+)
+
+var AllChallengeType = []ChallengeType{
+	ChallengeTypeSimple,
+	ChallengeTypeQuiz,
+	ChallengeTypeExternal,
+}
+
+func (e ChallengeType) IsValid() bool {
+	switch e {
+	case ChallengeTypeSimple, ChallengeTypeQuiz, ChallengeTypeExternal:
+		return true
+	}
+	return false
+}
+
+func (e ChallengeType) String() string {
+	return string(e)
+}
+
+func (e *ChallengeType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ChallengeType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ChallengeType", str)
+	}
+	return nil
+}
+
+func (e ChallengeType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ChallengeType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ChallengeType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 type ChurchCategory string

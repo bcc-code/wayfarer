@@ -923,7 +923,7 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 			SourceID:    &quiz.ID,
 			Reason:      &quiz.Name,
 			ChallengeID: &quiz.ChallengeID,
-			EventID:     challenge.EventID,
+			EventID:     getChallengeEventID(challenge),
 		}
 
 		_, err = qtx.CreateScoreJournalEntry(ctx, journalParams)
@@ -969,9 +969,22 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
+	// Auto-complete the associated challenge (after transaction commits)
+	_, err = r.DB.Queries.CompleteUserChallenge(ctx, sqlc.CompleteUserChallengeParams{
+		Userid:      userID,
+		Challengeid: quiz.ChallengeID,
+		Completedat: nil, // Use current time
+	})
+	if err != nil {
+		// Log but don't fail - quiz is finalized, challenge completion is secondary
+		fmt.Printf("warning: failed to auto-complete challenge %s for user %s: %v\n", quiz.ChallengeID, userID, err)
+	}
+
 	// Invalidate caches
 	r.Cache.InvalidateQuizSubmission(submissionID)
 	r.Cache.InvalidateProject(quiz.ProjectID)
+	r.Cache.InvalidateChallenge(quiz.ChallengeID)
+	r.Cache.InvalidateUser(userID)
 
 	return convertSubmissionRowToModel(updatedSubmission), nil
 }

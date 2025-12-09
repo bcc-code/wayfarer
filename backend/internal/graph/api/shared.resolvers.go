@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
@@ -22,106 +21,21 @@ import (
 	pgx "github.com/jackc/pgx/v5"
 )
 
-// Project is the resolver for the project field.
-func (r *challengeResolver) Project(ctx context.Context, obj *model.Challenge) (*model.Project, error) {
-	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
-}
-
-// Event is the resolver for the event field.
-func (r *challengeResolver) Event(ctx context.Context, obj *model.Challenge) (*model.Event, error) {
-	return resolveEventByID(ctx, r.Resolver, obj.EventID)
-}
-
-// UserCompletedAt is the resolver for the userCompletedAt field.
-func (r *challengeResolver) UserCompletedAt(ctx context.Context, obj *model.Challenge) (*scalars.DateTime, error) {
-	// Get authenticated user ID
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return nil, nil // Not authenticated, return nil
-	}
-
-	// Check cache first
-	cacheKey := cache.UserChallengeCompletionKey(userID, obj.ID)
-	if cached, ok := r.Cache.Get(cacheKey); ok {
-		if ts, ok := cached.(*time.Time); ok {
-			return &scalars.DateTime{Time: *ts}, nil
-		}
-	}
-
-	// Query database for completion timestamp
-	completion, err := r.DB.Queries.GetUserCompletionTimestamp(ctx, sqlc.GetUserCompletionTimestampParams{
-		Userid:      userID,
-		Challengeid: obj.ID,
-	})
-	if err != nil {
-		// Not completed, return nil
-		return nil, nil
-	}
-
-	if !completion.Valid {
-		return nil, nil
-	}
-
-	// Cache the result
-	ts := completion.Time
-	r.Cache.Set(cacheKey, &ts)
-
-	return &scalars.DateTime{Time: completion.Time}, nil
-}
-
-// UserEnrolledAt resolver for Challenge type
-func (r *challengeResolver) UserEnrolledAt(ctx context.Context, obj *model.Challenge) (*scalars.DateTime, error) {
-	// Get authenticated user ID
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return nil, nil // Not authenticated, return nil
-	}
-
-	// Check cache first
-	cacheKey := cache.UserChallengeEnrollmentKey(userID, obj.ID)
-	if cached, ok := r.Cache.Get(cacheKey); ok {
-		if ts, ok := cached.(*time.Time); ok {
-			return &scalars.DateTime{Time: *ts}, nil
-		}
-	}
-
-	// Query database for enrollment timestamp
-	enrollment, err := r.DB.Queries.GetUserEnrollmentTimestamp(ctx, sqlc.GetUserEnrollmentTimestampParams{
-		Userid:      userID,
-		Challengeid: obj.ID,
-	})
-	if err != nil {
-		// Not enrolled, return nil
-		return nil, nil
-	}
-
-	if !enrollment.Valid {
-		return nil, nil
-	}
-
-	// Cache the result
-	ts := enrollment.Time
-	r.Cache.Set(cacheKey, &ts)
-
-	return &scalars.DateTime{Time: enrollment.Time}, nil
-}
-
 // Challenges is the resolver for the challenges field.
 func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]model.Challenge, error) {
 	thunk := r.Loaders.ChallengesByEventLoader.Load(ctx, obj.ID)
-	challengePointers, err := thunk()
+	challenges, err := thunk()
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert []*model.Challenge to []model.Challenge and apply translations
-	challenges := make([]model.Challenge, len(challengePointers))
-	for i, cp := range challengePointers {
-		translated := r.ApplyTranslationToChallenge(ctx, cp)
-		challenges[i] = *translated
+	// Apply translations to each challenge
+	result := make([]model.Challenge, len(challenges))
+	for i, ch := range challenges {
+		result[i] = r.ApplyTranslationToChallenge(ctx, ch)
 	}
 
-	return challenges, nil
+	return result, nil
 }
 
 // Leaderboard is the resolver for the leaderboard field.
@@ -169,6 +83,26 @@ func (r *eventResolver) Leaderboard(ctx context.Context, obj *model.Event, entit
 // ParentProject is the resolver for the parentProject field.
 func (r *eventResolver) ParentProject(ctx context.Context, obj *model.Event) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Project is the resolver for the project field.
+func (r *externalChallengeResolver) Project(ctx context.Context, obj *model.ExternalChallenge) (*model.Project, error) {
+	panic(fmt.Errorf("not implemented: Project - project"))
+}
+
+// Event is the resolver for the event field.
+func (r *externalChallengeResolver) Event(ctx context.Context, obj *model.ExternalChallenge) (*model.Event, error) {
+	panic(fmt.Errorf("not implemented: Event - event"))
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *externalChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error) {
+	panic(fmt.Errorf("not implemented: UserCompletedAt - userCompletedAt"))
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *externalChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error) {
+	panic(fmt.Errorf("not implemented: UserEnrolledAt - userEnrolledAt"))
 }
 
 // Quiz is the resolver for the quiz field.
@@ -230,7 +164,7 @@ func (r *listeningAchievementResolver) Event(ctx context.Context, obj *model.Lis
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *listeningAchievementResolver) Challenge(ctx context.Context, obj *model.ListeningAchievement) (*model.Challenge, error) {
+func (r *listeningAchievementResolver) Challenge(ctx context.Context, obj *model.ListeningAchievement) (model.Challenge, error) {
 	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
 }
 
@@ -389,8 +323,7 @@ func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([
 
 	result := make([]model.Challenge, len(challenges))
 	for i, ch := range challenges {
-		translated := r.ApplyTranslationToChallenge(ctx, ch)
-		result[i] = *translated
+		result[i] = r.ApplyTranslationToChallenge(ctx, ch)
 	}
 
 	return result, nil
@@ -559,7 +492,7 @@ func (r *quizResolver) Project(ctx context.Context, obj *model.Quiz) (*model.Pro
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *quizResolver) Challenge(ctx context.Context, obj *model.Quiz) (*model.Challenge, error) {
+func (r *quizResolver) Challenge(ctx context.Context, obj *model.Quiz) (model.Challenge, error) {
 	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, obj.ChallengeID)
 	return thunk()
 }
@@ -693,7 +626,7 @@ func (r *quizAchievementResolver) Event(ctx context.Context, obj *model.QuizAchi
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *quizAchievementResolver) Challenge(ctx context.Context, obj *model.QuizAchievement) (*model.Challenge, error) {
+func (r *quizAchievementResolver) Challenge(ctx context.Context, obj *model.QuizAchievement) (model.Challenge, error) {
 	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
 }
 
@@ -706,6 +639,31 @@ func (r *quizAchievementResolver) AchievedAt(ctx context.Context, obj *model.Qui
 func (r *quizAchievementResolver) Quiz(ctx context.Context, obj *model.QuizAchievement) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
 	return thunk()
+}
+
+// Project is the resolver for the project field.
+func (r *quizChallengeResolver) Project(ctx context.Context, obj *model.QuizChallenge) (*model.Project, error) {
+	panic(fmt.Errorf("not implemented: Project - project"))
+}
+
+// Event is the resolver for the event field.
+func (r *quizChallengeResolver) Event(ctx context.Context, obj *model.QuizChallenge) (*model.Event, error) {
+	panic(fmt.Errorf("not implemented: Event - event"))
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *quizChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error) {
+	panic(fmt.Errorf("not implemented: UserCompletedAt - userCompletedAt"))
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *quizChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error) {
+	panic(fmt.Errorf("not implemented: UserEnrolledAt - userEnrolledAt"))
+}
+
+// Quiz is the resolver for the quiz field.
+func (r *quizChallengeResolver) Quiz(ctx context.Context, obj *model.QuizChallenge) (*model.Quiz, error) {
+	panic(fmt.Errorf("not implemented: Quiz - quiz"))
 }
 
 // Question is the resolver for the question field on QuizPredefinedAnswer.
@@ -845,7 +803,7 @@ func (r *readingAchievementResolver) Event(ctx context.Context, obj *model.Readi
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *readingAchievementResolver) Challenge(ctx context.Context, obj *model.ReadingAchievement) (*model.Challenge, error) {
+func (r *readingAchievementResolver) Challenge(ctx context.Context, obj *model.ReadingAchievement) (model.Challenge, error) {
 	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
 }
 
@@ -931,7 +889,7 @@ func (r *scoreJournalResolver) Event(ctx context.Context, obj *model.ScoreJourna
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *scoreJournalResolver) Challenge(ctx context.Context, obj *model.ScoreJournal) (*model.Challenge, error) {
+func (r *scoreJournalResolver) Challenge(ctx context.Context, obj *model.ScoreJournal) (model.Challenge, error) {
 	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
 }
 
@@ -969,7 +927,17 @@ func (r *scoreJournalResolver) Source(ctx context.Context, obj *model.ScoreJourn
 		if err != nil {
 			return nil, fmt.Errorf("failed to load challenge: %w", err)
 		}
-		return challenge, nil
+		// Type switch to return the concrete challenge type that implements ScoreSource
+		switch ch := challenge.(type) {
+		case *model.SimpleChallenge:
+			return ch, nil
+		case *model.QuizChallenge:
+			return ch, nil
+		case *model.ExternalChallenge:
+			return ch, nil
+		default:
+			return nil, fmt.Errorf("unexpected challenge type: %T", challenge)
+		}
 
 	case model.ScoreSourceTypeEvent:
 		event, err := r.LoadEventWithTranslation(ctx, *obj.SourceID)
@@ -1013,13 +981,33 @@ func (r *simpleAchievementResolver) Event(ctx context.Context, obj *model.Simple
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *simpleAchievementResolver) Challenge(ctx context.Context, obj *model.SimpleAchievement) (*model.Challenge, error) {
+func (r *simpleAchievementResolver) Challenge(ctx context.Context, obj *model.SimpleAchievement) (model.Challenge, error) {
 	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
 }
 
 // AchievedAt is the resolver for the achievedAt field.
 func (r *simpleAchievementResolver) AchievedAt(ctx context.Context, obj *model.SimpleAchievement) (*scalars.DateTime, error) {
 	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// Project is the resolver for the project field.
+func (r *simpleChallengeResolver) Project(ctx context.Context, obj *model.SimpleChallenge) (*model.Project, error) {
+	panic(fmt.Errorf("not implemented: Project - project"))
+}
+
+// Event is the resolver for the event field.
+func (r *simpleChallengeResolver) Event(ctx context.Context, obj *model.SimpleChallenge) (*model.Event, error) {
+	panic(fmt.Errorf("not implemented: Event - event"))
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *simpleChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error) {
+	panic(fmt.Errorf("not implemented: UserCompletedAt - userCompletedAt"))
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *simpleChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error) {
+	panic(fmt.Errorf("not implemented: UserEnrolledAt - userEnrolledAt"))
 }
 
 // Status is the resolver for the status field.
@@ -1200,7 +1188,7 @@ func (r *streakAchievementResolver) Event(ctx context.Context, obj *model.Streak
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *streakAchievementResolver) Challenge(ctx context.Context, obj *model.StreakAchievement) (*model.Challenge, error) {
+func (r *streakAchievementResolver) Challenge(ctx context.Context, obj *model.StreakAchievement) (model.Challenge, error) {
 	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
 }
 
@@ -1638,11 +1626,13 @@ func (r *userRoleResolver) Scope(ctx context.Context, obj *model.UserRole) (*mod
 	return obj.Scope, nil
 }
 
-// Challenge returns ChallengeResolver implementation.
-func (r *Resolver) Challenge() ChallengeResolver { return &challengeResolver{r} }
-
 // Event returns EventResolver implementation.
 func (r *Resolver) Event() EventResolver { return &eventResolver{r} }
+
+// ExternalChallenge returns ExternalChallengeResolver implementation.
+func (r *Resolver) ExternalChallenge() ExternalChallengeResolver {
+	return &externalChallengeResolver{r}
+}
 
 // FreeTextQuestion returns FreeTextQuestionResolver implementation.
 func (r *Resolver) FreeTextQuestion() FreeTextQuestionResolver { return &freeTextQuestionResolver{r} }
@@ -1689,6 +1679,9 @@ func (r *Resolver) Quiz() QuizResolver { return &quizResolver{r} }
 // QuizAchievement returns QuizAchievementResolver implementation.
 func (r *Resolver) QuizAchievement() QuizAchievementResolver { return &quizAchievementResolver{r} }
 
+// QuizChallenge returns QuizChallengeResolver implementation.
+func (r *Resolver) QuizChallenge() QuizChallengeResolver { return &quizChallengeResolver{r} }
+
 // QuizPredefinedAnswer returns QuizPredefinedAnswerResolver implementation.
 func (r *Resolver) QuizPredefinedAnswer() QuizPredefinedAnswerResolver {
 	return &quizPredefinedAnswerResolver{r}
@@ -1713,6 +1706,9 @@ func (r *Resolver) SimpleAchievement() SimpleAchievementResolver {
 	return &simpleAchievementResolver{r}
 }
 
+// SimpleChallenge returns SimpleChallengeResolver implementation.
+func (r *Resolver) SimpleChallenge() SimpleChallengeResolver { return &simpleChallengeResolver{r} }
+
 // Streak returns StreakResolver implementation.
 func (r *Resolver) Streak() StreakResolver { return &streakResolver{r} }
 
@@ -1736,8 +1732,8 @@ func (r *Resolver) User() UserResolver { return &userResolver{r} }
 // UserRole returns UserRoleResolver implementation.
 func (r *Resolver) UserRole() UserRoleResolver { return &userRoleResolver{r} }
 
-type challengeResolver struct{ *Resolver }
 type eventResolver struct{ *Resolver }
+type externalChallengeResolver struct{ *Resolver }
 type freeTextQuestionResolver struct{ *Resolver }
 type freeTextResponseResolver struct{ *Resolver }
 type jsonQuestionResolver struct{ *Resolver }
@@ -1751,12 +1747,14 @@ type predefinedResponseResolver struct{ *Resolver }
 type projectResolver struct{ *Resolver }
 type quizResolver struct{ *Resolver }
 type quizAchievementResolver struct{ *Resolver }
+type quizChallengeResolver struct{ *Resolver }
 type quizPredefinedAnswerResolver struct{ *Resolver }
 type quizSubmissionResolver struct{ *Resolver }
 type readingAchievementResolver struct{ *Resolver }
 type roleScopeResolver struct{ *Resolver }
 type scoreJournalResolver struct{ *Resolver }
 type simpleAchievementResolver struct{ *Resolver }
+type simpleChallengeResolver struct{ *Resolver }
 type streakResolver struct{ *Resolver }
 type streakAchievementResolver struct{ *Resolver }
 type superTeamResolver struct{ *Resolver }

@@ -39,9 +39,9 @@ type Config struct {
 }
 
 type ResolverRoot interface {
-	Challenge() ChallengeResolver
 	Consent() ConsentResolver
 	Event() EventResolver
+	ExternalChallenge() ExternalChallengeResolver
 	FreeTextQuestion() FreeTextQuestionResolver
 	FreeTextResponse() FreeTextResponseResolver
 	JsonQuestion() JsonQuestionResolver
@@ -57,12 +57,14 @@ type ResolverRoot interface {
 	Query() QueryResolver
 	Quiz() QuizResolver
 	QuizAchievement() QuizAchievementResolver
+	QuizChallenge() QuizChallengeResolver
 	QuizPredefinedAnswer() QuizPredefinedAnswerResolver
 	QuizSubmission() QuizSubmissionResolver
 	ReadingAchievement() ReadingAchievementResolver
 	RoleScope() RoleScopeResolver
 	ScoreJournal() ScoreJournalResolver
 	SimpleAchievement() SimpleAchievementResolver
+	SimpleChallenge() SimpleChallengeResolver
 	Streak() StreakResolver
 	StreakAchievement() StreakAchievementResolver
 	SuperTeam() SuperTeamResolver
@@ -106,25 +108,6 @@ type ComplexityRoot struct {
 		Colors   func(childComplexity int) int
 		Logo     func(childComplexity int) int
 		Rounding func(childComplexity int) int
-	}
-
-	Challenge struct {
-		ButtonText                  func(childComplexity int) int
-		Description                 func(childComplexity int) int
-		EndTime                     func(childComplexity int) int
-		Event                       func(childComplexity int) int
-		ID                          func(childComplexity int) int
-		Image                       func(childComplexity int) int
-		Name                        func(childComplexity int) int
-		Project                     func(childComplexity int) int
-		PublishedAt                 func(childComplexity int) int
-		RequiresSuperTeamMembership func(childComplexity int) int
-		RequiresTeamMembership      func(childComplexity int) int
-		StartedAt                   func(childComplexity int) int
-		URL                         func(childComplexity int) int
-		UserCompletedAt             func(childComplexity int) int
-		UserEnrolledAt              func(childComplexity int) int
-		VisibleAt                   func(childComplexity int) int
 	}
 
 	ChallengeConnection struct {
@@ -222,6 +205,25 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	ExternalChallenge struct {
+		ButtonText                  func(childComplexity int) int
+		Description                 func(childComplexity int) int
+		EndTime                     func(childComplexity int) int
+		Event                       func(childComplexity int) int
+		ID                          func(childComplexity int) int
+		Image                       func(childComplexity int) int
+		Name                        func(childComplexity int) int
+		Project                     func(childComplexity int) int
+		PublishedAt                 func(childComplexity int) int
+		RequiresSuperTeamMembership func(childComplexity int) int
+		RequiresTeamMembership      func(childComplexity int) int
+		StartedAt                   func(childComplexity int) int
+		URL                         func(childComplexity int) int
+		UserCompletedAt             func(childComplexity int) int
+		UserEnrolledAt              func(childComplexity int) int
+		VisibleAt                   func(childComplexity int) int
+	}
+
 	FreeTextQuestion struct {
 		ID            func(childComplexity int) int
 		QuestionOrder func(childComplexity int) int
@@ -313,7 +315,6 @@ type ComplexityRoot struct {
 		AwardTeamAchievement           func(childComplexity int, teamID string, achievementID string) int
 		BulkAwardAchievements          func(childComplexity int, userIds []string, achievementID string) int
 		BulkCompleteChallenges         func(childComplexity int, target model.EnrollmentTargetInput, challengeID string, completedAt *scalars.DateTime) int
-		BulkCreateChallenges           func(childComplexity int, projectID string, eventID string, inputs []model.CreateChallengeInput) int
 		BulkEnrollUsersInChallenge     func(childComplexity int, target model.EnrollmentTargetInput, challengeID string) int
 		BulkPublishChallenges          func(childComplexity int, ids []string, publishedAt scalars.DateTime) int
 		BulkUnenrollUsersFromChallenge func(childComplexity int, target model.EnrollmentTargetInput, challengeID string) int
@@ -365,6 +366,7 @@ type ComplexityRoot struct {
 		RevokeRole                     func(childComplexity int, input model.RevokeRoleInput) int
 		RevokeSuperTeamAchievement     func(childComplexity int, superTeamID string, achievementID string) int
 		RevokeTeamAchievement          func(childComplexity int, teamID string, achievementID string) int
+		SelfCompleteChallenge          func(childComplexity int, challengeID string) int
 		SetChallengeRequirements       func(childComplexity int, id string, requiresTeamMembership *bool, requiresSuperTeamMembership *bool) int
 		SetChallengeVisibility         func(childComplexity int, id string, visibleAt scalars.DateTime, startedAt *scalars.DateTime) int
 		StartQuiz                      func(childComplexity int, quizID string) int
@@ -541,6 +543,25 @@ type ComplexityRoot struct {
 		RequireCompletion  func(childComplexity int) int
 	}
 
+	QuizChallenge struct {
+		ButtonText                  func(childComplexity int) int
+		Description                 func(childComplexity int) int
+		EndTime                     func(childComplexity int) int
+		Event                       func(childComplexity int) int
+		ID                          func(childComplexity int) int
+		Image                       func(childComplexity int) int
+		Name                        func(childComplexity int) int
+		Project                     func(childComplexity int) int
+		PublishedAt                 func(childComplexity int) int
+		Quiz                        func(childComplexity int) int
+		RequiresSuperTeamMembership func(childComplexity int) int
+		RequiresTeamMembership      func(childComplexity int) int
+		StartedAt                   func(childComplexity int) int
+		UserCompletedAt             func(childComplexity int) int
+		UserEnrolledAt              func(childComplexity int) int
+		VisibleAt                   func(childComplexity int) int
+	}
+
 	QuizConnection struct {
 		Edges      func(childComplexity int) int
 		PageInfo   func(childComplexity int) int
@@ -648,6 +669,25 @@ type ComplexityRoot struct {
 		Name        func(childComplexity int) int
 		Points      func(childComplexity int) int
 		Project     func(childComplexity int) int
+	}
+
+	SimpleChallenge struct {
+		AllowSelfCompletion         func(childComplexity int) int
+		ButtonText                  func(childComplexity int) int
+		Description                 func(childComplexity int) int
+		EndTime                     func(childComplexity int) int
+		Event                       func(childComplexity int) int
+		ID                          func(childComplexity int) int
+		Image                       func(childComplexity int) int
+		Name                        func(childComplexity int) int
+		Project                     func(childComplexity int) int
+		PublishedAt                 func(childComplexity int) int
+		RequiresSuperTeamMembership func(childComplexity int) int
+		RequiresTeamMembership      func(childComplexity int) int
+		StartedAt                   func(childComplexity int) int
+		UserCompletedAt             func(childComplexity int) int
+		UserEnrolledAt              func(childComplexity int) int
+		VisibleAt                   func(childComplexity int) int
 	}
 
 	Streak struct {
@@ -804,13 +844,6 @@ type ComplexityRoot struct {
 	}
 }
 
-type ChallengeResolver interface {
-	Project(ctx context.Context, obj *model.Challenge) (*model.Project, error)
-	Event(ctx context.Context, obj *model.Challenge) (*model.Event, error)
-
-	UserCompletedAt(ctx context.Context, obj *model.Challenge) (*scalars.DateTime, error)
-	UserEnrolledAt(ctx context.Context, obj *model.Challenge) (*scalars.DateTime, error)
-}
 type ConsentResolver interface {
 	Body(ctx context.Context, obj *model.Consent) (*model.MarkdownText, error)
 
@@ -821,6 +854,13 @@ type EventResolver interface {
 	Leaderboard(ctx context.Context, obj *model.Event, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) (*model.LeaderboardConnection, error)
 
 	ParentProject(ctx context.Context, obj *model.Event) (*model.Project, error)
+}
+type ExternalChallengeResolver interface {
+	Project(ctx context.Context, obj *model.ExternalChallenge) (*model.Project, error)
+	Event(ctx context.Context, obj *model.ExternalChallenge) (*model.Event, error)
+
+	UserCompletedAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error)
+	UserEnrolledAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error)
 }
 type FreeTextQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.FreeTextQuestion) (*model.Quiz, error)
@@ -839,7 +879,7 @@ type JsonResponseResolver interface {
 type ListeningAchievementResolver interface {
 	Project(ctx context.Context, obj *model.ListeningAchievement) (*model.Project, error)
 	Event(ctx context.Context, obj *model.ListeningAchievement) (*model.Event, error)
-	Challenge(ctx context.Context, obj *model.ListeningAchievement) (*model.Challenge, error)
+	Challenge(ctx context.Context, obj *model.ListeningAchievement) (model.Challenge, error)
 	AchievedAt(ctx context.Context, obj *model.ListeningAchievement) (*scalars.DateTime, error)
 	Tracks(ctx context.Context, obj *model.ListeningAchievement) ([]model.Track, error)
 }
@@ -892,22 +932,22 @@ type MutationResolver interface {
 	MarkTrackAsListened(ctx context.Context, userID string, achievementID string, trackID string) (*model.ListeningAchievement, error)
 	UnmarkTrackAsListened(ctx context.Context, userID string, achievementID string, trackID string) (*model.ListeningAchievement, error)
 	RecordStreakActivity(ctx context.Context, userID string, achievementID string, currentStreak int) (*model.StreakAchievement, error)
-	CreateChallenge(ctx context.Context, projectID string, eventID string, input model.CreateChallengeInput) (*model.Challenge, error)
-	UpdateChallenge(ctx context.Context, id string, input model.UpdateChallengeInput) (*model.Challenge, error)
+	CreateChallenge(ctx context.Context, projectID string, eventID string, input model.CreateChallengeInput) (model.Challenge, error)
+	UpdateChallenge(ctx context.Context, id string, input model.UpdateChallengeInput) (model.Challenge, error)
 	DeleteChallenge(ctx context.Context, id string) (bool, error)
-	PublishChallenge(ctx context.Context, id string, publishedAt scalars.DateTime) (*model.Challenge, error)
-	AssignChallengeToEvent(ctx context.Context, challengeID string, eventID string) (*model.Challenge, error)
+	PublishChallenge(ctx context.Context, id string, publishedAt scalars.DateTime) (model.Challenge, error)
+	AssignChallengeToEvent(ctx context.Context, challengeID string, eventID string) (model.Challenge, error)
 	BulkPublishChallenges(ctx context.Context, ids []string, publishedAt scalars.DateTime) ([]model.Challenge, error)
-	BulkCreateChallenges(ctx context.Context, projectID string, eventID string, inputs []model.CreateChallengeInput) ([]model.Challenge, error)
-	SetChallengeVisibility(ctx context.Context, id string, visibleAt scalars.DateTime, startedAt *scalars.DateTime) (*model.Challenge, error)
-	SetChallengeRequirements(ctx context.Context, id string, requiresTeamMembership *bool, requiresSuperTeamMembership *bool) (*model.Challenge, error)
-	EnrollInChallenge(ctx context.Context, challengeID string) (*model.Challenge, error)
+	SetChallengeVisibility(ctx context.Context, id string, visibleAt scalars.DateTime, startedAt *scalars.DateTime) (model.Challenge, error)
+	SetChallengeRequirements(ctx context.Context, id string, requiresTeamMembership *bool, requiresSuperTeamMembership *bool) (model.Challenge, error)
+	SelfCompleteChallenge(ctx context.Context, challengeID string) (*model.SimpleChallenge, error)
+	EnrollInChallenge(ctx context.Context, challengeID string) (model.Challenge, error)
 	UnenrollFromChallenge(ctx context.Context, challengeID string) (bool, error)
-	EnrollUserInChallenge(ctx context.Context, userID string, challengeID string) (*model.Challenge, error)
+	EnrollUserInChallenge(ctx context.Context, userID string, challengeID string) (model.Challenge, error)
 	UnenrollUserFromChallenge(ctx context.Context, userID string, challengeID string) (bool, error)
 	BulkEnrollUsersInChallenge(ctx context.Context, target model.EnrollmentTargetInput, challengeID string) ([]model.Challenge, error)
 	BulkUnenrollUsersFromChallenge(ctx context.Context, target model.EnrollmentTargetInput, challengeID string) (bool, error)
-	CompleteChallenge(ctx context.Context, userID string, challengeID string, completedAt *scalars.DateTime) (*model.Challenge, error)
+	CompleteChallenge(ctx context.Context, userID string, challengeID string, completedAt *scalars.DateTime) (model.Challenge, error)
 	UncompleteChallenge(ctx context.Context, userID string, challengeID string) (bool, error)
 	BulkCompleteChallenges(ctx context.Context, target model.EnrollmentTargetInput, challengeID string, completedAt *scalars.DateTime) ([]model.Challenge, error)
 	CreateStreak(ctx context.Context, input model.CreateStreakInput) (*model.Streak, error)
@@ -986,7 +1026,7 @@ type QueryResolver interface {
 	Superteams(ctx context.Context, filter *model.SuperTeamFilter, first *int, after *string, last *int, before *string) (*model.SuperTeamConnection, error)
 	Achievement(ctx context.Context, id string) (model.Achievement, error)
 	Achievements(ctx context.Context, filter model.AchievementFilter, first *int, after *string, last *int, before *string) (*model.AchievementConnection, error)
-	Challenge(ctx context.Context, id string) (*model.Challenge, error)
+	Challenge(ctx context.Context, id string) (model.Challenge, error)
 	Challenges(ctx context.Context, filter *model.ChallengeFilter, first *int, after *string, last *int, before *string) (*model.ChallengeConnection, error)
 	Streak(ctx context.Context, id string) (*model.Streak, error)
 	Streaks(ctx context.Context, filter *model.StreakFilter, first *int, after *string, last *int, before *string) (*model.StreakConnection, error)
@@ -1007,7 +1047,7 @@ type QueryResolver interface {
 }
 type QuizResolver interface {
 	Project(ctx context.Context, obj *model.Quiz) (*model.Project, error)
-	Challenge(ctx context.Context, obj *model.Quiz) (*model.Challenge, error)
+	Challenge(ctx context.Context, obj *model.Quiz) (model.Challenge, error)
 
 	Questions(ctx context.Context, obj *model.Quiz) ([]model.QuizQuestion, error)
 
@@ -1018,10 +1058,18 @@ type QuizResolver interface {
 type QuizAchievementResolver interface {
 	Project(ctx context.Context, obj *model.QuizAchievement) (*model.Project, error)
 	Event(ctx context.Context, obj *model.QuizAchievement) (*model.Event, error)
-	Challenge(ctx context.Context, obj *model.QuizAchievement) (*model.Challenge, error)
+	Challenge(ctx context.Context, obj *model.QuizAchievement) (model.Challenge, error)
 	AchievedAt(ctx context.Context, obj *model.QuizAchievement) (*scalars.DateTime, error)
 
 	Quiz(ctx context.Context, obj *model.QuizAchievement) (*model.Quiz, error)
+}
+type QuizChallengeResolver interface {
+	Project(ctx context.Context, obj *model.QuizChallenge) (*model.Project, error)
+	Event(ctx context.Context, obj *model.QuizChallenge) (*model.Event, error)
+
+	UserCompletedAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error)
+	UserEnrolledAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error)
+	Quiz(ctx context.Context, obj *model.QuizChallenge) (*model.Quiz, error)
 }
 type QuizPredefinedAnswerResolver interface {
 	Question(ctx context.Context, obj *model.QuizPredefinedAnswer) (model.QuizQuestion, error)
@@ -1042,7 +1090,7 @@ type QuizSubmissionResolver interface {
 type ReadingAchievementResolver interface {
 	Project(ctx context.Context, obj *model.ReadingAchievement) (*model.Project, error)
 	Event(ctx context.Context, obj *model.ReadingAchievement) (*model.Event, error)
-	Challenge(ctx context.Context, obj *model.ReadingAchievement) (*model.Challenge, error)
+	Challenge(ctx context.Context, obj *model.ReadingAchievement) (model.Challenge, error)
 	AchievedAt(ctx context.Context, obj *model.ReadingAchievement) (*scalars.DateTime, error)
 	Articles(ctx context.Context, obj *model.ReadingAchievement) ([]model.Article, error)
 }
@@ -1055,7 +1103,7 @@ type ScoreJournalResolver interface {
 	Project(ctx context.Context, obj *model.ScoreJournal) (*model.Project, error)
 	User(ctx context.Context, obj *model.ScoreJournal) (*model.User, error)
 	Event(ctx context.Context, obj *model.ScoreJournal) (*model.Event, error)
-	Challenge(ctx context.Context, obj *model.ScoreJournal) (*model.Challenge, error)
+	Challenge(ctx context.Context, obj *model.ScoreJournal) (model.Challenge, error)
 
 	Source(ctx context.Context, obj *model.ScoreJournal) (model.ScoreSource, error)
 
@@ -1064,8 +1112,15 @@ type ScoreJournalResolver interface {
 type SimpleAchievementResolver interface {
 	Project(ctx context.Context, obj *model.SimpleAchievement) (*model.Project, error)
 	Event(ctx context.Context, obj *model.SimpleAchievement) (*model.Event, error)
-	Challenge(ctx context.Context, obj *model.SimpleAchievement) (*model.Challenge, error)
+	Challenge(ctx context.Context, obj *model.SimpleAchievement) (model.Challenge, error)
 	AchievedAt(ctx context.Context, obj *model.SimpleAchievement) (*scalars.DateTime, error)
+}
+type SimpleChallengeResolver interface {
+	Project(ctx context.Context, obj *model.SimpleChallenge) (*model.Project, error)
+	Event(ctx context.Context, obj *model.SimpleChallenge) (*model.Event, error)
+
+	UserCompletedAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error)
+	UserEnrolledAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error)
 }
 type StreakResolver interface {
 	Status(ctx context.Context, obj *model.Streak) (int, error)
@@ -1076,7 +1131,7 @@ type StreakResolver interface {
 type StreakAchievementResolver interface {
 	Project(ctx context.Context, obj *model.StreakAchievement) (*model.Project, error)
 	Event(ctx context.Context, obj *model.StreakAchievement) (*model.Event, error)
-	Challenge(ctx context.Context, obj *model.StreakAchievement) (*model.Challenge, error)
+	Challenge(ctx context.Context, obj *model.StreakAchievement) (model.Challenge, error)
 	AchievedAt(ctx context.Context, obj *model.StreakAchievement) (*scalars.DateTime, error)
 
 	Streak(ctx context.Context, obj *model.StreakAchievement) (*model.Streak, error)
@@ -1227,103 +1282,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Branding.Rounding(childComplexity), true
-
-	case "Challenge.buttonText":
-		if e.complexity.Challenge.ButtonText == nil {
-			break
-		}
-
-		return e.complexity.Challenge.ButtonText(childComplexity), true
-	case "Challenge.description":
-		if e.complexity.Challenge.Description == nil {
-			break
-		}
-
-		return e.complexity.Challenge.Description(childComplexity), true
-	case "Challenge.endTime":
-		if e.complexity.Challenge.EndTime == nil {
-			break
-		}
-
-		return e.complexity.Challenge.EndTime(childComplexity), true
-	case "Challenge.event":
-		if e.complexity.Challenge.Event == nil {
-			break
-		}
-
-		return e.complexity.Challenge.Event(childComplexity), true
-	case "Challenge.id":
-		if e.complexity.Challenge.ID == nil {
-			break
-		}
-
-		return e.complexity.Challenge.ID(childComplexity), true
-	case "Challenge.image":
-		if e.complexity.Challenge.Image == nil {
-			break
-		}
-
-		return e.complexity.Challenge.Image(childComplexity), true
-	case "Challenge.name":
-		if e.complexity.Challenge.Name == nil {
-			break
-		}
-
-		return e.complexity.Challenge.Name(childComplexity), true
-	case "Challenge.project":
-		if e.complexity.Challenge.Project == nil {
-			break
-		}
-
-		return e.complexity.Challenge.Project(childComplexity), true
-	case "Challenge.publishedAt":
-		if e.complexity.Challenge.PublishedAt == nil {
-			break
-		}
-
-		return e.complexity.Challenge.PublishedAt(childComplexity), true
-	case "Challenge.requiresSuperTeamMembership":
-		if e.complexity.Challenge.RequiresSuperTeamMembership == nil {
-			break
-		}
-
-		return e.complexity.Challenge.RequiresSuperTeamMembership(childComplexity), true
-	case "Challenge.requiresTeamMembership":
-		if e.complexity.Challenge.RequiresTeamMembership == nil {
-			break
-		}
-
-		return e.complexity.Challenge.RequiresTeamMembership(childComplexity), true
-	case "Challenge.startedAt":
-		if e.complexity.Challenge.StartedAt == nil {
-			break
-		}
-
-		return e.complexity.Challenge.StartedAt(childComplexity), true
-	case "Challenge.url":
-		if e.complexity.Challenge.URL == nil {
-			break
-		}
-
-		return e.complexity.Challenge.URL(childComplexity), true
-	case "Challenge.userCompletedAt":
-		if e.complexity.Challenge.UserCompletedAt == nil {
-			break
-		}
-
-		return e.complexity.Challenge.UserCompletedAt(childComplexity), true
-	case "Challenge.userEnrolledAt":
-		if e.complexity.Challenge.UserEnrolledAt == nil {
-			break
-		}
-
-		return e.complexity.Challenge.UserEnrolledAt(childComplexity), true
-	case "Challenge.visibleAt":
-		if e.complexity.Challenge.VisibleAt == nil {
-			break
-		}
-
-		return e.complexity.Challenge.VisibleAt(childComplexity), true
 
 	case "ChallengeConnection.edges":
 		if e.complexity.ChallengeConnection.Edges == nil {
@@ -1678,6 +1636,103 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.EventEdge.Node(childComplexity), true
+
+	case "ExternalChallenge.buttonText":
+		if e.complexity.ExternalChallenge.ButtonText == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.ButtonText(childComplexity), true
+	case "ExternalChallenge.description":
+		if e.complexity.ExternalChallenge.Description == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.Description(childComplexity), true
+	case "ExternalChallenge.endTime":
+		if e.complexity.ExternalChallenge.EndTime == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.EndTime(childComplexity), true
+	case "ExternalChallenge.event":
+		if e.complexity.ExternalChallenge.Event == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.Event(childComplexity), true
+	case "ExternalChallenge.id":
+		if e.complexity.ExternalChallenge.ID == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.ID(childComplexity), true
+	case "ExternalChallenge.image":
+		if e.complexity.ExternalChallenge.Image == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.Image(childComplexity), true
+	case "ExternalChallenge.name":
+		if e.complexity.ExternalChallenge.Name == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.Name(childComplexity), true
+	case "ExternalChallenge.project":
+		if e.complexity.ExternalChallenge.Project == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.Project(childComplexity), true
+	case "ExternalChallenge.publishedAt":
+		if e.complexity.ExternalChallenge.PublishedAt == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.PublishedAt(childComplexity), true
+	case "ExternalChallenge.requiresSuperTeamMembership":
+		if e.complexity.ExternalChallenge.RequiresSuperTeamMembership == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.RequiresSuperTeamMembership(childComplexity), true
+	case "ExternalChallenge.requiresTeamMembership":
+		if e.complexity.ExternalChallenge.RequiresTeamMembership == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.RequiresTeamMembership(childComplexity), true
+	case "ExternalChallenge.startedAt":
+		if e.complexity.ExternalChallenge.StartedAt == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.StartedAt(childComplexity), true
+	case "ExternalChallenge.url":
+		if e.complexity.ExternalChallenge.URL == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.URL(childComplexity), true
+	case "ExternalChallenge.userCompletedAt":
+		if e.complexity.ExternalChallenge.UserCompletedAt == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.UserCompletedAt(childComplexity), true
+	case "ExternalChallenge.userEnrolledAt":
+		if e.complexity.ExternalChallenge.UserEnrolledAt == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.UserEnrolledAt(childComplexity), true
+	case "ExternalChallenge.visibleAt":
+		if e.complexity.ExternalChallenge.VisibleAt == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.VisibleAt(childComplexity), true
 
 	case "FreeTextQuestion.id":
 		if e.complexity.FreeTextQuestion.ID == nil {
@@ -2141,17 +2196,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.BulkCompleteChallenges(childComplexity, args["target"].(model.EnrollmentTargetInput), args["challengeId"].(string), args["completedAt"].(*scalars.DateTime)), true
-	case "Mutation.bulkCreateChallenges":
-		if e.complexity.Mutation.BulkCreateChallenges == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_bulkCreateChallenges_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.BulkCreateChallenges(childComplexity, args["projectId"].(string), args["eventId"].(string), args["inputs"].([]model.CreateChallengeInput)), true
 	case "Mutation.bulkEnrollUsersInChallenge":
 		if e.complexity.Mutation.BulkEnrollUsersInChallenge == nil {
 			break
@@ -2708,6 +2752,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.RevokeTeamAchievement(childComplexity, args["teamId"].(string), args["achievementId"].(string)), true
+	case "Mutation.selfCompleteChallenge":
+		if e.complexity.Mutation.SelfCompleteChallenge == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_selfCompleteChallenge_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SelfCompleteChallenge(childComplexity, args["challengeId"].(string)), true
 	case "Mutation.setChallengeRequirements":
 		if e.complexity.Mutation.SetChallengeRequirements == nil {
 			break
@@ -3826,6 +3881,103 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.QuizAchievement.RequireCompletion(childComplexity), true
 
+	case "QuizChallenge.buttonText":
+		if e.complexity.QuizChallenge.ButtonText == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.ButtonText(childComplexity), true
+	case "QuizChallenge.description":
+		if e.complexity.QuizChallenge.Description == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.Description(childComplexity), true
+	case "QuizChallenge.endTime":
+		if e.complexity.QuizChallenge.EndTime == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.EndTime(childComplexity), true
+	case "QuizChallenge.event":
+		if e.complexity.QuizChallenge.Event == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.Event(childComplexity), true
+	case "QuizChallenge.id":
+		if e.complexity.QuizChallenge.ID == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.ID(childComplexity), true
+	case "QuizChallenge.image":
+		if e.complexity.QuizChallenge.Image == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.Image(childComplexity), true
+	case "QuizChallenge.name":
+		if e.complexity.QuizChallenge.Name == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.Name(childComplexity), true
+	case "QuizChallenge.project":
+		if e.complexity.QuizChallenge.Project == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.Project(childComplexity), true
+	case "QuizChallenge.publishedAt":
+		if e.complexity.QuizChallenge.PublishedAt == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.PublishedAt(childComplexity), true
+	case "QuizChallenge.quiz":
+		if e.complexity.QuizChallenge.Quiz == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.Quiz(childComplexity), true
+	case "QuizChallenge.requiresSuperTeamMembership":
+		if e.complexity.QuizChallenge.RequiresSuperTeamMembership == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.RequiresSuperTeamMembership(childComplexity), true
+	case "QuizChallenge.requiresTeamMembership":
+		if e.complexity.QuizChallenge.RequiresTeamMembership == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.RequiresTeamMembership(childComplexity), true
+	case "QuizChallenge.startedAt":
+		if e.complexity.QuizChallenge.StartedAt == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.StartedAt(childComplexity), true
+	case "QuizChallenge.userCompletedAt":
+		if e.complexity.QuizChallenge.UserCompletedAt == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.UserCompletedAt(childComplexity), true
+	case "QuizChallenge.userEnrolledAt":
+		if e.complexity.QuizChallenge.UserEnrolledAt == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.UserEnrolledAt(childComplexity), true
+	case "QuizChallenge.visibleAt":
+		if e.complexity.QuizChallenge.VisibleAt == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.VisibleAt(childComplexity), true
+
 	case "QuizConnection.edges":
 		if e.complexity.QuizConnection.Edges == nil {
 			break
@@ -4275,6 +4427,103 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SimpleAchievement.Project(childComplexity), true
+
+	case "SimpleChallenge.allowSelfCompletion":
+		if e.complexity.SimpleChallenge.AllowSelfCompletion == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.AllowSelfCompletion(childComplexity), true
+	case "SimpleChallenge.buttonText":
+		if e.complexity.SimpleChallenge.ButtonText == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.ButtonText(childComplexity), true
+	case "SimpleChallenge.description":
+		if e.complexity.SimpleChallenge.Description == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.Description(childComplexity), true
+	case "SimpleChallenge.endTime":
+		if e.complexity.SimpleChallenge.EndTime == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.EndTime(childComplexity), true
+	case "SimpleChallenge.event":
+		if e.complexity.SimpleChallenge.Event == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.Event(childComplexity), true
+	case "SimpleChallenge.id":
+		if e.complexity.SimpleChallenge.ID == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.ID(childComplexity), true
+	case "SimpleChallenge.image":
+		if e.complexity.SimpleChallenge.Image == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.Image(childComplexity), true
+	case "SimpleChallenge.name":
+		if e.complexity.SimpleChallenge.Name == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.Name(childComplexity), true
+	case "SimpleChallenge.project":
+		if e.complexity.SimpleChallenge.Project == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.Project(childComplexity), true
+	case "SimpleChallenge.publishedAt":
+		if e.complexity.SimpleChallenge.PublishedAt == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.PublishedAt(childComplexity), true
+	case "SimpleChallenge.requiresSuperTeamMembership":
+		if e.complexity.SimpleChallenge.RequiresSuperTeamMembership == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.RequiresSuperTeamMembership(childComplexity), true
+	case "SimpleChallenge.requiresTeamMembership":
+		if e.complexity.SimpleChallenge.RequiresTeamMembership == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.RequiresTeamMembership(childComplexity), true
+	case "SimpleChallenge.startedAt":
+		if e.complexity.SimpleChallenge.StartedAt == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.StartedAt(childComplexity), true
+	case "SimpleChallenge.userCompletedAt":
+		if e.complexity.SimpleChallenge.UserCompletedAt == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.UserCompletedAt(childComplexity), true
+	case "SimpleChallenge.userEnrolledAt":
+		if e.complexity.SimpleChallenge.UserEnrolledAt == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.UserEnrolledAt(childComplexity), true
+	case "SimpleChallenge.visibleAt":
+		if e.complexity.SimpleChallenge.VisibleAt == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.VisibleAt(childComplexity), true
 
 	case "Streak.description":
 		if e.complexity.Streak.Description == nil {
@@ -5335,14 +5584,13 @@ type SuperTeam {
 
 # ==================== Interfaces ====================
 
-type Challenge {
+interface Challenge {
     id: ID!
     name: String!
     description: HTML!
     image: String
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
-    url: String
     buttonText: String!
     publishedAt: DateTime
     visibleAt: DateTime
@@ -5352,6 +5600,74 @@ type Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+}
+
+# ==================== Challenge Implementations ====================
+
+enum ChallengeType {
+    SIMPLE
+    QUIZ
+    EXTERNAL
+}
+
+type SimpleChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # SimpleChallenge-specific fields
+    allowSelfCompletion: Boolean!
+}
+
+type QuizChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # QuizChallenge-specific fields - no url, linked to quiz
+    quiz: Quiz! @goField(forceResolver: true)
+}
+
+type ExternalChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # ExternalChallenge-specific fields - url is required
+    url: String!
 }
 
 interface Achievement {
@@ -5678,16 +5994,21 @@ input UpdateEventInput {
     endDate: DateTime
 }
 
+# ==================== Challenge Input Types ====================
+
 input CreateChallengeInput {
+    type: ChallengeType!
     name: String!
     description: HTML
     image: String
-    url: String
     buttonText: String!
     visibleAt: DateTime
     endTime: DateTime
     requiresTeamMembership: Boolean
     requiresSuperTeamMembership: Boolean
+    # Type-specific fields (validated based on type):
+    allowSelfCompletion: Boolean  # SIMPLE only, defaults true
+    url: String                   # EXTERNAL only, required
 }
 
 input UpdateChallengeInput {
@@ -5695,13 +6016,15 @@ input UpdateChallengeInput {
     description: HTML
     image: String
     eventId: ID
-    url: String
     buttonText: String
     visibleAt: DateTime
     startedAt: DateTime
     endTime: DateTime
     requiresTeamMembership: Boolean
     requiresSuperTeamMembership: Boolean
+    # Type-specific fields (validated based on existing challenge type):
+    allowSelfCompletion: Boolean  # SIMPLE only
+    url: String                   # EXTERNAL only
 }
 
 input CreateSimpleAchievementInput {
@@ -5980,6 +6303,7 @@ input ProjectFilter {
 input ChallengeFilter {
     projectId: ID
     eventId: ID
+    challengeType: ChallengeType
     ids: [ID!]  # Support bulk ID lookup for M2M API
     publishedAfter: DateTime
     publishedBefore: DateTime
@@ -6070,7 +6394,7 @@ input RevokeRoleInput {
 
 # ==================== Score Journal ====================
 
-union ScoreSource = SimpleAchievement | ReadingAchievement | ListeningAchievement | StreakAchievement | Challenge | Event
+union ScoreSource = SimpleAchievement | ReadingAchievement | ListeningAchievement | StreakAchievement | SimpleChallenge | QuizChallenge | ExternalChallenge | Event
 
 type ScoreJournal {
     id: ID!
@@ -6395,16 +6719,20 @@ extend type Query {
 }
 
 extend type Mutation {
-    # Admin management
+    # Admin management - Create and update (type determined by input.type for create, existing type for update)
     createChallenge(projectId: ID!, eventId: ID!, input: CreateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     updateChallenge(id: ID!, input: UpdateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
+
+    # Admin management - Common operations
     deleteChallenge(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
     publishChallenge(id: ID!, publishedAt: DateTime!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     assignChallengeToEvent(challengeId: ID!, eventId: ID!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     bulkPublishChallenges(ids: [ID!]!, publishedAt: DateTime!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
-    bulkCreateChallenges(projectId: ID!, eventId: ID!, inputs: [CreateChallengeInput!]!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
     setChallengeVisibility(id: ID!, visibleAt: DateTime!, startedAt: DateTime): Challenge! @requireRole(roles: ["admin", "superadmin"])
     setChallengeRequirements(id: ID!, requiresTeamMembership: Boolean, requiresSuperTeamMembership: Boolean): Challenge! @requireRole(roles: ["admin", "superadmin"])
+
+    # User self-completion (SimpleChallenge only, when allowSelfCompletion=true)
+    selfCompleteChallenge(challengeId: ID!): SimpleChallenge! @requireRole(roles: ["user"])
 
     # User self-enrollment
     enrollInChallenge(challengeId: ID!): Challenge! @requireRole(roles: ["user"])
@@ -6418,7 +6746,7 @@ extend type Mutation {
     bulkEnrollUsersInChallenge(target: EnrollmentTargetInput!, challengeId: ID!): [Challenge!]! @requireRole(roles: ["admin", "superadmin", "m2m"])
     bulkUnenrollUsersFromChallenge(target: EnrollmentTargetInput!, challengeId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "m2m"])
 
-    # Completion tracking (M2M)
+    # Completion tracking (M2M / Admin) - Works for ExternalChallenge and SimpleChallenge
     completeChallenge(userId: ID!, challengeId: ID!, completedAt: DateTime): Challenge! @requireRole(roles: ["m2m", "admin", "superadmin"])
     uncompleteChallenge(userId: ID!, challengeId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
     bulkCompleteChallenges(target: EnrollmentTargetInput!, challengeId: ID!, completedAt: DateTime): [Challenge!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
@@ -6904,27 +7232,6 @@ func (ec *executionContext) field_Mutation_bulkCompleteChallenges_args(ctx conte
 		return nil, err
 	}
 	args["completedAt"] = arg2
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_bulkCreateChallenges_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "projectId", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["projectId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "eventId", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["eventId"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "inputs", ec.unmarshalNCreateChallengeInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateChallengeInputᚄ)
-	if err != nil {
-		return nil, err
-	}
-	args["inputs"] = arg2
 	return args, nil
 }
 
@@ -7655,6 +7962,17 @@ func (ec *executionContext) field_Mutation_revokeTeamAchievement_args(ctx contex
 		return nil, err
 	}
 	args["achievementId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_selfCompleteChallenge_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "challengeId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["challengeId"] = arg0
 	return args, nil
 }
 
@@ -9203,522 +9521,6 @@ func (ec *executionContext) fieldContext_Branding_rounding(_ context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _Challenge_id(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_id,
-		func(ctx context.Context) (any, error) {
-			return obj.ID, nil
-		},
-		nil,
-		ec.marshalNID2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Challenge_name(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_name,
-		func(ctx context.Context) (any, error) {
-			return obj.Name, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Challenge_description(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_description,
-		func(ctx context.Context) (any, error) {
-			return obj.Description, nil
-		},
-		nil,
-		ec.marshalNHTML2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐHTML,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type HTML does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Challenge_image(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_image,
-		func(ctx context.Context) (any, error) {
-			return obj.Image, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Challenge_project(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_project,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Challenge().Project(ctx, obj)
-		},
-		nil,
-		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProject,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_project(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Project_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Project_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Project_description(ctx, field)
-			case "rules":
-				return ec.fieldContext_Project_rules(ctx, field)
-			case "challenges":
-				return ec.fieldContext_Project_challenges(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Project_leaderboard(ctx, field)
-			case "events":
-				return ec.fieldContext_Project_events(ctx, field)
-			case "startDate":
-				return ec.fieldContext_Project_startDate(ctx, field)
-			case "endDate":
-				return ec.fieldContext_Project_endDate(ctx, field)
-			case "branding":
-				return ec.fieldContext_Project_branding(ctx, field)
-			case "teams":
-				return ec.fieldContext_Project_teams(ctx, field)
-			case "myTeam":
-				return ec.fieldContext_Project_myTeam(ctx, field)
-			case "achievements":
-				return ec.fieldContext_Project_achievements(ctx, field)
-			case "streaks":
-				return ec.fieldContext_Project_streaks(ctx, field)
-			case "journal":
-				return ec.fieldContext_Project_journal(ctx, field)
-			case "archivedAt":
-				return ec.fieldContext_Project_archivedAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Challenge_event(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_event,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Challenge().Event(ctx, obj)
-		},
-		nil,
-		ec.marshalOEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEvent,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_event(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Event_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Event_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Event_description(ctx, field)
-			case "challenges":
-				return ec.fieldContext_Event_challenges(ctx, field)
-			case "leaderboard":
-				return ec.fieldContext_Event_leaderboard(ctx, field)
-			case "startDate":
-				return ec.fieldContext_Event_startDate(ctx, field)
-			case "endDate":
-				return ec.fieldContext_Event_endDate(ctx, field)
-			case "parentProject":
-				return ec.fieldContext_Event_parentProject(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Challenge_url(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_url,
-		func(ctx context.Context) (any, error) {
-			return obj.URL, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Challenge_buttonText(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_buttonText,
-		func(ctx context.Context) (any, error) {
-			return obj.ButtonText, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_buttonText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Challenge_publishedAt(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_publishedAt,
-		func(ctx context.Context) (any, error) {
-			return obj.PublishedAt, nil
-		},
-		nil,
-		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_publishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DateTime does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Challenge_visibleAt(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_visibleAt,
-		func(ctx context.Context) (any, error) {
-			return obj.VisibleAt, nil
-		},
-		nil,
-		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_visibleAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DateTime does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Challenge_startedAt(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_startedAt,
-		func(ctx context.Context) (any, error) {
-			return obj.StartedAt, nil
-		},
-		nil,
-		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DateTime does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Challenge_endTime(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_endTime,
-		func(ctx context.Context) (any, error) {
-			return obj.EndTime, nil
-		},
-		nil,
-		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_endTime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DateTime does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Challenge_requiresTeamMembership(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_requiresTeamMembership,
-		func(ctx context.Context) (any, error) {
-			return obj.RequiresTeamMembership, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_requiresTeamMembership(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Challenge_requiresSuperTeamMembership(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_requiresSuperTeamMembership,
-		func(ctx context.Context) (any, error) {
-			return obj.RequiresSuperTeamMembership, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_requiresSuperTeamMembership(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Challenge_userCompletedAt(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_userCompletedAt,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Challenge().UserCompletedAt(ctx, obj)
-		},
-		nil,
-		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_userCompletedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DateTime does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Challenge_userEnrolledAt(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Challenge_userEnrolledAt,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Challenge().UserEnrolledAt(ctx, obj)
-		},
-		nil,
-		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Challenge_userEnrolledAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Challenge",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DateTime does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _ChallengeConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.ChallengeConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -9861,7 +9663,7 @@ func (ec *executionContext) _ChallengeEdge_node(ctx context.Context, field graph
 			return obj.Node, nil
 		},
 		nil,
-		ec.marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		true,
 	)
@@ -9874,41 +9676,7 @@ func (ec *executionContext) fieldContext_ChallengeEdge_node(_ context.Context, f
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	return fc, nil
@@ -11268,41 +11036,7 @@ func (ec *executionContext) fieldContext_Event_challenges(_ context.Context, fie
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	return fc, nil
@@ -11654,6 +11388,522 @@ func (ec *executionContext) fieldContext_EventEdge_node(_ context.Context, field
 				return ec.fieldContext_Event_parentProject(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_id(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_name(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_description(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalNHTML2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐHTML,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type HTML does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_image(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_image,
+		func(ctx context.Context) (any, error) {
+			return obj.Image, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_project(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_project,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.ExternalChallenge().Project(ctx, obj)
+		},
+		nil,
+		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProject,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_project(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Project_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Project_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
+			case "challenges":
+				return ec.fieldContext_Project_challenges(ctx, field)
+			case "leaderboard":
+				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "events":
+				return ec.fieldContext_Project_events(ctx, field)
+			case "startDate":
+				return ec.fieldContext_Project_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_Project_endDate(ctx, field)
+			case "branding":
+				return ec.fieldContext_Project_branding(ctx, field)
+			case "teams":
+				return ec.fieldContext_Project_teams(ctx, field)
+			case "myTeam":
+				return ec.fieldContext_Project_myTeam(ctx, field)
+			case "achievements":
+				return ec.fieldContext_Project_achievements(ctx, field)
+			case "streaks":
+				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_event(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_event,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.ExternalChallenge().Event(ctx, obj)
+		},
+		nil,
+		ec.marshalOEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEvent,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_event(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Event_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Event_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Event_description(ctx, field)
+			case "challenges":
+				return ec.fieldContext_Event_challenges(ctx, field)
+			case "leaderboard":
+				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "startDate":
+				return ec.fieldContext_Event_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_Event_endDate(ctx, field)
+			case "parentProject":
+				return ec.fieldContext_Event_parentProject(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_buttonText(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_buttonText,
+		func(ctx context.Context) (any, error) {
+			return obj.ButtonText, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_buttonText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_publishedAt(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_publishedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.PublishedAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_publishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_visibleAt(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_visibleAt,
+		func(ctx context.Context) (any, error) {
+			return obj.VisibleAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_visibleAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_startedAt(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_startedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.StartedAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_endTime(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_endTime,
+		func(ctx context.Context) (any, error) {
+			return obj.EndTime, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_endTime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_requiresTeamMembership(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_requiresTeamMembership,
+		func(ctx context.Context) (any, error) {
+			return obj.RequiresTeamMembership, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_requiresTeamMembership(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_requiresSuperTeamMembership(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_requiresSuperTeamMembership,
+		func(ctx context.Context) (any, error) {
+			return obj.RequiresSuperTeamMembership, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_requiresSuperTeamMembership(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_userCompletedAt(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_userCompletedAt,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.ExternalChallenge().UserCompletedAt(ctx, obj)
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_userCompletedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_userEnrolledAt(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_userEnrolledAt,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.ExternalChallenge().UserEnrolledAt(ctx, obj)
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_userEnrolledAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalChallenge_url(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_url,
+		func(ctx context.Context) (any, error) {
+			return obj.URL, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -13036,7 +13286,7 @@ func (ec *executionContext) _ListeningAchievement_challenge(ctx context.Context,
 			return ec.resolvers.ListeningAchievement().Challenge(ctx, obj)
 		},
 		nil,
-		ec.marshalOChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalOChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		false,
 	)
@@ -13049,41 +13299,7 @@ func (ec *executionContext) fieldContext_ListeningAchievement_challenge(_ contex
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	return fc, nil
@@ -16658,11 +16874,11 @@ func (ec *executionContext) _Mutation_createChallenge(ctx context.Context, field
 			directive1 := func(ctx context.Context) (any, error) {
 				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, err
 				}
 				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, errors.New("directive requireRole is not implemented")
 				}
 				return ec.directives.RequireRole(ctx, nil, directive0, roles)
@@ -16671,7 +16887,7 @@ func (ec *executionContext) _Mutation_createChallenge(ctx context.Context, field
 			next = directive1
 			return next
 		},
-		ec.marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		true,
 	)
@@ -16684,41 +16900,7 @@ func (ec *executionContext) fieldContext_Mutation_createChallenge(ctx context.Co
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	defer func() {
@@ -16751,11 +16933,11 @@ func (ec *executionContext) _Mutation_updateChallenge(ctx context.Context, field
 			directive1 := func(ctx context.Context) (any, error) {
 				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, err
 				}
 				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, errors.New("directive requireRole is not implemented")
 				}
 				return ec.directives.RequireRole(ctx, nil, directive0, roles)
@@ -16764,7 +16946,7 @@ func (ec *executionContext) _Mutation_updateChallenge(ctx context.Context, field
 			next = directive1
 			return next
 		},
-		ec.marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		true,
 	)
@@ -16777,41 +16959,7 @@ func (ec *executionContext) fieldContext_Mutation_updateChallenge(ctx context.Co
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	defer func() {
@@ -16903,11 +17051,11 @@ func (ec *executionContext) _Mutation_publishChallenge(ctx context.Context, fiel
 			directive1 := func(ctx context.Context) (any, error) {
 				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, err
 				}
 				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, errors.New("directive requireRole is not implemented")
 				}
 				return ec.directives.RequireRole(ctx, nil, directive0, roles)
@@ -16916,7 +17064,7 @@ func (ec *executionContext) _Mutation_publishChallenge(ctx context.Context, fiel
 			next = directive1
 			return next
 		},
-		ec.marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		true,
 	)
@@ -16929,41 +17077,7 @@ func (ec *executionContext) fieldContext_Mutation_publishChallenge(ctx context.C
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	defer func() {
@@ -16996,11 +17110,11 @@ func (ec *executionContext) _Mutation_assignChallengeToEvent(ctx context.Context
 			directive1 := func(ctx context.Context) (any, error) {
 				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, err
 				}
 				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, errors.New("directive requireRole is not implemented")
 				}
 				return ec.directives.RequireRole(ctx, nil, directive0, roles)
@@ -17009,7 +17123,7 @@ func (ec *executionContext) _Mutation_assignChallengeToEvent(ctx context.Context
 			next = directive1
 			return next
 		},
-		ec.marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		true,
 	)
@@ -17022,41 +17136,7 @@ func (ec *executionContext) fieldContext_Mutation_assignChallengeToEvent(ctx con
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	defer func() {
@@ -17115,41 +17195,7 @@ func (ec *executionContext) fieldContext_Mutation_bulkPublishChallenges(ctx cont
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	defer func() {
@@ -17160,99 +17206,6 @@ func (ec *executionContext) fieldContext_Mutation_bulkPublishChallenges(ctx cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_bulkPublishChallenges_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_bulkCreateChallenges(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_bulkCreateChallenges,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().BulkCreateChallenges(ctx, fc.Args["projectId"].(string), fc.Args["eventId"].(string), fc.Args["inputs"].([]model.CreateChallengeInput))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
-				if err != nil {
-					var zeroVal []model.Challenge
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal []model.Challenge
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
-		ec.marshalNChallenge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_bulkCreateChallenges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_bulkCreateChallenges_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -17275,11 +17228,11 @@ func (ec *executionContext) _Mutation_setChallengeVisibility(ctx context.Context
 			directive1 := func(ctx context.Context) (any, error) {
 				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, err
 				}
 				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, errors.New("directive requireRole is not implemented")
 				}
 				return ec.directives.RequireRole(ctx, nil, directive0, roles)
@@ -17288,7 +17241,7 @@ func (ec *executionContext) _Mutation_setChallengeVisibility(ctx context.Context
 			next = directive1
 			return next
 		},
-		ec.marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		true,
 	)
@@ -17301,41 +17254,7 @@ func (ec *executionContext) fieldContext_Mutation_setChallengeVisibility(ctx con
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	defer func() {
@@ -17368,11 +17287,11 @@ func (ec *executionContext) _Mutation_setChallengeRequirements(ctx context.Conte
 			directive1 := func(ctx context.Context) (any, error) {
 				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, err
 				}
 				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, errors.New("directive requireRole is not implemented")
 				}
 				return ec.directives.RequireRole(ctx, nil, directive0, roles)
@@ -17381,7 +17300,7 @@ func (ec *executionContext) _Mutation_setChallengeRequirements(ctx context.Conte
 			next = directive1
 			return next
 		},
-		ec.marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		true,
 	)
@@ -17394,41 +17313,7 @@ func (ec *executionContext) fieldContext_Mutation_setChallengeRequirements(ctx c
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	defer func() {
@@ -17439,6 +17324,99 @@ func (ec *executionContext) fieldContext_Mutation_setChallengeRequirements(ctx c
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_setChallengeRequirements_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_selfCompleteChallenge(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_selfCompleteChallenge,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().SelfCompleteChallenge(ctx, fc.Args["challengeId"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
+				if err != nil {
+					var zeroVal *model.SimpleChallenge
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.SimpleChallenge
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNSimpleChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSimpleChallenge,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_selfCompleteChallenge(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_SimpleChallenge_id(ctx, field)
+			case "name":
+				return ec.fieldContext_SimpleChallenge_name(ctx, field)
+			case "description":
+				return ec.fieldContext_SimpleChallenge_description(ctx, field)
+			case "image":
+				return ec.fieldContext_SimpleChallenge_image(ctx, field)
+			case "project":
+				return ec.fieldContext_SimpleChallenge_project(ctx, field)
+			case "event":
+				return ec.fieldContext_SimpleChallenge_event(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_SimpleChallenge_buttonText(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_SimpleChallenge_publishedAt(ctx, field)
+			case "visibleAt":
+				return ec.fieldContext_SimpleChallenge_visibleAt(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_SimpleChallenge_startedAt(ctx, field)
+			case "endTime":
+				return ec.fieldContext_SimpleChallenge_endTime(ctx, field)
+			case "requiresTeamMembership":
+				return ec.fieldContext_SimpleChallenge_requiresTeamMembership(ctx, field)
+			case "requiresSuperTeamMembership":
+				return ec.fieldContext_SimpleChallenge_requiresSuperTeamMembership(ctx, field)
+			case "userCompletedAt":
+				return ec.fieldContext_SimpleChallenge_userCompletedAt(ctx, field)
+			case "userEnrolledAt":
+				return ec.fieldContext_SimpleChallenge_userEnrolledAt(ctx, field)
+			case "allowSelfCompletion":
+				return ec.fieldContext_SimpleChallenge_allowSelfCompletion(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SimpleChallenge", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_selfCompleteChallenge_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -17461,11 +17439,11 @@ func (ec *executionContext) _Mutation_enrollInChallenge(ctx context.Context, fie
 			directive1 := func(ctx context.Context) (any, error) {
 				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
 				if err != nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, err
 				}
 				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, errors.New("directive requireRole is not implemented")
 				}
 				return ec.directives.RequireRole(ctx, nil, directive0, roles)
@@ -17474,7 +17452,7 @@ func (ec *executionContext) _Mutation_enrollInChallenge(ctx context.Context, fie
 			next = directive1
 			return next
 		},
-		ec.marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		true,
 	)
@@ -17487,41 +17465,7 @@ func (ec *executionContext) fieldContext_Mutation_enrollInChallenge(ctx context.
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	defer func() {
@@ -17613,11 +17557,11 @@ func (ec *executionContext) _Mutation_enrollUserInChallenge(ctx context.Context,
 			directive1 := func(ctx context.Context) (any, error) {
 				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "m2m"})
 				if err != nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, err
 				}
 				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, errors.New("directive requireRole is not implemented")
 				}
 				return ec.directives.RequireRole(ctx, nil, directive0, roles)
@@ -17626,7 +17570,7 @@ func (ec *executionContext) _Mutation_enrollUserInChallenge(ctx context.Context,
 			next = directive1
 			return next
 		},
-		ec.marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		true,
 	)
@@ -17639,41 +17583,7 @@ func (ec *executionContext) fieldContext_Mutation_enrollUserInChallenge(ctx cont
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	defer func() {
@@ -17791,41 +17701,7 @@ func (ec *executionContext) fieldContext_Mutation_bulkEnrollUsersInChallenge(ctx
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	defer func() {
@@ -17917,11 +17793,11 @@ func (ec *executionContext) _Mutation_completeChallenge(ctx context.Context, fie
 			directive1 := func(ctx context.Context) (any, error) {
 				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
 				if err != nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, err
 				}
 				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Challenge
+					var zeroVal model.Challenge
 					return zeroVal, errors.New("directive requireRole is not implemented")
 				}
 				return ec.directives.RequireRole(ctx, nil, directive0, roles)
@@ -17930,7 +17806,7 @@ func (ec *executionContext) _Mutation_completeChallenge(ctx context.Context, fie
 			next = directive1
 			return next
 		},
-		ec.marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		true,
 	)
@@ -17943,41 +17819,7 @@ func (ec *executionContext) fieldContext_Mutation_completeChallenge(ctx context.
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	defer func() {
@@ -18095,41 +17937,7 @@ func (ec *executionContext) fieldContext_Mutation_bulkCompleteChallenges(ctx con
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	defer func() {
@@ -21405,41 +21213,7 @@ func (ec *executionContext) fieldContext_Project_challenges(_ context.Context, f
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	return fc, nil
@@ -23029,7 +22803,7 @@ func (ec *executionContext) _Query_challenge(ctx context.Context, field graphql.
 			return ec.resolvers.Query().Challenge(ctx, fc.Args["id"].(string))
 		},
 		nil,
-		ec.marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		true,
 	)
@@ -23042,41 +22816,7 @@ func (ec *executionContext) fieldContext_Query_challenge(ctx context.Context, fi
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	defer func() {
@@ -24447,7 +24187,7 @@ func (ec *executionContext) _Quiz_challenge(ctx context.Context, field graphql.C
 			return ec.resolvers.Quiz().Challenge(ctx, obj)
 		},
 		nil,
-		ec.marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		true,
 	)
@@ -24460,41 +24200,7 @@ func (ec *executionContext) fieldContext_Quiz_challenge(_ context.Context, field
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	return fc, nil
@@ -25144,7 +24850,7 @@ func (ec *executionContext) _QuizAchievement_challenge(ctx context.Context, fiel
 			return ec.resolvers.QuizAchievement().Challenge(ctx, obj)
 		},
 		nil,
-		ec.marshalOChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalOChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		false,
 	)
@@ -25157,41 +24863,7 @@ func (ec *executionContext) fieldContext_QuizAchievement_challenge(_ context.Con
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	return fc, nil
@@ -25404,6 +25076,560 @@ func (ec *executionContext) fieldContext_QuizAchievement_requireCompletion(_ con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_id(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_name(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_description(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalNHTML2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐHTML,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type HTML does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_image(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_image,
+		func(ctx context.Context) (any, error) {
+			return obj.Image, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_project(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_project,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizChallenge().Project(ctx, obj)
+		},
+		nil,
+		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProject,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_project(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Project_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Project_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
+			case "challenges":
+				return ec.fieldContext_Project_challenges(ctx, field)
+			case "leaderboard":
+				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "events":
+				return ec.fieldContext_Project_events(ctx, field)
+			case "startDate":
+				return ec.fieldContext_Project_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_Project_endDate(ctx, field)
+			case "branding":
+				return ec.fieldContext_Project_branding(ctx, field)
+			case "teams":
+				return ec.fieldContext_Project_teams(ctx, field)
+			case "myTeam":
+				return ec.fieldContext_Project_myTeam(ctx, field)
+			case "achievements":
+				return ec.fieldContext_Project_achievements(ctx, field)
+			case "streaks":
+				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_event(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_event,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizChallenge().Event(ctx, obj)
+		},
+		nil,
+		ec.marshalOEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEvent,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_event(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Event_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Event_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Event_description(ctx, field)
+			case "challenges":
+				return ec.fieldContext_Event_challenges(ctx, field)
+			case "leaderboard":
+				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "startDate":
+				return ec.fieldContext_Event_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_Event_endDate(ctx, field)
+			case "parentProject":
+				return ec.fieldContext_Event_parentProject(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_buttonText(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_buttonText,
+		func(ctx context.Context) (any, error) {
+			return obj.ButtonText, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_buttonText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_publishedAt(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_publishedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.PublishedAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_publishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_visibleAt(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_visibleAt,
+		func(ctx context.Context) (any, error) {
+			return obj.VisibleAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_visibleAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_startedAt(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_startedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.StartedAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_endTime(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_endTime,
+		func(ctx context.Context) (any, error) {
+			return obj.EndTime, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_endTime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_requiresTeamMembership(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_requiresTeamMembership,
+		func(ctx context.Context) (any, error) {
+			return obj.RequiresTeamMembership, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_requiresTeamMembership(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_requiresSuperTeamMembership(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_requiresSuperTeamMembership,
+		func(ctx context.Context) (any, error) {
+			return obj.RequiresSuperTeamMembership, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_requiresSuperTeamMembership(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_userCompletedAt(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_userCompletedAt,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizChallenge().UserCompletedAt(ctx, obj)
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_userCompletedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_userEnrolledAt(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_userEnrolledAt,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizChallenge().UserEnrolledAt(ctx, obj)
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_userEnrolledAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizChallenge_quiz(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_quiz,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizChallenge().Quiz(ctx, obj)
+		},
+		nil,
+		ec.marshalNQuiz2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuiz,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_quiz(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Quiz_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Quiz_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Quiz_description(ctx, field)
+			case "image":
+				return ec.fieldContext_Quiz_image(ctx, field)
+			case "project":
+				return ec.fieldContext_Quiz_project(ctx, field)
+			case "challenge":
+				return ec.fieldContext_Quiz_challenge(ctx, field)
+			case "timeoutSeconds":
+				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
+			case "questionTimeoutSeconds":
+				return ec.fieldContext_Quiz_questionTimeoutSeconds(ctx, field)
+			case "randomizeQuestions":
+				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
+			case "revealCorrectAnswers":
+				return ec.fieldContext_Quiz_revealCorrectAnswers(ctx, field)
+			case "allowRetakes":
+				return ec.fieldContext_Quiz_allowRetakes(ctx, field)
+			case "completionPoints":
+				return ec.fieldContext_Quiz_completionPoints(ctx, field)
+			case "questions":
+				return ec.fieldContext_Quiz_questions(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_Quiz_publishedAt(ctx, field)
+			case "endTime":
+				return ec.fieldContext_Quiz_endTime(ctx, field)
+			case "userSubmissions":
+				return ec.fieldContext_Quiz_userSubmissions(ctx, field)
+			case "userCanStart":
+				return ec.fieldContext_Quiz_userCanStart(ctx, field)
+			case "userActiveSubmission":
+				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
 	}
 	return fc, nil
@@ -26658,7 +26884,7 @@ func (ec *executionContext) _ReadingAchievement_challenge(ctx context.Context, f
 			return ec.resolvers.ReadingAchievement().Challenge(ctx, obj)
 		},
 		nil,
-		ec.marshalOChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalOChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		false,
 	)
@@ -26671,41 +26897,7 @@ func (ec *executionContext) fieldContext_ReadingAchievement_challenge(_ context.
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	return fc, nil
@@ -27334,7 +27526,7 @@ func (ec *executionContext) _ScoreJournal_challenge(ctx context.Context, field g
 			return ec.resolvers.ScoreJournal().Challenge(ctx, obj)
 		},
 		nil,
-		ec.marshalOChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalOChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		false,
 	)
@@ -27347,41 +27539,7 @@ func (ec *executionContext) fieldContext_ScoreJournal_challenge(_ context.Contex
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	return fc, nil
@@ -28016,7 +28174,7 @@ func (ec *executionContext) _SimpleAchievement_challenge(ctx context.Context, fi
 			return ec.resolvers.SimpleAchievement().Challenge(ctx, obj)
 		},
 		nil,
-		ec.marshalOChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalOChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		false,
 	)
@@ -28029,41 +28187,7 @@ func (ec *executionContext) fieldContext_SimpleAchievement_challenge(_ context.C
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	return fc, nil
@@ -28146,6 +28270,522 @@ func (ec *executionContext) _SimpleAchievement_hidden(ctx context.Context, field
 func (ec *executionContext) fieldContext_SimpleAchievement_hidden(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SimpleAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_id(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_name(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_description(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalNHTML2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐHTML,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type HTML does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_image(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_image,
+		func(ctx context.Context) (any, error) {
+			return obj.Image, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_project(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_project,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.SimpleChallenge().Project(ctx, obj)
+		},
+		nil,
+		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProject,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_project(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Project_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Project_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
+			case "challenges":
+				return ec.fieldContext_Project_challenges(ctx, field)
+			case "leaderboard":
+				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "events":
+				return ec.fieldContext_Project_events(ctx, field)
+			case "startDate":
+				return ec.fieldContext_Project_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_Project_endDate(ctx, field)
+			case "branding":
+				return ec.fieldContext_Project_branding(ctx, field)
+			case "teams":
+				return ec.fieldContext_Project_teams(ctx, field)
+			case "myTeam":
+				return ec.fieldContext_Project_myTeam(ctx, field)
+			case "achievements":
+				return ec.fieldContext_Project_achievements(ctx, field)
+			case "streaks":
+				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_event(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_event,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.SimpleChallenge().Event(ctx, obj)
+		},
+		nil,
+		ec.marshalOEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEvent,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_event(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Event_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Event_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Event_description(ctx, field)
+			case "challenges":
+				return ec.fieldContext_Event_challenges(ctx, field)
+			case "leaderboard":
+				return ec.fieldContext_Event_leaderboard(ctx, field)
+			case "startDate":
+				return ec.fieldContext_Event_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_Event_endDate(ctx, field)
+			case "parentProject":
+				return ec.fieldContext_Event_parentProject(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_buttonText(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_buttonText,
+		func(ctx context.Context) (any, error) {
+			return obj.ButtonText, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_buttonText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_publishedAt(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_publishedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.PublishedAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_publishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_visibleAt(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_visibleAt,
+		func(ctx context.Context) (any, error) {
+			return obj.VisibleAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_visibleAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_startedAt(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_startedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.StartedAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_endTime(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_endTime,
+		func(ctx context.Context) (any, error) {
+			return obj.EndTime, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_endTime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_requiresTeamMembership(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_requiresTeamMembership,
+		func(ctx context.Context) (any, error) {
+			return obj.RequiresTeamMembership, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_requiresTeamMembership(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_requiresSuperTeamMembership(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_requiresSuperTeamMembership,
+		func(ctx context.Context) (any, error) {
+			return obj.RequiresSuperTeamMembership, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_requiresSuperTeamMembership(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_userCompletedAt(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_userCompletedAt,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.SimpleChallenge().UserCompletedAt(ctx, obj)
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_userCompletedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_userEnrolledAt(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_userEnrolledAt,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.SimpleChallenge().UserEnrolledAt(ctx, obj)
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_userEnrolledAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_allowSelfCompletion(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_allowSelfCompletion,
+		func(ctx context.Context) (any, error) {
+			return obj.AllowSelfCompletion, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_allowSelfCompletion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -28653,7 +29293,7 @@ func (ec *executionContext) _StreakAchievement_challenge(ctx context.Context, fi
 			return ec.resolvers.StreakAchievement().Challenge(ctx, obj)
 		},
 		nil,
-		ec.marshalOChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
+		ec.marshalOChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		false,
 	)
@@ -28666,41 +29306,7 @@ func (ec *executionContext) fieldContext_StreakAchievement_challenge(_ context.C
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Challenge_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Challenge_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Challenge_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Challenge_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Challenge_project(ctx, field)
-			case "event":
-				return ec.fieldContext_Challenge_event(ctx, field)
-			case "url":
-				return ec.fieldContext_Challenge_url(ctx, field)
-			case "buttonText":
-				return ec.fieldContext_Challenge_buttonText(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Challenge_publishedAt(ctx, field)
-			case "visibleAt":
-				return ec.fieldContext_Challenge_visibleAt(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_Challenge_startedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Challenge_endTime(ctx, field)
-			case "requiresTeamMembership":
-				return ec.fieldContext_Challenge_requiresTeamMembership(ctx, field)
-			case "requiresSuperTeamMembership":
-				return ec.fieldContext_Challenge_requiresSuperTeamMembership(ctx, field)
-			case "userCompletedAt":
-				return ec.fieldContext_Challenge_userCompletedAt(ctx, field)
-			case "userEnrolledAt":
-				return ec.fieldContext_Challenge_userEnrolledAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	return fc, nil
@@ -33300,7 +33906,7 @@ func (ec *executionContext) unmarshalInputChallengeFilter(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"projectId", "eventId", "ids", "publishedAfter", "publishedBefore"}
+	fieldsInOrder := [...]string{"projectId", "eventId", "challengeType", "ids", "publishedAfter", "publishedBefore"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -33321,6 +33927,13 @@ func (ec *executionContext) unmarshalInputChallengeFilter(ctx context.Context, o
 				return it, err
 			}
 			it.EventID = data
+		case "challengeType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("challengeType"))
+			data, err := ec.unmarshalOChallengeType2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChallengeType = data
 		case "ids":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ids"))
 			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
@@ -33568,13 +34181,20 @@ func (ec *executionContext) unmarshalInputCreateChallengeInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "url", "buttonText", "visibleAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership"}
+	fieldsInOrder := [...]string{"type", "name", "description", "image", "buttonText", "visibleAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership", "allowSelfCompletion", "url"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			data, err := ec.unmarshalNChallengeType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
 		case "name":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -33596,13 +34216,6 @@ func (ec *executionContext) unmarshalInputCreateChallengeInput(ctx context.Conte
 				return it, err
 			}
 			it.Image = data
-		case "url":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.URL = data
 		case "buttonText":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("buttonText"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -33638,6 +34251,20 @@ func (ec *executionContext) unmarshalInputCreateChallengeInput(ctx context.Conte
 				return it, err
 			}
 			it.RequiresSuperTeamMembership = data
+		case "allowSelfCompletion":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowSelfCompletion"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AllowSelfCompletion = data
+		case "url":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.URL = data
 		}
 	}
 
@@ -35476,7 +36103,7 @@ func (ec *executionContext) unmarshalInputUpdateChallengeInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "eventId", "url", "buttonText", "visibleAt", "startedAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership"}
+	fieldsInOrder := [...]string{"name", "description", "image", "eventId", "buttonText", "visibleAt", "startedAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership", "allowSelfCompletion", "url"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -35511,13 +36138,6 @@ func (ec *executionContext) unmarshalInputUpdateChallengeInput(ctx context.Conte
 				return it, err
 			}
 			it.EventID = data
-		case "url":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.URL = data
 		case "buttonText":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("buttonText"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -35560,6 +36180,20 @@ func (ec *executionContext) unmarshalInputUpdateChallengeInput(ctx context.Conte
 				return it, err
 			}
 			it.RequiresSuperTeamMembership = data
+		case "allowSelfCompletion":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowSelfCompletion"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AllowSelfCompletion = data
+		case "url":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.URL = data
 		}
 	}
 
@@ -36351,6 +36985,36 @@ func (ec *executionContext) _Achievement(ctx context.Context, sel ast.SelectionS
 	}
 }
 
+func (ec *executionContext) _Challenge(ctx context.Context, sel ast.SelectionSet, obj model.Challenge) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.SimpleChallenge:
+		return ec._SimpleChallenge(ctx, sel, &obj)
+	case *model.SimpleChallenge:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SimpleChallenge(ctx, sel, obj)
+	case model.QuizChallenge:
+		return ec._QuizChallenge(ctx, sel, &obj)
+	case *model.QuizChallenge:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._QuizChallenge(ctx, sel, obj)
+	case model.ExternalChallenge:
+		return ec._ExternalChallenge(ctx, sel, &obj)
+	case *model.ExternalChallenge:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ExternalChallenge(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _QuizQuestion(ctx context.Context, sel ast.SelectionSet, obj model.QuizQuestion) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -36436,6 +37100,13 @@ func (ec *executionContext) _ScoreSource(ctx context.Context, sel ast.SelectionS
 			return graphql.Null
 		}
 		return ec._StreakAchievement(ctx, sel, obj)
+	case model.SimpleChallenge:
+		return ec._SimpleChallenge(ctx, sel, &obj)
+	case *model.SimpleChallenge:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SimpleChallenge(ctx, sel, obj)
 	case model.SimpleAchievement:
 		return ec._SimpleAchievement(ctx, sel, &obj)
 	case *model.SimpleAchievement:
@@ -36450,6 +37121,13 @@ func (ec *executionContext) _ScoreSource(ctx context.Context, sel ast.SelectionS
 			return graphql.Null
 		}
 		return ec._ReadingAchievement(ctx, sel, obj)
+	case model.QuizChallenge:
+		return ec._QuizChallenge(ctx, sel, &obj)
+	case *model.QuizChallenge:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._QuizChallenge(ctx, sel, obj)
 	case model.ListeningAchievement:
 		return ec._ListeningAchievement(ctx, sel, &obj)
 	case *model.ListeningAchievement:
@@ -36457,6 +37135,13 @@ func (ec *executionContext) _ScoreSource(ctx context.Context, sel ast.SelectionS
 			return graphql.Null
 		}
 		return ec._ListeningAchievement(ctx, sel, obj)
+	case model.ExternalChallenge:
+		return ec._ExternalChallenge(ctx, sel, &obj)
+	case *model.ExternalChallenge:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ExternalChallenge(ctx, sel, obj)
 	case model.Event:
 		return ec._Event(ctx, sel, &obj)
 	case *model.Event:
@@ -36464,13 +37149,6 @@ func (ec *executionContext) _ScoreSource(ctx context.Context, sel ast.SelectionS
 			return graphql.Null
 		}
 		return ec._Event(ctx, sel, obj)
-	case model.Challenge:
-		return ec._Challenge(ctx, sel, &obj)
-	case *model.Challenge:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Challenge(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -36691,217 +37369,6 @@ func (ec *executionContext) _Branding(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var challengeImplementors = []string{"Challenge", "ScoreSource"}
-
-func (ec *executionContext) _Challenge(ctx context.Context, sel ast.SelectionSet, obj *model.Challenge) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, challengeImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Challenge")
-		case "id":
-			out.Values[i] = ec._Challenge_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "name":
-			out.Values[i] = ec._Challenge_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "description":
-			out.Values[i] = ec._Challenge_description(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "image":
-			out.Values[i] = ec._Challenge_image(ctx, field, obj)
-		case "project":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Challenge_project(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "event":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Challenge_event(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "url":
-			out.Values[i] = ec._Challenge_url(ctx, field, obj)
-		case "buttonText":
-			out.Values[i] = ec._Challenge_buttonText(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "publishedAt":
-			out.Values[i] = ec._Challenge_publishedAt(ctx, field, obj)
-		case "visibleAt":
-			out.Values[i] = ec._Challenge_visibleAt(ctx, field, obj)
-		case "startedAt":
-			out.Values[i] = ec._Challenge_startedAt(ctx, field, obj)
-		case "endTime":
-			out.Values[i] = ec._Challenge_endTime(ctx, field, obj)
-		case "requiresTeamMembership":
-			out.Values[i] = ec._Challenge_requiresTeamMembership(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "requiresSuperTeamMembership":
-			out.Values[i] = ec._Challenge_requiresSuperTeamMembership(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "userCompletedAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Challenge_userCompletedAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "userEnrolledAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Challenge_userEnrolledAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -37769,6 +38236,220 @@ func (ec *executionContext) _EventEdge(ctx context.Context, sel ast.SelectionSet
 			out.Values[i] = ec._EventEdge_node(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var externalChallengeImplementors = []string{"ExternalChallenge", "Challenge", "ScoreSource"}
+
+func (ec *executionContext) _ExternalChallenge(ctx context.Context, sel ast.SelectionSet, obj *model.ExternalChallenge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, externalChallengeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ExternalChallenge")
+		case "id":
+			out.Values[i] = ec._ExternalChallenge_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._ExternalChallenge_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "description":
+			out.Values[i] = ec._ExternalChallenge_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "image":
+			out.Values[i] = ec._ExternalChallenge_image(ctx, field, obj)
+		case "project":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ExternalChallenge_project(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "event":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ExternalChallenge_event(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "buttonText":
+			out.Values[i] = ec._ExternalChallenge_buttonText(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "publishedAt":
+			out.Values[i] = ec._ExternalChallenge_publishedAt(ctx, field, obj)
+		case "visibleAt":
+			out.Values[i] = ec._ExternalChallenge_visibleAt(ctx, field, obj)
+		case "startedAt":
+			out.Values[i] = ec._ExternalChallenge_startedAt(ctx, field, obj)
+		case "endTime":
+			out.Values[i] = ec._ExternalChallenge_endTime(ctx, field, obj)
+		case "requiresTeamMembership":
+			out.Values[i] = ec._ExternalChallenge_requiresTeamMembership(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "requiresSuperTeamMembership":
+			out.Values[i] = ec._ExternalChallenge_requiresSuperTeamMembership(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "userCompletedAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ExternalChallenge_userCompletedAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "userEnrolledAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ExternalChallenge_userEnrolledAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "url":
+			out.Values[i] = ec._ExternalChallenge_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -39051,13 +39732,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "bulkCreateChallenges":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_bulkCreateChallenges(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "setChallengeVisibility":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_setChallengeVisibility(ctx, field)
@@ -39068,6 +39742,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "setChallengeRequirements":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_setChallengeRequirements(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "selfCompleteChallenge":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_selfCompleteChallenge(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -41718,6 +42399,251 @@ func (ec *executionContext) _QuizAchievement(ctx context.Context, sel ast.Select
 	return out
 }
 
+var quizChallengeImplementors = []string{"QuizChallenge", "Challenge", "ScoreSource"}
+
+func (ec *executionContext) _QuizChallenge(ctx context.Context, sel ast.SelectionSet, obj *model.QuizChallenge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, quizChallengeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("QuizChallenge")
+		case "id":
+			out.Values[i] = ec._QuizChallenge_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._QuizChallenge_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "description":
+			out.Values[i] = ec._QuizChallenge_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "image":
+			out.Values[i] = ec._QuizChallenge_image(ctx, field, obj)
+		case "project":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizChallenge_project(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "event":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizChallenge_event(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "buttonText":
+			out.Values[i] = ec._QuizChallenge_buttonText(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "publishedAt":
+			out.Values[i] = ec._QuizChallenge_publishedAt(ctx, field, obj)
+		case "visibleAt":
+			out.Values[i] = ec._QuizChallenge_visibleAt(ctx, field, obj)
+		case "startedAt":
+			out.Values[i] = ec._QuizChallenge_startedAt(ctx, field, obj)
+		case "endTime":
+			out.Values[i] = ec._QuizChallenge_endTime(ctx, field, obj)
+		case "requiresTeamMembership":
+			out.Values[i] = ec._QuizChallenge_requiresTeamMembership(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "requiresSuperTeamMembership":
+			out.Values[i] = ec._QuizChallenge_requiresSuperTeamMembership(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "userCompletedAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizChallenge_userCompletedAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "userEnrolledAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizChallenge_userEnrolledAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "quiz":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizChallenge_quiz(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var quizConnectionImplementors = []string{"QuizConnection"}
 
 func (ec *executionContext) _QuizConnection(ctx context.Context, sel ast.SelectionSet, obj *model.QuizConnection) graphql.Marshaler {
@@ -43202,6 +44128,220 @@ func (ec *executionContext) _SimpleAchievement(ctx context.Context, sel ast.Sele
 			}
 		case "hidden":
 			out.Values[i] = ec._SimpleAchievement_hidden(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var simpleChallengeImplementors = []string{"SimpleChallenge", "Challenge", "ScoreSource"}
+
+func (ec *executionContext) _SimpleChallenge(ctx context.Context, sel ast.SelectionSet, obj *model.SimpleChallenge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, simpleChallengeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SimpleChallenge")
+		case "id":
+			out.Values[i] = ec._SimpleChallenge_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._SimpleChallenge_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "description":
+			out.Values[i] = ec._SimpleChallenge_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "image":
+			out.Values[i] = ec._SimpleChallenge_image(ctx, field, obj)
+		case "project":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SimpleChallenge_project(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "event":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SimpleChallenge_event(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "buttonText":
+			out.Values[i] = ec._SimpleChallenge_buttonText(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "publishedAt":
+			out.Values[i] = ec._SimpleChallenge_publishedAt(ctx, field, obj)
+		case "visibleAt":
+			out.Values[i] = ec._SimpleChallenge_visibleAt(ctx, field, obj)
+		case "startedAt":
+			out.Values[i] = ec._SimpleChallenge_startedAt(ctx, field, obj)
+		case "endTime":
+			out.Values[i] = ec._SimpleChallenge_endTime(ctx, field, obj)
+		case "requiresTeamMembership":
+			out.Values[i] = ec._SimpleChallenge_requiresTeamMembership(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "requiresSuperTeamMembership":
+			out.Values[i] = ec._SimpleChallenge_requiresSuperTeamMembership(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "userCompletedAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SimpleChallenge_userCompletedAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "userEnrolledAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SimpleChallenge_userEnrolledAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allowSelfCompletion":
+			out.Values[i] = ec._SimpleChallenge_allowSelfCompletion(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -45788,7 +46928,13 @@ func (ec *executionContext) unmarshalNBrandingInput2ᚖgithubᚗcomᚋbccᚑmedi
 }
 
 func (ec *executionContext) marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge(ctx context.Context, sel ast.SelectionSet, v model.Challenge) graphql.Marshaler {
-	return ec._Challenge(ctx, sel, &v)
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Challenge(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNChallenge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Challenge) graphql.Marshaler {
@@ -45833,16 +46979,6 @@ func (ec *executionContext) marshalNChallenge2ᚕgithubᚗcomᚋbccᚑmediaᚋwa
 	}
 
 	return ret
-}
-
-func (ec *executionContext) marshalNChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge(ctx context.Context, sel ast.SelectionSet, v *model.Challenge) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._Challenge(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNChallengeConnection2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeConnection(ctx context.Context, sel ast.SelectionSet, v model.ChallengeConnection) graphql.Marshaler {
@@ -45905,6 +47041,16 @@ func (ec *executionContext) marshalNChallengeEdge2ᚕgithubᚗcomᚋbccᚑmedia�
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNChallengeType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeType(ctx context.Context, v any) (model.ChallengeType, error) {
+	var res model.ChallengeType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNChallengeType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeType(ctx context.Context, sel ast.SelectionSet, v model.ChallengeType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNChurch2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurch(ctx context.Context, sel ast.SelectionSet, v model.Church) graphql.Marshaler {
@@ -46114,21 +47260,6 @@ func (ec *executionContext) marshalNConsentStatus2ᚖgithubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) unmarshalNCreateChallengeInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateChallengeInput(ctx context.Context, v any) (model.CreateChallengeInput, error) {
 	res, err := ec.unmarshalInputCreateChallengeInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNCreateChallengeInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateChallengeInputᚄ(ctx context.Context, v any) ([]model.CreateChallengeInput, error) {
-	var vSlice []any
-	vSlice = graphql.CoerceList(v)
-	var err error
-	res := make([]model.CreateChallengeInput, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNCreateChallengeInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateChallengeInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
 }
 
 func (ec *executionContext) unmarshalNCreateEventInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateEventInput(ctx context.Context, v any) (model.CreateEventInput, error) {
@@ -47398,6 +48529,20 @@ func (ec *executionContext) marshalNSimpleAchievement2ᚖgithubᚗcomᚋbccᚑme
 		return graphql.Null
 	}
 	return ec._SimpleAchievement(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSimpleChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSimpleChallenge(ctx context.Context, sel ast.SelectionSet, v model.SimpleChallenge) graphql.Marshaler {
+	return ec._SimpleChallenge(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSimpleChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSimpleChallenge(ctx context.Context, sel ast.SelectionSet, v *model.SimpleChallenge) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SimpleChallenge(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNStreak2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreak(ctx context.Context, sel ast.SelectionSet, v model.Streak) graphql.Marshaler {
@@ -48691,7 +49836,7 @@ func (ec *executionContext) unmarshalOBrandingInput2ᚖgithubᚗcomᚋbccᚑmedi
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge(ctx context.Context, sel ast.SelectionSet, v *model.Challenge) graphql.Marshaler {
+func (ec *executionContext) marshalOChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge(ctx context.Context, sel ast.SelectionSet, v model.Challenge) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -48704,6 +49849,22 @@ func (ec *executionContext) unmarshalOChallengeFilter2ᚖgithubᚗcomᚋbccᚑme
 	}
 	res, err := ec.unmarshalInputChallengeFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOChallengeType2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeType(ctx context.Context, v any) (*model.ChallengeType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.ChallengeType)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOChallengeType2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeType(ctx context.Context, sel ast.SelectionSet, v *model.ChallengeType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) marshalOChurch2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurch(ctx context.Context, sel ast.SelectionSet, v *model.Church) graphql.Marshaler {
