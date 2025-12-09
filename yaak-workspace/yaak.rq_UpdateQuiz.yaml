@@ -15,7 +15,6 @@ body:
         name
         description
         timeoutSeconds
-        questionTimeoutSeconds
         randomizeQuestions
         revealCorrectAnswers
         allowRetakes

@@ -12,9 +12,9 @@ body:
     mutation AddQuizQuestion($quizId: ID!, $input: CreateQuizQuestionInput!) {
       addQuizQuestion(quizId: $quizId, input: $input) {
         id
-        questionType
         questionText
         questionOrder
+        timeoutSeconds
       }
     }
   variables: |
@@ -23,7 +23,8 @@ body:
       "input": {
         "questionType": "FREE_TEXT",
         "questionText": "Describe your favorite Bible verse and why it is meaningful to you.",
-        "questionOrder": 2
+        "questionOrder": 2,
+        "timeoutSeconds": 60
       }
     }
 bodyType: graphql

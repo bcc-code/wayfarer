@@ -12,15 +12,17 @@ body:
     mutation UpdateQuizQuestion($id: ID!, $input: UpdateQuizQuestionInput!) {
       updateQuizQuestion(id: $id, input: $input) {
         id
-        questionType
         questionText
         questionOrder
-        allowMultipleSelection
-        predefinedAnswers {
-          id
-          answerText
-          answerOrder
-          isCorrect
+        timeoutSeconds
+        ... on PredefinedQuestion {
+          allowMultipleSelection
+          predefinedAnswers {
+            id
+            answerText
+            answerOrder
+            isCorrect
+          }
         }
       }
     }
@@ -29,7 +31,8 @@ body:
       "id": "QQ01ARZ3NDEKTSV4RRFFQ69G5FAV",
       "input": {
         "questionText": "Updated question text?",
-        "questionOrder": 1
+        "questionOrder": 1,
+        "timeoutSeconds": 45
       }
     }
 bodyType: graphql

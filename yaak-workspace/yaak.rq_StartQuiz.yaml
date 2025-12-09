@@ -18,24 +18,27 @@ body:
         questionOrder
         orderedQuestions {
           id
-          questionType
           questionText
           questionOrder
-          allowMultipleSelection
-          predefinedAnswers {
-            id
-            answerText
-            answerOrder
+          timeoutSeconds
+          ... on PredefinedQuestion {
+            allowMultipleSelection
+            predefinedAnswers {
+              id
+              answerText
+              answerOrder
+            }
           }
-          minValue
-          maxValue
-          stepValue
+          ... on NumberQuestion {
+            minValue
+            maxValue
+            stepValue
+          }
         }
         quiz {
           id
           name
           timeoutSeconds
-          questionTimeoutSeconds
         }
       }
     }

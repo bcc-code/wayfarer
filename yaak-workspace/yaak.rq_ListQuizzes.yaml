@@ -21,21 +21,25 @@ body:
             endTime
             completionPoints
             userCanStart
-            questions{
+            questions {
               id
-              questionType
               questionText
               questionOrder
-              allowMultipleSelection
-              predefinedAnswers{
-                id
-                answerText
-                answerOrder
-                isCorrect
+              timeoutSeconds
+              ... on PredefinedQuestion {
+                allowMultipleSelection
+                predefinedAnswers {
+                  id
+                  answerText
+                  answerOrder
+                  isCorrect
+                }
               }
-              minValue
-              maxValue
-              stepValue
+              ... on NumberQuestion {
+                minValue
+                maxValue
+                stepValue
+              }
             }
             project {
               id
