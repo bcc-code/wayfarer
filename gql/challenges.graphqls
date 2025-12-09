@@ -33,7 +33,7 @@ extend type Mutation {
     setChallengeRequirements(id: ID!, requiresTeamMembership: Boolean, requiresSuperTeamMembership: Boolean): Challenge! @requireRole(roles: ["admin", "superadmin"])
 
     # User self-completion (SimpleChallenge only, when allowSelfCompletion=true)
-    selfCompleteChallenge(challengeId: ID!): SimpleChallenge! @requireRole(roles: ["user"])
+    selfCompleteChallenge(challengeId: ID!): SimpleChallenge!
 
     # User self-enrollment
     enrollInChallenge(challengeId: ID!): Challenge! @requireRole(roles: ["user"])
