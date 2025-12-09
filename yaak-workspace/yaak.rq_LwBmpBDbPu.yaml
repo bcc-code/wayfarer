@@ -2,56 +2,57 @@ type: http_request
 model: http_request
 id: rq_LwBmpBDbPu
 createdAt: 2025-12-01T10:57:23.142038
-updatedAt: 2025-12-02T16:26:52.469129
+updatedAt: 2025-12-03T12:50:35.211979
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_WoXqzhPmBJ
 authentication: {}
 authenticationType: null
 body:
   query: |
-    {
+    query Consents {
       me {
         consentStatus {
           pendingConsents {
+            __typename
             id
             key
             version
             title
             body {
               html
-              markdown
             }
             publishedAt
+            managedBy
+            managementType
           }
           acceptedConsents {
+            __typename
             id
-            consent{
-              userHistory{
-                source
-                action
-                occurredAt
-                externalConsentId
-              }
+            consent {
+              title
+              managedBy
+              managementType
+              url
             }
             action
+            actionDate
           }
-          rejectedConsents{
+          rejectedConsents {
+            __typename
             id
-            consent{
-              userHistory{
-                source
-                action
-                occurredAt
-                externalConsentId
-              }
+            consent {
+              title
+              managedBy
+              managementType
+              url
             }
-          }
-          pendingConsents{
-            id
+            action
+            actionDate
           }
         }
       }
     }
+  variables: ''
 bodyType: graphql
 description: ''
 headers:
