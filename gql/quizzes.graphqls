@@ -8,7 +8,7 @@ extend type Query {
         after: String
         last: Int
         before: String
-    ): QuizConnection! @requireRole(roles: ["user", "admin", "superadmin"])
+    ): QuizConnection! @requireRole(roles: ["admin", "superadmin"])
 
     quizSubmission(id: ID!): QuizSubmission! @requireRole(roles: ["user", "admin", "superadmin"])
 
@@ -39,9 +39,9 @@ extend type Mutation {
     createQuizAchievement(input: CreateQuizAchievementInput!): QuizAchievement! @requireRole(roles: ["admin", "superadmin"])
 
     # User: Taking quizzes
-    startQuiz(quizId: ID!): QuizSubmission! @requireRole(roles: ["user"])
-    submitQuizAnswer(submissionId: ID!, input: SubmitQuizAnswerInput!): QuizResponse! @requireRole(roles: ["user"])
-    finalizeQuiz(submissionId: ID!): QuizSubmission! @requireRole(roles: ["user"])
+    startQuiz(quizId: ID!): QuizSubmission!
+    submitQuizAnswer(submissionId: ID!, input: SubmitQuizAnswerInput!): QuizResponse!
+    finalizeQuiz(submissionId: ID!): QuizSubmission!
 
     # M2M: External submission
     createQuizSubmission(
