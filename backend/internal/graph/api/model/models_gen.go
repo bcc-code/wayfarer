@@ -50,6 +50,7 @@ type QuizQuestion interface {
 	GetQuiz() *Quiz
 	GetQuestionText() string
 	GetQuestionOrder() int
+	GetTimeoutSeconds() *int
 }
 
 type QuizResponse interface {
@@ -301,25 +302,25 @@ type CreateQuizAchievementInput struct {
 }
 
 type CreateQuizInput struct {
-	Name                   string            `json:"name"`
-	Description            string            `json:"description"`
-	Image                  *string           `json:"image,omitempty"`
-	ProjectID              string            `json:"projectId"`
-	ChallengeID            string            `json:"challengeId"`
-	TimeoutSeconds         *int              `json:"timeoutSeconds,omitempty"`
-	QuestionTimeoutSeconds *int              `json:"questionTimeoutSeconds,omitempty"`
-	RandomizeQuestions     bool              `json:"randomizeQuestions"`
-	RevealCorrectAnswers   bool              `json:"revealCorrectAnswers"`
-	AllowRetakes           bool              `json:"allowRetakes"`
-	CompletionPoints       int               `json:"completionPoints"`
-	PublishedAt            *scalars.DateTime `json:"publishedAt,omitempty"`
-	EndTime                *scalars.DateTime `json:"endTime,omitempty"`
+	Name                 string            `json:"name"`
+	Description          string            `json:"description"`
+	Image                *string           `json:"image,omitempty"`
+	ProjectID            string            `json:"projectId"`
+	ChallengeID          string            `json:"challengeId"`
+	TimeoutSeconds       *int              `json:"timeoutSeconds,omitempty"`
+	RandomizeQuestions   bool              `json:"randomizeQuestions"`
+	RevealCorrectAnswers bool              `json:"revealCorrectAnswers"`
+	AllowRetakes         bool              `json:"allowRetakes"`
+	CompletionPoints     int               `json:"completionPoints"`
+	PublishedAt          *scalars.DateTime `json:"publishedAt,omitempty"`
+	EndTime              *scalars.DateTime `json:"endTime,omitempty"`
 }
 
 type CreateQuizQuestionInput struct {
 	QuestionType           QuizQuestionType              `json:"questionType"`
 	QuestionText           string                        `json:"questionText"`
 	QuestionOrder          int                           `json:"questionOrder"`
+	TimeoutSeconds         *int                          `json:"timeoutSeconds,omitempty"`
 	AllowMultipleSelection *bool                         `json:"allowMultipleSelection,omitempty"`
 	PredefinedAnswers      []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
 	MinValue               *float64                      `json:"minValue,omitempty"`
@@ -494,11 +495,12 @@ func (this ExternalChallenge) GetUserEnrolledAt() *scalars.DateTime  { return th
 func (ExternalChallenge) IsScoreSource() {}
 
 type FreeTextQuestion struct {
-	ID            string `json:"id"`
-	Quiz          *Quiz  `json:"quiz"`
-	QuestionText  string `json:"questionText"`
-	QuestionOrder int    `json:"questionOrder"`
-	QuizID        string `json:"-"`
+	ID             string `json:"id"`
+	Quiz           *Quiz  `json:"quiz"`
+	QuestionText   string `json:"questionText"`
+	QuestionOrder  int    `json:"questionOrder"`
+	TimeoutSeconds *int   `json:"timeoutSeconds,omitempty"`
+	QuizID         string `json:"-"`
 }
 
 func (FreeTextQuestion) IsQuizQuestion()              {}
@@ -506,6 +508,7 @@ func (this FreeTextQuestion) GetID() string           { return this.ID }
 func (this FreeTextQuestion) GetQuiz() *Quiz          { return this.Quiz }
 func (this FreeTextQuestion) GetQuestionText() string { return this.QuestionText }
 func (this FreeTextQuestion) GetQuestionOrder() int   { return this.QuestionOrder }
+func (this FreeTextQuestion) GetTimeoutSeconds() *int { return this.TimeoutSeconds }
 
 type FreeTextResponse struct {
 	ID               string            `json:"id"`
@@ -526,11 +529,12 @@ func (this FreeTextResponse) GetAnsweredAt() *scalars.DateTime { return this.Ans
 func (this FreeTextResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
 
 type JSONQuestion struct {
-	ID            string `json:"id"`
-	Quiz          *Quiz  `json:"quiz"`
-	QuestionText  string `json:"questionText"`
-	QuestionOrder int    `json:"questionOrder"`
-	QuizID        string `json:"-"`
+	ID             string `json:"id"`
+	Quiz           *Quiz  `json:"quiz"`
+	QuestionText   string `json:"questionText"`
+	QuestionOrder  int    `json:"questionOrder"`
+	TimeoutSeconds *int   `json:"timeoutSeconds,omitempty"`
+	QuizID         string `json:"-"`
 }
 
 func (JSONQuestion) IsQuizQuestion()              {}
@@ -538,6 +542,7 @@ func (this JSONQuestion) GetID() string           { return this.ID }
 func (this JSONQuestion) GetQuiz() *Quiz          { return this.Quiz }
 func (this JSONQuestion) GetQuestionText() string { return this.QuestionText }
 func (this JSONQuestion) GetQuestionOrder() int   { return this.QuestionOrder }
+func (this JSONQuestion) GetTimeoutSeconds() *int { return this.TimeoutSeconds }
 
 type JSONResponse struct {
 	ID               string            `json:"id"`
@@ -628,14 +633,15 @@ type Mutation struct {
 }
 
 type NumberQuestion struct {
-	ID            string   `json:"id"`
-	Quiz          *Quiz    `json:"quiz"`
-	QuestionText  string   `json:"questionText"`
-	QuestionOrder int      `json:"questionOrder"`
-	MinValue      *float64 `json:"minValue,omitempty"`
-	MaxValue      *float64 `json:"maxValue,omitempty"`
-	StepValue     *float64 `json:"stepValue,omitempty"`
-	QuizID        string   `json:"-"`
+	ID             string   `json:"id"`
+	Quiz           *Quiz    `json:"quiz"`
+	QuestionText   string   `json:"questionText"`
+	QuestionOrder  int      `json:"questionOrder"`
+	TimeoutSeconds *int     `json:"timeoutSeconds,omitempty"`
+	MinValue       *float64 `json:"minValue,omitempty"`
+	MaxValue       *float64 `json:"maxValue,omitempty"`
+	StepValue      *float64 `json:"stepValue,omitempty"`
+	QuizID         string   `json:"-"`
 }
 
 func (NumberQuestion) IsQuizQuestion()              {}
@@ -643,6 +649,7 @@ func (this NumberQuestion) GetID() string           { return this.ID }
 func (this NumberQuestion) GetQuiz() *Quiz          { return this.Quiz }
 func (this NumberQuestion) GetQuestionText() string { return this.QuestionText }
 func (this NumberQuestion) GetQuestionOrder() int   { return this.QuestionOrder }
+func (this NumberQuestion) GetTimeoutSeconds() *int { return this.TimeoutSeconds }
 
 type NumberResponse struct {
 	ID               string            `json:"id"`
@@ -674,6 +681,7 @@ type PredefinedQuestion struct {
 	Quiz                   *Quiz                  `json:"quiz"`
 	QuestionText           string                 `json:"questionText"`
 	QuestionOrder          int                    `json:"questionOrder"`
+	TimeoutSeconds         *int                   `json:"timeoutSeconds,omitempty"`
 	AllowMultipleSelection bool                   `json:"allowMultipleSelection"`
 	PredefinedAnswers      []QuizPredefinedAnswer `json:"predefinedAnswers"`
 	QuizID                 string                 `json:"-"`
@@ -684,6 +692,7 @@ func (this PredefinedQuestion) GetID() string           { return this.ID }
 func (this PredefinedQuestion) GetQuiz() *Quiz          { return this.Quiz }
 func (this PredefinedQuestion) GetQuestionText() string { return this.QuestionText }
 func (this PredefinedQuestion) GetQuestionOrder() int   { return this.QuestionOrder }
+func (this PredefinedQuestion) GetTimeoutSeconds() *int { return this.TimeoutSeconds }
 
 type PredefinedResponse struct {
 	ID                string                 `json:"id"`
@@ -749,26 +758,25 @@ type Query struct {
 }
 
 type Quiz struct {
-	ID                     string            `json:"id"`
-	Name                   string            `json:"name"`
-	Description            string            `json:"description"`
-	Image                  *string           `json:"image,omitempty"`
-	Project                *Project          `json:"project"`
-	Challenge              Challenge         `json:"challenge"`
-	TimeoutSeconds         *int              `json:"timeoutSeconds,omitempty"`
-	QuestionTimeoutSeconds *int              `json:"questionTimeoutSeconds,omitempty"`
-	RandomizeQuestions     bool              `json:"randomizeQuestions"`
-	RevealCorrectAnswers   bool              `json:"revealCorrectAnswers"`
-	AllowRetakes           bool              `json:"allowRetakes"`
-	CompletionPoints       int               `json:"completionPoints"`
-	Questions              []QuizQuestion    `json:"questions"`
-	PublishedAt            *scalars.DateTime `json:"publishedAt,omitempty"`
-	EndTime                *scalars.DateTime `json:"endTime,omitempty"`
-	UserSubmissions        []QuizSubmission  `json:"userSubmissions"`
-	UserCanStart           bool              `json:"userCanStart"`
-	UserActiveSubmission   *QuizSubmission   `json:"userActiveSubmission,omitempty"`
-	ChallengeID            string            `json:"-"`
-	ProjectID              string            `json:"-"`
+	ID                   string            `json:"id"`
+	Name                 string            `json:"name"`
+	Description          string            `json:"description"`
+	Image                *string           `json:"image,omitempty"`
+	Project              *Project          `json:"project"`
+	Challenge            Challenge         `json:"challenge"`
+	TimeoutSeconds       *int              `json:"timeoutSeconds,omitempty"`
+	RandomizeQuestions   bool              `json:"randomizeQuestions"`
+	RevealCorrectAnswers bool              `json:"revealCorrectAnswers"`
+	AllowRetakes         bool              `json:"allowRetakes"`
+	CompletionPoints     int               `json:"completionPoints"`
+	Questions            []QuizQuestion    `json:"questions"`
+	PublishedAt          *scalars.DateTime `json:"publishedAt,omitempty"`
+	EndTime              *scalars.DateTime `json:"endTime,omitempty"`
+	UserSubmissions      []QuizSubmission  `json:"userSubmissions"`
+	UserCanStart         bool              `json:"userCanStart"`
+	UserActiveSubmission *QuizSubmission   `json:"userActiveSubmission,omitempty"`
+	ChallengeID          string            `json:"-"`
+	ProjectID            string            `json:"-"`
 }
 
 type QuizAchievement struct {
@@ -1282,22 +1290,22 @@ type UpdateProjectInput struct {
 }
 
 type UpdateQuizInput struct {
-	Name                   *string           `json:"name,omitempty"`
-	Description            *string           `json:"description,omitempty"`
-	Image                  *string           `json:"image,omitempty"`
-	TimeoutSeconds         *int              `json:"timeoutSeconds,omitempty"`
-	QuestionTimeoutSeconds *int              `json:"questionTimeoutSeconds,omitempty"`
-	RandomizeQuestions     *bool             `json:"randomizeQuestions,omitempty"`
-	RevealCorrectAnswers   *bool             `json:"revealCorrectAnswers,omitempty"`
-	AllowRetakes           *bool             `json:"allowRetakes,omitempty"`
-	CompletionPoints       *int              `json:"completionPoints,omitempty"`
-	PublishedAt            *scalars.DateTime `json:"publishedAt,omitempty"`
-	EndTime                *scalars.DateTime `json:"endTime,omitempty"`
+	Name                 *string           `json:"name,omitempty"`
+	Description          *string           `json:"description,omitempty"`
+	Image                *string           `json:"image,omitempty"`
+	TimeoutSeconds       *int              `json:"timeoutSeconds,omitempty"`
+	RandomizeQuestions   *bool             `json:"randomizeQuestions,omitempty"`
+	RevealCorrectAnswers *bool             `json:"revealCorrectAnswers,omitempty"`
+	AllowRetakes         *bool             `json:"allowRetakes,omitempty"`
+	CompletionPoints     *int              `json:"completionPoints,omitempty"`
+	PublishedAt          *scalars.DateTime `json:"publishedAt,omitempty"`
+	EndTime              *scalars.DateTime `json:"endTime,omitempty"`
 }
 
 type UpdateQuizQuestionInput struct {
 	QuestionText           *string                       `json:"questionText,omitempty"`
 	QuestionOrder          *int                          `json:"questionOrder,omitempty"`
+	TimeoutSeconds         *int                          `json:"timeoutSeconds,omitempty"`
 	AllowMultipleSelection *bool                         `json:"allowMultipleSelection,omitempty"`
 	PredefinedAnswers      []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
 	MinValue               *float64                      `json:"minValue,omitempty"`

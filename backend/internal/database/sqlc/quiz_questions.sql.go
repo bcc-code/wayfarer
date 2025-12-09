@@ -67,7 +67,8 @@ INSERT INTO quiz_questions (
     allow_multiple_selection,
     min_value,
     max_value,
-    step_value
+    step_value,
+    timeout_seconds
 )
 VALUES (
     $1::text,
@@ -78,9 +79,10 @@ VALUES (
     $6::bool,
     $7::decimal,
     $8::decimal,
-    $9::decimal
+    $9::decimal,
+    $10::int
 )
-RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, created_at, updated_at
+RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, created_at, updated_at
 `
 
 type CreateQuizQuestionParams struct {
@@ -93,9 +95,25 @@ type CreateQuizQuestionParams struct {
 	Minvalue               pgtype.Numeric `json:"minvalue"`
 	Maxvalue               pgtype.Numeric `json:"maxvalue"`
 	Stepvalue              pgtype.Numeric `json:"stepvalue"`
+	Timeoutseconds         *int32         `json:"timeoutseconds"`
 }
 
-func (q *Queries) CreateQuizQuestion(ctx context.Context, arg CreateQuizQuestionParams) (*QuizQuestion, error) {
+type CreateQuizQuestionRow struct {
+	ID                     string             `json:"id"`
+	QuizID                 string             `json:"quiz_id"`
+	QuestionType           string             `json:"question_type"`
+	QuestionText           string             `json:"question_text"`
+	QuestionOrder          int32              `json:"question_order"`
+	AllowMultipleSelection *bool              `json:"allow_multiple_selection"`
+	MinValue               pgtype.Numeric     `json:"min_value"`
+	MaxValue               pgtype.Numeric     `json:"max_value"`
+	StepValue              pgtype.Numeric     `json:"step_value"`
+	TimeoutSeconds         *int32             `json:"timeout_seconds"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) CreateQuizQuestion(ctx context.Context, arg CreateQuizQuestionParams) (*CreateQuizQuestionRow, error) {
 	row := q.db.QueryRow(ctx, CreateQuizQuestion,
 		arg.ID,
 		arg.Quizid,
@@ -106,8 +124,9 @@ func (q *Queries) CreateQuizQuestion(ctx context.Context, arg CreateQuizQuestion
 		arg.Minvalue,
 		arg.Maxvalue,
 		arg.Stepvalue,
+		arg.Timeoutseconds,
 	)
-	var i QuizQuestion
+	var i CreateQuizQuestionRow
 	err := row.Scan(
 		&i.ID,
 		&i.QuizID,
@@ -118,6 +137,7 @@ func (q *Queries) CreateQuizQuestion(ctx context.Context, arg CreateQuizQuestion
 		&i.MinValue,
 		&i.MaxValue,
 		&i.StepValue,
+		&i.TimeoutSeconds,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -266,14 +286,29 @@ func (q *Queries) GetPredefinedAnswersByQuestionIDs(ctx context.Context, questio
 }
 
 const GetQuizQuestionByID = `-- name: GetQuizQuestionByID :one
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, created_at, updated_at
 FROM quiz_questions
 WHERE id = $1::text
 `
 
-func (q *Queries) GetQuizQuestionByID(ctx context.Context, id string) (*QuizQuestion, error) {
+type GetQuizQuestionByIDRow struct {
+	ID                     string             `json:"id"`
+	QuizID                 string             `json:"quiz_id"`
+	QuestionType           string             `json:"question_type"`
+	QuestionText           string             `json:"question_text"`
+	QuestionOrder          int32              `json:"question_order"`
+	AllowMultipleSelection *bool              `json:"allow_multiple_selection"`
+	MinValue               pgtype.Numeric     `json:"min_value"`
+	MaxValue               pgtype.Numeric     `json:"max_value"`
+	StepValue              pgtype.Numeric     `json:"step_value"`
+	TimeoutSeconds         *int32             `json:"timeout_seconds"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetQuizQuestionByID(ctx context.Context, id string) (*GetQuizQuestionByIDRow, error) {
 	row := q.db.QueryRow(ctx, GetQuizQuestionByID, id)
-	var i QuizQuestion
+	var i GetQuizQuestionByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.QuizID,
@@ -284,6 +319,7 @@ func (q *Queries) GetQuizQuestionByID(ctx context.Context, id string) (*QuizQues
 		&i.MinValue,
 		&i.MaxValue,
 		&i.StepValue,
+		&i.TimeoutSeconds,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -291,20 +327,35 @@ func (q *Queries) GetQuizQuestionByID(ctx context.Context, id string) (*QuizQues
 }
 
 const GetQuizQuestionsByIDs = `-- name: GetQuizQuestionsByIDs :many
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, created_at, updated_at
 FROM quiz_questions
 WHERE id = ANY($1::text[])
 `
 
-func (q *Queries) GetQuizQuestionsByIDs(ctx context.Context, ids []string) ([]*QuizQuestion, error) {
+type GetQuizQuestionsByIDsRow struct {
+	ID                     string             `json:"id"`
+	QuizID                 string             `json:"quiz_id"`
+	QuestionType           string             `json:"question_type"`
+	QuestionText           string             `json:"question_text"`
+	QuestionOrder          int32              `json:"question_order"`
+	AllowMultipleSelection *bool              `json:"allow_multiple_selection"`
+	MinValue               pgtype.Numeric     `json:"min_value"`
+	MaxValue               pgtype.Numeric     `json:"max_value"`
+	StepValue              pgtype.Numeric     `json:"step_value"`
+	TimeoutSeconds         *int32             `json:"timeout_seconds"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetQuizQuestionsByIDs(ctx context.Context, ids []string) ([]*GetQuizQuestionsByIDsRow, error) {
 	rows, err := q.db.Query(ctx, GetQuizQuestionsByIDs, ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*QuizQuestion{}
+	items := []*GetQuizQuestionsByIDsRow{}
 	for rows.Next() {
-		var i QuizQuestion
+		var i GetQuizQuestionsByIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuizID,
@@ -315,6 +366,7 @@ func (q *Queries) GetQuizQuestionsByIDs(ctx context.Context, ids []string) ([]*Q
 			&i.MinValue,
 			&i.MaxValue,
 			&i.StepValue,
+			&i.TimeoutSeconds,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -329,21 +381,36 @@ func (q *Queries) GetQuizQuestionsByIDs(ctx context.Context, ids []string) ([]*Q
 }
 
 const GetQuizQuestionsByQuizID = `-- name: GetQuizQuestionsByQuizID :many
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, created_at, updated_at
 FROM quiz_questions
 WHERE quiz_id = $1::text
 ORDER BY question_order ASC
 `
 
-func (q *Queries) GetQuizQuestionsByQuizID(ctx context.Context, quizid string) ([]*QuizQuestion, error) {
+type GetQuizQuestionsByQuizIDRow struct {
+	ID                     string             `json:"id"`
+	QuizID                 string             `json:"quiz_id"`
+	QuestionType           string             `json:"question_type"`
+	QuestionText           string             `json:"question_text"`
+	QuestionOrder          int32              `json:"question_order"`
+	AllowMultipleSelection *bool              `json:"allow_multiple_selection"`
+	MinValue               pgtype.Numeric     `json:"min_value"`
+	MaxValue               pgtype.Numeric     `json:"max_value"`
+	StepValue              pgtype.Numeric     `json:"step_value"`
+	TimeoutSeconds         *int32             `json:"timeout_seconds"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetQuizQuestionsByQuizID(ctx context.Context, quizid string) ([]*GetQuizQuestionsByQuizIDRow, error) {
 	rows, err := q.db.Query(ctx, GetQuizQuestionsByQuizID, quizid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*QuizQuestion{}
+	items := []*GetQuizQuestionsByQuizIDRow{}
 	for rows.Next() {
-		var i QuizQuestion
+		var i GetQuizQuestionsByQuizIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuizID,
@@ -354,6 +421,7 @@ func (q *Queries) GetQuizQuestionsByQuizID(ctx context.Context, quizid string) (
 			&i.MinValue,
 			&i.MaxValue,
 			&i.StepValue,
+			&i.TimeoutSeconds,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -368,21 +436,36 @@ func (q *Queries) GetQuizQuestionsByQuizID(ctx context.Context, quizid string) (
 }
 
 const GetQuizQuestionsByQuizIDs = `-- name: GetQuizQuestionsByQuizIDs :many
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, created_at, updated_at
 FROM quiz_questions
 WHERE quiz_id = ANY($1::text[])
 ORDER BY quiz_id, question_order ASC
 `
 
-func (q *Queries) GetQuizQuestionsByQuizIDs(ctx context.Context, quizIds []string) ([]*QuizQuestion, error) {
+type GetQuizQuestionsByQuizIDsRow struct {
+	ID                     string             `json:"id"`
+	QuizID                 string             `json:"quiz_id"`
+	QuestionType           string             `json:"question_type"`
+	QuestionText           string             `json:"question_text"`
+	QuestionOrder          int32              `json:"question_order"`
+	AllowMultipleSelection *bool              `json:"allow_multiple_selection"`
+	MinValue               pgtype.Numeric     `json:"min_value"`
+	MaxValue               pgtype.Numeric     `json:"max_value"`
+	StepValue              pgtype.Numeric     `json:"step_value"`
+	TimeoutSeconds         *int32             `json:"timeout_seconds"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetQuizQuestionsByQuizIDs(ctx context.Context, quizIds []string) ([]*GetQuizQuestionsByQuizIDsRow, error) {
 	rows, err := q.db.Query(ctx, GetQuizQuestionsByQuizIDs, quizIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*QuizQuestion{}
+	items := []*GetQuizQuestionsByQuizIDsRow{}
 	for rows.Next() {
-		var i QuizQuestion
+		var i GetQuizQuestionsByQuizIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuizID,
@@ -393,6 +476,7 @@ func (q *Queries) GetQuizQuestionsByQuizIDs(ctx context.Context, quizIds []strin
 			&i.MinValue,
 			&i.MaxValue,
 			&i.StepValue,
+			&i.TimeoutSeconds,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -415,9 +499,10 @@ SET
     min_value = COALESCE($4::decimal, min_value),
     max_value = COALESCE($5::decimal, max_value),
     step_value = COALESCE($6::decimal, step_value),
+    timeout_seconds = COALESCE($7::int, timeout_seconds),
     updated_at = now()
-WHERE id = $7::text
-RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, created_at, updated_at
+WHERE id = $8::text
+RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, created_at, updated_at
 `
 
 type UpdateQuizQuestionParams struct {
@@ -427,10 +512,26 @@ type UpdateQuizQuestionParams struct {
 	Minvalue               pgtype.Numeric `json:"minvalue"`
 	Maxvalue               pgtype.Numeric `json:"maxvalue"`
 	Stepvalue              pgtype.Numeric `json:"stepvalue"`
+	Timeoutseconds         *int32         `json:"timeoutseconds"`
 	ID                     string         `json:"id"`
 }
 
-func (q *Queries) UpdateQuizQuestion(ctx context.Context, arg UpdateQuizQuestionParams) (*QuizQuestion, error) {
+type UpdateQuizQuestionRow struct {
+	ID                     string             `json:"id"`
+	QuizID                 string             `json:"quiz_id"`
+	QuestionType           string             `json:"question_type"`
+	QuestionText           string             `json:"question_text"`
+	QuestionOrder          int32              `json:"question_order"`
+	AllowMultipleSelection *bool              `json:"allow_multiple_selection"`
+	MinValue               pgtype.Numeric     `json:"min_value"`
+	MaxValue               pgtype.Numeric     `json:"max_value"`
+	StepValue              pgtype.Numeric     `json:"step_value"`
+	TimeoutSeconds         *int32             `json:"timeout_seconds"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) UpdateQuizQuestion(ctx context.Context, arg UpdateQuizQuestionParams) (*UpdateQuizQuestionRow, error) {
 	row := q.db.QueryRow(ctx, UpdateQuizQuestion,
 		arg.Questiontext,
 		arg.Questionorder,
@@ -438,9 +539,10 @@ func (q *Queries) UpdateQuizQuestion(ctx context.Context, arg UpdateQuizQuestion
 		arg.Minvalue,
 		arg.Maxvalue,
 		arg.Stepvalue,
+		arg.Timeoutseconds,
 		arg.ID,
 	)
-	var i QuizQuestion
+	var i UpdateQuizQuestionRow
 	err := row.Scan(
 		&i.ID,
 		&i.QuizID,
@@ -451,6 +553,7 @@ func (q *Queries) UpdateQuizQuestion(ctx context.Context, arg UpdateQuizQuestion
 		&i.MinValue,
 		&i.MaxValue,
 		&i.StepValue,
+		&i.TimeoutSeconds,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

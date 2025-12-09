@@ -58,25 +58,18 @@ func quizByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 					timeoutSeconds = &ts
 				}
 
-				var questionTimeoutSeconds *int
-				if row.QuestionTimeoutSeconds != nil {
-					qts := int(*row.QuestionTimeoutSeconds)
-					questionTimeoutSeconds = &qts
-				}
-
 				quiz := &model.Quiz{
-					ID:                     row.ID,
-					Name:                   row.Name,
-					Description:            row.Description,
-					Image:                  row.ImageUrl,
-					TimeoutSeconds:         timeoutSeconds,
-					QuestionTimeoutSeconds: questionTimeoutSeconds,
-					RandomizeQuestions:     row.RandomizeQuestions,
-					RevealCorrectAnswers:   row.RevealCorrectAnswers,
-					AllowRetakes:           row.AllowRetakes,
-					CompletionPoints:       int(row.CompletionPoints),
-					PublishedAt:            publishedAt,
-					EndTime:                endTime,
+					ID:                   row.ID,
+					Name:                 row.Name,
+					Description:          row.Description,
+					Image:                row.ImageUrl,
+					TimeoutSeconds:       timeoutSeconds,
+					RandomizeQuestions:   row.RandomizeQuestions,
+					RevealCorrectAnswers: row.RevealCorrectAnswers,
+					AllowRetakes:         row.AllowRetakes,
+					CompletionPoints:     int(row.CompletionPoints),
+					PublishedAt:          publishedAt,
+					EndTime:              endTime,
 					// Fields for resolvers
 					ProjectID:   row.ProjectID,
 					ChallengeID: row.ChallengeID,

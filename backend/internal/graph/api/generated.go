@@ -225,10 +225,11 @@ type ComplexityRoot struct {
 	}
 
 	FreeTextQuestion struct {
-		ID            func(childComplexity int) int
-		QuestionOrder func(childComplexity int) int
-		QuestionText  func(childComplexity int) int
-		Quiz          func(childComplexity int) int
+		ID             func(childComplexity int) int
+		QuestionOrder  func(childComplexity int) int
+		QuestionText   func(childComplexity int) int
+		Quiz           func(childComplexity int) int
+		TimeoutSeconds func(childComplexity int) int
 	}
 
 	FreeTextResponse struct {
@@ -241,10 +242,11 @@ type ComplexityRoot struct {
 	}
 
 	JsonQuestion struct {
-		ID            func(childComplexity int) int
-		QuestionOrder func(childComplexity int) int
-		QuestionText  func(childComplexity int) int
-		Quiz          func(childComplexity int) int
+		ID             func(childComplexity int) int
+		QuestionOrder  func(childComplexity int) int
+		QuestionText   func(childComplexity int) int
+		Quiz           func(childComplexity int) int
+		TimeoutSeconds func(childComplexity int) int
 	}
 
 	JsonResponse struct {
@@ -393,13 +395,14 @@ type ComplexityRoot struct {
 	}
 
 	NumberQuestion struct {
-		ID            func(childComplexity int) int
-		MaxValue      func(childComplexity int) int
-		MinValue      func(childComplexity int) int
-		QuestionOrder func(childComplexity int) int
-		QuestionText  func(childComplexity int) int
-		Quiz          func(childComplexity int) int
-		StepValue     func(childComplexity int) int
+		ID             func(childComplexity int) int
+		MaxValue       func(childComplexity int) int
+		MinValue       func(childComplexity int) int
+		QuestionOrder  func(childComplexity int) int
+		QuestionText   func(childComplexity int) int
+		Quiz           func(childComplexity int) int
+		StepValue      func(childComplexity int) int
+		TimeoutSeconds func(childComplexity int) int
 	}
 
 	NumberResponse struct {
@@ -425,6 +428,7 @@ type ComplexityRoot struct {
 		QuestionOrder          func(childComplexity int) int
 		QuestionText           func(childComplexity int) int
 		Quiz                   func(childComplexity int) int
+		TimeoutSeconds         func(childComplexity int) int
 	}
 
 	PredefinedResponse struct {
@@ -507,24 +511,23 @@ type ComplexityRoot struct {
 	}
 
 	Quiz struct {
-		AllowRetakes           func(childComplexity int) int
-		Challenge              func(childComplexity int) int
-		CompletionPoints       func(childComplexity int) int
-		Description            func(childComplexity int) int
-		EndTime                func(childComplexity int) int
-		ID                     func(childComplexity int) int
-		Image                  func(childComplexity int) int
-		Name                   func(childComplexity int) int
-		Project                func(childComplexity int) int
-		PublishedAt            func(childComplexity int) int
-		QuestionTimeoutSeconds func(childComplexity int) int
-		Questions              func(childComplexity int) int
-		RandomizeQuestions     func(childComplexity int) int
-		RevealCorrectAnswers   func(childComplexity int) int
-		TimeoutSeconds         func(childComplexity int) int
-		UserActiveSubmission   func(childComplexity int) int
-		UserCanStart           func(childComplexity int) int
-		UserSubmissions        func(childComplexity int) int
+		AllowRetakes         func(childComplexity int) int
+		Challenge            func(childComplexity int) int
+		CompletionPoints     func(childComplexity int) int
+		Description          func(childComplexity int) int
+		EndTime              func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		Image                func(childComplexity int) int
+		Name                 func(childComplexity int) int
+		Project              func(childComplexity int) int
+		PublishedAt          func(childComplexity int) int
+		Questions            func(childComplexity int) int
+		RandomizeQuestions   func(childComplexity int) int
+		RevealCorrectAnswers func(childComplexity int) int
+		TimeoutSeconds       func(childComplexity int) int
+		UserActiveSubmission func(childComplexity int) int
+		UserCanStart         func(childComplexity int) int
+		UserSubmissions      func(childComplexity int) int
 	}
 
 	QuizAchievement struct {
@@ -1758,6 +1761,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FreeTextQuestion.Quiz(childComplexity), true
+	case "FreeTextQuestion.timeoutSeconds":
+		if e.complexity.FreeTextQuestion.TimeoutSeconds == nil {
+			break
+		}
+
+		return e.complexity.FreeTextQuestion.TimeoutSeconds(childComplexity), true
 
 	case "FreeTextResponse.answeredAt":
 		if e.complexity.FreeTextResponse.AnsweredAt == nil {
@@ -1820,6 +1829,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JsonQuestion.Quiz(childComplexity), true
+	case "JsonQuestion.timeoutSeconds":
+		if e.complexity.JsonQuestion.TimeoutSeconds == nil {
+			break
+		}
+
+		return e.complexity.JsonQuestion.TimeoutSeconds(childComplexity), true
 
 	case "JsonResponse.answeredAt":
 		if e.complexity.JsonResponse.AnsweredAt == nil {
@@ -3059,6 +3074,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NumberQuestion.StepValue(childComplexity), true
+	case "NumberQuestion.timeoutSeconds":
+		if e.complexity.NumberQuestion.TimeoutSeconds == nil {
+			break
+		}
+
+		return e.complexity.NumberQuestion.TimeoutSeconds(childComplexity), true
 
 	case "NumberResponse.answeredAt":
 		if e.complexity.NumberResponse.AnsweredAt == nil {
@@ -3158,6 +3179,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PredefinedQuestion.Quiz(childComplexity), true
+	case "PredefinedQuestion.timeoutSeconds":
+		if e.complexity.PredefinedQuestion.TimeoutSeconds == nil {
+			break
+		}
+
+		return e.complexity.PredefinedQuestion.TimeoutSeconds(childComplexity), true
 
 	case "PredefinedResponse.answeredAt":
 		if e.complexity.PredefinedResponse.AnsweredAt == nil {
@@ -3753,12 +3780,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Quiz.PublishedAt(childComplexity), true
-	case "Quiz.questionTimeoutSeconds":
-		if e.complexity.Quiz.QuestionTimeoutSeconds == nil {
-			break
-		}
-
-		return e.complexity.Quiz.QuestionTimeoutSeconds(childComplexity), true
 	case "Quiz.questions":
 		if e.complexity.Quiz.Questions == nil {
 			break
@@ -5779,7 +5800,6 @@ type Quiz {
     challenge: Challenge! @goField(forceResolver: true)
 
     timeoutSeconds: Int
-    questionTimeoutSeconds: Int
     randomizeQuestions: Boolean!
     revealCorrectAnswers: Boolean!
     allowRetakes: Boolean!
@@ -5803,6 +5823,7 @@ interface QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     questionOrder: Int!
+    timeoutSeconds: Int
 }
 
 type PredefinedQuestion implements QuizQuestion {
@@ -5810,6 +5831,7 @@ type PredefinedQuestion implements QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     questionOrder: Int!
+    timeoutSeconds: Int
     allowMultipleSelection: Boolean!
     predefinedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
 }
@@ -5819,6 +5841,7 @@ type FreeTextQuestion implements QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     questionOrder: Int!
+    timeoutSeconds: Int
 }
 
 type NumberQuestion implements QuizQuestion {
@@ -5826,6 +5849,7 @@ type NumberQuestion implements QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     questionOrder: Int!
+    timeoutSeconds: Int
     minValue: Float
     maxValue: Float
     stepValue: Float
@@ -5836,6 +5860,7 @@ type JsonQuestion implements QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     questionOrder: Int!
+    timeoutSeconds: Int
 }
 
 type QuizPredefinedAnswer {
@@ -6096,7 +6121,6 @@ input CreateQuizInput {
     challengeId: ID!
 
     timeoutSeconds: Int
-    questionTimeoutSeconds: Int
 
     randomizeQuestions: Boolean!
     revealCorrectAnswers: Boolean!
@@ -6113,7 +6137,6 @@ input UpdateQuizInput {
     image: String
 
     timeoutSeconds: Int
-    questionTimeoutSeconds: Int
 
     randomizeQuestions: Boolean
     revealCorrectAnswers: Boolean
@@ -6128,6 +6151,7 @@ input CreateQuizQuestionInput {
     questionType: QuizQuestionType!
     questionText: String!
     questionOrder: Int!
+    timeoutSeconds: Int
 
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]
@@ -6146,6 +6170,7 @@ input CreatePredefinedAnswerInput {
 input UpdateQuizQuestionInput {
     questionText: String
     questionOrder: Int
+    timeoutSeconds: Int
 
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]
@@ -11976,8 +12001,6 @@ func (ec *executionContext) fieldContext_FreeTextQuestion_quiz(_ context.Context
 				return ec.fieldContext_Quiz_challenge(ctx, field)
 			case "timeoutSeconds":
 				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
-			case "questionTimeoutSeconds":
-				return ec.fieldContext_Quiz_questionTimeoutSeconds(ctx, field)
 			case "randomizeQuestions":
 				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
 			case "revealCorrectAnswers":
@@ -12051,6 +12074,35 @@ func (ec *executionContext) _FreeTextQuestion_questionOrder(ctx context.Context,
 }
 
 func (ec *executionContext) fieldContext_FreeTextQuestion_questionOrder(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FreeTextQuestion_timeoutSeconds(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextQuestion_timeoutSeconds,
+		func(ctx context.Context) (any, error) {
+			return obj.TimeoutSeconds, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextQuestion_timeoutSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "FreeTextQuestion",
 		Field:      field,
@@ -12334,8 +12386,6 @@ func (ec *executionContext) fieldContext_JsonQuestion_quiz(_ context.Context, fi
 				return ec.fieldContext_Quiz_challenge(ctx, field)
 			case "timeoutSeconds":
 				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
-			case "questionTimeoutSeconds":
-				return ec.fieldContext_Quiz_questionTimeoutSeconds(ctx, field)
 			case "randomizeQuestions":
 				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
 			case "revealCorrectAnswers":
@@ -12409,6 +12459,35 @@ func (ec *executionContext) _JsonQuestion_questionOrder(ctx context.Context, fie
 }
 
 func (ec *executionContext) fieldContext_JsonQuestion_questionOrder(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JsonQuestion_timeoutSeconds(ctx context.Context, field graphql.CollectedField, obj *model.JSONQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonQuestion_timeoutSeconds,
+		func(ctx context.Context) (any, error) {
+			return obj.TimeoutSeconds, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonQuestion_timeoutSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "JsonQuestion",
 		Field:      field,
@@ -19067,8 +19146,6 @@ func (ec *executionContext) fieldContext_Mutation_createQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_challenge(ctx, field)
 			case "timeoutSeconds":
 				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
-			case "questionTimeoutSeconds":
-				return ec.fieldContext_Quiz_questionTimeoutSeconds(ctx, field)
 			case "randomizeQuestions":
 				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
 			case "revealCorrectAnswers":
@@ -19164,8 +19241,6 @@ func (ec *executionContext) fieldContext_Mutation_updateQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_challenge(ctx, field)
 			case "timeoutSeconds":
 				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
-			case "questionTimeoutSeconds":
-				return ec.fieldContext_Quiz_questionTimeoutSeconds(ctx, field)
 			case "randomizeQuestions":
 				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
 			case "revealCorrectAnswers":
@@ -19320,8 +19395,6 @@ func (ec *executionContext) fieldContext_Mutation_publishQuiz(ctx context.Contex
 				return ec.fieldContext_Quiz_challenge(ctx, field)
 			case "timeoutSeconds":
 				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
-			case "questionTimeoutSeconds":
-				return ec.fieldContext_Quiz_questionTimeoutSeconds(ctx, field)
 			case "randomizeQuestions":
 				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
 			case "revealCorrectAnswers":
@@ -20076,8 +20149,6 @@ func (ec *executionContext) fieldContext_NumberQuestion_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_challenge(ctx, field)
 			case "timeoutSeconds":
 				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
-			case "questionTimeoutSeconds":
-				return ec.fieldContext_Quiz_questionTimeoutSeconds(ctx, field)
 			case "randomizeQuestions":
 				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
 			case "revealCorrectAnswers":
@@ -20151,6 +20222,35 @@ func (ec *executionContext) _NumberQuestion_questionOrder(ctx context.Context, f
 }
 
 func (ec *executionContext) fieldContext_NumberQuestion_questionOrder(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberQuestion_timeoutSeconds(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberQuestion_timeoutSeconds,
+		func(ctx context.Context) (any, error) {
+			return obj.TimeoutSeconds, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberQuestion_timeoutSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "NumberQuestion",
 		Field:      field,
@@ -20637,8 +20737,6 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_quiz(_ context.Conte
 				return ec.fieldContext_Quiz_challenge(ctx, field)
 			case "timeoutSeconds":
 				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
-			case "questionTimeoutSeconds":
-				return ec.fieldContext_Quiz_questionTimeoutSeconds(ctx, field)
 			case "randomizeQuestions":
 				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
 			case "revealCorrectAnswers":
@@ -20712,6 +20810,35 @@ func (ec *executionContext) _PredefinedQuestion_questionOrder(ctx context.Contex
 }
 
 func (ec *executionContext) fieldContext_PredefinedQuestion_questionOrder(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PredefinedQuestion_timeoutSeconds(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedQuestion_timeoutSeconds,
+		func(ctx context.Context) (any, error) {
+			return obj.TimeoutSeconds, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedQuestion_timeoutSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PredefinedQuestion",
 		Field:      field,
@@ -23627,8 +23754,6 @@ func (ec *executionContext) fieldContext_Query_quiz(ctx context.Context, field g
 				return ec.fieldContext_Quiz_challenge(ctx, field)
 			case "timeoutSeconds":
 				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
-			case "questionTimeoutSeconds":
-				return ec.fieldContext_Quiz_questionTimeoutSeconds(ctx, field)
 			case "randomizeQuestions":
 				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
 			case "revealCorrectAnswers":
@@ -24223,35 +24348,6 @@ func (ec *executionContext) _Quiz_timeoutSeconds(ctx context.Context, field grap
 }
 
 func (ec *executionContext) fieldContext_Quiz_timeoutSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Quiz",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Quiz_questionTimeoutSeconds(ctx context.Context, field graphql.CollectedField, obj *model.Quiz) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Quiz_questionTimeoutSeconds,
-		func(ctx context.Context) (any, error) {
-			return obj.QuestionTimeoutSeconds, nil
-		},
-		nil,
-		ec.marshalOInt2ᚖint,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Quiz_questionTimeoutSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Quiz",
 		Field:      field,
@@ -24994,8 +25090,6 @@ func (ec *executionContext) fieldContext_QuizAchievement_quiz(_ context.Context,
 				return ec.fieldContext_Quiz_challenge(ctx, field)
 			case "timeoutSeconds":
 				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
-			case "questionTimeoutSeconds":
-				return ec.fieldContext_Quiz_questionTimeoutSeconds(ctx, field)
 			case "randomizeQuestions":
 				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
 			case "revealCorrectAnswers":
@@ -25606,8 +25700,6 @@ func (ec *executionContext) fieldContext_QuizChallenge_quiz(_ context.Context, f
 				return ec.fieldContext_Quiz_challenge(ctx, field)
 			case "timeoutSeconds":
 				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
-			case "questionTimeoutSeconds":
-				return ec.fieldContext_Quiz_questionTimeoutSeconds(ctx, field)
 			case "randomizeQuestions":
 				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
 			case "revealCorrectAnswers":
@@ -25805,8 +25897,6 @@ func (ec *executionContext) fieldContext_QuizEdge_node(_ context.Context, field 
 				return ec.fieldContext_Quiz_challenge(ctx, field)
 			case "timeoutSeconds":
 				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
-			case "questionTimeoutSeconds":
-				return ec.fieldContext_Quiz_questionTimeoutSeconds(ctx, field)
 			case "randomizeQuestions":
 				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
 			case "revealCorrectAnswers":
@@ -26046,8 +26136,6 @@ func (ec *executionContext) fieldContext_QuizSubmission_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_challenge(ctx, field)
 			case "timeoutSeconds":
 				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
-			case "questionTimeoutSeconds":
-				return ec.fieldContext_Quiz_questionTimeoutSeconds(ctx, field)
 			case "randomizeQuestions":
 				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
 			case "revealCorrectAnswers":
@@ -34643,7 +34731,7 @@ func (ec *executionContext) unmarshalInputCreateQuizInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "projectId", "challengeId", "timeoutSeconds", "questionTimeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "publishedAt", "endTime"}
+	fieldsInOrder := [...]string{"name", "description", "image", "projectId", "challengeId", "timeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "publishedAt", "endTime"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -34692,13 +34780,6 @@ func (ec *executionContext) unmarshalInputCreateQuizInput(ctx context.Context, o
 				return it, err
 			}
 			it.TimeoutSeconds = data
-		case "questionTimeoutSeconds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("questionTimeoutSeconds"))
-			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.QuestionTimeoutSeconds = data
 		case "randomizeQuestions":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("randomizeQuestions"))
 			data, err := ec.unmarshalNBoolean2bool(ctx, v)
@@ -34754,7 +34835,7 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionType", "questionText", "questionOrder", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue"}
+	fieldsInOrder := [...]string{"questionType", "questionText", "questionOrder", "timeoutSeconds", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -34782,6 +34863,13 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.QuestionOrder = data
+		case "timeoutSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timeoutSeconds"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TimeoutSeconds = data
 		case "allowMultipleSelection":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowMultipleSelection"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -36434,7 +36522,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "timeoutSeconds", "questionTimeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "publishedAt", "endTime"}
+	fieldsInOrder := [...]string{"name", "description", "image", "timeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "publishedAt", "endTime"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -36469,13 +36557,6 @@ func (ec *executionContext) unmarshalInputUpdateQuizInput(ctx context.Context, o
 				return it, err
 			}
 			it.TimeoutSeconds = data
-		case "questionTimeoutSeconds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("questionTimeoutSeconds"))
-			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.QuestionTimeoutSeconds = data
 		case "randomizeQuestions":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("randomizeQuestions"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -36531,7 +36612,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionText", "questionOrder", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue"}
+	fieldsInOrder := [...]string{"questionText", "questionOrder", "timeoutSeconds", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -36552,6 +36633,13 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.QuestionOrder = data
+		case "timeoutSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timeoutSeconds"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TimeoutSeconds = data
 		case "allowMultipleSelection":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowMultipleSelection"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -38536,6 +38624,8 @@ func (ec *executionContext) _FreeTextQuestion(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "timeoutSeconds":
+			out.Values[i] = ec._FreeTextQuestion_timeoutSeconds(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -38741,6 +38831,8 @@ func (ec *executionContext) _JsonQuestion(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "timeoutSeconds":
+			out.Values[i] = ec._JsonQuestion_timeoutSeconds(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -40090,6 +40182,8 @@ func (ec *executionContext) _NumberQuestion(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "timeoutSeconds":
+			out.Values[i] = ec._NumberQuestion_timeoutSeconds(ctx, field, obj)
 		case "minValue":
 			out.Values[i] = ec._NumberQuestion_minValue(ctx, field, obj)
 		case "maxValue":
@@ -40349,6 +40443,8 @@ func (ec *executionContext) _PredefinedQuestion(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "timeoutSeconds":
+			out.Values[i] = ec._PredefinedQuestion_timeoutSeconds(ctx, field, obj)
 		case "allowMultipleSelection":
 			out.Values[i] = ec._PredefinedQuestion_allowMultipleSelection(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -41970,8 +42066,6 @@ func (ec *executionContext) _Quiz(ctx context.Context, sel ast.SelectionSet, obj
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "timeoutSeconds":
 			out.Values[i] = ec._Quiz_timeoutSeconds(ctx, field, obj)
-		case "questionTimeoutSeconds":
-			out.Values[i] = ec._Quiz_questionTimeoutSeconds(ctx, field, obj)
 		case "randomizeQuestions":
 			out.Values[i] = ec._Quiz_randomizeQuestions(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

@@ -32,13 +32,7 @@ func (r *mutationResolver) CreateQuiz(ctx context.Context, input model.CreateQui
 		return nil, fmt.Errorf("unauthorized to create quizzes in this project")
 	}
 
-	// Validate timeout configuration (must have ONE of the two)
-	if input.TimeoutSeconds == nil && input.QuestionTimeoutSeconds == nil {
-		return nil, fmt.Errorf("must provide either timeoutSeconds or questionTimeoutSeconds")
-	}
-	if input.TimeoutSeconds != nil && input.QuestionTimeoutSeconds != nil {
-		return nil, fmt.Errorf("cannot provide both timeoutSeconds and questionTimeoutSeconds")
-	}
+	// timeoutSeconds is optional - per-question timeouts are now configured on individual questions
 
 	// Generate new quiz ID
 	quizID := ulid.NewQuizID()
@@ -62,10 +56,6 @@ func (r *mutationResolver) CreateQuiz(ctx context.Context, input model.CreateQui
 	if input.TimeoutSeconds != nil {
 		ts := int32(*input.TimeoutSeconds)
 		params.Timeoutseconds = &ts
-	}
-	if input.QuestionTimeoutSeconds != nil {
-		qts := int32(*input.QuestionTimeoutSeconds)
-		params.Questiontimeoutseconds = &qts
 	}
 	if input.PublishedAt != nil {
 		params.Publishedat = pgtype.Timestamptz{Time: input.PublishedAt.Time, Valid: true}
@@ -120,10 +110,6 @@ func (r *mutationResolver) UpdateQuiz(ctx context.Context, id string, input mode
 	if input.TimeoutSeconds != nil {
 		ts := int32(*input.TimeoutSeconds)
 		params.Timeoutseconds = &ts
-	}
-	if input.QuestionTimeoutSeconds != nil {
-		qts := int32(*input.QuestionTimeoutSeconds)
-		params.Questiontimeoutseconds = &qts
 	}
 	if input.RandomizeQuestions != nil {
 		params.Randomizequestions = input.RandomizeQuestions
@@ -284,6 +270,10 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 	if input.StepValue != nil {
 		_ = params.Stepvalue.Scan(*input.StepValue)
 	}
+	if input.TimeoutSeconds != nil {
+		ts := int32(*input.TimeoutSeconds)
+		params.Timeoutseconds = &ts
+	}
 
 	// Create question
 	questionRow, err := qtx.CreateQuizQuestion(ctx, params)
@@ -317,7 +307,7 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 	r.Cache.InvalidateQuiz(quizID)
 
 	// Convert to GraphQL model
-	return convertQuizQuestionRowToInterface(questionRow), nil
+	return convertCreateQuizQuestionRowToInterface(questionRow), nil
 }
 
 // UpdateQuizQuestion is the resolver for the updateQuizQuestion field.
@@ -375,6 +365,10 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	if input.StepValue != nil {
 		_ = params.Stepvalue.Scan(*input.StepValue)
 	}
+	if input.TimeoutSeconds != nil {
+		ts := int32(*input.TimeoutSeconds)
+		params.Timeoutseconds = &ts
+	}
 
 	// Update question
 	updatedQuestion, err := qtx.UpdateQuizQuestion(ctx, params)
@@ -412,7 +406,7 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 
 	r.Cache.InvalidateQuiz(question.QuizID)
 
-	return convertQuizQuestionRowToInterface(updatedQuestion), nil
+	return convertUpdateQuizQuestionRowToInterface(updatedQuestion), nil
 }
 
 // DeleteQuizQuestion is the resolver for the deleteQuizQuestion field.

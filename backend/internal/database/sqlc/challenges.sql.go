@@ -748,7 +748,7 @@ func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChalle
 }
 
 const GetQuizByChallengeID = `-- name: GetQuizByChallengeID :one
-SELECT id, project_id, name, description, image_url, timeout_seconds, question_timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at, challenge_id FROM quizzes WHERE challenge_id = $1::text
+SELECT id, project_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at, challenge_id FROM quizzes WHERE challenge_id = $1::text
 `
 
 func (q *Queries) GetQuizByChallengeID(ctx context.Context, challengeid string) (*Quiz, error) {
@@ -761,7 +761,6 @@ func (q *Queries) GetQuizByChallengeID(ctx context.Context, challengeid string) 
 		&i.Description,
 		&i.ImageUrl,
 		&i.TimeoutSeconds,
-		&i.QuestionTimeoutSeconds,
 		&i.RandomizeQuestions,
 		&i.RevealCorrectAnswers,
 		&i.AllowRetakes,

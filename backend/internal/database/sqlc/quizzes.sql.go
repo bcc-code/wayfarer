@@ -52,7 +52,6 @@ INSERT INTO quizzes (
     description,
     image_url,
     timeout_seconds,
-    question_timeout_seconds,
     randomize_questions,
     reveal_correct_answers,
     allow_retakes,
@@ -68,51 +67,48 @@ VALUES (
     $5::text,
     $6::text,
     $7::int,
-    $8::int,
+    $8::bool,
     $9::bool,
     $10::bool,
-    $11::bool,
-    $12::int,
-    $13::timestamptz,
-    $14::timestamptz
+    $11::int,
+    $12::timestamptz,
+    $13::timestamptz
 )
-RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, question_timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
 `
 
 type CreateQuizParams struct {
-	ID                     string             `json:"id"`
-	Projectid              string             `json:"projectid"`
-	Challengeid            string             `json:"challengeid"`
-	Name                   string             `json:"name"`
-	Description            string             `json:"description"`
-	Imageurl               *string            `json:"imageurl"`
-	Timeoutseconds         *int32             `json:"timeoutseconds"`
-	Questiontimeoutseconds *int32             `json:"questiontimeoutseconds"`
-	Randomizequestions     bool               `json:"randomizequestions"`
-	Revealcorrectanswers   bool               `json:"revealcorrectanswers"`
-	Allowretakes           bool               `json:"allowretakes"`
-	Completionpoints       int32              `json:"completionpoints"`
-	Publishedat            pgtype.Timestamptz `json:"publishedat"`
-	Endtime                pgtype.Timestamptz `json:"endtime"`
+	ID                   string             `json:"id"`
+	Projectid            string             `json:"projectid"`
+	Challengeid          string             `json:"challengeid"`
+	Name                 string             `json:"name"`
+	Description          string             `json:"description"`
+	Imageurl             *string            `json:"imageurl"`
+	Timeoutseconds       *int32             `json:"timeoutseconds"`
+	Randomizequestions   bool               `json:"randomizequestions"`
+	Revealcorrectanswers bool               `json:"revealcorrectanswers"`
+	Allowretakes         bool               `json:"allowretakes"`
+	Completionpoints     int32              `json:"completionpoints"`
+	Publishedat          pgtype.Timestamptz `json:"publishedat"`
+	Endtime              pgtype.Timestamptz `json:"endtime"`
 }
 
 type CreateQuizRow struct {
-	ID                     string             `json:"id"`
-	ProjectID              string             `json:"project_id"`
-	ChallengeID            string             `json:"challenge_id"`
-	Name                   string             `json:"name"`
-	Description            string             `json:"description"`
-	ImageUrl               *string            `json:"image_url"`
-	TimeoutSeconds         *int32             `json:"timeout_seconds"`
-	QuestionTimeoutSeconds *int32             `json:"question_timeout_seconds"`
-	RandomizeQuestions     bool               `json:"randomize_questions"`
-	RevealCorrectAnswers   bool               `json:"reveal_correct_answers"`
-	AllowRetakes           bool               `json:"allow_retakes"`
-	CompletionPoints       int32              `json:"completion_points"`
-	PublishedAt            pgtype.Timestamptz `json:"published_at"`
-	EndTime                pgtype.Timestamptz `json:"end_time"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	ID                   string             `json:"id"`
+	ProjectID            string             `json:"project_id"`
+	ChallengeID          string             `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	Description          string             `json:"description"`
+	ImageUrl             *string            `json:"image_url"`
+	TimeoutSeconds       *int32             `json:"timeout_seconds"`
+	RandomizeQuestions   bool               `json:"randomize_questions"`
+	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
+	AllowRetakes         bool               `json:"allow_retakes"`
+	CompletionPoints     int32              `json:"completion_points"`
+	PublishedAt          pgtype.Timestamptz `json:"published_at"`
+	EndTime              pgtype.Timestamptz `json:"end_time"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
 func (q *Queries) CreateQuiz(ctx context.Context, arg CreateQuizParams) (*CreateQuizRow, error) {
@@ -124,7 +120,6 @@ func (q *Queries) CreateQuiz(ctx context.Context, arg CreateQuizParams) (*Create
 		arg.Description,
 		arg.Imageurl,
 		arg.Timeoutseconds,
-		arg.Questiontimeoutseconds,
 		arg.Randomizequestions,
 		arg.Revealcorrectanswers,
 		arg.Allowretakes,
@@ -141,7 +136,6 @@ func (q *Queries) CreateQuiz(ctx context.Context, arg CreateQuizParams) (*Create
 		&i.Description,
 		&i.ImageUrl,
 		&i.TimeoutSeconds,
-		&i.QuestionTimeoutSeconds,
 		&i.RandomizeQuestions,
 		&i.RevealCorrectAnswers,
 		&i.AllowRetakes,
@@ -175,28 +169,27 @@ func (q *Queries) DeleteQuizTranslations(ctx context.Context, quizid string) err
 }
 
 const GetQuizByID = `-- name: GetQuizByID :one
-SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, question_timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
 FROM quizzes
 WHERE id = $1::text
 `
 
 type GetQuizByIDRow struct {
-	ID                     string             `json:"id"`
-	ProjectID              string             `json:"project_id"`
-	ChallengeID            string             `json:"challenge_id"`
-	Name                   string             `json:"name"`
-	Description            string             `json:"description"`
-	ImageUrl               *string            `json:"image_url"`
-	TimeoutSeconds         *int32             `json:"timeout_seconds"`
-	QuestionTimeoutSeconds *int32             `json:"question_timeout_seconds"`
-	RandomizeQuestions     bool               `json:"randomize_questions"`
-	RevealCorrectAnswers   bool               `json:"reveal_correct_answers"`
-	AllowRetakes           bool               `json:"allow_retakes"`
-	CompletionPoints       int32              `json:"completion_points"`
-	PublishedAt            pgtype.Timestamptz `json:"published_at"`
-	EndTime                pgtype.Timestamptz `json:"end_time"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	ID                   string             `json:"id"`
+	ProjectID            string             `json:"project_id"`
+	ChallengeID          string             `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	Description          string             `json:"description"`
+	ImageUrl             *string            `json:"image_url"`
+	TimeoutSeconds       *int32             `json:"timeout_seconds"`
+	RandomizeQuestions   bool               `json:"randomize_questions"`
+	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
+	AllowRetakes         bool               `json:"allow_retakes"`
+	CompletionPoints     int32              `json:"completion_points"`
+	PublishedAt          pgtype.Timestamptz `json:"published_at"`
+	EndTime              pgtype.Timestamptz `json:"end_time"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
 func (q *Queries) GetQuizByID(ctx context.Context, id string) (*GetQuizByIDRow, error) {
@@ -210,7 +203,6 @@ func (q *Queries) GetQuizByID(ctx context.Context, id string) (*GetQuizByIDRow, 
 		&i.Description,
 		&i.ImageUrl,
 		&i.TimeoutSeconds,
-		&i.QuestionTimeoutSeconds,
 		&i.RandomizeQuestions,
 		&i.RevealCorrectAnswers,
 		&i.AllowRetakes,
@@ -224,7 +216,7 @@ func (q *Queries) GetQuizByID(ctx context.Context, id string) (*GetQuizByIDRow, 
 }
 
 const GetQuizzesByChallengeIDs = `-- name: GetQuizzesByChallengeIDs :many
-SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, question_timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
 FROM quizzes
 WHERE challenge_id = ANY($1::text[])
     AND published_at IS NOT NULL
@@ -233,22 +225,21 @@ ORDER BY challenge_id, published_at DESC
 `
 
 type GetQuizzesByChallengeIDsRow struct {
-	ID                     string             `json:"id"`
-	ProjectID              string             `json:"project_id"`
-	ChallengeID            string             `json:"challenge_id"`
-	Name                   string             `json:"name"`
-	Description            string             `json:"description"`
-	ImageUrl               *string            `json:"image_url"`
-	TimeoutSeconds         *int32             `json:"timeout_seconds"`
-	QuestionTimeoutSeconds *int32             `json:"question_timeout_seconds"`
-	RandomizeQuestions     bool               `json:"randomize_questions"`
-	RevealCorrectAnswers   bool               `json:"reveal_correct_answers"`
-	AllowRetakes           bool               `json:"allow_retakes"`
-	CompletionPoints       int32              `json:"completion_points"`
-	PublishedAt            pgtype.Timestamptz `json:"published_at"`
-	EndTime                pgtype.Timestamptz `json:"end_time"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	ID                   string             `json:"id"`
+	ProjectID            string             `json:"project_id"`
+	ChallengeID          string             `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	Description          string             `json:"description"`
+	ImageUrl             *string            `json:"image_url"`
+	TimeoutSeconds       *int32             `json:"timeout_seconds"`
+	RandomizeQuestions   bool               `json:"randomize_questions"`
+	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
+	AllowRetakes         bool               `json:"allow_retakes"`
+	CompletionPoints     int32              `json:"completion_points"`
+	PublishedAt          pgtype.Timestamptz `json:"published_at"`
+	EndTime              pgtype.Timestamptz `json:"end_time"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
 func (q *Queries) GetQuizzesByChallengeIDs(ctx context.Context, challengeIds []string) ([]*GetQuizzesByChallengeIDsRow, error) {
@@ -268,7 +259,6 @@ func (q *Queries) GetQuizzesByChallengeIDs(ctx context.Context, challengeIds []s
 			&i.Description,
 			&i.ImageUrl,
 			&i.TimeoutSeconds,
-			&i.QuestionTimeoutSeconds,
 			&i.RandomizeQuestions,
 			&i.RevealCorrectAnswers,
 			&i.AllowRetakes,
@@ -289,28 +279,27 @@ func (q *Queries) GetQuizzesByChallengeIDs(ctx context.Context, challengeIds []s
 }
 
 const GetQuizzesByIDs = `-- name: GetQuizzesByIDs :many
-SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, question_timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
 FROM quizzes
 WHERE id = ANY($1::text[])
 `
 
 type GetQuizzesByIDsRow struct {
-	ID                     string             `json:"id"`
-	ProjectID              string             `json:"project_id"`
-	ChallengeID            string             `json:"challenge_id"`
-	Name                   string             `json:"name"`
-	Description            string             `json:"description"`
-	ImageUrl               *string            `json:"image_url"`
-	TimeoutSeconds         *int32             `json:"timeout_seconds"`
-	QuestionTimeoutSeconds *int32             `json:"question_timeout_seconds"`
-	RandomizeQuestions     bool               `json:"randomize_questions"`
-	RevealCorrectAnswers   bool               `json:"reveal_correct_answers"`
-	AllowRetakes           bool               `json:"allow_retakes"`
-	CompletionPoints       int32              `json:"completion_points"`
-	PublishedAt            pgtype.Timestamptz `json:"published_at"`
-	EndTime                pgtype.Timestamptz `json:"end_time"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	ID                   string             `json:"id"`
+	ProjectID            string             `json:"project_id"`
+	ChallengeID          string             `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	Description          string             `json:"description"`
+	ImageUrl             *string            `json:"image_url"`
+	TimeoutSeconds       *int32             `json:"timeout_seconds"`
+	RandomizeQuestions   bool               `json:"randomize_questions"`
+	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
+	AllowRetakes         bool               `json:"allow_retakes"`
+	CompletionPoints     int32              `json:"completion_points"`
+	PublishedAt          pgtype.Timestamptz `json:"published_at"`
+	EndTime              pgtype.Timestamptz `json:"end_time"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
 func (q *Queries) GetQuizzesByIDs(ctx context.Context, ids []string) ([]*GetQuizzesByIDsRow, error) {
@@ -330,7 +319,6 @@ func (q *Queries) GetQuizzesByIDs(ctx context.Context, ids []string) ([]*GetQuiz
 			&i.Description,
 			&i.ImageUrl,
 			&i.TimeoutSeconds,
-			&i.QuestionTimeoutSeconds,
 			&i.RandomizeQuestions,
 			&i.RevealCorrectAnswers,
 			&i.AllowRetakes,
@@ -351,7 +339,7 @@ func (q *Queries) GetQuizzesByIDs(ctx context.Context, ids []string) ([]*GetQuiz
 }
 
 const GetQuizzesByProjectIDs = `-- name: GetQuizzesByProjectIDs :many
-SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, question_timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
 FROM quizzes
 WHERE project_id = ANY($1::text[])
     AND published_at IS NOT NULL
@@ -360,22 +348,21 @@ ORDER BY project_id, published_at DESC
 `
 
 type GetQuizzesByProjectIDsRow struct {
-	ID                     string             `json:"id"`
-	ProjectID              string             `json:"project_id"`
-	ChallengeID            string             `json:"challenge_id"`
-	Name                   string             `json:"name"`
-	Description            string             `json:"description"`
-	ImageUrl               *string            `json:"image_url"`
-	TimeoutSeconds         *int32             `json:"timeout_seconds"`
-	QuestionTimeoutSeconds *int32             `json:"question_timeout_seconds"`
-	RandomizeQuestions     bool               `json:"randomize_questions"`
-	RevealCorrectAnswers   bool               `json:"reveal_correct_answers"`
-	AllowRetakes           bool               `json:"allow_retakes"`
-	CompletionPoints       int32              `json:"completion_points"`
-	PublishedAt            pgtype.Timestamptz `json:"published_at"`
-	EndTime                pgtype.Timestamptz `json:"end_time"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	ID                   string             `json:"id"`
+	ProjectID            string             `json:"project_id"`
+	ChallengeID          string             `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	Description          string             `json:"description"`
+	ImageUrl             *string            `json:"image_url"`
+	TimeoutSeconds       *int32             `json:"timeout_seconds"`
+	RandomizeQuestions   bool               `json:"randomize_questions"`
+	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
+	AllowRetakes         bool               `json:"allow_retakes"`
+	CompletionPoints     int32              `json:"completion_points"`
+	PublishedAt          pgtype.Timestamptz `json:"published_at"`
+	EndTime              pgtype.Timestamptz `json:"end_time"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
 func (q *Queries) GetQuizzesByProjectIDs(ctx context.Context, projectIds []string) ([]*GetQuizzesByProjectIDsRow, error) {
@@ -395,7 +382,6 @@ func (q *Queries) GetQuizzesByProjectIDs(ctx context.Context, projectIds []strin
 			&i.Description,
 			&i.ImageUrl,
 			&i.TimeoutSeconds,
-			&i.QuestionTimeoutSeconds,
 			&i.RandomizeQuestions,
 			&i.RevealCorrectAnswers,
 			&i.AllowRetakes,
@@ -416,7 +402,7 @@ func (q *Queries) GetQuizzesByProjectIDs(ctx context.Context, projectIds []strin
 }
 
 const GetQuizzesFilteredCursor = `-- name: GetQuizzesFilteredCursor :many
-SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, question_timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
 FROM quizzes
 WHERE
     ($1::text[] IS NULL OR id = ANY($1::text[]))
@@ -445,22 +431,21 @@ type GetQuizzesFilteredCursorParams struct {
 }
 
 type GetQuizzesFilteredCursorRow struct {
-	ID                     string             `json:"id"`
-	ProjectID              string             `json:"project_id"`
-	ChallengeID            string             `json:"challenge_id"`
-	Name                   string             `json:"name"`
-	Description            string             `json:"description"`
-	ImageUrl               *string            `json:"image_url"`
-	TimeoutSeconds         *int32             `json:"timeout_seconds"`
-	QuestionTimeoutSeconds *int32             `json:"question_timeout_seconds"`
-	RandomizeQuestions     bool               `json:"randomize_questions"`
-	RevealCorrectAnswers   bool               `json:"reveal_correct_answers"`
-	AllowRetakes           bool               `json:"allow_retakes"`
-	CompletionPoints       int32              `json:"completion_points"`
-	PublishedAt            pgtype.Timestamptz `json:"published_at"`
-	EndTime                pgtype.Timestamptz `json:"end_time"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	ID                   string             `json:"id"`
+	ProjectID            string             `json:"project_id"`
+	ChallengeID          string             `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	Description          string             `json:"description"`
+	ImageUrl             *string            `json:"image_url"`
+	TimeoutSeconds       *int32             `json:"timeout_seconds"`
+	RandomizeQuestions   bool               `json:"randomize_questions"`
+	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
+	AllowRetakes         bool               `json:"allow_retakes"`
+	CompletionPoints     int32              `json:"completion_points"`
+	PublishedAt          pgtype.Timestamptz `json:"published_at"`
+	EndTime              pgtype.Timestamptz `json:"end_time"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
 func (q *Queries) GetQuizzesFilteredCursor(ctx context.Context, arg GetQuizzesFilteredCursorParams) ([]*GetQuizzesFilteredCursorRow, error) {
@@ -490,7 +475,6 @@ func (q *Queries) GetQuizzesFilteredCursor(ctx context.Context, arg GetQuizzesFi
 			&i.Description,
 			&i.ImageUrl,
 			&i.TimeoutSeconds,
-			&i.QuestionTimeoutSeconds,
 			&i.RandomizeQuestions,
 			&i.RevealCorrectAnswers,
 			&i.AllowRetakes,
@@ -516,7 +500,7 @@ SET
     published_at = $1::timestamptz,
     updated_at = now()
 WHERE id = $2::text
-RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, question_timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
 `
 
 type PublishQuizParams struct {
@@ -525,22 +509,21 @@ type PublishQuizParams struct {
 }
 
 type PublishQuizRow struct {
-	ID                     string             `json:"id"`
-	ProjectID              string             `json:"project_id"`
-	ChallengeID            string             `json:"challenge_id"`
-	Name                   string             `json:"name"`
-	Description            string             `json:"description"`
-	ImageUrl               *string            `json:"image_url"`
-	TimeoutSeconds         *int32             `json:"timeout_seconds"`
-	QuestionTimeoutSeconds *int32             `json:"question_timeout_seconds"`
-	RandomizeQuestions     bool               `json:"randomize_questions"`
-	RevealCorrectAnswers   bool               `json:"reveal_correct_answers"`
-	AllowRetakes           bool               `json:"allow_retakes"`
-	CompletionPoints       int32              `json:"completion_points"`
-	PublishedAt            pgtype.Timestamptz `json:"published_at"`
-	EndTime                pgtype.Timestamptz `json:"end_time"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	ID                   string             `json:"id"`
+	ProjectID            string             `json:"project_id"`
+	ChallengeID          string             `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	Description          string             `json:"description"`
+	ImageUrl             *string            `json:"image_url"`
+	TimeoutSeconds       *int32             `json:"timeout_seconds"`
+	RandomizeQuestions   bool               `json:"randomize_questions"`
+	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
+	AllowRetakes         bool               `json:"allow_retakes"`
+	CompletionPoints     int32              `json:"completion_points"`
+	PublishedAt          pgtype.Timestamptz `json:"published_at"`
+	EndTime              pgtype.Timestamptz `json:"end_time"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
 func (q *Queries) PublishQuiz(ctx context.Context, arg PublishQuizParams) (*PublishQuizRow, error) {
@@ -554,7 +537,6 @@ func (q *Queries) PublishQuiz(ctx context.Context, arg PublishQuizParams) (*Publ
 		&i.Description,
 		&i.ImageUrl,
 		&i.TimeoutSeconds,
-		&i.QuestionTimeoutSeconds,
 		&i.RandomizeQuestions,
 		&i.RevealCorrectAnswers,
 		&i.AllowRetakes,
@@ -574,48 +556,45 @@ SET
     description = COALESCE($2::text, description),
     image_url = COALESCE($3::text, image_url),
     timeout_seconds = COALESCE($4::int, timeout_seconds),
-    question_timeout_seconds = COALESCE($5::int, question_timeout_seconds),
-    randomize_questions = COALESCE($6::bool, randomize_questions),
-    reveal_correct_answers = COALESCE($7::bool, reveal_correct_answers),
-    allow_retakes = COALESCE($8::bool, allow_retakes),
-    completion_points = COALESCE($9::int, completion_points),
-    end_time = COALESCE($10::timestamptz, end_time),
+    randomize_questions = COALESCE($5::bool, randomize_questions),
+    reveal_correct_answers = COALESCE($6::bool, reveal_correct_answers),
+    allow_retakes = COALESCE($7::bool, allow_retakes),
+    completion_points = COALESCE($8::int, completion_points),
+    end_time = COALESCE($9::timestamptz, end_time),
     updated_at = now()
-WHERE id = $11::text
-RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, question_timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+WHERE id = $10::text
+RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
 `
 
 type UpdateQuizParams struct {
-	Name                   *string            `json:"name"`
-	Description            *string            `json:"description"`
-	Imageurl               *string            `json:"imageurl"`
-	Timeoutseconds         *int32             `json:"timeoutseconds"`
-	Questiontimeoutseconds *int32             `json:"questiontimeoutseconds"`
-	Randomizequestions     *bool              `json:"randomizequestions"`
-	Revealcorrectanswers   *bool              `json:"revealcorrectanswers"`
-	Allowretakes           *bool              `json:"allowretakes"`
-	Completionpoints       *int32             `json:"completionpoints"`
-	Endtime                pgtype.Timestamptz `json:"endtime"`
-	ID                     string             `json:"id"`
+	Name                 *string            `json:"name"`
+	Description          *string            `json:"description"`
+	Imageurl             *string            `json:"imageurl"`
+	Timeoutseconds       *int32             `json:"timeoutseconds"`
+	Randomizequestions   *bool              `json:"randomizequestions"`
+	Revealcorrectanswers *bool              `json:"revealcorrectanswers"`
+	Allowretakes         *bool              `json:"allowretakes"`
+	Completionpoints     *int32             `json:"completionpoints"`
+	Endtime              pgtype.Timestamptz `json:"endtime"`
+	ID                   string             `json:"id"`
 }
 
 type UpdateQuizRow struct {
-	ID                     string             `json:"id"`
-	ProjectID              string             `json:"project_id"`
-	ChallengeID            string             `json:"challenge_id"`
-	Name                   string             `json:"name"`
-	Description            string             `json:"description"`
-	ImageUrl               *string            `json:"image_url"`
-	TimeoutSeconds         *int32             `json:"timeout_seconds"`
-	QuestionTimeoutSeconds *int32             `json:"question_timeout_seconds"`
-	RandomizeQuestions     bool               `json:"randomize_questions"`
-	RevealCorrectAnswers   bool               `json:"reveal_correct_answers"`
-	AllowRetakes           bool               `json:"allow_retakes"`
-	CompletionPoints       int32              `json:"completion_points"`
-	PublishedAt            pgtype.Timestamptz `json:"published_at"`
-	EndTime                pgtype.Timestamptz `json:"end_time"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	ID                   string             `json:"id"`
+	ProjectID            string             `json:"project_id"`
+	ChallengeID          string             `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	Description          string             `json:"description"`
+	ImageUrl             *string            `json:"image_url"`
+	TimeoutSeconds       *int32             `json:"timeout_seconds"`
+	RandomizeQuestions   bool               `json:"randomize_questions"`
+	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
+	AllowRetakes         bool               `json:"allow_retakes"`
+	CompletionPoints     int32              `json:"completion_points"`
+	PublishedAt          pgtype.Timestamptz `json:"published_at"`
+	EndTime              pgtype.Timestamptz `json:"end_time"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
 func (q *Queries) UpdateQuiz(ctx context.Context, arg UpdateQuizParams) (*UpdateQuizRow, error) {
@@ -624,7 +603,6 @@ func (q *Queries) UpdateQuiz(ctx context.Context, arg UpdateQuizParams) (*Update
 		arg.Description,
 		arg.Imageurl,
 		arg.Timeoutseconds,
-		arg.Questiontimeoutseconds,
 		arg.Randomizequestions,
 		arg.Revealcorrectanswers,
 		arg.Allowretakes,
@@ -641,7 +619,6 @@ func (q *Queries) UpdateQuiz(ctx context.Context, arg UpdateQuizParams) (*Update
 		&i.Description,
 		&i.ImageUrl,
 		&i.TimeoutSeconds,
-		&i.QuestionTimeoutSeconds,
 		&i.RandomizeQuestions,
 		&i.RevealCorrectAnswers,
 		&i.AllowRetakes,

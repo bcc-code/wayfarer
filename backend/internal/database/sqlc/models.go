@@ -288,22 +288,21 @@ type ProjectTranslation struct {
 }
 
 type Quiz struct {
-	ID                     string             `json:"id"`
-	ProjectID              string             `json:"project_id"`
-	Name                   string             `json:"name"`
-	Description            string             `json:"description"`
-	ImageUrl               *string            `json:"image_url"`
-	TimeoutSeconds         *int32             `json:"timeout_seconds"`
-	QuestionTimeoutSeconds *int32             `json:"question_timeout_seconds"`
-	RandomizeQuestions     bool               `json:"randomize_questions"`
-	RevealCorrectAnswers   bool               `json:"reveal_correct_answers"`
-	AllowRetakes           bool               `json:"allow_retakes"`
-	CompletionPoints       int32              `json:"completion_points"`
-	PublishedAt            pgtype.Timestamptz `json:"published_at"`
-	EndTime                pgtype.Timestamptz `json:"end_time"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
-	ChallengeID            string             `json:"challenge_id"`
+	ID                   string             `json:"id"`
+	ProjectID            string             `json:"project_id"`
+	Name                 string             `json:"name"`
+	Description          string             `json:"description"`
+	ImageUrl             *string            `json:"image_url"`
+	TimeoutSeconds       *int32             `json:"timeout_seconds"`
+	RandomizeQuestions   bool               `json:"randomize_questions"`
+	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
+	AllowRetakes         bool               `json:"allow_retakes"`
+	CompletionPoints     int32              `json:"completion_points"`
+	PublishedAt          pgtype.Timestamptz `json:"published_at"`
+	EndTime              pgtype.Timestamptz `json:"end_time"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	ChallengeID          string             `json:"challenge_id"`
 }
 
 type QuizAchievement struct {
@@ -342,6 +341,7 @@ type QuizQuestion struct {
 	StepValue              pgtype.Numeric     `json:"step_value"`
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	TimeoutSeconds         *int32             `json:"timeout_seconds"`
 }
 
 type QuizQuestionTranslation struct {

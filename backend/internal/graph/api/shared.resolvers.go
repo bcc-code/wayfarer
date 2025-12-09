@@ -126,7 +126,7 @@ func (r *freeTextResponseResolver) Question(ctx context.Context, obj *model.Free
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertQuizQuestionRowToInterface(row), nil
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
 }
 
 // Quiz is the resolver for the quiz field.
@@ -150,7 +150,7 @@ func (r *jsonResponseResolver) Question(ctx context.Context, obj *model.JSONResp
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertQuizQuestionRowToInterface(row), nil
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
 }
 
 // Project is the resolver for the project field.
@@ -216,7 +216,7 @@ func (r *numberResponseResolver) Question(ctx context.Context, obj *model.Number
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertQuizQuestionRowToInterface(row), nil
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
 }
 
 // Quiz is the resolver for the quiz field.
@@ -255,7 +255,7 @@ func (r *predefinedResponseResolver) Question(ctx context.Context, obj *model.Pr
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertQuizQuestionRowToInterface(row), nil
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
 }
 
 // SelectedAnswers is the resolver for the selectedAnswers field.
@@ -673,7 +673,7 @@ func (r *quizPredefinedAnswerResolver) Question(ctx context.Context, obj *model.
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertQuizQuestionRowToInterface(row), nil
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
 }
 
 // IsCorrect is the resolver for the isCorrect field on QuizPredefinedAnswer.

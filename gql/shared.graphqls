@@ -488,7 +488,6 @@ type Quiz {
     challenge: Challenge! @goField(forceResolver: true)
 
     timeoutSeconds: Int
-    questionTimeoutSeconds: Int
     randomizeQuestions: Boolean!
     revealCorrectAnswers: Boolean!
     allowRetakes: Boolean!
@@ -512,6 +511,7 @@ interface QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     questionOrder: Int!
+    timeoutSeconds: Int
 }
 
 type PredefinedQuestion implements QuizQuestion {
@@ -519,6 +519,7 @@ type PredefinedQuestion implements QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     questionOrder: Int!
+    timeoutSeconds: Int
     allowMultipleSelection: Boolean!
     predefinedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
 }
@@ -528,6 +529,7 @@ type FreeTextQuestion implements QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     questionOrder: Int!
+    timeoutSeconds: Int
 }
 
 type NumberQuestion implements QuizQuestion {
@@ -535,6 +537,7 @@ type NumberQuestion implements QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     questionOrder: Int!
+    timeoutSeconds: Int
     minValue: Float
     maxValue: Float
     stepValue: Float
@@ -545,6 +548,7 @@ type JsonQuestion implements QuizQuestion {
     quiz: Quiz! @goField(forceResolver: true)
     questionText: String!
     questionOrder: Int!
+    timeoutSeconds: Int
 }
 
 type QuizPredefinedAnswer {
@@ -805,7 +809,6 @@ input CreateQuizInput {
     challengeId: ID!
 
     timeoutSeconds: Int
-    questionTimeoutSeconds: Int
 
     randomizeQuestions: Boolean!
     revealCorrectAnswers: Boolean!
@@ -822,7 +825,6 @@ input UpdateQuizInput {
     image: String
 
     timeoutSeconds: Int
-    questionTimeoutSeconds: Int
 
     randomizeQuestions: Boolean
     revealCorrectAnswers: Boolean
@@ -837,6 +839,7 @@ input CreateQuizQuestionInput {
     questionType: QuizQuestionType!
     questionText: String!
     questionOrder: Int!
+    timeoutSeconds: Int
 
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]
@@ -855,6 +858,7 @@ input CreatePredefinedAnswerInput {
 input UpdateQuizQuestionInput {
     questionText: String
     questionOrder: Int
+    timeoutSeconds: Int
 
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]

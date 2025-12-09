@@ -1,22 +1,22 @@
 -- name: GetQuizQuestionsByQuizID :many
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, created_at, updated_at
 FROM quiz_questions
 WHERE quiz_id = @quizid::text
 ORDER BY question_order ASC;
 
 -- name: GetQuizQuestionsByQuizIDs :many
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, created_at, updated_at
 FROM quiz_questions
 WHERE quiz_id = ANY(@quiz_ids::text[])
 ORDER BY quiz_id, question_order ASC;
 
 -- name: GetQuizQuestionByID :one
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, created_at, updated_at
 FROM quiz_questions
 WHERE id = @id::text;
 
 -- name: GetQuizQuestionsByIDs :many
-SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, created_at, updated_at
+SELECT id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, created_at, updated_at
 FROM quiz_questions
 WHERE id = ANY(@ids::text[]);
 
@@ -30,7 +30,8 @@ INSERT INTO quiz_questions (
     allow_multiple_selection,
     min_value,
     max_value,
-    step_value
+    step_value,
+    timeout_seconds
 )
 VALUES (
     @id::text,
@@ -41,9 +42,10 @@ VALUES (
     sqlc.narg('allowmultipleselection')::bool,
     sqlc.narg('minvalue')::decimal,
     sqlc.narg('maxvalue')::decimal,
-    sqlc.narg('stepvalue')::decimal
+    sqlc.narg('stepvalue')::decimal,
+    sqlc.narg('timeoutseconds')::int
 )
-RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, created_at, updated_at;
+RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, created_at, updated_at;
 
 -- name: UpdateQuizQuestion :one
 UPDATE quiz_questions
@@ -54,9 +56,10 @@ SET
     min_value = COALESCE(sqlc.narg('minvalue')::decimal, min_value),
     max_value = COALESCE(sqlc.narg('maxvalue')::decimal, max_value),
     step_value = COALESCE(sqlc.narg('stepvalue')::decimal, step_value),
+    timeout_seconds = COALESCE(sqlc.narg('timeoutseconds')::int, timeout_seconds),
     updated_at = now()
 WHERE id = @id::text
-RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, created_at, updated_at;
+RETURNING id, quiz_id, question_type, question_text, question_order, allow_multiple_selection, min_value, max_value, step_value, timeout_seconds, created_at, updated_at;
 
 -- name: DeleteQuizQuestion :exec
 DELETE FROM quiz_questions
