@@ -44,7 +44,6 @@ const hasScrolled = computed(() => y.value > 25)
           >
             {{ title }}
           </h1>
-          <DesignSkeleton v-else class="h-8 w-1/2" />
           <div
             :class="[
               'absolute right-6 bottom-3 size-11 transition-all duration-300 ease-out',

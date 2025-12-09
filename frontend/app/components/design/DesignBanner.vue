@@ -10,7 +10,7 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="flex items-start gap-medium rounded-list bg-background-raised border border-border-default p-medium shadow-small"
+    class="flex items-start gap-3 rounded-card bg-background-raised p-default"
   >
     <div class="grow space-y-small">
       <p class="text-label text-text-default">{{ title }}</p>

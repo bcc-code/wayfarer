@@ -109,9 +109,14 @@ export type Challenge = {
   image?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   project: Project;
-  publishedAt: Scalars['DateTime']['output'];
+  publishedAt?: Maybe<Scalars['DateTime']['output']>;
+  requiresSuperTeamMembership: Scalars['Boolean']['output'];
+  requiresTeamMembership: Scalars['Boolean']['output'];
+  startedAt?: Maybe<Scalars['DateTime']['output']>;
   url?: Maybe<Scalars['String']['output']>;
   userCompletedAt?: Maybe<Scalars['DateTime']['output']>;
+  userEnrolledAt?: Maybe<Scalars['DateTime']['output']>;
+  visibleAt?: Maybe<Scalars['DateTime']['output']>;
 };
 
 export type ChallengeConnection = {
@@ -166,6 +171,11 @@ export type ChurchFilter = {
   category?: InputMaybe<ChurchCategory>;
   country?: InputMaybe<Scalars['String']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+export type ChurchInProjectInput = {
+  churchId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
 };
 
 export type ColorSet = {
@@ -247,7 +257,10 @@ export type CreateChallengeInput = {
   endTime?: InputMaybe<Scalars['DateTime']['input']>;
   image?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
+  requiresSuperTeamMembership?: InputMaybe<Scalars['Boolean']['input']>;
+  requiresTeamMembership?: InputMaybe<Scalars['Boolean']['input']>;
   url?: InputMaybe<Scalars['String']['input']>;
+  visibleAt?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
 export type CreateChurchInput = {
@@ -365,6 +378,14 @@ export type DateRange = {
 export type DateRangeInput = {
   end: Scalars['Date']['input'];
   start: Scalars['Date']['input'];
+};
+
+export type EnrollmentTargetInput = {
+  allProjectMembers?: InputMaybe<Scalars['ID']['input']>;
+  churchInProject?: InputMaybe<ChurchInProjectInput>;
+  superTeamIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  teamIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  userIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 export type Event = {
@@ -513,7 +534,9 @@ export type Mutation = {
   bulkAwardAchievements: Array<Achievement>;
   bulkCompleteChallenges: Array<Challenge>;
   bulkCreateChallenges: Array<Challenge>;
+  bulkEnrollUsersInChallenge: Array<Challenge>;
   bulkPublishChallenges: Array<Challenge>;
+  bulkUnenrollUsersFromChallenge: Scalars['Boolean']['output'];
   completeChallenge: Challenge;
   createChallenge: Challenge;
   createConsent: Consent;
@@ -534,6 +557,8 @@ export type Mutation = {
   deleteStreak: Scalars['Boolean']['output'];
   deleteSuperTeam: Scalars['Boolean']['output'];
   deleteTeam: Scalars['Boolean']['output'];
+  enrollInChallenge: Challenge;
+  enrollUserInChallenge: Challenge;
   joinEvent: Event;
   joinProject: Project;
   joinTeam: Team;
@@ -551,7 +576,11 @@ export type Mutation = {
   revokeRole: Scalars['Boolean']['output'];
   revokeSuperTeamAchievement: Scalars['Boolean']['output'];
   revokeTeamAchievement: Scalars['Boolean']['output'];
+  setChallengeRequirements: Challenge;
+  setChallengeVisibility: Challenge;
   uncompleteChallenge: Scalars['Boolean']['output'];
+  unenrollFromChallenge: Scalars['Boolean']['output'];
+  unenrollUserFromChallenge: Scalars['Boolean']['output'];
   unmarkArticleAsRead: ReadingAchievement;
   unmarkTrackAsListened: ListeningAchievement;
   updateAchievement: Achievement;
@@ -648,7 +677,7 @@ export type MutationBulkAwardAchievementsArgs = {
 export type MutationBulkCompleteChallengesArgs = {
   challengeId: Scalars['ID']['input'];
   completedAt?: InputMaybe<Scalars['DateTime']['input']>;
-  userIds: Array<Scalars['ID']['input']>;
+  target: EnrollmentTargetInput;
 };
 
 
@@ -659,9 +688,21 @@ export type MutationBulkCreateChallengesArgs = {
 };
 
 
+export type MutationBulkEnrollUsersInChallengeArgs = {
+  challengeId: Scalars['ID']['input'];
+  target: EnrollmentTargetInput;
+};
+
+
 export type MutationBulkPublishChallengesArgs = {
   ids: Array<Scalars['ID']['input']>;
   publishedAt: Scalars['DateTime']['input'];
+};
+
+
+export type MutationBulkUnenrollUsersFromChallengeArgs = {
+  challengeId: Scalars['ID']['input'];
+  target: EnrollmentTargetInput;
 };
 
 
@@ -778,6 +819,17 @@ export type MutationDeleteTeamArgs = {
 };
 
 
+export type MutationEnrollInChallengeArgs = {
+  challengeId: Scalars['ID']['input'];
+};
+
+
+export type MutationEnrollUserInChallengeArgs = {
+  challengeId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
 export type MutationJoinEventArgs = {
   eventId: Scalars['ID']['input'];
 };
@@ -877,7 +929,32 @@ export type MutationRevokeTeamAchievementArgs = {
 };
 
 
+export type MutationSetChallengeRequirementsArgs = {
+  id: Scalars['ID']['input'];
+  requiresSuperTeamMembership?: InputMaybe<Scalars['Boolean']['input']>;
+  requiresTeamMembership?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+export type MutationSetChallengeVisibilityArgs = {
+  id: Scalars['ID']['input'];
+  startedAt?: InputMaybe<Scalars['DateTime']['input']>;
+  visibleAt: Scalars['DateTime']['input'];
+};
+
+
 export type MutationUncompleteChallengeArgs = {
+  challengeId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationUnenrollFromChallengeArgs = {
+  challengeId: Scalars['ID']['input'];
+};
+
+
+export type MutationUnenrollUserFromChallengeArgs = {
   challengeId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
@@ -1511,7 +1588,11 @@ export type UpdateChallengeInput = {
   eventId?: InputMaybe<Scalars['ID']['input']>;
   image?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  requiresSuperTeamMembership?: InputMaybe<Scalars['Boolean']['input']>;
+  requiresTeamMembership?: InputMaybe<Scalars['Boolean']['input']>;
+  startedAt?: InputMaybe<Scalars['DateTime']['input']>;
   url?: InputMaybe<Scalars['String']['input']>;
+  visibleAt?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
 export type UpdateChurchInput = {
@@ -1964,7 +2045,7 @@ export type AdminProjectChallengePageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectChallengePageQuery = { __typename?: 'Query', challenge: { __typename?: 'Challenge', id: string, name: string, description: any, image?: string | null, url?: string | null, buttonText: string, publishedAt: any, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string } } };
+export type AdminProjectChallengePageQuery = { __typename?: 'Query', challenge: { __typename?: 'Challenge', id: string, name: string, description: any, image?: string | null, url?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string } } };
 
 export type AdminProjectChallengeNewPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -2052,17 +2133,17 @@ export type ChallengePageQueryVariables = Exact<{
 }>;
 
 
-export type ChallengePageQuery = { __typename?: 'Query', challenge: { __typename?: 'Challenge', id: string, name: string, description: any, image?: string | null, url?: string | null, buttonText: string, publishedAt: any, endTime?: any | null, userCompletedAt?: any | null } };
+export type ChallengePageQuery = { __typename?: 'Query', challenge: { __typename?: 'Challenge', id: string, name: string, description: any, image?: string | null, url?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, userCompletedAt?: any | null } };
 
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', challenges: Array<{ __typename?: 'Challenge', id: string, name: string, description: any, userCompletedAt?: any | null, image?: string | null, url?: string | null, buttonText: string, publishedAt: any, endTime?: any | null }> } };
+export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', challenges: Array<{ __typename?: 'Challenge', id: string, name: string, description: any, userCompletedAt?: any | null, image?: string | null, url?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null }> } };
 
 export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, image?: string | null, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename?: 'Consent', id: string, key: string, version: number }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
+export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, image?: string | null, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, managementType: ConsentManagementType, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
       | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
@@ -3145,9 +3226,15 @@ export const ProfilePageDocument = gql`
     image
     consentStatus {
       pendingConsents {
+        __typename
         id
         key
         version
+        title
+        body {
+          html
+        }
+        managementType
       }
     }
   }

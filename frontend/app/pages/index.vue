@@ -7,9 +7,15 @@ gql(`
       image
       consentStatus {
         pendingConsents {
+          __typename
           id
           key
           version
+          title
+          body {
+            html
+          }
+          managementType
         }
       }
     }
@@ -36,7 +42,12 @@ gql(`
 `)
 
 const { isAuthReady } = useAuthReady()
-const { data, error, fetching } = useProfilePageQuery({
+const {
+  data,
+  error,
+  fetching,
+  executeQuery: refetch,
+} = useProfilePageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
@@ -65,26 +76,15 @@ watch(
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <div v-else-if="data" class="space-y-list-section-gap">
-      <!-- <Transition
-        enter-from-class="opacity-0 scale-95"
-        leave-to-class="opacity-0 scale-95"
-        enter-active-class="duration-200 transition ease-out"
-        leave-active-class="duration-200 transition ease-out"
-      >
-        <DesignBanner
-          v-if="showBanner"
-          :title="$t('consent.bannerTitle')"
-          @close="showBanner = false"
-        >
-          <template #action>
-            <NuxtLink :to="{ name: 'settings-consents' }">
-              <DesignButton size="small" variant="secondary">
-                {{ $t('consent.bannerButton') }}
-              </DesignButton>
-            </NuxtLink>
-          </template>
-        </DesignBanner>
-      </Transition> -->
+      <template v-if="showBanner">
+        <ConsentCard
+          v-for="consent in data.me.consentStatus.pendingConsents"
+          :key="consent.id"
+          :consent
+          class="rounded-card!"
+          @update="refetch"
+        />
+      </template>
 
       <ProfileProjectCard
         v-if="data.myCurrentProject"
