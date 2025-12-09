@@ -1,20 +1,5 @@
 <script setup lang="ts">
 const { track } = useAnalytics()
-const { locale, locales, setLocale } = useI18n()
-
-const localeName = computed(() => {
-  return locales.value.find((l) => l.code === locale.value)?.name
-})
-
-const localeComp = computed({
-  get() {
-    return locale.value
-  },
-  set(v) {
-    track(AnalyticsEvent.LanguageChanged, { from: locale.value, to: v })
-    setLocale(v)
-  },
-})
 
 const colorMode = useColorMode()
 const colorModes = ['system', 'dark', 'light']
@@ -41,31 +26,14 @@ const { me } = useAuth()
 
     <div class="space-y-list-section-gap">
       <DesignPanel class="gap-list-section-inset flex flex-col">
-        <UDropdownMenu
-          :ui="{
-            content:
-              'bg-background-raised ring-border-default rounded-list w-(--reka-dropdown-menu-trigger-width)',
-          }"
-          :content="{ align: 'end', side: 'bottom', sideOffset: -4 }"
-          :items="
-            locales.map((l) => ({
-              label: l.name,
-              value: l.code,
-              type: 'checkbox',
-              checked: l.code == localeComp,
-              onSelect: () => (localeComp = l.code),
-            }))
-          "
-          size="xl"
-          checked-icon="lucide:check"
-        >
+        <LocaleSelector v-slot="{ selectedLocale }">
           <div class="flex items-center justify-between gap-2.5 px-3 py-2">
             <p class="text-label">{{ $t('settings.language') }}</p>
             <DesignButton size="small" variant="secondary" class="grow-0">
-              {{ localeName }}
+              {{ selectedLocale?.name }}
             </DesignButton>
           </div>
-        </UDropdownMenu>
+        </LocaleSelector>
         <hr class="border-border-default mx-3" />
         <UDropdownMenu
           :ui="{

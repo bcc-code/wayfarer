@@ -116,14 +116,114 @@ export default defineNuxtConfig({
     defaultLocale: 'nb',
     locales: [
       {
-        name: 'English',
-        code: 'en',
-        file: 'en.json',
-      },
-      {
         name: 'Norsk',
         code: 'nb',
         file: 'nb.json',
+      },
+      {
+        name: 'English',
+        code: 'en',
+        file: 'en_us.json',
+      },
+      {
+        name: 'Deutsch',
+        code: 'de',
+        file: 'de.json',
+      },
+      {
+        name: 'Français',
+        code: 'fr',
+        file: 'fr.json',
+      },
+      {
+        name: 'Español',
+        code: 'es',
+        file: 'es.json',
+      },
+      {
+        name: 'Italiano',
+        code: 'it',
+        file: 'it.json',
+      },
+      {
+        name: 'Nederlands',
+        code: 'nl',
+        file: 'nl.json',
+      },
+      {
+        name: 'Eesti',
+        code: 'et',
+        file: 'et.json',
+      },
+      {
+        name: 'Suomi',
+        code: 'fi',
+        file: 'fi.json',
+      },
+      {
+        name: 'Magyar',
+        code: 'hu',
+        file: 'hu.json',
+      },
+      {
+        name: 'Khasi',
+        code: 'kha',
+        file: 'kha.json',
+      },
+      {
+        name: 'മലയാളം',
+        code: 'ml',
+        file: 'ml.json',
+      },
+      {
+        name: 'Papiamentu',
+        code: 'pap',
+        file: 'pap.json',
+      },
+      {
+        name: 'Polski',
+        code: 'pl',
+        file: 'pl.json',
+      },
+      {
+        name: 'Português',
+        code: 'pt',
+        file: 'pt.json',
+      },
+      {
+        name: 'Română',
+        code: 'ro',
+        file: 'ro.json',
+      },
+      {
+        name: 'Русский',
+        code: 'ru',
+        file: 'ru.json',
+      },
+      {
+        name: 'Slovenščina',
+        code: 'sl',
+        file: 'sl.json',
+      },
+      {
+        name: 'தமிழ்',
+        code: 'ta',
+        file: 'ta.json',
+      },
+      {
+        name: 'Türkçe',
+        code: 'tr',
+        file: 'tr.json',
+      },
+      {
+        name: '中文(简体)',
+        code: 'zh-CN',
+        file: 'zn_cn.json',
+      },
+      {
+        name: '中文(香港)',
+        code: 'zh-HK',
+        file: 'zh_hk.json',
       },
     ],
     strategy: 'no_prefix',
@@ -146,8 +246,8 @@ export default defineNuxtConfig({
       type: 'module',
     },
     manifest: {
-      theme_color: '#ffaedf',
-      name: 'Interact by BCC Media',
+      theme_color: '#E8DFA7',
+      name: 'Interact',
       short_name: 'Interact',
       orientation: 'portrait',
       icons: [

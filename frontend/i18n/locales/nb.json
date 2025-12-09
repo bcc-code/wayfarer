@@ -57,10 +57,10 @@
   "consent": {
     "pending": "Ventende",
     "accepted": "Godtatt",
-    "rejected": "Avslått",
+    "rejected": "Jeg gir ikke samtykke",
     "acceptButton": "Aksepter",
     "rejectButton": "Avslå",
-    "bannerTitle": "Du har ventende samtykker som må aksepteres",
+    "bannerTitle": "Du har samtykker du må ta stilling til",
     "bannerButton": "Gå til samtykkeinstillinger",
     "readButton": "Les samtykkeerklæring",
     "iDontConsent": "Jeg vil ikke godta",
