@@ -6757,7 +6757,7 @@ extend type Mutation {
     setChallengeRequirements(id: ID!, requiresTeamMembership: Boolean, requiresSuperTeamMembership: Boolean): Challenge! @requireRole(roles: ["admin", "superadmin"])
 
     # User self-completion (SimpleChallenge only, when allowSelfCompletion=true)
-    selfCompleteChallenge(challengeId: ID!): SimpleChallenge! @requireRole(roles: ["user"])
+    selfCompleteChallenge(challengeId: ID!): SimpleChallenge!
 
     # User self-enrollment
     enrollInChallenge(challengeId: ID!): Challenge! @requireRole(roles: ["user"])
@@ -6927,7 +6927,7 @@ extend type Query {
         after: String
         last: Int
         before: String
-    ): QuizConnection! @requireRole(roles: ["user", "admin", "superadmin"])
+    ): QuizConnection! @requireRole(roles: ["admin", "superadmin"])
 
     quizSubmission(id: ID!): QuizSubmission! @requireRole(roles: ["user", "admin", "superadmin"])
 
@@ -6958,9 +6958,9 @@ extend type Mutation {
     createQuizAchievement(input: CreateQuizAchievementInput!): QuizAchievement! @requireRole(roles: ["admin", "superadmin"])
 
     # User: Taking quizzes
-    startQuiz(quizId: ID!): QuizSubmission! @requireRole(roles: ["user"])
-    submitQuizAnswer(submissionId: ID!, input: SubmitQuizAnswerInput!): QuizResponse! @requireRole(roles: ["user"])
-    finalizeQuiz(submissionId: ID!): QuizSubmission! @requireRole(roles: ["user"])
+    startQuiz(quizId: ID!): QuizSubmission!
+    submitQuizAnswer(submissionId: ID!, input: SubmitQuizAnswerInput!): QuizResponse!
+    finalizeQuiz(submissionId: ID!): QuizSubmission!
 
     # M2M: External submission
     createQuizSubmission(
@@ -17419,25 +17419,7 @@ func (ec *executionContext) _Mutation_selfCompleteChallenge(ctx context.Context,
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().SelfCompleteChallenge(ctx, fc.Args["challengeId"].(string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal *model.SimpleChallenge
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.SimpleChallenge
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNSimpleChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSimpleChallenge,
 		true,
 		true,
@@ -19766,25 +19748,7 @@ func (ec *executionContext) _Mutation_startQuiz(ctx context.Context, field graph
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().StartQuiz(ctx, fc.Args["quizId"].(string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal *model.QuizSubmission
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.QuizSubmission
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNQuizSubmission2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSubmission,
 		true,
 		true,
@@ -19855,25 +19819,7 @@ func (ec *executionContext) _Mutation_submitQuizAnswer(ctx context.Context, fiel
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().SubmitQuizAnswer(ctx, fc.Args["submissionId"].(string), fc.Args["input"].(model.SubmitQuizAnswerInput))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal model.QuizResponse
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal model.QuizResponse
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNQuizResponse2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizResponse,
 		true,
 		true,
@@ -19914,25 +19860,7 @@ func (ec *executionContext) _Mutation_finalizeQuiz(ctx context.Context, field gr
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().FinalizeQuiz(ctx, fc.Args["submissionId"].(string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal *model.QuizSubmission
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.QuizSubmission
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNQuizSubmission2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSubmission,
 		true,
 		true,
@@ -23806,7 +23734,7 @@ func (ec *executionContext) _Query_quizzes(ctx context.Context, field graphql.Co
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user", "admin", "superadmin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.QuizConnection
 					return zeroVal, err
