@@ -9,18 +9,11 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div
-    class="flex items-start gap-3 rounded-card bg-background-raised p-default"
-  >
-    <div class="grow space-y-small">
-      <p class="text-label text-text-default">{{ title }}</p>
-      <slot name="action" />
+  <div class="flex flex-col gap-3 rounded-card bg-background-raised p-default">
+    <div class="grow space-y-small flex justify-between">
+      <p class="text-title text-text-default text-balance">{{ title }}</p>
+      <DesignIconButton icon="lucide:x" size="small" @click="emit('close')" />
     </div>
-    <DesignIconButton
-      icon="lucide:x"
-      variant="tertiary"
-      class="-m-small"
-      @click="emit('close')"
-    />
+    <slot name="action" />
   </div>
 </template>

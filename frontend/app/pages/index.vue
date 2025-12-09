@@ -4,7 +4,6 @@ gql(`
     me {
       id
       name
-      image
       consentStatus {
         pendingConsents {
           __typename
@@ -42,12 +41,7 @@ gql(`
 `)
 
 const { isAuthReady } = useAuthReady()
-const {
-  data,
-  error,
-  fetching,
-  executeQuery: refetch,
-} = useProfilePageQuery({
+const { data, error, fetching } = useProfilePageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
@@ -76,16 +70,7 @@ watch(
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <div v-else-if="data" class="space-y-list-section-gap">
-      <template v-if="showBanner">
-        <ConsentCard
-          v-for="consent in data.me.consentStatus.pendingConsents"
-          :key="consent.id"
-          :consent
-          class="rounded-card!"
-          @update="refetch"
-        />
-      </template>
-
+      <ConsentBanner v-if="showBanner" />
       <ProfileProjectCard
         v-if="data.myCurrentProject"
         :project-name="data.myCurrentProject.name"
