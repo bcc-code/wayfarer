@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_KGzVPBagKW
 createdAt: 2025-11-25T13:22:34.139477
-updatedAt: 2025-12-08T08:19:33.360555
+updatedAt: 2025-12-09T10:59:38.449753
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -78,6 +78,6 @@ headers:
   id: 0s4xJY0Rq9
 method: POST
 name: TeamLeaderboards
-sortPriority: 7000.0
+sortPriority: 9000.0
 url: ${[ HOST ]}/graphql
 urlParameters: []

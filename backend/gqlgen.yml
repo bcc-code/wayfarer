@@ -13,6 +13,7 @@ schema:
   - ../gql/churches.graphqls
   - ../gql/scoring.graphqls
   - ../gql/consents.graphqls
+  - ../gql/quizzes.graphqls
 
 # Generated code locations
 exec:
@@ -66,11 +67,50 @@ models:
         type: "*string"
 
   # Add ProjectID field to types that have project relationships
-  Challenge:
+  # Challenge implementations
+  SimpleChallenge:
     fields:
       project:
         resolver: true
       event:
+        resolver: true
+      userCompletedAt:
+        resolver: true
+      userEnrolledAt:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      EventID:
+        type: "*string"
+
+  QuizChallenge:
+    fields:
+      project:
+        resolver: true
+      event:
+        resolver: true
+      userCompletedAt:
+        resolver: true
+      userEnrolledAt:
+        resolver: true
+      quiz:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      EventID:
+        type: "*string"
+
+  ExternalChallenge:
+    fields:
+      project:
+        resolver: true
+      event:
+        resolver: true
+      userCompletedAt:
+        resolver: true
+      userEnrolledAt:
         resolver: true
     extraFields:
       ProjectID:
@@ -244,6 +284,166 @@ models:
         resolver: true
     extraFields:
       ConsentID:
+        type: string
+
+  Quiz:
+    fields:
+      project:
+        resolver: true
+      challenge:
+        resolver: true
+      questions:
+        resolver: true
+      userSubmissions:
+        resolver: true
+      userCanStart:
+        resolver: true
+      userActiveSubmission:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      ChallengeID:
+        type: string
+
+  # QuizQuestion implementations
+  PredefinedQuestion:
+    fields:
+      quiz:
+        resolver: true
+      predefinedAnswers:
+        resolver: true
+    extraFields:
+      QuizID:
+        type: string
+
+  FreeTextQuestion:
+    fields:
+      quiz:
+        resolver: true
+    extraFields:
+      QuizID:
+        type: string
+
+  NumberQuestion:
+    fields:
+      quiz:
+        resolver: true
+    extraFields:
+      QuizID:
+        type: string
+
+  JsonQuestion:
+    fields:
+      quiz:
+        resolver: true
+    extraFields:
+      QuizID:
+        type: string
+
+  QuizPredefinedAnswer:
+    fields:
+      question:
+        resolver: true
+      isCorrect:
+        resolver: true
+    extraFields:
+      QuestionID:
+        type: string
+      IsCorrectValue:
+        type: bool
+
+  QuizSubmission:
+    fields:
+      quiz:
+        resolver: true
+      user:
+        resolver: true
+      isExpired:
+        resolver: true
+      orderedQuestions:
+        resolver: true
+      responses:
+        resolver: true
+      scorePercentage:
+        resolver: true
+    extraFields:
+      QuizID:
+        type: string
+      UserID:
+        type: string
+
+  # QuizResponse implementations
+  PredefinedResponse:
+    fields:
+      submission:
+        resolver: true
+      question:
+        resolver: true
+      selectedAnswers:
+        resolver: true
+    extraFields:
+      SubmissionID:
+        type: string
+      QuestionID:
+        type: string
+
+  FreeTextResponse:
+    fields:
+      submission:
+        resolver: true
+      question:
+        resolver: true
+    extraFields:
+      SubmissionID:
+        type: string
+      QuestionID:
+        type: string
+
+  NumberResponse:
+    fields:
+      submission:
+        resolver: true
+      question:
+        resolver: true
+    extraFields:
+      SubmissionID:
+        type: string
+      QuestionID:
+        type: string
+
+  JsonResponse:
+    fields:
+      submission:
+        resolver: true
+      question:
+        resolver: true
+    extraFields:
+      SubmissionID:
+        type: string
+      QuestionID:
+        type: string
+
+  QuizAchievement:
+    fields:
+      project:
+        resolver: true
+      event:
+        resolver: true
+      challenge:
+        resolver: true
+      achievedAt:
+        resolver: true
+      quiz:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      EventID:
+        type: "*string"
+      ChallengeID:
+        type: "*string"
+      QuizID:
         type: string
 
 # Autobind - automatically bind Go types to GraphQL types if they match by name

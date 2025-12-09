@@ -1,0 +1,44 @@
+type: http_request
+model: http_request
+id: rq_SubmitQuizAnswerFreeText
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+      submitQuizAnswer(submissionId: $submissionId, input: $input) {
+        id
+        textResponse
+        answeredAt
+        timeSpentSeconds
+        question {
+          id
+          questionText
+        }
+      }
+    }
+  variables: |
+    {
+      "submissionId": "QS01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "input": {
+        "questionId": "QQ01ARZ3NDEKTSV4RRFFQ69G5FAV",
+        "textResponse": "My favorite verse is John 3:16 because it shows the depth of God's love.",
+        "timeSpentSeconds": 45
+      }
+    }
+bodyType: graphql
+description: Submit a free text answer (user)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_SubmitQuizAnswerFreeText
+method: POST
+name: Submit Quiz Answer (Free Text)
+sortPriority: 4200.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

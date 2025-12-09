@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_zwQhAmibYn
 createdAt: 2025-11-28T13:49:13.623726
-updatedAt: 2025-12-08T08:19:57.813351
+updatedAt: 2025-12-09T10:59:38.452966
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -43,6 +43,6 @@ headers:
   id: 0s4xJY0Rq9
 method: POST
 name: ProjectRules
-sortPriority: 11000.0
+sortPriority: 14000.0
 url: ${[ HOST ]}/graphql
 urlParameters: []

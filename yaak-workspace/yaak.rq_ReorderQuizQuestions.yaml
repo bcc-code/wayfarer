@@ -1,0 +1,39 @@
+type: http_request
+model: http_request
+id: rq_ReorderQuizQuestions
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation ReorderQuizQuestions($quizId: ID!, $questionIds: [ID!]!) {
+      reorderQuizQuestions(quizId: $quizId, questionIds: $questionIds) {
+        id
+        questionText
+        questionOrder
+      }
+    }
+  variables: |
+    {
+      "quizId": "QZ01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "questionIds": [
+        "QQ01ARZ3NDEKTSV4RRFFQ69G5FA1",
+        "QQ01ARZ3NDEKTSV4RRFFQ69G5FA2",
+        "QQ01ARZ3NDEKTSV4RRFFQ69G5FA3"
+      ]
+    }
+bodyType: graphql
+description: Reorder quiz questions (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_ReorderQuizQuestions
+method: POST
+name: Reorder Quiz Questions
+sortPriority: 3500.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

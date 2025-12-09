@@ -293,14 +293,13 @@ type SuperTeam {
 
 # ==================== Interfaces ====================
 
-type Challenge {
+interface Challenge {
     id: ID!
     name: String!
     description: HTML!
     image: String
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
-    url: String
     buttonText: String!
     publishedAt: DateTime
     visibleAt: DateTime
@@ -310,6 +309,74 @@ type Challenge {
     requiresSuperTeamMembership: Boolean!
     userCompletedAt: DateTime @goField(forceResolver: true)
     userEnrolledAt: DateTime @goField(forceResolver: true)
+}
+
+# ==================== Challenge Implementations ====================
+
+enum ChallengeType {
+    SIMPLE
+    QUIZ
+    EXTERNAL
+}
+
+type SimpleChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # SimpleChallenge-specific fields
+    allowSelfCompletion: Boolean!
+}
+
+type QuizChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # QuizChallenge-specific fields - no url, linked to quiz
+    quiz: Quiz! @goField(forceResolver: true)
+}
+
+type ExternalChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # ExternalChallenge-specific fields - url is required
+    url: String!
 }
 
 interface Achievement {
@@ -386,6 +453,182 @@ type StreakAchievement implements Achievement {
     hidden: Boolean!
     streak: Streak! @goField(forceResolver: true)
 }
+
+type QuizAchievement implements Achievement {
+    id: ID!
+    name: String!
+    description: String!
+    image: String
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
+    achievedAt: DateTime @goField(forceResolver: true)
+    points: Int!
+    hidden: Boolean!
+    quiz: Quiz! @goField(forceResolver: true)
+    minScorePercentage: Int
+    requireCompletion: Boolean!
+}
+
+# ==================== Quiz Types ====================
+
+enum QuizQuestionType {
+    PREDEFINED
+    FREE_TEXT
+    NUMBER
+    JSON
+}
+
+type Quiz {
+    id: ID!
+    name: String!
+    description: String!
+    image: String
+    project: Project! @goField(forceResolver: true)
+    challenge: Challenge! @goField(forceResolver: true)
+
+    timeoutSeconds: Int
+    randomizeQuestions: Boolean!
+    revealCorrectAnswers: Boolean!
+    allowRetakes: Boolean!
+    completionPoints: Int!
+
+    questions: [QuizQuestion!]! @goField(forceResolver: true)
+
+    publishedAt: DateTime
+    endTime: DateTime
+
+    # User-specific fields
+    userSubmissions: [QuizSubmission!]! @goField(forceResolver: true)
+    userCanStart: Boolean! @goField(forceResolver: true)
+    userActiveSubmission: QuizSubmission @goField(forceResolver: true)
+}
+
+# ==================== Quiz Question Interface ====================
+
+interface QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
+    timeoutSeconds: Int
+}
+
+type PredefinedQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
+    timeoutSeconds: Int
+    allowMultipleSelection: Boolean!
+    predefinedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
+}
+
+type FreeTextQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
+    timeoutSeconds: Int
+}
+
+type NumberQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
+    timeoutSeconds: Int
+    minValue: Float
+    maxValue: Float
+    stepValue: Float
+}
+
+type JsonQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
+    timeoutSeconds: Int
+}
+
+type QuizPredefinedAnswer {
+    id: ID!
+    question: QuizQuestion! @goField(forceResolver: true)
+    answerText: String!
+    answerOrder: Int!
+    isCorrect: Boolean @goField(forceResolver: true)
+}
+
+type QuizSubmission {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    user: User! @goField(forceResolver: true)
+
+    startedAt: DateTime!
+    completedAt: DateTime
+    expiresAt: DateTime
+    isExpired: Boolean! @goField(forceResolver: true)
+
+    questionOrder: [ID!]!
+    orderedQuestions: [QuizQuestion!]! @goField(forceResolver: true)
+
+    responses: [QuizResponse!]! @goField(forceResolver: true)
+
+    score: Int
+    maxScore: Int
+    scorePercentage: Float @goField(forceResolver: true)
+    pointsAwarded: Int
+}
+
+# ==================== Quiz Response Interface ====================
+
+interface QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+}
+
+type PredefinedResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    selectedAnswerIds: [ID!]!
+    selectedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
+    isCorrect: Boolean
+}
+
+type FreeTextResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    textResponse: String!
+}
+
+type NumberResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    numberResponse: Float!
+}
+
+type JsonResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    jsonResponse: JSON!
+}
+
+scalar JSON
 
 # ==================== Input Types ====================
 
@@ -464,16 +707,21 @@ input UpdateEventInput {
     endDate: DateTime
 }
 
+# ==================== Challenge Input Types ====================
+
 input CreateChallengeInput {
+    type: ChallengeType!
     name: String!
     description: HTML
     image: String
-    url: String
     buttonText: String!
     visibleAt: DateTime
     endTime: DateTime
     requiresTeamMembership: Boolean
     requiresSuperTeamMembership: Boolean
+    # Type-specific fields (validated based on type):
+    allowSelfCompletion: Boolean  # SIMPLE only, defaults true
+    url: String                   # EXTERNAL only, required
 }
 
 input UpdateChallengeInput {
@@ -481,13 +729,15 @@ input UpdateChallengeInput {
     description: HTML
     image: String
     eventId: ID
-    url: String
     buttonText: String
     visibleAt: DateTime
     startedAt: DateTime
     endTime: DateTime
     requiresTeamMembership: Boolean
     requiresSuperTeamMembership: Boolean
+    # Type-specific fields (validated based on existing challenge type):
+    allowSelfCompletion: Boolean  # SIMPLE only
+    url: String                   # EXTERNAL only
 }
 
 input CreateSimpleAchievementInput {
@@ -536,6 +786,105 @@ input CreateStreakAchievementInput {
     hidden: Boolean!
     neededStreak: Int!
     streakId: ID!
+}
+
+input CreateQuizAchievementInput {
+    name: String!
+    description: String!
+    image: String
+    projectId: ID!
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+    quizId: ID!
+    minScorePercentage: Int
+    requireCompletion: Boolean!
+}
+
+input CreateQuizInput {
+    name: String!
+    description: String!
+    image: String
+    projectId: ID!
+    challengeId: ID!
+
+    timeoutSeconds: Int
+
+    randomizeQuestions: Boolean!
+    revealCorrectAnswers: Boolean!
+    allowRetakes: Boolean!
+    completionPoints: Int!
+
+    publishedAt: DateTime
+    endTime: DateTime
+}
+
+input UpdateQuizInput {
+    name: String
+    description: String
+    image: String
+
+    timeoutSeconds: Int
+
+    randomizeQuestions: Boolean
+    revealCorrectAnswers: Boolean
+    allowRetakes: Boolean
+    completionPoints: Int
+
+    publishedAt: DateTime
+    endTime: DateTime
+}
+
+input CreateQuizQuestionInput {
+    questionType: QuizQuestionType!
+    questionText: String!
+    questionOrder: Int!
+    timeoutSeconds: Int
+
+    allowMultipleSelection: Boolean
+    predefinedAnswers: [CreatePredefinedAnswerInput!]
+
+    minValue: Float
+    maxValue: Float
+    stepValue: Float
+}
+
+input CreatePredefinedAnswerInput {
+    answerText: String!
+    isCorrect: Boolean!
+    answerOrder: Int!
+}
+
+input UpdateQuizQuestionInput {
+    questionText: String
+    questionOrder: Int
+    timeoutSeconds: Int
+
+    allowMultipleSelection: Boolean
+    predefinedAnswers: [CreatePredefinedAnswerInput!]
+
+    minValue: Float
+    maxValue: Float
+    stepValue: Float
+}
+
+input SubmitQuizAnswerInput {
+    questionId: ID!
+
+    selectedAnswerIds: [ID!]
+    textResponse: String
+    numberResponse: Float
+    jsonResponse: JSON
+
+    timeSpentSeconds: Int
+}
+
+input QuizFilter {
+    projectId: ID
+    challengeId: ID
+    ids: [ID!]
+    publishedAfter: DateTime
+    publishedBefore: DateTime
 }
 
 input UpdateAchievementInput {
@@ -667,6 +1016,7 @@ input ProjectFilter {
 input ChallengeFilter {
     projectId: ID
     eventId: ID
+    challengeType: ChallengeType
     ids: [ID!]  # Support bulk ID lookup for M2M API
     publishedAfter: DateTime
     publishedBefore: DateTime
@@ -757,7 +1107,7 @@ input RevokeRoleInput {
 
 # ==================== Score Journal ====================
 
-union ScoreSource = SimpleAchievement | ReadingAchievement | ListeningAchievement | StreakAchievement | Challenge | Event
+union ScoreSource = SimpleAchievement | ReadingAchievement | ListeningAchievement | StreakAchievement | SimpleChallenge | QuizChallenge | ExternalChallenge | Event
 
 type ScoreJournal {
     id: ID!
@@ -897,6 +1247,28 @@ type StreakEdge {
 
 type StreakConnection {
     edges: [StreakEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type QuizEdge {
+    cursor: String!
+    node: Quiz!
+}
+
+type QuizConnection {
+    edges: [QuizEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type QuizSubmissionEdge {
+    cursor: String!
+    node: QuizSubmission!
+}
+
+type QuizSubmissionConnection {
+    edges: [QuizSubmissionEdge!]!
     pageInfo: PageInfo!
     totalCount: Int!
 }

@@ -178,7 +178,7 @@ func (r *Resolver) LoadStreakWithTranslation(ctx context.Context, id string) (*m
 }
 
 // LoadChallengeWithTranslation loads a challenge and applies translation for the requested language
-func (r *Resolver) LoadChallengeWithTranslation(ctx context.Context, id string) (*model.Challenge, error) {
+func (r *Resolver) LoadChallengeWithTranslation(ctx context.Context, id string) (model.Challenge, error) {
 	challenge, err := r.Loaders.ChallengeByIDLoader.Load(ctx, id)()
 	if err != nil {
 		return nil, err
@@ -199,11 +199,33 @@ func (r *Resolver) LoadChallengeWithTranslation(ctx context.Context, id string) 
 		return challenge, nil
 	}
 
-	translated := *challenge
-	translated.Name = applyStringTranslation(trans.Name, challenge.Name)
-	translated.Description = applyHTMLTranslation(trans.Description, challenge.Description)
-	translated.ButtonText = applyStringTranslation(trans.ButtonText, challenge.ButtonText)
-	return &translated, nil
+	return applyChallengeTranslation(challenge, trans), nil
+}
+
+// applyChallengeTranslation applies translation to a Challenge interface value
+func applyChallengeTranslation(challenge model.Challenge, trans *loaders.Translation) model.Challenge {
+	switch c := challenge.(type) {
+	case *model.SimpleChallenge:
+		translated := *c
+		translated.Name = applyStringTranslation(trans.Name, c.Name)
+		translated.Description = applyHTMLTranslation(trans.Description, c.Description)
+		translated.ButtonText = applyStringTranslation(trans.ButtonText, c.ButtonText)
+		return &translated
+	case *model.QuizChallenge:
+		translated := *c
+		translated.Name = applyStringTranslation(trans.Name, c.Name)
+		translated.Description = applyHTMLTranslation(trans.Description, c.Description)
+		translated.ButtonText = applyStringTranslation(trans.ButtonText, c.ButtonText)
+		return &translated
+	case *model.ExternalChallenge:
+		translated := *c
+		translated.Name = applyStringTranslation(trans.Name, c.Name)
+		translated.Description = applyHTMLTranslation(trans.Description, c.Description)
+		translated.ButtonText = applyStringTranslation(trans.ButtonText, c.ButtonText)
+		return &translated
+	default:
+		return challenge
+	}
 }
 
 // ApplyTranslationToProject applies translation to an already-loaded project
@@ -315,7 +337,7 @@ func (r *Resolver) ApplyTranslationToSuperTeam(ctx context.Context, superTeam *m
 }
 
 // ApplyTranslationToChallenge applies translation to an already-loaded challenge
-func (r *Resolver) ApplyTranslationToChallenge(ctx context.Context, challenge *model.Challenge) *model.Challenge {
+func (r *Resolver) ApplyTranslationToChallenge(ctx context.Context, challenge model.Challenge) model.Challenge {
 	if challenge == nil {
 		return nil
 	}
@@ -327,7 +349,7 @@ func (r *Resolver) ApplyTranslationToChallenge(ctx context.Context, challenge *m
 
 	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
 		EntityType: "challenge",
-		EntityID:   challenge.ID,
+		EntityID:   getChallengeID(challenge),
 		LangCode:   lang,
 	})()
 
@@ -335,11 +357,7 @@ func (r *Resolver) ApplyTranslationToChallenge(ctx context.Context, challenge *m
 		return challenge
 	}
 
-	translated := *challenge
-	translated.Name = applyStringTranslation(trans.Name, challenge.Name)
-	translated.Description = applyHTMLTranslation(trans.Description, challenge.Description)
-	translated.ButtonText = applyStringTranslation(trans.ButtonText, challenge.ButtonText)
-	return &translated
+	return applyChallengeTranslation(challenge, trans)
 }
 
 // ApplyTranslationToStreak applies translation to an already-loaded streak

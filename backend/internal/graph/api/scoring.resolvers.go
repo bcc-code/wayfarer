@@ -28,23 +28,15 @@ func (r *mutationResolver) CreateScoreAdjustment(ctx context.Context, input mode
 
 	// Build params
 	params := sqlc.CreateScoreJournalEntryParams{
-		ID:         journalID,
-		ProjectID:  input.ProjectID,
-		UserID:     input.UserID,
-		Points:     int32(input.Points),
-		SourceType: "MANUAL",
-		AwardedBy:  awardedByUserID,
-	}
-
-	// Set optional fields
-	if input.EventID != nil {
-		params.EventID = *input.EventID
-	}
-	if input.ChallengeID != nil {
-		params.ChallengeID = *input.ChallengeID
-	}
-	if input.Reason != nil {
-		params.Reason = *input.Reason
+		ID:          journalID,
+		ProjectID:   input.ProjectID,
+		UserID:      input.UserID,
+		Points:      int32(input.Points),
+		SourceType:  "MANUAL",
+		AwardedBy:   &awardedByUserID,
+		EventID:     input.EventID,
+		ChallengeID: input.ChallengeID,
+		Reason:      input.Reason,
 	}
 
 	// Create entry

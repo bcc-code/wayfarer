@@ -1,0 +1,53 @@
+# Quiz queries and mutations
+
+extend type Query {
+    quiz(id: ID!): Quiz! @requireRole(roles: ["user", "admin", "superadmin"])
+    quizzes(
+        filter: QuizFilter
+        first: Int
+        after: String
+        last: Int
+        before: String
+    ): QuizConnection! @requireRole(roles: ["admin", "superadmin"])
+
+    quizSubmission(id: ID!): QuizSubmission! @requireRole(roles: ["user", "admin", "superadmin"])
+
+    quizSubmissions(
+        quizId: ID!
+        userId: ID
+        first: Int
+        after: String
+        last: Int
+        before: String
+    ): QuizSubmissionConnection! @requireRole(roles: ["admin", "superadmin"])
+}
+
+extend type Mutation {
+    # Admin: Quiz management
+    createQuiz(input: CreateQuizInput!): Quiz! @requireRole(roles: ["admin", "superadmin"])
+    updateQuiz(id: ID!, input: UpdateQuizInput!): Quiz! @requireRole(roles: ["admin", "superadmin"])
+    deleteQuiz(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    publishQuiz(id: ID!, publishedAt: DateTime!): Quiz! @requireRole(roles: ["admin", "superadmin"])
+
+    # Admin: Question management
+    addQuizQuestion(quizId: ID!, input: CreateQuizQuestionInput!): QuizQuestion! @requireRole(roles: ["admin", "superadmin"])
+    updateQuizQuestion(id: ID!, input: UpdateQuizQuestionInput!): QuizQuestion! @requireRole(roles: ["admin", "superadmin"])
+    deleteQuizQuestion(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    reorderQuizQuestions(quizId: ID!, questionIds: [ID!]!): [QuizQuestion!]! @requireRole(roles: ["admin", "superadmin"])
+
+    # Admin: Achievement integration
+    createQuizAchievement(input: CreateQuizAchievementInput!): QuizAchievement! @requireRole(roles: ["admin", "superadmin"])
+
+    # User: Taking quizzes
+    startQuiz(quizId: ID!): QuizSubmission!
+    submitQuizAnswer(submissionId: ID!, input: SubmitQuizAnswerInput!): QuizResponse!
+    finalizeQuiz(submissionId: ID!): QuizSubmission!
+
+    # M2M: External submission
+    createQuizSubmission(
+        quizId: ID!
+        userId: ID!
+        responses: [SubmitQuizAnswerInput!]!
+        completedAt: DateTime
+    ): QuizSubmission! @requireRole(roles: ["m2m", "admin", "superadmin"])
+}

@@ -2,6 +2,20 @@ package pagination
 
 import "github.com/bcc-media/wayfarer/internal/graph/api/model"
 
+// getChallengeID extracts the ID from any Challenge implementation
+func getChallengeID(c model.Challenge) string {
+	switch v := c.(type) {
+	case *model.SimpleChallenge:
+		return v.ID
+	case *model.QuizChallenge:
+		return v.ID
+	case *model.ExternalChallenge:
+		return v.ID
+	default:
+		return ""
+	}
+}
+
 // BuildUserConnectionParams holds parameters for building a UserConnection
 type BuildUserConnectionParams struct {
 	Users           []model.User
@@ -351,8 +365,8 @@ func BuildChallengeConnection(params BuildChallengeConnectionParams) *model.Chal
 	edges := make([]model.ChallengeEdge, len(params.Challenges))
 	for i, challenge := range params.Challenges {
 		edges[i] = model.ChallengeEdge{
-			Cursor: EncodeCursor(challenge.ID),
-			Node:   &challenge,
+			Cursor: EncodeCursor(getChallengeID(challenge)),
+			Node:   challenge,
 		}
 	}
 

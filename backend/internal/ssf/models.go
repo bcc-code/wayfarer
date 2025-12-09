@@ -177,15 +177,15 @@ type PeriodicalArticle struct {
 
 // PeriodicalIssue represents a periodical issue (parent of articles)
 type PeriodicalIssue struct {
-	PeriodicalIssueID      int    `json:"periodical_issue_id"`
-	PeriodicalID           int    `json:"periodical_id"`
-	Year                   int    `json:"year"`
-	Month                  int    `json:"month"`
-	NoOfMonths             string `json:"no_of_months"`
-	ContentTimestamp       string `json:"content_timestamp"`
-	ISSN                   string `json:"issn"`
-	PrintVersionFileName   string `json:"print_version_file_name"`
-	PrintBookletFileName   string `json:"print_booklet_file_name"`
+	PeriodicalIssueID    int    `json:"periodical_issue_id"`
+	PeriodicalID         int    `json:"periodical_id"`
+	Year                 int    `json:"year"`
+	Month                int    `json:"month"`
+	NoOfMonths           string `json:"no_of_months"`
+	ContentTimestamp     string `json:"content_timestamp"`
+	ISSN                 string `json:"issn"`
+	PrintVersionFileName string `json:"print_version_file_name"`
+	PrintBookletFileName string `json:"print_booklet_file_name"`
 }
 
 // BibleChapter represents a bible chapter reference

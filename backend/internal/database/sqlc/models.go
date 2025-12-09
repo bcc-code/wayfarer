@@ -49,6 +49,8 @@ type Challenge struct {
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	RequiresTeamMembership      bool               `json:"requires_team_membership"`
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	ChallengeType               string             `json:"challenge_type"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 }
 
 type ChallengeTranslation struct {
@@ -283,6 +285,107 @@ type ProjectTranslation struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 	Rules        *string            `json:"rules"`
+}
+
+type Quiz struct {
+	ID                   string             `json:"id"`
+	ProjectID            string             `json:"project_id"`
+	Name                 string             `json:"name"`
+	Description          string             `json:"description"`
+	ImageUrl             *string            `json:"image_url"`
+	TimeoutSeconds       *int32             `json:"timeout_seconds"`
+	RandomizeQuestions   bool               `json:"randomize_questions"`
+	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
+	AllowRetakes         bool               `json:"allow_retakes"`
+	CompletionPoints     int32              `json:"completion_points"`
+	PublishedAt          pgtype.Timestamptz `json:"published_at"`
+	EndTime              pgtype.Timestamptz `json:"end_time"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	ChallengeID          string             `json:"challenge_id"`
+}
+
+type QuizAchievement struct {
+	AchievementID      string `json:"achievement_id"`
+	QuizID             string `json:"quiz_id"`
+	MinScorePercentage *int32 `json:"min_score_percentage"`
+	RequireCompletion  bool   `json:"require_completion"`
+}
+
+type QuizAnswerTranslation struct {
+	AnswerID     string             `json:"answer_id"`
+	LanguageCode string             `json:"language_code"`
+	AnswerText   *string            `json:"answer_text"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type QuizPredefinedAnswer struct {
+	ID          string             `json:"id"`
+	QuestionID  string             `json:"question_id"`
+	AnswerText  string             `json:"answer_text"`
+	IsCorrect   bool               `json:"is_correct"`
+	AnswerOrder int32              `json:"answer_order"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type QuizQuestion struct {
+	ID                     string             `json:"id"`
+	QuizID                 string             `json:"quiz_id"`
+	QuestionType           string             `json:"question_type"`
+	QuestionText           string             `json:"question_text"`
+	QuestionOrder          int32              `json:"question_order"`
+	AllowMultipleSelection *bool              `json:"allow_multiple_selection"`
+	MinValue               pgtype.Numeric     `json:"min_value"`
+	MaxValue               pgtype.Numeric     `json:"max_value"`
+	StepValue              pgtype.Numeric     `json:"step_value"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	TimeoutSeconds         *int32             `json:"timeout_seconds"`
+}
+
+type QuizQuestionTranslation struct {
+	QuestionID   string             `json:"question_id"`
+	LanguageCode string             `json:"language_code"`
+	QuestionText *string            `json:"question_text"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type QuizResponse struct {
+	ID                string             `json:"id"`
+	SubmissionID      string             `json:"submission_id"`
+	QuestionID        string             `json:"question_id"`
+	SelectedAnswerIds []byte             `json:"selected_answer_ids"`
+	TextResponse      *string            `json:"text_response"`
+	NumberResponse    pgtype.Numeric     `json:"number_response"`
+	JsonResponse      []byte             `json:"json_response"`
+	IsCorrect         *bool              `json:"is_correct"`
+	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
+	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
+}
+
+type QuizSubmission struct {
+	ID            string             `json:"id"`
+	QuizID        string             `json:"quiz_id"`
+	UserID        string             `json:"user_id"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
+	QuestionOrder []byte             `json:"question_order"`
+	Score         *int32             `json:"score"`
+	MaxScore      *int32             `json:"max_score"`
+	PointsAwarded *int32             `json:"points_awarded"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type QuizTranslation struct {
+	QuizID       string             `json:"quiz_id"`
+	LanguageCode string             `json:"language_code"`
+	Name         *string            `json:"name"`
+	Description  *string            `json:"description"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 type ReadingAchievement struct {

@@ -172,23 +172,37 @@ CREATE TABLE challenges (
     id CHAR(28) PRIMARY KEY CHECK (id ~ '^CL[0-9A-Z]{26}$'),
     project_id CHAR(28) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     event_id CHAR(28) REFERENCES events(id) ON DELETE SET NULL,
+    challenge_type VARCHAR(50) NOT NULL DEFAULT 'SIMPLE' CHECK (challenge_type IN ('SIMPLE', 'QUIZ', 'EXTERNAL')),
     name VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     image_url VARCHAR(500),
     url VARCHAR(500),
     button_text VARCHAR(100) NOT NULL,
     published_at TIMESTAMPTZ,
+    visible_at TIMESTAMPTZ,
+    started_at TIMESTAMPTZ,
     end_time TIMESTAMPTZ,
+    allow_self_completion BOOLEAN DEFAULT true NOT NULL,
+    requires_team_membership BOOLEAN DEFAULT false NOT NULL,
+    requires_super_team_membership BOOLEAN DEFAULT false NOT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
+    -- Type constraints: EXTERNAL requires url, QUIZ must not have url
+    CONSTRAINT challenge_type_url_constraint CHECK (
+        (challenge_type = 'EXTERNAL' AND url IS NOT NULL AND url != '') OR
+        (challenge_type = 'QUIZ' AND (url IS NULL OR url = '')) OR
+        (challenge_type = 'SIMPLE')
+    ),
     INDEX idx_challenges_project (project_id),
     INDEX idx_challenges_event (event_id),
-    INDEX idx_challenges_published (published_at)
+    INDEX idx_challenges_published (published_at),
+    INDEX idx_challenges_visible (visible_at),
+    INDEX idx_challenges_type (challenge_type)
 );
 
 CREATE TABLE achievements (
     id CHAR(28) PRIMARY KEY CHECK (id ~ '^AC[0-9A-Z]{26}$'),
-    achievement_type VARCHAR(50) NOT NULL CHECK (achievement_type IN ('SIMPLE', 'READING', 'LISTENING', 'STREAK')),
+    achievement_type VARCHAR(50) NOT NULL CHECK (achievement_type IN ('SIMPLE', 'READING', 'LISTENING', 'STREAK', 'QUIZ')),
     project_id CHAR(28) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     event_id CHAR(28) REFERENCES events(id) ON DELETE SET NULL,
     challenge_id CHAR(28) REFERENCES challenges(id) ON DELETE SET NULL,
@@ -502,4 +516,177 @@ CREATE TABLE user_consent_history (
     INDEX idx_user_consent_history_user_key (user_id, consent_key),
     INDEX idx_user_consent_history_occurred (occurred_at),
     UNIQUE INDEX idx_user_consent_history_remote_idempotent (user_id, consent_key, external_consent_id) WHERE external_consent_id IS NOT NULL
+);
+
+-- ==================== Quiz System Tables ====================
+
+CREATE TABLE quizzes (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^QZ[0-9A-Z]{26}$'),
+    project_id CHAR(28) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    challenge_id CHAR(28) NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
+
+    -- Basic info
+    name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    image_url VARCHAR(500),
+
+    -- Timing configuration (one of these must be set, not both)
+    timeout_seconds INT,              -- Quiz-level timeout (e.g., 1800 for 30 min)
+    question_timeout_seconds INT,     -- Per-question timeout (e.g., 30 sec)
+
+    -- Configuration
+    randomize_questions BOOLEAN DEFAULT false NOT NULL,
+    reveal_correct_answers BOOLEAN DEFAULT true NOT NULL,
+    allow_retakes BOOLEAN DEFAULT false NOT NULL,
+
+    -- Points awarded on completion (independent of correctness)
+    completion_points INT DEFAULT 0 NOT NULL,
+
+    -- Publishing
+    published_at TIMESTAMPTZ,
+    end_time TIMESTAMPTZ,
+
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+
+    INDEX idx_quizzes_project (project_id),
+    INDEX idx_quizzes_challenge (challenge_id),
+    INDEX idx_quizzes_published (published_at),
+    CHECK (timeout_seconds IS NULL OR question_timeout_seconds IS NULL)
+);
+
+CREATE TABLE quiz_questions (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^QQ[0-9A-Z]{26}$'),
+    quiz_id CHAR(28) NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+
+    -- Question details
+    question_type VARCHAR(50) NOT NULL CHECK (question_type IN ('PREDEFINED', 'FREE_TEXT', 'NUMBER', 'JSON')),
+    question_text TEXT NOT NULL,
+    question_order INT NOT NULL,
+
+    -- For predefined questions
+    allow_multiple_selection BOOLEAN DEFAULT false,
+
+    -- For number questions
+    min_value DECIMAL,
+    max_value DECIMAL,
+    step_value DECIMAL,
+
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+
+    INDEX idx_quiz_questions_quiz (quiz_id),
+    UNIQUE (quiz_id, question_order)
+);
+
+CREATE TABLE quiz_predefined_answers (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^QA[0-9A-Z]{26}$'),
+    question_id CHAR(28) NOT NULL REFERENCES quiz_questions(id) ON DELETE CASCADE,
+
+    answer_text TEXT NOT NULL,
+    is_correct BOOLEAN DEFAULT false NOT NULL,
+    answer_order INT NOT NULL,
+
+    created_at TIMESTAMPTZ DEFAULT now(),
+
+    INDEX idx_quiz_answers_question (question_id),
+    UNIQUE (question_id, answer_order)
+);
+
+CREATE TABLE quiz_submissions (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^QS[0-9A-Z]{26}$'),
+    quiz_id CHAR(28) NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+    user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    -- Session tracking
+    started_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    completed_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ,
+
+    -- Question order for this specific submission (JSON array of question IDs)
+    -- Supports randomization per user
+    question_order JSONB NOT NULL,
+
+    -- Scoring (calculated from correct answers)
+    score INT,           -- Number of correct answers
+    max_score INT,       -- Total number of gradable questions
+
+    -- Points awarded (copied from quiz.completion_points when completed)
+    points_awarded INT,
+
+    created_at TIMESTAMPTZ DEFAULT now(),
+
+    INDEX idx_quiz_submissions_quiz (quiz_id),
+    INDEX idx_quiz_submissions_user (user_id),
+    INDEX idx_quiz_submissions_completed (completed_at),
+    INDEX idx_quiz_submissions_expires (expires_at)
+);
+
+CREATE TABLE quiz_responses (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^QR[0-9A-Z]{26}$'),
+    submission_id CHAR(28) NOT NULL REFERENCES quiz_submissions(id) ON DELETE CASCADE,
+    question_id CHAR(28) NOT NULL REFERENCES quiz_questions(id) ON DELETE CASCADE,
+
+    -- Response data (polymorphic based on question_type)
+    -- For PREDEFINED: array of selected answer IDs
+    selected_answer_ids JSONB,
+
+    -- For FREE_TEXT: text response
+    text_response TEXT,
+
+    -- For NUMBER: numeric value
+    number_response DECIMAL,
+
+    -- For JSON: structured data
+    json_response JSONB,
+
+    -- Correctness (null for FREE_TEXT and JSON types)
+    is_correct BOOLEAN,
+
+    -- Timing
+    answered_at TIMESTAMPTZ DEFAULT now(),
+    time_spent_seconds INT,
+
+    INDEX idx_quiz_responses_submission (submission_id),
+    INDEX idx_quiz_responses_question (question_id),
+    UNIQUE (submission_id, question_id)
+);
+
+CREATE TABLE quiz_achievements (
+    achievement_id CHAR(28) PRIMARY KEY REFERENCES achievements(id) ON DELETE CASCADE,
+    quiz_id CHAR(28) NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+
+    -- Requirements for earning the achievement
+    min_score_percentage INT,     -- e.g., 80 means need 80% correct to earn
+    require_completion BOOLEAN DEFAULT true NOT NULL,
+
+    CHECK (min_score_percentage >= 0 AND min_score_percentage <= 100)
+);
+
+CREATE TABLE quiz_translations (
+    quiz_id CHAR(28) NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+    language_code VARCHAR(10) NOT NULL,
+    name VARCHAR(255),
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (quiz_id, language_code)
+);
+
+CREATE TABLE quiz_question_translations (
+    question_id CHAR(28) NOT NULL REFERENCES quiz_questions(id) ON DELETE CASCADE,
+    language_code VARCHAR(10) NOT NULL,
+    question_text TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (question_id, language_code)
+);
+
+CREATE TABLE quiz_answer_translations (
+    answer_id CHAR(28) NOT NULL REFERENCES quiz_predefined_answers(id) ON DELETE CASCADE,
+    language_code VARCHAR(10) NOT NULL,
+    answer_text TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (answer_id, language_code)
 );

@@ -1,0 +1,56 @@
+type: http_request
+model: http_request
+id: rq_CreateQuizAchievement
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation CreateQuizAchievement($input: CreateQuizAchievementInput!) {
+      createQuizAchievement(input: $input) {
+        id
+        name
+        description
+        image
+        points
+        hidden
+        quiz {
+          id
+          name
+        }
+        minScorePercentage
+        requireCompletion
+        project {
+          id
+          name
+        }
+      }
+    }
+  variables: |
+    {
+      "input": {
+        "name": "Quiz Master",
+        "description": "Complete the quiz with at least 80% score",
+        "projectId": "PR01K9VZ87EPZMZMK17E9KM7ZH8Z",
+        "points": 50,
+        "hidden": false,
+        "quizId": "QZ01ARZ3NDEKTSV4RRFFQ69G5FAV",
+        "minScorePercentage": 80,
+        "requireCompletion": true
+      }
+    }
+bodyType: graphql
+description: Create a quiz-linked achievement (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_CreateQuizAchievement
+method: POST
+name: Create Quiz Achievement
+sortPriority: 6000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

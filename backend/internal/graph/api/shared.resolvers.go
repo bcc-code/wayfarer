@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
@@ -22,106 +21,21 @@ import (
 	pgx "github.com/jackc/pgx/v5"
 )
 
-// Project is the resolver for the project field.
-func (r *challengeResolver) Project(ctx context.Context, obj *model.Challenge) (*model.Project, error) {
-	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
-}
-
-// Event is the resolver for the event field.
-func (r *challengeResolver) Event(ctx context.Context, obj *model.Challenge) (*model.Event, error) {
-	return resolveEventByID(ctx, r.Resolver, obj.EventID)
-}
-
-// UserCompletedAt is the resolver for the userCompletedAt field.
-func (r *challengeResolver) UserCompletedAt(ctx context.Context, obj *model.Challenge) (*scalars.DateTime, error) {
-	// Get authenticated user ID
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return nil, nil // Not authenticated, return nil
-	}
-
-	// Check cache first
-	cacheKey := cache.UserChallengeCompletionKey(userID, obj.ID)
-	if cached, ok := r.Cache.Get(cacheKey); ok {
-		if ts, ok := cached.(*time.Time); ok {
-			return &scalars.DateTime{Time: *ts}, nil
-		}
-	}
-
-	// Query database for completion timestamp
-	completion, err := r.DB.Queries.GetUserCompletionTimestamp(ctx, sqlc.GetUserCompletionTimestampParams{
-		Userid:      userID,
-		Challengeid: obj.ID,
-	})
-	if err != nil {
-		// Not completed, return nil
-		return nil, nil
-	}
-
-	if !completion.Valid {
-		return nil, nil
-	}
-
-	// Cache the result
-	ts := completion.Time
-	r.Cache.Set(cacheKey, &ts)
-
-	return &scalars.DateTime{Time: completion.Time}, nil
-}
-
-// UserEnrolledAt resolver for Challenge type
-func (r *challengeResolver) UserEnrolledAt(ctx context.Context, obj *model.Challenge) (*scalars.DateTime, error) {
-	// Get authenticated user ID
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return nil, nil // Not authenticated, return nil
-	}
-
-	// Check cache first
-	cacheKey := cache.UserChallengeEnrollmentKey(userID, obj.ID)
-	if cached, ok := r.Cache.Get(cacheKey); ok {
-		if ts, ok := cached.(*time.Time); ok {
-			return &scalars.DateTime{Time: *ts}, nil
-		}
-	}
-
-	// Query database for enrollment timestamp
-	enrollment, err := r.DB.Queries.GetUserEnrollmentTimestamp(ctx, sqlc.GetUserEnrollmentTimestampParams{
-		Userid:      userID,
-		Challengeid: obj.ID,
-	})
-	if err != nil {
-		// Not enrolled, return nil
-		return nil, nil
-	}
-
-	if !enrollment.Valid {
-		return nil, nil
-	}
-
-	// Cache the result
-	ts := enrollment.Time
-	r.Cache.Set(cacheKey, &ts)
-
-	return &scalars.DateTime{Time: enrollment.Time}, nil
-}
-
 // Challenges is the resolver for the challenges field.
 func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]model.Challenge, error) {
 	thunk := r.Loaders.ChallengesByEventLoader.Load(ctx, obj.ID)
-	challengePointers, err := thunk()
+	challenges, err := thunk()
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert []*model.Challenge to []model.Challenge and apply translations
-	challenges := make([]model.Challenge, len(challengePointers))
-	for i, cp := range challengePointers {
-		translated := r.ApplyTranslationToChallenge(ctx, cp)
-		challenges[i] = *translated
+	// Apply translations to each challenge
+	result := make([]model.Challenge, len(challenges))
+	for i, ch := range challenges {
+		result[i] = r.ApplyTranslationToChallenge(ctx, ch)
 	}
 
-	return challenges, nil
+	return result, nil
 }
 
 // Leaderboard is the resolver for the leaderboard field.
@@ -172,6 +86,74 @@ func (r *eventResolver) ParentProject(ctx context.Context, obj *model.Event) (*m
 }
 
 // Project is the resolver for the project field.
+func (r *externalChallengeResolver) Project(ctx context.Context, obj *model.ExternalChallenge) (*model.Project, error) {
+	panic(fmt.Errorf("not implemented: Project - project"))
+}
+
+// Event is the resolver for the event field.
+func (r *externalChallengeResolver) Event(ctx context.Context, obj *model.ExternalChallenge) (*model.Event, error) {
+	panic(fmt.Errorf("not implemented: Event - event"))
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *externalChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error) {
+	panic(fmt.Errorf("not implemented: UserCompletedAt - userCompletedAt"))
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *externalChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error) {
+	panic(fmt.Errorf("not implemented: UserEnrolledAt - userEnrolledAt"))
+}
+
+// Quiz is the resolver for the quiz field.
+func (r *freeTextQuestionResolver) Quiz(ctx context.Context, obj *model.FreeTextQuestion) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	return thunk()
+}
+
+// Submission is the resolver for the submission field.
+func (r *freeTextResponseResolver) Submission(ctx context.Context, obj *model.FreeTextResponse) (*model.QuizSubmission, error) {
+	row, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+	return convertSubmissionRowToModel(row), nil
+}
+
+// Question is the resolver for the question field.
+func (r *freeTextResponseResolver) Question(ctx context.Context, obj *model.FreeTextResponse) (model.QuizQuestion, error) {
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// Quiz is the resolver for the quiz field.
+func (r *jsonQuestionResolver) Quiz(ctx context.Context, obj *model.JSONQuestion) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	return thunk()
+}
+
+// Submission is the resolver for the submission field.
+func (r *jsonResponseResolver) Submission(ctx context.Context, obj *model.JSONResponse) (*model.QuizSubmission, error) {
+	row, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+	return convertSubmissionRowToModel(row), nil
+}
+
+// Question is the resolver for the question field.
+func (r *jsonResponseResolver) Question(ctx context.Context, obj *model.JSONResponse) (model.QuizQuestion, error) {
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// Project is the resolver for the project field.
 func (r *listeningAchievementResolver) Project(ctx context.Context, obj *model.ListeningAchievement) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
@@ -182,7 +164,7 @@ func (r *listeningAchievementResolver) Event(ctx context.Context, obj *model.Lis
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *listeningAchievementResolver) Challenge(ctx context.Context, obj *model.ListeningAchievement) (*model.Challenge, error) {
+func (r *listeningAchievementResolver) Challenge(ctx context.Context, obj *model.ListeningAchievement) (model.Challenge, error) {
 	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
 }
 
@@ -211,6 +193,99 @@ func (r *listeningAchievementResolver) Tracks(ctx context.Context, obj *model.Li
 // HTML is the resolver for the html field.
 func (r *markdownTextResolver) HTML(ctx context.Context, obj *model.MarkdownText) (string, error) {
 	return utils.RenderMarkdownToHTML(obj.Markdown)
+}
+
+// Quiz is the resolver for the quiz field.
+func (r *numberQuestionResolver) Quiz(ctx context.Context, obj *model.NumberQuestion) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	return thunk()
+}
+
+// Submission is the resolver for the submission field.
+func (r *numberResponseResolver) Submission(ctx context.Context, obj *model.NumberResponse) (*model.QuizSubmission, error) {
+	row, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+	return convertSubmissionRowToModel(row), nil
+}
+
+// Question is the resolver for the question field.
+func (r *numberResponseResolver) Question(ctx context.Context, obj *model.NumberResponse) (model.QuizQuestion, error) {
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// Quiz is the resolver for the quiz field.
+func (r *predefinedQuestionResolver) Quiz(ctx context.Context, obj *model.PredefinedQuestion) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	return thunk()
+}
+
+// PredefinedAnswers is the resolver for the predefinedAnswers field.
+func (r *predefinedQuestionResolver) PredefinedAnswers(ctx context.Context, obj *model.PredefinedQuestion) ([]model.QuizPredefinedAnswer, error) {
+	thunk := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, obj.ID)
+	answers, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load predefined answers: %w", err)
+	}
+	// Convert []*model.QuizPredefinedAnswer to []model.QuizPredefinedAnswer
+	result := make([]model.QuizPredefinedAnswer, len(answers))
+	for i, a := range answers {
+		result[i] = *a
+	}
+	return result, nil
+}
+
+// Submission is the resolver for the submission field.
+func (r *predefinedResponseResolver) Submission(ctx context.Context, obj *model.PredefinedResponse) (*model.QuizSubmission, error) {
+	row, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+	return convertSubmissionRowToModel(row), nil
+}
+
+// Question is the resolver for the question field.
+func (r *predefinedResponseResolver) Question(ctx context.Context, obj *model.PredefinedResponse) (model.QuizQuestion, error) {
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// SelectedAnswers is the resolver for the selectedAnswers field.
+func (r *predefinedResponseResolver) SelectedAnswers(ctx context.Context, obj *model.PredefinedResponse) ([]model.QuizPredefinedAnswer, error) {
+	if len(obj.SelectedAnswerIds) == 0 {
+		return []model.QuizPredefinedAnswer{}, nil
+	}
+
+	// Load answers for the question and filter by selected IDs
+	thunk := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, obj.QuestionID)
+	allAnswers, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load answers: %w", err)
+	}
+
+	// Build a set of selected IDs
+	selectedSet := make(map[string]bool)
+	for _, id := range obj.SelectedAnswerIds {
+		selectedSet[id] = true
+	}
+
+	// Filter to only selected answers
+	var result []model.QuizPredefinedAnswer
+	for _, a := range allAnswers {
+		if selectedSet[a.ID] {
+			result = append(result, *a)
+		}
+	}
+
+	return result, nil
 }
 
 // Rules is the resolver for the rules field.
@@ -248,8 +323,7 @@ func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([
 
 	result := make([]model.Challenge, len(challenges))
 	for i, ch := range challenges {
-		translated := r.ApplyTranslationToChallenge(ctx, ch)
-		result[i] = *translated
+		result[i] = r.ApplyTranslationToChallenge(ctx, ch)
 	}
 
 	return result, nil
@@ -411,6 +485,313 @@ func (r *projectResolver) Journal(ctx context.Context, obj *model.Project, filte
 	return r.Resolver.getScoreJournal(ctx, obj.ID, userID, filter, first, after, last, before)
 }
 
+// Project is the resolver for the project field on Quiz.
+func (r *quizResolver) Project(ctx context.Context, obj *model.Quiz) (*model.Project, error) {
+	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, obj.ProjectID)
+	return thunk()
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *quizResolver) Challenge(ctx context.Context, obj *model.Quiz) (model.Challenge, error) {
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, obj.ChallengeID)
+	return thunk()
+}
+
+// Questions is the resolver for the questions field on Quiz.
+func (r *quizResolver) Questions(ctx context.Context, obj *model.Quiz) ([]model.QuizQuestion, error) {
+	thunk := r.Loaders.QuizQuestionsByQuizLoader.Load(ctx, obj.ID)
+	return thunk()
+}
+
+// UserSubmissions is the resolver for the userSubmissions field on Quiz.
+func (r *quizResolver) UserSubmissions(ctx context.Context, obj *model.Quiz) ([]model.QuizSubmission, error) {
+	// Get authenticated user ID
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return []model.QuizSubmission{}, nil
+	}
+
+	// Load all submissions for this user
+	thunk := r.Loaders.QuizSubmissionsByUserLoader.Load(ctx, userID)
+	allSubmissions, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user submissions: %w", err)
+	}
+
+	// Filter to submissions for this quiz
+	var quizSubmissions []model.QuizSubmission
+	for _, sub := range allSubmissions {
+		if sub.QuizID == obj.ID {
+			quizSubmissions = append(quizSubmissions, *sub)
+		}
+	}
+
+	return quizSubmissions, nil
+}
+
+// UserCanStart is the resolver for the userCanStart field on Quiz.
+func (r *quizResolver) UserCanStart(ctx context.Context, obj *model.Quiz) (bool, error) {
+	// Get authenticated user ID
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return false, nil
+	}
+
+	// Check if quiz is published
+	if obj.PublishedAt == nil || obj.PublishedAt.Time.After(time.Now()) {
+		return false, nil
+	}
+
+	// Check if quiz has ended
+	if obj.EndTime != nil && obj.EndTime.Time.Before(time.Now()) {
+		return false, nil
+	}
+
+	// Load user submissions for this quiz
+	thunk := r.Loaders.QuizSubmissionsByUserLoader.Load(ctx, userID)
+	allSubmissions, err := thunk()
+	if err != nil {
+		return false, fmt.Errorf("failed to load user submissions: %w", err)
+	}
+
+	// Filter to submissions for this quiz
+	var quizSubmissions []*model.QuizSubmission
+	for _, sub := range allSubmissions {
+		if sub.QuizID == obj.ID {
+			quizSubmissions = append(quizSubmissions, sub)
+		}
+	}
+
+	// Check if retakes are allowed
+	if !obj.AllowRetakes {
+		// Check if user has any completed submissions
+		for _, sub := range quizSubmissions {
+			if sub.CompletedAt != nil {
+				return false, nil // Already completed, no retakes allowed
+			}
+		}
+	}
+
+	// Check if there's an active (non-completed, non-expired) submission
+	for _, sub := range quizSubmissions {
+		if sub.CompletedAt == nil {
+			// Check if expired
+			if sub.ExpiresAt != nil && sub.ExpiresAt.Time.Before(time.Now()) {
+				continue // This one is expired, keep looking
+			}
+			return false, nil // Active submission exists
+		}
+	}
+
+	return true, nil
+}
+
+// UserActiveSubmission is the resolver for the userActiveSubmission field on Quiz.
+func (r *quizResolver) UserActiveSubmission(ctx context.Context, obj *model.Quiz) (*model.QuizSubmission, error) {
+	// Get authenticated user ID
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, nil
+	}
+
+	// Load user submissions for this quiz
+	thunk := r.Loaders.QuizSubmissionsByUserLoader.Load(ctx, userID)
+	allSubmissions, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user submissions: %w", err)
+	}
+
+	// Find active submission (not completed, not expired)
+	for _, sub := range allSubmissions {
+		if sub.QuizID == obj.ID && sub.CompletedAt == nil {
+			// Check if expired
+			if sub.ExpiresAt != nil && sub.ExpiresAt.Time.Before(time.Now()) {
+				continue
+			}
+			return sub, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// Project is the resolver for the project field.
+func (r *quizAchievementResolver) Project(ctx context.Context, obj *model.QuizAchievement) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *quizAchievementResolver) Event(ctx context.Context, obj *model.QuizAchievement) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *quizAchievementResolver) Challenge(ctx context.Context, obj *model.QuizAchievement) (model.Challenge, error) {
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// AchievedAt is the resolver for the achievedAt field.
+func (r *quizAchievementResolver) AchievedAt(ctx context.Context, obj *model.QuizAchievement) (*scalars.DateTime, error) {
+	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// Quiz is the resolver for the quiz field.
+func (r *quizAchievementResolver) Quiz(ctx context.Context, obj *model.QuizAchievement) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	return thunk()
+}
+
+// Project is the resolver for the project field.
+func (r *quizChallengeResolver) Project(ctx context.Context, obj *model.QuizChallenge) (*model.Project, error) {
+	panic(fmt.Errorf("not implemented: Project - project"))
+}
+
+// Event is the resolver for the event field.
+func (r *quizChallengeResolver) Event(ctx context.Context, obj *model.QuizChallenge) (*model.Event, error) {
+	panic(fmt.Errorf("not implemented: Event - event"))
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *quizChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error) {
+	panic(fmt.Errorf("not implemented: UserCompletedAt - userCompletedAt"))
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *quizChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error) {
+	panic(fmt.Errorf("not implemented: UserEnrolledAt - userEnrolledAt"))
+}
+
+// Quiz is the resolver for the quiz field.
+func (r *quizChallengeResolver) Quiz(ctx context.Context, obj *model.QuizChallenge) (*model.Quiz, error) {
+	panic(fmt.Errorf("not implemented: Quiz - quiz"))
+}
+
+// Question is the resolver for the question field on QuizPredefinedAnswer.
+func (r *quizPredefinedAnswerResolver) Question(ctx context.Context, obj *model.QuizPredefinedAnswer) (model.QuizQuestion, error) {
+	// Query directly
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// IsCorrect is the resolver for the isCorrect field on QuizPredefinedAnswer.
+func (r *quizPredefinedAnswerResolver) IsCorrect(ctx context.Context, obj *model.QuizPredefinedAnswer) (*bool, error) {
+	// Load question to get quiz ID
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+
+	// Load quiz to check reveal setting
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, row.QuizID)
+	quiz, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load quiz: %w", err)
+	}
+
+	// Check if user is authenticated
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, nil // Not authenticated
+	}
+
+	// Admins can always see correct answers for quizzes they manage
+	if r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
+		return &obj.IsCorrectValue, nil
+	}
+
+	// If reveal_correct_answers is false, never reveal to regular users
+	if !quiz.RevealCorrectAnswers {
+		return nil, nil
+	}
+
+	// Check if user has completed the quiz
+	submissionsThunk := r.Loaders.QuizSubmissionsByUserLoader.Load(ctx, userID)
+	submissions, err := submissionsThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submissions: %w", err)
+	}
+
+	var userCompleted bool
+	for _, sub := range submissions {
+		if sub.QuizID == quiz.ID && sub.CompletedAt != nil {
+			userCompleted = true
+			break
+		}
+	}
+
+	// Only reveal if user completed the quiz
+	if userCompleted {
+		return &obj.IsCorrectValue, nil
+	}
+
+	return nil, nil
+}
+
+// Quiz is the resolver for the quiz field on QuizSubmission.
+func (r *quizSubmissionResolver) Quiz(ctx context.Context, obj *model.QuizSubmission) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	return thunk()
+}
+
+// User is the resolver for the user field on QuizSubmission.
+func (r *quizSubmissionResolver) User(ctx context.Context, obj *model.QuizSubmission) (*model.User, error) {
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
+	return thunk()
+}
+
+// IsExpired is the resolver for the isExpired field on QuizSubmission.
+func (r *quizSubmissionResolver) IsExpired(ctx context.Context, obj *model.QuizSubmission) (bool, error) {
+	if obj.ExpiresAt == nil {
+		return false, nil
+	}
+	return obj.ExpiresAt.Time.Before(time.Now()), nil
+}
+
+// OrderedQuestions is the resolver for the orderedQuestions field on QuizSubmission.
+func (r *quizSubmissionResolver) OrderedQuestions(ctx context.Context, obj *model.QuizSubmission) ([]model.QuizQuestion, error) {
+	// Load all questions for the quiz
+	thunk := r.Loaders.QuizQuestionsByQuizLoader.Load(ctx, obj.QuizID)
+	allQuestions, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load questions: %w", err)
+	}
+
+	// Build map of questions by ID
+	questionMap := make(map[string]model.QuizQuestion)
+	for _, q := range allQuestions {
+		questionMap[q.GetID()] = q
+	}
+
+	// Order questions according to submission's question_order
+	orderedQuestions := make([]model.QuizQuestion, 0, len(obj.QuestionOrder))
+	for _, questionID := range obj.QuestionOrder {
+		if q, ok := questionMap[questionID]; ok {
+			orderedQuestions = append(orderedQuestions, q)
+		}
+	}
+
+	return orderedQuestions, nil
+}
+
+// Responses is the resolver for the responses field on QuizSubmission.
+func (r *quizSubmissionResolver) Responses(ctx context.Context, obj *model.QuizSubmission) ([]model.QuizResponse, error) {
+	thunk := r.Loaders.QuizResponsesBySubmissionLoader.Load(ctx, obj.ID)
+	return thunk()
+}
+
+// ScorePercentage is the resolver for the scorePercentage field on QuizSubmission.
+func (r *quizSubmissionResolver) ScorePercentage(ctx context.Context, obj *model.QuizSubmission) (*float64, error) {
+	if obj.Score == nil || obj.MaxScore == nil || *obj.MaxScore == 0 {
+		return nil, nil
+	}
+
+	percentage := (float64(*obj.Score) / float64(*obj.MaxScore)) * 100
+	return &percentage, nil
+}
+
 // Project is the resolver for the project field.
 func (r *readingAchievementResolver) Project(ctx context.Context, obj *model.ReadingAchievement) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
@@ -422,7 +803,7 @@ func (r *readingAchievementResolver) Event(ctx context.Context, obj *model.Readi
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *readingAchievementResolver) Challenge(ctx context.Context, obj *model.ReadingAchievement) (*model.Challenge, error) {
+func (r *readingAchievementResolver) Challenge(ctx context.Context, obj *model.ReadingAchievement) (model.Challenge, error) {
 	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
 }
 
@@ -508,7 +889,7 @@ func (r *scoreJournalResolver) Event(ctx context.Context, obj *model.ScoreJourna
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *scoreJournalResolver) Challenge(ctx context.Context, obj *model.ScoreJournal) (*model.Challenge, error) {
+func (r *scoreJournalResolver) Challenge(ctx context.Context, obj *model.ScoreJournal) (model.Challenge, error) {
 	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
 }
 
@@ -546,7 +927,17 @@ func (r *scoreJournalResolver) Source(ctx context.Context, obj *model.ScoreJourn
 		if err != nil {
 			return nil, fmt.Errorf("failed to load challenge: %w", err)
 		}
-		return challenge, nil
+		// Type switch to return the concrete challenge type that implements ScoreSource
+		switch ch := challenge.(type) {
+		case *model.SimpleChallenge:
+			return ch, nil
+		case *model.QuizChallenge:
+			return ch, nil
+		case *model.ExternalChallenge:
+			return ch, nil
+		default:
+			return nil, fmt.Errorf("unexpected challenge type: %T", challenge)
+		}
 
 	case model.ScoreSourceTypeEvent:
 		event, err := r.LoadEventWithTranslation(ctx, *obj.SourceID)
@@ -590,13 +981,33 @@ func (r *simpleAchievementResolver) Event(ctx context.Context, obj *model.Simple
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *simpleAchievementResolver) Challenge(ctx context.Context, obj *model.SimpleAchievement) (*model.Challenge, error) {
+func (r *simpleAchievementResolver) Challenge(ctx context.Context, obj *model.SimpleAchievement) (model.Challenge, error) {
 	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
 }
 
 // AchievedAt is the resolver for the achievedAt field.
 func (r *simpleAchievementResolver) AchievedAt(ctx context.Context, obj *model.SimpleAchievement) (*scalars.DateTime, error) {
 	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// Project is the resolver for the project field.
+func (r *simpleChallengeResolver) Project(ctx context.Context, obj *model.SimpleChallenge) (*model.Project, error) {
+	panic(fmt.Errorf("not implemented: Project - project"))
+}
+
+// Event is the resolver for the event field.
+func (r *simpleChallengeResolver) Event(ctx context.Context, obj *model.SimpleChallenge) (*model.Event, error) {
+	panic(fmt.Errorf("not implemented: Event - event"))
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *simpleChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error) {
+	panic(fmt.Errorf("not implemented: UserCompletedAt - userCompletedAt"))
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *simpleChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error) {
+	panic(fmt.Errorf("not implemented: UserEnrolledAt - userEnrolledAt"))
 }
 
 // Status is the resolver for the status field.
@@ -777,7 +1188,7 @@ func (r *streakAchievementResolver) Event(ctx context.Context, obj *model.Streak
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *streakAchievementResolver) Challenge(ctx context.Context, obj *model.StreakAchievement) (*model.Challenge, error) {
+func (r *streakAchievementResolver) Challenge(ctx context.Context, obj *model.StreakAchievement) (model.Challenge, error) {
 	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
 }
 
@@ -1215,11 +1626,25 @@ func (r *userRoleResolver) Scope(ctx context.Context, obj *model.UserRole) (*mod
 	return obj.Scope, nil
 }
 
-// Challenge returns ChallengeResolver implementation.
-func (r *Resolver) Challenge() ChallengeResolver { return &challengeResolver{r} }
-
 // Event returns EventResolver implementation.
 func (r *Resolver) Event() EventResolver { return &eventResolver{r} }
+
+// ExternalChallenge returns ExternalChallengeResolver implementation.
+func (r *Resolver) ExternalChallenge() ExternalChallengeResolver {
+	return &externalChallengeResolver{r}
+}
+
+// FreeTextQuestion returns FreeTextQuestionResolver implementation.
+func (r *Resolver) FreeTextQuestion() FreeTextQuestionResolver { return &freeTextQuestionResolver{r} }
+
+// FreeTextResponse returns FreeTextResponseResolver implementation.
+func (r *Resolver) FreeTextResponse() FreeTextResponseResolver { return &freeTextResponseResolver{r} }
+
+// JsonQuestion returns JsonQuestionResolver implementation.
+func (r *Resolver) JsonQuestion() JsonQuestionResolver { return &jsonQuestionResolver{r} }
+
+// JsonResponse returns JsonResponseResolver implementation.
+func (r *Resolver) JsonResponse() JsonResponseResolver { return &jsonResponseResolver{r} }
 
 // ListeningAchievement returns ListeningAchievementResolver implementation.
 func (r *Resolver) ListeningAchievement() ListeningAchievementResolver {
@@ -1229,8 +1654,41 @@ func (r *Resolver) ListeningAchievement() ListeningAchievementResolver {
 // MarkdownText returns MarkdownTextResolver implementation.
 func (r *Resolver) MarkdownText() MarkdownTextResolver { return &markdownTextResolver{r} }
 
+// NumberQuestion returns NumberQuestionResolver implementation.
+func (r *Resolver) NumberQuestion() NumberQuestionResolver { return &numberQuestionResolver{r} }
+
+// NumberResponse returns NumberResponseResolver implementation.
+func (r *Resolver) NumberResponse() NumberResponseResolver { return &numberResponseResolver{r} }
+
+// PredefinedQuestion returns PredefinedQuestionResolver implementation.
+func (r *Resolver) PredefinedQuestion() PredefinedQuestionResolver {
+	return &predefinedQuestionResolver{r}
+}
+
+// PredefinedResponse returns PredefinedResponseResolver implementation.
+func (r *Resolver) PredefinedResponse() PredefinedResponseResolver {
+	return &predefinedResponseResolver{r}
+}
+
 // Project returns ProjectResolver implementation.
 func (r *Resolver) Project() ProjectResolver { return &projectResolver{r} }
+
+// Quiz returns QuizResolver implementation.
+func (r *Resolver) Quiz() QuizResolver { return &quizResolver{r} }
+
+// QuizAchievement returns QuizAchievementResolver implementation.
+func (r *Resolver) QuizAchievement() QuizAchievementResolver { return &quizAchievementResolver{r} }
+
+// QuizChallenge returns QuizChallengeResolver implementation.
+func (r *Resolver) QuizChallenge() QuizChallengeResolver { return &quizChallengeResolver{r} }
+
+// QuizPredefinedAnswer returns QuizPredefinedAnswerResolver implementation.
+func (r *Resolver) QuizPredefinedAnswer() QuizPredefinedAnswerResolver {
+	return &quizPredefinedAnswerResolver{r}
+}
+
+// QuizSubmission returns QuizSubmissionResolver implementation.
+func (r *Resolver) QuizSubmission() QuizSubmissionResolver { return &quizSubmissionResolver{r} }
 
 // ReadingAchievement returns ReadingAchievementResolver implementation.
 func (r *Resolver) ReadingAchievement() ReadingAchievementResolver {
@@ -1247,6 +1705,9 @@ func (r *Resolver) ScoreJournal() ScoreJournalResolver { return &scoreJournalRes
 func (r *Resolver) SimpleAchievement() SimpleAchievementResolver {
 	return &simpleAchievementResolver{r}
 }
+
+// SimpleChallenge returns SimpleChallengeResolver implementation.
+func (r *Resolver) SimpleChallenge() SimpleChallengeResolver { return &simpleChallengeResolver{r} }
 
 // Streak returns StreakResolver implementation.
 func (r *Resolver) Streak() StreakResolver { return &streakResolver{r} }
@@ -1271,15 +1732,29 @@ func (r *Resolver) User() UserResolver { return &userResolver{r} }
 // UserRole returns UserRoleResolver implementation.
 func (r *Resolver) UserRole() UserRoleResolver { return &userRoleResolver{r} }
 
-type challengeResolver struct{ *Resolver }
 type eventResolver struct{ *Resolver }
+type externalChallengeResolver struct{ *Resolver }
+type freeTextQuestionResolver struct{ *Resolver }
+type freeTextResponseResolver struct{ *Resolver }
+type jsonQuestionResolver struct{ *Resolver }
+type jsonResponseResolver struct{ *Resolver }
 type listeningAchievementResolver struct{ *Resolver }
 type markdownTextResolver struct{ *Resolver }
+type numberQuestionResolver struct{ *Resolver }
+type numberResponseResolver struct{ *Resolver }
+type predefinedQuestionResolver struct{ *Resolver }
+type predefinedResponseResolver struct{ *Resolver }
 type projectResolver struct{ *Resolver }
+type quizResolver struct{ *Resolver }
+type quizAchievementResolver struct{ *Resolver }
+type quizChallengeResolver struct{ *Resolver }
+type quizPredefinedAnswerResolver struct{ *Resolver }
+type quizSubmissionResolver struct{ *Resolver }
 type readingAchievementResolver struct{ *Resolver }
 type roleScopeResolver struct{ *Resolver }
 type scoreJournalResolver struct{ *Resolver }
 type simpleAchievementResolver struct{ *Resolver }
+type simpleChallengeResolver struct{ *Resolver }
 type streakResolver struct{ *Resolver }
 type streakAchievementResolver struct{ *Resolver }
 type superTeamResolver struct{ *Resolver }

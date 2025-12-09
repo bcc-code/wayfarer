@@ -12,15 +12,17 @@ import (
 // These prefixes enable tag-based invalidation by matching prefix patterns
 const (
 	// Core entities
-	PrefixUser        = "user:"
-	PrefixChurch      = "church:"
-	PrefixProject     = "project:"
-	PrefixEvent       = "event:"
-	PrefixTeam        = "team:"
-	PrefixSuperTeam   = "superteam:"
-	PrefixChallenge   = "challenge:"
-	PrefixAchievement = "achievement:"
-	PrefixStreak      = "streak:"
+	PrefixUser           = "user:"
+	PrefixChurch         = "church:"
+	PrefixProject        = "project:"
+	PrefixEvent          = "event:"
+	PrefixTeam           = "team:"
+	PrefixSuperTeam      = "superteam:"
+	PrefixChallenge      = "challenge:"
+	PrefixAchievement    = "achievement:"
+	PrefixStreak         = "streak:"
+	PrefixQuiz           = "quiz:"
+	PrefixQuizSubmission = "quizsubmission:"
 
 	// Relationship/Junction tables
 	PrefixUserProjects = "userprojects:"
@@ -29,12 +31,12 @@ const (
 	PrefixUserRoles    = "userroles:"
 
 	// Progress tracking
-	PrefixUserAchievements           = "userachievements:"
-	PrefixUserChallengeCompletions   = "userchallenges:"
-	PrefixUserChallengeEnrollments   = "userchallengeenrollments:"
-	PrefixUserReadingProgress        = "userreading:"
-	PrefixUserListeningProgress      = "userlistening:"
-	PrefixUserStreakActivity         = "userstreak:"
+	PrefixUserAchievements         = "userachievements:"
+	PrefixUserChallengeCompletions = "userchallenges:"
+	PrefixUserChallengeEnrollments = "userchallengeenrollments:"
+	PrefixUserReadingProgress      = "userreading:"
+	PrefixUserListeningProgress    = "userlistening:"
+	PrefixUserStreakActivity       = "userstreak:"
 
 	// Computed data
 	PrefixLeaderboard         = "leaderboard:"
@@ -44,24 +46,28 @@ const (
 	PrefixScore               = "score:"
 
 	// Query results
-	PrefixUsersFilter        = "usersfilter:"
-	PrefixUsersCount         = "userscount:"
-	PrefixProjectsFilter     = "projectsfilter:"
-	PrefixProjectsCount      = "projectscount:"
-	PrefixEventsFilter       = "eventsfilter:"
-	PrefixEventsCount        = "eventscount:"
-	PrefixTeamsFilter        = "teamsfilter:"
-	PrefixTeamsCount         = "teamscount:"
-	PrefixSuperTeamsFilter   = "superteamsfilter:"
-	PrefixSuperTeamsCount    = "superteamscount:"
-	PrefixAchievementsFilter = "achievementsfilter:"
-	PrefixAchievementsCount  = "achievementscount:"
-	PrefixChallengesFilter   = "challengesfilter:"
-	PrefixChallengesCount    = "challengescount:"
-	PrefixChurchesFilter     = "churchesfilter:"
-	PrefixChurchesCount      = "churchescount:"
-	PrefixStreaksFilter      = "streaksfilter:"
-	PrefixStreaksCount       = "streakscount:"
+	PrefixUsersFilter           = "usersfilter:"
+	PrefixUsersCount            = "userscount:"
+	PrefixProjectsFilter        = "projectsfilter:"
+	PrefixProjectsCount         = "projectscount:"
+	PrefixEventsFilter          = "eventsfilter:"
+	PrefixEventsCount           = "eventscount:"
+	PrefixTeamsFilter           = "teamsfilter:"
+	PrefixTeamsCount            = "teamscount:"
+	PrefixSuperTeamsFilter      = "superteamsfilter:"
+	PrefixSuperTeamsCount       = "superteamscount:"
+	PrefixAchievementsFilter    = "achievementsfilter:"
+	PrefixAchievementsCount     = "achievementscount:"
+	PrefixChallengesFilter      = "challengesfilter:"
+	PrefixChallengesCount       = "challengescount:"
+	PrefixChurchesFilter        = "churchesfilter:"
+	PrefixChurchesCount         = "churchescount:"
+	PrefixStreaksFilter         = "streaksfilter:"
+	PrefixStreaksCount          = "streakscount:"
+	PrefixQuizzesFilter         = "quizzesfilter:"
+	PrefixQuizzesCount          = "quizzescount:"
+	PrefixQuizSubmissionsFilter = "quizsubmissionsfilter:"
+	PrefixQuizSubmissionsCount  = "quizsubmissionscount:"
 
 	// Permissions/Roles
 	PrefixHasRole          = "hasrole:"
@@ -220,6 +226,51 @@ func RelevantDaysByStreakKey(streakID string) string {
 // UserStreakActivityKey builds a cache key for user streak activity
 func UserStreakActivityKey(userID string, streakID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixUserStreakActivity, userID, streakID)
+}
+
+// QuizKey builds a cache key for a quiz by ID
+func QuizKey(quizID string) string {
+	return PrefixQuiz + quizID
+}
+
+// QuizzesByProjectKey builds a cache key for quizzes in a project
+func QuizzesByProjectKey(projectID string) string {
+	return fmt.Sprintf("%s:project:%s", PrefixQuiz, projectID)
+}
+
+// QuizzesByEventKey builds a cache key for quizzes in an event
+func QuizzesByEventKey(eventID string) string {
+	return fmt.Sprintf("%s:event:%s", PrefixQuiz, eventID)
+}
+
+// QuizSubmissionKey builds a cache key for a quiz submission by ID
+func QuizSubmissionKey(submissionID string) string {
+	return PrefixQuizSubmission + submissionID
+}
+
+// QuizSubmissionsByUserKey builds a cache key for quiz submissions by user
+func QuizSubmissionsByUserKey(userID string) string {
+	return fmt.Sprintf("%s:user:%s", PrefixQuizSubmission, userID)
+}
+
+// QuizSubmissionsByQuizKey builds a cache key for quiz submissions by quiz
+func QuizSubmissionsByQuizKey(quizID string) string {
+	return fmt.Sprintf("%s:quiz:%s", PrefixQuizSubmission, quizID)
+}
+
+// QuizQuestionsByQuizKey builds a cache key for questions in a quiz
+func QuizQuestionsByQuizKey(quizID string) string {
+	return fmt.Sprintf("%squestions:%s", PrefixQuiz, quizID)
+}
+
+// QuizAnswersByQuestionKey builds a cache key for predefined answers by question
+func QuizAnswersByQuestionKey(questionID string) string {
+	return fmt.Sprintf("%sanswers:%s", PrefixQuiz, questionID)
+}
+
+// QuizResponsesBySubmissionKey builds a cache key for responses by submission
+func QuizResponsesBySubmissionKey(submissionID string) string {
+	return fmt.Sprintf("%sresponses:%s", PrefixQuizSubmission, submissionID)
 }
 
 // UserAchievementTimestampKey builds a cache key for user achievement timestamp (achievedAt)

@@ -1,0 +1,30 @@
+type: http_request
+model: http_request
+id: rq_DeleteQuizQuestion
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation DeleteQuizQuestion($id: ID!) {
+      deleteQuizQuestion(id: $id)
+    }
+  variables: |
+    {
+      "id": "QQ01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    }
+bodyType: graphql
+description: Delete a quiz question (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_DeleteQuizQuestion
+method: POST
+name: Delete Quiz Question
+sortPriority: 3400.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

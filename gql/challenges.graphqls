@@ -20,16 +20,20 @@ extend type Query {
 }
 
 extend type Mutation {
-    # Admin management
+    # Admin management - Create and update (type determined by input.type for create, existing type for update)
     createChallenge(projectId: ID!, eventId: ID!, input: CreateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     updateChallenge(id: ID!, input: UpdateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
+
+    # Admin management - Common operations
     deleteChallenge(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
     publishChallenge(id: ID!, publishedAt: DateTime!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     assignChallengeToEvent(challengeId: ID!, eventId: ID!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     bulkPublishChallenges(ids: [ID!]!, publishedAt: DateTime!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
-    bulkCreateChallenges(projectId: ID!, eventId: ID!, inputs: [CreateChallengeInput!]!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
     setChallengeVisibility(id: ID!, visibleAt: DateTime!, startedAt: DateTime): Challenge! @requireRole(roles: ["admin", "superadmin"])
     setChallengeRequirements(id: ID!, requiresTeamMembership: Boolean, requiresSuperTeamMembership: Boolean): Challenge! @requireRole(roles: ["admin", "superadmin"])
+
+    # User self-completion (SimpleChallenge only, when allowSelfCompletion=true)
+    selfCompleteChallenge(challengeId: ID!): SimpleChallenge!
 
     # User self-enrollment
     enrollInChallenge(challengeId: ID!): Challenge! @requireRole(roles: ["user"])
@@ -43,7 +47,7 @@ extend type Mutation {
     bulkEnrollUsersInChallenge(target: EnrollmentTargetInput!, challengeId: ID!): [Challenge!]! @requireRole(roles: ["admin", "superadmin", "m2m"])
     bulkUnenrollUsersFromChallenge(target: EnrollmentTargetInput!, challengeId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "m2m"])
 
-    # Completion tracking (M2M)
+    # Completion tracking (M2M / Admin) - Works for ExternalChallenge and SimpleChallenge
     completeChallenge(userId: ID!, challengeId: ID!, completedAt: DateTime): Challenge! @requireRole(roles: ["m2m", "admin", "superadmin"])
     uncompleteChallenge(userId: ID!, challengeId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
     bulkCompleteChallenges(target: EnrollmentTargetInput!, challengeId: ID!, completedAt: DateTime): [Challenge!]! @requireRole(roles: ["m2m", "admin", "superadmin"])

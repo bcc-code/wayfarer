@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_PsGCJsJjtJ
 createdAt: 2025-11-25T12:38:08.100714
-updatedAt: 2025-12-08T08:19:33.357848
+updatedAt: 2025-12-09T14:13:58.628705
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -50,6 +50,6 @@ headers:
   id: 0s4xJY0Rq9
 method: POST
 name: TeamLeadTest
-sortPriority: 5000.0
+sortPriority: 8333.333333333334
 url: ${[ HOST ]}/graphql
 urlParameters: []

@@ -1,0 +1,46 @@
+type: http_request
+model: http_request
+id: rq_UpdateQuiz
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T21:07:52.267634
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation UpdateQuiz($id: ID!, $input: UpdateQuizInput!) {
+      updateQuiz(id: $id, input: $input) {
+        id
+        name
+        description
+        timeoutSeconds
+        randomizeQuestions
+        revealCorrectAnswers
+        allowRetakes
+        completionPoints
+        publishedAt
+        endTime
+      }
+    }
+  variables: |
+    {
+      "id": "QZ01KBZWN4PRARY23WRKV63CTYRG",
+      "input": {
+        "name": "Updated Quiz Name",
+        "description": "Updated description",
+        "completionPoints": 150
+      }
+    }
+bodyType: graphql
+description: Update an existing quiz (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_UpdateQuiz
+method: POST
+name: Update Quiz
+sortPriority: 2100.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

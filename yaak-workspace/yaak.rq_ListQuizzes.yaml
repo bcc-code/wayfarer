@@ -1,0 +1,77 @@
+type: http_request
+model: http_request
+id: rq_ListQuizzes
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T19:48:31.635180
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query ListQuizzes($filter: QuizFilter, $first: Int, $after: String) {
+      quizzes(filter: $filter, first: $first, after: $after) {
+        edges {
+          cursor
+          node {
+            id
+            name
+            description
+            publishedAt
+            endTime
+            completionPoints
+            userCanStart
+            questions {
+              id
+              questionText
+              questionOrder
+              timeoutSeconds
+              ... on PredefinedQuestion {
+                allowMultipleSelection
+                predefinedAnswers {
+                  id
+                  answerText
+                  answerOrder
+                  isCorrect
+                }
+              }
+              ... on NumberQuestion {
+                minValue
+                maxValue
+                stepValue
+              }
+            }
+            project {
+              id
+              name
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
+        totalCount
+      }
+    }
+  variables: |
+    {
+      "filter": {
+        "projectId": "PR01K9VZ8684DP9R4W3ZEV526E5X"
+      },
+      "first": 10
+    }
+bodyType: graphql
+description: List quizzes with pagination and filtering
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_ListQuizzes
+method: POST
+name: List Quizzes
+sortPriority: 1100.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

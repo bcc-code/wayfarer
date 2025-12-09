@@ -20,7 +20,7 @@ import (
 )
 
 // CreateChallenge is the resolver for the createChallenge field.
-func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string, eventID string, input model.CreateChallengeInput) (*model.Challenge, error) {
+func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string, eventID string, input model.CreateChallengeInput) (model.Challenge, error) {
 	// Get authenticated user ID from context
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
@@ -32,32 +32,57 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 		return nil, fmt.Errorf("unauthorized to create challenges in this project")
 	}
 
-	// Generate new challenge ID
-	challengeID := ulid.NewChallengeID()
-
-	// Build params for database
-	params := sqlc.CreateChallengeParams{
-		ID:         challengeID,
-		Projectid:  projectID,
-		Name:       input.Name,
-		Buttontext: input.ButtonText,
+	// Validate type-specific fields
+	if err := validateCreateChallengeInput(input); err != nil {
+		return nil, err
 	}
 
-	// Set optional description (default to empty string if not provided)
+	// Generate challenge ID
+	challengeID := ulid.NewChallengeID()
+
+	// Build database params
+	params := sqlc.CreateChallengeParams{
+		ID:            challengeID,
+		Projectid:     projectID,
+		Eventid:       eventID,
+		Challengetype: string(input.Type),
+		Name:          input.Name,
+		Description:   "", // Will be set below
+		Imageurl:      input.Image,
+		Buttontext:    input.ButtonText,
+	}
+
+	// Set description
 	if input.Description != nil {
 		params.Description = string(*input.Description)
 	}
 
-	// Set optional image and URL
-	params.Imageurl = input.Image
-	params.Url = input.URL
-
-	// Set required eventID
-	params.Eventid = eventID
-
-	// Set optional endTime
+	// Set optional timestamps
+	if input.VisibleAt != nil {
+		params.Visibleat = pgtype.Timestamptz{Time: input.VisibleAt.Time, Valid: true}
+	}
 	if input.EndTime != nil {
 		params.Endtime = pgtype.Timestamptz{Time: input.EndTime.Time, Valid: true}
+	}
+
+	// Set optional requirements
+	params.Requiresteammembership = input.RequiresTeamMembership
+	params.Requiressuperteammembership = input.RequiresSuperTeamMembership
+
+	// Set type-specific fields
+	switch input.Type {
+	case model.ChallengeTypeSimple:
+		// Default allowSelfCompletion to true if not specified
+		if input.AllowSelfCompletion != nil {
+			params.Allowselfcompletion = input.AllowSelfCompletion
+		} else {
+			defaultTrue := true
+			params.Allowselfcompletion = &defaultTrue
+		}
+	case model.ChallengeTypeExternal:
+		params.Url = input.URL
+	case model.ChallengeTypeQuiz:
+		// No type-specific fields for quiz challenges
 	}
 
 	// Create challenge in database
@@ -66,22 +91,25 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 		return nil, fmt.Errorf("failed to create challenge: %w", err)
 	}
 
-	// Invalidate project cache to reflect new challenge in lists
+	// Invalidate cache
 	r.Cache.InvalidateProject(projectID)
+	if eventID != "" {
+		r.Cache.InvalidateEvent(eventID)
+	}
 
 	// Convert to GraphQL model
 	return convertCreateChallengeRowToChallenge(row), nil
 }
 
 // UpdateChallenge is the resolver for the updateChallenge field.
-func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input model.UpdateChallengeInput) (*model.Challenge, error) {
+func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input model.UpdateChallengeInput) (model.Challenge, error) {
 	// Get authenticated user ID from context
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// Load existing challenge to verify it exists and get project ID
+	// Load existing challenge to verify it exists and get type
 	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, id)
 	existingChallenge, err := thunk()
 	if err != nil {
@@ -89,37 +117,55 @@ func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input
 	}
 
 	// Check authorization (admins, superadmins, and project admins for their own projects)
-	if !r.RoleService.CanManageProject(ctx, userID, existingChallenge.ProjectID) {
+	projectID := getChallengeProjectID(existingChallenge)
+	if !r.RoleService.CanManageProject(ctx, userID, projectID) {
 		return nil, fmt.Errorf("unauthorized to update this challenge")
 	}
 
-	// Build update parameters
+	// Validate type-specific fields based on existing challenge type
+	challengeType := getChallengeType(existingChallenge)
+	if err := validateUpdateChallengeInput(input, challengeType); err != nil {
+		return nil, err
+	}
+
+	// Build database params
 	params := sqlc.UpdateChallengeParams{
 		ID: id,
 	}
 
-	// Only set fields that are provided
-	if input.Name != nil {
-		params.Name = input.Name
-	}
+	// Set optional fields
+	params.Name = input.Name
 	if input.Description != nil {
 		desc := string(*input.Description)
 		params.Description = &desc
 	}
-	if input.Image != nil {
-		params.Imageurl = input.Image
+	params.Imageurl = input.Image
+	params.Eventid = input.EventID
+	params.Buttontext = input.ButtonText
+
+	// Set optional timestamps
+	if input.VisibleAt != nil {
+		params.Visibleat = pgtype.Timestamptz{Time: input.VisibleAt.Time, Valid: true}
 	}
-	if input.URL != nil {
-		params.Url = input.URL
-	}
-	if input.ButtonText != nil {
-		params.Buttontext = input.ButtonText
-	}
-	if input.EventID != nil {
-		params.Eventid = input.EventID
+	if input.StartedAt != nil {
+		params.Startedat = pgtype.Timestamptz{Time: input.StartedAt.Time, Valid: true}
 	}
 	if input.EndTime != nil {
 		params.Endtime = pgtype.Timestamptz{Time: input.EndTime.Time, Valid: true}
+	}
+
+	// Set optional requirements
+	params.Requiresteammembership = input.RequiresTeamMembership
+	params.Requiressuperteammembership = input.RequiresSuperTeamMembership
+
+	// Set type-specific fields based on existing challenge type
+	switch challengeType {
+	case model.ChallengeTypeSimple:
+		params.Allowselfcompletion = input.AllowSelfCompletion
+	case model.ChallengeTypeExternal:
+		params.Url = input.URL
+	case model.ChallengeTypeQuiz:
+		// No type-specific fields for quiz challenges
 	}
 
 	// Update challenge in database
@@ -130,23 +176,16 @@ func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input
 
 	// Invalidate cache
 	r.Cache.InvalidateChallenge(id)
+	r.Cache.InvalidateProject(projectID)
 
-	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.Description != nil || input.ButtonText != nil {
-		_ = r.DB.Queries.DeleteChallengeTranslations(ctx, id)
-		r.Cache.DeletePrefix(cache.PrefixTranslation + "challenge:" + id)
+	// Invalidate old event if it existed
+	existingEventID := getChallengeEventID(existingChallenge)
+	if existingEventID != nil {
+		r.Cache.InvalidateEvent(*existingEventID)
 	}
-
-	// If eventID is being changed, invalidate both old and new events
-	if input.EventID != nil {
-		// Invalidate old event if it exists
-		if existingChallenge.EventID != nil {
-			r.Cache.InvalidateEvent(*existingChallenge.EventID)
-		}
-		// Invalidate new event if it's being set to a value
-		if *input.EventID != "" {
-			r.Cache.InvalidateEvent(*input.EventID)
-		}
+	// Invalidate new event if changed
+	if input.EventID != nil && (existingEventID == nil || *input.EventID != *existingEventID) {
+		r.Cache.InvalidateEvent(*input.EventID)
 	}
 
 	// Convert to GraphQL model
@@ -169,7 +208,8 @@ func (r *mutationResolver) DeleteChallenge(ctx context.Context, id string) (bool
 	}
 
 	// Check authorization (admins, superadmins, and project admins for their own projects)
-	if !r.RoleService.CanManageProject(ctx, userID, existingChallenge.ProjectID) {
+	projectID := getChallengeProjectID(existingChallenge)
+	if !r.RoleService.CanManageProject(ctx, userID, projectID) {
 		return false, fmt.Errorf("unauthorized to delete this challenge")
 	}
 
@@ -181,13 +221,13 @@ func (r *mutationResolver) DeleteChallenge(ctx context.Context, id string) (bool
 
 	// Invalidate cache
 	r.Cache.InvalidateChallenge(id)
-	r.Cache.InvalidateProject(existingChallenge.ProjectID)
+	r.Cache.InvalidateProject(projectID)
 
 	return true, nil
 }
 
 // PublishChallenge is the resolver for the publishChallenge field.
-func (r *mutationResolver) PublishChallenge(ctx context.Context, id string, publishedAt scalars.DateTime) (*model.Challenge, error) {
+func (r *mutationResolver) PublishChallenge(ctx context.Context, id string, publishedAt scalars.DateTime) (model.Challenge, error) {
 	// Get authenticated user ID from context
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
@@ -202,7 +242,7 @@ func (r *mutationResolver) PublishChallenge(ctx context.Context, id string, publ
 	}
 
 	// Check authorization (admins, superadmins, and project admins for their own projects)
-	if !r.RoleService.CanManageProject(ctx, userID, existingChallenge.ProjectID) {
+	if !r.RoleService.CanManageProject(ctx, userID, getChallengeProjectID(existingChallenge)) {
 		return nil, fmt.Errorf("unauthorized to publish this challenge")
 	}
 
@@ -223,7 +263,7 @@ func (r *mutationResolver) PublishChallenge(ctx context.Context, id string, publ
 }
 
 // AssignChallengeToEvent is the resolver for the assignChallengeToEvent field.
-func (r *mutationResolver) AssignChallengeToEvent(ctx context.Context, challengeID string, eventID string) (*model.Challenge, error) {
+func (r *mutationResolver) AssignChallengeToEvent(ctx context.Context, challengeID string, eventID string) (model.Challenge, error) {
 	// Get authenticated user ID from context
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
@@ -245,12 +285,13 @@ func (r *mutationResolver) AssignChallengeToEvent(ctx context.Context, challenge
 	}
 
 	// Verify event belongs to the same project as the challenge
-	if event.ProjectID != existingChallenge.ProjectID {
+	existingProjectID := getChallengeProjectID(existingChallenge)
+	if event.ProjectID != existingProjectID {
 		return nil, fmt.Errorf("event must belong to the same project as the challenge")
 	}
 
 	// Check authorization (admins, superadmins, and project admins for their own projects)
-	if !r.RoleService.CanManageProject(ctx, userID, existingChallenge.ProjectID) {
+	if !r.RoleService.CanManageProject(ctx, userID, existingProjectID) {
 		return nil, fmt.Errorf("unauthorized to modify this challenge")
 	}
 
@@ -267,8 +308,9 @@ func (r *mutationResolver) AssignChallengeToEvent(ctx context.Context, challenge
 	r.Cache.InvalidateChallenge(challengeID)
 
 	// Invalidate old event if it exists
-	if existingChallenge.EventID != nil {
-		r.Cache.InvalidateEvent(*existingChallenge.EventID)
+	existingEventID := getChallengeEventID(existingChallenge)
+	if existingEventID != nil {
+		r.Cache.InvalidateEvent(*existingEventID)
 	}
 	// Invalidate new event
 	r.Cache.InvalidateEvent(eventID)
@@ -286,7 +328,6 @@ func (r *mutationResolver) BulkPublishChallenges(ctx context.Context, ids []stri
 	}
 
 	// Load all challenges to verify they exist and check authorization
-	challenges := make([]*model.Challenge, 0, len(ids))
 	for _, id := range ids {
 		thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, id)
 		challenge, err := thunk()
@@ -295,11 +336,9 @@ func (r *mutationResolver) BulkPublishChallenges(ctx context.Context, ids []stri
 		}
 
 		// Check authorization for each challenge
-		if !r.RoleService.CanManageProject(ctx, userID, challenge.ProjectID) {
+		if !r.RoleService.CanManageProject(ctx, userID, getChallengeProjectID(challenge)) {
 			return nil, fmt.Errorf("unauthorized to publish challenge %s", id)
 		}
-
-		challenges = append(challenges, challenge)
 	}
 
 	// Publish challenges in database
@@ -319,97 +358,14 @@ func (r *mutationResolver) BulkPublishChallenges(ctx context.Context, ids []stri
 	// Convert to GraphQL models
 	result := make([]model.Challenge, len(rows))
 	for i, row := range rows {
-		result[i] = *convertBulkPublishChallengesRowToChallenge(row)
-	}
-
-	return result, nil
-}
-
-// BulkCreateChallenges is the resolver for the bulkCreateChallenges field.
-func (r *mutationResolver) BulkCreateChallenges(ctx context.Context, projectID string, eventID string, inputs []model.CreateChallengeInput) ([]model.Challenge, error) {
-	// Get authenticated user ID from context
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return nil, fmt.Errorf("user not authenticated")
-	}
-
-	// Check authorization for the project
-	if !r.RoleService.CanManageProject(ctx, userID, projectID) {
-		return nil, fmt.Errorf("unauthorized to create challenges in project %s", projectID)
-	}
-
-	// Prepare data for bulk insert
-	ids := make([]string, len(inputs))
-	projectIDs := make([]string, len(inputs))
-	eventIDs := make([]string, len(inputs))
-	names := make([]string, len(inputs))
-	descriptions := make([]string, len(inputs))
-	imageURLs := make([]string, len(inputs))
-	urls := make([]string, len(inputs))
-	buttonTexts := make([]string, len(inputs))
-	publishedAts := make([]pgtype.Timestamptz, len(inputs))
-	endTimes := make([]pgtype.Timestamptz, len(inputs))
-
-	for i, input := range inputs {
-		// Generate ID for each challenge
-		ids[i] = ulid.NewChallengeID()
-		projectIDs[i] = projectID
-		names[i] = input.Name
-		if input.URL != nil {
-			urls[i] = *input.URL
-		}
-		buttonTexts[i] = input.ButtonText
-
-		// Set optional description
-		if input.Description != nil {
-			descriptions[i] = string(*input.Description)
-		}
-
-		// Set optional image
-		if input.Image != nil {
-			imageURLs[i] = *input.Image
-		}
-
-		// Set required eventID (use the top-level eventID parameter for all)
-		eventIDs[i] = eventID
-
-		// Set optional endTime
-		if input.EndTime != nil {
-			endTimes[i] = pgtype.Timestamptz{Time: input.EndTime.Time, Valid: true}
-		}
-	}
-
-	// Create challenges in database
-	rows, err := r.DB.Queries.BulkCreateChallenges(ctx, sqlc.BulkCreateChallengesParams{
-		Ids:          ids,
-		Projectids:   projectIDs,
-		Eventids:     eventIDs,
-		Names:        names,
-		Descriptions: descriptions,
-		Imageurls:    imageURLs,
-		Urls:         urls,
-		Buttontexts:  buttonTexts,
-		Publishedats: publishedAts,
-		Endtimes:     endTimes,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to bulk create challenges: %w", err)
-	}
-
-	// Invalidate project cache to reflect new challenges in lists
-	r.Cache.InvalidateProject(projectID)
-
-	// Convert to GraphQL models
-	result := make([]model.Challenge, len(rows))
-	for i, row := range rows {
-		result[i] = *convertBulkCreateChallengesRowToChallenge(row)
+		result[i] = convertBulkPublishChallengesRowToChallenge(row)
 	}
 
 	return result, nil
 }
 
 // SetChallengeVisibility - Admin mutation for visibility settings
-func (r *mutationResolver) SetChallengeVisibility(ctx context.Context, id string, visibleAt scalars.DateTime, startedAt *scalars.DateTime) (*model.Challenge, error) {
+func (r *mutationResolver) SetChallengeVisibility(ctx context.Context, id string, visibleAt scalars.DateTime, startedAt *scalars.DateTime) (model.Challenge, error) {
 	adminID, ok := middleware.GetUserID(ctx)
 	if !ok || adminID == "" {
 		return nil, fmt.Errorf("user not authenticated")
@@ -441,11 +397,11 @@ func (r *mutationResolver) SetChallengeVisibility(ctx context.Context, id string
 	r.Cache.InvalidateChallenge(id)
 
 	// Convert and return
-	return convertUpdateChallengeTimestampsRowToChallenge(*row), nil
+	return convertUpdateChallengeTimestampsRowToChallenge(row), nil
 }
 
 // SetChallengeRequirements - Admin mutation for team/superteam requirements
-func (r *mutationResolver) SetChallengeRequirements(ctx context.Context, id string, requiresTeamMembership *bool, requiresSuperTeamMembership *bool) (*model.Challenge, error) {
+func (r *mutationResolver) SetChallengeRequirements(ctx context.Context, id string, requiresTeamMembership *bool, requiresSuperTeamMembership *bool) (model.Challenge, error) {
 	adminID, ok := middleware.GetUserID(ctx)
 	if !ok || adminID == "" {
 		return nil, fmt.Errorf("user not authenticated")
@@ -475,11 +431,16 @@ func (r *mutationResolver) SetChallengeRequirements(ctx context.Context, id stri
 	r.Cache.InvalidateChallenge(id)
 
 	// Convert and return
-	return convertUpdateChallengeRequirementsRowToChallenge(*row), nil
+	return convertUpdateChallengeRequirementsRowToChallenge(row), nil
+}
+
+// SelfCompleteChallenge is the resolver for the selfCompleteChallenge field.
+func (r *mutationResolver) SelfCompleteChallenge(ctx context.Context, challengeID string) (*model.SimpleChallenge, error) {
+	panic(fmt.Errorf("not implemented: SelfCompleteChallenge - selfCompleteChallenge"))
 }
 
 // EnrollInChallenge - User self-enrollment with validation
-func (r *mutationResolver) EnrollInChallenge(ctx context.Context, challengeID string) (*model.Challenge, error) {
+func (r *mutationResolver) EnrollInChallenge(ctx context.Context, challengeID string) (model.Challenge, error) {
 	// Get authenticated user ID from context
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
@@ -494,19 +455,22 @@ func (r *mutationResolver) EnrollInChallenge(ctx context.Context, challengeID st
 	}
 
 	// Validation 1: Challenge must be published
-	if challenge.PublishedAt == nil || challenge.PublishedAt.Time.After(time.Now()) {
+	publishedAt := getChallengePublishedAt(challenge)
+	if publishedAt == nil || publishedAt.Time.After(time.Now()) {
 		return nil, fmt.Errorf("challenge is not yet available for enrollment")
 	}
 
 	// Validation 2: Challenge must not be ended
-	if challenge.EndTime != nil && challenge.EndTime.Time.Before(time.Now()) {
+	endTime := getChallengeEndTime(challenge)
+	if endTime != nil && endTime.Time.Before(time.Now()) {
 		return nil, fmt.Errorf("challenge enrollment has ended")
 	}
 
 	// Validation 3: Auto-enroll in project if needed (like team joining)
+	challengeProjectID := getChallengeProjectID(challenge)
 	isInProject, err := r.DB.Queries.IsUserInProject(ctx, sqlc.IsUserInProjectParams{
 		Userid:    userID,
-		Projectid: challenge.ProjectID,
+		Projectid: challengeProjectID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to check project membership: %w", err)
@@ -515,7 +479,7 @@ func (r *mutationResolver) EnrollInChallenge(ctx context.Context, challengeID st
 		// Automatically join the user to the project
 		err = r.DB.Queries.JoinProject(ctx, sqlc.JoinProjectParams{
 			Userid:    userID,
-			Projectid: challenge.ProjectID,
+			Projectid: challengeProjectID,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to auto-enroll in project: %w", err)
@@ -523,10 +487,10 @@ func (r *mutationResolver) EnrollInChallenge(ctx context.Context, challengeID st
 	}
 
 	// Validation 4: Check team membership requirement
-	if challenge.RequiresTeamMembership {
+	if getChallengeRequiresTeamMembership(challenge) {
 		isInTeam, err := r.DB.Queries.IsUserInAnyTeamInProject(ctx, sqlc.IsUserInAnyTeamInProjectParams{
 			Userid:    userID,
-			Projectid: challenge.ProjectID,
+			Projectid: challengeProjectID,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to check team membership: %w", err)
@@ -537,10 +501,10 @@ func (r *mutationResolver) EnrollInChallenge(ctx context.Context, challengeID st
 	}
 
 	// Validation 5: Check superteam membership requirement
-	if challenge.RequiresSuperTeamMembership {
+	if getChallengeRequiresSuperTeamMembership(challenge) {
 		isInSuperTeam, err := r.DB.Queries.IsUserInAnySuperTeamInProject(ctx, sqlc.IsUserInAnySuperTeamInProjectParams{
 			Userid:    userID,
-			Projectid: challenge.ProjectID,
+			Projectid: challengeProjectID,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to check super team membership: %w", err)
@@ -599,7 +563,7 @@ func (r *mutationResolver) UnenrollFromChallenge(ctx context.Context, challengeI
 }
 
 // EnrollUserInChallenge - Admin enrollment (no validation)
-func (r *mutationResolver) EnrollUserInChallenge(ctx context.Context, userID string, challengeID string) (*model.Challenge, error) {
+func (r *mutationResolver) EnrollUserInChallenge(ctx context.Context, userID string, challengeID string) (model.Challenge, error) {
 	// Get authenticated admin ID for authorization check
 	adminID, ok := middleware.GetUserID(ctx)
 	if !ok || adminID == "" {
@@ -699,7 +663,7 @@ func (r *mutationResolver) BulkEnrollUsersInChallenge(ctx context.Context, targe
 	translatedChallenge := r.ApplyTranslationToChallenge(ctx, challenge)
 	result := make([]model.Challenge, len(userIds))
 	for i := range result {
-		result[i] = *translatedChallenge
+		result[i] = translatedChallenge
 	}
 
 	return result, nil
@@ -739,7 +703,7 @@ func (r *mutationResolver) BulkUnenrollUsersFromChallenge(ctx context.Context, t
 }
 
 // CompleteChallenge is the resolver for the completeChallenge field.
-func (r *mutationResolver) CompleteChallenge(ctx context.Context, userID string, challengeID string, completedAt *scalars.DateTime) (*model.Challenge, error) {
+func (r *mutationResolver) CompleteChallenge(ctx context.Context, userID string, challengeID string, completedAt *scalars.DateTime) (model.Challenge, error) {
 	// Get authenticated admin ID for authorization
 	_, ok := middleware.GetUserID(ctx)
 	if !ok {
@@ -855,14 +819,14 @@ func (r *mutationResolver) BulkCompleteChallenges(ctx context.Context, target mo
 	translatedChallenge := r.ApplyTranslationToChallenge(ctx, challenge)
 	result := make([]model.Challenge, len(userIds))
 	for i := range result {
-		result[i] = *translatedChallenge
+		result[i] = translatedChallenge
 	}
 
 	return result, nil
 }
 
 // Challenge is the resolver for the challenge field.
-func (r *queryResolver) Challenge(ctx context.Context, id string) (*model.Challenge, error) {
+func (r *queryResolver) Challenge(ctx context.Context, id string) (model.Challenge, error) {
 	// Use translation-aware wrapper to fetch challenge
 	return r.LoadChallengeWithTranslation(ctx, id)
 }
@@ -957,8 +921,7 @@ func (r *queryResolver) Challenges(ctx context.Context, filter *model.ChallengeF
 	// Convert to GraphQL model
 	modelChallenges := make([]model.Challenge, len(challengeRows))
 	for i, row := range challengeRows {
-		challenge := convertGetChallengesFilteredCursorRowToChallenge(row)
-		modelChallenges[i] = *challenge
+		modelChallenges[i] = convertGetChallengesFilteredCursorRowToChallenge(row)
 	}
 
 	// Build connection using pagination helper

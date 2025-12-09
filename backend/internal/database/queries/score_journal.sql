@@ -15,14 +15,14 @@ INSERT INTO score_journal (
     @id::text,
     @project_id::text,
     @user_id::text,
-    @event_id::text,
-    @challenge_id::text,
+    sqlc.narg('event_id')::text,
+    sqlc.narg('challenge_id')::text,
     @points::int,
     @source_type::text,
-    @source_id::text,
-    @reason::text,
-    @awarded_by::text,
-    COALESCE(@created_at::timestamptz, now())
+    sqlc.narg('source_id')::text,
+    sqlc.narg('reason')::text,
+    sqlc.narg('awarded_by')::text,
+    COALESCE(sqlc.narg('created_at')::timestamptz, now())
 ) RETURNING *;
 
 -- name: GetScoreJournalFiltered :many

@@ -1,0 +1,50 @@
+type: http_request
+model: http_request
+id: rq_SubmitQuizAnswerPredefined
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T21:19:50.203252
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+      submitQuizAnswer(submissionId: $submissionId, input: $input) {
+        id
+        selectedAnswerIds
+        selectedAnswers {
+          id
+          answerText
+          isCorrect
+        }
+        isCorrect
+        answeredAt
+        timeSpentSeconds
+        question {
+          id
+          questionText
+        }
+      }
+    }
+  variables: |
+    {
+      "submissionId": "QS01KBZXB9XAGZZ38CRCXHDQE192",
+      "input": {
+        "questionId": "QQ01KBZWNV0V987EC8TC1X16FAH5",
+        "selectedAnswerIds": ["QA01KBZWNV3P1EYRANVC49VVMXJ8"],
+        "timeSpentSeconds": 15
+      }
+    }
+bodyType: graphql
+description: Submit a predefined answer (user)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_SubmitQuizAnswerPredefined
+method: POST
+name: Submit Quiz Answer (Predefined)
+sortPriority: 4100.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

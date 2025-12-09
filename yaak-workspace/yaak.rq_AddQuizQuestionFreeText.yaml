@@ -1,0 +1,41 @@
+type: http_request
+model: http_request
+id: rq_AddQuizQuestionFreeText
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-08T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation AddQuizQuestion($quizId: ID!, $input: CreateQuizQuestionInput!) {
+      addQuizQuestion(quizId: $quizId, input: $input) {
+        id
+        questionText
+        questionOrder
+        timeoutSeconds
+      }
+    }
+  variables: |
+    {
+      "quizId": "QZ01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "input": {
+        "questionType": "FREE_TEXT",
+        "questionText": "Describe your favorite Bible verse and why it is meaningful to you.",
+        "questionOrder": 2,
+        "timeoutSeconds": 60
+      }
+    }
+bodyType: graphql
+description: Add a free text question to a quiz (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_AddQuizQuestionFreeText
+method: POST
+name: Add Quiz Question (Free Text)
+sortPriority: 3100.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

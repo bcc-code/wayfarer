@@ -260,6 +260,33 @@ func (c *CacheWithRegistry) InvalidateAchievement(achievementID string) {
 	c.DeletePrefix(PrefixAchievementsCount)
 }
 
+// InvalidateQuiz invalidates all cache entries related to a quiz
+func (c *CacheWithRegistry) InvalidateQuiz(quizID string) {
+	c.Delete(QuizKey(quizID))
+
+	// All quiz list/filter queries
+	c.DeletePrefix(PrefixQuizzesFilter)
+	c.DeletePrefix(PrefixQuizzesCount)
+
+	// Invalidate quiz questions and answers for this quiz
+	c.Delete(QuizQuestionsByQuizKey(quizID))
+
+	// Invalidate submissions for this quiz
+	c.Delete(QuizSubmissionsByQuizKey(quizID))
+}
+
+// InvalidateQuizSubmission invalidates all cache entries related to a quiz submission
+func (c *CacheWithRegistry) InvalidateQuizSubmission(submissionID string) {
+	c.Delete(QuizSubmissionKey(submissionID))
+
+	// Invalidate responses for this submission
+	c.Delete(QuizResponsesBySubmissionKey(submissionID))
+
+	// All quiz submission list/filter queries
+	c.DeletePrefix(PrefixQuizSubmissionsFilter)
+	c.DeletePrefix(PrefixQuizSubmissionsCount)
+}
+
 // InvalidateTeamMemberLeaderboardTags invalidates all tag caches for team member leaderboards.
 // Call this when user roles change, as TEAM_LEAD tags depend on role assignments.
 // Note: TEAM_LEAD tags are cached per team (viewer-independent), ME tags are computed on-the-fly.

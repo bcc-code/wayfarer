@@ -1,0 +1,60 @@
+type: http_request
+model: http_request
+id: rq_StartQuiz
+createdAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-09T14:55:37.544149
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation StartQuiz($quizId: ID!) {
+      startQuiz(quizId: $quizId) {
+        id
+        startedAt
+        expiresAt
+        isExpired
+        questionOrder
+        orderedQuestions {
+          id
+          questionText
+          questionOrder
+          timeoutSeconds
+          ... on PredefinedQuestion {
+            allowMultipleSelection
+            predefinedAnswers {
+              id
+              answerText
+              answerOrder
+            }
+          }
+          ... on NumberQuestion {
+            minValue
+            maxValue
+            stepValue
+          }
+        }
+        quiz {
+          id
+          name
+          timeoutSeconds
+        }
+      }
+    }
+  variables: |
+    {
+      "quizId": "QZ01KC1SR8V7JC7F1Q7RCYD946HD"
+    }
+bodyType: graphql
+description: Start a quiz session (user)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_StartQuiz
+method: POST
+name: Start Quiz
+sortPriority: 4000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

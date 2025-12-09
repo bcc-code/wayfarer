@@ -28,14 +28,14 @@ func TestChallengeCacheBehavior(t *testing.T) {
 	publishedAt := time.Now().Add(-24 * time.Hour)
 	endTime := time.Now().Add(7 * 24 * time.Hour)
 
-	challenge := &model.Challenge{
+	challenge := &model.ExternalChallenge{
 		ID:          challengeID,
 		Name:        "Test Challenge",
 		Description: scalars.HTML("Test description"),
 		Image:       stringPtr("https://example.com/image.png"),
 		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
 		EventID:     nil,
-		URL:         stringPtr("https://example.com/challenge"),
+		URL:         "https://example.com/challenge",
 		ButtonText:  "Start Challenge",
 		PublishedAt: &scalars.DateTime{Time: publishedAt},
 		EndTime:     &scalars.DateTime{Time: endTime},
@@ -51,13 +51,13 @@ func TestChallengeCacheBehavior(t *testing.T) {
 	assert.True(t, ok, "challenge should be in cache")
 	require.NotNil(t, cached)
 
-	cachedChallenge, ok := cached.(*model.Challenge)
-	assert.True(t, ok, "cached value should be a *model.Challenge")
+	cachedChallenge, ok := cached.(*model.ExternalChallenge)
+	assert.True(t, ok, "cached value should be a *model.ExternalChallenge")
 	require.NotNil(t, cachedChallenge)
 	assert.Equal(t, challengeID, cachedChallenge.ID)
 	assert.Equal(t, "Test Challenge", cachedChallenge.Name)
 	assert.Equal(t, scalars.HTML("Test description"), cachedChallenge.Description)
-	assert.Equal(t, "https://example.com/challenge", *cachedChallenge.URL)
+	assert.Equal(t, "https://example.com/challenge", cachedChallenge.URL)
 	assert.Equal(t, "Start Challenge", cachedChallenge.ButtonText)
 	assert.NotNil(t, cachedChallenge.EndTime)
 }
@@ -70,13 +70,13 @@ func TestChallengeCacheExpiry(t *testing.T) {
 	challengeID := "CL01K8XV6VK9ED2GBZSQ2VDTAT8T"
 	publishedAt := time.Now().Add(-24 * time.Hour)
 
-	challenge := &model.Challenge{
+	challenge := &model.ExternalChallenge{
 		ID:          challengeID,
 		Name:        "Test Challenge",
 		Description: scalars.HTML("Test description"),
 		Image:       stringPtr("https://example.com/image.png"),
 		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-		URL:         stringPtr("https://example.com/challenge"),
+		URL:         "https://example.com/challenge",
 		ButtonText:  "Start Challenge",
 		PublishedAt: &scalars.DateTime{Time: publishedAt},
 	}
@@ -100,14 +100,14 @@ func TestChallengeModel(t *testing.T) {
 	endTime := time.Now().Add(14 * 24 * time.Hour)
 	eventID := "EV01K8XV6VK9ED2GBZSQ2VDTAT8T"
 
-	challenge := &model.Challenge{
+	challenge := &model.ExternalChallenge{
 		ID:          "CL01K8XV6VK9ED2GBZSQ2VDTAT8T",
 		Name:        "Daily Bible Reading",
 		Description: scalars.HTML("<p>Read the daily passage</p>"),
 		Image:       stringPtr("https://example.com/bible.png"),
 		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
 		EventID:     &eventID,
-		URL:         stringPtr("https://example.com/bible-reading"),
+		URL:         "https://example.com/bible-reading",
 		ButtonText:  "Read Now",
 		PublishedAt: &scalars.DateTime{Time: publishedAt},
 		EndTime:     &scalars.DateTime{Time: endTime},
@@ -116,7 +116,7 @@ func TestChallengeModel(t *testing.T) {
 	assert.Equal(t, "CL01K8XV6VK9ED2GBZSQ2VDTAT8T", challenge.ID)
 	assert.Equal(t, "Daily Bible Reading", challenge.Name)
 	assert.Equal(t, scalars.HTML("<p>Read the daily passage</p>"), challenge.Description)
-	assert.Equal(t, "https://example.com/bible-reading", *challenge.URL)
+	assert.Equal(t, "https://example.com/bible-reading", challenge.URL)
 	assert.Equal(t, "Read Now", challenge.ButtonText)
 	assert.NotNil(t, challenge.EventID)
 	assert.Equal(t, "EV01K8XV6VK9ED2GBZSQ2VDTAT8T", *challenge.EventID)
@@ -126,17 +126,17 @@ func TestChallengeModel(t *testing.T) {
 func TestChallengeModelWithoutEndTime(t *testing.T) {
 	publishedAt := time.Now().Add(-24 * time.Hour)
 
-	challenge := &model.Challenge{
-		ID:          "CL01K8XV6VK9ED2GBZSQ2VDTAT8T",
-		Name:        "Ongoing Challenge",
-		Description: scalars.HTML("Challenge with no end time"),
-		Image:       stringPtr("https://example.com/ongoing.png"),
-		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-		EventID:     nil,
-		URL:         stringPtr("https://example.com/ongoing"),
-		ButtonText:  "Participate",
-		PublishedAt: &scalars.DateTime{Time: publishedAt},
-		EndTime:     nil,
+	challenge := &model.SimpleChallenge{
+		ID:                  "CL01K8XV6VK9ED2GBZSQ2VDTAT8T",
+		Name:                "Ongoing Challenge",
+		Description:         scalars.HTML("Challenge with no end time"),
+		Image:               stringPtr("https://example.com/ongoing.png"),
+		ProjectID:           "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
+		EventID:             nil,
+		ButtonText:          "Participate",
+		PublishedAt:         &scalars.DateTime{Time: publishedAt},
+		EndTime:             nil,
+		AllowSelfCompletion: true,
 	}
 
 	assert.Equal(t, "CL01K8XV6VK9ED2GBZSQ2VDTAT8T", challenge.ID)
@@ -152,36 +152,35 @@ func TestMultipleChallengesInCache(t *testing.T) {
 	publishedAt := time.Now().Add(-24 * time.Hour)
 	endTime := time.Now().Add(7 * 24 * time.Hour)
 
-	challenges := []*model.Challenge{
-		{
+	challenges := []model.Challenge{
+		&model.ExternalChallenge{
 			ID:          "CL01K8XV6VK9ED2GBZSQ2VDTAT8T",
 			Name:        "Challenge 1",
 			Description: scalars.HTML("First challenge"),
 			Image:       stringPtr("https://example.com/1.png"),
 			ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-			URL:         stringPtr("https://example.com/challenge1"),
+			URL:         "https://example.com/challenge1",
 			ButtonText:  "Start",
 			PublishedAt: &scalars.DateTime{Time: publishedAt},
 			EndTime:     &scalars.DateTime{Time: endTime},
 		},
-		{
-			ID:          "CL01K8XV6VK9ED2GBZSQ2VDTAT9T",
-			Name:        "Challenge 2",
-			Description: scalars.HTML("Second challenge"),
-			Image:       stringPtr("https://example.com/2.png"),
-			ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-			URL:         stringPtr("https://example.com/challenge2"),
-			ButtonText:  "Begin",
-			PublishedAt: &scalars.DateTime{Time: publishedAt},
-			EndTime:     nil,
+		&model.SimpleChallenge{
+			ID:                  "CL01K8XV6VK9ED2GBZSQ2VDTAT9T",
+			Name:                "Challenge 2",
+			Description:         scalars.HTML("Second challenge"),
+			Image:               stringPtr("https://example.com/2.png"),
+			ProjectID:           "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
+			ButtonText:          "Begin",
+			PublishedAt:         &scalars.DateTime{Time: publishedAt},
+			EndTime:             nil,
+			AllowSelfCompletion: true,
 		},
-		{
+		&model.QuizChallenge{
 			ID:          "CL01K8XV6VK9ED2GBZSQ2VDTATZZ",
 			Name:        "Challenge 3",
 			Description: scalars.HTML("Third challenge"),
 			Image:       stringPtr("https://example.com/3.png"),
 			ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-			URL:         stringPtr("https://example.com/challenge3"),
 			ButtonText:  "Go",
 			PublishedAt: &scalars.DateTime{Time: publishedAt},
 			EndTime:     &scalars.DateTime{Time: endTime},
@@ -190,20 +189,33 @@ func TestMultipleChallengesInCache(t *testing.T) {
 
 	// Store all challenges in cache
 	for _, challenge := range challenges {
-		c.Set(cache.ChallengeKey(challenge.ID), challenge)
+		c.Set(cache.ChallengeKey(getChallengeIDForTest(challenge)), challenge)
 	}
 	time.Sleep(10 * time.Millisecond) // Allow ristretto to process async writes
 
 	// Verify all challenges can be retrieved
 	for _, expectedChallenge := range challenges {
-		cached, ok := c.Get(cache.ChallengeKey(expectedChallenge.ID))
-		assert.True(t, ok, "challenge %s should be in cache", expectedChallenge.ID)
+		challengeID := getChallengeIDForTest(expectedChallenge)
+		cached, ok := c.Get(cache.ChallengeKey(challengeID))
+		assert.True(t, ok, "challenge %s should be in cache", challengeID)
 		require.NotNil(t, cached)
 
-		cachedChallenge, ok := cached.(*model.Challenge)
+		cachedChallenge, ok := cached.(model.Challenge)
 		assert.True(t, ok)
-		assert.Equal(t, expectedChallenge.ID, cachedChallenge.ID)
-		assert.Equal(t, expectedChallenge.Name, cachedChallenge.Name)
-		assert.Equal(t, expectedChallenge.URL, cachedChallenge.URL)
+		assert.Equal(t, challengeID, getChallengeIDForTest(cachedChallenge))
+	}
+}
+
+// getChallengeIDForTest extracts the ID from any Challenge implementation (test helper)
+func getChallengeIDForTest(c model.Challenge) string {
+	switch v := c.(type) {
+	case *model.SimpleChallenge:
+		return v.ID
+	case *model.QuizChallenge:
+		return v.ID
+	case *model.ExternalChallenge:
+		return v.ID
+	default:
+		return ""
 	}
 }
