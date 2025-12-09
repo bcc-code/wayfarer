@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_GetQuiz
 createdAt: 2025-12-08T12:00:00
-updatedAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-09T14:55:48.271635
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Quizzes
 authentication: {}
@@ -61,7 +61,7 @@ body:
     }
   variables: |
     {
-      "id": "QZ01ARZ3NDEKTSV4RRFFQ69G5FAV"
+      "id": "QZ01KC1SR8V7JC7F1Q7RCYD946HD"
     }
 bodyType: graphql
 description: Get a quiz by ID with all questions

@@ -616,6 +616,16 @@ func (r *mutationResolver) StartQuiz(ctx context.Context, quizID string) (*model
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
 	}
 
+	// Check if quiz is published
+	if quiz.PublishedAt == nil || quiz.PublishedAt.Time.After(time.Now()) {
+		return nil, fmt.Errorf("quiz is not available")
+	}
+
+	// Check if quiz has ended
+	if quiz.EndTime != nil && quiz.EndTime.Time.Before(time.Now()) {
+		return nil, fmt.Errorf("quiz has ended")
+	}
+
 	// Check retake policy
 	if !quiz.AllowRetakes {
 		existing, _ := r.DB.Queries.GetCompletedSubmissionsByUserAndQuiz(ctx, sqlc.GetCompletedSubmissionsByUserAndQuizParams{

@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_StartQuiz
 createdAt: 2025-12-08T12:00:00
-updatedAt: 2025-12-08T21:08:05.394436
+updatedAt: 2025-12-09T14:55:37.544149
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Quizzes
 authentication: {}
@@ -44,7 +44,7 @@ body:
     }
   variables: |
     {
-      "quizId": "QZ01KBZWN4PRARY23WRKV63CTYRG"
+      "quizId": "QZ01KC1SR8V7JC7F1Q7RCYD946HD"
     }
 bodyType: graphql
 description: Start a quiz session (user)
