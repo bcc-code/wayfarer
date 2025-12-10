@@ -12,6 +12,7 @@ query ProfilePage {
         body {
           html
         }
+        url
         managementType
         managedBy
       }
