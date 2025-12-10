@@ -1,18 +1,4 @@
 <script setup lang="ts">
-const { track } = useAnalytics()
-
-const colorMode = useColorMode()
-const colorModes = ['system', 'dark', 'light']
-
-watch(
-  () => colorMode.preference,
-  (newMode, oldMode) => {
-    if (oldMode) {
-      track(AnalyticsEvent.ColorModeChanged, { from: oldMode, to: newMode })
-    }
-  },
-)
-
 const { me } = useAuth()
 </script>
 
@@ -35,29 +21,14 @@ const { me } = useAuth()
           </div>
         </LocaleSelector>
         <hr class="border-border-default mx-3" />
-        <UDropdownMenu
-          :ui="{
-            content:
-              'bg-background-raised ring-border-default rounded-list w-(--reka-dropdown-menu-trigger-width)',
-          }"
-          :content="{ align: 'end', side: 'bottom', sideOffset: -4 }"
-          :items="
-            colorModes.map((mode) => ({
-              label: $t('settings.colorModes.' + mode),
-              value: mode,
-              type: 'checkbox',
-              checked: mode == colorMode.preference,
-              onSelect: () => (colorMode.preference = mode),
-            }))
-          "
-        >
+        <ColorModeSelector v-slot="{ selectedColorMode }">
           <div class="flex items-center justify-between gap-2.5 px-3 py-2">
             <p class="text-label">{{ $t('settings.colorMode') }}</p>
             <DesignButton size="small" variant="secondary" class="grow-0">
-              {{ $t('settings.colorModes.' + colorMode.preference) }}
+              {{ selectedColorMode?.name() }}
             </DesignButton>
           </div>
-        </UDropdownMenu>
+        </ColorModeSelector>
         <hr class="border-border-default mx-3" />
         <button class="flex items-center justify-between gap-2.5 px-3 py-2">
           <p class="text-label">{{ $t('settings.notifications') }}</p>
@@ -73,6 +44,14 @@ const { me } = useAuth()
           <p class="text-label">{{ $t('settings.addToHomeScreen') }}</p>
           <Icon name="lucide:chevron-right" class="size-6" />
         </button>
+        <hr class="border-border-default mx-3" />
+        <NuxtLink
+          to="https://bcc.media/privacy"
+          class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
+        >
+          <p class="text-label">{{ $t('settings.privacyPolicy') }}</p>
+          <Icon name="lucide:chevron-right" class="size-6" />
+        </NuxtLink>
         <hr class="border-border-default mx-3" />
         <NuxtLink
           :to="{ name: 'settings-consent' }"

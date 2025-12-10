@@ -15,17 +15,22 @@ const selectedLocale = computed({
   <DesignDrawer :title="$t('settings.language')">
     <slot :selected-locale="locales.find((l) => l.code === selectedLocale)" />
     <template #content>
-      <DesignButton
-        v-for="l in locales"
-        :key="l.code"
-        variant="secondary"
-        size="medium"
-        class="w-full"
-        @click="selectedLocale = l.code"
-      >
-        <span class="grow text-start">{{ l.name }}</span>
-        <Icon v-if="selectedLocale === l.code" name="lucide:check" />
-      </DesignButton>
+      <DesignPanel class="gap-list-section-inset flex flex-col">
+        <template v-for="(l, index) in locales" :key="l.code">
+          <hr v-if="index > 0" class="border-border-default mx-3" />
+          <button
+            class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
+            @click="selectedLocale = l.code"
+          >
+            <p class="text-label">{{ l.name }}</p>
+            <Icon
+              v-if="selectedLocale === l.code"
+              name="lucide:check"
+              class="size-6"
+            />
+          </button>
+        </template>
+      </DesignPanel>
     </template>
   </DesignDrawer>
 </template>

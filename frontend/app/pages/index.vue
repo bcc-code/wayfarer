@@ -23,6 +23,12 @@ onMounted(() => {
     navigateTo({ name: 'settings-consent' })
   }
 })
+
+const remotePendingConsents = computed(() => {
+  return data.value?.me.consentStatus.pendingConsents.filter(
+    (c) => c.managementType === ConsentManagementType.Remote,
+  )
+})
 </script>
 
 <template>
@@ -35,7 +41,7 @@ onMounted(() => {
 
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
-    <div v-else-if="data" class="space-y-list-section-gap">
+    <div v-else-if="data" class="space-y-list-section-gap p-list-outside">
       <ProfileProjectCard
         v-if="data.myCurrentProject"
         :project-name="data.myCurrentProject.name"
@@ -45,9 +51,7 @@ onMounted(() => {
       >
         <div v-if="showBanner" class="p-small">
           <ConsentCard
-            v-for="consent in data.me.consentStatus.pendingConsents.filter(
-              (c) => c.managementType === ConsentManagementType.Remote,
-            )"
+            v-for="consent in remotePendingConsents"
             :key="consent.id"
             :consent
             class="bg-background-indent!"

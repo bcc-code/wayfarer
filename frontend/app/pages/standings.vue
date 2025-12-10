@@ -17,17 +17,19 @@ const tab = computed({
 
 <template>
   <PageLayout :title="$t('pages.standings')">
-    <DesignTabs
-      v-model="tab"
-      :tabs="[
-        { label: $t('standings.global'), value: 'global' },
-        { label: $t('standings.local'), value: 'local' },
-        { label: $t('standings.unit'), value: 'unit' },
-      ]"
-      class="mb-default -mt-list-outside"
-    />
-    <StandingsGlobal v-if="tab == 'global'" />
-    <StandingsLocal v-if="tab == 'local'" />
-    <StandingsUnit v-if="tab == 'unit'" />
+    <div class="p-list-outside">
+      <DesignTabs
+        v-model="tab"
+        :tabs="[
+          { label: $t('standings.global'), value: 'global' },
+          { label: $t('standings.local'), value: 'local' },
+          { label: $t('standings.unit'), value: 'unit' },
+        ]"
+        class="mb-default -mt-list-outside"
+      />
+      <StandingsGlobal v-if="tab == 'global'" />
+      <StandingsLocal v-if="tab == 'local'" />
+      <StandingsUnit v-if="tab == 'unit'" />
+    </div>
   </PageLayout>
 </template>

@@ -8,7 +8,7 @@
     "yourAnswer": "Ditt svar"
   },
   "pages": {
-    "standings": "Ledertavle",
+    "standings": "Standings",
     "unit": "Din unit",
     "profile": "Din profil",
     "challenges": "Oppgaver",
@@ -19,7 +19,7 @@
     "consents": "Samtykke"
   },
   "navigation": {
-    "standings": "Ledertavle",
+    "standings": "Standings",
     "profile": "Profil",
     "challenges": "Oppgaver"
   },
@@ -36,7 +36,8 @@
     "notifications": "Varslinger",
     "notificationsEnabled": "På",
     "notificationsDisabled": "Av",
-    "addToHomeScreen": "Legg til app på hjem skjerm"
+    "addToHomeScreen": "Legg til app på hjem skjerm",
+    "privacyPolicy": "Personvernerklæring"
   },
   "standings": {
     "global": "Topp 20",
