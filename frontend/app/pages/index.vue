@@ -29,14 +29,24 @@ watch(
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <div v-else-if="data" class="space-y-list-section-gap">
-      <ConsentBanner v-if="showBanner" />
       <ProfileProjectCard
         v-if="data.myCurrentProject"
         :project-name="data.myCurrentProject.name"
         :score="data.myCurrentProject.leaderboard.me?.score"
         :rank="data.myCurrentProject.leaderboard.me?.rank"
         :achievements="data.myCurrentProject.achievements"
-      />
+      >
+        <div v-if="showBanner" class="p-small">
+          <ConsentCard
+            v-for="consent in data.me.consentStatus.pendingConsents.filter(
+              (c) => c.managementType === ConsentManagementType.Remote,
+            )"
+            :key="consent.id"
+            :consent
+            class="bg-background-indent!"
+          />
+        </div>
+      </ProfileProjectCard>
     </div>
   </PageLayout>
 </template>

@@ -13,6 +13,7 @@ query ProfilePage {
           html
         }
         managementType
+        managedBy
       }
     }
   }

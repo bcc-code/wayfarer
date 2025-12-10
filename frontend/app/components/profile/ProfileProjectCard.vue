@@ -34,6 +34,7 @@ defineProps<{
         </ProfileGetPoints>
       </div>
     </div>
+    <slot />
     <div class="p-medium gap-medium grid grid-cols-4">
       <AchievementBadge
         v-for="achievement in achievements"
