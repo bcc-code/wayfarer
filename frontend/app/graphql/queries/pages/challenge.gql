@@ -1,0 +1,87 @@
+query ChallengePage($challengeId: ID!) {
+  challenge(id: $challengeId) {
+    __typename
+    id
+    name
+    description
+    userEnrolledAt
+    userCompletedAt
+    ... on SimpleChallenge {
+      allowSelfCompletion
+    }
+    ... on ExternalChallenge {
+      url
+    }
+    ... on QuizChallenge {
+      quiz {
+        id
+        name
+        description
+        timeoutSeconds
+        randomizeQuestions
+        revealCorrectAnswers
+        allowRetakes
+        completionPoints
+        publishedAt
+        endTime
+        userCanStart
+        userSubmissions {
+          id
+          startedAt
+          completedAt
+          expiresAt
+          isExpired
+          score
+          maxScore
+          scorePercentage
+          scorePercentage
+          orderedQuestions {
+            __typename
+            id
+            questionText
+            questionOrder
+            timeoutSeconds
+            ... on NumberQuestion {
+              minValue
+              maxValue
+              stepValue
+            }
+            ... on PredefinedQuestion {
+              allowMultipleSelection
+              predefinedAnswers {
+                id
+                answerText
+                answerOrder
+                isCorrect
+              }
+            }
+          }
+          responses {
+            __typename
+            id
+            answeredAt
+            timeSpentSeconds
+            ... on FreeTextResponse {
+              textResponse
+            }
+            ... on JsonResponse {
+              jsonResponse
+            }
+            ... on NumberResponse {
+              numberResponse
+            }
+            ... on PredefinedResponse {
+              isCorrect
+              selectedAnswers {
+                id
+                answerText
+                answerOrder
+                isCorrect
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

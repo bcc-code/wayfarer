@@ -1215,13 +1215,8 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 
 // Quiz is the resolver for the quiz field.
 func (r *queryResolver) Quiz(ctx context.Context, id string) (*model.Quiz, error) {
-	// Use data loader to load quiz
-	thunk := r.Loaders.QuizByIDLoader.Load(ctx, id)
-	quiz, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load quiz: %w", err)
-	}
-	return quiz, nil
+	// Load quiz with visibility check
+	return r.LoadQuizWithVisibility(ctx, id)
 }
 
 // Quizzes is the resolver for the quizzes field.

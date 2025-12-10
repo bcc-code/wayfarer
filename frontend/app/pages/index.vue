@@ -1,45 +1,4 @@
 <script setup lang="ts">
-gql(`
-  query ProfilePage {
-    me {
-      id
-      name
-      consentStatus {
-        pendingConsents {
-          __typename
-          id
-          key
-          version
-          title
-          body {
-            html
-          }
-          managementType
-        }
-      }
-    }
-    myCurrentProject {
-      id
-      name
-      achievements {
-        id
-        name
-        description
-        image
-        hidden
-        achievedAt
-        points
-      }
-      leaderboard(entityType: PERSONS) {
-        me {
-          score
-          rank
-        }
-      }
-    }
-  }
-`)
-
 const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useProfilePageQuery({
   pause: computed(() => !isAuthReady.value),

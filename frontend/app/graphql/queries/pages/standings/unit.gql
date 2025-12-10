@@ -1,0 +1,16 @@
+query StandingsUnitPage {
+  myCurrentProject {
+    id
+    myTeam {
+      id
+      name
+      memberLeaderboard {
+        id
+        name
+        tags
+        rank
+        score
+      }
+    }
+  }
+}

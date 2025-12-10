@@ -1,36 +1,4 @@
 <script setup lang="ts">
-gql(`
-  query StandingsLocalPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter) {
-    me {
-      church {
-        id
-        name
-      }
-    }
-    myCurrentProject {
-      id
-      leaderboard(entityType: $entityType, filter: $filter) {
-        edges {
-          node {
-            id
-            name
-            score
-            rank
-            tags
-          }
-        }
-        me {
-          id
-          name
-          score
-          rank
-          tags
-        }
-      }
-    }
-  }
-`)
-
 const entityType = ref(LeaderboardEntityType.Persons)
 
 const { me } = useAuth()

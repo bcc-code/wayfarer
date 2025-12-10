@@ -17,12 +17,11 @@ WHERE project_id = ANY(@project_ids::text[])
 ORDER BY project_id, published_at DESC;
 
 -- name: GetQuizzesByChallengeIDs :many
+-- Batch version of GetQuizByChallengeID for dataloader
 SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
 FROM quizzes
 WHERE challenge_id = ANY(@challenge_ids::text[])
-    AND published_at IS NOT NULL
-    AND published_at <= NOW()
-ORDER BY challenge_id, published_at DESC;
+ORDER BY challenge_id;
 
 -- name: GetQuizzesFilteredCursor :many
 SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at

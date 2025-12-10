@@ -219,9 +219,7 @@ const GetQuizzesByChallengeIDs = `-- name: GetQuizzesByChallengeIDs :many
 SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
 FROM quizzes
 WHERE challenge_id = ANY($1::text[])
-    AND published_at IS NOT NULL
-    AND published_at <= NOW()
-ORDER BY challenge_id, published_at DESC
+ORDER BY challenge_id
 `
 
 type GetQuizzesByChallengeIDsRow struct {
@@ -242,6 +240,7 @@ type GetQuizzesByChallengeIDsRow struct {
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
+// Batch version of GetQuizByChallengeID for dataloader
 func (q *Queries) GetQuizzesByChallengeIDs(ctx context.Context, challengeIds []string) ([]*GetQuizzesByChallengeIDsRow, error) {
 	rows, err := q.db.Query(ctx, GetQuizzesByChallengeIDs, challengeIds)
 	if err != nil {

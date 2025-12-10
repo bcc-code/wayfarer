@@ -1,4 +1,12 @@
 {
+  "error": {
+    "title": "Oops! Noe gikk galt"
+  },
+  "quiz": {
+    "wrongAnswer": "Feil svar",
+    "correctAnswer": "Riktig svar",
+    "yourAnswer": "Ditt svar"
+  },
   "pages": {
     "standings": "Ledertavle",
     "unit": "Din unit",

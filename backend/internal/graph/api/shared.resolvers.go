@@ -113,22 +113,22 @@ func (r *eventResolver) ParentProject(ctx context.Context, obj *model.Event) (*m
 
 // Project is the resolver for the project field.
 func (r *externalChallengeResolver) Project(ctx context.Context, obj *model.ExternalChallenge) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: Project - project"))
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
 // Event is the resolver for the event field.
 func (r *externalChallengeResolver) Event(ctx context.Context, obj *model.ExternalChallenge) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: Event - event"))
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
 }
 
 // UserCompletedAt is the resolver for the userCompletedAt field.
 func (r *externalChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error) {
-	panic(fmt.Errorf("not implemented: UserCompletedAt - userCompletedAt"))
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
 }
 
 // UserEnrolledAt is the resolver for the userEnrolledAt field.
 func (r *externalChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error) {
-	panic(fmt.Errorf("not implemented: UserEnrolledAt - userEnrolledAt"))
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
 }
 
 // Quiz is the resolver for the quiz field.
@@ -664,27 +664,44 @@ func (r *quizAchievementResolver) Quiz(ctx context.Context, obj *model.QuizAchie
 
 // Project is the resolver for the project field.
 func (r *quizChallengeResolver) Project(ctx context.Context, obj *model.QuizChallenge) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: Project - project"))
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
 // Event is the resolver for the event field.
 func (r *quizChallengeResolver) Event(ctx context.Context, obj *model.QuizChallenge) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: Event - event"))
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
 }
 
 // UserCompletedAt is the resolver for the userCompletedAt field.
 func (r *quizChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error) {
-	panic(fmt.Errorf("not implemented: UserCompletedAt - userCompletedAt"))
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
 }
 
 // UserEnrolledAt is the resolver for the userEnrolledAt field.
 func (r *quizChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error) {
-	panic(fmt.Errorf("not implemented: UserEnrolledAt - userEnrolledAt"))
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
 }
 
 // Quiz is the resolver for the quiz field.
 func (r *quizChallengeResolver) Quiz(ctx context.Context, obj *model.QuizChallenge) (*model.Quiz, error) {
-	panic(fmt.Errorf("not implemented: Quiz - quiz"))
+	thunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, obj.ID)
+	quiz, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	if quiz == nil {
+		return nil, nil
+	}
+
+	// Check visibility for non-admins
+	userID, _ := middleware.GetUserID(ctx)
+	if userID == "" || !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
+		if quiz.PublishedAt == nil || quiz.PublishedAt.Time.After(time.Now()) {
+			return nil, nil // Return nil for field resolver
+		}
+	}
+
+	return quiz, nil
 }
 
 // Question is the resolver for the question field on QuizPredefinedAnswer.
@@ -1008,22 +1025,22 @@ func (r *simpleAchievementResolver) AchievedAt(ctx context.Context, obj *model.S
 
 // Project is the resolver for the project field.
 func (r *simpleChallengeResolver) Project(ctx context.Context, obj *model.SimpleChallenge) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: Project - project"))
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
 // Event is the resolver for the event field.
 func (r *simpleChallengeResolver) Event(ctx context.Context, obj *model.SimpleChallenge) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: Event - event"))
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
 }
 
 // UserCompletedAt is the resolver for the userCompletedAt field.
 func (r *simpleChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error) {
-	panic(fmt.Errorf("not implemented: UserCompletedAt - userCompletedAt"))
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
 }
 
 // UserEnrolledAt is the resolver for the userEnrolledAt field.
 func (r *simpleChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error) {
-	panic(fmt.Errorf("not implemented: UserEnrolledAt - userEnrolledAt"))
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
 }
 
 // Status is the resolver for the status field.
