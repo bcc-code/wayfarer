@@ -12,7 +12,7 @@ const { data, fetching, error } = useChallengesPageQuery({
     <ErrorState v-else-if="error" :error />
     <div
       v-else-if="data?.myCurrentProject.challenges.length"
-      class="space-y-list-section-gap"
+      class="space-y-list-section-gap p-list-outside"
     >
       <ChallengeCard
         v-for="challenge in data.myCurrentProject.challenges"
