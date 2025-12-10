@@ -60,7 +60,7 @@ const getColorClasses = (
         </p>
         <span
           v-if="isMe"
-          class="bg-accent text-on-accent text-caption flex gap-1 rounded-full px-1.5"
+          class="bg-accent text-on-accent text-caption flex gap-1 rounded-full pl-1.5 pr-2"
         >
           {{ $t('standings.you') }}
         </span>
