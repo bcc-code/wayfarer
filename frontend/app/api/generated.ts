@@ -2472,19 +2472,19 @@ export type ChallengePageQueryVariables = Exact<{
 
 
 export type ChallengePageQuery = { __typename?: 'Query', challenge:
-    | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any }
-    | { __typename: 'QuizChallenge', id: string, name: string, description: any, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, publishedAt?: any | null, endTime?: any | null, userCanStart: boolean, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, orderedQuestions: Array<
-            | { __typename?: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
-            | { __typename?: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
-            | { __typename?: 'NumberQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
-            | { __typename?: 'PredefinedQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+    | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null }
+    | { __typename: 'QuizChallenge', id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, publishedAt?: any | null, endTime?: any | null, userCanStart: boolean, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, orderedQuestions: Array<
+            | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+            | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+            | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+            | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
           >, responses: Array<
-            | { __typename?: 'FreeTextResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null }
-            | { __typename?: 'JsonResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null }
-            | { __typename?: 'NumberResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null }
-            | { __typename?: 'PredefinedResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null }
+            | { __typename: 'FreeTextResponse', textResponse: string, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null }
+            | { __typename: 'JsonResponse', jsonResponse: any, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null }
+            | { __typename: 'NumberResponse', numberResponse: number, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null }
+            | { __typename: 'PredefinedResponse', isCorrect?: boolean | null, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
           > }> } }
-    | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any }
+    | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null }
    };
 
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
@@ -3096,6 +3096,8 @@ export const ChallengePageDocument = gql`
     id
     name
     description
+    userEnrolledAt
+    userCompletedAt
     ... on SimpleChallenge {
       allowSelfCompletion
     }
@@ -3126,15 +3128,49 @@ export const ChallengePageDocument = gql`
           scorePercentage
           scorePercentage
           orderedQuestions {
+            __typename
             id
             questionText
             questionOrder
             timeoutSeconds
+            ... on NumberQuestion {
+              minValue
+              maxValue
+              stepValue
+            }
+            ... on PredefinedQuestion {
+              allowMultipleSelection
+              predefinedAnswers {
+                id
+                answerText
+                answerOrder
+                isCorrect
+              }
+            }
           }
           responses {
+            __typename
             id
             answeredAt
             timeSpentSeconds
+            ... on FreeTextResponse {
+              textResponse
+            }
+            ... on JsonResponse {
+              jsonResponse
+            }
+            ... on NumberResponse {
+              numberResponse
+            }
+            ... on PredefinedResponse {
+              isCorrect
+              selectedAnswers {
+                id
+                answerText
+                answerOrder
+                isCorrect
+              }
+            }
           }
         }
       }

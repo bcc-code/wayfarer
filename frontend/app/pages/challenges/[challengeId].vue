@@ -11,28 +11,18 @@ const { data, fetching, error } = useChallengePageQuery({
 </script>
 
 <template>
-  <PageLayout :title="$t('pages.challenge')">
-    <template #action>
-      <NuxtLink :to="{ name: 'challenges' }">
-        <DesignIconButton icon="lucide:x" />
-      </NuxtLink>
-    </template>
-
+  <div class="h-full">
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
-    <div v-else-if="data" class="gap-medium flex flex-col">
-      <QuizAlternative text="This is an alternative" />
-      <QuizAlternative text="This is a highlighted alternative" highlighted />
-      <QuizAlternative
-        text="This is a confirmed and wrong alternative"
-        confirmed
-        wrong
+    <template v-else-if="data">
+      <SimpleChallenge
+        v-if="data.challenge.__typename === 'SimpleChallenge'"
+        :challenge="data.challenge"
       />
-      <QuizAlternative
-        text="This is a confirmed and correct alternative"
-        confirmed
-        correct
+      <QuizChallenge
+        v-if="data.challenge.__typename === 'QuizChallenge'"
+        :challenge="data.challenge"
       />
-    </div>
-  </PageLayout>
+    </template>
+  </div>
 </template>

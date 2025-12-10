@@ -4,6 +4,8 @@ query ChallengePage($challengeId: ID!) {
     id
     name
     description
+    userEnrolledAt
+    userCompletedAt
     ... on SimpleChallenge {
       allowSelfCompletion
     }
@@ -34,15 +36,49 @@ query ChallengePage($challengeId: ID!) {
           scorePercentage
           scorePercentage
           orderedQuestions {
+            __typename
             id
             questionText
             questionOrder
             timeoutSeconds
+            ... on NumberQuestion {
+              minValue
+              maxValue
+              stepValue
+            }
+            ... on PredefinedQuestion {
+              allowMultipleSelection
+              predefinedAnswers {
+                id
+                answerText
+                answerOrder
+                isCorrect
+              }
+            }
           }
           responses {
+            __typename
             id
             answeredAt
             timeSpentSeconds
+            ... on FreeTextResponse {
+              textResponse
+            }
+            ... on JsonResponse {
+              jsonResponse
+            }
+            ... on NumberResponse {
+              numberResponse
+            }
+            ... on PredefinedResponse {
+              isCorrect
+              selectedAnswers {
+                id
+                answerText
+                answerOrder
+                isCorrect
+              }
+            }
           }
         }
       }

@@ -123,6 +123,14 @@ watch(
 )
 
 const { left, height, width, top } = useElementBounding(activeMenuItem)
+
+const showNavigation = computed(() => {
+  const path = route.path
+  if (path.startsWith('/settings')) return false
+  if (path === '/challenges') return true
+  if (path.startsWith('/challenges/')) return false
+  return true
+})
 </script>
 
 <template>
@@ -130,10 +138,7 @@ const { left, height, width, top } = useElementBounding(activeMenuItem)
     <div class="h-full">
       <slot />
     </div>
-    <div
-      v-if="!route.path.startsWith('/settings')"
-      class="fixed inset-x-0 bottom-0"
-    >
+    <div v-if="showNavigation" class="fixed inset-x-0 bottom-0">
       <ProgressiveBlur
         class="p-navigation-outside from-shadow-blank/0 to-shadow-default bg-linear-to-b"
       >
