@@ -1,0 +1,51 @@
+query ChallengePage($challengeId: ID!) {
+  challenge(id: $challengeId) {
+    __typename
+    id
+    name
+    description
+    ... on SimpleChallenge {
+      allowSelfCompletion
+    }
+    ... on ExternalChallenge {
+      url
+    }
+    ... on QuizChallenge {
+      quiz {
+        id
+        name
+        description
+        timeoutSeconds
+        randomizeQuestions
+        revealCorrectAnswers
+        allowRetakes
+        completionPoints
+        publishedAt
+        endTime
+        userCanStart
+        userSubmissions {
+          id
+          startedAt
+          completedAt
+          expiresAt
+          isExpired
+          score
+          maxScore
+          scorePercentage
+          scorePercentage
+          orderedQuestions {
+            id
+            questionText
+            questionOrder
+            timeoutSeconds
+          }
+          responses {
+            id
+            answeredAt
+            timeSpentSeconds
+          }
+        }
+      }
+    }
+  }
+}

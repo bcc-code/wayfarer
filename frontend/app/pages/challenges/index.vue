@@ -1,21 +1,4 @@
 <script setup lang="ts">
-gql(`
-  query ChallengesPage {
-    myCurrentProject {
-      challenges {
-        id
-        name
-        description
-        image
-        buttonText
-        publishedAt
-        endTime
-        visibleAt
-      }
-    }
-  }
-`)
-
 const { isAuthReady } = useAuthReady()
 
 const { data, fetching, error } = useChallengesPageQuery({

@@ -1,0 +1,29 @@
+query StandingsGlobalPage(
+  $entityType: LeaderboardEntityType!
+  $filter: LeaderboardFilter
+  $first: Int
+) {
+  myCurrentProject {
+    id
+    leaderboard(entityType: $entityType, filter: $filter, first: $first) {
+      edges {
+        node {
+          id
+          name
+          description
+          score
+          rank
+          tags
+        }
+      }
+      me {
+        id
+        name
+        description
+        score
+        rank
+        tags
+      }
+    }
+  }
+}

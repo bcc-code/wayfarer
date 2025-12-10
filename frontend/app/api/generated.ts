@@ -2230,28 +2230,6 @@ export type PointHistoryQuery = { __typename?: 'Query', myCurrentProject: { __ty
             | { __typename: 'StreakAchievement', id: string, name: string }
            | null } }> } } };
 
-export type StandingsGlobalPageQueryVariables = Exact<{
-  entityType: LeaderboardEntityType;
-  filter?: InputMaybe<LeaderboardFilter>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-}>;
-
-
-export type StandingsGlobalPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null } } };
-
-export type StandingsLocalPageQueryVariables = Exact<{
-  entityType: LeaderboardEntityType;
-  filter?: InputMaybe<LeaderboardFilter>;
-}>;
-
-
-export type StandingsLocalPageQuery = { __typename?: 'Query', me: { __typename?: 'User', church: { __typename?: 'Church', id: string, name: string } }, myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null } } };
-
-export type StandingsUnitPageQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type StandingsUnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, myTeam?: { __typename?: 'Team', id: string, name: string, memberLeaderboard: Array<{ __typename?: 'LeaderboardEntry', id: string, name: string, tags: Array<LeaderboardEntryTag>, rank?: number | null, score: number }> } | null } };
-
 export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -2488,6 +2466,74 @@ export type AssignTeamLeadMutationVariables = Exact<{
 
 export type AssignTeamLeadMutation = { __typename?: 'Mutation', assignTeamLead: { __typename?: 'Team', id: string } };
 
+export type ChallengePageQueryVariables = Exact<{
+  challengeId: Scalars['ID']['input'];
+}>;
+
+
+export type ChallengePageQuery = { __typename?: 'Query', challenge:
+    | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any }
+    | { __typename: 'QuizChallenge', id: string, name: string, description: any, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, publishedAt?: any | null, endTime?: any | null, userCanStart: boolean, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, orderedQuestions: Array<
+            | { __typename?: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+            | { __typename?: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+            | { __typename?: 'NumberQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+            | { __typename?: 'PredefinedQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+          >, responses: Array<
+            | { __typename?: 'FreeTextResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null }
+            | { __typename?: 'JsonResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null }
+            | { __typename?: 'NumberResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null }
+            | { __typename?: 'PredefinedResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null }
+          > }> } }
+    | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any }
+   };
+
+export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', challenges: Array<
+      | { __typename?: 'ExternalChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null }
+      | { __typename?: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null }
+      | { __typename?: 'SimpleChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null }
+    > } };
+
+export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, managementType: ConsentManagementType, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
+      | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename?: 'QuizAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
+    >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank?: number | null } | null } } };
+
+export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ConsentsPageQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
+
+export type StandingsGlobalPageQueryVariables = Exact<{
+  entityType: LeaderboardEntityType;
+  filter?: InputMaybe<LeaderboardFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type StandingsGlobalPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null } } };
+
+export type StandingsLocalPageQueryVariables = Exact<{
+  entityType: LeaderboardEntityType;
+  filter?: InputMaybe<LeaderboardFilter>;
+}>;
+
+
+export type StandingsLocalPageQuery = { __typename?: 'Query', me: { __typename?: 'User', church: { __typename?: 'Church', id: string, name: string } }, myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null } } };
+
+export type StandingsUnitPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type StandingsUnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, myTeam?: { __typename?: 'Team', id: string, name: string, memberLeaderboard: Array<{ __typename?: 'LeaderboardEntry', id: string, name: string, tags: Array<LeaderboardEntryTag>, rank?: number | null, score: number }> } | null } };
+
 export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -2620,42 +2666,6 @@ export type AdminUsersPageQueryVariables = Exact<{
 
 export type AdminUsersPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'UserEdge', cursor: string, node: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, church: { __typename?: 'Church', name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType }> } }> } };
 
-export type ChallengePageQueryVariables = Exact<{
-  challengeId: Scalars['ID']['input'];
-}>;
-
-
-export type ChallengePageQuery = { __typename?: 'Query', challenge:
-    | { __typename?: 'ExternalChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null }
-    | { __typename?: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null }
-    | { __typename?: 'SimpleChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null }
-   };
-
-export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', challenges: Array<
-      | { __typename?: 'ExternalChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null }
-      | { __typename?: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null }
-      | { __typename?: 'SimpleChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null }
-    > } };
-
-export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, managementType: ConsentManagementType, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
-      | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'QuizAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-    >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank?: number | null } | null } } };
-
-export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ConsentsPageQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
-
 
 export const ProjectRulesDocument = gql`
     query ProjectRules {
@@ -2722,94 +2732,6 @@ export const PointHistoryDocument = gql`
 
 export function usePointHistoryQuery(options?: Omit<Urql.UseQueryArgs<never, PointHistoryQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<PointHistoryQuery, PointHistoryQueryVariables | undefined>({ query: PointHistoryDocument, variables: undefined, ...options });
-};
-export const StandingsGlobalPageDocument = gql`
-    query StandingsGlobalPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter, $first: Int) {
-  myCurrentProject {
-    id
-    leaderboard(entityType: $entityType, filter: $filter, first: $first) {
-      edges {
-        node {
-          id
-          name
-          description
-          score
-          rank
-          tags
-        }
-      }
-      me {
-        id
-        name
-        description
-        score
-        rank
-        tags
-      }
-    }
-  }
-}
-    `;
-
-export function useStandingsGlobalPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsGlobalPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<StandingsGlobalPageQuery, StandingsGlobalPageQueryVariables | undefined>({ query: StandingsGlobalPageDocument, variables: undefined, ...options });
-};
-export const StandingsLocalPageDocument = gql`
-    query StandingsLocalPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter) {
-  me {
-    church {
-      id
-      name
-    }
-  }
-  myCurrentProject {
-    id
-    leaderboard(entityType: $entityType, filter: $filter) {
-      edges {
-        node {
-          id
-          name
-          score
-          rank
-          tags
-        }
-      }
-      me {
-        id
-        name
-        score
-        rank
-        tags
-      }
-    }
-  }
-}
-    `;
-
-export function useStandingsLocalPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsLocalPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<StandingsLocalPageQuery, StandingsLocalPageQueryVariables | undefined>({ query: StandingsLocalPageDocument, variables: undefined, ...options });
-};
-export const StandingsUnitPageDocument = gql`
-    query StandingsUnitPage {
-  myCurrentProject {
-    id
-    myTeam {
-      id
-      name
-      memberLeaderboard {
-        id
-        name
-        tags
-        rank
-        score
-      }
-    }
-  }
-}
-    `;
-
-export function useStandingsUnitPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsUnitPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<StandingsUnitPageQuery, StandingsUnitPageQueryVariables | undefined>({ query: StandingsUnitPageDocument, variables: undefined, ...options });
 };
 export const GetMeDocument = gql`
     query GetMe {
@@ -3166,6 +3088,271 @@ export const AssignTeamLeadDocument = gql`
 
 export function useAssignTeamLeadMutation() {
   return Urql.useMutation<AssignTeamLeadMutation, AssignTeamLeadMutationVariables>(AssignTeamLeadDocument);
+};
+export const ChallengePageDocument = gql`
+    query ChallengePage($challengeId: ID!) {
+  challenge(id: $challengeId) {
+    __typename
+    id
+    name
+    description
+    ... on SimpleChallenge {
+      allowSelfCompletion
+    }
+    ... on ExternalChallenge {
+      url
+    }
+    ... on QuizChallenge {
+      quiz {
+        id
+        name
+        description
+        timeoutSeconds
+        randomizeQuestions
+        revealCorrectAnswers
+        allowRetakes
+        completionPoints
+        publishedAt
+        endTime
+        userCanStart
+        userSubmissions {
+          id
+          startedAt
+          completedAt
+          expiresAt
+          isExpired
+          score
+          maxScore
+          scorePercentage
+          scorePercentage
+          orderedQuestions {
+            id
+            questionText
+            questionOrder
+            timeoutSeconds
+          }
+          responses {
+            id
+            answeredAt
+            timeSpentSeconds
+          }
+        }
+      }
+    }
+  }
+}
+    `;
+
+export function useChallengePageQuery(options?: Omit<Urql.UseQueryArgs<never, ChallengePageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ChallengePageQuery, ChallengePageQueryVariables | undefined>({ query: ChallengePageDocument, variables: undefined, ...options });
+};
+export const ChallengesPageDocument = gql`
+    query ChallengesPage {
+  myCurrentProject {
+    challenges {
+      id
+      name
+      description
+      image
+      buttonText
+      publishedAt
+      endTime
+      visibleAt
+    }
+  }
+}
+    `;
+
+export function useChallengesPageQuery(options?: Omit<Urql.UseQueryArgs<never, ChallengesPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ChallengesPageQuery, ChallengesPageQueryVariables | undefined>({ query: ChallengesPageDocument, variables: undefined, ...options });
+};
+export const ProfilePageDocument = gql`
+    query ProfilePage {
+  me {
+    id
+    name
+    consentStatus {
+      pendingConsents {
+        __typename
+        id
+        key
+        version
+        title
+        body {
+          html
+        }
+        managementType
+      }
+    }
+  }
+  myCurrentProject {
+    id
+    name
+    achievements {
+      id
+      name
+      description
+      image
+      hidden
+      achievedAt
+      points
+    }
+    leaderboard(entityType: PERSONS) {
+      me {
+        score
+        rank
+      }
+    }
+  }
+}
+    `;
+
+export function useProfilePageQuery(options?: Omit<Urql.UseQueryArgs<never, ProfilePageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ProfilePageQuery, ProfilePageQueryVariables | undefined>({ query: ProfilePageDocument, variables: undefined, ...options });
+};
+export const ConsentsPageDocument = gql`
+    query ConsentsPage {
+  me {
+    consentStatus {
+      pendingConsents {
+        __typename
+        id
+        key
+        version
+        title
+        body {
+          html
+        }
+        publishedAt
+        managedBy
+        managementType
+        url
+      }
+      acceptedConsents {
+        __typename
+        id
+        consent {
+          title
+          body {
+            html
+          }
+          managedBy
+          managementType
+          url
+        }
+        action
+        actionDate
+      }
+      rejectedConsents {
+        __typename
+        id
+        consent {
+          title
+          body {
+            html
+          }
+          managedBy
+          managementType
+          url
+        }
+        action
+        actionDate
+      }
+    }
+  }
+}
+    `;
+
+export function useConsentsPageQuery(options?: Omit<Urql.UseQueryArgs<never, ConsentsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ConsentsPageQuery, ConsentsPageQueryVariables | undefined>({ query: ConsentsPageDocument, variables: undefined, ...options });
+};
+export const StandingsGlobalPageDocument = gql`
+    query StandingsGlobalPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter, $first: Int) {
+  myCurrentProject {
+    id
+    leaderboard(entityType: $entityType, filter: $filter, first: $first) {
+      edges {
+        node {
+          id
+          name
+          description
+          score
+          rank
+          tags
+        }
+      }
+      me {
+        id
+        name
+        description
+        score
+        rank
+        tags
+      }
+    }
+  }
+}
+    `;
+
+export function useStandingsGlobalPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsGlobalPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<StandingsGlobalPageQuery, StandingsGlobalPageQueryVariables | undefined>({ query: StandingsGlobalPageDocument, variables: undefined, ...options });
+};
+export const StandingsLocalPageDocument = gql`
+    query StandingsLocalPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter) {
+  me {
+    church {
+      id
+      name
+    }
+  }
+  myCurrentProject {
+    id
+    leaderboard(entityType: $entityType, filter: $filter) {
+      edges {
+        node {
+          id
+          name
+          score
+          rank
+          tags
+        }
+      }
+      me {
+        id
+        name
+        score
+        rank
+        tags
+      }
+    }
+  }
+}
+    `;
+
+export function useStandingsLocalPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsLocalPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<StandingsLocalPageQuery, StandingsLocalPageQueryVariables | undefined>({ query: StandingsLocalPageDocument, variables: undefined, ...options });
+};
+export const StandingsUnitPageDocument = gql`
+    query StandingsUnitPage {
+  myCurrentProject {
+    id
+    myTeam {
+      id
+      name
+      memberLeaderboard {
+        id
+        name
+        tags
+        rank
+        score
+      }
+    }
+  }
+}
+    `;
+
+export function useStandingsUnitPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsUnitPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<StandingsUnitPageQuery, StandingsUnitPageQueryVariables | undefined>({ query: StandingsUnitPageDocument, variables: undefined, ...options });
 };
 export const AdminSidebarDocument = gql`
     query AdminSidebar {
@@ -3677,141 +3864,4 @@ export const AdminUsersPageDocument = gql`
 
 export function useAdminUsersPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminUsersPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminUsersPageQuery, AdminUsersPageQueryVariables | undefined>({ query: AdminUsersPageDocument, variables: undefined, ...options });
-};
-export const ChallengePageDocument = gql`
-    query ChallengePage($challengeId: ID!) {
-  challenge(id: $challengeId) {
-    id
-    name
-    description
-    image
-    buttonText
-    publishedAt
-    endTime
-  }
-}
-    `;
-
-export function useChallengePageQuery(options?: Omit<Urql.UseQueryArgs<never, ChallengePageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<ChallengePageQuery, ChallengePageQueryVariables | undefined>({ query: ChallengePageDocument, variables: undefined, ...options });
-};
-export const ChallengesPageDocument = gql`
-    query ChallengesPage {
-  myCurrentProject {
-    challenges {
-      id
-      name
-      description
-      image
-      buttonText
-      publishedAt
-      endTime
-      visibleAt
-    }
-  }
-}
-    `;
-
-export function useChallengesPageQuery(options?: Omit<Urql.UseQueryArgs<never, ChallengesPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<ChallengesPageQuery, ChallengesPageQueryVariables | undefined>({ query: ChallengesPageDocument, variables: undefined, ...options });
-};
-export const ProfilePageDocument = gql`
-    query ProfilePage {
-  me {
-    id
-    name
-    consentStatus {
-      pendingConsents {
-        __typename
-        id
-        key
-        version
-        title
-        body {
-          html
-        }
-        managementType
-      }
-    }
-  }
-  myCurrentProject {
-    id
-    name
-    achievements {
-      id
-      name
-      description
-      image
-      hidden
-      achievedAt
-      points
-    }
-    leaderboard(entityType: PERSONS) {
-      me {
-        score
-        rank
-      }
-    }
-  }
-}
-    `;
-
-export function useProfilePageQuery(options?: Omit<Urql.UseQueryArgs<never, ProfilePageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<ProfilePageQuery, ProfilePageQueryVariables | undefined>({ query: ProfilePageDocument, variables: undefined, ...options });
-};
-export const ConsentsPageDocument = gql`
-    query ConsentsPage {
-  me {
-    consentStatus {
-      pendingConsents {
-        __typename
-        id
-        key
-        version
-        title
-        body {
-          html
-        }
-        publishedAt
-        managedBy
-        managementType
-        url
-      }
-      acceptedConsents {
-        __typename
-        id
-        consent {
-          title
-          body {
-            html
-          }
-          managedBy
-          managementType
-          url
-        }
-        action
-        actionDate
-      }
-      rejectedConsents {
-        __typename
-        id
-        consent {
-          title
-          body {
-            html
-          }
-          managedBy
-          managementType
-          url
-        }
-        action
-        actionDate
-      }
-    }
-  }
-}
-    `;
-
-export function useConsentsPageQuery(options?: Omit<Urql.UseQueryArgs<never, ConsentsPageQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<ConsentsPageQuery, ConsentsPageQueryVariables | undefined>({ query: ConsentsPageDocument, variables: undefined, ...options });
 };

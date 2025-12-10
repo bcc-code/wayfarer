@@ -1,32 +1,4 @@
 <script setup lang="ts">
-gql(`
-  query StandingsGlobalPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter, $first: Int) {
-    myCurrentProject {
-      id
-      leaderboard(entityType: $entityType, filter: $filter, first: $first) {
-        edges {
-          node {
-            id
-            name
-            description
-            score
-            rank
-            tags
-          }
-        }
-        me {
-          id
-          name
-          description
-          score
-          rank
-          tags
-        }
-      }
-    }
-  }
-`)
-
 const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useStandingsGlobalPageQuery({
   variables: computed(() => ({

@@ -1,23 +1,4 @@
 <script setup lang="ts">
-gql(`
-  query StandingsUnitPage {
-    myCurrentProject {
-      id
-      myTeam {
-        id
-        name
-        memberLeaderboard {
-          id
-          name
-          tags
-          rank
-          score
-        }
-      }
-    }
-  }
-`)
-
 const { isTeamLead } = useAuth()
 const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useStandingsUnitPageQuery({

@@ -1,18 +1,4 @@
 <script setup lang="ts">
-gql(`
-  query ChallengePage($challengeId: ID!) {
-    challenge(id: $challengeId) {
-      id
-      name
-      description
-      image
-      buttonText
-      publishedAt
-      endTime
-    }
-  }
-`)
-
 const route = useRoute('challenges-challengeId')
 
 const { isAuthReady } = useAuthReady()

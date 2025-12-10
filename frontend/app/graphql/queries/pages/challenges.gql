@@ -1,0 +1,14 @@
+query ChallengesPage {
+  myCurrentProject {
+    challenges {
+      id
+      name
+      description
+      image
+      buttonText
+      publishedAt
+      endTime
+      visibleAt
+    }
+  }
+}
