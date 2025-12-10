@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
@@ -703,6 +704,10 @@ func (r *mutationResolver) StartQuiz(ctx context.Context, quizID string) (*model
 	if err != nil {
 		return nil, fmt.Errorf("failed to create submission: %w", err)
 	}
+
+	// Invalidate cached submissions for this user and quiz
+	r.Cache.Delete(cache.QuizSubmissionsByUserKey(userID))
+	r.Cache.Delete(cache.QuizSubmissionsByQuizKey(quizID))
 
 	return convertSubmissionRowToModel(submission), nil
 }
