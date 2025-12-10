@@ -2626,9 +2626,9 @@ export type ChallengePageQueryVariables = Exact<{
 
 
 export type ChallengePageQuery = { __typename?: 'Query', challenge:
-    | { __typename?: 'ExternalChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, userCompletedAt?: any | null }
-    | { __typename?: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, userCompletedAt?: any | null }
-    | { __typename?: 'SimpleChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, userCompletedAt?: any | null }
+    | { __typename?: 'ExternalChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null }
+    | { __typename?: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null }
+    | { __typename?: 'SimpleChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null }
    };
 
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
@@ -3688,7 +3688,6 @@ export const ChallengePageDocument = gql`
     buttonText
     publishedAt
     endTime
-    userCompletedAt
   }
 }
     `;

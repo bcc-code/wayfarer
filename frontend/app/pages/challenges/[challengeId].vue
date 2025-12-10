@@ -9,7 +9,6 @@ gql(`
       buttonText
       publishedAt
       endTime
-      userCompletedAt
     }
   }
 `)

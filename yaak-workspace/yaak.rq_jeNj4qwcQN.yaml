@@ -2,25 +2,65 @@ type: http_request
 model: http_request
 id: rq_jeNj4qwcQN
 createdAt: 2025-12-08T08:28:18.920390
-updatedAt: 2025-12-09T09:54:32.445886
+updatedAt: 2025-12-10T11:16:32.114819
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_U4FqjQ2Ma5
 authentication: {}
 authenticationType: null
 body:
-  query: |-
-    query {
+  query: |
+    {
       me {
         id
       }
-      challenge(id:"CL01K9VZ87EPZMZMK17E9KM7ZH8Z") {
+      challenge(id: "CL01K9VZ87EPZMZMK17E9KM7ZH8Z") {
+        __typename
         id
-        image
         name
         description
-        buttonText
-        userEnrolledAt
-        userCompletedAt
+        ... on SimpleChallenge {
+          allowSelfCompletion
+        }
+        ... on ExternalChallenge {
+          url
+        }
+        ... on QuizChallenge {
+          quiz {
+            id
+            name
+            description
+            timeoutSeconds
+            randomizeQuestions
+            revealCorrectAnswers
+            allowRetakes
+            completionPoints
+            publishedAt
+            endTime
+            userCanStart
+            userSubmissions {
+              id
+              startedAt
+              completedAt
+              expiresAt
+              isExpired
+              score
+              maxScore
+              scorePercentage
+              scorePercentage
+              orderedQuestions {
+                id
+                questionText
+                questionOrder
+                timeoutSeconds
+              }
+              responses {
+                id
+                answeredAt
+                timeSpentSeconds
+              }
+            }
+          }
+        }
       }
     }
   variables: ''
