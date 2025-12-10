@@ -233,6 +233,11 @@ func QuizKey(quizID string) string {
 	return PrefixQuiz + quizID
 }
 
+// QuizByChallengeKey builds a cache key for a quiz by challenge ID
+func QuizByChallengeKey(challengeID string) string {
+	return fmt.Sprintf("%schallenge:%s", PrefixQuiz, challengeID)
+}
+
 // QuizzesByProjectKey builds a cache key for quizzes in a project
 func QuizzesByProjectKey(projectID string) string {
 	return fmt.Sprintf("%s:project:%s", PrefixQuiz, projectID)

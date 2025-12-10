@@ -827,8 +827,13 @@ func (r *mutationResolver) BulkCompleteChallenges(ctx context.Context, target mo
 
 // Challenge is the resolver for the challenge field.
 func (r *queryResolver) Challenge(ctx context.Context, id string) (model.Challenge, error) {
-	// Use translation-aware wrapper to fetch challenge
-	return r.LoadChallengeWithTranslation(ctx, id)
+	// Load challenge with visibility check
+	challenge, err := r.LoadChallengeWithVisibility(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	// Apply translation
+	return r.ApplyTranslationToChallenge(ctx, challenge), nil
 }
 
 // Challenges is the resolver for the challenges field.
