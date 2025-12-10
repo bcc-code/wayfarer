@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/ulid"
 )
@@ -105,9 +106,20 @@ func (s *Seeder) seedReadingAchievements(projectID string, count int, stats *Sta
 		VALUES ($1)
 	`
 
+	// Create external content first, then link to article
+	externalContentQuery := `
+		INSERT INTO external_content (id, plan_id, task_id, content_id, content_type, published_at, synced_at, source)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`
+
+	externalContentTranslationQuery := `
+		INSERT INTO external_content_translations (external_content_id, language_code, title)
+		VALUES ($1, $2, $3)
+	`
+
 	articleQuery := `
-		INSERT INTO reading_achievement_articles (id, achievement_id, article_id, title, author, url)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO reading_achievement_articles (id, achievement_id, external_content_id)
+		VALUES ($1, $2, $3)
 	`
 
 	for i := 0; i < count; i++ {
@@ -142,25 +154,51 @@ func (s *Seeder) seedReadingAchievements(projectID string, count int, stats *Sta
 			return err
 		}
 
-		// Add 3-6 articles
+		// Add 3-6 articles via external content
 		numArticles := 3 + rand.Intn(4)
-		for j := 0; j < numArticles; j++ {
-			articleID := ulid.NewReadingAchievementID()
-			externalArticleID := fmt.Sprintf("ART-%d", rand.Intn(10000))
-			title := s.Fake.Lorem().Sentence(5)
-			author := s.Fake.Person().Name()
-			url := s.Fake.Internet().URL()
+		planID := fmt.Sprintf("seed-reading-plan-%s-%d", achievementID, i)
 
+		for j := 0; j < numArticles; j++ {
+			// Create external content
+			externalContentID := ulid.NewExternalContentID()
+			taskID := fmt.Sprintf("task-%d", j+1)
+			contentID := fmt.Sprintf("article-%d", rand.Intn(10000))
+			title := s.Fake.Lorem().Sentence(5)
+			now := time.Now()
+
+			_, err = s.DB.Pool.Exec(s.Ctx, externalContentQuery,
+				externalContentID,
+				planID,
+				taskID,
+				contentID,
+				"periodical_article",
+				now,
+				now,
+				"seed",
+			)
+			if err != nil {
+				return fmt.Errorf("failed to create external content: %w", err)
+			}
+
+			// Create translation for the external content
+			_, err = s.DB.Pool.Exec(s.Ctx, externalContentTranslationQuery,
+				externalContentID,
+				"en",
+				title,
+			)
+			if err != nil {
+				return fmt.Errorf("failed to create external content translation: %w", err)
+			}
+
+			// Create article linked to external content
+			articleID := ulid.NewReadingAchievementID()
 			_, err = s.DB.Pool.Exec(s.Ctx, articleQuery,
 				articleID,
 				achievementID,
-				externalArticleID,
-				title,
-				author,
-				url,
+				externalContentID,
 			)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to create reading achievement article: %w", err)
 			}
 		}
 
@@ -182,9 +220,20 @@ func (s *Seeder) seedListeningAchievements(projectID string, count int, stats *S
 		VALUES ($1)
 	`
 
+	// Create external content first, then link to track
+	externalContentQuery := `
+		INSERT INTO external_content (id, plan_id, task_id, content_id, content_type, published_at, synced_at, source)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`
+
+	externalContentTranslationQuery := `
+		INSERT INTO external_content_translations (external_content_id, language_code, title)
+		VALUES ($1, $2, $3)
+	`
+
 	trackQuery := `
-		INSERT INTO listening_achievement_tracks (id, achievement_id, track_id, name, description, image_url)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO listening_achievement_tracks (id, achievement_id, external_content_id)
+		VALUES ($1, $2, $3)
 	`
 
 	for i := 0; i < count; i++ {
@@ -219,25 +268,51 @@ func (s *Seeder) seedListeningAchievements(projectID string, count int, stats *S
 			return err
 		}
 
-		// Add 4-8 tracks
+		// Add 4-8 tracks via external content
 		numTracks := 4 + rand.Intn(5)
-		for j := 0; j < numTracks; j++ {
-			trackID := ulid.NewListeningAchievementID()
-			externalTrackID := fmt.Sprintf("TRK-%d", rand.Intn(10000))
-			trackName := s.Fake.Lorem().Sentence(3)
-			trackDesc := s.Fake.Lorem().Sentence(8)
-			trackImageURL := fmt.Sprintf("https://placecats.com/millie/%d/%d", 300+rand.Intn(100), 300+rand.Intn(100))
+		planID := fmt.Sprintf("seed-listening-plan-%s-%d", achievementID, i)
 
+		for j := 0; j < numTracks; j++ {
+			// Create external content
+			externalContentID := ulid.NewExternalContentID()
+			taskID := fmt.Sprintf("task-%d", j+1)
+			contentID := fmt.Sprintf("track-%d", rand.Intn(10000))
+			title := s.Fake.Lorem().Sentence(3)
+			now := time.Now()
+
+			_, err = s.DB.Pool.Exec(s.Ctx, externalContentQuery,
+				externalContentID,
+				planID,
+				taskID,
+				contentID,
+				"media_episode",
+				now,
+				now,
+				"seed",
+			)
+			if err != nil {
+				return fmt.Errorf("failed to create external content: %w", err)
+			}
+
+			// Create translation for the external content
+			_, err = s.DB.Pool.Exec(s.Ctx, externalContentTranslationQuery,
+				externalContentID,
+				"en",
+				title,
+			)
+			if err != nil {
+				return fmt.Errorf("failed to create external content translation: %w", err)
+			}
+
+			// Create track linked to external content
+			trackID := ulid.NewListeningAchievementID()
 			_, err = s.DB.Pool.Exec(s.Ctx, trackQuery,
 				trackID,
 				achievementID,
-				externalTrackID,
-				trackName,
-				trackDesc,
-				trackImageURL,
+				externalContentID,
 			)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to create listening achievement track: %w", err)
 			}
 		}
 

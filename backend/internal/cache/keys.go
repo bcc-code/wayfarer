@@ -82,6 +82,11 @@ const (
 	PrefixConsent        = "consent:"
 	PrefixUserConsents   = "userconsents:"
 	PrefixLatestConsents = "latestconsents"
+
+	// External content
+	PrefixExternalContent       = "externalcontent:"
+	PrefixExternalContentsFilter = "externalcontentsfilter:"
+	PrefixExternalContentsCount  = "externalcontentscount:"
 )
 
 // Key builders for different entity types
@@ -1095,4 +1100,76 @@ func UserConsentsKey(userID string) string {
 // LatestConsentsKey builds a cache key for all latest published consents
 func LatestConsentsKey() string {
 	return PrefixLatestConsents
+}
+
+// ExternalContentKey builds a cache key for external content by ID
+func ExternalContentKey(id string) string {
+	return PrefixExternalContent + id
+}
+
+// ExternalContentsFilterKey builds a cache key for filtered external content list
+func ExternalContentsFilterKey(params map[string]string) string {
+	if len(params) == 0 {
+		return PrefixExternalContentsFilter + "all"
+	}
+
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for a shorter key
+	hash := sha256.Sum256([]byte(builder.String()))
+	hashStr := hex.EncodeToString(hash[:])[:16]
+
+	return PrefixExternalContentsFilter + hashStr
+}
+
+// ExternalContentsCountKey builds a cache key for external content count
+func ExternalContentsCountKey(params map[string]string) string {
+	if len(params) == 0 {
+		return PrefixExternalContentsCount + "all"
+	}
+
+	// Sort keys for deterministic ordering
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build deterministic string from sorted key-value pairs
+	var builder strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			builder.WriteString(":")
+		}
+		builder.WriteString(k)
+		builder.WriteString("=")
+		builder.WriteString(params[k])
+	}
+
+	// Hash the parameter string for a shorter key
+	hash := sha256.Sum256([]byte(builder.String()))
+	hashStr := hex.EncodeToString(hash[:])[:16]
+
+	return PrefixExternalContentsCount + hashStr
+}
+
+// ExternalContentTranslationsKey builds a cache key for external content translations
+func ExternalContentTranslationsKey(externalContentID string) string {
+	return fmt.Sprintf("%stranslations:%s", PrefixExternalContent, externalContentID)
 }

@@ -1,0 +1,117 @@
+# External Content queries and mutations
+
+# ==================== Enums ====================
+
+enum ExternalContentType {
+    MEDIA_EPISODE
+    SONG
+    BOOK_CHAPTER
+    PERIODICAL_ARTICLE
+    BIBLE_CHAPTER
+    BIBLE_VERSES
+}
+
+enum ExternalContentSortBy {
+    CREATED_AT_ASC
+    CREATED_AT_DESC
+    PUBLISHED_AT_ASC
+    PUBLISHED_AT_DESC
+}
+
+# ==================== Types ====================
+
+type ExternalContent {
+    id: ID!
+    planId: String!
+    taskId: String!
+    contentId: String
+    contentType: ExternalContentType!
+    publishedAt: DateTime
+    source: String!
+    syncedAt: DateTime!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+
+    # Translations loaded via dataloader
+    translations: [ExternalContentTranslation!]! @goField(forceResolver: true)
+
+    # Convenience field for primary translation
+    title(languageCode: String): String @goField(forceResolver: true)
+}
+
+type ExternalContentTranslation {
+    languageCode: String!
+    title: String
+}
+
+type ExternalContentEdge {
+    cursor: String!
+    node: ExternalContent!
+}
+
+type ExternalContentConnection {
+    edges: [ExternalContentEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Input Types ====================
+
+input ExternalContentFilter {
+    planId: String
+    taskId: String
+    contentId: String
+    contentType: ExternalContentType
+    source: String
+    publishedAfter: DateTime
+    publishedBefore: DateTime
+    ids: [ID!]
+}
+
+input CreateReadingAchievementFromExternalContentInput {
+    name: String!
+    description: String!
+    image: String
+    projectId: ID!
+    eventId: ID
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+    externalContentIds: [ID!]!
+}
+
+input CreateListeningAchievementFromExternalContentInput {
+    name: String!
+    description: String!
+    image: String
+    projectId: ID!
+    eventId: ID
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+    externalContentIds: [ID!]!
+}
+
+# ==================== Queries ====================
+
+extend type Query {
+    # Admin-only queries for external content
+    externalContent(id: ID!): ExternalContent! @requireRole(roles: ["admin", "superadmin"])
+
+    externalContents(
+        filter: ExternalContentFilter!
+        sortBy: ExternalContentSortBy
+        first: Int
+        after: String
+        last: Int
+        before: String
+    ): ExternalContentConnection! @requireRole(roles: ["admin", "superadmin"])
+}
+
+# ==================== Mutations ====================
+
+extend type Mutation {
+    # Create achievements directly from external content
+    createReadingAchievementFromExternalContent(input: CreateReadingAchievementFromExternalContentInput!): ReadingAchievement! @requireRole(roles: ["admin", "superadmin"])
+    createListeningAchievementFromExternalContent(input: CreateListeningAchievementFromExternalContentInput!): ListeningAchievement! @requireRole(roles: ["admin", "superadmin"])
+}

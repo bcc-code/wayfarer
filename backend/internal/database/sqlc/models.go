@@ -222,12 +222,10 @@ type ListeningAchievement struct {
 }
 
 type ListeningAchievementTrack struct {
-	ID            string  `json:"id"`
-	AchievementID string  `json:"achievement_id"`
-	TrackID       string  `json:"track_id"`
-	Name          string  `json:"name"`
-	Description   *string `json:"description"`
-	ImageUrl      *string `json:"image_url"`
+	ID            string `json:"id"`
+	AchievementID string `json:"achievement_id"`
+	// Optional FK to external_content. If set, use external content instead of local metadata fields.
+	ExternalContentID string `json:"external_content_id"`
 }
 
 type ListeningAchievementTrackTranslation struct {
@@ -393,12 +391,10 @@ type ReadingAchievement struct {
 }
 
 type ReadingAchievementArticle struct {
-	ID            string  `json:"id"`
-	AchievementID string  `json:"achievement_id"`
-	ArticleID     string  `json:"article_id"`
-	Title         string  `json:"title"`
-	Author        string  `json:"author"`
-	Url           *string `json:"url"`
+	ID            string `json:"id"`
+	AchievementID string `json:"achievement_id"`
+	// Optional FK to external_content. If set, use external content instead of local metadata fields.
+	ExternalContentID string `json:"external_content_id"`
 }
 
 type ReadingAchievementArticleTranslation struct {

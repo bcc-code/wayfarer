@@ -92,16 +92,12 @@ type AgeRange {
 
 type Article {
     id: ID!
-    title: String!
-    author: String!
-    url: String
+    externalContent: ExternalContent! @goField(forceResolver: true)
 }
 
 type Track {
     id: ID!
-    name: String!
-    description: String!
-    image: String
+    externalContent: ExternalContent! @goField(forceResolver: true)
 }
 
 type Branding {
@@ -664,15 +660,11 @@ input ColorsInput {
 }
 
 input ArticleInput {
-    title: String!
-    author: String!
-    url: String
+    externalContentId: ID!
 }
 
 input TrackInput {
-    name: String!
-    description: String!
-    image: String
+    externalContentId: ID!
 }
 
 input CreateProjectInput {

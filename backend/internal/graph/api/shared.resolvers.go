@@ -21,6 +21,32 @@ import (
 	pgx "github.com/jackc/pgx/v5"
 )
 
+// ExternalContent is the resolver for the externalContent field.
+func (r *articleResolver) ExternalContent(ctx context.Context, obj *model.Article) (*model.ExternalContent, error) {
+	ec, err := r.DB.Queries.GetExternalContentByID(ctx, obj.ExternalContentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load external content: %w", err)
+	}
+
+	var publishedAt *scalars.DateTime
+	if ec.PublishedAt.Valid {
+		publishedAt = &scalars.DateTime{Time: ec.PublishedAt.Time}
+	}
+
+	return &model.ExternalContent{
+		ID:          ec.ID,
+		PlanID:      ec.PlanID,
+		TaskID:      ec.TaskID,
+		ContentID:   ec.ContentID,
+		ContentType: model.ExternalContentType(ec.ContentType),
+		PublishedAt: publishedAt,
+		Source:      ec.Source,
+		SyncedAt:    scalars.DateTime{Time: ec.SyncedAt.Time},
+		CreatedAt:   scalars.DateTime{Time: ec.CreatedAt.Time},
+		UpdatedAt:   scalars.DateTime{Time: ec.UpdatedAt.Time},
+	}, nil
+}
+
 // Challenges is the resolver for the challenges field.
 func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]model.Challenge, error) {
 	thunk := r.Loaders.ChallengesByEventLoader.Load(ctx, obj.ID)
@@ -181,13 +207,8 @@ func (r *listeningAchievementResolver) Tracks(ctx context.Context, obj *model.Li
 		return nil, fmt.Errorf("failed to load tracks: %w", err)
 	}
 
-	// Apply translations to each track
-	result := make([]model.Track, len(tracks))
-	for i, t := range tracks {
-		result[i] = r.ApplyTranslationToTrack(ctx, t)
-	}
-
-	return result, nil
+	// Track translations are now handled via ExternalContent
+	return tracks, nil
 }
 
 // HTML is the resolver for the html field.
@@ -820,13 +841,8 @@ func (r *readingAchievementResolver) Articles(ctx context.Context, obj *model.Re
 		return nil, fmt.Errorf("failed to load articles: %w", err)
 	}
 
-	// Apply translations to each article
-	result := make([]model.Article, len(articles))
-	for i, a := range articles {
-		result[i] = r.ApplyTranslationToArticle(ctx, a)
-	}
-
-	return result, nil
+	// Article translations are now handled via ExternalContent
+	return articles, nil
 }
 
 // Church is the resolver for the church field.
@@ -1472,6 +1488,32 @@ func (r *teamMemberResolver) User(ctx context.Context, obj *model.TeamMember) (*
 	return user, nil
 }
 
+// ExternalContent is the resolver for the externalContent field.
+func (r *trackResolver) ExternalContent(ctx context.Context, obj *model.Track) (*model.ExternalContent, error) {
+	ec, err := r.DB.Queries.GetExternalContentByID(ctx, obj.ExternalContentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load external content: %w", err)
+	}
+
+	var publishedAt *scalars.DateTime
+	if ec.PublishedAt.Valid {
+		publishedAt = &scalars.DateTime{Time: ec.PublishedAt.Time}
+	}
+
+	return &model.ExternalContent{
+		ID:          ec.ID,
+		PlanID:      ec.PlanID,
+		TaskID:      ec.TaskID,
+		ContentID:   ec.ContentID,
+		ContentType: model.ExternalContentType(ec.ContentType),
+		PublishedAt: publishedAt,
+		Source:      ec.Source,
+		SyncedAt:    scalars.DateTime{Time: ec.SyncedAt.Time},
+		CreatedAt:   scalars.DateTime{Time: ec.CreatedAt.Time},
+		UpdatedAt:   scalars.DateTime{Time: ec.UpdatedAt.Time},
+	}, nil
+}
+
 // Church is the resolver for the church field.
 func (r *userResolver) Church(ctx context.Context, obj *model.User) (*model.Church, error) {
 	// Use dataloader to fetch church (Load returns a Thunk that must be called)
@@ -1626,6 +1668,9 @@ func (r *userRoleResolver) Scope(ctx context.Context, obj *model.UserRole) (*mod
 	return obj.Scope, nil
 }
 
+// Article returns ArticleResolver implementation.
+func (r *Resolver) Article() ArticleResolver { return &articleResolver{r} }
+
 // Event returns EventResolver implementation.
 func (r *Resolver) Event() EventResolver { return &eventResolver{r} }
 
@@ -1726,12 +1771,16 @@ func (r *Resolver) Team() TeamResolver { return &teamResolver{r} }
 // TeamMember returns TeamMemberResolver implementation.
 func (r *Resolver) TeamMember() TeamMemberResolver { return &teamMemberResolver{r} }
 
+// Track returns TrackResolver implementation.
+func (r *Resolver) Track() TrackResolver { return &trackResolver{r} }
+
 // User returns UserResolver implementation.
 func (r *Resolver) User() UserResolver { return &userResolver{r} }
 
 // UserRole returns UserRoleResolver implementation.
 func (r *Resolver) UserRole() UserRoleResolver { return &userRoleResolver{r} }
 
+type articleResolver struct{ *Resolver }
 type eventResolver struct{ *Resolver }
 type externalChallengeResolver struct{ *Resolver }
 type freeTextQuestionResolver struct{ *Resolver }
@@ -1760,5 +1809,6 @@ type streakAchievementResolver struct{ *Resolver }
 type superTeamResolver struct{ *Resolver }
 type teamResolver struct{ *Resolver }
 type teamMemberResolver struct{ *Resolver }
+type trackResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
 type userRoleResolver struct{ *Resolver }

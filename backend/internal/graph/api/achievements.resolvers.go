@@ -148,15 +148,9 @@ func (r *mutationResolver) CreateReadingAchievement(ctx context.Context, input m
 		articleID := ulid.NewReadingAchievementID()
 
 		articleParams := sqlc.CreateReadingAchievementArticleParams{
-			ID:            articleID,
-			AchievementID: achievementID,
-			ArticleID:     articleInput.Title, // Using title as article_id for now
-			Title:         articleInput.Title,
-			Author:        articleInput.Author,
-		}
-
-		if articleInput.URL != nil {
-			articleParams.Url = *articleInput.URL
+			ID:                articleID,
+			AchievementID:     achievementID,
+			ExternalContentID: articleInput.ExternalContentID,
 		}
 
 		article, err := qtx.CreateReadingAchievementArticle(ctx, articleParams)
@@ -164,12 +158,12 @@ func (r *mutationResolver) CreateReadingAchievement(ctx context.Context, input m
 			return nil, fmt.Errorf("failed to create article: %w", err)
 		}
 
-		articles = append(articles, model.Article{
-			ID:     article.ID,
-			Title:  article.Title,
-			Author: article.Author,
-			URL:    article.Url,
-		})
+		articleModel := model.Article{
+			ID:                article.ID,
+			ExternalContentID: article.ExternalContentID,
+		}
+
+		articles = append(articles, articleModel)
 	}
 
 	// Commit transaction
@@ -268,15 +262,9 @@ func (r *mutationResolver) CreateListeningAchievement(ctx context.Context, input
 		trackID := ulid.NewListeningAchievementID()
 
 		trackParams := sqlc.CreateListeningAchievementTrackParams{
-			ID:            trackID,
-			AchievementID: achievementID,
-			TrackID:       trackInput.Name, // Using name as track_id for now
-			Name:          trackInput.Name,
-			Description:   trackInput.Description,
-		}
-
-		if trackInput.Image != nil {
-			trackParams.ImageUrl = *trackInput.Image
+			ID:                trackID,
+			AchievementID:     achievementID,
+			ExternalContentID: trackInput.ExternalContentID,
 		}
 
 		track, err := qtx.CreateListeningAchievementTrack(ctx, trackParams)
@@ -284,17 +272,12 @@ func (r *mutationResolver) CreateListeningAchievement(ctx context.Context, input
 			return nil, fmt.Errorf("failed to create track: %w", err)
 		}
 
-		description := ""
-		if track.Description != nil {
-			description = *track.Description
+		trackModel := model.Track{
+			ID:                track.ID,
+			ExternalContentID: track.ExternalContentID,
 		}
 
-		tracks = append(tracks, model.Track{
-			ID:          track.ID,
-			Name:        track.Name,
-			Description: description,
-			Image:       track.ImageUrl,
-		})
+		tracks = append(tracks, trackModel)
 	}
 
 	// Commit transaction
@@ -583,15 +566,11 @@ func (r *mutationResolver) UpdateReadingAchievement(ctx context.Context, id stri
 		// Create new articles
 		for _, articleInput := range input.Articles {
 			articleID := ulid.NewReadingAchievementID()
+
 			articleParams := sqlc.CreateReadingAchievementArticleParams{
-				ID:            articleID,
-				AchievementID: id,
-				ArticleID:     articleInput.Title,
-				Title:         articleInput.Title,
-				Author:        articleInput.Author,
-			}
-			if articleInput.URL != nil {
-				articleParams.Url = *articleInput.URL
+				ID:                articleID,
+				AchievementID:     id,
+				ExternalContentID: articleInput.ExternalContentID,
 			}
 
 			if _, err := qtx.CreateReadingAchievementArticle(ctx, articleParams); err != nil {
@@ -734,15 +713,11 @@ func (r *mutationResolver) UpdateListeningAchievement(ctx context.Context, id st
 		// Create new tracks
 		for _, trackInput := range input.Tracks {
 			trackID := ulid.NewListeningAchievementID()
+
 			trackParams := sqlc.CreateListeningAchievementTrackParams{
-				ID:            trackID,
-				AchievementID: id,
-				TrackID:       trackInput.Name,
-				Name:          trackInput.Name,
-				Description:   trackInput.Description,
-			}
-			if trackInput.Image != nil {
-				trackParams.ImageUrl = *trackInput.Image
+				ID:                trackID,
+				AchievementID:     id,
+				ExternalContentID: trackInput.ExternalContentID,
 			}
 
 			if _, err := qtx.CreateListeningAchievementTrack(ctx, trackParams); err != nil {

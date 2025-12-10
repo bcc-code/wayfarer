@@ -18,10 +18,7 @@ SELECT
         (SELECT jsonb_agg(
             jsonb_build_object(
                 'id', raa.id,
-                'article_id', raa.article_id,
-                'title', raa.title,
-                'author', raa.author,
-                'url', raa.url
+                'external_content_id', raa.external_content_id
             )
         )
         FROM reading_achievement_articles raa
@@ -34,10 +31,7 @@ SELECT
         (SELECT jsonb_agg(
             jsonb_build_object(
                 'id', lat.id,
-                'track_id', lat.track_id,
-                'name', lat.name,
-                'description', lat.description,
-                'image_url', lat.image_url
+                'external_content_id', lat.external_content_id
             )
         )
         FROM listening_achievement_tracks lat
@@ -100,10 +94,7 @@ SELECT
         (SELECT jsonb_agg(
             jsonb_build_object(
                 'id', raa.id,
-                'article_id', raa.article_id,
-                'title', raa.title,
-                'author', raa.author,
-                'url', raa.url
+                'external_content_id', raa.external_content_id
             )
         )
         FROM reading_achievement_articles raa
@@ -116,10 +107,7 @@ SELECT
         (SELECT jsonb_agg(
             jsonb_build_object(
                 'id', lat.id,
-                'track_id', lat.track_id,
-                'name', lat.name,
-                'description', lat.description,
-                'image_url', lat.image_url
+                'external_content_id', lat.external_content_id
             )
         )
         FROM listening_achievement_tracks lat
@@ -153,13 +141,13 @@ WHERE
     AND (@eventid::text = '' OR a.event_id = @eventid::text);
 
 -- name: GetArticlesByAchievementIDs :many
-SELECT id, achievement_id, article_id, title, author, url
+SELECT id, achievement_id, external_content_id
 FROM reading_achievement_articles
 WHERE achievement_id = ANY(@achievement_ids::text[])
 ORDER BY achievement_id;
 
 -- name: GetTracksByAchievementIDs :many
-SELECT id, achievement_id, track_id, name, description, image_url
+SELECT id, achievement_id, external_content_id
 FROM listening_achievement_tracks
 WHERE achievement_id = ANY(@achievement_ids::text[])
 ORDER BY achievement_id;
@@ -199,17 +187,11 @@ VALUES (@achievement_id::text);
 INSERT INTO reading_achievement_articles (
     id,
     achievement_id,
-    article_id,
-    title,
-    author,
-    url
+    external_content_id
 ) VALUES (
     @id::text,
     @achievement_id::text,
-    @article_id::text,
-    @title::text,
-    @author::text,
-    @url::text
+    @external_content_id::text
 ) RETURNING *;
 
 -- name: CreateListeningAchievementJunction :exec
@@ -220,17 +202,11 @@ VALUES (@achievement_id::text);
 INSERT INTO listening_achievement_tracks (
     id,
     achievement_id,
-    track_id,
-    name,
-    description,
-    image_url
+    external_content_id
 ) VALUES (
     @id::text,
     @achievement_id::text,
-    @track_id::text,
-    @name::text,
-    @description::text,
-    @image_url::text
+    @external_content_id::text
 ) RETURNING *;
 
 -- name: CreateStreakAchievementData :exec
@@ -349,3 +325,39 @@ FROM user_achievements
 WHERE (user_id, achievement_id) IN (
     SELECT unnest(@user_ids::text[]), unnest(@achievement_ids::text[])
 );
+
+-- ==================== External Content Operations ====================
+
+-- name: GetArticlesWithExternalContent :many
+-- Get articles with external content joined
+SELECT
+    raa.id,
+    raa.achievement_id,
+    raa.external_content_id,
+    ec.plan_id AS external_plan_id,
+    ec.task_id AS external_task_id,
+    ec.content_id AS external_content_id_value,
+    ec.content_type AS external_content_type,
+    ec.published_at AS external_published_at,
+    ec.source AS external_source
+FROM reading_achievement_articles raa
+INNER JOIN external_content ec ON raa.external_content_id = ec.id
+WHERE raa.achievement_id = ANY(@achievementids::text[])
+ORDER BY raa.achievement_id;
+
+-- name: GetTracksWithExternalContent :many
+-- Get tracks with external content joined
+SELECT
+    lat.id,
+    lat.achievement_id,
+    lat.external_content_id,
+    ec.plan_id AS external_plan_id,
+    ec.task_id AS external_task_id,
+    ec.content_id AS external_content_id_value,
+    ec.content_type AS external_content_type,
+    ec.published_at AS external_published_at,
+    ec.source AS external_source
+FROM listening_achievement_tracks lat
+INNER JOIN external_content ec ON lat.external_content_id = ec.id
+WHERE lat.achievement_id = ANY(@achievementids::text[])
+ORDER BY lat.achievement_id;

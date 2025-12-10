@@ -40,16 +40,9 @@ func tracksByAchievementBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 
 			// Group tracks by achievement ID and convert to GraphQL model
 			for _, row := range rows {
-				description := ""
-				if row.Description != nil {
-					description = *row.Description
-				}
-
 				track := model.Track{
-					ID:          row.ID, // Use the database row ID, not TrackID
-					Name:        row.Name,
-					Description: description,
-					Image:       row.ImageUrl,
+					ID:                row.ID,
+					ExternalContentID: row.ExternalContentID,
 				}
 				tracksByAchievement[row.AchievementID] = append(tracksByAchievement[row.AchievementID], track)
 			}

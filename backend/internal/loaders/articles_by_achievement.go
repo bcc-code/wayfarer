@@ -41,10 +41,8 @@ func articlesByAchievementBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 			// Group articles by achievement ID and convert to GraphQL model
 			for _, row := range rows {
 				article := model.Article{
-					ID:     row.ID, // Use the database row ID, not ArticleID
-					Title:  row.Title,
-					Author: row.Author,
-					URL:    row.Url,
+					ID:                row.ID,
+					ExternalContentID: row.ExternalContentID,
 				}
 				articlesByAchievement[row.AchievementID] = append(articlesByAchievement[row.AchievementID], article)
 			}

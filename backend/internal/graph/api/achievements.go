@@ -167,16 +167,9 @@ func convertRowToReadingAchievement(row *sqlc.GetAchievementsFilteredCursorRow, 
 
 	articles := make([]model.Article, 0, len(articlesData))
 	for _, articleData := range articlesData {
-		var url *string
-		if urlVal, ok := articleData["url"]; ok && urlVal != nil {
-			urlStr := urlVal.(string)
-			url = &urlStr
-		}
 		article := model.Article{
-			ID:     articleData["id"].(string),
-			Title:  articleData["title"].(string),
-			Author: articleData["author"].(string),
-			URL:    url,
+			ID:                articleData["id"].(string),
+			ExternalContentID: articleData["external_content_id"].(string),
 		}
 		articles = append(articles, article)
 	}
@@ -212,21 +205,9 @@ func convertRowToListeningAchievement(row *sqlc.GetAchievementsFilteredCursorRow
 
 	tracks := make([]model.Track, 0, len(tracksData))
 	for _, trackData := range tracksData {
-		description := ""
-		if desc, ok := trackData["description"]; ok && desc != nil {
-			description = desc.(string)
-		}
-		var image *string
-		if img, ok := trackData["image_url"]; ok && img != nil {
-			imageURL := img.(string)
-			image = &imageURL
-		}
-
 		track := model.Track{
-			ID:          trackData["id"].(string),
-			Name:        trackData["name"].(string),
-			Description: description,
-			Image:       image,
+			ID:                trackData["id"].(string),
+			ExternalContentID: trackData["external_content_id"].(string),
 		}
 		tracks = append(tracks, track)
 	}

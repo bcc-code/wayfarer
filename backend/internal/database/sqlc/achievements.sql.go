@@ -184,47 +184,24 @@ const CreateListeningAchievementTrack = `-- name: CreateListeningAchievementTrac
 INSERT INTO listening_achievement_tracks (
     id,
     achievement_id,
-    track_id,
-    name,
-    description,
-    image_url
+    external_content_id
 ) VALUES (
     $1::text,
     $2::text,
-    $3::text,
-    $4::text,
-    $5::text,
-    $6::text
-) RETURNING id, achievement_id, track_id, name, description, image_url
+    $3::text
+) RETURNING id, achievement_id, external_content_id
 `
 
 type CreateListeningAchievementTrackParams struct {
-	ID            string `json:"id"`
-	AchievementID string `json:"achievement_id"`
-	TrackID       string `json:"track_id"`
-	Name          string `json:"name"`
-	Description   string `json:"description"`
-	ImageUrl      string `json:"image_url"`
+	ID                string `json:"id"`
+	AchievementID     string `json:"achievement_id"`
+	ExternalContentID string `json:"external_content_id"`
 }
 
 func (q *Queries) CreateListeningAchievementTrack(ctx context.Context, arg CreateListeningAchievementTrackParams) (*ListeningAchievementTrack, error) {
-	row := q.db.QueryRow(ctx, CreateListeningAchievementTrack,
-		arg.ID,
-		arg.AchievementID,
-		arg.TrackID,
-		arg.Name,
-		arg.Description,
-		arg.ImageUrl,
-	)
+	row := q.db.QueryRow(ctx, CreateListeningAchievementTrack, arg.ID, arg.AchievementID, arg.ExternalContentID)
 	var i ListeningAchievementTrack
-	err := row.Scan(
-		&i.ID,
-		&i.AchievementID,
-		&i.TrackID,
-		&i.Name,
-		&i.Description,
-		&i.ImageUrl,
-	)
+	err := row.Scan(&i.ID, &i.AchievementID, &i.ExternalContentID)
 	return &i, err
 }
 
@@ -232,47 +209,24 @@ const CreateReadingAchievementArticle = `-- name: CreateReadingAchievementArticl
 INSERT INTO reading_achievement_articles (
     id,
     achievement_id,
-    article_id,
-    title,
-    author,
-    url
+    external_content_id
 ) VALUES (
     $1::text,
     $2::text,
-    $3::text,
-    $4::text,
-    $5::text,
-    $6::text
-) RETURNING id, achievement_id, article_id, title, author, url
+    $3::text
+) RETURNING id, achievement_id, external_content_id
 `
 
 type CreateReadingAchievementArticleParams struct {
-	ID            string `json:"id"`
-	AchievementID string `json:"achievement_id"`
-	ArticleID     string `json:"article_id"`
-	Title         string `json:"title"`
-	Author        string `json:"author"`
-	Url           string `json:"url"`
+	ID                string `json:"id"`
+	AchievementID     string `json:"achievement_id"`
+	ExternalContentID string `json:"external_content_id"`
 }
 
 func (q *Queries) CreateReadingAchievementArticle(ctx context.Context, arg CreateReadingAchievementArticleParams) (*ReadingAchievementArticle, error) {
-	row := q.db.QueryRow(ctx, CreateReadingAchievementArticle,
-		arg.ID,
-		arg.AchievementID,
-		arg.ArticleID,
-		arg.Title,
-		arg.Author,
-		arg.Url,
-	)
+	row := q.db.QueryRow(ctx, CreateReadingAchievementArticle, arg.ID, arg.AchievementID, arg.ExternalContentID)
 	var i ReadingAchievementArticle
-	err := row.Scan(
-		&i.ID,
-		&i.AchievementID,
-		&i.ArticleID,
-		&i.Title,
-		&i.Author,
-		&i.Url,
-	)
+	err := row.Scan(&i.ID, &i.AchievementID, &i.ExternalContentID)
 	return &i, err
 }
 
@@ -361,10 +315,7 @@ SELECT
         (SELECT jsonb_agg(
             jsonb_build_object(
                 'id', raa.id,
-                'article_id', raa.article_id,
-                'title', raa.title,
-                'author', raa.author,
-                'url', raa.url
+                'external_content_id', raa.external_content_id
             )
         )
         FROM reading_achievement_articles raa
@@ -377,10 +328,7 @@ SELECT
         (SELECT jsonb_agg(
             jsonb_build_object(
                 'id', lat.id,
-                'track_id', lat.track_id,
-                'name', lat.name,
-                'description', lat.description,
-                'image_url', lat.image_url
+                'external_content_id', lat.external_content_id
             )
         )
         FROM listening_achievement_tracks lat
@@ -561,10 +509,7 @@ SELECT
         (SELECT jsonb_agg(
             jsonb_build_object(
                 'id', raa.id,
-                'article_id', raa.article_id,
-                'title', raa.title,
-                'author', raa.author,
-                'url', raa.url
+                'external_content_id', raa.external_content_id
             )
         )
         FROM reading_achievement_articles raa
@@ -577,10 +522,7 @@ SELECT
         (SELECT jsonb_agg(
             jsonb_build_object(
                 'id', lat.id,
-                'track_id', lat.track_id,
-                'name', lat.name,
-                'description', lat.description,
-                'image_url', lat.image_url
+                'external_content_id', lat.external_content_id
             )
         )
         FROM listening_achievement_tracks lat
@@ -685,7 +627,7 @@ func (q *Queries) GetAchievementsFilteredCursor(ctx context.Context, arg GetAchi
 }
 
 const GetArticlesByAchievementIDs = `-- name: GetArticlesByAchievementIDs :many
-SELECT id, achievement_id, article_id, title, author, url
+SELECT id, achievement_id, external_content_id
 FROM reading_achievement_articles
 WHERE achievement_id = ANY($1::text[])
 ORDER BY achievement_id
@@ -700,13 +642,68 @@ func (q *Queries) GetArticlesByAchievementIDs(ctx context.Context, achievementId
 	items := []*ReadingAchievementArticle{}
 	for rows.Next() {
 		var i ReadingAchievementArticle
+		if err := rows.Scan(&i.ID, &i.AchievementID, &i.ExternalContentID); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetArticlesWithExternalContent = `-- name: GetArticlesWithExternalContent :many
+
+SELECT
+    raa.id,
+    raa.achievement_id,
+    raa.external_content_id,
+    ec.plan_id AS external_plan_id,
+    ec.task_id AS external_task_id,
+    ec.content_id AS external_content_id_value,
+    ec.content_type AS external_content_type,
+    ec.published_at AS external_published_at,
+    ec.source AS external_source
+FROM reading_achievement_articles raa
+INNER JOIN external_content ec ON raa.external_content_id = ec.id
+WHERE raa.achievement_id = ANY($1::text[])
+ORDER BY raa.achievement_id
+`
+
+type GetArticlesWithExternalContentRow struct {
+	ID                     string             `json:"id"`
+	AchievementID          string             `json:"achievement_id"`
+	ExternalContentID      string             `json:"external_content_id"`
+	ExternalPlanID         string             `json:"external_plan_id"`
+	ExternalTaskID         string             `json:"external_task_id"`
+	ExternalContentIDValue *string            `json:"external_content_id_value"`
+	ExternalContentType    string             `json:"external_content_type"`
+	ExternalPublishedAt    pgtype.Timestamptz `json:"external_published_at"`
+	ExternalSource         string             `json:"external_source"`
+}
+
+// ==================== External Content Operations ====================
+// Get articles with external content joined
+func (q *Queries) GetArticlesWithExternalContent(ctx context.Context, achievementids []string) ([]*GetArticlesWithExternalContentRow, error) {
+	rows, err := q.db.Query(ctx, GetArticlesWithExternalContent, achievementids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetArticlesWithExternalContentRow{}
+	for rows.Next() {
+		var i GetArticlesWithExternalContentRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.AchievementID,
-			&i.ArticleID,
-			&i.Title,
-			&i.Author,
-			&i.Url,
+			&i.ExternalContentID,
+			&i.ExternalPlanID,
+			&i.ExternalTaskID,
+			&i.ExternalContentIDValue,
+			&i.ExternalContentType,
+			&i.ExternalPublishedAt,
+			&i.ExternalSource,
 		); err != nil {
 			return nil, err
 		}
@@ -752,7 +749,7 @@ func (q *Queries) GetBulkUserAchievementTimestamps(ctx context.Context, arg GetB
 }
 
 const GetTracksByAchievementIDs = `-- name: GetTracksByAchievementIDs :many
-SELECT id, achievement_id, track_id, name, description, image_url
+SELECT id, achievement_id, external_content_id
 FROM listening_achievement_tracks
 WHERE achievement_id = ANY($1::text[])
 ORDER BY achievement_id
@@ -767,13 +764,66 @@ func (q *Queries) GetTracksByAchievementIDs(ctx context.Context, achievementIds 
 	items := []*ListeningAchievementTrack{}
 	for rows.Next() {
 		var i ListeningAchievementTrack
+		if err := rows.Scan(&i.ID, &i.AchievementID, &i.ExternalContentID); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetTracksWithExternalContent = `-- name: GetTracksWithExternalContent :many
+SELECT
+    lat.id,
+    lat.achievement_id,
+    lat.external_content_id,
+    ec.plan_id AS external_plan_id,
+    ec.task_id AS external_task_id,
+    ec.content_id AS external_content_id_value,
+    ec.content_type AS external_content_type,
+    ec.published_at AS external_published_at,
+    ec.source AS external_source
+FROM listening_achievement_tracks lat
+INNER JOIN external_content ec ON lat.external_content_id = ec.id
+WHERE lat.achievement_id = ANY($1::text[])
+ORDER BY lat.achievement_id
+`
+
+type GetTracksWithExternalContentRow struct {
+	ID                     string             `json:"id"`
+	AchievementID          string             `json:"achievement_id"`
+	ExternalContentID      string             `json:"external_content_id"`
+	ExternalPlanID         string             `json:"external_plan_id"`
+	ExternalTaskID         string             `json:"external_task_id"`
+	ExternalContentIDValue *string            `json:"external_content_id_value"`
+	ExternalContentType    string             `json:"external_content_type"`
+	ExternalPublishedAt    pgtype.Timestamptz `json:"external_published_at"`
+	ExternalSource         string             `json:"external_source"`
+}
+
+// Get tracks with external content joined
+func (q *Queries) GetTracksWithExternalContent(ctx context.Context, achievementids []string) ([]*GetTracksWithExternalContentRow, error) {
+	rows, err := q.db.Query(ctx, GetTracksWithExternalContent, achievementids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetTracksWithExternalContentRow{}
+	for rows.Next() {
+		var i GetTracksWithExternalContentRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.AchievementID,
-			&i.TrackID,
-			&i.Name,
-			&i.Description,
-			&i.ImageUrl,
+			&i.ExternalContentID,
+			&i.ExternalPlanID,
+			&i.ExternalTaskID,
+			&i.ExternalContentIDValue,
+			&i.ExternalContentType,
+			&i.ExternalPublishedAt,
+			&i.ExternalSource,
 		); err != nil {
 			return nil, err
 		}

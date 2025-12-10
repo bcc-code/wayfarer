@@ -14,6 +14,7 @@ schema:
   - ../gql/scoring.graphqls
   - ../gql/consents.graphqls
   - ../gql/quizzes.graphqls
+  - ../gql/external_content.graphqls
 
 # Generated code locations
 exec:
@@ -445,6 +446,29 @@ models:
         type: "*string"
       QuizID:
         type: string
+
+  Article:
+    fields:
+      externalContent:
+        resolver: true
+    extraFields:
+      ExternalContentID:
+        type: string
+
+  Track:
+    fields:
+      externalContent:
+        resolver: true
+    extraFields:
+      ExternalContentID:
+        type: string
+
+  ExternalContent:
+    fields:
+      translations:
+        resolver: true
+      title:
+        resolver: true
 
 # Autobind - automatically bind Go types to GraphQL types if they match by name
 autobind:

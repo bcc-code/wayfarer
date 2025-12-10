@@ -62,3 +62,42 @@ SELECT COUNT(*) FROM external_content WHERE plan_id = @planid::text;
 
 -- name: CountExternalContentBySource :one
 SELECT COUNT(*) FROM external_content WHERE source = @source::text;
+
+-- ==================== Admin Search Queries ====================
+
+-- name: SearchExternalContentAdmin :many
+-- Admin search with filters
+SELECT * FROM external_content
+WHERE
+    (@planid::text = '' OR plan_id = @planid::text)
+    AND (@taskid::text = '' OR task_id = @taskid::text)
+    AND (@contentid::text = '' OR content_id = @contentid::text)
+    AND (@contenttype::text = '' OR content_type = @contenttype::text)
+    AND (@source::text = '' OR source = @source::text)
+    AND (@publishedafter::timestamptz IS NULL OR published_at >= @publishedafter::timestamptz)
+    AND (@publishedbefore::timestamptz IS NULL OR published_at <= @publishedbefore::timestamptz)
+ORDER BY
+    CASE WHEN @sortby::text = 'published_at_desc' THEN published_at END DESC NULLS LAST,
+    CASE WHEN @sortby::text = 'published_at_asc' THEN published_at END ASC NULLS LAST,
+    CASE WHEN @sortby::text = 'created_at_desc' OR @sortby::text = '' THEN created_at END DESC,
+    CASE WHEN @sortby::text = 'created_at_asc' THEN created_at END ASC
+LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END
+OFFSET CASE WHEN @queryoffset::int IS NULL THEN 0 ELSE @queryoffset::int END;
+
+-- name: CountExternalContentAdmin :one
+-- Count for pagination
+SELECT COUNT(*) FROM external_content
+WHERE
+    (@planid::text = '' OR plan_id = @planid::text)
+    AND (@taskid::text = '' OR task_id = @taskid::text)
+    AND (@contentid::text = '' OR content_id = @contentid::text)
+    AND (@contenttype::text = '' OR content_type = @contenttype::text)
+    AND (@source::text = '' OR source = @source::text)
+    AND (@publishedafter::timestamptz IS NULL OR published_at >= @publishedafter::timestamptz)
+    AND (@publishedbefore::timestamptz IS NULL OR published_at <= @publishedbefore::timestamptz);
+
+-- name: GetExternalContentByID :one
+SELECT * FROM external_content WHERE id = @id;
+
+-- name: GetExternalContentByIDs :many
+SELECT * FROM external_content WHERE id = ANY(@ids::text[]);
