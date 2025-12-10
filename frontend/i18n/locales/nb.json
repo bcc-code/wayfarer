@@ -74,7 +74,8 @@
     "change": "Endre",
     "goToConsent": "Gå til samtykke",
     "continue": "Gå videre",
-    "changeDescription": "For å endre samtykket ditt, kontakt oss på {email}"
+    "changeDescription": "For å endre samtykket ditt, kontakt oss på {email}",
+    "changeConsent": "Endre samtykke"
   },
   "achievement": {
     "title": "Utmerkelse",

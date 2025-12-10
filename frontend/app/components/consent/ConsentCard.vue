@@ -156,7 +156,7 @@ const changing = ref(false)
             <Icon name="lucide:check" class="size-6" />
             {{ $t('consent.accepted') }}
           </span>
-          <DesignDrawer :title="$t('consent.change')">
+          <DesignDrawer :title="$t('consent.changeConsent')">
             <DesignButton size="small" variant="secondary" class="grow-0">
               {{ $t('consent.change') }}
             </DesignButton>
