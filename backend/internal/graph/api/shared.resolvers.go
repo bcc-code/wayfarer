@@ -97,12 +97,12 @@ func (r *externalChallengeResolver) Event(ctx context.Context, obj *model.Extern
 
 // UserCompletedAt is the resolver for the userCompletedAt field.
 func (r *externalChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error) {
-	panic(fmt.Errorf("not implemented: UserCompletedAt - userCompletedAt"))
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
 }
 
 // UserEnrolledAt is the resolver for the userEnrolledAt field.
 func (r *externalChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error) {
-	panic(fmt.Errorf("not implemented: UserEnrolledAt - userEnrolledAt"))
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
 }
 
 // Quiz is the resolver for the quiz field.
@@ -653,12 +653,12 @@ func (r *quizChallengeResolver) Event(ctx context.Context, obj *model.QuizChalle
 
 // UserCompletedAt is the resolver for the userCompletedAt field.
 func (r *quizChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error) {
-	panic(fmt.Errorf("not implemented: UserCompletedAt - userCompletedAt"))
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
 }
 
 // UserEnrolledAt is the resolver for the userEnrolledAt field.
 func (r *quizChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error) {
-	panic(fmt.Errorf("not implemented: UserEnrolledAt - userEnrolledAt"))
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
 }
 
 // Quiz is the resolver for the quiz field.
@@ -1002,12 +1002,12 @@ func (r *simpleChallengeResolver) Event(ctx context.Context, obj *model.SimpleCh
 
 // UserCompletedAt is the resolver for the userCompletedAt field.
 func (r *simpleChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error) {
-	panic(fmt.Errorf("not implemented: UserCompletedAt - userCompletedAt"))
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
 }
 
 // UserEnrolledAt is the resolver for the userEnrolledAt field.
 func (r *simpleChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error) {
-	panic(fmt.Errorf("not implemented: UserEnrolledAt - userEnrolledAt"))
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
 }
 
 // Status is the resolver for the status field.

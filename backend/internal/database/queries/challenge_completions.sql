@@ -32,3 +32,10 @@ ORDER BY completed_at ASC;
 INSERT INTO user_challenge_completions (user_id, challenge_id, completed_at)
 SELECT unnest(@userids::text[]) as user_id, @challengeid::text as challenge_id, COALESCE(@completedat, now()) as completed_at
 ON CONFLICT (user_id, challenge_id) DO NOTHING;
+
+-- name: GetBulkUserCompletionTimestamps :many
+SELECT user_id, challenge_id, completed_at
+FROM user_challenge_completions
+WHERE (user_id, challenge_id) IN (
+    SELECT unnest(@userids::text[]), unnest(@challengeids::text[])
+);
