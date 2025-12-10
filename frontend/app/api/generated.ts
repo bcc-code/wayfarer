@@ -2635,9 +2635,9 @@ export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', challenges: Array<
-      | { __typename?: 'ExternalChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userEnrolledAt?: any | null, userCompletedAt?: any | null }
-      | { __typename?: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userEnrolledAt?: any | null, userCompletedAt?: any | null }
-      | { __typename?: 'SimpleChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userEnrolledAt?: any | null, userCompletedAt?: any | null }
+      | { __typename?: 'ExternalChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null }
+      | { __typename?: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null }
+      | { __typename?: 'SimpleChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null }
     > } };
 
 export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
@@ -3708,8 +3708,6 @@ export const ChallengesPageDocument = gql`
       publishedAt
       endTime
       visibleAt
-      userEnrolledAt
-      userCompletedAt
     }
   }
 }

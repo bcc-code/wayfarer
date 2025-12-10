@@ -11,8 +11,6 @@ gql(`
         publishedAt
         endTime
         visibleAt
-        userEnrolledAt
-        userCompletedAt
       }
     }
   }
@@ -23,16 +21,6 @@ const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useChallengesPageQuery({
   pause: computed(() => !isAuthReady.value),
 })
-const relevantChallenges = computed(() => {
-  const notCompleted = data.value?.myCurrentProject.challenges.filter(
-    (challenge) => !challenge.userCompletedAt,
-  )
-  const notEnded = notCompleted?.filter(
-    (challenge) =>
-      !challenge.endTime || new Date(challenge.endTime).getTime() > Date.now(),
-  )
-  return notEnded
-})
 </script>
 
 <template>
@@ -40,11 +28,11 @@ const relevantChallenges = computed(() => {
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <div
-      v-else-if="relevantChallenges?.length"
+      v-else-if="data?.myCurrentProject.challenges.length"
       class="space-y-list-section-gap"
     >
       <ChallengeCard
-        v-for="challenge in relevantChallenges"
+        v-for="challenge in data.myCurrentProject.challenges"
         :key="challenge.id"
         :challenge
       />
