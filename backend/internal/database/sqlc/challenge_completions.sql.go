@@ -50,6 +50,39 @@ func (q *Queries) CompleteUserChallenge(ctx context.Context, arg CompleteUserCha
 	return completed_at, err
 }
 
+const GetBulkUserCompletionTimestamps = `-- name: GetBulkUserCompletionTimestamps :many
+SELECT user_id, challenge_id, completed_at
+FROM user_challenge_completions
+WHERE (user_id, challenge_id) IN (
+    SELECT unnest($1::text[]), unnest($2::text[])
+)
+`
+
+type GetBulkUserCompletionTimestampsParams struct {
+	Userids      []string `json:"userids"`
+	Challengeids []string `json:"challengeids"`
+}
+
+func (q *Queries) GetBulkUserCompletionTimestamps(ctx context.Context, arg GetBulkUserCompletionTimestampsParams) ([]*UserChallengeCompletion, error) {
+	rows, err := q.db.Query(ctx, GetBulkUserCompletionTimestamps, arg.Userids, arg.Challengeids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*UserChallengeCompletion{}
+	for rows.Next() {
+		var i UserChallengeCompletion
+		if err := rows.Scan(&i.UserID, &i.ChallengeID, &i.CompletedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetCompletedUsersForChallenge = `-- name: GetCompletedUsersForChallenge :many
 SELECT user_id, completed_at
 FROM user_challenge_completions
