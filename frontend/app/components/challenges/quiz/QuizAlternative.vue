@@ -65,14 +65,14 @@ const classes = cva(
       class="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 text-label text-on-accent bg-accent-negative rounded-full pl-2 pr-3 py-1 flex gap-1 items-center"
     >
       <Icon name="lucide:x" class="size-6" />
-      Feil svar
+      {{ $t('quiz.wrongAnswer') }}
     </span>
     <span
       v-if="confirmed && correct"
       class="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 text-label text-on-accent bg-accent-positive rounded-full pl-2 pr-3 py-1 flex gap-1 items-center"
     >
       <Icon name="lucide:check" class="size-6" />
-      Riktig svar
+      {{ $t('quiz.correctAnswer') }}
     </span>
   </button>
 </template>
