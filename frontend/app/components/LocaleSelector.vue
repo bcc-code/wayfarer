@@ -14,6 +14,18 @@ const selectedLocale = computed({
 <template>
   <DesignDrawer :title="$t('settings.language')">
     <slot :selected-locale="locales.find((l) => l.code === selectedLocale)" />
-    <template #content="{ close }"></template>
+    <template #content>
+      <DesignButton
+        v-for="l in locales"
+        :key="l.code"
+        variant="secondary"
+        size="medium"
+        class="w-full"
+        @click="selectedLocale = l.code"
+      >
+        <span class="grow text-start">{{ l.name }}</span>
+        <Icon v-if="selectedLocale === l.code" name="lucide:check" />
+      </DesignButton>
+    </template>
   </DesignDrawer>
 </template>

@@ -1,0 +1,34 @@
+mutation StartQuiz($quizId: ID!) {
+  startQuiz(quizId: $quizId) {
+    id
+    startedAt
+    expiresAt
+    isExpired
+    questionOrder
+    orderedQuestions {
+      id
+      questionText
+      questionOrder
+      timeoutSeconds
+      ... on PredefinedQuestion {
+        allowMultipleSelection
+        predefinedAnswers {
+          id
+          answerText
+          answerOrder
+          isCorrect
+        }
+      }
+      ... on NumberQuestion {
+        minValue
+        maxValue
+        stepValue
+      }
+    }
+    quiz {
+      id
+      name
+      timeoutSeconds
+    }
+  }
+}

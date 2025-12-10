@@ -6,9 +6,36 @@ type QuizChallengeData = Extract<
   { __typename: 'QuizChallenge' }
 >
 
-defineProps<{
+const props = defineProps<{
   challenge: QuizChallengeData
 }>()
+
+const emit = defineEmits<{
+  start: []
+}>()
+
+const { executeMutation: startQuiz } = useStartQuizMutation()
+
+onMounted(() => {
+  if (!props.challenge.quiz.userActiveSubmission?.id) {
+    startQuiz({
+      quizId: props.challenge.quiz.id,
+    }).then(() => {
+      emit('start')
+    })
+  }
+})
+
+const activeSubmission = computed(() => {
+  return props.challenge.quiz.userSubmissions.find(
+    (submission) =>
+      submission.id === props.challenge.quiz.userActiveSubmission?.id,
+  )
+})
+
+const questions = computed(() => {
+  return activeSubmission.value?.orderedQuestions
+})
 </script>
 
 <template>
@@ -19,22 +46,11 @@ defineProps<{
       </NuxtLink>
     </template>
     <template #title>
-      <QuizProgress />
+      <QuizProgress :submission="activeSubmission" />
     </template>
 
-    <div class="gap-medium flex flex-col">
-      <QuizAlternative text="This is an alternative" />
-      <QuizAlternative text="This is a highlighted alternative" highlighted />
-      <QuizAlternative
-        text="This is a confirmed and wrong alternative"
-        confirmed
-        wrong
-      />
-      <QuizAlternative
-        text="This is a confirmed and correct alternative"
-        confirmed
-        correct
-      />
+    <div v-for="question in questions" :key="question.id">
+      {{ question.questionText }}
     </div>
   </PageLayout>
 </template>

@@ -19,6 +19,7 @@ query ConsentsPage {
         __typename
         id
         consent {
+          id
           title
           body {
             html
@@ -34,6 +35,7 @@ query ConsentsPage {
         __typename
         id
         consent {
+          id
           title
           body {
             html

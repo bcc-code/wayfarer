@@ -16,6 +16,13 @@ watch(
     }
   },
 )
+
+const hasCompletedOnboarding = useLocalStorage('hasCompletedOnboarding', false)
+onMounted(() => {
+  if (!hasCompletedOnboarding.value && showBanner.value) {
+    navigateTo({ name: 'settings-consent' })
+  }
+})
 </script>
 
 <template>

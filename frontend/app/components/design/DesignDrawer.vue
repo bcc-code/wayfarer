@@ -38,7 +38,9 @@ const close = () => {
           <DesignIconButton v-if="dismissible" icon="lucide:x" @click="close" />
         </template>
       </TitleBar>
-      <div class="p-list-outside grow flex flex-col gap-list-section-gap">
+      <div
+        class="p-list-outside grow flex flex-col gap-list-section-gap overflow-auto"
+      >
         <slot name="content" />
       </div>
     </template>

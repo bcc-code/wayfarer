@@ -23,9 +23,7 @@ withDefaults(
         </template>
       </TitleBar>
     </div>
-    <div
-      :class="['p-list-outside flex grow flex-col', { 'pb-28': bottomPadding }]"
-    >
+    <div :class="['flex grow flex-col', { 'pb-28': bottomPadding }]">
       <slot />
     </div>
   </div>

@@ -17,7 +17,10 @@ const { executeMutation: acceptConsent } = useAcceptConsentMutation()
 const { executeMutation: rejectConsent } = useRejectConsentMutation()
 
 function handleAccept() {
-  const consentId = props.consent.id
+  const consentId =
+    props.consent.__typename === 'UserConsent'
+      ? props.consent.consent.id
+      : props.consent.id
   acceptConsent({ consentId }).then(({ error }) => {
     if (error) {
       console.error(error)
@@ -29,7 +32,10 @@ function handleAccept() {
 }
 
 function handleReject() {
-  const consentId = props.consent.id
+  const consentId =
+    props.consent.__typename === 'UserConsent'
+      ? props.consent.consent.id
+      : props.consent.id
   rejectConsent({ consentId }).then(({ error }) => {
     if (error) {
       console.error(error)
@@ -150,14 +156,20 @@ const changing = ref(false)
             <Icon name="lucide:check" class="size-6" />
             {{ $t('consent.accepted') }}
           </span>
-          <DesignButton
-            size="small"
-            variant="secondary"
-            class="grow-0"
-            @click="changing = true"
-          >
-            {{ $t('consent.change') }}
-          </DesignButton>
+          <DesignDrawer :title="$t('consent.change')">
+            <DesignButton size="small" variant="secondary" class="grow-0">
+              {{ $t('consent.change') }}
+            </DesignButton>
+            <template #content>
+              <p class="text-label text-text-default px-default">
+                {{
+                  $t('consent.changeDescription', {
+                    email: 'support@bcc.media',
+                  })
+                }}
+              </p>
+            </template>
+          </DesignDrawer>
         </div>
       </template>
       <template v-else-if="status === ConsentAction.Rejected">

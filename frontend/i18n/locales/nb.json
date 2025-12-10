@@ -71,7 +71,9 @@
     "bannerButton": "Gå til samtykke-instillinger",
     "readButton": "Les alle vilkår",
     "change": "Endre",
-    "goToConsent": "Gå til samtykke"
+    "goToConsent": "Gå til samtykke",
+    "continue": "Gå videre",
+    "changeDescription": "For å endre samtykket ditt, kontakt oss på {email}"
   },
   "achievement": {
     "title": "Utmerkelse",

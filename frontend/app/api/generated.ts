@@ -2375,6 +2375,18 @@ export type DeleteProjectMutationVariables = Exact<{
 
 export type DeleteProjectMutation = { __typename?: 'Mutation', deleteProject: boolean };
 
+export type StartQuizMutationVariables = Exact<{
+  quizId: Scalars['ID']['input'];
+}>;
+
+
+export type StartQuizMutation = { __typename?: 'Mutation', startQuiz: { __typename?: 'QuizSubmission', id: string, startedAt: any, expiresAt?: any | null, isExpired: boolean, questionOrder: Array<string>, orderedQuestions: Array<
+      | { __typename?: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+      | { __typename?: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+      | { __typename?: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+      | { __typename?: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
+    >, quiz: { __typename?: 'Quiz', id: string, name: string, timeoutSeconds?: number | null } } };
+
 export type AssignRoleMutationVariables = Exact<{
   input: AssignRoleInput;
 }>;
@@ -2473,7 +2485,7 @@ export type ChallengePageQueryVariables = Exact<{
 
 export type ChallengePageQuery = { __typename?: 'Query', challenge:
     | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null }
-    | { __typename: 'QuizChallenge', id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, publishedAt?: any | null, endTime?: any | null, userCanStart: boolean, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, orderedQuestions: Array<
+    | { __typename: 'QuizChallenge', id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, publishedAt?: any | null, endTime?: any | null, userCanStart: boolean, userActiveSubmission?: { __typename?: 'QuizSubmission', id: string } | null, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, orderedQuestions: Array<
             | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
             | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
             | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
@@ -2510,7 +2522,7 @@ export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User'
 export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ConsentsPageQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
+export type ConsentsPageQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
 
 export type StandingsGlobalPageQueryVariables = Exact<{
   entityType: LeaderboardEntityType;
@@ -2957,6 +2969,46 @@ export const DeleteProjectDocument = gql`
 export function useDeleteProjectMutation() {
   return Urql.useMutation<DeleteProjectMutation, DeleteProjectMutationVariables>(DeleteProjectDocument);
 };
+export const StartQuizDocument = gql`
+    mutation StartQuiz($quizId: ID!) {
+  startQuiz(quizId: $quizId) {
+    id
+    startedAt
+    expiresAt
+    isExpired
+    questionOrder
+    orderedQuestions {
+      id
+      questionText
+      questionOrder
+      timeoutSeconds
+      ... on PredefinedQuestion {
+        allowMultipleSelection
+        predefinedAnswers {
+          id
+          answerText
+          answerOrder
+          isCorrect
+        }
+      }
+      ... on NumberQuestion {
+        minValue
+        maxValue
+        stepValue
+      }
+    }
+    quiz {
+      id
+      name
+      timeoutSeconds
+    }
+  }
+}
+    `;
+
+export function useStartQuizMutation() {
+  return Urql.useMutation<StartQuizMutation, StartQuizMutationVariables>(StartQuizDocument);
+};
 export const AssignRoleDocument = gql`
     mutation AssignRole($input: AssignRoleInput!) {
   assignRole(input: $input) {
@@ -3117,6 +3169,9 @@ export const ChallengePageDocument = gql`
         publishedAt
         endTime
         userCanStart
+        userActiveSubmission {
+          id
+        }
         userSubmissions {
           id
           startedAt
@@ -3269,6 +3324,7 @@ export const ConsentsPageDocument = gql`
         __typename
         id
         consent {
+          id
           title
           body {
             html
@@ -3284,6 +3340,7 @@ export const ConsentsPageDocument = gql`
         __typename
         id
         consent {
+          id
           title
           body {
             html

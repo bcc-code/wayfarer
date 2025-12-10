@@ -25,6 +25,9 @@ query ChallengePage($challengeId: ID!) {
         publishedAt
         endTime
         userCanStart
+        userActiveSubmission {
+          id
+        }
         userSubmissions {
           id
           startedAt

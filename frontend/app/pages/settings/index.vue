@@ -24,7 +24,7 @@ const { me } = useAuth()
       </NuxtLink>
     </template>
 
-    <div class="space-y-list-section-gap">
+    <div class="space-y-list-section-gap p-list-outside">
       <DesignPanel class="gap-list-section-inset flex flex-col">
         <LocaleSelector v-slot="{ selectedLocale }">
           <div class="flex items-center justify-between gap-2.5 px-3 py-2">
