@@ -5,6 +5,7 @@ type Consent {
     key: String!
     version: Int!
     title: String!
+    shortText: String!
     body: MarkdownText!
     url: String
     publishedAt: DateTime
@@ -62,6 +63,7 @@ extend type Mutation {
     createConsent(
         key: String!
         title: String!
+        shortText: String
         body: String!
         url: String
         publishedAt: DateTime
@@ -73,6 +75,7 @@ extend type Mutation {
     updateConsent(
         id: ID!
         title: String
+        shortText: String
         body: String
         url: String
         publishedAt: DateTime

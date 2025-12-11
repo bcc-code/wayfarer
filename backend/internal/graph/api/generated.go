@@ -160,6 +160,7 @@ type ComplexityRoot struct {
 		ManagedBy      func(childComplexity int) int
 		ManagementType func(childComplexity int) int
 		PublishedAt    func(childComplexity int) int
+		ShortText      func(childComplexity int) int
 		Title          func(childComplexity int) int
 		URL            func(childComplexity int) int
 		UserHistory    func(childComplexity int) int
@@ -173,21 +174,23 @@ type ComplexityRoot struct {
 	}
 
 	ContentAchievement struct {
-		AchievedAt         func(childComplexity int) int
-		Challenge          func(childComplexity int) int
-		CompletedItemCount func(childComplexity int) int
-		Description        func(childComplexity int) int
-		Event              func(childComplexity int) int
-		Hidden             func(childComplexity int) int
-		ID                 func(childComplexity int) int
-		Image              func(childComplexity int) int
-		Items              func(childComplexity int) int
-		Name               func(childComplexity int) int
-		NextItem           func(childComplexity int) int
-		Points             func(childComplexity int) int
-		Project            func(childComplexity int) int
-		TotalItems         func(childComplexity int) int
-		UserCompletedItems func(childComplexity int) int
+		AchievedAt           func(childComplexity int) int
+		Challenge            func(childComplexity int) int
+		CompletedItemCount   func(childComplexity int) int
+		DescriptionCompleted func(childComplexity int) int
+		DescriptionPending   func(childComplexity int) int
+		Event                func(childComplexity int) int
+		Hidden               func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		ImageCompleted       func(childComplexity int) int
+		ImagePending         func(childComplexity int) int
+		Items                func(childComplexity int) int
+		Name                 func(childComplexity int) int
+		NextItem             func(childComplexity int) int
+		Points               func(childComplexity int) int
+		Project              func(childComplexity int) int
+		TotalItems           func(childComplexity int) int
+		UserCompletedItems   func(childComplexity int) int
 	}
 
 	ContentItem struct {
@@ -355,7 +358,7 @@ type ComplexityRoot struct {
 		BulkUnenrollUsersFromChallenge              func(childComplexity int, target model.EnrollmentTargetInput, challengeID string) int
 		CompleteChallenge                           func(childComplexity int, userID string, challengeID string, completedAt *scalars.DateTime) int
 		CreateChallenge                             func(childComplexity int, projectID string, eventID string, input model.CreateChallengeInput) int
-		CreateConsent                               func(childComplexity int, key string, title string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) int
+		CreateConsent                               func(childComplexity int, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) int
 		CreateContentAchievement                    func(childComplexity int, input model.CreateContentAchievementInput) int
 		CreateContentAchievementFromExternalContent func(childComplexity int, input model.CreateContentAchievementFromExternalContentInput) int
 		CreateEvent                                 func(childComplexity int, projectID string, input model.CreateEventInput) int
@@ -412,7 +415,7 @@ type ComplexityRoot struct {
 		UpdateAchievement                           func(childComplexity int, id string, input model.UpdateAchievementInput) int
 		UpdateAvatar                                func(childComplexity int, file graphql.Upload) int
 		UpdateChallenge                             func(childComplexity int, id string, input model.UpdateChallengeInput) int
-		UpdateConsent                               func(childComplexity int, id string, title *string, body *string, url *string, publishedAt *scalars.DateTime) int
+		UpdateConsent                               func(childComplexity int, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime) int
 		UpdateContentAchievement                    func(childComplexity int, id string, input model.UpdateContentAchievementInput) int
 		UpdateEvent                                 func(childComplexity int, id string, input model.UpdateEventInput) int
 		UpdateProject                               func(childComplexity int, id string, input model.UpdateProjectInput) int
@@ -563,19 +566,21 @@ type ComplexityRoot struct {
 	}
 
 	QuizAchievement struct {
-		AchievedAt         func(childComplexity int) int
-		Challenge          func(childComplexity int) int
-		Description        func(childComplexity int) int
-		Event              func(childComplexity int) int
-		Hidden             func(childComplexity int) int
-		ID                 func(childComplexity int) int
-		Image              func(childComplexity int) int
-		MinScorePercentage func(childComplexity int) int
-		Name               func(childComplexity int) int
-		Points             func(childComplexity int) int
-		Project            func(childComplexity int) int
-		Quiz               func(childComplexity int) int
-		RequireCompletion  func(childComplexity int) int
+		AchievedAt           func(childComplexity int) int
+		Challenge            func(childComplexity int) int
+		DescriptionCompleted func(childComplexity int) int
+		DescriptionPending   func(childComplexity int) int
+		Event                func(childComplexity int) int
+		Hidden               func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		ImageCompleted       func(childComplexity int) int
+		ImagePending         func(childComplexity int) int
+		MinScorePercentage   func(childComplexity int) int
+		Name                 func(childComplexity int) int
+		Points               func(childComplexity int) int
+		Project              func(childComplexity int) int
+		Quiz                 func(childComplexity int) int
+		RequireCompletion    func(childComplexity int) int
 	}
 
 	QuizChallenge struct {
@@ -678,16 +683,18 @@ type ComplexityRoot struct {
 	}
 
 	SimpleAchievement struct {
-		AchievedAt  func(childComplexity int) int
-		Challenge   func(childComplexity int) int
-		Description func(childComplexity int) int
-		Event       func(childComplexity int) int
-		Hidden      func(childComplexity int) int
-		ID          func(childComplexity int) int
-		Image       func(childComplexity int) int
-		Name        func(childComplexity int) int
-		Points      func(childComplexity int) int
-		Project     func(childComplexity int) int
+		AchievedAt           func(childComplexity int) int
+		Challenge            func(childComplexity int) int
+		DescriptionCompleted func(childComplexity int) int
+		DescriptionPending   func(childComplexity int) int
+		Event                func(childComplexity int) int
+		Hidden               func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		ImageCompleted       func(childComplexity int) int
+		ImagePending         func(childComplexity int) int
+		Name                 func(childComplexity int) int
+		Points               func(childComplexity int) int
+		Project              func(childComplexity int) int
 	}
 
 	SimpleChallenge struct {
@@ -720,18 +727,20 @@ type ComplexityRoot struct {
 	}
 
 	StreakAchievement struct {
-		AchievedAt   func(childComplexity int) int
-		Challenge    func(childComplexity int) int
-		Description  func(childComplexity int) int
-		Event        func(childComplexity int) int
-		Hidden       func(childComplexity int) int
-		ID           func(childComplexity int) int
-		Image        func(childComplexity int) int
-		Name         func(childComplexity int) int
-		NeededStreak func(childComplexity int) int
-		Points       func(childComplexity int) int
-		Project      func(childComplexity int) int
-		Streak       func(childComplexity int) int
+		AchievedAt           func(childComplexity int) int
+		Challenge            func(childComplexity int) int
+		DescriptionCompleted func(childComplexity int) int
+		DescriptionPending   func(childComplexity int) int
+		Event                func(childComplexity int) int
+		Hidden               func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		ImageCompleted       func(childComplexity int) int
+		ImagePending         func(childComplexity int) int
+		Name                 func(childComplexity int) int
+		NeededStreak         func(childComplexity int) int
+		Points               func(childComplexity int) int
+		Project              func(childComplexity int) int
+		Streak               func(childComplexity int) int
 	}
 
 	StreakConnection struct {
@@ -982,8 +991,8 @@ type MutationResolver interface {
 	CreateScoreAdjustment(ctx context.Context, input model.CreateScoreAdjustmentInput) (*model.ScoreJournal, error)
 	AcceptConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
 	RejectConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
-	CreateConsent(ctx context.Context, key string, title string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) (*model.Consent, error)
-	UpdateConsent(ctx context.Context, id string, title *string, body *string, url *string, publishedAt *scalars.DateTime) (*model.Consent, error)
+	CreateConsent(ctx context.Context, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) (*model.Consent, error)
+	UpdateConsent(ctx context.Context, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime) (*model.Consent, error)
 	CreateQuiz(ctx context.Context, input model.CreateQuizInput) (*model.Quiz, error)
 	UpdateQuiz(ctx context.Context, id string, input model.UpdateQuizInput) (*model.Quiz, error)
 	DeleteQuiz(ctx context.Context, id string) (bool, error)
@@ -1485,6 +1494,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Consent.PublishedAt(childComplexity), true
+	case "Consent.shortText":
+		if e.complexity.Consent.ShortText == nil {
+			break
+		}
+
+		return e.complexity.Consent.ShortText(childComplexity), true
 	case "Consent.title":
 		if e.complexity.Consent.Title == nil {
 			break
@@ -1547,12 +1562,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ContentAchievement.CompletedItemCount(childComplexity), true
-	case "ContentAchievement.description":
-		if e.complexity.ContentAchievement.Description == nil {
+	case "ContentAchievement.descriptionCompleted":
+		if e.complexity.ContentAchievement.DescriptionCompleted == nil {
 			break
 		}
 
-		return e.complexity.ContentAchievement.Description(childComplexity), true
+		return e.complexity.ContentAchievement.DescriptionCompleted(childComplexity), true
+	case "ContentAchievement.descriptionPending":
+		if e.complexity.ContentAchievement.DescriptionPending == nil {
+			break
+		}
+
+		return e.complexity.ContentAchievement.DescriptionPending(childComplexity), true
 	case "ContentAchievement.event":
 		if e.complexity.ContentAchievement.Event == nil {
 			break
@@ -1571,12 +1592,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ContentAchievement.ID(childComplexity), true
-	case "ContentAchievement.image":
-		if e.complexity.ContentAchievement.Image == nil {
+	case "ContentAchievement.imageCompleted":
+		if e.complexity.ContentAchievement.ImageCompleted == nil {
 			break
 		}
 
-		return e.complexity.ContentAchievement.Image(childComplexity), true
+		return e.complexity.ContentAchievement.ImageCompleted(childComplexity), true
+	case "ContentAchievement.imagePending":
+		if e.complexity.ContentAchievement.ImagePending == nil {
+			break
+		}
+
+		return e.complexity.ContentAchievement.ImagePending(childComplexity), true
 	case "ContentAchievement.items":
 		if e.complexity.ContentAchievement.Items == nil {
 			break
@@ -2413,7 +2440,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateConsent(childComplexity, args["key"].(string), args["title"].(string), args["body"].(string), args["url"].(*string), args["publishedAt"].(*scalars.DateTime), args["isRemote"].(*bool), args["managedBy"].(*string)), true
+		return e.complexity.Mutation.CreateConsent(childComplexity, args["key"].(string), args["title"].(string), args["shortText"].(*string), args["body"].(string), args["url"].(*string), args["publishedAt"].(*scalars.DateTime), args["isRemote"].(*bool), args["managedBy"].(*string)), true
 	case "Mutation.createContentAchievement":
 		if e.complexity.Mutation.CreateContentAchievement == nil {
 			break
@@ -3035,7 +3062,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateConsent(childComplexity, args["id"].(string), args["title"].(*string), args["body"].(*string), args["url"].(*string), args["publishedAt"].(*scalars.DateTime)), true
+		return e.complexity.Mutation.UpdateConsent(childComplexity, args["id"].(string), args["title"].(*string), args["shortText"].(*string), args["body"].(*string), args["url"].(*string), args["publishedAt"].(*scalars.DateTime)), true
 	case "Mutation.updateContentAchievement":
 		if e.complexity.Mutation.UpdateContentAchievement == nil {
 			break
@@ -3961,12 +3988,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizAchievement.Challenge(childComplexity), true
-	case "QuizAchievement.description":
-		if e.complexity.QuizAchievement.Description == nil {
+	case "QuizAchievement.descriptionCompleted":
+		if e.complexity.QuizAchievement.DescriptionCompleted == nil {
 			break
 		}
 
-		return e.complexity.QuizAchievement.Description(childComplexity), true
+		return e.complexity.QuizAchievement.DescriptionCompleted(childComplexity), true
+	case "QuizAchievement.descriptionPending":
+		if e.complexity.QuizAchievement.DescriptionPending == nil {
+			break
+		}
+
+		return e.complexity.QuizAchievement.DescriptionPending(childComplexity), true
 	case "QuizAchievement.event":
 		if e.complexity.QuizAchievement.Event == nil {
 			break
@@ -3985,12 +4018,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizAchievement.ID(childComplexity), true
-	case "QuizAchievement.image":
-		if e.complexity.QuizAchievement.Image == nil {
+	case "QuizAchievement.imageCompleted":
+		if e.complexity.QuizAchievement.ImageCompleted == nil {
 			break
 		}
 
-		return e.complexity.QuizAchievement.Image(childComplexity), true
+		return e.complexity.QuizAchievement.ImageCompleted(childComplexity), true
+	case "QuizAchievement.imagePending":
+		if e.complexity.QuizAchievement.ImagePending == nil {
+			break
+		}
+
+		return e.complexity.QuizAchievement.ImagePending(childComplexity), true
 	case "QuizAchievement.minScorePercentage":
 		if e.complexity.QuizAchievement.MinScorePercentage == nil {
 			break
@@ -4447,12 +4486,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SimpleAchievement.Challenge(childComplexity), true
-	case "SimpleAchievement.description":
-		if e.complexity.SimpleAchievement.Description == nil {
+	case "SimpleAchievement.descriptionCompleted":
+		if e.complexity.SimpleAchievement.DescriptionCompleted == nil {
 			break
 		}
 
-		return e.complexity.SimpleAchievement.Description(childComplexity), true
+		return e.complexity.SimpleAchievement.DescriptionCompleted(childComplexity), true
+	case "SimpleAchievement.descriptionPending":
+		if e.complexity.SimpleAchievement.DescriptionPending == nil {
+			break
+		}
+
+		return e.complexity.SimpleAchievement.DescriptionPending(childComplexity), true
 	case "SimpleAchievement.event":
 		if e.complexity.SimpleAchievement.Event == nil {
 			break
@@ -4471,12 +4516,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SimpleAchievement.ID(childComplexity), true
-	case "SimpleAchievement.image":
-		if e.complexity.SimpleAchievement.Image == nil {
+	case "SimpleAchievement.imageCompleted":
+		if e.complexity.SimpleAchievement.ImageCompleted == nil {
 			break
 		}
 
-		return e.complexity.SimpleAchievement.Image(childComplexity), true
+		return e.complexity.SimpleAchievement.ImageCompleted(childComplexity), true
+	case "SimpleAchievement.imagePending":
+		if e.complexity.SimpleAchievement.ImagePending == nil {
+			break
+		}
+
+		return e.complexity.SimpleAchievement.ImagePending(childComplexity), true
 	case "SimpleAchievement.name":
 		if e.complexity.SimpleAchievement.Name == nil {
 			break
@@ -4653,12 +4704,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StreakAchievement.Challenge(childComplexity), true
-	case "StreakAchievement.description":
-		if e.complexity.StreakAchievement.Description == nil {
+	case "StreakAchievement.descriptionCompleted":
+		if e.complexity.StreakAchievement.DescriptionCompleted == nil {
 			break
 		}
 
-		return e.complexity.StreakAchievement.Description(childComplexity), true
+		return e.complexity.StreakAchievement.DescriptionCompleted(childComplexity), true
+	case "StreakAchievement.descriptionPending":
+		if e.complexity.StreakAchievement.DescriptionPending == nil {
+			break
+		}
+
+		return e.complexity.StreakAchievement.DescriptionPending(childComplexity), true
 	case "StreakAchievement.event":
 		if e.complexity.StreakAchievement.Event == nil {
 			break
@@ -4677,12 +4734,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StreakAchievement.ID(childComplexity), true
-	case "StreakAchievement.image":
-		if e.complexity.StreakAchievement.Image == nil {
+	case "StreakAchievement.imageCompleted":
+		if e.complexity.StreakAchievement.ImageCompleted == nil {
 			break
 		}
 
-		return e.complexity.StreakAchievement.Image(childComplexity), true
+		return e.complexity.StreakAchievement.ImageCompleted(childComplexity), true
+	case "StreakAchievement.imagePending":
+		if e.complexity.StreakAchievement.ImagePending == nil {
+			break
+		}
+
+		return e.complexity.StreakAchievement.ImagePending(childComplexity), true
 	case "StreakAchievement.name":
 		if e.complexity.StreakAchievement.Name == nil {
 			break
@@ -5707,8 +5770,10 @@ type ExternalChallenge implements Challenge {
 interface Achievement {
     id: ID!
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -5722,8 +5787,10 @@ interface Achievement {
 type SimpleAchievement implements Achievement {
     id: ID!
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -5735,8 +5802,10 @@ type SimpleAchievement implements Achievement {
 type ContentAchievement implements Achievement {
     id: ID!
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -5754,8 +5823,10 @@ type ContentAchievement implements Achievement {
 type StreakAchievement implements Achievement {
     id: ID!
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -5769,8 +5840,10 @@ type StreakAchievement implements Achievement {
 type QuizAchievement implements Achievement {
     id: ID!
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -6046,8 +6119,10 @@ input UpdateChallengeInput {
 
 input CreateSimpleAchievementInput {
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     projectId: ID!
     eventId: ID
     challengeId: ID
@@ -6057,8 +6132,10 @@ input CreateSimpleAchievementInput {
 
 input CreateContentAchievementInput {
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     projectId: ID!
     eventId: ID
     challengeId: ID
@@ -6069,8 +6146,10 @@ input CreateContentAchievementInput {
 
 input CreateStreakAchievementInput {
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     projectId: ID!
     eventId: ID
     challengeId: ID
@@ -6082,8 +6161,10 @@ input CreateStreakAchievementInput {
 
 input CreateQuizAchievementInput {
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     projectId: ID!
     challengeId: ID
     points: Int!
@@ -6181,8 +6262,10 @@ input QuizFilter {
 
 input UpdateAchievementInput {
     name: String
-    description: String
-    image: String
+    descriptionPending: String
+    descriptionCompleted: String
+    imagePending: String
+    imageCompleted: String
     eventId: ID
     challengeId: ID
     points: Int
@@ -6191,8 +6274,10 @@ input UpdateAchievementInput {
 
 input UpdateContentAchievementInput {
     name: String
-    description: String
-    image: String
+    descriptionPending: String
+    descriptionCompleted: String
+    imagePending: String
+    imageCompleted: String
     eventId: ID
     challengeId: ID
     points: Int
@@ -6202,8 +6287,10 @@ input UpdateContentAchievementInput {
 
 input UpdateStreakAchievementInput {
     name: String
-    description: String
-    image: String
+    descriptionPending: String
+    descriptionCompleted: String
+    imagePending: String
+    imageCompleted: String
     eventId: ID
     challengeId: ID
     points: Int
@@ -6806,6 +6893,7 @@ type Consent {
     key: String!
     version: Int!
     title: String!
+    shortText: String!
     body: MarkdownText!
     url: String
     publishedAt: DateTime
@@ -6863,6 +6951,7 @@ extend type Mutation {
     createConsent(
         key: String!
         title: String!
+        shortText: String
         body: String!
         url: String
         publishedAt: DateTime
@@ -6874,6 +6963,7 @@ extend type Mutation {
     updateConsent(
         id: ID!
         title: String
+        shortText: String
         body: String
         url: String
         publishedAt: DateTime
@@ -7006,8 +7096,10 @@ input ExternalContentFilter {
 
 input CreateContentAchievementFromExternalContentInput {
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     projectId: ID!
     eventId: ID
     challengeId: ID
@@ -7431,31 +7523,36 @@ func (ec *executionContext) field_Mutation_createConsent_args(ctx context.Contex
 		return nil, err
 	}
 	args["title"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "body", ec.unmarshalNString2string)
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "shortText", ec.unmarshalOString2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
-	args["body"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "url", ec.unmarshalOString2ᚖstring)
+	args["shortText"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "body", ec.unmarshalNString2string)
 	if err != nil {
 		return nil, err
 	}
-	args["url"] = arg3
-	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "publishedAt", ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime)
+	args["body"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "url", ec.unmarshalOString2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
-	args["publishedAt"] = arg4
-	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "isRemote", ec.unmarshalOBoolean2ᚖbool)
+	args["url"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "publishedAt", ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime)
 	if err != nil {
 		return nil, err
 	}
-	args["isRemote"] = arg5
-	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "managedBy", ec.unmarshalOString2ᚖstring)
+	args["publishedAt"] = arg5
+	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "isRemote", ec.unmarshalOBoolean2ᚖbool)
 	if err != nil {
 		return nil, err
 	}
-	args["managedBy"] = arg6
+	args["isRemote"] = arg6
+	arg7, err := graphql.ProcessArgField(ctx, rawArgs, "managedBy", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["managedBy"] = arg7
 	return args, nil
 }
 
@@ -8227,21 +8324,26 @@ func (ec *executionContext) field_Mutation_updateConsent_args(ctx context.Contex
 		return nil, err
 	}
 	args["title"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "body", ec.unmarshalOString2ᚖstring)
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "shortText", ec.unmarshalOString2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
-	args["body"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "url", ec.unmarshalOString2ᚖstring)
+	args["shortText"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "body", ec.unmarshalOString2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
-	args["url"] = arg3
-	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "publishedAt", ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime)
+	args["body"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "url", ec.unmarshalOString2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
-	args["publishedAt"] = arg4
+	args["url"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "publishedAt", ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime)
+	if err != nil {
+		return nil, err
+	}
+	args["publishedAt"] = arg5
 	return args, nil
 }
 
@@ -10499,6 +10601,35 @@ func (ec *executionContext) fieldContext_Consent_title(_ context.Context, field 
 	return fc, nil
 }
 
+func (ec *executionContext) _Consent_shortText(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Consent_shortText,
+		func(ctx context.Context) (any, error) {
+			return obj.ShortText, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Consent_shortText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Consent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Consent_body(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -10727,6 +10858,8 @@ func (ec *executionContext) fieldContext_ConsentStatus_pendingConsents(_ context
 				return ec.fieldContext_Consent_version(ctx, field)
 			case "title":
 				return ec.fieldContext_Consent_title(ctx, field)
+			case "shortText":
+				return ec.fieldContext_Consent_shortText(ctx, field)
 			case "body":
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
@@ -10882,14 +11015,14 @@ func (ec *executionContext) fieldContext_ContentAchievement_name(_ context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) _ContentAchievement_description(ctx context.Context, field graphql.CollectedField, obj *model.ContentAchievement) (ret graphql.Marshaler) {
+func (ec *executionContext) _ContentAchievement_descriptionPending(ctx context.Context, field graphql.CollectedField, obj *model.ContentAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ContentAchievement_description,
+		ec.fieldContext_ContentAchievement_descriptionPending,
 		func(ctx context.Context) (any, error) {
-			return obj.Description, nil
+			return obj.DescriptionPending, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -10898,7 +11031,7 @@ func (ec *executionContext) _ContentAchievement_description(ctx context.Context,
 	)
 }
 
-func (ec *executionContext) fieldContext_ContentAchievement_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ContentAchievement_descriptionPending(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ContentAchievement",
 		Field:      field,
@@ -10911,23 +11044,81 @@ func (ec *executionContext) fieldContext_ContentAchievement_description(_ contex
 	return fc, nil
 }
 
-func (ec *executionContext) _ContentAchievement_image(ctx context.Context, field graphql.CollectedField, obj *model.ContentAchievement) (ret graphql.Marshaler) {
+func (ec *executionContext) _ContentAchievement_descriptionCompleted(ctx context.Context, field graphql.CollectedField, obj *model.ContentAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ContentAchievement_image,
+		ec.fieldContext_ContentAchievement_descriptionCompleted,
 		func(ctx context.Context) (any, error) {
-			return obj.Image, nil
+			return obj.DescriptionCompleted, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		ec.marshalNString2string,
 		true,
-		false,
+		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_ContentAchievement_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ContentAchievement_descriptionCompleted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ContentAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ContentAchievement_imagePending(ctx context.Context, field graphql.CollectedField, obj *model.ContentAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ContentAchievement_imagePending,
+		func(ctx context.Context) (any, error) {
+			return obj.ImagePending, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ContentAchievement_imagePending(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ContentAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ContentAchievement_imageCompleted(ctx context.Context, field graphql.CollectedField, obj *model.ContentAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ContentAchievement_imageCompleted,
+		func(ctx context.Context) (any, error) {
+			return obj.ImageCompleted, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ContentAchievement_imageCompleted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ContentAchievement",
 		Field:      field,
@@ -16293,10 +16484,14 @@ func (ec *executionContext) fieldContext_Mutation_createSimpleAchievement(ctx co
 				return ec.fieldContext_SimpleAchievement_id(ctx, field)
 			case "name":
 				return ec.fieldContext_SimpleAchievement_name(ctx, field)
-			case "description":
-				return ec.fieldContext_SimpleAchievement_description(ctx, field)
-			case "image":
-				return ec.fieldContext_SimpleAchievement_image(ctx, field)
+			case "descriptionPending":
+				return ec.fieldContext_SimpleAchievement_descriptionPending(ctx, field)
+			case "descriptionCompleted":
+				return ec.fieldContext_SimpleAchievement_descriptionCompleted(ctx, field)
+			case "imagePending":
+				return ec.fieldContext_SimpleAchievement_imagePending(ctx, field)
+			case "imageCompleted":
+				return ec.fieldContext_SimpleAchievement_imageCompleted(ctx, field)
 			case "project":
 				return ec.fieldContext_SimpleAchievement_project(ctx, field)
 			case "event":
@@ -16374,10 +16569,14 @@ func (ec *executionContext) fieldContext_Mutation_createContentAchievement(ctx c
 				return ec.fieldContext_ContentAchievement_id(ctx, field)
 			case "name":
 				return ec.fieldContext_ContentAchievement_name(ctx, field)
-			case "description":
-				return ec.fieldContext_ContentAchievement_description(ctx, field)
-			case "image":
-				return ec.fieldContext_ContentAchievement_image(ctx, field)
+			case "descriptionPending":
+				return ec.fieldContext_ContentAchievement_descriptionPending(ctx, field)
+			case "descriptionCompleted":
+				return ec.fieldContext_ContentAchievement_descriptionCompleted(ctx, field)
+			case "imagePending":
+				return ec.fieldContext_ContentAchievement_imagePending(ctx, field)
+			case "imageCompleted":
+				return ec.fieldContext_ContentAchievement_imageCompleted(ctx, field)
 			case "project":
 				return ec.fieldContext_ContentAchievement_project(ctx, field)
 			case "event":
@@ -16465,10 +16664,14 @@ func (ec *executionContext) fieldContext_Mutation_createStreakAchievement(ctx co
 				return ec.fieldContext_StreakAchievement_id(ctx, field)
 			case "name":
 				return ec.fieldContext_StreakAchievement_name(ctx, field)
-			case "description":
-				return ec.fieldContext_StreakAchievement_description(ctx, field)
-			case "image":
-				return ec.fieldContext_StreakAchievement_image(ctx, field)
+			case "descriptionPending":
+				return ec.fieldContext_StreakAchievement_descriptionPending(ctx, field)
+			case "descriptionCompleted":
+				return ec.fieldContext_StreakAchievement_descriptionCompleted(ctx, field)
+			case "imagePending":
+				return ec.fieldContext_StreakAchievement_imagePending(ctx, field)
+			case "imageCompleted":
+				return ec.fieldContext_StreakAchievement_imageCompleted(ctx, field)
 			case "project":
 				return ec.fieldContext_StreakAchievement_project(ctx, field)
 			case "event":
@@ -16609,10 +16812,14 @@ func (ec *executionContext) fieldContext_Mutation_updateContentAchievement(ctx c
 				return ec.fieldContext_ContentAchievement_id(ctx, field)
 			case "name":
 				return ec.fieldContext_ContentAchievement_name(ctx, field)
-			case "description":
-				return ec.fieldContext_ContentAchievement_description(ctx, field)
-			case "image":
-				return ec.fieldContext_ContentAchievement_image(ctx, field)
+			case "descriptionPending":
+				return ec.fieldContext_ContentAchievement_descriptionPending(ctx, field)
+			case "descriptionCompleted":
+				return ec.fieldContext_ContentAchievement_descriptionCompleted(ctx, field)
+			case "imagePending":
+				return ec.fieldContext_ContentAchievement_imagePending(ctx, field)
+			case "imageCompleted":
+				return ec.fieldContext_ContentAchievement_imageCompleted(ctx, field)
 			case "project":
 				return ec.fieldContext_ContentAchievement_project(ctx, field)
 			case "event":
@@ -16700,10 +16907,14 @@ func (ec *executionContext) fieldContext_Mutation_updateStreakAchievement(ctx co
 				return ec.fieldContext_StreakAchievement_id(ctx, field)
 			case "name":
 				return ec.fieldContext_StreakAchievement_name(ctx, field)
-			case "description":
-				return ec.fieldContext_StreakAchievement_description(ctx, field)
-			case "image":
-				return ec.fieldContext_StreakAchievement_image(ctx, field)
+			case "descriptionPending":
+				return ec.fieldContext_StreakAchievement_descriptionPending(ctx, field)
+			case "descriptionCompleted":
+				return ec.fieldContext_StreakAchievement_descriptionCompleted(ctx, field)
+			case "imagePending":
+				return ec.fieldContext_StreakAchievement_imagePending(ctx, field)
+			case "imageCompleted":
+				return ec.fieldContext_StreakAchievement_imageCompleted(ctx, field)
 			case "project":
 				return ec.fieldContext_StreakAchievement_project(ctx, field)
 			case "event":
@@ -17080,10 +17291,14 @@ func (ec *executionContext) fieldContext_Mutation_markContentItemCompleted(ctx c
 				return ec.fieldContext_ContentAchievement_id(ctx, field)
 			case "name":
 				return ec.fieldContext_ContentAchievement_name(ctx, field)
-			case "description":
-				return ec.fieldContext_ContentAchievement_description(ctx, field)
-			case "image":
-				return ec.fieldContext_ContentAchievement_image(ctx, field)
+			case "descriptionPending":
+				return ec.fieldContext_ContentAchievement_descriptionPending(ctx, field)
+			case "descriptionCompleted":
+				return ec.fieldContext_ContentAchievement_descriptionCompleted(ctx, field)
+			case "imagePending":
+				return ec.fieldContext_ContentAchievement_imagePending(ctx, field)
+			case "imageCompleted":
+				return ec.fieldContext_ContentAchievement_imageCompleted(ctx, field)
 			case "project":
 				return ec.fieldContext_ContentAchievement_project(ctx, field)
 			case "event":
@@ -17171,10 +17386,14 @@ func (ec *executionContext) fieldContext_Mutation_unmarkContentItemCompleted(ctx
 				return ec.fieldContext_ContentAchievement_id(ctx, field)
 			case "name":
 				return ec.fieldContext_ContentAchievement_name(ctx, field)
-			case "description":
-				return ec.fieldContext_ContentAchievement_description(ctx, field)
-			case "image":
-				return ec.fieldContext_ContentAchievement_image(ctx, field)
+			case "descriptionPending":
+				return ec.fieldContext_ContentAchievement_descriptionPending(ctx, field)
+			case "descriptionCompleted":
+				return ec.fieldContext_ContentAchievement_descriptionCompleted(ctx, field)
+			case "imagePending":
+				return ec.fieldContext_ContentAchievement_imagePending(ctx, field)
+			case "imageCompleted":
+				return ec.fieldContext_ContentAchievement_imageCompleted(ctx, field)
 			case "project":
 				return ec.fieldContext_ContentAchievement_project(ctx, field)
 			case "event":
@@ -17262,10 +17481,14 @@ func (ec *executionContext) fieldContext_Mutation_recordStreakActivity(ctx conte
 				return ec.fieldContext_StreakAchievement_id(ctx, field)
 			case "name":
 				return ec.fieldContext_StreakAchievement_name(ctx, field)
-			case "description":
-				return ec.fieldContext_StreakAchievement_description(ctx, field)
-			case "image":
-				return ec.fieldContext_StreakAchievement_image(ctx, field)
+			case "descriptionPending":
+				return ec.fieldContext_StreakAchievement_descriptionPending(ctx, field)
+			case "descriptionCompleted":
+				return ec.fieldContext_StreakAchievement_descriptionCompleted(ctx, field)
+			case "imagePending":
+				return ec.fieldContext_StreakAchievement_imagePending(ctx, field)
+			case "imageCompleted":
+				return ec.fieldContext_StreakAchievement_imageCompleted(ctx, field)
 			case "project":
 				return ec.fieldContext_StreakAchievement_project(ctx, field)
 			case "event":
@@ -19280,7 +19503,7 @@ func (ec *executionContext) _Mutation_createConsent(ctx context.Context, field g
 		ec.fieldContext_Mutation_createConsent,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().CreateConsent(ctx, fc.Args["key"].(string), fc.Args["title"].(string), fc.Args["body"].(string), fc.Args["url"].(*string), fc.Args["publishedAt"].(*scalars.DateTime), fc.Args["isRemote"].(*bool), fc.Args["managedBy"].(*string))
+			return ec.resolvers.Mutation().CreateConsent(ctx, fc.Args["key"].(string), fc.Args["title"].(string), fc.Args["shortText"].(*string), fc.Args["body"].(string), fc.Args["url"].(*string), fc.Args["publishedAt"].(*scalars.DateTime), fc.Args["isRemote"].(*bool), fc.Args["managedBy"].(*string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -19323,6 +19546,8 @@ func (ec *executionContext) fieldContext_Mutation_createConsent(ctx context.Cont
 				return ec.fieldContext_Consent_version(ctx, field)
 			case "title":
 				return ec.fieldContext_Consent_title(ctx, field)
+			case "shortText":
+				return ec.fieldContext_Consent_shortText(ctx, field)
 			case "body":
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
@@ -19361,7 +19586,7 @@ func (ec *executionContext) _Mutation_updateConsent(ctx context.Context, field g
 		ec.fieldContext_Mutation_updateConsent,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateConsent(ctx, fc.Args["id"].(string), fc.Args["title"].(*string), fc.Args["body"].(*string), fc.Args["url"].(*string), fc.Args["publishedAt"].(*scalars.DateTime))
+			return ec.resolvers.Mutation().UpdateConsent(ctx, fc.Args["id"].(string), fc.Args["title"].(*string), fc.Args["shortText"].(*string), fc.Args["body"].(*string), fc.Args["url"].(*string), fc.Args["publishedAt"].(*scalars.DateTime))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -19404,6 +19629,8 @@ func (ec *executionContext) fieldContext_Mutation_updateConsent(ctx context.Cont
 				return ec.fieldContext_Consent_version(ctx, field)
 			case "title":
 				return ec.fieldContext_Consent_title(ctx, field)
+			case "shortText":
+				return ec.fieldContext_Consent_shortText(ctx, field)
 			case "body":
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
@@ -20061,10 +20288,14 @@ func (ec *executionContext) fieldContext_Mutation_createQuizAchievement(ctx cont
 				return ec.fieldContext_QuizAchievement_id(ctx, field)
 			case "name":
 				return ec.fieldContext_QuizAchievement_name(ctx, field)
-			case "description":
-				return ec.fieldContext_QuizAchievement_description(ctx, field)
-			case "image":
-				return ec.fieldContext_QuizAchievement_image(ctx, field)
+			case "descriptionPending":
+				return ec.fieldContext_QuizAchievement_descriptionPending(ctx, field)
+			case "descriptionCompleted":
+				return ec.fieldContext_QuizAchievement_descriptionCompleted(ctx, field)
+			case "imagePending":
+				return ec.fieldContext_QuizAchievement_imagePending(ctx, field)
+			case "imageCompleted":
+				return ec.fieldContext_QuizAchievement_imageCompleted(ctx, field)
 			case "project":
 				return ec.fieldContext_QuizAchievement_project(ctx, field)
 			case "event":
@@ -20420,10 +20651,14 @@ func (ec *executionContext) fieldContext_Mutation_createContentAchievementFromEx
 				return ec.fieldContext_ContentAchievement_id(ctx, field)
 			case "name":
 				return ec.fieldContext_ContentAchievement_name(ctx, field)
-			case "description":
-				return ec.fieldContext_ContentAchievement_description(ctx, field)
-			case "image":
-				return ec.fieldContext_ContentAchievement_image(ctx, field)
+			case "descriptionPending":
+				return ec.fieldContext_ContentAchievement_descriptionPending(ctx, field)
+			case "descriptionCompleted":
+				return ec.fieldContext_ContentAchievement_descriptionCompleted(ctx, field)
+			case "imagePending":
+				return ec.fieldContext_ContentAchievement_imagePending(ctx, field)
+			case "imageCompleted":
+				return ec.fieldContext_ContentAchievement_imageCompleted(ctx, field)
 			case "project":
 				return ec.fieldContext_ContentAchievement_project(ctx, field)
 			case "event":
@@ -23928,6 +24163,8 @@ func (ec *executionContext) fieldContext_Query_consents(_ context.Context, field
 				return ec.fieldContext_Consent_version(ctx, field)
 			case "title":
 				return ec.fieldContext_Consent_title(ctx, field)
+			case "shortText":
+				return ec.fieldContext_Consent_shortText(ctx, field)
 			case "body":
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
@@ -23980,6 +24217,8 @@ func (ec *executionContext) fieldContext_Query_consent(ctx context.Context, fiel
 				return ec.fieldContext_Consent_version(ctx, field)
 			case "title":
 				return ec.fieldContext_Consent_title(ctx, field)
+			case "shortText":
+				return ec.fieldContext_Consent_shortText(ctx, field)
 			case "body":
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
@@ -24060,6 +24299,8 @@ func (ec *executionContext) fieldContext_Query_pendingConsents(_ context.Context
 				return ec.fieldContext_Consent_version(ctx, field)
 			case "title":
 				return ec.fieldContext_Consent_title(ctx, field)
+			case "shortText":
+				return ec.fieldContext_Consent_shortText(ctx, field)
 			case "body":
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
@@ -25302,14 +25543,14 @@ func (ec *executionContext) fieldContext_QuizAchievement_name(_ context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _QuizAchievement_description(ctx context.Context, field graphql.CollectedField, obj *model.QuizAchievement) (ret graphql.Marshaler) {
+func (ec *executionContext) _QuizAchievement_descriptionPending(ctx context.Context, field graphql.CollectedField, obj *model.QuizAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_QuizAchievement_description,
+		ec.fieldContext_QuizAchievement_descriptionPending,
 		func(ctx context.Context) (any, error) {
-			return obj.Description, nil
+			return obj.DescriptionPending, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -25318,7 +25559,7 @@ func (ec *executionContext) _QuizAchievement_description(ctx context.Context, fi
 	)
 }
 
-func (ec *executionContext) fieldContext_QuizAchievement_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_QuizAchievement_descriptionPending(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "QuizAchievement",
 		Field:      field,
@@ -25331,23 +25572,81 @@ func (ec *executionContext) fieldContext_QuizAchievement_description(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _QuizAchievement_image(ctx context.Context, field graphql.CollectedField, obj *model.QuizAchievement) (ret graphql.Marshaler) {
+func (ec *executionContext) _QuizAchievement_descriptionCompleted(ctx context.Context, field graphql.CollectedField, obj *model.QuizAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_QuizAchievement_image,
+		ec.fieldContext_QuizAchievement_descriptionCompleted,
 		func(ctx context.Context) (any, error) {
-			return obj.Image, nil
+			return obj.DescriptionCompleted, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		ec.marshalNString2string,
 		true,
-		false,
+		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_QuizAchievement_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_QuizAchievement_descriptionCompleted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizAchievement_imagePending(ctx context.Context, field graphql.CollectedField, obj *model.QuizAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizAchievement_imagePending,
+		func(ctx context.Context) (any, error) {
+			return obj.ImagePending, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizAchievement_imagePending(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizAchievement_imageCompleted(ctx context.Context, field graphql.CollectedField, obj *model.QuizAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizAchievement_imageCompleted,
+		func(ctx context.Context) (any, error) {
+			return obj.ImageCompleted, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizAchievement_imageCompleted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "QuizAchievement",
 		Field:      field,
@@ -28159,14 +28458,14 @@ func (ec *executionContext) fieldContext_SimpleAchievement_name(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _SimpleAchievement_description(ctx context.Context, field graphql.CollectedField, obj *model.SimpleAchievement) (ret graphql.Marshaler) {
+func (ec *executionContext) _SimpleAchievement_descriptionPending(ctx context.Context, field graphql.CollectedField, obj *model.SimpleAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_SimpleAchievement_description,
+		ec.fieldContext_SimpleAchievement_descriptionPending,
 		func(ctx context.Context) (any, error) {
-			return obj.Description, nil
+			return obj.DescriptionPending, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -28175,7 +28474,7 @@ func (ec *executionContext) _SimpleAchievement_description(ctx context.Context, 
 	)
 }
 
-func (ec *executionContext) fieldContext_SimpleAchievement_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SimpleAchievement_descriptionPending(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SimpleAchievement",
 		Field:      field,
@@ -28188,23 +28487,81 @@ func (ec *executionContext) fieldContext_SimpleAchievement_description(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _SimpleAchievement_image(ctx context.Context, field graphql.CollectedField, obj *model.SimpleAchievement) (ret graphql.Marshaler) {
+func (ec *executionContext) _SimpleAchievement_descriptionCompleted(ctx context.Context, field graphql.CollectedField, obj *model.SimpleAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_SimpleAchievement_image,
+		ec.fieldContext_SimpleAchievement_descriptionCompleted,
 		func(ctx context.Context) (any, error) {
-			return obj.Image, nil
+			return obj.DescriptionCompleted, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		ec.marshalNString2string,
 		true,
-		false,
+		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_SimpleAchievement_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SimpleAchievement_descriptionCompleted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleAchievement_imagePending(ctx context.Context, field graphql.CollectedField, obj *model.SimpleAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleAchievement_imagePending,
+		func(ctx context.Context) (any, error) {
+			return obj.ImagePending, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleAchievement_imagePending(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleAchievement_imageCompleted(ctx context.Context, field graphql.CollectedField, obj *model.SimpleAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleAchievement_imageCompleted,
+		func(ctx context.Context) (any, error) {
+			return obj.ImageCompleted, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleAchievement_imageCompleted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SimpleAchievement",
 		Field:      field,
@@ -29278,14 +29635,14 @@ func (ec *executionContext) fieldContext_StreakAchievement_name(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _StreakAchievement_description(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
+func (ec *executionContext) _StreakAchievement_descriptionPending(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_StreakAchievement_description,
+		ec.fieldContext_StreakAchievement_descriptionPending,
 		func(ctx context.Context) (any, error) {
-			return obj.Description, nil
+			return obj.DescriptionPending, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -29294,7 +29651,7 @@ func (ec *executionContext) _StreakAchievement_description(ctx context.Context, 
 	)
 }
 
-func (ec *executionContext) fieldContext_StreakAchievement_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_StreakAchievement_descriptionPending(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "StreakAchievement",
 		Field:      field,
@@ -29307,23 +29664,81 @@ func (ec *executionContext) fieldContext_StreakAchievement_description(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _StreakAchievement_image(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
+func (ec *executionContext) _StreakAchievement_descriptionCompleted(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_StreakAchievement_image,
+		ec.fieldContext_StreakAchievement_descriptionCompleted,
 		func(ctx context.Context) (any, error) {
-			return obj.Image, nil
+			return obj.DescriptionCompleted, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		ec.marshalNString2string,
 		true,
-		false,
+		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_StreakAchievement_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_StreakAchievement_descriptionCompleted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StreakAchievement_imagePending(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakAchievement_imagePending,
+		func(ctx context.Context) (any, error) {
+			return obj.ImagePending, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakAchievement_imagePending(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StreakAchievement_imageCompleted(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakAchievement_imageCompleted,
+		func(ctx context.Context) (any, error) {
+			return obj.ImageCompleted, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakAchievement_imageCompleted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "StreakAchievement",
 		Field:      field,
@@ -31739,6 +32154,8 @@ func (ec *executionContext) fieldContext_UserConsent_consent(_ context.Context, 
 				return ec.fieldContext_Consent_version(ctx, field)
 			case "title":
 				return ec.fieldContext_Consent_title(ctx, field)
+			case "shortText":
+				return ec.fieldContext_Consent_shortText(ctx, field)
 			case "body":
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
@@ -31877,6 +32294,8 @@ func (ec *executionContext) fieldContext_UserConsentHistoryEntry_consent(_ conte
 				return ec.fieldContext_Consent_version(ctx, field)
 			case "title":
 				return ec.fieldContext_Consent_title(ctx, field)
+			case "shortText":
+				return ec.fieldContext_Consent_shortText(ctx, field)
 			case "body":
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
@@ -34352,7 +34771,7 @@ func (ec *executionContext) unmarshalInputCreateContentAchievementFromExternalCo
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "projectId", "eventId", "challengeId", "points", "hidden", "externalContentIds"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden", "externalContentIds"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -34366,20 +34785,34 @@ func (ec *executionContext) unmarshalInputCreateContentAchievementFromExternalCo
 				return it, err
 			}
 			it.Name = data
-		case "description":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+		case "descriptionPending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionPending"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Description = data
-		case "image":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			it.DescriptionPending = data
+		case "descriptionCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionCompleted"))
+			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Image = data
+			it.DescriptionCompleted = data
+		case "imagePending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imagePending"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImagePending = data
+		case "imageCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageCompleted"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImageCompleted = data
 		case "projectId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
 			data, err := ec.unmarshalNID2string(ctx, v)
@@ -34435,7 +34868,7 @@ func (ec *executionContext) unmarshalInputCreateContentAchievementInput(ctx cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "projectId", "eventId", "challengeId", "points", "hidden", "items"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden", "items"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -34449,20 +34882,34 @@ func (ec *executionContext) unmarshalInputCreateContentAchievementInput(ctx cont
 				return it, err
 			}
 			it.Name = data
-		case "description":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+		case "descriptionPending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionPending"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Description = data
-		case "image":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			it.DescriptionPending = data
+		case "descriptionCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionCompleted"))
+			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Image = data
+			it.DescriptionCompleted = data
+		case "imagePending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imagePending"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImagePending = data
+		case "imageCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageCompleted"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImageCompleted = data
 		case "projectId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
 			data, err := ec.unmarshalNID2string(ctx, v)
@@ -34669,7 +35116,7 @@ func (ec *executionContext) unmarshalInputCreateQuizAchievementInput(ctx context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "projectId", "challengeId", "points", "hidden", "quizId", "minScorePercentage", "requireCompletion"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "imagePending", "imageCompleted", "projectId", "challengeId", "points", "hidden", "quizId", "minScorePercentage", "requireCompletion"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -34683,20 +35130,34 @@ func (ec *executionContext) unmarshalInputCreateQuizAchievementInput(ctx context
 				return it, err
 			}
 			it.Name = data
-		case "description":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+		case "descriptionPending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionPending"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Description = data
-		case "image":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			it.DescriptionPending = data
+		case "descriptionCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionCompleted"))
+			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Image = data
+			it.DescriptionCompleted = data
+		case "imagePending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imagePending"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImagePending = data
+		case "imageCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageCompleted"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImageCompleted = data
 		case "projectId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
 			data, err := ec.unmarshalNID2string(ctx, v)
@@ -35008,7 +35469,7 @@ func (ec *executionContext) unmarshalInputCreateSimpleAchievementInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "projectId", "eventId", "challengeId", "points", "hidden"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -35022,20 +35483,34 @@ func (ec *executionContext) unmarshalInputCreateSimpleAchievementInput(ctx conte
 				return it, err
 			}
 			it.Name = data
-		case "description":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+		case "descriptionPending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionPending"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Description = data
-		case "image":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			it.DescriptionPending = data
+		case "descriptionCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionCompleted"))
+			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Image = data
+			it.DescriptionCompleted = data
+		case "imagePending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imagePending"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImagePending = data
+		case "imageCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageCompleted"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImageCompleted = data
 		case "projectId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
 			data, err := ec.unmarshalNID2string(ctx, v)
@@ -35084,7 +35559,7 @@ func (ec *executionContext) unmarshalInputCreateStreakAchievementInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "projectId", "eventId", "challengeId", "points", "hidden", "neededStreak", "streakId"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden", "neededStreak", "streakId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -35098,20 +35573,34 @@ func (ec *executionContext) unmarshalInputCreateStreakAchievementInput(ctx conte
 				return it, err
 			}
 			it.Name = data
-		case "description":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+		case "descriptionPending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionPending"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Description = data
-		case "image":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			it.DescriptionPending = data
+		case "descriptionCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionCompleted"))
+			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Image = data
+			it.DescriptionCompleted = data
+		case "imagePending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imagePending"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImagePending = data
+		case "imageCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageCompleted"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImageCompleted = data
 		case "projectId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
 			data, err := ec.unmarshalNID2string(ctx, v)
@@ -36102,7 +36591,7 @@ func (ec *executionContext) unmarshalInputUpdateAchievementInput(ctx context.Con
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "eventId", "challengeId", "points", "hidden"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -36116,20 +36605,34 @@ func (ec *executionContext) unmarshalInputUpdateAchievementInput(ctx context.Con
 				return it, err
 			}
 			it.Name = data
-		case "description":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+		case "descriptionPending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionPending"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Description = data
-		case "image":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
+			it.DescriptionPending = data
+		case "descriptionCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionCompleted"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Image = data
+			it.DescriptionCompleted = data
+		case "imagePending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imagePending"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImagePending = data
+		case "imageCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageCompleted"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImageCompleted = data
 		case "eventId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("eventId"))
 			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
@@ -36316,7 +36819,7 @@ func (ec *executionContext) unmarshalInputUpdateContentAchievementInput(ctx cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "eventId", "challengeId", "points", "hidden", "items"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden", "items"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -36330,20 +36833,34 @@ func (ec *executionContext) unmarshalInputUpdateContentAchievementInput(ctx cont
 				return it, err
 			}
 			it.Name = data
-		case "description":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+		case "descriptionPending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionPending"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Description = data
-		case "image":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
+			it.DescriptionPending = data
+		case "descriptionCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionCompleted"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Image = data
+			it.DescriptionCompleted = data
+		case "imagePending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imagePending"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImagePending = data
+		case "imageCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageCompleted"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImageCompleted = data
 		case "eventId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("eventId"))
 			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
@@ -36668,7 +37185,7 @@ func (ec *executionContext) unmarshalInputUpdateStreakAchievementInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "eventId", "challengeId", "points", "hidden", "neededStreak", "streakId"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden", "neededStreak", "streakId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -36682,20 +37199,34 @@ func (ec *executionContext) unmarshalInputUpdateStreakAchievementInput(ctx conte
 				return it, err
 			}
 			it.Name = data
-		case "description":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+		case "descriptionPending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionPending"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Description = data
-		case "image":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
+			it.DescriptionPending = data
+		case "descriptionCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionCompleted"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Image = data
+			it.DescriptionCompleted = data
+		case "imagePending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imagePending"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImagePending = data
+		case "imageCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageCompleted"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImageCompleted = data
 		case "eventId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("eventId"))
 			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
@@ -37735,6 +38266,11 @@ func (ec *executionContext) _Consent(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "shortText":
+			out.Values[i] = ec._Consent_shortText(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "body":
 			field := field
 
@@ -37911,13 +38447,26 @@ func (ec *executionContext) _ContentAchievement(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "description":
-			out.Values[i] = ec._ContentAchievement_description(ctx, field, obj)
+		case "descriptionPending":
+			out.Values[i] = ec._ContentAchievement_descriptionPending(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "image":
-			out.Values[i] = ec._ContentAchievement_image(ctx, field, obj)
+		case "descriptionCompleted":
+			out.Values[i] = ec._ContentAchievement_descriptionCompleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "imagePending":
+			out.Values[i] = ec._ContentAchievement_imagePending(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "imageCompleted":
+			out.Values[i] = ec._ContentAchievement_imageCompleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "project":
 			field := field
 
@@ -42605,13 +43154,26 @@ func (ec *executionContext) _QuizAchievement(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "description":
-			out.Values[i] = ec._QuizAchievement_description(ctx, field, obj)
+		case "descriptionPending":
+			out.Values[i] = ec._QuizAchievement_descriptionPending(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "image":
-			out.Values[i] = ec._QuizAchievement_image(ctx, field, obj)
+		case "descriptionCompleted":
+			out.Values[i] = ec._QuizAchievement_descriptionCompleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "imagePending":
+			out.Values[i] = ec._QuizAchievement_imagePending(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "imageCompleted":
+			out.Values[i] = ec._QuizAchievement_imageCompleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "project":
 			field := field
 
@@ -44161,13 +44723,26 @@ func (ec *executionContext) _SimpleAchievement(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "description":
-			out.Values[i] = ec._SimpleAchievement_description(ctx, field, obj)
+		case "descriptionPending":
+			out.Values[i] = ec._SimpleAchievement_descriptionPending(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "image":
-			out.Values[i] = ec._SimpleAchievement_image(ctx, field, obj)
+		case "descriptionCompleted":
+			out.Values[i] = ec._SimpleAchievement_descriptionCompleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "imagePending":
+			out.Values[i] = ec._SimpleAchievement_imagePending(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "imageCompleted":
+			out.Values[i] = ec._SimpleAchievement_imageCompleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "project":
 			field := field
 
@@ -44764,13 +45339,26 @@ func (ec *executionContext) _StreakAchievement(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "description":
-			out.Values[i] = ec._StreakAchievement_description(ctx, field, obj)
+		case "descriptionPending":
+			out.Values[i] = ec._StreakAchievement_descriptionPending(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "image":
-			out.Values[i] = ec._StreakAchievement_image(ctx, field, obj)
+		case "descriptionCompleted":
+			out.Values[i] = ec._StreakAchievement_descriptionCompleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "imagePending":
+			out.Values[i] = ec._StreakAchievement_imagePending(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "imageCompleted":
+			out.Values[i] = ec._StreakAchievement_imageCompleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "project":
 			field := field
 

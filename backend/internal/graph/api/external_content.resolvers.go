@@ -62,15 +62,17 @@ func (r *mutationResolver) CreateContentAchievementFromExternalContent(ctx conte
 
 	// Delegate to existing CreateContentAchievement resolver
 	createInput := model.CreateContentAchievementInput{
-		Name:        input.Name,
-		Description: input.Description,
-		Image:       input.Image,
-		ProjectID:   input.ProjectID,
-		EventID:     input.EventID,
-		ChallengeID: input.ChallengeID,
-		Points:      input.Points,
-		Hidden:      input.Hidden,
-		Items:       items,
+		Name:                 input.Name,
+		DescriptionPending:   input.DescriptionPending,
+		DescriptionCompleted: input.DescriptionCompleted,
+		ImagePending:         input.ImagePending,
+		ImageCompleted:       input.ImageCompleted,
+		ProjectID:            input.ProjectID,
+		EventID:              input.EventID,
+		ChallengeID:          input.ChallengeID,
+		Points:               input.Points,
+		Hidden:               input.Hidden,
+		Items:                items,
 	}
 
 	return r.CreateContentAchievement(ctx, createInput)

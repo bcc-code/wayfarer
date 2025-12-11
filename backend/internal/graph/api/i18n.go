@@ -415,6 +415,7 @@ func (r *Resolver) LoadConsentWithTranslation(ctx context.Context, id string) (*
 	// Create copy with translations applied
 	translated := *consent
 	translated.Title = applyStringTranslation(trans.Title, consent.Title)
+	translated.ShortText = applyStringTranslation(trans.ShortText, consent.ShortText)
 	translated.BodyMarkdown = applyStringTranslation(trans.Body, consent.BodyMarkdown)
 	return &translated, nil
 }
@@ -442,6 +443,7 @@ func (r *Resolver) ApplyTranslationToConsent(ctx context.Context, consent *model
 
 	translated := *consent
 	translated.Title = applyStringTranslation(trans.Title, consent.Title)
+	translated.ShortText = applyStringTranslation(trans.ShortText, consent.ShortText)
 	translated.BodyMarkdown = applyStringTranslation(trans.Body, consent.BodyMarkdown)
 	return &translated
 }

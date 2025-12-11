@@ -35,13 +35,16 @@ func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input mo
 
 	// Build params for database
 	params := sqlc.CreateAchievementParams{
-		ID:              achievementID,
-		AchievementType: "SIMPLE",
-		ProjectID:       input.ProjectID,
-		Name:            input.Name,
-		Description:     input.Description,
-		Points:          int32(input.Points),
-		Hidden:          input.Hidden,
+		ID:                   achievementID,
+		AchievementType:      "SIMPLE",
+		ProjectID:            input.ProjectID,
+		Name:                 input.Name,
+		DescriptionPending:   input.DescriptionPending,
+		DescriptionCompleted: input.DescriptionCompleted,
+		ImagePending:         input.ImagePending,
+		ImageCompleted:       input.ImageCompleted,
+		Points:               int32(input.Points),
+		Hidden:               input.Hidden,
 	}
 
 	// Set optional fields
@@ -50,9 +53,6 @@ func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input mo
 	}
 	if input.ChallengeID != nil {
 		params.ChallengeID = *input.ChallengeID
-	}
-	if input.Image != nil {
-		params.ImageUrl = *input.Image
 	}
 
 	// Create achievement in database
@@ -71,15 +71,17 @@ func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input mo
 	}
 
 	return &model.SimpleAchievement{
-		ID:          achievement.ID,
-		Name:        achievement.Name,
-		Description: achievement.Description,
-		Image:       achievement.ImageUrl,
-		Points:      int(achievement.Points),
-		Hidden:      hidden,
-		ProjectID:   achievement.ProjectID,
-		EventID:     achievement.EventID,
-		ChallengeID: achievement.ChallengeID,
+		ID:                   achievement.ID,
+		Name:                 achievement.Name,
+		DescriptionPending:   achievement.DescriptionPending,
+		DescriptionCompleted: achievement.DescriptionCompleted,
+		ImagePending:         achievement.ImagePending,
+		ImageCompleted:       achievement.ImageCompleted,
+		Points:               int(achievement.Points),
+		Hidden:               hidden,
+		ProjectID:            achievement.ProjectID,
+		EventID:              achievement.EventID,
+		ChallengeID:          achievement.ChallengeID,
 	}, nil
 }
 
@@ -113,13 +115,16 @@ func (r *mutationResolver) CreateContentAchievement(ctx context.Context, input m
 
 	// Create achievement in database
 	achievementParams := sqlc.CreateAchievementParams{
-		ID:              achievementID,
-		AchievementType: "CONTENT",
-		ProjectID:       input.ProjectID,
-		Name:            input.Name,
-		Description:     input.Description,
-		Points:          int32(input.Points),
-		Hidden:          input.Hidden,
+		ID:                   achievementID,
+		AchievementType:      "CONTENT",
+		ProjectID:            input.ProjectID,
+		Name:                 input.Name,
+		DescriptionPending:   input.DescriptionPending,
+		DescriptionCompleted: input.DescriptionCompleted,
+		ImagePending:         input.ImagePending,
+		ImageCompleted:       input.ImageCompleted,
+		Points:               int32(input.Points),
+		Hidden:               input.Hidden,
 	}
 
 	// Set optional fields
@@ -128,9 +133,6 @@ func (r *mutationResolver) CreateContentAchievement(ctx context.Context, input m
 	}
 	if input.ChallengeID != nil {
 		achievementParams.ChallengeID = *input.ChallengeID
-	}
-	if input.Image != nil {
-		achievementParams.ImageUrl = *input.Image
 	}
 
 	achievement, err := qtx.CreateAchievement(ctx, achievementParams)
@@ -172,16 +174,18 @@ func (r *mutationResolver) CreateContentAchievement(ctx context.Context, input m
 	}
 
 	return &model.ContentAchievement{
-		ID:          achievement.ID,
-		Name:        achievement.Name,
-		Description: achievement.Description,
-		Image:       achievement.ImageUrl,
-		Points:      int(achievement.Points),
-		Hidden:      hidden,
-		ProjectID:   achievement.ProjectID,
-		EventID:     achievement.EventID,
-		ChallengeID: achievement.ChallengeID,
-		TotalItems:  len(input.Items),
+		ID:                   achievement.ID,
+		Name:                 achievement.Name,
+		DescriptionPending:   achievement.DescriptionPending,
+		DescriptionCompleted: achievement.DescriptionCompleted,
+		ImagePending:         achievement.ImagePending,
+		ImageCompleted:       achievement.ImageCompleted,
+		Points:               int(achievement.Points),
+		Hidden:               hidden,
+		ProjectID:            achievement.ProjectID,
+		EventID:              achievement.EventID,
+		ChallengeID:          achievement.ChallengeID,
+		TotalItems:           len(input.Items),
 	}, nil
 }
 
@@ -215,13 +219,16 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 
 	// Create achievement in database
 	achievementParams := sqlc.CreateAchievementParams{
-		ID:              achievementID,
-		AchievementType: "STREAK",
-		ProjectID:       input.ProjectID,
-		Name:            input.Name,
-		Description:     input.Description,
-		Points:          int32(input.Points),
-		Hidden:          input.Hidden,
+		ID:                   achievementID,
+		AchievementType:      "STREAK",
+		ProjectID:            input.ProjectID,
+		Name:                 input.Name,
+		DescriptionPending:   input.DescriptionPending,
+		DescriptionCompleted: input.DescriptionCompleted,
+		ImagePending:         input.ImagePending,
+		ImageCompleted:       input.ImageCompleted,
+		Points:               int32(input.Points),
+		Hidden:               input.Hidden,
 	}
 
 	// Set optional fields
@@ -230,9 +237,6 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 	}
 	if input.ChallengeID != nil {
 		achievementParams.ChallengeID = *input.ChallengeID
-	}
-	if input.Image != nil {
-		achievementParams.ImageUrl = *input.Image
 	}
 
 	achievement, err := qtx.CreateAchievement(ctx, achievementParams)
@@ -266,17 +270,19 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 	}
 
 	return &model.StreakAchievement{
-		ID:           achievement.ID,
-		Name:         achievement.Name,
-		Description:  achievement.Description,
-		Image:        achievement.ImageUrl,
-		Points:       int(achievement.Points),
-		Hidden:       hidden,
-		ProjectID:    achievement.ProjectID,
-		EventID:      achievement.EventID,
-		ChallengeID:  achievement.ChallengeID,
-		NeededStreak: input.NeededStreak,
-		StreakID:     input.StreakID,
+		ID:                   achievement.ID,
+		Name:                 achievement.Name,
+		DescriptionPending:   achievement.DescriptionPending,
+		DescriptionCompleted: achievement.DescriptionCompleted,
+		ImagePending:         achievement.ImagePending,
+		ImageCompleted:       achievement.ImageCompleted,
+		Points:               int(achievement.Points),
+		Hidden:               hidden,
+		ProjectID:            achievement.ProjectID,
+		EventID:              achievement.EventID,
+		ChallengeID:          achievement.ChallengeID,
+		NeededStreak:         input.NeededStreak,
+		StreakID:             input.StreakID,
 	}, nil
 }
 
@@ -319,13 +325,15 @@ func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, inp
 
 	// Build params for database
 	params := sqlc.UpdateAchievementParams{
-		ID:          id,
-		Name:        input.Name,
-		Description: input.Description,
-		ImageUrl:    input.Image,
-		EventID:     input.EventID,
-		ChallengeID: input.ChallengeID,
-		Hidden:      input.Hidden,
+		ID:                   id,
+		Name:                 input.Name,
+		DescriptionPending:   input.DescriptionPending,
+		DescriptionCompleted: input.DescriptionCompleted,
+		ImagePending:         input.ImagePending,
+		ImageCompleted:       input.ImageCompleted,
+		EventID:              input.EventID,
+		ChallengeID:          input.ChallengeID,
+		Hidden:               input.Hidden,
 	}
 
 	// Convert points if provided
@@ -346,7 +354,7 @@ func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, inp
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
 
 	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.Description != nil {
+	if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil {
 		_ = r.DB.Queries.DeleteAchievementTranslations(ctx, id)
 		r.Cache.DeletePrefix(cache.PrefixTranslation + "achievement:" + id)
 	}
@@ -410,15 +418,17 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 		qtx := r.DB.Queries.WithTx(tx)
 
 		// Update common fields if provided
-		if input.Name != nil || input.Description != nil || input.Image != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
+		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
 			params := sqlc.UpdateAchievementParams{
-				ID:          id,
-				Name:        input.Name,
-				Description: input.Description,
-				ImageUrl:    input.Image,
-				EventID:     input.EventID,
-				ChallengeID: input.ChallengeID,
-				Hidden:      input.Hidden,
+				ID:                   id,
+				Name:                 input.Name,
+				DescriptionPending:   input.DescriptionPending,
+				DescriptionCompleted: input.DescriptionCompleted,
+				ImagePending:         input.ImagePending,
+				ImageCompleted:       input.ImageCompleted,
+				EventID:              input.EventID,
+				ChallengeID:          input.ChallengeID,
+				Hidden:               input.Hidden,
 			}
 			if input.Points != nil {
 				points := int32(*input.Points)
@@ -454,13 +464,15 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 	} else {
 		// Just update common fields without transaction
 		params := sqlc.UpdateAchievementParams{
-			ID:          id,
-			Name:        input.Name,
-			Description: input.Description,
-			ImageUrl:    input.Image,
-			EventID:     input.EventID,
-			ChallengeID: input.ChallengeID,
-			Hidden:      input.Hidden,
+			ID:                   id,
+			Name:                 input.Name,
+			DescriptionPending:   input.DescriptionPending,
+			DescriptionCompleted: input.DescriptionCompleted,
+			ImagePending:         input.ImagePending,
+			ImageCompleted:       input.ImageCompleted,
+			EventID:              input.EventID,
+			ChallengeID:          input.ChallengeID,
+			Hidden:               input.Hidden,
 		}
 		if input.Points != nil {
 			points := int32(*input.Points)
@@ -480,7 +492,7 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 	r.Loaders.ContentItemsByAchievementLoader.Clear(ctx, id)
 
 	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.Description != nil {
+	if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil {
 		_ = r.DB.Queries.DeleteAchievementTranslations(ctx, id)
 		r.Cache.DeletePrefix(cache.PrefixTranslation + "achievement:" + id)
 	}
@@ -549,15 +561,17 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 		qtx := r.DB.Queries.WithTx(tx)
 
 		// Update common fields if provided
-		if input.Name != nil || input.Description != nil || input.Image != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
+		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
 			params := sqlc.UpdateAchievementParams{
-				ID:          id,
-				Name:        input.Name,
-				Description: input.Description,
-				ImageUrl:    input.Image,
-				EventID:     input.EventID,
-				ChallengeID: input.ChallengeID,
-				Hidden:      input.Hidden,
+				ID:                   id,
+				Name:                 input.Name,
+				DescriptionPending:   input.DescriptionPending,
+				DescriptionCompleted: input.DescriptionCompleted,
+				ImagePending:         input.ImagePending,
+				ImageCompleted:       input.ImageCompleted,
+				EventID:              input.EventID,
+				ChallengeID:          input.ChallengeID,
+				Hidden:               input.Hidden,
 			}
 			if input.Points != nil {
 				points := int32(*input.Points)
@@ -589,13 +603,15 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 	} else {
 		// Just update common fields without transaction
 		params := sqlc.UpdateAchievementParams{
-			ID:          id,
-			Name:        input.Name,
-			Description: input.Description,
-			ImageUrl:    input.Image,
-			EventID:     input.EventID,
-			ChallengeID: input.ChallengeID,
-			Hidden:      input.Hidden,
+			ID:                   id,
+			Name:                 input.Name,
+			DescriptionPending:   input.DescriptionPending,
+			DescriptionCompleted: input.DescriptionCompleted,
+			ImagePending:         input.ImagePending,
+			ImageCompleted:       input.ImageCompleted,
+			EventID:              input.EventID,
+			ChallengeID:          input.ChallengeID,
+			Hidden:               input.Hidden,
 		}
 		if input.Points != nil {
 			points := int32(*input.Points)
@@ -613,7 +629,7 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
 
 	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.Description != nil {
+	if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil {
 		_ = r.DB.Queries.DeleteAchievementTranslations(ctx, id)
 		r.Cache.DeletePrefix(cache.PrefixTranslation + "achievement:" + id)
 	}

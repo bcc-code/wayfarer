@@ -9,27 +9,30 @@ import (
 )
 
 type Achievement struct {
-	ID              string             `json:"id"`
-	AchievementType string             `json:"achievement_type"`
-	ProjectID       string             `json:"project_id"`
-	EventID         *string            `json:"event_id"`
-	ChallengeID     *string            `json:"challenge_id"`
-	Name            string             `json:"name"`
-	Description     string             `json:"description"`
-	ImageUrl        *string            `json:"image_url"`
-	Points          int32              `json:"points"`
-	Hidden          *bool              `json:"hidden"`
-	CreatedAt       pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	ID                   string             `json:"id"`
+	AchievementType      string             `json:"achievement_type"`
+	ProjectID            string             `json:"project_id"`
+	EventID              *string            `json:"event_id"`
+	ChallengeID          *string            `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	Points               int32              `json:"points"`
+	Hidden               *bool              `json:"hidden"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	DescriptionPending   string             `json:"description_pending"`
+	DescriptionCompleted string             `json:"description_completed"`
+	ImagePending         string             `json:"image_pending"`
+	ImageCompleted       string             `json:"image_completed"`
 }
 
 type AchievementTranslation struct {
-	AchievementID string             `json:"achievement_id"`
-	LanguageCode  string             `json:"language_code"`
-	Name          *string            `json:"name"`
-	Description   *string            `json:"description"`
-	CreatedAt     pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	AchievementID        string             `json:"achievement_id"`
+	LanguageCode         string             `json:"language_code"`
+	Name                 *string            `json:"name"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	DescriptionPending   *string            `json:"description_pending"`
+	DescriptionCompleted *string            `json:"description_completed"`
 }
 
 type Challenge struct {
@@ -85,6 +88,7 @@ type Consent struct {
 	Url         *string            `json:"url"`
 	ManagedBy   *string            `json:"managed_by"`
 	IsRemote    bool               `json:"is_remote"`
+	ShortText   string             `json:"short_text"`
 }
 
 type ConsentTranslation struct {
@@ -94,6 +98,7 @@ type ConsentTranslation struct {
 	Body         *string            `json:"body"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	ShortText    *string            `json:"short_text"`
 }
 
 type ContentAchievement struct {

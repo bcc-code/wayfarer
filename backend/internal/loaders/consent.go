@@ -49,13 +49,22 @@ func consentByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(cont
 					publishedAt = &dt
 				}
 
+				managementType := model.ConsentManagementTypeLocal
+				if row.IsRemote {
+					managementType = model.ConsentManagementTypeRemote
+				}
+
 				consent := &model.Consent{
-					ID:           row.ID,
-					Key:          row.Key,
-					Version:      int(row.Version),
-					Title:        row.Title,
-					BodyMarkdown: row.Body,
-					PublishedAt:  publishedAt,
+					ID:             row.ID,
+					Key:            row.Key,
+					Version:        int(row.Version),
+					Title:          row.Title,
+					ShortText:      row.ShortText,
+					BodyMarkdown:   row.Body,
+					URL:            row.Url,
+					PublishedAt:    publishedAt,
+					ManagementType: managementType,
+					ManagedBy:      row.ManagedBy,
 				}
 
 				consentMap[row.ID] = consent

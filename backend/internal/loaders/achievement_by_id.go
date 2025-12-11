@@ -97,15 +97,17 @@ func achievementByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(
 
 func convertToSimpleAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool) (model.Achievement, error) {
 	return &model.SimpleAchievement{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: row.Description,
-		Image:       row.ImageUrl,
-		Points:      int(row.Points),
-		Hidden:      hidden,
-		ProjectID:   row.ProjectID,
-		EventID:     row.EventID,
-		ChallengeID: row.ChallengeID,
+		ID:                   row.ID,
+		Name:                 row.Name,
+		DescriptionPending:   row.DescriptionPending,
+		DescriptionCompleted: row.DescriptionCompleted,
+		ImagePending:         row.ImagePending,
+		ImageCompleted:       row.ImageCompleted,
+		Points:               int(row.Points),
+		Hidden:               hidden,
+		ProjectID:            row.ProjectID,
+		EventID:              row.EventID,
+		ChallengeID:          row.ChallengeID,
 	}, nil
 }
 
@@ -125,16 +127,18 @@ func convertToContentAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool)
 	}
 
 	return &model.ContentAchievement{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: row.Description,
-		Image:       row.ImageUrl,
-		Points:      int(row.Points),
-		Hidden:      hidden,
-		ProjectID:   row.ProjectID,
-		EventID:     row.EventID,
-		ChallengeID: row.ChallengeID,
-		TotalItems:  totalItems,
+		ID:                   row.ID,
+		Name:                 row.Name,
+		DescriptionPending:   row.DescriptionPending,
+		DescriptionCompleted: row.DescriptionCompleted,
+		ImagePending:         row.ImagePending,
+		ImageCompleted:       row.ImageCompleted,
+		Points:               int(row.Points),
+		Hidden:               hidden,
+		ProjectID:            row.ProjectID,
+		EventID:              row.EventID,
+		ChallengeID:          row.ChallengeID,
+		TotalItems:           totalItems,
 		// Items, UserCompletedItems, NextItem, and CompletedItemCount will be populated by resolvers
 	}, nil
 }
@@ -145,17 +149,19 @@ func convertToStreakAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool) 
 	}
 
 	return &model.StreakAchievement{
-		ID:           row.ID,
-		Name:         row.Name,
-		Description:  row.Description,
-		Image:        row.ImageUrl,
-		Points:       int(row.Points),
-		Hidden:       hidden,
-		ProjectID:    row.ProjectID,
-		EventID:      row.EventID,
-		ChallengeID:  row.ChallengeID,
-		StreakID:     *row.StreakID,
-		NeededStreak: int(*row.NeededStreak),
-		Streak:       nil, // Will be populated by resolver
+		ID:                   row.ID,
+		Name:                 row.Name,
+		DescriptionPending:   row.DescriptionPending,
+		DescriptionCompleted: row.DescriptionCompleted,
+		ImagePending:         row.ImagePending,
+		ImageCompleted:       row.ImageCompleted,
+		Points:               int(row.Points),
+		Hidden:               hidden,
+		ProjectID:            row.ProjectID,
+		EventID:              row.EventID,
+		ChallengeID:          row.ChallengeID,
+		StreakID:             *row.StreakID,
+		NeededStreak:         int(*row.NeededStreak),
+		Streak:               nil, // Will be populated by resolver
 	}, nil
 }

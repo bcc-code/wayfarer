@@ -75,7 +75,7 @@ func (q *Queries) DeleteTeamTranslations(ctx context.Context, teamID string) err
 }
 
 const GetAchievementTranslationsByIDs = `-- name: GetAchievementTranslationsByIDs :many
-SELECT achievement_id, language_code, name, description
+SELECT achievement_id, language_code, name, description_pending, description_completed
 FROM achievement_translations
 WHERE achievement_id = ANY($1::text[])
   AND language_code = $2::text
@@ -87,10 +87,11 @@ type GetAchievementTranslationsByIDsParams struct {
 }
 
 type GetAchievementTranslationsByIDsRow struct {
-	AchievementID string  `json:"achievement_id"`
-	LanguageCode  string  `json:"language_code"`
-	Name          *string `json:"name"`
-	Description   *string `json:"description"`
+	AchievementID        string  `json:"achievement_id"`
+	LanguageCode         string  `json:"language_code"`
+	Name                 *string `json:"name"`
+	DescriptionPending   *string `json:"description_pending"`
+	DescriptionCompleted *string `json:"description_completed"`
 }
 
 func (q *Queries) GetAchievementTranslationsByIDs(ctx context.Context, arg GetAchievementTranslationsByIDsParams) ([]*GetAchievementTranslationsByIDsRow, error) {
@@ -106,7 +107,8 @@ func (q *Queries) GetAchievementTranslationsByIDs(ctx context.Context, arg GetAc
 			&i.AchievementID,
 			&i.LanguageCode,
 			&i.Name,
-			&i.Description,
+			&i.DescriptionPending,
+			&i.DescriptionCompleted,
 		); err != nil {
 			return nil, err
 		}

@@ -374,8 +374,10 @@ type ExternalChallenge implements Challenge {
 interface Achievement {
     id: ID!
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -389,8 +391,10 @@ interface Achievement {
 type SimpleAchievement implements Achievement {
     id: ID!
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -402,8 +406,10 @@ type SimpleAchievement implements Achievement {
 type ContentAchievement implements Achievement {
     id: ID!
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -421,8 +427,10 @@ type ContentAchievement implements Achievement {
 type StreakAchievement implements Achievement {
     id: ID!
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -436,8 +444,10 @@ type StreakAchievement implements Achievement {
 type QuizAchievement implements Achievement {
     id: ID!
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -713,8 +723,10 @@ input UpdateChallengeInput {
 
 input CreateSimpleAchievementInput {
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     projectId: ID!
     eventId: ID
     challengeId: ID
@@ -724,8 +736,10 @@ input CreateSimpleAchievementInput {
 
 input CreateContentAchievementInput {
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     projectId: ID!
     eventId: ID
     challengeId: ID
@@ -736,8 +750,10 @@ input CreateContentAchievementInput {
 
 input CreateStreakAchievementInput {
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     projectId: ID!
     eventId: ID
     challengeId: ID
@@ -749,8 +765,10 @@ input CreateStreakAchievementInput {
 
 input CreateQuizAchievementInput {
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     projectId: ID!
     challengeId: ID
     points: Int!
@@ -848,8 +866,10 @@ input QuizFilter {
 
 input UpdateAchievementInput {
     name: String
-    description: String
-    image: String
+    descriptionPending: String
+    descriptionCompleted: String
+    imagePending: String
+    imageCompleted: String
     eventId: ID
     challengeId: ID
     points: Int
@@ -858,8 +878,10 @@ input UpdateAchievementInput {
 
 input UpdateContentAchievementInput {
     name: String
-    description: String
-    image: String
+    descriptionPending: String
+    descriptionCompleted: String
+    imagePending: String
+    imageCompleted: String
     eventId: ID
     challengeId: ID
     points: Int
@@ -869,8 +891,10 @@ input UpdateContentAchievementInput {
 
 input UpdateStreakAchievementInput {
     name: String
-    description: String
-    image: String
+    descriptionPending: String
+    descriptionCompleted: String
+    imagePending: String
+    imageCompleted: String
     eventId: ID
     challengeId: ID
     points: Int

@@ -70,8 +70,10 @@ input ExternalContentFilter {
 
 input CreateContentAchievementFromExternalContentInput {
     name: String!
-    description: String!
-    image: String
+    descriptionPending: String!
+    descriptionCompleted: String!
+    imagePending: String!
+    imageCompleted: String!
     projectId: ID!
     eventId: ID
     challengeId: ID

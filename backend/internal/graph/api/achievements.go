@@ -138,15 +138,17 @@ func convertRowToAchievement(row *sqlc.GetAchievementsFilteredCursorRow) (model.
 
 func convertRowToSimpleAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hidden bool) model.Achievement {
 	return &model.SimpleAchievement{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: row.Description,
-		Image:       row.ImageUrl,
-		Points:      int(row.Points),
-		Hidden:      hidden,
-		ProjectID:   row.ProjectID,
-		EventID:     row.EventID,
-		ChallengeID: row.ChallengeID,
+		ID:                   row.ID,
+		Name:                 row.Name,
+		DescriptionPending:   row.DescriptionPending,
+		DescriptionCompleted: row.DescriptionCompleted,
+		ImagePending:         row.ImagePending,
+		ImageCompleted:       row.ImageCompleted,
+		Points:               int(row.Points),
+		Hidden:               hidden,
+		ProjectID:            row.ProjectID,
+		EventID:              row.EventID,
+		ChallengeID:          row.ChallengeID,
 	}
 }
 
@@ -166,16 +168,18 @@ func convertRowToContentAchievement(row *sqlc.GetAchievementsFilteredCursorRow, 
 	}
 
 	return &model.ContentAchievement{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: row.Description,
-		Image:       row.ImageUrl,
-		Points:      int(row.Points),
-		Hidden:      hidden,
-		ProjectID:   row.ProjectID,
-		EventID:     row.EventID,
-		ChallengeID: row.ChallengeID,
-		TotalItems:  totalItems,
+		ID:                   row.ID,
+		Name:                 row.Name,
+		DescriptionPending:   row.DescriptionPending,
+		DescriptionCompleted: row.DescriptionCompleted,
+		ImagePending:         row.ImagePending,
+		ImageCompleted:       row.ImageCompleted,
+		Points:               int(row.Points),
+		Hidden:               hidden,
+		ProjectID:            row.ProjectID,
+		EventID:              row.EventID,
+		ChallengeID:          row.ChallengeID,
+		TotalItems:           totalItems,
 		// Items, UserCompletedItems, NextItem, and CompletedItemCount will be populated by resolvers
 	}, nil
 }
@@ -186,17 +190,19 @@ func convertRowToStreakAchievement(row *sqlc.GetAchievementsFilteredCursorRow, h
 	}
 
 	return &model.StreakAchievement{
-		ID:           row.ID,
-		Name:         row.Name,
-		Description:  row.Description,
-		Image:        row.ImageUrl,
-		Points:       int(row.Points),
-		Hidden:       hidden,
-		ProjectID:    row.ProjectID,
-		EventID:      row.EventID,
-		ChallengeID:  row.ChallengeID,
-		NeededStreak: int(*row.NeededStreak),
-		StreakID:     *row.StreakID,
+		ID:                   row.ID,
+		Name:                 row.Name,
+		DescriptionPending:   row.DescriptionPending,
+		DescriptionCompleted: row.DescriptionCompleted,
+		ImagePending:         row.ImagePending,
+		ImageCompleted:       row.ImageCompleted,
+		Points:               int(row.Points),
+		Hidden:               hidden,
+		ProjectID:            row.ProjectID,
+		EventID:              row.EventID,
+		ChallengeID:          row.ChallengeID,
+		NeededStreak:         int(*row.NeededStreak),
+		StreakID:             *row.StreakID,
 	}, nil
 }
 
@@ -220,15 +226,17 @@ func convertPublishedContentAchievementRow(row *sqlc.GetPublishedContentAchievem
 	}
 
 	return &model.ContentAchievement{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: row.Description,
-		Image:       row.ImageUrl,
-		Points:      int(row.Points),
-		Hidden:      hidden,
-		ProjectID:   row.ProjectID,
-		EventID:     row.EventID,
-		ChallengeID: row.ChallengeID,
-		TotalItems:  totalItems,
+		ID:                   row.ID,
+		Name:                 row.Name,
+		DescriptionPending:   row.DescriptionPending,
+		DescriptionCompleted: row.DescriptionCompleted,
+		ImagePending:         row.ImagePending,
+		ImageCompleted:       row.ImageCompleted,
+		Points:               int(row.Points),
+		Hidden:               hidden,
+		ProjectID:            row.ProjectID,
+		EventID:              row.EventID,
+		ChallengeID:          row.ChallengeID,
+		TotalItems:           totalItems,
 	}
 }

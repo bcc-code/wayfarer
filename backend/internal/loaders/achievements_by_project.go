@@ -87,28 +87,32 @@ func convertRowToAchievement(row *sqlc.GetAchievementsByProjectIDsRow) (model.Ac
 	switch row.AchievementType {
 	case "SIMPLE":
 		return &model.SimpleAchievement{
-			ID:          row.ID,
-			Name:        row.Name,
-			Description: row.Description,
-			Image:       row.ImageUrl,
-			Points:      int(row.Points),
-			Hidden:      hidden,
-			ProjectID:   row.ProjectID,
-			EventID:     row.EventID,
-			ChallengeID: row.ChallengeID,
+			ID:                   row.ID,
+			Name:                 row.Name,
+			DescriptionPending:   row.DescriptionPending,
+			DescriptionCompleted: row.DescriptionCompleted,
+			ImagePending:         row.ImagePending,
+			ImageCompleted:       row.ImageCompleted,
+			Points:               int(row.Points),
+			Hidden:               hidden,
+			ProjectID:            row.ProjectID,
+			EventID:              row.EventID,
+			ChallengeID:          row.ChallengeID,
 		}, nil
 
 	case "CONTENT":
 		return &model.ContentAchievement{
-			ID:          row.ID,
-			Name:        row.Name,
-			Description: row.Description,
-			Image:       row.ImageUrl,
-			Points:      int(row.Points),
-			Hidden:      hidden,
-			ProjectID:   row.ProjectID,
-			EventID:     row.EventID,
-			ChallengeID: row.ChallengeID,
+			ID:                   row.ID,
+			Name:                 row.Name,
+			DescriptionPending:   row.DescriptionPending,
+			DescriptionCompleted: row.DescriptionCompleted,
+			ImagePending:         row.ImagePending,
+			ImageCompleted:       row.ImageCompleted,
+			Points:               int(row.Points),
+			Hidden:               hidden,
+			ProjectID:            row.ProjectID,
+			EventID:              row.EventID,
+			ChallengeID:          row.ChallengeID,
 			// Items, UserCompletedItems, NextItem, TotalItems, and CompletedItemCount will be populated by resolvers
 		}, nil
 
@@ -117,18 +121,20 @@ func convertRowToAchievement(row *sqlc.GetAchievementsByProjectIDsRow) (model.Ac
 			return nil, fmt.Errorf("streak achievement missing required fields: streak_id or needed_streak")
 		}
 		return &model.StreakAchievement{
-			ID:           row.ID,
-			Name:         row.Name,
-			Description:  row.Description,
-			Image:        row.ImageUrl,
-			Points:       int(row.Points),
-			Hidden:       hidden,
-			ProjectID:    row.ProjectID,
-			EventID:      row.EventID,
-			ChallengeID:  row.ChallengeID,
-			StreakID:     *row.StreakID,
-			NeededStreak: int(*row.NeededStreak),
-			Streak:       nil, // Will be populated by resolver
+			ID:                   row.ID,
+			Name:                 row.Name,
+			DescriptionPending:   row.DescriptionPending,
+			DescriptionCompleted: row.DescriptionCompleted,
+			ImagePending:         row.ImagePending,
+			ImageCompleted:       row.ImageCompleted,
+			Points:               int(row.Points),
+			Hidden:               hidden,
+			ProjectID:            row.ProjectID,
+			EventID:              row.EventID,
+			ChallengeID:          row.ChallengeID,
+			StreakID:             *row.StreakID,
+			NeededStreak:         int(*row.NeededStreak),
+			Streak:               nil, // Will be populated by resolver
 		}, nil
 
 	default:

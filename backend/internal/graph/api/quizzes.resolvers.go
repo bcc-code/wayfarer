@@ -529,18 +529,18 @@ func (r *mutationResolver) CreateQuizAchievement(ctx context.Context, input mode
 
 	// Create achievement record
 	achievementParams := sqlc.CreateAchievementParams{
-		ID:              achievementID,
-		ProjectID:       input.ProjectID,
-		AchievementType: "QUIZ",
-		Name:            input.Name,
-		Description:     input.Description,
-		Points:          int32(input.Points),
-		Hidden:          input.Hidden,
+		ID:                   achievementID,
+		ProjectID:            input.ProjectID,
+		AchievementType:      "QUIZ",
+		Name:                 input.Name,
+		DescriptionPending:   input.DescriptionPending,
+		DescriptionCompleted: input.DescriptionCompleted,
+		ImagePending:         input.ImagePending,
+		ImageCompleted:       input.ImageCompleted,
+		Points:               int32(input.Points),
+		Hidden:               input.Hidden,
 	}
 
-	if input.Image != nil {
-		achievementParams.ImageUrl = *input.Image
-	}
 	// Inherit challenge from quiz
 	achievementParams.ChallengeID = quiz.ChallengeID
 
@@ -588,18 +588,20 @@ func (r *mutationResolver) CreateQuizAchievement(ctx context.Context, input mode
 	}
 
 	return &model.QuizAchievement{
-		ID:                 achievementID,
-		Name:               achievementRow.Name,
-		Description:        achievementRow.Description,
-		Image:              achievementRow.ImageUrl,
-		ProjectID:          achievementRow.ProjectID,
-		EventID:            achievementRow.EventID,
-		ChallengeID:        achievementRow.ChallengeID,
-		Points:             int(achievementRow.Points),
-		Hidden:             hidden,
-		QuizID:             input.QuizID,
-		MinScorePercentage: minScorePercentage,
-		RequireCompletion:  input.RequireCompletion,
+		ID:                   achievementID,
+		Name:                 achievementRow.Name,
+		DescriptionPending:   achievementRow.DescriptionPending,
+		DescriptionCompleted: achievementRow.DescriptionCompleted,
+		ImagePending:         achievementRow.ImagePending,
+		ImageCompleted:       achievementRow.ImageCompleted,
+		ProjectID:            achievementRow.ProjectID,
+		EventID:              achievementRow.EventID,
+		ChallengeID:          achievementRow.ChallengeID,
+		Points:               int(achievementRow.Points),
+		Hidden:               hidden,
+		QuizID:               input.QuizID,
+		MinScorePercentage:   minScorePercentage,
+		RequireCompletion:    input.RequireCompletion,
 	}, nil
 }
 

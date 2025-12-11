@@ -211,7 +211,7 @@ func (r *mutationResolver) RejectConsent(ctx context.Context, consentID string) 
 }
 
 // CreateConsent is the resolver for the createConsent field.
-func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) (*model.Consent, error) {
+func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) (*model.Consent, error) {
 	// Get next version for this consent key
 	nextVersion, err := r.DB.Queries.GetNextVersionForConsentKey(ctx, key)
 	if err != nil {
@@ -228,12 +228,19 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 		isRemoteBool = *isRemote
 	}
 
+	// Default short text to empty string if not provided
+	var shortTextStr string
+	if shortText != nil {
+		shortTextStr = *shortText
+	}
+
 	// Create consent
 	consent, err := r.DB.Queries.CreateConsent(ctx, sqlc.CreateConsentParams{
 		ID:          ulid.NewConsentID(),
 		Key:         key,
 		Version:     nextVersion,
 		Title:       title,
+		ShortText:   shortTextStr,
 		Body:        string(body),
 		Url:         url,
 		PublishedAt: publishedAtPG,
@@ -263,6 +270,7 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 		Key:            consent.Key,
 		Version:        int(consent.Version),
 		Title:          consent.Title,
+		ShortText:      consent.ShortText,
 		BodyMarkdown:   consent.Body,
 		URL:            consent.Url,
 		PublishedAt:    publishedAtOut,
@@ -272,10 +280,13 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 }
 
 // UpdateConsent is the resolver for the updateConsent field.
-func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *string, body *string, url *string, publishedAt *scalars.DateTime) (*model.Consent, error) {
-	var titleStr, bodyStr, urlStr string
+func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime) (*model.Consent, error) {
+	var titleStr, shortTextStr, bodyStr, urlStr string
 	if title != nil {
 		titleStr = *title
+	}
+	if shortText != nil {
+		shortTextStr = *shortText
 	}
 	if body != nil {
 		bodyStr = string(*body)
@@ -292,6 +303,7 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 	consent, err := r.DB.Queries.UpdateConsent(ctx, sqlc.UpdateConsentParams{
 		ID:          id,
 		Title:       titleStr,
+		ShortText:   shortTextStr,
 		Body:        bodyStr,
 		Url:         urlStr,
 		PublishedAt: publishedAtPG,
@@ -320,6 +332,7 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 		Key:            consent.Key,
 		Version:        int(consent.Version),
 		Title:          consent.Title,
+		ShortText:      consent.ShortText,
 		BodyMarkdown:   consent.Body,
 		URL:            consent.Url,
 		PublishedAt:    publishedAtOut,
@@ -353,6 +366,7 @@ func (r *queryResolver) Consents(ctx context.Context) ([]model.Consent, error) {
 			Key:            row.Key,
 			Version:        int(row.Version),
 			Title:          row.Title,
+			ShortText:      row.ShortText,
 			BodyMarkdown:   row.Body,
 			URL:            row.Url,
 			PublishedAt:    publishedAt,
@@ -402,6 +416,7 @@ func (r *queryResolver) PendingConsents(ctx context.Context) ([]model.Consent, e
 			Key:            row.Key,
 			Version:        int(row.Version),
 			Title:          row.Title,
+			ShortText:      row.ShortText,
 			BodyMarkdown:   row.Body,
 			URL:            row.Url,
 			PublishedAt:    publishedAt,

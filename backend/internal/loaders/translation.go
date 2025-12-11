@@ -24,15 +24,18 @@ func (k TranslationKey) String() string {
 // Translation holds translated fields for an entity
 // Fields are pointers - nil means "use base value"
 type Translation struct {
-	EntityID    string
-	LangCode    string
-	Name        *string
-	Description *string
-	Rules       *string // Only for projects
-	ButtonText  *string // Only for challenges
-	Title       *string // Only for articles and consents
-	Author      *string // Only for articles
-	Body        *string // Only for consents
+	EntityID             string
+	LangCode             string
+	Name                 *string
+	Description          *string // Used by most entity types
+	DescriptionPending   *string // Only for achievements
+	DescriptionCompleted *string // Only for achievements
+	Rules                *string // Only for projects
+	ButtonText           *string // Only for challenges
+	Title                *string // Only for articles and consents
+	ShortText            *string // Only for consents
+	Author               *string // Only for articles
+	Body                 *string // Only for consents
 }
 
 // translationBatchFunc batches loading translations by entity type, ID, and language code
@@ -236,10 +239,11 @@ func queryTranslations(ctx context.Context, db *database.DB, entityType string, 
 		translations := make([]*Translation, len(rows))
 		for i, row := range rows {
 			translations[i] = &Translation{
-				EntityID:    row.AchievementID,
-				LangCode:    row.LanguageCode,
-				Name:        row.Name,
-				Description: row.Description,
+				EntityID:             row.AchievementID,
+				LangCode:             row.LanguageCode,
+				Name:                 row.Name,
+				DescriptionPending:   row.DescriptionPending,
+				DescriptionCompleted: row.DescriptionCompleted,
 			}
 		}
 		return translations, nil
@@ -255,10 +259,11 @@ func queryTranslations(ctx context.Context, db *database.DB, entityType string, 
 		translations := make([]*Translation, len(rows))
 		for i, row := range rows {
 			translations[i] = &Translation{
-				EntityID: row.ConsentID,
-				LangCode: row.LanguageCode,
-				Title:    row.Title,
-				Body:     row.Body,
+				EntityID:  row.ConsentID,
+				LangCode:  row.LanguageCode,
+				Title:     row.Title,
+				ShortText: row.ShortText,
+				Body:      row.Body,
 			}
 		}
 		return translations, nil
