@@ -32,8 +32,7 @@ type Loaders struct {
 	SuperTeamByIDLoader                    *dataloader.Loader[string, *model.SuperTeam]
 	AchievementByIDLoader                  *dataloader.Loader[string, model.Achievement]
 	AchievementsByProjectLoader            *dataloader.Loader[string, []model.Achievement]
-	ArticlesByAchievementLoader            *dataloader.Loader[string, []model.Article]
-	TracksByAchievementLoader              *dataloader.Loader[string, []model.Track]
+	ContentItemsByAchievementLoader        *dataloader.Loader[string, []*model.ContentItem]
 	ChallengeByIDLoader                    *dataloader.Loader[string, model.Challenge]
 	ChallengesByProjectLoader              *dataloader.Loader[string, []model.Challenge]
 	ChallengesByEventLoader                *dataloader.Loader[string, []model.Challenge]
@@ -52,6 +51,8 @@ type Loaders struct {
 	QuizAnswersByQuestionLoader            *dataloader.Loader[string, []*model.QuizPredefinedAnswer]
 	QuizSubmissionsByUserLoader            *dataloader.Loader[string, []*model.QuizSubmission]
 	QuizResponsesBySubmissionLoader        *dataloader.Loader[string, []model.QuizResponse]
+	ExternalContentByIDLoader              *dataloader.Loader[string, *model.ExternalContent]
+	ExternalContentTranslationsLoader      *dataloader.Loader[string, []model.ExternalContentTranslation]
 }
 
 // newBatchedLoader creates a new batched dataloader with standard configuration:
@@ -90,8 +91,7 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		SuperTeamByIDLoader:                    newBatchedLoader(superTeamByIDBatchFunc(db, cache)),
 		AchievementByIDLoader:                  newBatchedLoader(achievementByIDBatchFunc(db, cache)),
 		AchievementsByProjectLoader:            newBatchedLoader(achievementsByProjectBatchFunc(db, cache)),
-		ArticlesByAchievementLoader:            newBatchedLoader(articlesByAchievementBatchFunc(db, cache)),
-		TracksByAchievementLoader:              newBatchedLoader(tracksByAchievementBatchFunc(db, cache)),
+		ContentItemsByAchievementLoader:        newBatchedLoader(contentItemsByAchievementBatchFunc(db, cache)),
 		ChallengeByIDLoader:                    newBatchedLoader(challengeByIDBatchFunc(db, cache)),
 		ChallengesByProjectLoader:              newBatchedLoader(challengesByProjectBatchFunc(db, cache)),
 		ChallengesByEventLoader:                newBatchedLoader(challengesByEventBatchFunc(db, cache)),
@@ -110,5 +110,7 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		QuizAnswersByQuestionLoader:            newBatchedLoader(quizAnswersByQuestionBatchFunc(db, cache)),
 		QuizSubmissionsByUserLoader:            newBatchedLoader(quizSubmissionsByUserBatchFunc(db, cache)),
 		QuizResponsesBySubmissionLoader:        newBatchedLoader(quizResponsesBySubmissionBatchFunc(db, cache)),
+		ExternalContentByIDLoader:              newBatchedLoader(externalContentByIDBatchFunc(db, cache)),
+		ExternalContentTranslationsLoader:      newBatchedLoader(externalContentTranslationsBatchFunc(db, cache)),
 	}
 }

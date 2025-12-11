@@ -11,6 +11,44 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const CountExternalContentAdmin = `-- name: CountExternalContentAdmin :one
+SELECT COUNT(*) FROM external_content
+WHERE
+    ($1::text = '' OR plan_id = $1::text)
+    AND ($2::text = '' OR task_id = $2::text)
+    AND ($3::text = '' OR content_id = $3::text)
+    AND ($4::text = '' OR content_type = $4::text)
+    AND ($5::text = '' OR source = $5::text)
+    AND ($6::timestamptz IS NULL OR published_at >= $6::timestamptz)
+    AND ($7::timestamptz IS NULL OR published_at <= $7::timestamptz)
+`
+
+type CountExternalContentAdminParams struct {
+	Planid          string             `json:"planid"`
+	Taskid          string             `json:"taskid"`
+	Contentid       string             `json:"contentid"`
+	Contenttype     string             `json:"contenttype"`
+	Source          string             `json:"source"`
+	Publishedafter  pgtype.Timestamptz `json:"publishedafter"`
+	Publishedbefore pgtype.Timestamptz `json:"publishedbefore"`
+}
+
+// Count for pagination
+func (q *Queries) CountExternalContentAdmin(ctx context.Context, arg CountExternalContentAdminParams) (int64, error) {
+	row := q.db.QueryRow(ctx, CountExternalContentAdmin,
+		arg.Planid,
+		arg.Taskid,
+		arg.Contentid,
+		arg.Contenttype,
+		arg.Source,
+		arg.Publishedafter,
+		arg.Publishedbefore,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const CountExternalContentByPlanID = `-- name: CountExternalContentByPlanID :one
 SELECT COUNT(*) FROM external_content WHERE plan_id = $1::text
 `
@@ -94,6 +132,63 @@ type GetExternalContentByContentTypeParams struct {
 
 func (q *Queries) GetExternalContentByContentType(ctx context.Context, arg GetExternalContentByContentTypeParams) ([]*ExternalContent, error) {
 	rows, err := q.db.Query(ctx, GetExternalContentByContentType, arg.Contenttype, arg.Queryoffset, arg.Querylimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*ExternalContent{}
+	for rows.Next() {
+		var i ExternalContent
+		if err := rows.Scan(
+			&i.ID,
+			&i.PlanID,
+			&i.TaskID,
+			&i.ContentID,
+			&i.ContentType,
+			&i.PublishedAt,
+			&i.SyncedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Source,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetExternalContentByID = `-- name: GetExternalContentByID :one
+SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source FROM external_content WHERE id = $1
+`
+
+func (q *Queries) GetExternalContentByID(ctx context.Context, id string) (*ExternalContent, error) {
+	row := q.db.QueryRow(ctx, GetExternalContentByID, id)
+	var i ExternalContent
+	err := row.Scan(
+		&i.ID,
+		&i.PlanID,
+		&i.TaskID,
+		&i.ContentID,
+		&i.ContentType,
+		&i.PublishedAt,
+		&i.SyncedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Source,
+	)
+	return &i, err
+}
+
+const GetExternalContentByIDs = `-- name: GetExternalContentByIDs :many
+SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source FROM external_content WHERE id = ANY($1::text[])
+`
+
+func (q *Queries) GetExternalContentByIDs(ctx context.Context, ids []string) ([]*ExternalContent, error) {
+	rows, err := q.db.Query(ctx, GetExternalContentByIDs, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -270,6 +365,114 @@ func (q *Queries) GetExternalContentTranslations(ctx context.Context, externalco
 			&i.Title,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetExternalContentTranslationsByContentIDs = `-- name: GetExternalContentTranslationsByContentIDs :many
+SELECT external_content_id, language_code, title, created_at, updated_at FROM external_content_translations
+WHERE external_content_id = ANY($1::text[])
+`
+
+func (q *Queries) GetExternalContentTranslationsByContentIDs(ctx context.Context, externalcontentids []string) ([]*ExternalContentTranslation, error) {
+	rows, err := q.db.Query(ctx, GetExternalContentTranslationsByContentIDs, externalcontentids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*ExternalContentTranslation{}
+	for rows.Next() {
+		var i ExternalContentTranslation
+		if err := rows.Scan(
+			&i.ExternalContentID,
+			&i.LanguageCode,
+			&i.Title,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const SearchExternalContentAdmin = `-- name: SearchExternalContentAdmin :many
+
+SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source FROM external_content
+WHERE
+    ($1::text = '' OR plan_id = $1::text)
+    AND ($2::text = '' OR task_id = $2::text)
+    AND ($3::text = '' OR content_id = $3::text)
+    AND ($4::text = '' OR content_type = $4::text)
+    AND ($5::text = '' OR source = $5::text)
+    AND ($6::timestamptz IS NULL OR published_at >= $6::timestamptz)
+    AND ($7::timestamptz IS NULL OR published_at <= $7::timestamptz)
+ORDER BY
+    CASE WHEN $8::text = 'published_at_desc' THEN published_at END DESC NULLS LAST,
+    CASE WHEN $8::text = 'published_at_asc' THEN published_at END ASC NULLS LAST,
+    CASE WHEN $8::text = 'created_at_desc' OR $8::text = '' THEN created_at END DESC,
+    CASE WHEN $8::text = 'created_at_asc' THEN created_at END ASC
+LIMIT CASE WHEN $10::int IS NULL THEN NULL ELSE $10::int END
+OFFSET CASE WHEN $9::int IS NULL THEN 0 ELSE $9::int END
+`
+
+type SearchExternalContentAdminParams struct {
+	Planid          string             `json:"planid"`
+	Taskid          string             `json:"taskid"`
+	Contentid       string             `json:"contentid"`
+	Contenttype     string             `json:"contenttype"`
+	Source          string             `json:"source"`
+	Publishedafter  pgtype.Timestamptz `json:"publishedafter"`
+	Publishedbefore pgtype.Timestamptz `json:"publishedbefore"`
+	Sortby          string             `json:"sortby"`
+	Queryoffset     int32              `json:"queryoffset"`
+	Querylimit      int32              `json:"querylimit"`
+}
+
+// ==================== Admin Search Queries ====================
+// Admin search with filters
+func (q *Queries) SearchExternalContentAdmin(ctx context.Context, arg SearchExternalContentAdminParams) ([]*ExternalContent, error) {
+	rows, err := q.db.Query(ctx, SearchExternalContentAdmin,
+		arg.Planid,
+		arg.Taskid,
+		arg.Contentid,
+		arg.Contenttype,
+		arg.Source,
+		arg.Publishedafter,
+		arg.Publishedbefore,
+		arg.Sortby,
+		arg.Queryoffset,
+		arg.Querylimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*ExternalContent{}
+	for rows.Next() {
+		var i ExternalContent
+		if err := rows.Scan(
+			&i.ID,
+			&i.PlanID,
+			&i.TaskID,
+			&i.ContentID,
+			&i.ContentType,
+			&i.PublishedAt,
+			&i.SyncedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Source,
 		); err != nil {
 			return nil, err
 		}

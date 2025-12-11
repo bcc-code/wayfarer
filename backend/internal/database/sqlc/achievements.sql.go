@@ -115,11 +115,11 @@ INSERT INTO achievements (
     $1::text,
     $2::text,
     $3::text,
-    $4::text,
-    $5::text,
+    NULLIF($4::text, ''),
+    NULLIF($5::text, ''),
     $6::text,
     $7::text,
-    $8::text,
+    NULLIF($8::text, ''),
     $9::int,
     $10::bool
 ) RETURNING id, achievement_type, project_id, event_id, challenge_id, name, description, image_url, points, hidden, created_at, updated_at
@@ -170,119 +170,51 @@ func (q *Queries) CreateAchievement(ctx context.Context, arg CreateAchievementPa
 	return &i, err
 }
 
-const CreateListeningAchievementJunction = `-- name: CreateListeningAchievementJunction :exec
-INSERT INTO listening_achievements (achievement_id)
-VALUES ($1::text)
-`
-
-func (q *Queries) CreateListeningAchievementJunction(ctx context.Context, achievementID string) error {
-	_, err := q.db.Exec(ctx, CreateListeningAchievementJunction, achievementID)
-	return err
-}
-
-const CreateListeningAchievementTrack = `-- name: CreateListeningAchievementTrack :one
-INSERT INTO listening_achievement_tracks (
+const CreateContentAchievementItem = `-- name: CreateContentAchievementItem :one
+INSERT INTO content_achievement_items (
     id,
     achievement_id,
-    track_id,
-    name,
-    description,
-    image_url
+    external_content_id,
+    sort_order
 ) VALUES (
     $1::text,
     $2::text,
     $3::text,
-    $4::text,
-    $5::text,
-    $6::text
-) RETURNING id, achievement_id, track_id, name, description, image_url
+    $4::int
+) RETURNING id, achievement_id, external_content_id, sort_order
 `
 
-type CreateListeningAchievementTrackParams struct {
-	ID            string `json:"id"`
-	AchievementID string `json:"achievement_id"`
-	TrackID       string `json:"track_id"`
-	Name          string `json:"name"`
-	Description   string `json:"description"`
-	ImageUrl      string `json:"image_url"`
+type CreateContentAchievementItemParams struct {
+	ID                string `json:"id"`
+	AchievementID     string `json:"achievement_id"`
+	ExternalContentID string `json:"external_content_id"`
+	SortOrder         int32  `json:"sort_order"`
 }
 
-func (q *Queries) CreateListeningAchievementTrack(ctx context.Context, arg CreateListeningAchievementTrackParams) (*ListeningAchievementTrack, error) {
-	row := q.db.QueryRow(ctx, CreateListeningAchievementTrack,
+func (q *Queries) CreateContentAchievementItem(ctx context.Context, arg CreateContentAchievementItemParams) (*ContentAchievementItem, error) {
+	row := q.db.QueryRow(ctx, CreateContentAchievementItem,
 		arg.ID,
 		arg.AchievementID,
-		arg.TrackID,
-		arg.Name,
-		arg.Description,
-		arg.ImageUrl,
+		arg.ExternalContentID,
+		arg.SortOrder,
 	)
-	var i ListeningAchievementTrack
+	var i ContentAchievementItem
 	err := row.Scan(
 		&i.ID,
 		&i.AchievementID,
-		&i.TrackID,
-		&i.Name,
-		&i.Description,
-		&i.ImageUrl,
+		&i.ExternalContentID,
+		&i.SortOrder,
 	)
 	return &i, err
 }
 
-const CreateReadingAchievementArticle = `-- name: CreateReadingAchievementArticle :one
-INSERT INTO reading_achievement_articles (
-    id,
-    achievement_id,
-    article_id,
-    title,
-    author,
-    url
-) VALUES (
-    $1::text,
-    $2::text,
-    $3::text,
-    $4::text,
-    $5::text,
-    $6::text
-) RETURNING id, achievement_id, article_id, title, author, url
-`
-
-type CreateReadingAchievementArticleParams struct {
-	ID            string `json:"id"`
-	AchievementID string `json:"achievement_id"`
-	ArticleID     string `json:"article_id"`
-	Title         string `json:"title"`
-	Author        string `json:"author"`
-	Url           string `json:"url"`
-}
-
-func (q *Queries) CreateReadingAchievementArticle(ctx context.Context, arg CreateReadingAchievementArticleParams) (*ReadingAchievementArticle, error) {
-	row := q.db.QueryRow(ctx, CreateReadingAchievementArticle,
-		arg.ID,
-		arg.AchievementID,
-		arg.ArticleID,
-		arg.Title,
-		arg.Author,
-		arg.Url,
-	)
-	var i ReadingAchievementArticle
-	err := row.Scan(
-		&i.ID,
-		&i.AchievementID,
-		&i.ArticleID,
-		&i.Title,
-		&i.Author,
-		&i.Url,
-	)
-	return &i, err
-}
-
-const CreateReadingAchievementJunction = `-- name: CreateReadingAchievementJunction :exec
-INSERT INTO reading_achievements (achievement_id)
+const CreateContentAchievementJunction = `-- name: CreateContentAchievementJunction :exec
+INSERT INTO content_achievements (achievement_id)
 VALUES ($1::text)
 `
 
-func (q *Queries) CreateReadingAchievementJunction(ctx context.Context, achievementID string) error {
-	_, err := q.db.Exec(ctx, CreateReadingAchievementJunction, achievementID)
+func (q *Queries) CreateContentAchievementJunction(ctx context.Context, achievementID string) error {
+	_, err := q.db.Exec(ctx, CreateContentAchievementJunction, achievementID)
 	return err
 }
 
@@ -321,23 +253,13 @@ func (q *Queries) DeleteAchievement(ctx context.Context, id string) error {
 	return err
 }
 
-const DeleteListeningAchievementTracks = `-- name: DeleteListeningAchievementTracks :exec
-DELETE FROM listening_achievement_tracks
+const DeleteContentAchievementItems = `-- name: DeleteContentAchievementItems :exec
+DELETE FROM content_achievement_items
 WHERE achievement_id = $1::text
 `
 
-func (q *Queries) DeleteListeningAchievementTracks(ctx context.Context, achievementID string) error {
-	_, err := q.db.Exec(ctx, DeleteListeningAchievementTracks, achievementID)
-	return err
-}
-
-const DeleteReadingAchievementArticles = `-- name: DeleteReadingAchievementArticles :exec
-DELETE FROM reading_achievement_articles
-WHERE achievement_id = $1::text
-`
-
-func (q *Queries) DeleteReadingAchievementArticles(ctx context.Context, achievementID string) error {
-	_, err := q.db.Exec(ctx, DeleteReadingAchievementArticles, achievementID)
+func (q *Queries) DeleteContentAchievementItems(ctx context.Context, achievementID string) error {
+	_, err := q.db.Exec(ctx, DeleteContentAchievementItems, achievementID)
 	return err
 }
 
@@ -355,67 +277,46 @@ SELECT
     a.hidden,
     a.created_at,
     a.updated_at,
-    -- Reading achievement data
-    ra.achievement_id AS reading_achievement_id,
+    -- Content achievement data
+    ca.achievement_id AS content_achievement_id,
     COALESCE(
         (SELECT jsonb_agg(
             jsonb_build_object(
-                'id', raa.id,
-                'article_id', raa.article_id,
-                'title', raa.title,
-                'author', raa.author,
-                'url', raa.url
-            )
+                'id', cai.id,
+                'external_content_id', cai.external_content_id,
+                'sort_order', cai.sort_order
+            ) ORDER BY cai.sort_order
         )
-        FROM reading_achievement_articles raa
-        WHERE raa.achievement_id = a.id),
+        FROM content_achievement_items cai
+        WHERE cai.achievement_id = a.id),
         '[]'::jsonb
-    ) AS reading_articles,
-    -- Listening achievement data
-    la.achievement_id AS listening_achievement_id,
-    COALESCE(
-        (SELECT jsonb_agg(
-            jsonb_build_object(
-                'id', lat.id,
-                'track_id', lat.track_id,
-                'name', lat.name,
-                'description', lat.description,
-                'image_url', lat.image_url
-            )
-        )
-        FROM listening_achievement_tracks lat
-        WHERE lat.achievement_id = a.id),
-        '[]'::jsonb
-    ) AS listening_tracks,
+    ) AS content_items,
     -- Streak achievement data
     sa.streak_id,
     sa.needed_streak
 FROM achievements a
-LEFT JOIN reading_achievements ra ON a.id = ra.achievement_id
-LEFT JOIN listening_achievements la ON a.id = la.achievement_id
+LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 WHERE a.id = ANY($1::text[])
 `
 
 type GetAchievementsByIDsRow struct {
-	ID                     string             `json:"id"`
-	AchievementType        string             `json:"achievement_type"`
-	ProjectID              string             `json:"project_id"`
-	EventID                *string            `json:"event_id"`
-	ChallengeID            *string            `json:"challenge_id"`
-	Name                   string             `json:"name"`
-	Description            string             `json:"description"`
-	ImageUrl               *string            `json:"image_url"`
-	Points                 int32              `json:"points"`
-	Hidden                 *bool              `json:"hidden"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
-	ReadingAchievementID   *string            `json:"reading_achievement_id"`
-	ReadingArticles        interface{}        `json:"reading_articles"`
-	ListeningAchievementID *string            `json:"listening_achievement_id"`
-	ListeningTracks        interface{}        `json:"listening_tracks"`
-	StreakID               *string            `json:"streak_id"`
-	NeededStreak           *int32             `json:"needed_streak"`
+	ID                   string             `json:"id"`
+	AchievementType      string             `json:"achievement_type"`
+	ProjectID            string             `json:"project_id"`
+	EventID              *string            `json:"event_id"`
+	ChallengeID          *string            `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	Description          string             `json:"description"`
+	ImageUrl             *string            `json:"image_url"`
+	Points               int32              `json:"points"`
+	Hidden               *bool              `json:"hidden"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	ContentAchievementID *string            `json:"content_achievement_id"`
+	ContentItems         interface{}        `json:"content_items"`
+	StreakID             *string            `json:"streak_id"`
+	NeededStreak         *int32             `json:"needed_streak"`
 }
 
 func (q *Queries) GetAchievementsByIDs(ctx context.Context, ids []string) ([]*GetAchievementsByIDsRow, error) {
@@ -440,10 +341,8 @@ func (q *Queries) GetAchievementsByIDs(ctx context.Context, ids []string) ([]*Ge
 			&i.Hidden,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.ReadingAchievementID,
-			&i.ReadingArticles,
-			&i.ListeningAchievementID,
-			&i.ListeningTracks,
+			&i.ContentAchievementID,
+			&i.ContentItems,
 			&i.StreakID,
 			&i.NeededStreak,
 		); err != nil {
@@ -472,13 +371,11 @@ SELECT
     a.created_at,
     a.updated_at,
     -- Type-specific fields needed for model construction
-    ra.achievement_id AS reading_achievement_id,
-    la.achievement_id AS listening_achievement_id,
+    ca.achievement_id AS content_achievement_id,
     sa.streak_id,
     sa.needed_streak
 FROM achievements a
-LEFT JOIN reading_achievements ra ON a.id = ra.achievement_id
-LEFT JOIN listening_achievements la ON a.id = la.achievement_id
+LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 WHERE a.project_id = ANY($1::text[])
     AND a.hidden = false
@@ -486,22 +383,21 @@ ORDER BY a.project_id, a.created_at DESC
 `
 
 type GetAchievementsByProjectIDsRow struct {
-	ID                     string             `json:"id"`
-	AchievementType        string             `json:"achievement_type"`
-	ProjectID              string             `json:"project_id"`
-	EventID                *string            `json:"event_id"`
-	ChallengeID            *string            `json:"challenge_id"`
-	Name                   string             `json:"name"`
-	Description            string             `json:"description"`
-	ImageUrl               *string            `json:"image_url"`
-	Points                 int32              `json:"points"`
-	Hidden                 *bool              `json:"hidden"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
-	ReadingAchievementID   *string            `json:"reading_achievement_id"`
-	ListeningAchievementID *string            `json:"listening_achievement_id"`
-	StreakID               *string            `json:"streak_id"`
-	NeededStreak           *int32             `json:"needed_streak"`
+	ID                   string             `json:"id"`
+	AchievementType      string             `json:"achievement_type"`
+	ProjectID            string             `json:"project_id"`
+	EventID              *string            `json:"event_id"`
+	ChallengeID          *string            `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	Description          string             `json:"description"`
+	ImageUrl             *string            `json:"image_url"`
+	Points               int32              `json:"points"`
+	Hidden               *bool              `json:"hidden"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	ContentAchievementID *string            `json:"content_achievement_id"`
+	StreakID             *string            `json:"streak_id"`
+	NeededStreak         *int32             `json:"needed_streak"`
 }
 
 func (q *Queries) GetAchievementsByProjectIDs(ctx context.Context, projectIds []string) ([]*GetAchievementsByProjectIDsRow, error) {
@@ -526,8 +422,7 @@ func (q *Queries) GetAchievementsByProjectIDs(ctx context.Context, projectIds []
 			&i.Hidden,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.ReadingAchievementID,
-			&i.ListeningAchievementID,
+			&i.ContentAchievementID,
 			&i.StreakID,
 			&i.NeededStreak,
 		); err != nil {
@@ -555,44 +450,25 @@ SELECT
     a.hidden,
     a.created_at,
     a.updated_at,
-    -- Reading achievement data
-    ra.achievement_id AS reading_achievement_id,
+    -- Content achievement data
+    ca.achievement_id AS content_achievement_id,
     COALESCE(
         (SELECT jsonb_agg(
             jsonb_build_object(
-                'id', raa.id,
-                'article_id', raa.article_id,
-                'title', raa.title,
-                'author', raa.author,
-                'url', raa.url
-            )
+                'id', cai.id,
+                'external_content_id', cai.external_content_id,
+                'sort_order', cai.sort_order
+            ) ORDER BY cai.sort_order
         )
-        FROM reading_achievement_articles raa
-        WHERE raa.achievement_id = a.id),
+        FROM content_achievement_items cai
+        WHERE cai.achievement_id = a.id),
         '[]'::jsonb
-    ) AS reading_articles,
-    -- Listening achievement data
-    la.achievement_id AS listening_achievement_id,
-    COALESCE(
-        (SELECT jsonb_agg(
-            jsonb_build_object(
-                'id', lat.id,
-                'track_id', lat.track_id,
-                'name', lat.name,
-                'description', lat.description,
-                'image_url', lat.image_url
-            )
-        )
-        FROM listening_achievement_tracks lat
-        WHERE lat.achievement_id = a.id),
-        '[]'::jsonb
-    ) AS listening_tracks,
+    ) AS content_items,
     -- Streak achievement data
     sa.streak_id,
     sa.needed_streak
 FROM achievements a
-LEFT JOIN reading_achievements ra ON a.id = ra.achievement_id
-LEFT JOIN listening_achievements la ON a.id = la.achievement_id
+LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 WHERE
     ($1::text[] IS NULL OR a.id = ANY($1::text[]))
@@ -617,24 +493,22 @@ type GetAchievementsFilteredCursorParams struct {
 }
 
 type GetAchievementsFilteredCursorRow struct {
-	ID                     string             `json:"id"`
-	AchievementType        string             `json:"achievement_type"`
-	ProjectID              string             `json:"project_id"`
-	EventID                *string            `json:"event_id"`
-	ChallengeID            *string            `json:"challenge_id"`
-	Name                   string             `json:"name"`
-	Description            string             `json:"description"`
-	ImageUrl               *string            `json:"image_url"`
-	Points                 int32              `json:"points"`
-	Hidden                 *bool              `json:"hidden"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
-	ReadingAchievementID   *string            `json:"reading_achievement_id"`
-	ReadingArticles        interface{}        `json:"reading_articles"`
-	ListeningAchievementID *string            `json:"listening_achievement_id"`
-	ListeningTracks        interface{}        `json:"listening_tracks"`
-	StreakID               *string            `json:"streak_id"`
-	NeededStreak           *int32             `json:"needed_streak"`
+	ID                   string             `json:"id"`
+	AchievementType      string             `json:"achievement_type"`
+	ProjectID            string             `json:"project_id"`
+	EventID              *string            `json:"event_id"`
+	ChallengeID          *string            `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	Description          string             `json:"description"`
+	ImageUrl             *string            `json:"image_url"`
+	Points               int32              `json:"points"`
+	Hidden               *bool              `json:"hidden"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	ContentAchievementID *string            `json:"content_achievement_id"`
+	ContentItems         interface{}        `json:"content_items"`
+	StreakID             *string            `json:"streak_id"`
+	NeededStreak         *int32             `json:"needed_streak"`
 }
 
 func (q *Queries) GetAchievementsFilteredCursor(ctx context.Context, arg GetAchievementsFilteredCursorParams) ([]*GetAchievementsFilteredCursorRow, error) {
@@ -667,46 +541,10 @@ func (q *Queries) GetAchievementsFilteredCursor(ctx context.Context, arg GetAchi
 			&i.Hidden,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.ReadingAchievementID,
-			&i.ReadingArticles,
-			&i.ListeningAchievementID,
-			&i.ListeningTracks,
+			&i.ContentAchievementID,
+			&i.ContentItems,
 			&i.StreakID,
 			&i.NeededStreak,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const GetArticlesByAchievementIDs = `-- name: GetArticlesByAchievementIDs :many
-SELECT id, achievement_id, article_id, title, author, url
-FROM reading_achievement_articles
-WHERE achievement_id = ANY($1::text[])
-ORDER BY achievement_id
-`
-
-func (q *Queries) GetArticlesByAchievementIDs(ctx context.Context, achievementIds []string) ([]*ReadingAchievementArticle, error) {
-	rows, err := q.db.Query(ctx, GetArticlesByAchievementIDs, achievementIds)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*ReadingAchievementArticle{}
-	for rows.Next() {
-		var i ReadingAchievementArticle
-		if err := rows.Scan(
-			&i.ID,
-			&i.AchievementID,
-			&i.ArticleID,
-			&i.Title,
-			&i.Author,
-			&i.Url,
 		); err != nil {
 			return nil, err
 		}
@@ -751,29 +589,174 @@ func (q *Queries) GetBulkUserAchievementTimestamps(ctx context.Context, arg GetB
 	return items, nil
 }
 
-const GetTracksByAchievementIDs = `-- name: GetTracksByAchievementIDs :many
-SELECT id, achievement_id, track_id, name, description, image_url
-FROM listening_achievement_tracks
+const GetContentItemsByAchievementIDs = `-- name: GetContentItemsByAchievementIDs :many
+SELECT id, achievement_id, external_content_id, sort_order
+FROM content_achievement_items
 WHERE achievement_id = ANY($1::text[])
-ORDER BY achievement_id
+ORDER BY achievement_id, sort_order
 `
 
-func (q *Queries) GetTracksByAchievementIDs(ctx context.Context, achievementIds []string) ([]*ListeningAchievementTrack, error) {
-	rows, err := q.db.Query(ctx, GetTracksByAchievementIDs, achievementIds)
+func (q *Queries) GetContentItemsByAchievementIDs(ctx context.Context, achievementIds []string) ([]*ContentAchievementItem, error) {
+	rows, err := q.db.Query(ctx, GetContentItemsByAchievementIDs, achievementIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*ListeningAchievementTrack{}
+	items := []*ContentAchievementItem{}
 	for rows.Next() {
-		var i ListeningAchievementTrack
+		var i ContentAchievementItem
 		if err := rows.Scan(
 			&i.ID,
 			&i.AchievementID,
-			&i.TrackID,
+			&i.ExternalContentID,
+			&i.SortOrder,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetContentItemsWithExternalContent = `-- name: GetContentItemsWithExternalContent :many
+SELECT
+    cai.id,
+    cai.achievement_id,
+    cai.external_content_id,
+    cai.sort_order,
+    ec.plan_id AS external_plan_id,
+    ec.task_id AS external_task_id,
+    ec.content_id AS external_content_id_value,
+    ec.content_type AS external_content_type,
+    ec.published_at AS external_published_at,
+    ec.source AS external_source
+FROM content_achievement_items cai
+INNER JOIN external_content ec ON cai.external_content_id = ec.id
+WHERE cai.achievement_id = ANY($1::text[])
+ORDER BY cai.achievement_id, cai.sort_order
+`
+
+type GetContentItemsWithExternalContentRow struct {
+	ID                     string             `json:"id"`
+	AchievementID          string             `json:"achievement_id"`
+	ExternalContentID      string             `json:"external_content_id"`
+	SortOrder              int32              `json:"sort_order"`
+	ExternalPlanID         string             `json:"external_plan_id"`
+	ExternalTaskID         string             `json:"external_task_id"`
+	ExternalContentIDValue *string            `json:"external_content_id_value"`
+	ExternalContentType    string             `json:"external_content_type"`
+	ExternalPublishedAt    pgtype.Timestamptz `json:"external_published_at"`
+	ExternalSource         string             `json:"external_source"`
+}
+
+// Get content items with external content joined
+func (q *Queries) GetContentItemsWithExternalContent(ctx context.Context, achievementids []string) ([]*GetContentItemsWithExternalContentRow, error) {
+	rows, err := q.db.Query(ctx, GetContentItemsWithExternalContent, achievementids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetContentItemsWithExternalContentRow{}
+	for rows.Next() {
+		var i GetContentItemsWithExternalContentRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AchievementID,
+			&i.ExternalContentID,
+			&i.SortOrder,
+			&i.ExternalPlanID,
+			&i.ExternalTaskID,
+			&i.ExternalContentIDValue,
+			&i.ExternalContentType,
+			&i.ExternalPublishedAt,
+			&i.ExternalSource,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetPublishedContentAchievementsByExternalContent = `-- name: GetPublishedContentAchievementsByExternalContent :many
+SELECT DISTINCT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description,
+    a.image_url,
+    a.points,
+    a.hidden,
+    a.created_at,
+    a.updated_at,
+    COALESCE(
+        (SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', cai2.id,
+                'external_content_id', cai2.external_content_id,
+                'sort_order', cai2.sort_order
+            ) ORDER BY cai2.sort_order
+        )
+        FROM content_achievement_items cai2
+        WHERE cai2.achievement_id = a.id),
+        '[]'::jsonb
+    ) AS content_items
+FROM achievements a
+INNER JOIN content_achievements ca ON a.id = ca.achievement_id
+INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
+WHERE cai.external_content_id = $1::text
+  AND (a.hidden IS NULL OR a.hidden = false)
+`
+
+type GetPublishedContentAchievementsByExternalContentRow struct {
+	ID              string             `json:"id"`
+	AchievementType string             `json:"achievement_type"`
+	ProjectID       string             `json:"project_id"`
+	EventID         *string            `json:"event_id"`
+	ChallengeID     *string            `json:"challenge_id"`
+	Name            string             `json:"name"`
+	Description     string             `json:"description"`
+	ImageUrl        *string            `json:"image_url"`
+	Points          int32              `json:"points"`
+	Hidden          *bool              `json:"hidden"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	ContentItems    interface{}        `json:"content_items"`
+}
+
+// Get all published (non-hidden) content achievements that contain a specific external content
+func (q *Queries) GetPublishedContentAchievementsByExternalContent(ctx context.Context, externalContentID string) ([]*GetPublishedContentAchievementsByExternalContentRow, error) {
+	rows, err := q.db.Query(ctx, GetPublishedContentAchievementsByExternalContent, externalContentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetPublishedContentAchievementsByExternalContentRow{}
+	for rows.Next() {
+		var i GetPublishedContentAchievementsByExternalContentRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AchievementType,
+			&i.ProjectID,
+			&i.EventID,
+			&i.ChallengeID,
 			&i.Name,
 			&i.Description,
 			&i.ImageUrl,
+			&i.Points,
+			&i.Hidden,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ContentItems,
 		); err != nil {
 			return nil, err
 		}
@@ -821,6 +804,127 @@ func (q *Queries) GetUserAchievementTimestamps(ctx context.Context, arg GetUserA
 		return nil, err
 	}
 	return items, nil
+}
+
+const GetUserContentProgress = `-- name: GetUserContentProgress :many
+
+SELECT user_id, achievement_id, external_content_id, completed_at
+FROM user_content_progress
+WHERE user_id = $1::text
+  AND achievement_id = ANY($2::text[])
+`
+
+type GetUserContentProgressParams struct {
+	UserID         string   `json:"user_id"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+// ==================== Content Progress Operations ====================
+func (q *Queries) GetUserContentProgress(ctx context.Context, arg GetUserContentProgressParams) ([]*UserContentProgress, error) {
+	rows, err := q.db.Query(ctx, GetUserContentProgress, arg.UserID, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*UserContentProgress{}
+	for rows.Next() {
+		var i UserContentProgress
+		if err := rows.Scan(
+			&i.UserID,
+			&i.AchievementID,
+			&i.ExternalContentID,
+			&i.CompletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUserContentProgressForAchievement = `-- name: GetUserContentProgressForAchievement :many
+SELECT user_id, achievement_id, external_content_id, completed_at
+FROM user_content_progress
+WHERE user_id = $1::text
+  AND achievement_id = $2::text
+`
+
+type GetUserContentProgressForAchievementParams struct {
+	UserID        string `json:"user_id"`
+	AchievementID string `json:"achievement_id"`
+}
+
+func (q *Queries) GetUserContentProgressForAchievement(ctx context.Context, arg GetUserContentProgressForAchievementParams) ([]*UserContentProgress, error) {
+	rows, err := q.db.Query(ctx, GetUserContentProgressForAchievement, arg.UserID, arg.AchievementID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*UserContentProgress{}
+	for rows.Next() {
+		var i UserContentProgress
+		if err := rows.Scan(
+			&i.UserID,
+			&i.AchievementID,
+			&i.ExternalContentID,
+			&i.CompletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const MarkContentItemCompleted = `-- name: MarkContentItemCompleted :exec
+INSERT INTO user_content_progress (user_id, achievement_id, external_content_id, completed_at)
+VALUES ($1::text, $2::text, $3::text, COALESCE($4::timestamptz, now()))
+ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING
+`
+
+type MarkContentItemCompletedParams struct {
+	UserID            string             `json:"user_id"`
+	AchievementID     string             `json:"achievement_id"`
+	ExternalContentID string             `json:"external_content_id"`
+	CompletedAt       pgtype.Timestamptz `json:"completed_at"`
+}
+
+func (q *Queries) MarkContentItemCompleted(ctx context.Context, arg MarkContentItemCompletedParams) error {
+	_, err := q.db.Exec(ctx, MarkContentItemCompleted,
+		arg.UserID,
+		arg.AchievementID,
+		arg.ExternalContentID,
+		arg.CompletedAt,
+	)
+	return err
+}
+
+const MarkContentItemCompletedForAllAchievements = `-- name: MarkContentItemCompletedForAllAchievements :exec
+INSERT INTO user_content_progress (user_id, achievement_id, external_content_id, completed_at)
+SELECT $1::text, ca.achievement_id, $2::text, now()
+FROM content_achievements ca
+INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
+INNER JOIN achievements a ON ca.achievement_id = a.id
+WHERE cai.external_content_id = $2::text
+  AND (a.hidden IS NULL OR a.hidden = false)
+ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING
+`
+
+type MarkContentItemCompletedForAllAchievementsParams struct {
+	UserID            string `json:"user_id"`
+	ExternalContentID string `json:"external_content_id"`
+}
+
+// Mark content completed for a user across all published achievements containing this content
+func (q *Queries) MarkContentItemCompletedForAllAchievements(ctx context.Context, arg MarkContentItemCompletedForAllAchievementsParams) error {
+	_, err := q.db.Exec(ctx, MarkContentItemCompletedForAllAchievements, arg.UserID, arg.ExternalContentID)
+	return err
 }
 
 const RevokeSuperTeamAchievementBatch = `-- name: RevokeSuperTeamAchievementBatch :exec
@@ -879,6 +983,41 @@ type RevokeUserAchievementParams struct {
 
 func (q *Queries) RevokeUserAchievement(ctx context.Context, arg RevokeUserAchievementParams) error {
 	_, err := q.db.Exec(ctx, RevokeUserAchievement, arg.UserID, arg.AchievementID)
+	return err
+}
+
+const UnmarkContentItemCompleted = `-- name: UnmarkContentItemCompleted :exec
+DELETE FROM user_content_progress
+WHERE user_id = $1::text
+  AND achievement_id = $2::text
+  AND external_content_id = $3::text
+`
+
+type UnmarkContentItemCompletedParams struct {
+	UserID            string `json:"user_id"`
+	AchievementID     string `json:"achievement_id"`
+	ExternalContentID string `json:"external_content_id"`
+}
+
+func (q *Queries) UnmarkContentItemCompleted(ctx context.Context, arg UnmarkContentItemCompletedParams) error {
+	_, err := q.db.Exec(ctx, UnmarkContentItemCompleted, arg.UserID, arg.AchievementID, arg.ExternalContentID)
+	return err
+}
+
+const UnmarkContentItemCompletedForAllAchievements = `-- name: UnmarkContentItemCompletedForAllAchievements :exec
+DELETE FROM user_content_progress
+WHERE user_id = $1::text
+  AND external_content_id = $2::text
+`
+
+type UnmarkContentItemCompletedForAllAchievementsParams struct {
+	UserID            string `json:"user_id"`
+	ExternalContentID string `json:"external_content_id"`
+}
+
+// Unmark content completed for a user across all achievements containing this content
+func (q *Queries) UnmarkContentItemCompletedForAllAchievements(ctx context.Context, arg UnmarkContentItemCompletedForAllAchievementsParams) error {
+	_, err := q.db.Exec(ctx, UnmarkContentItemCompletedForAllAchievements, arg.UserID, arg.ExternalContentID)
 	return err
 }
 

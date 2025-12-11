@@ -22,10 +22,9 @@ const (
 	PrefixStreak               = "SK" // Streaks
 	PrefixStreakRelevantDay    = "SD" // Streak Relevant Days
 	PrefixChallenge            = "CL" // Challenges
-	PrefixAchievement          = "AC" // Achievements
-	PrefixReadingAchievement   = "RA" // Reading Achievement Articles
-	PrefixListeningAchievement = "LT" // Listening Achievement Tracks
-	PrefixScoreJournal         = "SJ" // Score Journal
+	PrefixAchievement   = "AC" // Achievements
+	PrefixContentItem   = "CI" // Content Achievement Items
+	PrefixScoreJournal  = "SJ" // Score Journal
 	PrefixContentEvent         = "CE" // External Content Events
 	PrefixConsent              = "CN" // Consents
 	PrefixUserConsent          = "UC" // User Consent Acceptances (deprecated, use PrefixUserConsentHistory)
@@ -112,14 +111,9 @@ func NewAchievementID() string {
 	return newID(PrefixAchievement)
 }
 
-// NewReadingAchievementID generates a new ID for a reading achievement article (RA prefix)
-func NewReadingAchievementID() string {
-	return newID(PrefixReadingAchievement)
-}
-
-// NewListeningAchievementID generates a new ID for a listening achievement track (LT prefix)
-func NewListeningAchievementID() string {
-	return newID(PrefixListeningAchievement)
+// NewContentItemID generates a new ID for a content achievement item (CI prefix)
+func NewContentItemID() string {
+	return newID(PrefixContentItem)
 }
 
 // NewScoreJournalID generates a new ID for a score journal entry (SJ prefix)
@@ -266,14 +260,9 @@ func IsAchievementID(id string) bool {
 	return IsValidID(id, PrefixAchievement)
 }
 
-// IsReadingAchievementID validates a reading achievement ID
-func IsReadingAchievementID(id string) bool {
-	return IsValidID(id, PrefixReadingAchievement)
-}
-
-// IsListeningAchievementID validates a listening achievement ID
-func IsListeningAchievementID(id string) bool {
-	return IsValidID(id, PrefixListeningAchievement)
+// IsContentItemID validates a content item ID
+func IsContentItemID(id string) bool {
+	return IsValidID(id, PrefixContentItem)
 }
 
 // IsScoreJournalID validates a score journal ID

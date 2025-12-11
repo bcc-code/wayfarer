@@ -1,0 +1,71 @@
+type: http_request
+model: http_request
+id: rq_CreateContentAchievementFromExternalContent
+createdAt: 2025-12-11T12:00:00
+updatedAt: 2025-12-11T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_ExternalContent
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation CreateContentAchievementFromExternalContent($input: CreateContentAchievementFromExternalContentInput!) {
+      createContentAchievementFromExternalContent(input: $input) {
+        id
+        name
+        description
+        image
+        points
+        hidden
+        totalItems
+        items {
+          id
+          sortOrder
+          externalContent {
+            id
+            planId
+            taskId
+            contentId
+            contentType
+            title
+          }
+        }
+        project {
+          id
+          name
+        }
+        event {
+          id
+          name
+        }
+        challenge {
+          id
+          name
+        }
+      }
+    }
+  variables: |
+    {
+      "input": {
+        "name": "Content Achievement from External Content",
+        "description": "Complete all content items to earn this achievement",
+        "projectId": "PR01K9VZ8684DP9R4W3ZEV526E5X",
+        "points": 50,
+        "hidden": false,
+        "externalContentIds": [
+          "EC01ARZ3NDEKTSV4RRFFQ69G5FAV"
+        ]
+      }
+    }
+bodyType: graphql
+description: Create a content achievement from external content IDs (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_CreateContentAchievementFromExternalContent
+method: POST
+name: Create Content Achievement From External Content
+sortPriority: 3000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

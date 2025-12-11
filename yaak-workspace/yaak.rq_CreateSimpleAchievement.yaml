@@ -1,0 +1,55 @@
+type: http_request
+model: http_request
+id: rq_CreateSimpleAchievement
+createdAt: 2025-12-11T12:00:00
+updatedAt: 2025-12-11T08:01:53.355227
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation CreateSimpleAchievement($input: CreateSimpleAchievementInput!) {
+      createSimpleAchievement(input: $input) {
+        id
+        name
+        description
+        image
+        points
+        hidden
+        project {
+          id
+          name
+        }
+        event {
+          id
+          name
+        }
+        challenge {
+          id
+          name
+        }
+      }
+    }
+  variables: |
+    {
+      "input": {
+        "name": "Simple Achievement",
+        "description": "A simple achievement for testing",
+        "projectId": "PR01K9W1Y51ARG5DCHJXR9VW8DKN",
+        "points": 10,
+        "hidden": false
+      }
+    }
+bodyType: graphql
+description: Create a simple achievement (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_CreateSimpleAchievement
+method: POST
+name: Create Simple Achievement
+sortPriority: 3100.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

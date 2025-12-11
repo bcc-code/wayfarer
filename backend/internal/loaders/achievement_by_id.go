@@ -55,10 +55,8 @@ func achievementByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(
 				switch row.AchievementType {
 				case "SIMPLE":
 					achievement, err = convertToSimpleAchievement(row, hidden)
-				case "READING":
-					achievement, err = convertToReadingAchievement(row, hidden)
-				case "LISTENING":
-					achievement, err = convertToListeningAchievement(row, hidden)
+				case "CONTENT":
+					achievement, err = convertToContentAchievement(row, hidden)
 				case "STREAK":
 					achievement, err = convertToStreakAchievement(row, hidden)
 				default:
@@ -111,36 +109,22 @@ func convertToSimpleAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool) 
 	}, nil
 }
 
-func convertToReadingAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool) (model.Achievement, error) {
-	// Parse the reading articles JSON
-	var articlesData []map[string]interface{}
-	if row.ReadingArticles != nil {
-		jsonBytes, err := json.Marshal(row.ReadingArticles)
+func convertToContentAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool) (model.Achievement, error) {
+	// Count content items from JSON if available
+	totalItems := 0
+	if row.ContentItems != nil {
+		var itemsData []map[string]interface{}
+		jsonBytes, err := json.Marshal(row.ContentItems)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal reading articles: %w", err)
+			return nil, fmt.Errorf("failed to marshal content items: %w", err)
 		}
-		if err := json.Unmarshal(jsonBytes, &articlesData); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal reading articles: %w", err)
+		if err := json.Unmarshal(jsonBytes, &itemsData); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal content items: %w", err)
 		}
+		totalItems = len(itemsData)
 	}
 
-	articles := make([]model.Article, 0, len(articlesData))
-	for _, articleData := range articlesData {
-		var url *string
-		if urlVal, ok := articleData["url"]; ok && urlVal != nil {
-			urlStr := urlVal.(string)
-			url = &urlStr
-		}
-		article := model.Article{
-			ID:     articleData["id"].(string),
-			Title:  articleData["title"].(string),
-			Author: articleData["author"].(string),
-			URL:    url,
-		}
-		articles = append(articles, article)
-	}
-
-	return &model.ReadingAchievement{
+	return &model.ContentAchievement{
 		ID:          row.ID,
 		Name:        row.Name,
 		Description: row.Description,
@@ -150,59 +134,8 @@ func convertToReadingAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool)
 		ProjectID:   row.ProjectID,
 		EventID:     row.EventID,
 		ChallengeID: row.ChallengeID,
-		Articles:    articles,
-		UserHasRead: []model.Article{}, // Will be populated by resolver if needed
-		NextArticle: nil,               // Will be populated by resolver if needed
-	}, nil
-}
-
-func convertToListeningAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool) (model.Achievement, error) {
-	// Parse the listening tracks JSON
-	var tracksData []map[string]interface{}
-	if row.ListeningTracks != nil {
-		jsonBytes, err := json.Marshal(row.ListeningTracks)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal listening tracks: %w", err)
-		}
-		if err := json.Unmarshal(jsonBytes, &tracksData); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal listening tracks: %w", err)
-		}
-	}
-
-	tracks := make([]model.Track, 0, len(tracksData))
-	for _, trackData := range tracksData {
-		description := ""
-		if desc, ok := trackData["description"]; ok && desc != nil {
-			description = desc.(string)
-		}
-		var image *string
-		if img, ok := trackData["image_url"]; ok && img != nil {
-			imageURL := img.(string)
-			image = &imageURL
-		}
-
-		track := model.Track{
-			ID:          trackData["id"].(string),
-			Name:        trackData["name"].(string),
-			Description: description,
-			Image:       image,
-		}
-		tracks = append(tracks, track)
-	}
-
-	return &model.ListeningAchievement{
-		ID:              row.ID,
-		Name:            row.Name,
-		Description:     row.Description,
-		Image:           row.ImageUrl,
-		Points:          int(row.Points),
-		Hidden:          hidden,
-		ProjectID:       row.ProjectID,
-		EventID:         row.EventID,
-		ChallengeID:     row.ChallengeID,
-		Tracks:          tracks,
-		UserHasListened: []model.Track{}, // Will be populated by resolver if needed
-		NextTrack:       nil,             // Will be populated by resolver if needed
+		TotalItems:  totalItems,
+		// Items, UserCompletedItems, NextItem, and CompletedItemCount will be populated by resolvers
 	}, nil
 }
 

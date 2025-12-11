@@ -387,51 +387,8 @@ func (r *Resolver) ApplyTranslationToStreak(ctx context.Context, streak *model.S
 	return &translated
 }
 
-// ApplyTranslationToArticle applies translation to an already-loaded article
-func (r *Resolver) ApplyTranslationToArticle(ctx context.Context, article model.Article) model.Article {
-	lang := middleware.GetLanguage(ctx)
-	if lang == middleware.DefaultLanguage {
-		return article
-	}
-
-	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
-		EntityType: "article",
-		EntityID:   article.ID,
-		LangCode:   lang,
-	})()
-
-	if trans == nil {
-		return article
-	}
-
-	translated := article
-	translated.Title = applyStringTranslation(trans.Title, article.Title)
-	translated.Author = applyStringTranslation(trans.Author, article.Author)
-	return translated
-}
-
-// ApplyTranslationToTrack applies translation to an already-loaded track
-func (r *Resolver) ApplyTranslationToTrack(ctx context.Context, track model.Track) model.Track {
-	lang := middleware.GetLanguage(ctx)
-	if lang == middleware.DefaultLanguage {
-		return track
-	}
-
-	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
-		EntityType: "track",
-		EntityID:   track.ID,
-		LangCode:   lang,
-	})()
-
-	if trans == nil {
-		return track
-	}
-
-	translated := track
-	translated.Name = applyStringTranslation(trans.Name, track.Name)
-	translated.Description = applyStringTranslation(trans.Description, track.Description)
-	return translated
-}
+// Note: Article and Track translations are now handled via ExternalContent
+// The title field on Article and Track is resolved from ExternalContent translations
 
 // LoadConsentWithTranslation loads a consent and applies translation for the requested language
 func (r *Resolver) LoadConsentWithTranslation(ctx context.Context, id string) (*model.Consent, error) {

@@ -1,0 +1,126 @@
+type: http_request
+model: http_request
+id: rq_GetAchievement
+createdAt: 2025-12-11T12:00:00
+updatedAt: 2025-12-11T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query GetAchievement($id: ID!) {
+      achievement(id: $id) {
+        id
+        name
+        description
+        image
+        points
+        hidden
+        achievedAt
+        ... on SimpleAchievement {
+          project {
+            id
+            name
+          }
+          event {
+            id
+            name
+          }
+          challenge {
+            id
+            name
+          }
+        }
+        ... on ContentAchievement {
+          totalItems
+          completedItemCount
+          items {
+            id
+            sortOrder
+            externalContent {
+              id
+              contentType
+              title
+            }
+          }
+          userCompletedItems {
+            id
+            externalContent {
+              id
+              title
+            }
+          }
+          nextItem {
+            id
+            externalContent {
+              id
+              title
+            }
+          }
+          project {
+            id
+            name
+          }
+          event {
+            id
+            name
+          }
+          challenge {
+            id
+            name
+          }
+        }
+        ... on StreakAchievement {
+          neededStreak
+          streak {
+            id
+            name
+          }
+          project {
+            id
+            name
+          }
+          event {
+            id
+            name
+          }
+          challenge {
+            id
+            name
+          }
+        }
+        ... on QuizAchievement {
+          minScorePercentage
+          requireCompletion
+          quiz {
+            id
+            name
+          }
+          project {
+            id
+            name
+          }
+          challenge {
+            id
+            name
+          }
+        }
+      }
+    }
+  variables: |
+    {
+      "id": "AC01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    }
+bodyType: graphql
+description: Get a single achievement by ID
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_GetAchievement
+method: POST
+name: Get Achievement
+sortPriority: 4100.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

@@ -8,14 +8,12 @@ extend type Query {
 extend type Mutation {
     # Create achievements
     createSimpleAchievement(input: CreateSimpleAchievementInput!): SimpleAchievement! @requireRole(roles: ["admin", "superadmin"])
-    createReadingAchievement(input: CreateReadingAchievementInput!): ReadingAchievement! @requireRole(roles: ["admin", "superadmin"])
-    createListeningAchievement(input: CreateListeningAchievementInput!): ListeningAchievement! @requireRole(roles: ["admin", "superadmin"])
+    createContentAchievement(input: CreateContentAchievementInput!): ContentAchievement! @requireRole(roles: ["admin", "superadmin"])
     createStreakAchievement(input: CreateStreakAchievementInput!): StreakAchievement! @requireRole(roles: ["admin", "superadmin"])
 
     # Update achievements
     updateAchievement(id: ID!, input: UpdateAchievementInput!): Achievement! @requireRole(roles: ["admin", "superadmin"])
-    updateReadingAchievement(id: ID!, input: UpdateReadingAchievementInput!): ReadingAchievement! @requireRole(roles: ["admin", "superadmin"])
-    updateListeningAchievement(id: ID!, input: UpdateListeningAchievementInput!): ListeningAchievement! @requireRole(roles: ["admin", "superadmin"])
+    updateContentAchievement(id: ID!, input: UpdateContentAchievementInput!): ContentAchievement! @requireRole(roles: ["admin", "superadmin"])
     updateStreakAchievement(id: ID!, input: UpdateStreakAchievementInput!): StreakAchievement! @requireRole(roles: ["admin", "superadmin"])
 
     # Delete achievement
@@ -27,13 +25,9 @@ extend type Mutation {
     revokeAchievement(userId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
     bulkAwardAchievements(userIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
-    # Reading progress (M2M)
-    markArticleAsRead(userId: ID!, achievementId: ID!, articleId: ID!): ReadingAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    unmarkArticleAsRead(userId: ID!, achievementId: ID!, articleId: ID!): ReadingAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
-
-    # Listening progress (M2M)
-    markTrackAsListened(userId: ID!, achievementId: ID!, trackId: ID!): ListeningAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    unmarkTrackAsListened(userId: ID!, achievementId: ID!, trackId: ID!): ListeningAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    # Content progress (M2M) - marks content completed across ALL published achievements containing this content
+    markContentItemCompleted(userId: ID!, externalContentId: ID!): [ContentAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    unmarkContentItemCompleted(userId: ID!, externalContentId: ID!): [ContentAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
 
     # Streak tracking (M2M)
     recordStreakActivity(userId: ID!, achievementId: ID!, currentStreak: Int!): StreakAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])

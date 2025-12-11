@@ -105,74 +105,22 @@ func TestSimpleAchievementModel(t *testing.T) {
 	assert.False(t, achievement.Hidden)
 }
 
-func TestReadingAchievementModel(t *testing.T) {
-	articles := []model.Article{
-		{
-			ID:     "RA01K8XV6VK9ED2GBZSQ2VDTAT8T",
-			Title:  "Article 1",
-			Author: "John Doe",
-			URL:    stringPtr("https://example.com/article1"),
-		},
-		{
-			ID:     "RA01K8XV6VK9ED2GBZSQ2VDTAT9T",
-			Title:  "Article 2",
-			Author: "Jane Smith",
-			URL:    stringPtr("https://example.com/article2"),
-		},
-	}
-
-	achievement := &model.ReadingAchievement{
+func TestContentAchievementModel(t *testing.T) {
+	achievement := &model.ContentAchievement{
 		ID:          "AC01K8XV6VK9ED2GBZSQ2VDTAT8T",
-		Name:        "Reading Achievement",
-		Description: "Read all required articles",
-		Image:       stringPtr("https://example.com/reading.png"),
+		Name:        "Content Achievement",
+		Description: "Complete all required content",
+		Image:       stringPtr("https://example.com/content.png"),
 		Points:      100,
 		Hidden:      false,
 		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-		Articles:    articles,
-		UserHasRead: []model.Article{},
+		TotalItems:  2,
+		// Items will be populated by resolver
 	}
 
 	assert.Equal(t, "AC01K8XV6VK9ED2GBZSQ2VDTAT8T", achievement.ID)
-	assert.Equal(t, "Reading Achievement", achievement.Name)
-	assert.Len(t, achievement.Articles, 2)
-	assert.Equal(t, "Article 1", achievement.Articles[0].Title)
-	assert.Equal(t, "John Doe", achievement.Articles[0].Author)
-}
-
-func TestListeningAchievementModel(t *testing.T) {
-	tracks := []model.Track{
-		{
-			ID:          "LT01K8XV6VK9ED2GBZSQ2VDTAT8T",
-			Name:        "Track 1",
-			Description: "First track description",
-			Image:       stringPtr("https://example.com/track1.jpg"),
-		},
-		{
-			ID:          "LT01K8XV6VK9ED2GBZSQ2VDTAT9T",
-			Name:        "Track 2",
-			Description: "Second track description",
-			Image:       stringPtr("https://example.com/track2.jpg"),
-		},
-	}
-
-	achievement := &model.ListeningAchievement{
-		ID:              "AC01K8XV6VK9ED2GBZSQ2VDTAT8T",
-		Name:            "Listening Achievement",
-		Description:     "Listen to all required tracks",
-		Image:           stringPtr("https://example.com/listening.png"),
-		Points:          150,
-		Hidden:          false,
-		ProjectID:       "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-		Tracks:          tracks,
-		UserHasListened: []model.Track{},
-	}
-
-	assert.Equal(t, "AC01K8XV6VK9ED2GBZSQ2VDTAT8T", achievement.ID)
-	assert.Equal(t, "Listening Achievement", achievement.Name)
-	assert.Len(t, achievement.Tracks, 2)
-	assert.Equal(t, "Track 1", achievement.Tracks[0].Name)
-	assert.Equal(t, "First track description", achievement.Tracks[0].Description)
+	assert.Equal(t, "Content Achievement", achievement.Name)
+	assert.Equal(t, 2, achievement.TotalItems)
 }
 
 func TestStreakAchievementModel(t *testing.T) {
@@ -209,27 +157,26 @@ func TestMultipleAchievementsInCache(t *testing.T) {
 			Hidden:      false,
 			ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
 		},
-		&model.ReadingAchievement{
+		&model.ContentAchievement{
 			ID:          "AC01K8XV6VK9ED2GBZSQ2VDTAT9T",
-			Name:        "Reading Achievement",
+			Name:        "Content Achievement",
 			Description: "Second achievement",
 			Image:       stringPtr("https://example.com/2.png"),
 			Points:      100,
 			Hidden:      false,
 			ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-			Articles:    []model.Article{},
-			UserHasRead: []model.Article{},
+			TotalItems:  3,
 		},
-		&model.ListeningAchievement{
-			ID:              "AC01K8XV6VK9ED2GBZSQ2VDTATZZ",
-			Name:            "Listening Achievement",
-			Description:     "Third achievement",
-			Image:           stringPtr("https://example.com/3.png"),
-			Points:          150,
-			Hidden:          false,
-			ProjectID:       "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-			Tracks:          []model.Track{},
-			UserHasListened: []model.Track{},
+		&model.StreakAchievement{
+			ID:           "AC01K8XV6VK9ED2GBZSQ2VDTATZZ",
+			Name:         "Streak Achievement",
+			Description:  "Third achievement",
+			Image:        stringPtr("https://example.com/3.png"),
+			Points:       150,
+			Hidden:       false,
+			ProjectID:    "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
+			StreakID:     "SK01K8XV6VK9ED2GBZSQ2VDTAT8T",
+			NeededStreak: 7,
 		},
 	}
 

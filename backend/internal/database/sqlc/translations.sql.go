@@ -18,15 +18,6 @@ func (q *Queries) DeleteAchievementTranslations(ctx context.Context, achievement
 	return err
 }
 
-const DeleteArticleTranslations = `-- name: DeleteArticleTranslations :exec
-DELETE FROM reading_achievement_article_translations WHERE article_id = $1::text
-`
-
-func (q *Queries) DeleteArticleTranslations(ctx context.Context, articleID string) error {
-	_, err := q.db.Exec(ctx, DeleteArticleTranslations, articleID)
-	return err
-}
-
 const DeleteChallengeTranslations = `-- name: DeleteChallengeTranslations :exec
 DELETE FROM challenge_translations WHERE challenge_id = $1::text
 `
@@ -83,15 +74,6 @@ func (q *Queries) DeleteTeamTranslations(ctx context.Context, teamID string) err
 	return err
 }
 
-const DeleteTrackTranslations = `-- name: DeleteTrackTranslations :exec
-DELETE FROM listening_achievement_track_translations WHERE track_id = $1::text
-`
-
-func (q *Queries) DeleteTrackTranslations(ctx context.Context, trackID string) error {
-	_, err := q.db.Exec(ctx, DeleteTrackTranslations, trackID)
-	return err
-}
-
 const GetAchievementTranslationsByIDs = `-- name: GetAchievementTranslationsByIDs :many
 SELECT achievement_id, language_code, name, description
 FROM achievement_translations
@@ -125,50 +107,6 @@ func (q *Queries) GetAchievementTranslationsByIDs(ctx context.Context, arg GetAc
 			&i.LanguageCode,
 			&i.Name,
 			&i.Description,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const GetArticleTranslationsByIDs = `-- name: GetArticleTranslationsByIDs :many
-SELECT article_id, language_code, title, author
-FROM reading_achievement_article_translations
-WHERE article_id = ANY($1::text[])
-  AND language_code = $2::text
-`
-
-type GetArticleTranslationsByIDsParams struct {
-	EntityIds    []string `json:"entity_ids"`
-	LanguageCode string   `json:"language_code"`
-}
-
-type GetArticleTranslationsByIDsRow struct {
-	ArticleID    string  `json:"article_id"`
-	LanguageCode string  `json:"language_code"`
-	Title        *string `json:"title"`
-	Author       *string `json:"author"`
-}
-
-func (q *Queries) GetArticleTranslationsByIDs(ctx context.Context, arg GetArticleTranslationsByIDsParams) ([]*GetArticleTranslationsByIDsRow, error) {
-	rows, err := q.db.Query(ctx, GetArticleTranslationsByIDs, arg.EntityIds, arg.LanguageCode)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetArticleTranslationsByIDsRow{}
-	for rows.Next() {
-		var i GetArticleTranslationsByIDsRow
-		if err := rows.Scan(
-			&i.ArticleID,
-			&i.LanguageCode,
-			&i.Title,
-			&i.Author,
 		); err != nil {
 			return nil, err
 		}
@@ -437,50 +375,6 @@ func (q *Queries) GetTeamTranslationsByIDs(ctx context.Context, arg GetTeamTrans
 		var i GetTeamTranslationsByIDsRow
 		if err := rows.Scan(
 			&i.TeamID,
-			&i.LanguageCode,
-			&i.Name,
-			&i.Description,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const GetTrackTranslationsByIDs = `-- name: GetTrackTranslationsByIDs :many
-SELECT track_id, language_code, name, description
-FROM listening_achievement_track_translations
-WHERE track_id = ANY($1::text[])
-  AND language_code = $2::text
-`
-
-type GetTrackTranslationsByIDsParams struct {
-	EntityIds    []string `json:"entity_ids"`
-	LanguageCode string   `json:"language_code"`
-}
-
-type GetTrackTranslationsByIDsRow struct {
-	TrackID      string  `json:"track_id"`
-	LanguageCode string  `json:"language_code"`
-	Name         *string `json:"name"`
-	Description  *string `json:"description"`
-}
-
-func (q *Queries) GetTrackTranslationsByIDs(ctx context.Context, arg GetTrackTranslationsByIDsParams) ([]*GetTrackTranslationsByIDsRow, error) {
-	rows, err := q.db.Query(ctx, GetTrackTranslationsByIDs, arg.EntityIds, arg.LanguageCode)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetTrackTranslationsByIDsRow{}
-	for rows.Next() {
-		var i GetTrackTranslationsByIDsRow
-		if err := rows.Scan(
-			&i.TrackID,
 			&i.LanguageCode,
 			&i.Name,
 			&i.Description,

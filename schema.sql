@@ -202,7 +202,7 @@ CREATE TABLE challenges (
 
 CREATE TABLE achievements (
     id CHAR(28) PRIMARY KEY CHECK (id ~ '^AC[0-9A-Z]{26}$'),
-    achievement_type VARCHAR(50) NOT NULL CHECK (achievement_type IN ('SIMPLE', 'READING', 'LISTENING', 'STREAK', 'QUIZ')),
+    achievement_type VARCHAR(50) NOT NULL CHECK (achievement_type IN ('SIMPLE', 'CONTENT', 'STREAK', 'QUIZ')),
     project_id CHAR(28) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     event_id CHAR(28) REFERENCES events(id) ON DELETE SET NULL,
     challenge_id CHAR(28) REFERENCES challenges(id) ON DELETE SET NULL,
@@ -220,34 +220,18 @@ CREATE TABLE achievements (
 );
 
 -- Type-specific achievement data
-CREATE TABLE reading_achievements (
+CREATE TABLE content_achievements (
     achievement_id CHAR(28) PRIMARY KEY REFERENCES achievements(id) ON DELETE CASCADE
 );
 
-CREATE TABLE reading_achievement_articles (
-    id CHAR(28) PRIMARY KEY CHECK (id ~ '^RA[0-9A-Z]{26}$'),
-    achievement_id CHAR(28) NOT NULL REFERENCES reading_achievements(achievement_id) ON DELETE CASCADE,
-    article_id VARCHAR(255) NOT NULL,
-    title VARCHAR(500) NOT NULL,
-    author VARCHAR(255) NOT NULL,
-    url VARCHAR(500),
-    INDEX idx_reading_articles_achievement (achievement_id),
-    UNIQUE (achievement_id, article_id)
-);
-
-CREATE TABLE listening_achievements (
-    achievement_id CHAR(28) PRIMARY KEY REFERENCES achievements(id) ON DELETE CASCADE
-);
-
-CREATE TABLE listening_achievement_tracks (
-    id CHAR(28) PRIMARY KEY CHECK (id ~ '^LT[0-9A-Z]{26}$'),
-    achievement_id CHAR(28) NOT NULL REFERENCES listening_achievements(achievement_id) ON DELETE CASCADE,
-    track_id VARCHAR(255) NOT NULL,
-    name VARCHAR(500) NOT NULL,
-    description TEXT,
-    image_url VARCHAR(500),
-    INDEX idx_listening_tracks_achievement (achievement_id),
-    UNIQUE (achievement_id, track_id)
+CREATE TABLE content_achievement_items (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^CI[0-9A-Z]{26}$'),
+    achievement_id CHAR(28) NOT NULL REFERENCES content_achievements(achievement_id) ON DELETE CASCADE,
+    external_content_id CHAR(28) NOT NULL REFERENCES external_content(id) ON DELETE CASCADE,
+    sort_order INT NOT NULL DEFAULT 0,
+    INDEX idx_content_items_achievement (achievement_id),
+    INDEX idx_content_items_external_content (external_content_id),
+    UNIQUE (achievement_id, external_content_id)
 );
 
 CREATE TABLE streak_achievements (
@@ -325,24 +309,15 @@ CREATE TABLE user_challenge_completions (
     INDEX idx_user_challenges_time (completed_at)
 );
 
-CREATE TABLE user_reading_progress (
+CREATE TABLE user_content_progress (
     user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    achievement_id CHAR(28) NOT NULL REFERENCES reading_achievements(achievement_id) ON DELETE CASCADE,
-    article_id VARCHAR(255) NOT NULL,
-    read_at TIMESTAMPTZ DEFAULT now(),
-    PRIMARY KEY (user_id, achievement_id, article_id),
-    INDEX idx_user_reading_user (user_id),
-    INDEX idx_user_reading_achievement (achievement_id)
-);
-
-CREATE TABLE user_listening_progress (
-    user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    achievement_id CHAR(28) NOT NULL REFERENCES listening_achievements(achievement_id) ON DELETE CASCADE,
-    track_id VARCHAR(255) NOT NULL,
-    listened_at TIMESTAMPTZ DEFAULT now(),
-    PRIMARY KEY (user_id, achievement_id, track_id),
-    INDEX idx_user_listening_user (user_id),
-    INDEX idx_user_listening_achievement (achievement_id)
+    achievement_id CHAR(28) NOT NULL REFERENCES content_achievements(achievement_id) ON DELETE CASCADE,
+    external_content_id CHAR(28) NOT NULL REFERENCES external_content(id) ON DELETE CASCADE,
+    completed_at TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (user_id, achievement_id, external_content_id),
+    INDEX idx_user_content_progress_user (user_id),
+    INDEX idx_user_content_progress_achievement (achievement_id),
+    INDEX idx_user_content_progress_content (external_content_id)
 );
 
 CREATE TABLE user_streak_activity (
@@ -448,25 +423,6 @@ CREATE TABLE achievement_translations (
     PRIMARY KEY (achievement_id, language_code)
 );
 
-CREATE TABLE reading_achievement_article_translations (
-    article_id CHAR(28) NOT NULL REFERENCES reading_achievement_articles(id) ON DELETE CASCADE,
-    language_code VARCHAR(10) NOT NULL,
-    title VARCHAR(500),
-    author VARCHAR(255),
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    PRIMARY KEY (article_id, language_code)
-);
-
-CREATE TABLE listening_achievement_track_translations (
-    track_id CHAR(28) NOT NULL REFERENCES listening_achievement_tracks(id) ON DELETE CASCADE,
-    language_code VARCHAR(10) NOT NULL,
-    name VARCHAR(500),
-    description TEXT,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    PRIMARY KEY (track_id, language_code)
-);
 
 -- ==================== Consent Tables ====================
 -- Global user consent management (system-wide, not project-scoped)

@@ -1,0 +1,31 @@
+type: http_request
+model: http_request
+id: rq_RevokeAchievement
+createdAt: 2025-12-11T12:00:00
+updatedAt: 2025-12-11T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation RevokeAchievement($userId: ID!, $achievementId: ID!) {
+      revokeAchievement(userId: $userId, achievementId: $achievementId)
+    }
+  variables: |
+    {
+      "userId": "US01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "achievementId": "AC01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    }
+bodyType: graphql
+description: Revoke an achievement from a user (M2M/admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_RevokeAchievement
+method: POST
+name: Revoke Achievement
+sortPriority: 3700.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

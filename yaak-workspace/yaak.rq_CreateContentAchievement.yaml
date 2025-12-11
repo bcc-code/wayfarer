@@ -1,0 +1,71 @@
+type: http_request
+model: http_request
+id: rq_CreateContentAchievement
+createdAt: 2025-12-11T12:00:00
+updatedAt: 2025-12-11T08:32:00.104182
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation CreateContentAchievement($input: CreateContentAchievementInput!) {
+      createContentAchievement(input: $input) {
+        id
+        name
+        description
+        image
+        points
+        hidden
+        totalItems
+        items {
+          id
+          sortOrder
+          externalContent {
+            id
+            planId
+            taskId
+            contentId
+            contentType
+            title
+          }
+        }
+        project {
+          id
+          name
+        }
+        event {
+          id
+          name
+        }
+        challenge {
+          id
+          name
+        }
+      }
+    }
+  variables: |
+    {
+      "input": {
+        "name": "Content Achievement",
+        "description": "Complete all content items to earn this achievement",
+        "projectId": "PR01K9W1Y51ARG5DCHJXR9VW8DKN",
+        "points": 50,
+        "hidden": false,
+        "items": [
+          {"externalContentId": "EC01KBMJ4JM86GE2BXNQ4QRHXX5J"}
+        ]
+      }
+    }
+bodyType: graphql
+description: Create a content achievement with items (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_CreateContentAchievement
+method: POST
+name: Create Content Achievement
+sortPriority: 3200.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

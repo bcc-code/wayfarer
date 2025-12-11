@@ -244,44 +244,6 @@ func queryTranslations(ctx context.Context, db *database.DB, entityType string, 
 		}
 		return translations, nil
 
-	case "article":
-		rows, err := db.Queries.GetArticleTranslationsByIDs(ctx, sqlc.GetArticleTranslationsByIDsParams{
-			EntityIds:    entityIDs,
-			LanguageCode: langCode,
-		})
-		if err != nil {
-			return nil, err
-		}
-		translations := make([]*Translation, len(rows))
-		for i, row := range rows {
-			translations[i] = &Translation{
-				EntityID: row.ArticleID,
-				LangCode: row.LanguageCode,
-				Title:    row.Title,
-				Author:   row.Author,
-			}
-		}
-		return translations, nil
-
-	case "track":
-		rows, err := db.Queries.GetTrackTranslationsByIDs(ctx, sqlc.GetTrackTranslationsByIDsParams{
-			EntityIds:    entityIDs,
-			LanguageCode: langCode,
-		})
-		if err != nil {
-			return nil, err
-		}
-		translations := make([]*Translation, len(rows))
-		for i, row := range rows {
-			translations[i] = &Translation{
-				EntityID:    row.TrackID,
-				LangCode:    row.LanguageCode,
-				Name:        row.Name,
-				Description: row.Description,
-			}
-		}
-		return translations, nil
-
 	case "consent":
 		rows, err := db.Queries.GetConsentTranslationsByIDs(ctx, sqlc.GetConsentTranslationsByIDsParams{
 			EntityIds:    entityIDs,

@@ -90,18 +90,10 @@ type AgeRange {
     max: Int!
 }
 
-type Article {
+type ContentItem {
     id: ID!
-    title: String!
-    author: String!
-    url: String
-}
-
-type Track {
-    id: ID!
-    name: String!
-    description: String!
-    image: String
+    externalContent: ExternalContent! @goField(forceResolver: true)
+    sortOrder: Int!
 }
 
 type Branding {
@@ -407,7 +399,7 @@ type SimpleAchievement implements Achievement {
     hidden: Boolean!
 }
 
-type ReadingAchievement implements Achievement {
+type ContentAchievement implements Achievement {
     id: ID!
     name: String!
     description: String!
@@ -416,27 +408,14 @@ type ReadingAchievement implements Achievement {
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime @goField(forceResolver: true)
-    articles: [Article!]! @goField(forceResolver: true)
-    userHasRead: [Article!]!
-    nextArticle: Article!
     points: Int!
     hidden: Boolean!
-}
-
-type ListeningAchievement implements Achievement {
-    id: ID!
-    name: String!
-    description: String!
-    image: String
-    project: Project! @goField(forceResolver: true)
-    event: Event @goField(forceResolver: true)
-    challenge: Challenge @goField(forceResolver: true)
-    achievedAt: DateTime @goField(forceResolver: true)
-    tracks: [Track!]! @goField(forceResolver: true)
-    userHasListened: [Track!]!
-    nextTrack: Track!
-    points: Int!
-    hidden: Boolean!
+    # Content-specific fields
+    items: [ContentItem!]! @goField(forceResolver: true)
+    userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
+    nextItem: ContentItem @goField(forceResolver: true)
+    totalItems: Int!
+    completedItemCount: Int! @goField(forceResolver: true)
 }
 
 type StreakAchievement implements Achievement {
@@ -663,16 +642,8 @@ input ColorsInput {
     light: ColorSetInput!
 }
 
-input ArticleInput {
-    title: String!
-    author: String!
-    url: String
-}
-
-input TrackInput {
-    name: String!
-    description: String!
-    image: String
+input ContentItemInput {
+    externalContentId: ID!
 }
 
 input CreateProjectInput {
@@ -751,7 +722,7 @@ input CreateSimpleAchievementInput {
     hidden: Boolean!
 }
 
-input CreateReadingAchievementInput {
+input CreateContentAchievementInput {
     name: String!
     description: String!
     image: String
@@ -760,19 +731,7 @@ input CreateReadingAchievementInput {
     challengeId: ID
     points: Int!
     hidden: Boolean!
-    articles: [ArticleInput!]!
-}
-
-input CreateListeningAchievementInput {
-    name: String!
-    description: String!
-    image: String
-    projectId: ID!
-    eventId: ID
-    challengeId: ID
-    points: Int!
-    hidden: Boolean!
-    tracks: [TrackInput!]!
+    items: [ContentItemInput!]!
 }
 
 input CreateStreakAchievementInput {
@@ -897,7 +856,7 @@ input UpdateAchievementInput {
     hidden: Boolean
 }
 
-input UpdateReadingAchievementInput {
+input UpdateContentAchievementInput {
     name: String
     description: String
     image: String
@@ -905,18 +864,7 @@ input UpdateReadingAchievementInput {
     challengeId: ID
     points: Int
     hidden: Boolean
-    articles: [ArticleInput!]
-}
-
-input UpdateListeningAchievementInput {
-    name: String
-    description: String
-    image: String
-    eventId: ID
-    challengeId: ID
-    points: Int
-    hidden: Boolean
-    tracks: [TrackInput!]
+    items: [ContentItemInput!]
 }
 
 input UpdateStreakAchievementInput {
@@ -1107,7 +1055,7 @@ input RevokeRoleInput {
 
 # ==================== Score Journal ====================
 
-union ScoreSource = SimpleAchievement | ReadingAchievement | ListeningAchievement | StreakAchievement | SimpleChallenge | QuizChallenge | ExternalChallenge | Event
+union ScoreSource = SimpleAchievement | ContentAchievement | StreakAchievement | QuizAchievement | SimpleChallenge | QuizChallenge | ExternalChallenge | Event
 
 type ScoreJournal {
     id: ID!
