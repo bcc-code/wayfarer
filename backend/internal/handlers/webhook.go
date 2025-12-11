@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"time"
 
+	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/ulid"
@@ -14,7 +16,8 @@ import (
 )
 
 type WebhookHandler struct {
-	DB *database.DB
+	DB    *database.DB
+	Cache *cache.CacheWithRegistry
 }
 
 // ContentEventRequest represents the incoming webhook payload for content events
@@ -134,6 +137,170 @@ func (h *WebhookHandler) HandleContentEvent(c *gin.Context) {
 		"source", sourceStr,
 	)
 
+	// Process achievements for this content event
+	h.processAchievements(ctx, req.PersonID, req.TaskID)
+
 	// Return success response with no body
 	c.Status(http.StatusCreated)
+}
+
+// processAchievements handles achievement progress and auto-award logic for content events.
+// It silently skips processing if user or content is not found in the database.
+func (h *WebhookHandler) processAchievements(ctx context.Context, personID string, taskID string) {
+	// 1. Get user by members_id (personID is a UUID string)
+	user, err := h.DB.Queries.GetUserByMembersID(ctx, personID)
+	if err != nil {
+		slog.Warn("webhook: user not found for achievement processing",
+			"person_id", personID, "error", err)
+		return
+	}
+
+	// 2. Get external content by task_id
+	content, err := h.DB.Queries.GetExternalContentByTaskID(ctx, taskID)
+	if err != nil {
+		slog.Warn("webhook: external content not found for achievement processing",
+			"task_id", taskID, "error", err)
+		return
+	}
+
+	// 3. Get all published achievements containing this content
+	achievements, err := h.DB.Queries.GetPublishedContentAchievementsByExternalContent(ctx, content.ID)
+	if err != nil {
+		slog.Error("webhook: failed to get achievements", "error", err)
+		return
+	}
+
+	if len(achievements) == 0 {
+		return
+	}
+
+	// 4. Mark content completed for all achievements
+	err = h.DB.Queries.MarkContentItemCompletedForAllAchievements(ctx, sqlc.MarkContentItemCompletedForAllAchievementsParams{
+		UserID:            user.ID,
+		ExternalContentID: content.ID,
+	})
+	if err != nil {
+		slog.Error("webhook: failed to mark content completed", "error", err)
+		return
+	}
+
+	slog.Info("webhook: marked content completed",
+		"user_id", user.ID,
+		"external_content_id", content.ID,
+		"achievement_count", len(achievements))
+
+	// 5. Check and award completed achievements
+	for _, row := range achievements {
+		h.Cache.Delete(cache.UserContentProgressKey(user.ID, row.ID))
+
+		// Check if all items are completed
+		items, err := h.DB.Queries.GetContentItemsByAchievementIDs(ctx, []string{row.ID})
+		if err != nil {
+			slog.Error("webhook: failed to get content items", "error", err, "achievement_id", row.ID)
+			continue
+		}
+
+		progress, err := h.DB.Queries.GetUserContentProgressForAchievement(ctx, sqlc.GetUserContentProgressForAchievementParams{
+			UserID:        user.ID,
+			AchievementID: row.ID,
+		})
+		if err != nil {
+			slog.Error("webhook: failed to get user progress", "error", err, "achievement_id", row.ID)
+			continue
+		}
+
+		if len(progress) == len(items) {
+			h.awardAchievement(ctx, user.ID, row)
+		}
+	}
+}
+
+// awardAchievement awards an achievement to a user, creates a score journal entry,
+// and invalidates relevant caches. Only awards if not already awarded.
+func (h *WebhookHandler) awardAchievement(ctx context.Context, userID string, achievement *sqlc.GetPublishedContentAchievementsByExternalContentRow) {
+	// Check if user already has this achievement
+	hasAchievement, err := h.DB.Queries.CheckUserHasAchievement(ctx, sqlc.CheckUserHasAchievementParams{
+		UserID:        userID,
+		AchievementID: achievement.ID,
+	})
+	if err != nil {
+		slog.Error("webhook: failed to check if user has achievement", "error", err,
+			"user_id", userID, "achievement_id", achievement.ID)
+		return
+	}
+
+	if hasAchievement {
+		slog.Debug("webhook: user already has achievement, skipping",
+			"user_id", userID, "achievement_id", achievement.ID)
+		return
+	}
+
+	// Ensure user is in the project (required for leaderboard)
+	err = h.DB.Queries.JoinProject(ctx, sqlc.JoinProjectParams{
+		Userid:    userID,
+		Projectid: achievement.ProjectID,
+	})
+	if err != nil {
+		slog.Error("webhook: failed to add user to project", "error", err,
+			"user_id", userID, "project_id", achievement.ProjectID)
+		// Continue anyway - achievement can still be awarded
+	}
+
+	// Award the achievement
+	err = h.DB.Queries.AwardUserAchievementIdempotent(ctx, sqlc.AwardUserAchievementIdempotentParams{
+		UserID:        userID,
+		AchievementID: achievement.ID,
+	})
+	if err != nil {
+		slog.Error("webhook: failed to award achievement", "error", err,
+			"user_id", userID, "achievement_id", achievement.ID)
+		return
+	}
+
+	// Check if score journal entry already exists for this achievement
+	journalExists, err := h.DB.Queries.CheckScoreJournalEntryExists(ctx, sqlc.CheckScoreJournalEntryExistsParams{
+		UserID:     userID,
+		SourceType: "ACHIEVEMENT",
+		SourceID:   achievement.ID,
+	})
+	if err != nil {
+		slog.Error("webhook: failed to check score journal entry", "error", err,
+			"user_id", userID, "achievement_id", achievement.ID)
+	}
+
+	// Only create score journal entry if it doesn't exist
+	if !journalExists {
+		journalID := ulid.NewScoreJournalID()
+		_, err = h.DB.Queries.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
+			ID:         journalID,
+			ProjectID:  achievement.ProjectID,
+			UserID:     userID,
+			EventID:    achievement.EventID,
+			Points:     achievement.Points,
+			SourceType: "ACHIEVEMENT",
+			SourceID:   &achievement.ID,
+		})
+		if err != nil {
+			slog.Error("webhook: failed to create score journal entry", "error", err,
+				"user_id", userID, "achievement_id", achievement.ID)
+			// Achievement was awarded, but score journal failed - log but continue
+		}
+	} else {
+		slog.Debug("webhook: score journal entry already exists, skipping",
+			"user_id", userID, "achievement_id", achievement.ID)
+	}
+
+	// Invalidate caches
+	h.Cache.InvalidateUser(userID)
+	h.Cache.InvalidateAchievement(achievement.ID)
+	h.Cache.InvalidateProject(achievement.ProjectID)
+	if achievement.EventID != nil {
+		h.Cache.InvalidateEvent(*achievement.EventID)
+	}
+	h.Cache.Delete(cache.UserAchievementTimestampKey(userID, achievement.ID))
+
+	slog.Info("webhook: awarded achievement",
+		"user_id", userID,
+		"achievement_id", achievement.ID,
+		"points", achievement.Points)
 }

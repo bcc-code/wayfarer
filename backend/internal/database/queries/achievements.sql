@@ -212,6 +212,19 @@ WHERE id = @id::text;
 INSERT INTO user_achievements (user_id, achievement_id, achieved_at)
 VALUES (@user_id::text, @achievement_id::text, COALESCE(@achieved_at::timestamptz, now()));
 
+-- name: AwardUserAchievementIdempotent :exec
+-- Awards achievement to user, silently ignores if already awarded
+INSERT INTO user_achievements (user_id, achievement_id, achieved_at)
+VALUES (@user_id::text, @achievement_id::text, COALESCE(@achieved_at::timestamptz, now()))
+ON CONFLICT (user_id, achievement_id) DO NOTHING;
+
+-- name: CheckUserHasAchievement :one
+-- Check if a user already has an achievement
+SELECT EXISTS(
+    SELECT 1 FROM user_achievements
+    WHERE user_id = @user_id::text AND achievement_id = @achievement_id::text
+) AS has_achievement;
+
 -- name: AwardTeamAchievementBatch :exec
 -- Award achievement to all members of a team in a single query
 INSERT INTO user_achievements (user_id, achievement_id, achieved_at)

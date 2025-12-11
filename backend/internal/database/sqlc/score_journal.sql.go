@@ -11,6 +11,29 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const CheckScoreJournalEntryExists = `-- name: CheckScoreJournalEntryExists :one
+SELECT EXISTS(
+    SELECT 1 FROM score_journal
+    WHERE user_id = $1::text
+      AND source_type = $2::text
+      AND source_id = $3::text
+) AS exists
+`
+
+type CheckScoreJournalEntryExistsParams struct {
+	UserID     string `json:"user_id"`
+	SourceType string `json:"source_type"`
+	SourceID   string `json:"source_id"`
+}
+
+// Check if a score journal entry already exists for a specific source (e.g., achievement)
+func (q *Queries) CheckScoreJournalEntryExists(ctx context.Context, arg CheckScoreJournalEntryExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, CheckScoreJournalEntryExists, arg.UserID, arg.SourceType, arg.SourceID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const CountScoreJournalFiltered = `-- name: CountScoreJournalFiltered :one
 SELECT COUNT(*)
 FROM score_journal

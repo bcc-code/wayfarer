@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_ContentEvent
 createdAt: 2025-12-03T10:15:00
-updatedAt: 2025-12-03T09:18:19.268239
+updatedAt: 2025-12-11T10:35:08.318092
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_ContentEvents
 authentication:
@@ -12,9 +12,9 @@ authenticationType: bearer
 body:
   text: |
     {
-      "person_id": "550e8400-e29b-41d4-a716-446655440000",
-      "task_id": "article-123",
-      "plan_id": "plan-456",
+      "person_id": "4dabc229-2c60-4724-a049-c75793d2682b",
+      "task_id": "b22759c3-f40e-4875-a2cd-0cf07feff17a",
+      "plan_id": "hidden-treasures-podcast",
       "timestamp": "2025-01-15T14:30:00Z",
       "content_progress": 0.75
     }

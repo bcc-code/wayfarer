@@ -76,6 +76,44 @@ func (q *Queries) AwardUserAchievement(ctx context.Context, arg AwardUserAchieve
 	return err
 }
 
+const AwardUserAchievementIdempotent = `-- name: AwardUserAchievementIdempotent :exec
+INSERT INTO user_achievements (user_id, achievement_id, achieved_at)
+VALUES ($1::text, $2::text, COALESCE($3::timestamptz, now()))
+ON CONFLICT (user_id, achievement_id) DO NOTHING
+`
+
+type AwardUserAchievementIdempotentParams struct {
+	UserID        string             `json:"user_id"`
+	AchievementID string             `json:"achievement_id"`
+	AchievedAt    pgtype.Timestamptz `json:"achieved_at"`
+}
+
+// Awards achievement to user, silently ignores if already awarded
+func (q *Queries) AwardUserAchievementIdempotent(ctx context.Context, arg AwardUserAchievementIdempotentParams) error {
+	_, err := q.db.Exec(ctx, AwardUserAchievementIdempotent, arg.UserID, arg.AchievementID, arg.AchievedAt)
+	return err
+}
+
+const CheckUserHasAchievement = `-- name: CheckUserHasAchievement :one
+SELECT EXISTS(
+    SELECT 1 FROM user_achievements
+    WHERE user_id = $1::text AND achievement_id = $2::text
+) AS has_achievement
+`
+
+type CheckUserHasAchievementParams struct {
+	UserID        string `json:"user_id"`
+	AchievementID string `json:"achievement_id"`
+}
+
+// Check if a user already has an achievement
+func (q *Queries) CheckUserHasAchievement(ctx context.Context, arg CheckUserHasAchievementParams) (bool, error) {
+	row := q.db.QueryRow(ctx, CheckUserHasAchievement, arg.UserID, arg.AchievementID)
+	var has_achievement bool
+	err := row.Scan(&has_achievement)
+	return has_achievement, err
+}
+
 const CountAchievementsFiltered = `-- name: CountAchievementsFiltered :one
 SELECT COUNT(DISTINCT a.id)
 FROM achievements a

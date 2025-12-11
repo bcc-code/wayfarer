@@ -95,3 +95,12 @@ DELETE FROM score_journal
 WHERE user_id = @user_id::text
     AND source_type = 'ACHIEVEMENT'
     AND source_id = @achievement_id::text;
+
+-- name: CheckScoreJournalEntryExists :one
+-- Check if a score journal entry already exists for a specific source (e.g., achievement)
+SELECT EXISTS(
+    SELECT 1 FROM score_journal
+    WHERE user_id = @user_id::text
+      AND source_type = @source_type::text
+      AND source_id = @source_id::text
+) AS exists;
