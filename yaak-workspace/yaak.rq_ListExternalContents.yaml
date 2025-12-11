@@ -1,0 +1,59 @@
+type: http_request
+model: http_request
+id: rq_ListExternalContents
+createdAt: 2025-12-10T13:00:00
+updatedAt: 2025-12-10T15:04:51.996902
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_ExternalContent
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query ExternalContents($filter: ExternalContentFilter!, $sortBy: ExternalContentSortBy, $first: Int, $after: String) {
+      externalContents(filter: $filter, sortBy: $sortBy, first: $first, after: $after) {
+        edges {
+          node {
+            id
+            planId
+            taskId
+            contentId
+            contentType
+            publishedAt
+            source
+            syncedAt
+            title
+            translations {
+              languageCode
+              title
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
+        totalCount
+      }
+    }
+  variables: |
+    {
+      "filter": {
+        "planId": "hidden-treasures-podcast"
+      },
+      "sortBy": "PUBLISHED_AT_ASC",
+      "first": 300
+    }
+bodyType: graphql
+description: List external contents with filters and pagination (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_ListExternalContents
+method: POST
+name: List External Contents
+sortPriority: 2000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

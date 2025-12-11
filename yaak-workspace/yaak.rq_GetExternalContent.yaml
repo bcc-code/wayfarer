@@ -1,0 +1,42 @@
+type: http_request
+model: http_request
+id: rq_GetExternalContent
+createdAt: 2025-12-10T13:00:00
+updatedAt: 2025-12-10T13:58:16.464169
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_ExternalContent
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query ExternalContent($id: ID!) {
+      externalContent(id: $id) {
+        id
+        planId
+        taskId
+        contentId
+        contentType
+        publishedAt
+        source
+        syncedAt
+        createdAt
+        updatedAt
+        title
+      }
+    }
+  variables: |
+    {
+      "id": "EC01KBMJ4JM86GE2BXNQ4QRHXX5J"
+    }
+bodyType: graphql
+description: Get a single external content by ID (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_GetExternalContent
+method: POST
+name: Get External Content
+sortPriority: 666.6666666666666
+url: ${[ HOST ]}/graphql
+urlParameters: []

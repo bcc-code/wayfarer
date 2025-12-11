@@ -43,18 +43,6 @@ FROM achievement_translations
 WHERE achievement_id = ANY(@entity_ids::text[])
   AND language_code = @language_code::text;
 
--- name: GetArticleTranslationsByIDs :many
-SELECT article_id, language_code, title, author
-FROM reading_achievement_article_translations
-WHERE article_id = ANY(@entity_ids::text[])
-  AND language_code = @language_code::text;
-
--- name: GetTrackTranslationsByIDs :many
-SELECT track_id, language_code, name, description
-FROM listening_achievement_track_translations
-WHERE track_id = ANY(@entity_ids::text[])
-  AND language_code = @language_code::text;
-
 -- Delete queries for translation invalidation when base content changes
 
 -- name: DeleteProjectTranslations :exec
@@ -77,9 +65,3 @@ DELETE FROM challenge_translations WHERE challenge_id = @challenge_id::text;
 
 -- name: DeleteAchievementTranslations :exec
 DELETE FROM achievement_translations WHERE achievement_id = @achievement_id::text;
-
--- name: DeleteArticleTranslations :exec
-DELETE FROM reading_achievement_article_translations WHERE article_id = @article_id::text;
-
--- name: DeleteTrackTranslations :exec
-DELETE FROM listening_achievement_track_translations WHERE track_id = @track_id::text;

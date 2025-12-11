@@ -35,8 +35,8 @@ type ExternalContent {
     # Translations loaded via dataloader
     translations: [ExternalContentTranslation!]! @goField(forceResolver: true)
 
-    # Convenience field for primary translation
-    title(languageCode: String): String @goField(forceResolver: true)
+    # Title in user's preferred language (from Accept-Language header)
+    title: String @goField(forceResolver: true)
 }
 
 type ExternalContentTranslation {
@@ -68,19 +68,7 @@ input ExternalContentFilter {
     ids: [ID!]
 }
 
-input CreateReadingAchievementFromExternalContentInput {
-    name: String!
-    description: String!
-    image: String
-    projectId: ID!
-    eventId: ID
-    challengeId: ID
-    points: Int!
-    hidden: Boolean!
-    externalContentIds: [ID!]!
-}
-
-input CreateListeningAchievementFromExternalContentInput {
+input CreateContentAchievementFromExternalContentInput {
     name: String!
     description: String!
     image: String
@@ -111,7 +99,6 @@ extend type Query {
 # ==================== Mutations ====================
 
 extend type Mutation {
-    # Create achievements directly from external content
-    createReadingAchievementFromExternalContent(input: CreateReadingAchievementFromExternalContentInput!): ReadingAchievement! @requireRole(roles: ["admin", "superadmin"])
-    createListeningAchievementFromExternalContent(input: CreateListeningAchievementFromExternalContentInput!): ListeningAchievement! @requireRole(roles: ["admin", "superadmin"])
+    # Create content achievement directly from external content
+    createContentAchievementFromExternalContent(input: CreateContentAchievementFromExternalContentInput!): ContentAchievement! @requireRole(roles: ["admin", "superadmin"])
 }

@@ -1,0 +1,58 @@
+type: http_request
+model: http_request
+id: rq_AwardAchievement
+createdAt: 2025-12-11T12:00:00
+updatedAt: 2025-12-11T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation AwardAchievement($userId: ID!, $achievementId: ID!) {
+      awardAchievement(userId: $userId, achievementId: $achievementId) {
+        id
+        name
+        description
+        points
+        achievedAt
+        ... on SimpleAchievement {
+          project {
+            id
+            name
+          }
+        }
+        ... on ContentAchievement {
+          totalItems
+          completedItemCount
+          project {
+            id
+            name
+          }
+        }
+        ... on StreakAchievement {
+          neededStreak
+          project {
+            id
+            name
+          }
+        }
+      }
+    }
+  variables: |
+    {
+      "userId": "US01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "achievementId": "AC01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    }
+bodyType: graphql
+description: Award an achievement to a user (M2M/admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_AwardAchievement
+method: POST
+name: Award Achievement
+sortPriority: 3600.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

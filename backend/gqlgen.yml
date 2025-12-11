@@ -185,7 +185,7 @@ models:
       ChallengeID:
         type: "*string"
 
-  ReadingAchievement:
+  ContentAchievement:
     fields:
       project:
         resolver: true
@@ -194,6 +194,14 @@ models:
       challenge:
         resolver: true
       achievedAt:
+        resolver: true
+      items:
+        resolver: true
+      userCompletedItems:
+        resolver: true
+      nextItem:
+        resolver: true
+      completedItemCount:
         resolver: true
     extraFields:
       ProjectID:
@@ -203,23 +211,13 @@ models:
       ChallengeID:
         type: "*string"
 
-  ListeningAchievement:
+  ContentItem:
     fields:
-      project:
-        resolver: true
-      event:
-        resolver: true
-      challenge:
-        resolver: true
-      achievedAt:
+      externalContent:
         resolver: true
     extraFields:
-      ProjectID:
+      ExternalContentID:
         type: string
-      EventID:
-        type: "*string"
-      ChallengeID:
-        type: "*string"
 
   StreakAchievement:
     fields:
@@ -445,22 +443,6 @@ models:
       ChallengeID:
         type: "*string"
       QuizID:
-        type: string
-
-  Article:
-    fields:
-      externalContent:
-        resolver: true
-    extraFields:
-      ExternalContentID:
-        type: string
-
-  Track:
-    fields:
-      externalContent:
-        resolver: true
-    extraFields:
-      ExternalContentID:
         type: string
 
   ExternalContent:

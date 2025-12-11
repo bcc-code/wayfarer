@@ -96,6 +96,17 @@ type ConsentTranslation struct {
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
+type ContentAchievement struct {
+	AchievementID string `json:"achievement_id"`
+}
+
+type ContentAchievementItem struct {
+	ID                string `json:"id"`
+	AchievementID     string `json:"achievement_id"`
+	ExternalContentID string `json:"external_content_id"`
+	SortOrder         int32  `json:"sort_order"`
+}
+
 type Event struct {
 	ID          string             `json:"id"`
 	ProjectID   string             `json:"project_id"`
@@ -215,26 +226,6 @@ type LeaderboardProjectTeam struct {
 	TeamID    string             `json:"team_id"`
 	Score     int64              `json:"score"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-}
-
-type ListeningAchievement struct {
-	AchievementID string `json:"achievement_id"`
-}
-
-type ListeningAchievementTrack struct {
-	ID            string `json:"id"`
-	AchievementID string `json:"achievement_id"`
-	// Optional FK to external_content. If set, use external content instead of local metadata fields.
-	ExternalContentID string `json:"external_content_id"`
-}
-
-type ListeningAchievementTrackTranslation struct {
-	TrackID      string             `json:"track_id"`
-	LanguageCode string             `json:"language_code"`
-	Name         *string            `json:"name"`
-	Description  *string            `json:"description"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Project struct {
@@ -386,26 +377,6 @@ type QuizTranslation struct {
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
-type ReadingAchievement struct {
-	AchievementID string `json:"achievement_id"`
-}
-
-type ReadingAchievementArticle struct {
-	ID            string `json:"id"`
-	AchievementID string `json:"achievement_id"`
-	// Optional FK to external_content. If set, use external content instead of local metadata fields.
-	ExternalContentID string `json:"external_content_id"`
-}
-
-type ReadingAchievementArticleTranslation struct {
-	ArticleID    string             `json:"article_id"`
-	LanguageCode string             `json:"language_code"`
-	Title        *string            `json:"title"`
-	Author       *string            `json:"author"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-}
-
 type ScoreJournal struct {
 	ID          string             `json:"id"`
 	ProjectID   string             `json:"project_id"`
@@ -542,30 +513,23 @@ type UserConsentHistory struct {
 	ExternalTimestamp pgtype.Timestamptz `json:"external_timestamp"`
 }
 
+type UserContentProgress struct {
+	UserID            string             `json:"user_id"`
+	AchievementID     string             `json:"achievement_id"`
+	ExternalContentID string             `json:"external_content_id"`
+	CompletedAt       pgtype.Timestamptz `json:"completed_at"`
+}
+
 type UserEvent struct {
 	UserID   string             `json:"user_id"`
 	EventID  string             `json:"event_id"`
 	JoinedAt pgtype.Timestamptz `json:"joined_at"`
 }
 
-type UserListeningProgress struct {
-	UserID        string             `json:"user_id"`
-	AchievementID string             `json:"achievement_id"`
-	TrackID       string             `json:"track_id"`
-	ListenedAt    pgtype.Timestamptz `json:"listened_at"`
-}
-
 type UserProject struct {
 	UserID    string             `json:"user_id"`
 	ProjectID string             `json:"project_id"`
 	JoinedAt  pgtype.Timestamptz `json:"joined_at"`
-}
-
-type UserReadingProgress struct {
-	UserID        string             `json:"user_id"`
-	AchievementID string             `json:"achievement_id"`
-	ArticleID     string             `json:"article_id"`
-	ReadAt        pgtype.Timestamptz `json:"read_at"`
 }
 
 type UserRole struct {

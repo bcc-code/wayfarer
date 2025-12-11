@@ -1,0 +1,55 @@
+type: http_request
+model: http_request
+id: rq_MarkContentItemCompleted
+createdAt: 2025-12-11T12:00:00
+updatedAt: 2025-12-11T08:40:57.615150
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation MarkContentItemCompleted($userId: ID!, $externalContentId: ID!) {
+      markContentItemCompleted(userId: $userId, externalContentId: $externalContentId) {
+        id
+        name
+        totalItems
+        completedItemCount
+        userCompletedItems {
+          id
+          sortOrder
+          externalContent {
+            id
+            contentType
+            title
+          }
+        }
+        nextItem {
+          id
+          sortOrder
+          externalContent {
+            id
+            contentType
+            title
+          }
+        }
+        achievedAt
+      }
+    }
+  variables: |
+    {
+      "userId": "US01K9W1Y4M1R19YCDX4YSACT0BK",
+      "externalContentId": "EC01KBMJ4JM86GE2BXNQ4QRHXX5J"
+    }
+bodyType: graphql
+description: Mark content item completed across ALL published achievements (M2M/admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_MarkContentItemCompleted
+method: POST
+name: Mark Content Item Completed
+sortPriority: 3400.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

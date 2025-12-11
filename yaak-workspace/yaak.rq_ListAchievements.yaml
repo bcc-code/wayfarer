@@ -1,0 +1,79 @@
+type: http_request
+model: http_request
+id: rq_ListAchievements
+createdAt: 2025-12-11T12:00:00
+updatedAt: 2025-12-11T08:43:26.690626
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query ListAchievements($filter: AchievementFilter!, $first: Int, $after: String) {
+      achievements(filter: $filter, first: $first, after: $after) {
+        edges {
+          node {
+            id
+            name
+            description
+            points
+            hidden
+            achievedAt
+            ... on SimpleAchievement {
+              project {
+                id
+                name
+              }
+            }
+            ... on ContentAchievement {
+              totalItems
+              completedItemCount
+              project {
+                id
+                name
+              }
+            }
+            ... on StreakAchievement {
+              neededStreak
+              project {
+                id
+                name
+              }
+            }
+            ... on QuizAchievement {
+              minScorePercentage
+              project {
+                id
+                name
+              }
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
+        totalCount
+      }
+    }
+  variables: |
+    {
+      "filter": {
+        "projectId": "PR01K9W1Y51ARG5DCHJXR9VW8DKN"
+      },
+      "first": 20
+    }
+bodyType: graphql
+description: List achievements with filters and pagination
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_ListAchievements
+method: POST
+name: List Achievements
+sortPriority: 4200.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

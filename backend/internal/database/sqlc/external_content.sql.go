@@ -376,6 +376,37 @@ func (q *Queries) GetExternalContentTranslations(ctx context.Context, externalco
 	return items, nil
 }
 
+const GetExternalContentTranslationsByContentIDs = `-- name: GetExternalContentTranslationsByContentIDs :many
+SELECT external_content_id, language_code, title, created_at, updated_at FROM external_content_translations
+WHERE external_content_id = ANY($1::text[])
+`
+
+func (q *Queries) GetExternalContentTranslationsByContentIDs(ctx context.Context, externalcontentids []string) ([]*ExternalContentTranslation, error) {
+	rows, err := q.db.Query(ctx, GetExternalContentTranslationsByContentIDs, externalcontentids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*ExternalContentTranslation{}
+	for rows.Next() {
+		var i ExternalContentTranslation
+		if err := rows.Scan(
+			&i.ExternalContentID,
+			&i.LanguageCode,
+			&i.Title,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const SearchExternalContentAdmin = `-- name: SearchExternalContentAdmin :many
 
 SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source FROM external_content

@@ -1,0 +1,56 @@
+type: http_request
+model: http_request
+id: rq_UnmarkContentItemCompleted
+createdAt: 2025-12-11T12:00:00
+updatedAt: 2025-12-11T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation UnmarkContentItemCompleted($userId: ID!, $achievementId: ID!, $externalContentId: ID!) {
+      unmarkContentItemCompleted(userId: $userId, achievementId: $achievementId, externalContentId: $externalContentId) {
+        id
+        name
+        totalItems
+        completedItemCount
+        userCompletedItems {
+          id
+          sortOrder
+          externalContent {
+            id
+            contentType
+            title
+          }
+        }
+        nextItem {
+          id
+          sortOrder
+          externalContent {
+            id
+            contentType
+            title
+          }
+        }
+        achievedAt
+      }
+    }
+  variables: |
+    {
+      "userId": "US01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "achievementId": "AC01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "externalContentId": "EC01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    }
+bodyType: graphql
+description: Unmark a content item as completed for a user (M2M/admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_UnmarkContentItemCompleted
+method: POST
+name: Unmark Content Item Completed
+sortPriority: 3500.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

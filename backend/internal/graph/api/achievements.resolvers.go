@@ -7,6 +7,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -82,8 +83,8 @@ func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input mo
 	}, nil
 }
 
-// CreateReadingAchievement is the resolver for the createReadingAchievement field.
-func (r *mutationResolver) CreateReadingAchievement(ctx context.Context, input model.CreateReadingAchievementInput) (*model.ReadingAchievement, error) {
+// CreateContentAchievement is the resolver for the createContentAchievement field.
+func (r *mutationResolver) CreateContentAchievement(ctx context.Context, input model.CreateContentAchievementInput) (*model.ContentAchievement, error) {
 	// Get authenticated user ID from context
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
@@ -113,7 +114,7 @@ func (r *mutationResolver) CreateReadingAchievement(ctx context.Context, input m
 	// Create achievement in database
 	achievementParams := sqlc.CreateAchievementParams{
 		ID:              achievementID,
-		AchievementType: "READING",
+		AchievementType: "CONTENT",
 		ProjectID:       input.ProjectID,
 		Name:            input.Name,
 		Description:     input.Description,
@@ -134,36 +135,26 @@ func (r *mutationResolver) CreateReadingAchievement(ctx context.Context, input m
 
 	achievement, err := qtx.CreateAchievement(ctx, achievementParams)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create reading achievement: %w", err)
+		return nil, fmt.Errorf("failed to create content achievement: %w", err)
 	}
 
-	// Create reading achievement junction
-	if err := qtx.CreateReadingAchievementJunction(ctx, achievementID); err != nil {
-		return nil, fmt.Errorf("failed to create reading achievement junction: %w", err)
+	// Create content achievement junction
+	if err := qtx.CreateContentAchievementJunction(ctx, achievementID); err != nil {
+		return nil, fmt.Errorf("failed to create content achievement junction: %w", err)
 	}
 
-	// Create articles
-	articles := make([]model.Article, 0, len(input.Articles))
-	for _, articleInput := range input.Articles {
-		articleID := ulid.NewReadingAchievementID()
-
-		articleParams := sqlc.CreateReadingAchievementArticleParams{
-			ID:                articleID,
+	// Create content items
+	for i, item := range input.Items {
+		itemID := ulid.NewContentItemID()
+		itemParams := sqlc.CreateContentAchievementItemParams{
+			ID:                itemID,
 			AchievementID:     achievementID,
-			ExternalContentID: articleInput.ExternalContentID,
+			ExternalContentID: item.ExternalContentID,
+			SortOrder:         int32(i),
 		}
-
-		article, err := qtx.CreateReadingAchievementArticle(ctx, articleParams)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create article: %w", err)
+		if _, err := qtx.CreateContentAchievementItem(ctx, itemParams); err != nil {
+			return nil, fmt.Errorf("failed to create content achievement item: %w", err)
 		}
-
-		articleModel := model.Article{
-			ID:                article.ID,
-			ExternalContentID: article.ExternalContentID,
-		}
-
-		articles = append(articles, articleModel)
 	}
 
 	// Commit transaction
@@ -180,7 +171,7 @@ func (r *mutationResolver) CreateReadingAchievement(ctx context.Context, input m
 		hidden = *achievement.Hidden
 	}
 
-	return &model.ReadingAchievement{
+	return &model.ContentAchievement{
 		ID:          achievement.ID,
 		Name:        achievement.Name,
 		Description: achievement.Description,
@@ -190,123 +181,7 @@ func (r *mutationResolver) CreateReadingAchievement(ctx context.Context, input m
 		ProjectID:   achievement.ProjectID,
 		EventID:     achievement.EventID,
 		ChallengeID: achievement.ChallengeID,
-		Articles:    articles,
-		UserHasRead: []model.Article{},
-		NextArticle: nil,
-	}, nil
-}
-
-// CreateListeningAchievement is the resolver for the createListeningAchievement field.
-func (r *mutationResolver) CreateListeningAchievement(ctx context.Context, input model.CreateListeningAchievementInput) (*model.ListeningAchievement, error) {
-	// Get authenticated user ID from context
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return nil, fmt.Errorf("user not authenticated")
-	}
-
-	// Check authorization
-	if !r.RoleService.CanManageProject(ctx, userID, input.ProjectID) {
-		return nil, fmt.Errorf("unauthorized to create achievements in this project")
-	}
-
-	// Generate new achievement ID
-	achievementID := ulid.NewAchievementID()
-
-	// Start transaction
-	tx, err := r.DB.Pool.Begin(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer func() {
-		_ = tx.Rollback(ctx)
-	}()
-
-	// Create queries with transaction
-	qtx := r.DB.Queries.WithTx(tx)
-
-	// Create achievement in database
-	achievementParams := sqlc.CreateAchievementParams{
-		ID:              achievementID,
-		AchievementType: "LISTENING",
-		ProjectID:       input.ProjectID,
-		Name:            input.Name,
-		Description:     input.Description,
-		Points:          int32(input.Points),
-		Hidden:          input.Hidden,
-	}
-
-	// Set optional fields
-	if input.EventID != nil {
-		achievementParams.EventID = *input.EventID
-	}
-	if input.ChallengeID != nil {
-		achievementParams.ChallengeID = *input.ChallengeID
-	}
-	if input.Image != nil {
-		achievementParams.ImageUrl = *input.Image
-	}
-
-	achievement, err := qtx.CreateAchievement(ctx, achievementParams)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create listening achievement: %w", err)
-	}
-
-	// Create listening achievement junction
-	if err := qtx.CreateListeningAchievementJunction(ctx, achievementID); err != nil {
-		return nil, fmt.Errorf("failed to create listening achievement junction: %w", err)
-	}
-
-	// Create tracks
-	tracks := make([]model.Track, 0, len(input.Tracks))
-	for _, trackInput := range input.Tracks {
-		trackID := ulid.NewListeningAchievementID()
-
-		trackParams := sqlc.CreateListeningAchievementTrackParams{
-			ID:                trackID,
-			AchievementID:     achievementID,
-			ExternalContentID: trackInput.ExternalContentID,
-		}
-
-		track, err := qtx.CreateListeningAchievementTrack(ctx, trackParams)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create track: %w", err)
-		}
-
-		trackModel := model.Track{
-			ID:                track.ID,
-			ExternalContentID: track.ExternalContentID,
-		}
-
-		tracks = append(tracks, trackModel)
-	}
-
-	// Commit transaction
-	if err := tx.Commit(ctx); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	// Invalidate project cache
-	r.Cache.InvalidateProject(input.ProjectID)
-
-	// Convert to GraphQL model
-	hidden := false
-	if achievement.Hidden != nil {
-		hidden = *achievement.Hidden
-	}
-
-	return &model.ListeningAchievement{
-		ID:              achievement.ID,
-		Name:            achievement.Name,
-		Description:     achievement.Description,
-		Image:           achievement.ImageUrl,
-		Points:          int(achievement.Points),
-		Hidden:          hidden,
-		ProjectID:       achievement.ProjectID,
-		EventID:         achievement.EventID,
-		ChallengeID:     achievement.ChallengeID,
-		Tracks:          tracks,
-		UserHasListened: []model.Track{},
-		NextTrack:       nil,
+		TotalItems:  len(input.Items),
 	}, nil
 }
 
@@ -427,10 +302,7 @@ func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, inp
 	case *model.SimpleAchievement:
 		projectID = ach.ProjectID
 		oldEventID = ach.EventID
-	case *model.ReadingAchievement:
-		projectID = ach.ProjectID
-		oldEventID = ach.EventID
-	case *model.ListeningAchievement:
+	case *model.ContentAchievement:
 		projectID = ach.ProjectID
 		oldEventID = ach.EventID
 	case *model.StreakAchievement:
@@ -501,8 +373,8 @@ func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, inp
 	return updatedAchievement, nil
 }
 
-// UpdateReadingAchievement is the resolver for the updateReadingAchievement field.
-func (r *mutationResolver) UpdateReadingAchievement(ctx context.Context, id string, input model.UpdateReadingAchievementInput) (*model.ReadingAchievement, error) {
+// UpdateContentAchievement is the resolver for the updateContentAchievement field.
+func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id string, input model.UpdateContentAchievementInput) (*model.ContentAchievement, error) {
 	// Get authenticated user ID from context
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
@@ -516,19 +388,19 @@ func (r *mutationResolver) UpdateReadingAchievement(ctx context.Context, id stri
 		return nil, fmt.Errorf("failed to load achievement: %w", err)
 	}
 
-	// Verify it's a reading achievement
-	readingAch, ok := existingAchievement.(*model.ReadingAchievement)
+	// Verify it's a content achievement
+	contentAch, ok := existingAchievement.(*model.ContentAchievement)
 	if !ok {
-		return nil, fmt.Errorf("achievement is not a reading achievement")
+		return nil, fmt.Errorf("achievement is not a content achievement")
 	}
 
 	// Check authorization
-	if !r.RoleService.CanManageProject(ctx, userID, readingAch.ProjectID) {
+	if !r.RoleService.CanManageProject(ctx, userID, contentAch.ProjectID) {
 		return nil, fmt.Errorf("unauthorized to update achievements in this project")
 	}
 
-	// Start transaction if we need to update articles
-	if input.Articles != nil {
+	// Start transaction if we need to update content items
+	if input.Items != nil {
 		tx, err := r.DB.Pool.Begin(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -558,23 +430,21 @@ func (r *mutationResolver) UpdateReadingAchievement(ctx context.Context, id stri
 			}
 		}
 
-		// Delete existing articles and create new ones
-		if err := qtx.DeleteReadingAchievementArticles(ctx, id); err != nil {
-			return nil, fmt.Errorf("failed to delete existing articles: %w", err)
+		// Delete existing content items and create new ones
+		if err := qtx.DeleteContentAchievementItems(ctx, id); err != nil {
+			return nil, fmt.Errorf("failed to delete existing content items: %w", err)
 		}
 
-		// Create new articles
-		for _, articleInput := range input.Articles {
-			articleID := ulid.NewReadingAchievementID()
-
-			articleParams := sqlc.CreateReadingAchievementArticleParams{
-				ID:                articleID,
+		for i, item := range input.Items {
+			itemID := ulid.NewContentItemID()
+			itemParams := sqlc.CreateContentAchievementItemParams{
+				ID:                itemID,
 				AchievementID:     id,
-				ExternalContentID: articleInput.ExternalContentID,
+				ExternalContentID: item.ExternalContentID,
+				SortOrder:         int32(i),
 			}
-
-			if _, err := qtx.CreateReadingAchievementArticle(ctx, articleParams); err != nil {
-				return nil, fmt.Errorf("failed to create article: %w", err)
+			if _, err := qtx.CreateContentAchievementItem(ctx, itemParams); err != nil {
+				return nil, fmt.Errorf("failed to create content achievement item: %w", err)
 			}
 		}
 
@@ -603,9 +473,11 @@ func (r *mutationResolver) UpdateReadingAchievement(ctx context.Context, id stri
 	}
 
 	// Invalidate caches
-	r.Cache.InvalidateProject(readingAch.ProjectID)
+	r.Cache.InvalidateProject(contentAch.ProjectID)
 	r.Cache.InvalidateAchievement(id)
+	r.Cache.Delete(cache.ContentItemsByAchievementKey(id))
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
+	r.Loaders.ContentItemsByAchievementLoader.Clear(ctx, id)
 
 	// Delete translations when translatable fields are updated
 	if input.Name != nil || input.Description != nil {
@@ -613,19 +485,11 @@ func (r *mutationResolver) UpdateReadingAchievement(ctx context.Context, id stri
 		r.Cache.DeletePrefix(cache.PrefixTranslation + "achievement:" + id)
 	}
 
-	// Delete article translations when articles are updated
-	if input.Articles != nil {
-		for _, article := range readingAch.Articles {
-			_ = r.DB.Queries.DeleteArticleTranslations(ctx, article.ID)
-			r.Cache.DeletePrefix(cache.PrefixTranslation + "article:" + article.ID)
-		}
-	}
-
 	// If eventID is being changed, invalidate both old and new events
 	if input.EventID != nil {
 		// Invalidate old event if it exists
-		if readingAch.EventID != nil {
-			r.Cache.InvalidateEvent(*readingAch.EventID)
+		if contentAch.EventID != nil {
+			r.Cache.InvalidateEvent(*contentAch.EventID)
 		}
 		// Invalidate new event if it's being set to a value
 		if *input.EventID != "" {
@@ -640,159 +504,12 @@ func (r *mutationResolver) UpdateReadingAchievement(ctx context.Context, id stri
 		return nil, fmt.Errorf("failed to reload achievement: %w", err)
 	}
 
-	readingAchievement, ok := updatedAchievement.(*model.ReadingAchievement)
+	contentAchievement, ok := updatedAchievement.(*model.ContentAchievement)
 	if !ok {
-		return nil, fmt.Errorf("updated achievement is not a reading achievement")
+		return nil, fmt.Errorf("updated achievement is not a content achievement")
 	}
 
-	return readingAchievement, nil
-}
-
-// UpdateListeningAchievement is the resolver for the updateListeningAchievement field.
-func (r *mutationResolver) UpdateListeningAchievement(ctx context.Context, id string, input model.UpdateListeningAchievementInput) (*model.ListeningAchievement, error) {
-	// Get authenticated user ID from context
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return nil, fmt.Errorf("user not authenticated")
-	}
-
-	// Load the achievement to verify it exists and get project ID
-	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, id)
-	existingAchievement, err := achievementThunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load achievement: %w", err)
-	}
-
-	// Verify it's a listening achievement
-	listeningAch, ok := existingAchievement.(*model.ListeningAchievement)
-	if !ok {
-		return nil, fmt.Errorf("achievement is not a listening achievement")
-	}
-
-	// Check authorization
-	if !r.RoleService.CanManageProject(ctx, userID, listeningAch.ProjectID) {
-		return nil, fmt.Errorf("unauthorized to update achievements in this project")
-	}
-
-	// Start transaction if we need to update tracks
-	if input.Tracks != nil {
-		tx, err := r.DB.Pool.Begin(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to begin transaction: %w", err)
-		}
-		defer tx.Rollback(ctx)
-
-		qtx := r.DB.Queries.WithTx(tx)
-
-		// Update common fields if provided
-		if input.Name != nil || input.Description != nil || input.Image != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
-			params := sqlc.UpdateAchievementParams{
-				ID:          id,
-				Name:        input.Name,
-				Description: input.Description,
-				ImageUrl:    input.Image,
-				EventID:     input.EventID,
-				ChallengeID: input.ChallengeID,
-				Hidden:      input.Hidden,
-			}
-			if input.Points != nil {
-				points := int32(*input.Points)
-				params.Points = &points
-			}
-
-			if _, err := qtx.UpdateAchievement(ctx, params); err != nil {
-				return nil, fmt.Errorf("failed to update achievement: %w", err)
-			}
-		}
-
-		// Delete existing tracks and create new ones
-		if err := qtx.DeleteListeningAchievementTracks(ctx, id); err != nil {
-			return nil, fmt.Errorf("failed to delete existing tracks: %w", err)
-		}
-
-		// Create new tracks
-		for _, trackInput := range input.Tracks {
-			trackID := ulid.NewListeningAchievementID()
-
-			trackParams := sqlc.CreateListeningAchievementTrackParams{
-				ID:                trackID,
-				AchievementID:     id,
-				ExternalContentID: trackInput.ExternalContentID,
-			}
-
-			if _, err := qtx.CreateListeningAchievementTrack(ctx, trackParams); err != nil {
-				return nil, fmt.Errorf("failed to create track: %w", err)
-			}
-		}
-
-		if err := tx.Commit(ctx); err != nil {
-			return nil, fmt.Errorf("failed to commit transaction: %w", err)
-		}
-	} else {
-		// Just update common fields without transaction
-		params := sqlc.UpdateAchievementParams{
-			ID:          id,
-			Name:        input.Name,
-			Description: input.Description,
-			ImageUrl:    input.Image,
-			EventID:     input.EventID,
-			ChallengeID: input.ChallengeID,
-			Hidden:      input.Hidden,
-		}
-		if input.Points != nil {
-			points := int32(*input.Points)
-			params.Points = &points
-		}
-
-		if _, err := r.DB.Queries.UpdateAchievement(ctx, params); err != nil {
-			return nil, fmt.Errorf("failed to update achievement: %w", err)
-		}
-	}
-
-	// Invalidate caches
-	r.Cache.InvalidateProject(listeningAch.ProjectID)
-	r.Cache.InvalidateAchievement(id)
-	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
-
-	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.Description != nil {
-		_ = r.DB.Queries.DeleteAchievementTranslations(ctx, id)
-		r.Cache.DeletePrefix(cache.PrefixTranslation + "achievement:" + id)
-	}
-
-	// Delete track translations when tracks are updated
-	if input.Tracks != nil {
-		for _, track := range listeningAch.Tracks {
-			_ = r.DB.Queries.DeleteTrackTranslations(ctx, track.ID)
-			r.Cache.DeletePrefix(cache.PrefixTranslation + "track:" + track.ID)
-		}
-	}
-
-	// If eventID is being changed, invalidate both old and new events
-	if input.EventID != nil {
-		// Invalidate old event if it exists
-		if listeningAch.EventID != nil {
-			r.Cache.InvalidateEvent(*listeningAch.EventID)
-		}
-		// Invalidate new event if it's being set to a value
-		if *input.EventID != "" {
-			r.Cache.InvalidateEvent(*input.EventID)
-		}
-	}
-
-	// Reload and return updated achievement
-	achievementThunk = r.Loaders.AchievementByIDLoader.Load(ctx, id)
-	updatedAchievement, err := achievementThunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to reload achievement: %w", err)
-	}
-
-	listeningAchievement, ok := updatedAchievement.(*model.ListeningAchievement)
-	if !ok {
-		return nil, fmt.Errorf("updated achievement is not a listening achievement")
-	}
-
-	return listeningAchievement, nil
+	return contentAchievement, nil
 }
 
 // UpdateStreakAchievement is the resolver for the updateStreakAchievement field.
@@ -948,9 +665,7 @@ func (r *mutationResolver) DeleteAchievement(ctx context.Context, id string) (bo
 	switch ach := existingAchievement.(type) {
 	case *model.SimpleAchievement:
 		projectID = ach.ProjectID
-	case *model.ReadingAchievement:
-		projectID = ach.ProjectID
-	case *model.ListeningAchievement:
+	case *model.ContentAchievement:
 		projectID = ach.ProjectID
 	case *model.StreakAchievement:
 		projectID = ach.ProjectID
@@ -1079,24 +794,107 @@ func (r *mutationResolver) BulkAwardAchievements(ctx context.Context, userIds []
 	panic(fmt.Errorf("not implemented: BulkAwardAchievements - bulkAwardAchievements"))
 }
 
-// MarkArticleAsRead is the resolver for the markArticleAsRead field.
-func (r *mutationResolver) MarkArticleAsRead(ctx context.Context, userID string, achievementID string, articleID string) (*model.ReadingAchievement, error) {
-	panic(fmt.Errorf("not implemented: MarkArticleAsRead - markArticleAsRead"))
+// MarkContentItemCompleted is the resolver for the markContentItemCompleted field.
+// Marks content as completed for a user across ALL published achievements containing this content.
+func (r *mutationResolver) MarkContentItemCompleted(ctx context.Context, userID string, externalContentID string) ([]model.ContentAchievement, error) {
+	// Get authenticated user ID from context
+	adminID, ok := middleware.GetUserID(ctx)
+	if !ok || adminID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Get all published content achievements containing this external content
+	achievementRows, err := r.DB.Queries.GetPublishedContentAchievementsByExternalContent(ctx, externalContentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get achievements for external content: %w", err)
+	}
+
+	if len(achievementRows) == 0 {
+		return []model.ContentAchievement{}, nil
+	}
+
+	// Mark content completed for all achievements in one query
+	params := sqlc.MarkContentItemCompletedForAllAchievementsParams{
+		UserID:            userID,
+		ExternalContentID: externalContentID,
+	}
+	if err := r.DB.Queries.MarkContentItemCompletedForAllAchievements(ctx, params); err != nil {
+		return nil, fmt.Errorf("failed to mark content item completed: %w", err)
+	}
+
+	// Convert to model and check for auto-award
+	result := make([]model.ContentAchievement, 0, len(achievementRows))
+	for _, row := range achievementRows {
+		contentAch := convertPublishedContentAchievementRow(row)
+		result = append(result, *contentAch)
+
+		// Invalidate user-specific caches
+		r.Cache.Delete(cache.UserContentProgressKey(userID, row.ID))
+
+		// Check if all items are completed and award achievement if so
+		items, err := r.DB.Queries.GetContentItemsByAchievementIDs(ctx, []string{row.ID})
+		if err != nil {
+			slog.Error("failed to get content items for auto-award check", "error", err, "achievement_id", row.ID)
+			continue
+		}
+
+		progress, err := r.DB.Queries.GetUserContentProgressForAchievement(ctx, sqlc.GetUserContentProgressForAchievementParams{
+			UserID:        userID,
+			AchievementID: row.ID,
+		})
+		if err != nil {
+			slog.Error("failed to get user progress for auto-award check", "error", err, "achievement_id", row.ID)
+			continue
+		}
+
+		if len(progress) == len(items) {
+			// Award the achievement
+			if _, err := r.AwardAchievement(ctx, userID, row.ID); err != nil {
+				// Log error but don't fail - the progress was still recorded
+				slog.Error("failed to auto-award achievement", "error", err, "user_id", userID, "achievement_id", row.ID)
+			}
+		}
+	}
+
+	return result, nil
 }
 
-// UnmarkArticleAsRead is the resolver for the unmarkArticleAsRead field.
-func (r *mutationResolver) UnmarkArticleAsRead(ctx context.Context, userID string, achievementID string, articleID string) (*model.ReadingAchievement, error) {
-	panic(fmt.Errorf("not implemented: UnmarkArticleAsRead - unmarkArticleAsRead"))
-}
+// UnmarkContentItemCompleted is the resolver for the unmarkContentItemCompleted field.
+// Unmarks content as completed for a user across ALL achievements containing this content.
+func (r *mutationResolver) UnmarkContentItemCompleted(ctx context.Context, userID string, externalContentID string) ([]model.ContentAchievement, error) {
+	// Get authenticated user ID from context
+	adminID, ok := middleware.GetUserID(ctx)
+	if !ok || adminID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+	_ = adminID // Used for authentication check
 
-// MarkTrackAsListened is the resolver for the markTrackAsListened field.
-func (r *mutationResolver) MarkTrackAsListened(ctx context.Context, userID string, achievementID string, trackID string) (*model.ListeningAchievement, error) {
-	panic(fmt.Errorf("not implemented: MarkTrackAsListened - markTrackAsListened"))
-}
+	// Get all content achievements containing this external content (before deletion)
+	achievementRows, err := r.DB.Queries.GetPublishedContentAchievementsByExternalContent(ctx, externalContentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get achievements for external content: %w", err)
+	}
 
-// UnmarkTrackAsListened is the resolver for the unmarkTrackAsListened field.
-func (r *mutationResolver) UnmarkTrackAsListened(ctx context.Context, userID string, achievementID string, trackID string) (*model.ListeningAchievement, error) {
-	panic(fmt.Errorf("not implemented: UnmarkTrackAsListened - unmarkTrackAsListened"))
+	// Unmark content completed for all achievements in one query
+	params := sqlc.UnmarkContentItemCompletedForAllAchievementsParams{
+		UserID:            userID,
+		ExternalContentID: externalContentID,
+	}
+	if err := r.DB.Queries.UnmarkContentItemCompletedForAllAchievements(ctx, params); err != nil {
+		return nil, fmt.Errorf("failed to unmark content item completed: %w", err)
+	}
+
+	// Convert to model and invalidate caches
+	result := make([]model.ContentAchievement, 0, len(achievementRows))
+	for _, row := range achievementRows {
+		contentAch := convertPublishedContentAchievementRow(row)
+		result = append(result, *contentAch)
+
+		// Invalidate user-specific caches
+		r.Cache.Delete(cache.UserContentProgressKey(userID, row.ID))
+	}
+
+	return result, nil
 }
 
 // RecordStreakActivity is the resolver for the recordStreakActivity field.

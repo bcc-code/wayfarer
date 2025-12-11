@@ -93,16 +93,6 @@ type AgeRangeInput struct {
 	Max int `json:"max"`
 }
 
-type Article struct {
-	ID                string           `json:"id"`
-	ExternalContent   *ExternalContent `json:"externalContent"`
-	ExternalContentID string           `json:"-"`
-}
-
-type ArticleInput struct {
-	ExternalContentID string `json:"externalContentId"`
-}
-
 type AssignRoleInput struct {
 	UserID    string     `json:"userId"`
 	Role      RoleType   `json:"role"`
@@ -231,6 +221,52 @@ type ConsentStatus struct {
 	RejectedConsents []UserConsent `json:"rejectedConsents"`
 }
 
+type ContentAchievement struct {
+	ID                 string            `json:"id"`
+	Name               string            `json:"name"`
+	Description        string            `json:"description"`
+	Image              *string           `json:"image,omitempty"`
+	Project            *Project          `json:"project"`
+	Event              *Event            `json:"event,omitempty"`
+	Challenge          Challenge         `json:"challenge,omitempty"`
+	AchievedAt         *scalars.DateTime `json:"achievedAt,omitempty"`
+	Points             int               `json:"points"`
+	Hidden             bool              `json:"hidden"`
+	Items              []ContentItem     `json:"items"`
+	UserCompletedItems []ContentItem     `json:"userCompletedItems"`
+	NextItem           *ContentItem      `json:"nextItem,omitempty"`
+	TotalItems         int               `json:"totalItems"`
+	CompletedItemCount int               `json:"completedItemCount"`
+	ChallengeID        *string           `json:"-"`
+	EventID            *string           `json:"-"`
+	ProjectID          string            `json:"-"`
+}
+
+func (ContentAchievement) IsAchievement()                        {}
+func (this ContentAchievement) GetID() string                    { return this.ID }
+func (this ContentAchievement) GetName() string                  { return this.Name }
+func (this ContentAchievement) GetDescription() string           { return this.Description }
+func (this ContentAchievement) GetImage() *string                { return this.Image }
+func (this ContentAchievement) GetProject() *Project             { return this.Project }
+func (this ContentAchievement) GetEvent() *Event                 { return this.Event }
+func (this ContentAchievement) GetChallenge() Challenge          { return this.Challenge }
+func (this ContentAchievement) GetAchievedAt() *scalars.DateTime { return this.AchievedAt }
+func (this ContentAchievement) GetPoints() int                   { return this.Points }
+func (this ContentAchievement) GetHidden() bool                  { return this.Hidden }
+
+func (ContentAchievement) IsScoreSource() {}
+
+type ContentItem struct {
+	ID                string           `json:"id"`
+	ExternalContent   *ExternalContent `json:"externalContent"`
+	SortOrder         int              `json:"sortOrder"`
+	ExternalContentID string           `json:"-"`
+}
+
+type ContentItemInput struct {
+	ExternalContentID string `json:"externalContentId"`
+}
+
 type CreateChallengeInput struct {
 	Type                        ChallengeType     `json:"type"`
 	Name                        string            `json:"name"`
@@ -251,14 +287,7 @@ type CreateChurchInput struct {
 	Category ChurchCategory `json:"category"`
 }
 
-type CreateEventInput struct {
-	Name        string           `json:"name"`
-	Description string           `json:"description"`
-	StartDate   scalars.DateTime `json:"startDate"`
-	EndDate     scalars.DateTime `json:"endDate"`
-}
-
-type CreateListeningAchievementFromExternalContentInput struct {
+type CreateContentAchievementFromExternalContentInput struct {
 	Name               string   `json:"name"`
 	Description        string   `json:"description"`
 	Image              *string  `json:"image,omitempty"`
@@ -270,16 +299,23 @@ type CreateListeningAchievementFromExternalContentInput struct {
 	ExternalContentIds []string `json:"externalContentIds"`
 }
 
-type CreateListeningAchievementInput struct {
-	Name        string       `json:"name"`
-	Description string       `json:"description"`
-	Image       *string      `json:"image,omitempty"`
-	ProjectID   string       `json:"projectId"`
-	EventID     *string      `json:"eventId,omitempty"`
-	ChallengeID *string      `json:"challengeId,omitempty"`
-	Points      int          `json:"points"`
-	Hidden      bool         `json:"hidden"`
-	Tracks      []TrackInput `json:"tracks"`
+type CreateContentAchievementInput struct {
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	Image       *string            `json:"image,omitempty"`
+	ProjectID   string             `json:"projectId"`
+	EventID     *string            `json:"eventId,omitempty"`
+	ChallengeID *string            `json:"challengeId,omitempty"`
+	Points      int                `json:"points"`
+	Hidden      bool               `json:"hidden"`
+	Items       []ContentItemInput `json:"items"`
+}
+
+type CreateEventInput struct {
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	StartDate   scalars.DateTime `json:"startDate"`
+	EndDate     scalars.DateTime `json:"endDate"`
 }
 
 type CreatePredefinedAnswerInput struct {
@@ -335,30 +371,6 @@ type CreateQuizQuestionInput struct {
 	MinValue               *float64                      `json:"minValue,omitempty"`
 	MaxValue               *float64                      `json:"maxValue,omitempty"`
 	StepValue              *float64                      `json:"stepValue,omitempty"`
-}
-
-type CreateReadingAchievementFromExternalContentInput struct {
-	Name               string   `json:"name"`
-	Description        string   `json:"description"`
-	Image              *string  `json:"image,omitempty"`
-	ProjectID          string   `json:"projectId"`
-	EventID            *string  `json:"eventId,omitempty"`
-	ChallengeID        *string  `json:"challengeId,omitempty"`
-	Points             int      `json:"points"`
-	Hidden             bool     `json:"hidden"`
-	ExternalContentIds []string `json:"externalContentIds"`
-}
-
-type CreateReadingAchievementInput struct {
-	Name        string         `json:"name"`
-	Description string         `json:"description"`
-	Image       *string        `json:"image,omitempty"`
-	ProjectID   string         `json:"projectId"`
-	EventID     *string        `json:"eventId,omitempty"`
-	ChallengeID *string        `json:"challengeId,omitempty"`
-	Points      int            `json:"points"`
-	Hidden      bool           `json:"hidden"`
-	Articles    []ArticleInput `json:"articles"`
 }
 
 type CreateScoreAdjustmentInput struct {
@@ -659,39 +671,6 @@ type LeaderboardFilter struct {
 	SuperTeamID    *string         `json:"superTeamId,omitempty"`
 }
 
-type ListeningAchievement struct {
-	ID              string            `json:"id"`
-	Name            string            `json:"name"`
-	Description     string            `json:"description"`
-	Image           *string           `json:"image,omitempty"`
-	Project         *Project          `json:"project"`
-	Event           *Event            `json:"event,omitempty"`
-	Challenge       Challenge         `json:"challenge,omitempty"`
-	AchievedAt      *scalars.DateTime `json:"achievedAt,omitempty"`
-	Tracks          []Track           `json:"tracks"`
-	UserHasListened []Track           `json:"userHasListened"`
-	NextTrack       *Track            `json:"nextTrack"`
-	Points          int               `json:"points"`
-	Hidden          bool              `json:"hidden"`
-	ChallengeID     *string           `json:"-"`
-	EventID         *string           `json:"-"`
-	ProjectID       string            `json:"-"`
-}
-
-func (ListeningAchievement) IsAchievement()                        {}
-func (this ListeningAchievement) GetID() string                    { return this.ID }
-func (this ListeningAchievement) GetName() string                  { return this.Name }
-func (this ListeningAchievement) GetDescription() string           { return this.Description }
-func (this ListeningAchievement) GetImage() *string                { return this.Image }
-func (this ListeningAchievement) GetProject() *Project             { return this.Project }
-func (this ListeningAchievement) GetEvent() *Event                 { return this.Event }
-func (this ListeningAchievement) GetChallenge() Challenge          { return this.Challenge }
-func (this ListeningAchievement) GetAchievedAt() *scalars.DateTime { return this.AchievedAt }
-func (this ListeningAchievement) GetPoints() int                   { return this.Points }
-func (this ListeningAchievement) GetHidden() bool                  { return this.Hidden }
-
-func (ListeningAchievement) IsScoreSource() {}
-
 type Mutation struct {
 }
 
@@ -874,6 +853,8 @@ func (this QuizAchievement) GetAchievedAt() *scalars.DateTime { return this.Achi
 func (this QuizAchievement) GetPoints() int                   { return this.Points }
 func (this QuizAchievement) GetHidden() bool                  { return this.Hidden }
 
+func (QuizAchievement) IsScoreSource() {}
+
 type QuizChallenge struct {
 	ID                          string            `json:"id"`
 	Name                        string            `json:"name"`
@@ -974,39 +955,6 @@ type QuizSubmissionEdge struct {
 	Cursor string          `json:"cursor"`
 	Node   *QuizSubmission `json:"node"`
 }
-
-type ReadingAchievement struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	Description string            `json:"description"`
-	Image       *string           `json:"image,omitempty"`
-	Project     *Project          `json:"project"`
-	Event       *Event            `json:"event,omitempty"`
-	Challenge   Challenge         `json:"challenge,omitempty"`
-	AchievedAt  *scalars.DateTime `json:"achievedAt,omitempty"`
-	Articles    []Article         `json:"articles"`
-	UserHasRead []Article         `json:"userHasRead"`
-	NextArticle *Article          `json:"nextArticle"`
-	Points      int               `json:"points"`
-	Hidden      bool              `json:"hidden"`
-	ChallengeID *string           `json:"-"`
-	EventID     *string           `json:"-"`
-	ProjectID   string            `json:"-"`
-}
-
-func (ReadingAchievement) IsAchievement()                        {}
-func (this ReadingAchievement) GetID() string                    { return this.ID }
-func (this ReadingAchievement) GetName() string                  { return this.Name }
-func (this ReadingAchievement) GetDescription() string           { return this.Description }
-func (this ReadingAchievement) GetImage() *string                { return this.Image }
-func (this ReadingAchievement) GetProject() *Project             { return this.Project }
-func (this ReadingAchievement) GetEvent() *Event                 { return this.Event }
-func (this ReadingAchievement) GetChallenge() Challenge          { return this.Challenge }
-func (this ReadingAchievement) GetAchievedAt() *scalars.DateTime { return this.AchievedAt }
-func (this ReadingAchievement) GetPoints() int                   { return this.Points }
-func (this ReadingAchievement) GetHidden() bool                  { return this.Hidden }
-
-func (ReadingAchievement) IsScoreSource() {}
 
 type RevokeRoleInput struct {
 	UserID    string     `json:"userId"`
@@ -1281,16 +1229,6 @@ type TeamMember struct {
 	UserID     string  `json:"-"`
 }
 
-type Track struct {
-	ID                string           `json:"id"`
-	ExternalContent   *ExternalContent `json:"externalContent"`
-	ExternalContentID string           `json:"-"`
-}
-
-type TrackInput struct {
-	ExternalContentID string `json:"externalContentId"`
-}
-
 type UpdateAchievementInput struct {
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
@@ -1322,22 +1260,22 @@ type UpdateChurchInput struct {
 	Category *ChurchCategory `json:"category,omitempty"`
 }
 
+type UpdateContentAchievementInput struct {
+	Name        *string            `json:"name,omitempty"`
+	Description *string            `json:"description,omitempty"`
+	Image       *string            `json:"image,omitempty"`
+	EventID     *string            `json:"eventId,omitempty"`
+	ChallengeID *string            `json:"challengeId,omitempty"`
+	Points      *int               `json:"points,omitempty"`
+	Hidden      *bool              `json:"hidden,omitempty"`
+	Items       []ContentItemInput `json:"items,omitempty"`
+}
+
 type UpdateEventInput struct {
 	Name        *string           `json:"name,omitempty"`
 	Description *string           `json:"description,omitempty"`
 	StartDate   *scalars.DateTime `json:"startDate,omitempty"`
 	EndDate     *scalars.DateTime `json:"endDate,omitempty"`
-}
-
-type UpdateListeningAchievementInput struct {
-	Name        *string      `json:"name,omitempty"`
-	Description *string      `json:"description,omitempty"`
-	Image       *string      `json:"image,omitempty"`
-	EventID     *string      `json:"eventId,omitempty"`
-	ChallengeID *string      `json:"challengeId,omitempty"`
-	Points      *int         `json:"points,omitempty"`
-	Hidden      *bool        `json:"hidden,omitempty"`
-	Tracks      []TrackInput `json:"tracks,omitempty"`
 }
 
 type UpdateProjectInput struct {
@@ -1371,17 +1309,6 @@ type UpdateQuizQuestionInput struct {
 	MinValue               *float64                      `json:"minValue,omitempty"`
 	MaxValue               *float64                      `json:"maxValue,omitempty"`
 	StepValue              *float64                      `json:"stepValue,omitempty"`
-}
-
-type UpdateReadingAchievementInput struct {
-	Name        *string        `json:"name,omitempty"`
-	Description *string        `json:"description,omitempty"`
-	Image       *string        `json:"image,omitempty"`
-	EventID     *string        `json:"eventId,omitempty"`
-	ChallengeID *string        `json:"challengeId,omitempty"`
-	Points      *int           `json:"points,omitempty"`
-	Hidden      *bool          `json:"hidden,omitempty"`
-	Articles    []ArticleInput `json:"articles,omitempty"`
 }
 
 type UpdateStreakAchievementInput struct {

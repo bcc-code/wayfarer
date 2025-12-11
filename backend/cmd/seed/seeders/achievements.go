@@ -9,28 +9,23 @@ import (
 	"github.com/bcc-media/wayfarer/internal/ulid"
 )
 
-// SeedAchievements creates all 4 types of achievements based on configuration
+// SeedAchievements creates all types of achievements based on configuration
 func (s *Seeder) SeedAchievements(stats *Stats) error {
 	projectCount := 0
 	for _, projectID := range s.Data.ProjectIDs {
 		projectCount++
 
 		// Split achievements across types
-		// 60% simple, 20% reading, 15% listening, 5% streak
+		// 60% simple, 35% content, 5% streak
 		numSimple := int(float64(s.Config.NumAchievements) * 0.6)
-		numReading := int(float64(s.Config.NumAchievements) * 0.2)
-		numListening := int(float64(s.Config.NumAchievements) * 0.15)
+		numContent := int(float64(s.Config.NumAchievements) * 0.35)
 		// Remaining will be streak achievements
 
 		if err := s.seedSimpleAchievements(projectID, numSimple, stats); err != nil {
 			return err
 		}
 
-		if err := s.seedReadingAchievements(projectID, numReading, stats); err != nil {
-			return err
-		}
-
-		if err := s.seedListeningAchievements(projectID, numListening, stats); err != nil {
+		if err := s.seedContentAchievements(projectID, numContent, stats); err != nil {
 			return err
 		}
 
@@ -95,18 +90,18 @@ func (s *Seeder) seedSimpleAchievements(projectID string, count int, stats *Stat
 	return nil
 }
 
-func (s *Seeder) seedReadingAchievements(projectID string, count int, stats *Stats) error {
+func (s *Seeder) seedContentAchievements(projectID string, count int, stats *Stats) error {
 	achievementQuery := `
 		INSERT INTO achievements (id, achievement_type, project_id, event_id, challenge_id, name, description, image_url, points)
-		VALUES ($1, 'READING', $2, $3, $4, $5, $6, $7, $8)
+		VALUES ($1, 'CONTENT', $2, $3, $4, $5, $6, $7, $8)
 	`
 
-	readingQuery := `
-		INSERT INTO reading_achievements (achievement_id)
+	contentQuery := `
+		INSERT INTO content_achievements (achievement_id)
 		VALUES ($1)
 	`
 
-	// Create external content first, then link to article
+	// Create external content first, then link as content item
 	externalContentQuery := `
 		INSERT INTO external_content (id, plan_id, task_id, content_id, content_type, published_at, synced_at, source)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -117,15 +112,17 @@ func (s *Seeder) seedReadingAchievements(projectID string, count int, stats *Sta
 		VALUES ($1, $2, $3)
 	`
 
-	articleQuery := `
-		INSERT INTO reading_achievement_articles (id, achievement_id, external_content_id)
-		VALUES ($1, $2, $3)
+	contentItemQuery := `
+		INSERT INTO content_achievement_items (id, achievement_id, external_content_id, sort_order)
+		VALUES ($1, $2, $3, $4)
 	`
+
+	contentTypes := []string{"periodical_article", "media_episode"}
 
 	for i := 0; i < count; i++ {
 		achievementID := ulid.NewAchievementID()
-		name := "Read: " + s.Fake.Lorem().Word()
-		description := "Complete all articles to earn this achievement."
+		name := "Complete: " + s.Fake.Lorem().Word()
+		description := "Complete all content items to earn this achievement."
 		imageURL := fmt.Sprintf("https://placecats.com/g/%d/%d", 300+rand.Intn(100), 300+rand.Intn(100))
 		points := 50 + rand.Intn(100)
 
@@ -149,20 +146,21 @@ func (s *Seeder) seedReadingAchievements(projectID string, count int, stats *Sta
 			return err
 		}
 
-		_, err = s.DB.Pool.Exec(s.Ctx, readingQuery, achievementID)
+		_, err = s.DB.Pool.Exec(s.Ctx, contentQuery, achievementID)
 		if err != nil {
 			return err
 		}
 
-		// Add 3-6 articles via external content
-		numArticles := 3 + rand.Intn(4)
-		planID := fmt.Sprintf("seed-reading-plan-%s-%d", achievementID, i)
+		// Add 3-8 content items (mix of articles and tracks)
+		numItems := 3 + rand.Intn(6)
+		planID := fmt.Sprintf("seed-content-plan-%s-%d", achievementID, i)
 
-		for j := 0; j < numArticles; j++ {
+		for j := 0; j < numItems; j++ {
 			// Create external content
 			externalContentID := ulid.NewExternalContentID()
 			taskID := fmt.Sprintf("task-%d", j+1)
-			contentID := fmt.Sprintf("article-%d", rand.Intn(10000))
+			contentType := contentTypes[rand.Intn(len(contentTypes))]
+			contentID := fmt.Sprintf("%s-%d", contentType, rand.Intn(10000))
 			title := s.Fake.Lorem().Sentence(5)
 			now := time.Now()
 
@@ -171,7 +169,7 @@ func (s *Seeder) seedReadingAchievements(projectID string, count int, stats *Sta
 				planID,
 				taskID,
 				contentID,
-				"periodical_article",
+				contentType,
 				now,
 				now,
 				"seed",
@@ -190,129 +188,16 @@ func (s *Seeder) seedReadingAchievements(projectID string, count int, stats *Sta
 				return fmt.Errorf("failed to create external content translation: %w", err)
 			}
 
-			// Create article linked to external content
-			articleID := ulid.NewReadingAchievementID()
-			_, err = s.DB.Pool.Exec(s.Ctx, articleQuery,
-				articleID,
+			// Create content item linked to external content
+			contentItemID := ulid.NewContentItemID()
+			_, err = s.DB.Pool.Exec(s.Ctx, contentItemQuery,
+				contentItemID,
 				achievementID,
 				externalContentID,
+				j,
 			)
 			if err != nil {
-				return fmt.Errorf("failed to create reading achievement article: %w", err)
-			}
-		}
-
-		s.Data.AchievementIDs[projectID] = append(s.Data.AchievementIDs[projectID], achievementID)
-		stats.Achievements++
-	}
-
-	return nil
-}
-
-func (s *Seeder) seedListeningAchievements(projectID string, count int, stats *Stats) error {
-	achievementQuery := `
-		INSERT INTO achievements (id, achievement_type, project_id, event_id, challenge_id, name, description, image_url, points)
-		VALUES ($1, 'LISTENING', $2, $3, $4, $5, $6, $7, $8)
-	`
-
-	listeningQuery := `
-		INSERT INTO listening_achievements (achievement_id)
-		VALUES ($1)
-	`
-
-	// Create external content first, then link to track
-	externalContentQuery := `
-		INSERT INTO external_content (id, plan_id, task_id, content_id, content_type, published_at, synced_at, source)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-	`
-
-	externalContentTranslationQuery := `
-		INSERT INTO external_content_translations (external_content_id, language_code, title)
-		VALUES ($1, $2, $3)
-	`
-
-	trackQuery := `
-		INSERT INTO listening_achievement_tracks (id, achievement_id, external_content_id)
-		VALUES ($1, $2, $3)
-	`
-
-	for i := 0; i < count; i++ {
-		achievementID := ulid.NewAchievementID()
-		name := "Listen: " + s.Fake.Lorem().Word()
-		description := "Listen to all tracks to earn this achievement."
-		imageURL := fmt.Sprintf("https://placecats.com/neo/%d/%d", 300+rand.Intn(100), 300+rand.Intn(100))
-		points := 50 + rand.Intn(100)
-
-		var eventID *string
-		if rand.Float32() < 0.3 && len(s.Data.EventIDs[projectID]) > 0 {
-			eID := s.Data.EventIDs[projectID][rand.Intn(len(s.Data.EventIDs[projectID]))]
-			eventID = &eID
-		}
-
-		_, err := s.DB.Pool.Exec(s.Ctx, achievementQuery,
-			achievementID,
-			projectID,
-			eventID,
-			nil,
-			name,
-			description,
-			imageURL,
-			points,
-		)
-		if err != nil {
-			return err
-		}
-
-		_, err = s.DB.Pool.Exec(s.Ctx, listeningQuery, achievementID)
-		if err != nil {
-			return err
-		}
-
-		// Add 4-8 tracks via external content
-		numTracks := 4 + rand.Intn(5)
-		planID := fmt.Sprintf("seed-listening-plan-%s-%d", achievementID, i)
-
-		for j := 0; j < numTracks; j++ {
-			// Create external content
-			externalContentID := ulid.NewExternalContentID()
-			taskID := fmt.Sprintf("task-%d", j+1)
-			contentID := fmt.Sprintf("track-%d", rand.Intn(10000))
-			title := s.Fake.Lorem().Sentence(3)
-			now := time.Now()
-
-			_, err = s.DB.Pool.Exec(s.Ctx, externalContentQuery,
-				externalContentID,
-				planID,
-				taskID,
-				contentID,
-				"media_episode",
-				now,
-				now,
-				"seed",
-			)
-			if err != nil {
-				return fmt.Errorf("failed to create external content: %w", err)
-			}
-
-			// Create translation for the external content
-			_, err = s.DB.Pool.Exec(s.Ctx, externalContentTranslationQuery,
-				externalContentID,
-				"en",
-				title,
-			)
-			if err != nil {
-				return fmt.Errorf("failed to create external content translation: %w", err)
-			}
-
-			// Create track linked to external content
-			trackID := ulid.NewListeningAchievementID()
-			_, err = s.DB.Pool.Exec(s.Ctx, trackQuery,
-				trackID,
-				achievementID,
-				externalContentID,
-			)
-			if err != nil {
-				return fmt.Errorf("failed to create listening achievement track: %w", err)
+				return fmt.Errorf("failed to create content achievement item: %w", err)
 			}
 		}
 

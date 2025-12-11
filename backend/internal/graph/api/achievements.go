@@ -127,10 +127,8 @@ func convertRowToAchievement(row *sqlc.GetAchievementsFilteredCursorRow) (model.
 	switch row.AchievementType {
 	case "SIMPLE":
 		return convertRowToSimpleAchievement(row, hidden), nil
-	case "READING":
-		return convertRowToReadingAchievement(row, hidden)
-	case "LISTENING":
-		return convertRowToListeningAchievement(row, hidden)
+	case "CONTENT":
+		return convertRowToContentAchievement(row, hidden)
 	case "STREAK":
 		return convertRowToStreakAchievement(row, hidden)
 	default:
@@ -152,29 +150,22 @@ func convertRowToSimpleAchievement(row *sqlc.GetAchievementsFilteredCursorRow, h
 	}
 }
 
-func convertRowToReadingAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hidden bool) (model.Achievement, error) {
-	// Parse the reading articles JSON
-	var articlesData []map[string]interface{}
-	if row.ReadingArticles != nil {
-		jsonBytes, err := json.Marshal(row.ReadingArticles)
+func convertRowToContentAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hidden bool) (model.Achievement, error) {
+	// Count content items from JSON if available
+	totalItems := 0
+	if row.ContentItems != nil {
+		var itemsData []map[string]interface{}
+		jsonBytes, err := json.Marshal(row.ContentItems)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal reading articles: %w", err)
+			return nil, fmt.Errorf("failed to marshal content items: %w", err)
 		}
-		if err := json.Unmarshal(jsonBytes, &articlesData); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal reading articles: %w", err)
+		if err := json.Unmarshal(jsonBytes, &itemsData); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal content items: %w", err)
 		}
+		totalItems = len(itemsData)
 	}
 
-	articles := make([]model.Article, 0, len(articlesData))
-	for _, articleData := range articlesData {
-		article := model.Article{
-			ID:                articleData["id"].(string),
-			ExternalContentID: articleData["external_content_id"].(string),
-		}
-		articles = append(articles, article)
-	}
-
-	return &model.ReadingAchievement{
+	return &model.ContentAchievement{
 		ID:          row.ID,
 		Name:        row.Name,
 		Description: row.Description,
@@ -184,47 +175,8 @@ func convertRowToReadingAchievement(row *sqlc.GetAchievementsFilteredCursorRow, 
 		ProjectID:   row.ProjectID,
 		EventID:     row.EventID,
 		ChallengeID: row.ChallengeID,
-		Articles:    articles,
-		UserHasRead: []model.Article{}, // Will be populated by resolver if needed
-		NextArticle: nil,               // Will be populated by resolver if needed
-	}, nil
-}
-
-func convertRowToListeningAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hidden bool) (model.Achievement, error) {
-	// Parse the listening tracks JSON
-	var tracksData []map[string]interface{}
-	if row.ListeningTracks != nil {
-		jsonBytes, err := json.Marshal(row.ListeningTracks)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal listening tracks: %w", err)
-		}
-		if err := json.Unmarshal(jsonBytes, &tracksData); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal listening tracks: %w", err)
-		}
-	}
-
-	tracks := make([]model.Track, 0, len(tracksData))
-	for _, trackData := range tracksData {
-		track := model.Track{
-			ID:                trackData["id"].(string),
-			ExternalContentID: trackData["external_content_id"].(string),
-		}
-		tracks = append(tracks, track)
-	}
-
-	return &model.ListeningAchievement{
-		ID:              row.ID,
-		Name:            row.Name,
-		Description:     row.Description,
-		Image:           row.ImageUrl,
-		Points:          int(row.Points),
-		Hidden:          hidden,
-		ProjectID:       row.ProjectID,
-		EventID:         row.EventID,
-		ChallengeID:     row.ChallengeID,
-		Tracks:          tracks,
-		UserHasListened: []model.Track{}, // Will be populated by resolver if needed
-		NextTrack:       nil,             // Will be populated by resolver if needed
+		TotalItems:  totalItems,
+		// Items, UserCompletedItems, NextItem, and CompletedItemCount will be populated by resolvers
 	}, nil
 }
 
@@ -246,4 +198,37 @@ func convertRowToStreakAchievement(row *sqlc.GetAchievementsFilteredCursorRow, h
 		NeededStreak: int(*row.NeededStreak),
 		StreakID:     *row.StreakID,
 	}, nil
+}
+
+// convertPublishedContentAchievementRow converts GetPublishedContentAchievementsByExternalContentRow to ContentAchievement model
+func convertPublishedContentAchievementRow(row *sqlc.GetPublishedContentAchievementsByExternalContentRow) *model.ContentAchievement {
+	// Count content items from JSON if available
+	totalItems := 0
+	if row.ContentItems != nil {
+		var itemsData []map[string]interface{}
+		jsonBytes, err := json.Marshal(row.ContentItems)
+		if err == nil {
+			if err := json.Unmarshal(jsonBytes, &itemsData); err == nil {
+				totalItems = len(itemsData)
+			}
+		}
+	}
+
+	hidden := false
+	if row.Hidden != nil {
+		hidden = *row.Hidden
+	}
+
+	return &model.ContentAchievement{
+		ID:          row.ID,
+		Name:        row.Name,
+		Description: row.Description,
+		Image:       row.ImageUrl,
+		Points:      int(row.Points),
+		Hidden:      hidden,
+		ProjectID:   row.ProjectID,
+		EventID:     row.EventID,
+		ChallengeID: row.ChallengeID,
+		TotalItems:  totalItems,
+	}
 }

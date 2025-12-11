@@ -12,38 +12,25 @@ SELECT
     a.hidden,
     a.created_at,
     a.updated_at,
-    -- Reading achievement data
-    ra.achievement_id AS reading_achievement_id,
+    -- Content achievement data
+    ca.achievement_id AS content_achievement_id,
     COALESCE(
         (SELECT jsonb_agg(
             jsonb_build_object(
-                'id', raa.id,
-                'external_content_id', raa.external_content_id
-            )
+                'id', cai.id,
+                'external_content_id', cai.external_content_id,
+                'sort_order', cai.sort_order
+            ) ORDER BY cai.sort_order
         )
-        FROM reading_achievement_articles raa
-        WHERE raa.achievement_id = a.id),
+        FROM content_achievement_items cai
+        WHERE cai.achievement_id = a.id),
         '[]'::jsonb
-    ) AS reading_articles,
-    -- Listening achievement data
-    la.achievement_id AS listening_achievement_id,
-    COALESCE(
-        (SELECT jsonb_agg(
-            jsonb_build_object(
-                'id', lat.id,
-                'external_content_id', lat.external_content_id
-            )
-        )
-        FROM listening_achievement_tracks lat
-        WHERE lat.achievement_id = a.id),
-        '[]'::jsonb
-    ) AS listening_tracks,
+    ) AS content_items,
     -- Streak achievement data
     sa.streak_id,
     sa.needed_streak
 FROM achievements a
-LEFT JOIN reading_achievements ra ON a.id = ra.achievement_id
-LEFT JOIN listening_achievements la ON a.id = la.achievement_id
+LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 WHERE a.id = ANY(@ids::text[]);
 
@@ -62,13 +49,11 @@ SELECT
     a.created_at,
     a.updated_at,
     -- Type-specific fields needed for model construction
-    ra.achievement_id AS reading_achievement_id,
-    la.achievement_id AS listening_achievement_id,
+    ca.achievement_id AS content_achievement_id,
     sa.streak_id,
     sa.needed_streak
 FROM achievements a
-LEFT JOIN reading_achievements ra ON a.id = ra.achievement_id
-LEFT JOIN listening_achievements la ON a.id = la.achievement_id
+LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 WHERE a.project_id = ANY(@project_ids::text[])
     AND a.hidden = false
@@ -88,38 +73,25 @@ SELECT
     a.hidden,
     a.created_at,
     a.updated_at,
-    -- Reading achievement data
-    ra.achievement_id AS reading_achievement_id,
+    -- Content achievement data
+    ca.achievement_id AS content_achievement_id,
     COALESCE(
         (SELECT jsonb_agg(
             jsonb_build_object(
-                'id', raa.id,
-                'external_content_id', raa.external_content_id
-            )
+                'id', cai.id,
+                'external_content_id', cai.external_content_id,
+                'sort_order', cai.sort_order
+            ) ORDER BY cai.sort_order
         )
-        FROM reading_achievement_articles raa
-        WHERE raa.achievement_id = a.id),
+        FROM content_achievement_items cai
+        WHERE cai.achievement_id = a.id),
         '[]'::jsonb
-    ) AS reading_articles,
-    -- Listening achievement data
-    la.achievement_id AS listening_achievement_id,
-    COALESCE(
-        (SELECT jsonb_agg(
-            jsonb_build_object(
-                'id', lat.id,
-                'external_content_id', lat.external_content_id
-            )
-        )
-        FROM listening_achievement_tracks lat
-        WHERE lat.achievement_id = a.id),
-        '[]'::jsonb
-    ) AS listening_tracks,
+    ) AS content_items,
     -- Streak achievement data
     sa.streak_id,
     sa.needed_streak
 FROM achievements a
-LEFT JOIN reading_achievements ra ON a.id = ra.achievement_id
-LEFT JOIN listening_achievements la ON a.id = la.achievement_id
+LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 WHERE
     (@ids::text[] IS NULL OR a.id = ANY(@ids::text[]))
@@ -140,17 +112,11 @@ WHERE
     AND (@projectid::text = '' OR a.project_id = @projectid::text)
     AND (@eventid::text = '' OR a.event_id = @eventid::text);
 
--- name: GetArticlesByAchievementIDs :many
-SELECT id, achievement_id, external_content_id
-FROM reading_achievement_articles
+-- name: GetContentItemsByAchievementIDs :many
+SELECT id, achievement_id, external_content_id, sort_order
+FROM content_achievement_items
 WHERE achievement_id = ANY(@achievement_ids::text[])
-ORDER BY achievement_id;
-
--- name: GetTracksByAchievementIDs :many
-SELECT id, achievement_id, external_content_id
-FROM listening_achievement_tracks
-WHERE achievement_id = ANY(@achievement_ids::text[])
-ORDER BY achievement_id;
+ORDER BY achievement_id, sort_order;
 
 -- ==================== Create Operations ====================
 
@@ -170,43 +136,30 @@ INSERT INTO achievements (
     @id::text,
     @achievement_type::text,
     @project_id::text,
-    @event_id::text,
-    @challenge_id::text,
+    NULLIF(@event_id::text, ''),
+    NULLIF(@challenge_id::text, ''),
     @name::text,
     @description::text,
-    @image_url::text,
+    NULLIF(@image_url::text, ''),
     @points::int,
     @hidden::bool
 ) RETURNING *;
 
--- name: CreateReadingAchievementJunction :exec
-INSERT INTO reading_achievements (achievement_id)
+-- name: CreateContentAchievementJunction :exec
+INSERT INTO content_achievements (achievement_id)
 VALUES (@achievement_id::text);
 
--- name: CreateReadingAchievementArticle :one
-INSERT INTO reading_achievement_articles (
+-- name: CreateContentAchievementItem :one
+INSERT INTO content_achievement_items (
     id,
     achievement_id,
-    external_content_id
+    external_content_id,
+    sort_order
 ) VALUES (
     @id::text,
     @achievement_id::text,
-    @external_content_id::text
-) RETURNING *;
-
--- name: CreateListeningAchievementJunction :exec
-INSERT INTO listening_achievements (achievement_id)
-VALUES (@achievement_id::text);
-
--- name: CreateListeningAchievementTrack :one
-INSERT INTO listening_achievement_tracks (
-    id,
-    achievement_id,
-    external_content_id
-) VALUES (
-    @id::text,
-    @achievement_id::text,
-    @external_content_id::text
+    @external_content_id::text,
+    @sort_order::int
 ) RETURNING *;
 
 -- name: CreateStreakAchievementData :exec
@@ -236,12 +189,8 @@ SET
 WHERE id = @id::text
 RETURNING *;
 
--- name: DeleteReadingAchievementArticles :exec
-DELETE FROM reading_achievement_articles
-WHERE achievement_id = @achievement_id::text;
-
--- name: DeleteListeningAchievementTracks :exec
-DELETE FROM listening_achievement_tracks
+-- name: DeleteContentAchievementItems :exec
+DELETE FROM content_achievement_items
 WHERE achievement_id = @achievement_id::text;
 
 -- name: UpdateStreakAchievementData :exec
@@ -326,38 +275,95 @@ WHERE (user_id, achievement_id) IN (
     SELECT unnest(@user_ids::text[]), unnest(@achievement_ids::text[])
 );
 
--- ==================== External Content Operations ====================
+-- ==================== Content Progress Operations ====================
 
--- name: GetArticlesWithExternalContent :many
--- Get articles with external content joined
+-- name: GetUserContentProgress :many
+SELECT user_id, achievement_id, external_content_id, completed_at
+FROM user_content_progress
+WHERE user_id = @user_id::text
+  AND achievement_id = ANY(@achievement_ids::text[]);
+
+-- name: GetUserContentProgressForAchievement :many
+SELECT user_id, achievement_id, external_content_id, completed_at
+FROM user_content_progress
+WHERE user_id = @user_id::text
+  AND achievement_id = @achievement_id::text;
+
+-- name: MarkContentItemCompleted :exec
+INSERT INTO user_content_progress (user_id, achievement_id, external_content_id, completed_at)
+VALUES (@user_id::text, @achievement_id::text, @external_content_id::text, COALESCE(@completed_at::timestamptz, now()))
+ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING;
+
+-- name: UnmarkContentItemCompleted :exec
+DELETE FROM user_content_progress
+WHERE user_id = @user_id::text
+  AND achievement_id = @achievement_id::text
+  AND external_content_id = @external_content_id::text;
+
+-- name: GetPublishedContentAchievementsByExternalContent :many
+-- Get all published (non-hidden) content achievements that contain a specific external content
+SELECT DISTINCT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description,
+    a.image_url,
+    a.points,
+    a.hidden,
+    a.created_at,
+    a.updated_at,
+    COALESCE(
+        (SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', cai2.id,
+                'external_content_id', cai2.external_content_id,
+                'sort_order', cai2.sort_order
+            ) ORDER BY cai2.sort_order
+        )
+        FROM content_achievement_items cai2
+        WHERE cai2.achievement_id = a.id),
+        '[]'::jsonb
+    ) AS content_items
+FROM achievements a
+INNER JOIN content_achievements ca ON a.id = ca.achievement_id
+INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
+WHERE cai.external_content_id = @external_content_id::text
+  AND (a.hidden IS NULL OR a.hidden = false);
+
+-- name: MarkContentItemCompletedForAllAchievements :exec
+-- Mark content completed for a user across all published achievements containing this content
+INSERT INTO user_content_progress (user_id, achievement_id, external_content_id, completed_at)
+SELECT @user_id::text, ca.achievement_id, @external_content_id::text, now()
+FROM content_achievements ca
+INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
+INNER JOIN achievements a ON ca.achievement_id = a.id
+WHERE cai.external_content_id = @external_content_id::text
+  AND (a.hidden IS NULL OR a.hidden = false)
+ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING;
+
+-- name: UnmarkContentItemCompletedForAllAchievements :exec
+-- Unmark content completed for a user across all achievements containing this content
+DELETE FROM user_content_progress
+WHERE user_id = @user_id::text
+  AND external_content_id = @external_content_id::text;
+
+-- name: GetContentItemsWithExternalContent :many
+-- Get content items with external content joined
 SELECT
-    raa.id,
-    raa.achievement_id,
-    raa.external_content_id,
+    cai.id,
+    cai.achievement_id,
+    cai.external_content_id,
+    cai.sort_order,
     ec.plan_id AS external_plan_id,
     ec.task_id AS external_task_id,
     ec.content_id AS external_content_id_value,
     ec.content_type AS external_content_type,
     ec.published_at AS external_published_at,
     ec.source AS external_source
-FROM reading_achievement_articles raa
-INNER JOIN external_content ec ON raa.external_content_id = ec.id
-WHERE raa.achievement_id = ANY(@achievementids::text[])
-ORDER BY raa.achievement_id;
-
--- name: GetTracksWithExternalContent :many
--- Get tracks with external content joined
-SELECT
-    lat.id,
-    lat.achievement_id,
-    lat.external_content_id,
-    ec.plan_id AS external_plan_id,
-    ec.task_id AS external_task_id,
-    ec.content_id AS external_content_id_value,
-    ec.content_type AS external_content_type,
-    ec.published_at AS external_published_at,
-    ec.source AS external_source
-FROM listening_achievement_tracks lat
-INNER JOIN external_content ec ON lat.external_content_id = ec.id
-WHERE lat.achievement_id = ANY(@achievementids::text[])
-ORDER BY lat.achievement_id;
+FROM content_achievement_items cai
+INNER JOIN external_content ec ON cai.external_content_id = ec.id
+WHERE cai.achievement_id = ANY(@achievementids::text[])
+ORDER BY cai.achievement_id, cai.sort_order;

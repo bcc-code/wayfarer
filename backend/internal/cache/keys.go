@@ -34,8 +34,7 @@ const (
 	PrefixUserAchievements         = "userachievements:"
 	PrefixUserChallengeCompletions = "userchallenges:"
 	PrefixUserChallengeEnrollments = "userchallengeenrollments:"
-	PrefixUserReadingProgress      = "userreading:"
-	PrefixUserListeningProgress    = "userlistening:"
+	PrefixUserContentProgress      = "usercontent:"
 	PrefixUserStreakActivity       = "userstreak:"
 
 	// Computed data
@@ -203,14 +202,14 @@ func AchievementsByProjectKey(projectID string) string {
 	return fmt.Sprintf("%s:project:%s", PrefixAchievement, projectID)
 }
 
-// ArticlesByAchievementKey builds a cache key for articles by achievement ID
-func ArticlesByAchievementKey(achievementID string) string {
-	return fmt.Sprintf("%s:articles:%s", PrefixAchievement, achievementID)
+// ContentItemsByAchievementKey builds a cache key for content items by achievement ID
+func ContentItemsByAchievementKey(achievementID string) string {
+	return fmt.Sprintf("%s:items:%s", PrefixAchievement, achievementID)
 }
 
-// TracksByAchievementKey builds a cache key for tracks by achievement ID
-func TracksByAchievementKey(achievementID string) string {
-	return fmt.Sprintf("%s:tracks:%s", PrefixAchievement, achievementID)
+// UserContentProgressKey builds a cache key for user content progress
+func UserContentProgressKey(userID, achievementID string) string {
+	return fmt.Sprintf("%s%s:%s", PrefixUserContentProgress, userID, achievementID)
 }
 
 // StreakKey builds a cache key for a streak by ID

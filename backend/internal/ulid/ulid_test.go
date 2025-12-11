@@ -25,8 +25,7 @@ func TestNewIDs(t *testing.T) {
 		{"NewStreakID", NewStreakID, PrefixStreak, IsStreakID},
 		{"NewChallengeID", NewChallengeID, PrefixChallenge, IsChallengeID},
 		{"NewAchievementID", NewAchievementID, PrefixAchievement, IsAchievementID},
-		{"NewReadingAchievementID", NewReadingAchievementID, PrefixReadingAchievement, IsReadingAchievementID},
-		{"NewListeningAchievementID", NewListeningAchievementID, PrefixListeningAchievement, IsListeningAchievementID},
+		{"NewContentItemID", NewContentItemID, PrefixContentItem, IsContentItemID},
 		{"NewScoreJournalID", NewScoreJournalID, PrefixScoreJournal, IsScoreJournalID},
 	}
 

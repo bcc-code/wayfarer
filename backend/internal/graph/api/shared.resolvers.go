@@ -21,30 +21,161 @@ import (
 	pgx "github.com/jackc/pgx/v5"
 )
 
+// Project is the resolver for the project field.
+func (r *contentAchievementResolver) Project(ctx context.Context, obj *model.ContentAchievement) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *contentAchievementResolver) Event(ctx context.Context, obj *model.ContentAchievement) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *contentAchievementResolver) Challenge(ctx context.Context, obj *model.ContentAchievement) (model.Challenge, error) {
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// AchievedAt is the resolver for the achievedAt field.
+func (r *contentAchievementResolver) AchievedAt(ctx context.Context, obj *model.ContentAchievement) (*scalars.DateTime, error) {
+	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// Items is the resolver for the items field.
+func (r *contentAchievementResolver) Items(ctx context.Context, obj *model.ContentAchievement) ([]model.ContentItem, error) {
+	thunk := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)
+	items, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load content items: %w", err)
+	}
+
+	// Convert []*model.ContentItem to []model.ContentItem
+	result := make([]model.ContentItem, len(items))
+	for i, item := range items {
+		result[i] = *item
+	}
+	return result, nil
+}
+
+// UserCompletedItems is the resolver for the userCompletedItems field.
+func (r *contentAchievementResolver) UserCompletedItems(ctx context.Context, obj *model.ContentAchievement) ([]model.ContentItem, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return []model.ContentItem{}, nil
+	}
+
+	// Get all items for this achievement
+	thunk := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)
+	items, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load content items: %w", err)
+	}
+
+	// Get user's completed items
+	progress, err := r.DB.Queries.GetUserContentProgressForAchievement(ctx, sqlc.GetUserContentProgressForAchievementParams{
+		UserID:        userID,
+		AchievementID: obj.ID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user progress: %w", err)
+	}
+
+	// Create a set of completed external content IDs
+	completedSet := make(map[string]bool)
+	for _, p := range progress {
+		completedSet[p.ExternalContentID] = true
+	}
+
+	// Filter items to only those the user has completed
+	var completedItems []model.ContentItem
+	for _, item := range items {
+		if completedSet[item.ExternalContentID] {
+			completedItems = append(completedItems, *item)
+		}
+	}
+	if completedItems == nil {
+		completedItems = []model.ContentItem{}
+	}
+	return completedItems, nil
+}
+
+// NextItem is the resolver for the nextItem field.
+func (r *contentAchievementResolver) NextItem(ctx context.Context, obj *model.ContentAchievement) (*model.ContentItem, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		// No user, return first item
+		thunk := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)
+		items, err := thunk()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load content items: %w", err)
+		}
+		if len(items) == 0 {
+			return nil, nil
+		}
+		return items[0], nil
+	}
+
+	// Get all items for this achievement
+	thunk := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)
+	items, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load content items: %w", err)
+	}
+	if len(items) == 0 {
+		return nil, nil
+	}
+
+	// Get user's completed items
+	progress, err := r.DB.Queries.GetUserContentProgressForAchievement(ctx, sqlc.GetUserContentProgressForAchievementParams{
+		UserID:        userID,
+		AchievementID: obj.ID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user progress: %w", err)
+	}
+
+	// Create a set of completed external content IDs
+	completedSet := make(map[string]bool)
+	for _, p := range progress {
+		completedSet[p.ExternalContentID] = true
+	}
+
+	// Find the first incomplete item
+	for _, item := range items {
+		if !completedSet[item.ExternalContentID] {
+			return item, nil
+		}
+	}
+
+	// All items completed
+	return nil, nil
+}
+
+// CompletedItemCount is the resolver for the completedItemCount field.
+func (r *contentAchievementResolver) CompletedItemCount(ctx context.Context, obj *model.ContentAchievement) (int, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return 0, nil
+	}
+
+	progress, err := r.DB.Queries.GetUserContentProgressForAchievement(ctx, sqlc.GetUserContentProgressForAchievementParams{
+		UserID:        userID,
+		AchievementID: obj.ID,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to load user progress: %w", err)
+	}
+	return len(progress), nil
+}
+
 // ExternalContent is the resolver for the externalContent field.
-func (r *articleResolver) ExternalContent(ctx context.Context, obj *model.Article) (*model.ExternalContent, error) {
-	ec, err := r.DB.Queries.GetExternalContentByID(ctx, obj.ExternalContentID)
+func (r *contentItemResolver) ExternalContent(ctx context.Context, obj *model.ContentItem) (*model.ExternalContent, error) {
+	thunk := r.Loaders.ExternalContentByIDLoader.Load(ctx, obj.ExternalContentID)
+	ec, err := thunk()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load external content: %w", err)
 	}
-
-	var publishedAt *scalars.DateTime
-	if ec.PublishedAt.Valid {
-		publishedAt = &scalars.DateTime{Time: ec.PublishedAt.Time}
-	}
-
-	return &model.ExternalContent{
-		ID:          ec.ID,
-		PlanID:      ec.PlanID,
-		TaskID:      ec.TaskID,
-		ContentID:   ec.ContentID,
-		ContentType: model.ExternalContentType(ec.ContentType),
-		PublishedAt: publishedAt,
-		Source:      ec.Source,
-		SyncedAt:    scalars.DateTime{Time: ec.SyncedAt.Time},
-		CreatedAt:   scalars.DateTime{Time: ec.CreatedAt.Time},
-		UpdatedAt:   scalars.DateTime{Time: ec.UpdatedAt.Time},
-	}, nil
+	return ec, nil
 }
 
 // Challenges is the resolver for the challenges field.
@@ -177,38 +308,6 @@ func (r *jsonResponseResolver) Question(ctx context.Context, obj *model.JSONResp
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
 	return convertGetQuizQuestionByIDRowToInterface(row), nil
-}
-
-// Project is the resolver for the project field.
-func (r *listeningAchievementResolver) Project(ctx context.Context, obj *model.ListeningAchievement) (*model.Project, error) {
-	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
-}
-
-// Event is the resolver for the event field.
-func (r *listeningAchievementResolver) Event(ctx context.Context, obj *model.ListeningAchievement) (*model.Event, error) {
-	return resolveEventByID(ctx, r.Resolver, obj.EventID)
-}
-
-// Challenge is the resolver for the challenge field.
-func (r *listeningAchievementResolver) Challenge(ctx context.Context, obj *model.ListeningAchievement) (model.Challenge, error) {
-	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
-}
-
-// AchievedAt is the resolver for the achievedAt field.
-func (r *listeningAchievementResolver) AchievedAt(ctx context.Context, obj *model.ListeningAchievement) (*scalars.DateTime, error) {
-	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
-}
-
-// Tracks is the resolver for the tracks field.
-func (r *listeningAchievementResolver) Tracks(ctx context.Context, obj *model.ListeningAchievement) ([]model.Track, error) {
-	thunk := r.Loaders.TracksByAchievementLoader.Load(ctx, obj.ID)
-	tracks, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load tracks: %w", err)
-	}
-
-	// Track translations are now handled via ExternalContent
-	return tracks, nil
 }
 
 // HTML is the resolver for the html field.
@@ -830,38 +929,6 @@ func (r *quizSubmissionResolver) ScorePercentage(ctx context.Context, obj *model
 	return &percentage, nil
 }
 
-// Project is the resolver for the project field.
-func (r *readingAchievementResolver) Project(ctx context.Context, obj *model.ReadingAchievement) (*model.Project, error) {
-	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
-}
-
-// Event is the resolver for the event field.
-func (r *readingAchievementResolver) Event(ctx context.Context, obj *model.ReadingAchievement) (*model.Event, error) {
-	return resolveEventByID(ctx, r.Resolver, obj.EventID)
-}
-
-// Challenge is the resolver for the challenge field.
-func (r *readingAchievementResolver) Challenge(ctx context.Context, obj *model.ReadingAchievement) (model.Challenge, error) {
-	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
-}
-
-// AchievedAt is the resolver for the achievedAt field.
-func (r *readingAchievementResolver) AchievedAt(ctx context.Context, obj *model.ReadingAchievement) (*scalars.DateTime, error) {
-	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
-}
-
-// Articles is the resolver for the articles field.
-func (r *readingAchievementResolver) Articles(ctx context.Context, obj *model.ReadingAchievement) ([]model.Article, error) {
-	thunk := r.Loaders.ArticlesByAchievementLoader.Load(ctx, obj.ID)
-	articles, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load articles: %w", err)
-	}
-
-	// Article translations are now handled via ExternalContent
-	return articles, nil
-}
-
 // Church is the resolver for the church field.
 func (r *roleScopeResolver) Church(ctx context.Context, obj *model.RoleScope) (*model.Church, error) {
 	// Only return church if scope type is CHURCH
@@ -945,9 +1012,7 @@ func (r *scoreJournalResolver) Source(ctx context.Context, obj *model.ScoreJourn
 		switch ach := achievement.(type) {
 		case *model.SimpleAchievement:
 			return ach, nil
-		case *model.ReadingAchievement:
-			return ach, nil
-		case *model.ListeningAchievement:
+		case *model.ContentAchievement:
 			return ach, nil
 		case *model.StreakAchievement:
 			return ach, nil
@@ -1505,32 +1570,6 @@ func (r *teamMemberResolver) User(ctx context.Context, obj *model.TeamMember) (*
 	return user, nil
 }
 
-// ExternalContent is the resolver for the externalContent field.
-func (r *trackResolver) ExternalContent(ctx context.Context, obj *model.Track) (*model.ExternalContent, error) {
-	ec, err := r.DB.Queries.GetExternalContentByID(ctx, obj.ExternalContentID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load external content: %w", err)
-	}
-
-	var publishedAt *scalars.DateTime
-	if ec.PublishedAt.Valid {
-		publishedAt = &scalars.DateTime{Time: ec.PublishedAt.Time}
-	}
-
-	return &model.ExternalContent{
-		ID:          ec.ID,
-		PlanID:      ec.PlanID,
-		TaskID:      ec.TaskID,
-		ContentID:   ec.ContentID,
-		ContentType: model.ExternalContentType(ec.ContentType),
-		PublishedAt: publishedAt,
-		Source:      ec.Source,
-		SyncedAt:    scalars.DateTime{Time: ec.SyncedAt.Time},
-		CreatedAt:   scalars.DateTime{Time: ec.CreatedAt.Time},
-		UpdatedAt:   scalars.DateTime{Time: ec.UpdatedAt.Time},
-	}, nil
-}
-
 // Church is the resolver for the church field.
 func (r *userResolver) Church(ctx context.Context, obj *model.User) (*model.Church, error) {
 	// Use dataloader to fetch church (Load returns a Thunk that must be called)
@@ -1685,8 +1724,13 @@ func (r *userRoleResolver) Scope(ctx context.Context, obj *model.UserRole) (*mod
 	return obj.Scope, nil
 }
 
-// Article returns ArticleResolver implementation.
-func (r *Resolver) Article() ArticleResolver { return &articleResolver{r} }
+// ContentAchievement returns ContentAchievementResolver implementation.
+func (r *Resolver) ContentAchievement() ContentAchievementResolver {
+	return &contentAchievementResolver{r}
+}
+
+// ContentItem returns ContentItemResolver implementation.
+func (r *Resolver) ContentItem() ContentItemResolver { return &contentItemResolver{r} }
 
 // Event returns EventResolver implementation.
 func (r *Resolver) Event() EventResolver { return &eventResolver{r} }
@@ -1707,11 +1751,6 @@ func (r *Resolver) JsonQuestion() JsonQuestionResolver { return &jsonQuestionRes
 
 // JsonResponse returns JsonResponseResolver implementation.
 func (r *Resolver) JsonResponse() JsonResponseResolver { return &jsonResponseResolver{r} }
-
-// ListeningAchievement returns ListeningAchievementResolver implementation.
-func (r *Resolver) ListeningAchievement() ListeningAchievementResolver {
-	return &listeningAchievementResolver{r}
-}
 
 // MarkdownText returns MarkdownTextResolver implementation.
 func (r *Resolver) MarkdownText() MarkdownTextResolver { return &markdownTextResolver{r} }
@@ -1752,11 +1791,6 @@ func (r *Resolver) QuizPredefinedAnswer() QuizPredefinedAnswerResolver {
 // QuizSubmission returns QuizSubmissionResolver implementation.
 func (r *Resolver) QuizSubmission() QuizSubmissionResolver { return &quizSubmissionResolver{r} }
 
-// ReadingAchievement returns ReadingAchievementResolver implementation.
-func (r *Resolver) ReadingAchievement() ReadingAchievementResolver {
-	return &readingAchievementResolver{r}
-}
-
 // RoleScope returns RoleScopeResolver implementation.
 func (r *Resolver) RoleScope() RoleScopeResolver { return &roleScopeResolver{r} }
 
@@ -1788,23 +1822,20 @@ func (r *Resolver) Team() TeamResolver { return &teamResolver{r} }
 // TeamMember returns TeamMemberResolver implementation.
 func (r *Resolver) TeamMember() TeamMemberResolver { return &teamMemberResolver{r} }
 
-// Track returns TrackResolver implementation.
-func (r *Resolver) Track() TrackResolver { return &trackResolver{r} }
-
 // User returns UserResolver implementation.
 func (r *Resolver) User() UserResolver { return &userResolver{r} }
 
 // UserRole returns UserRoleResolver implementation.
 func (r *Resolver) UserRole() UserRoleResolver { return &userRoleResolver{r} }
 
-type articleResolver struct{ *Resolver }
+type contentAchievementResolver struct{ *Resolver }
+type contentItemResolver struct{ *Resolver }
 type eventResolver struct{ *Resolver }
 type externalChallengeResolver struct{ *Resolver }
 type freeTextQuestionResolver struct{ *Resolver }
 type freeTextResponseResolver struct{ *Resolver }
 type jsonQuestionResolver struct{ *Resolver }
 type jsonResponseResolver struct{ *Resolver }
-type listeningAchievementResolver struct{ *Resolver }
 type markdownTextResolver struct{ *Resolver }
 type numberQuestionResolver struct{ *Resolver }
 type numberResponseResolver struct{ *Resolver }
@@ -1816,7 +1847,6 @@ type quizAchievementResolver struct{ *Resolver }
 type quizChallengeResolver struct{ *Resolver }
 type quizPredefinedAnswerResolver struct{ *Resolver }
 type quizSubmissionResolver struct{ *Resolver }
-type readingAchievementResolver struct{ *Resolver }
 type roleScopeResolver struct{ *Resolver }
 type scoreJournalResolver struct{ *Resolver }
 type simpleAchievementResolver struct{ *Resolver }
@@ -1826,6 +1856,5 @@ type streakAchievementResolver struct{ *Resolver }
 type superTeamResolver struct{ *Resolver }
 type teamResolver struct{ *Resolver }
 type teamMemberResolver struct{ *Resolver }
-type trackResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
 type userRoleResolver struct{ *Resolver }

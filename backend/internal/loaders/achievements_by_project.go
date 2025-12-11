@@ -98,8 +98,8 @@ func convertRowToAchievement(row *sqlc.GetAchievementsByProjectIDsRow) (model.Ac
 			ChallengeID: row.ChallengeID,
 		}, nil
 
-	case "READING":
-		return &model.ReadingAchievement{
+	case "CONTENT":
+		return &model.ContentAchievement{
 			ID:          row.ID,
 			Name:        row.Name,
 			Description: row.Description,
@@ -109,25 +109,7 @@ func convertRowToAchievement(row *sqlc.GetAchievementsByProjectIDsRow) (model.Ac
 			ProjectID:   row.ProjectID,
 			EventID:     row.EventID,
 			ChallengeID: row.ChallengeID,
-			Articles:    []model.Article{}, // Will be populated by resolver if needed
-			UserHasRead: []model.Article{}, // Will be populated by resolver if needed
-			NextArticle: nil,               // Will be populated by resolver if needed
-		}, nil
-
-	case "LISTENING":
-		return &model.ListeningAchievement{
-			ID:              row.ID,
-			Name:            row.Name,
-			Description:     row.Description,
-			Image:           row.ImageUrl,
-			Points:          int(row.Points),
-			Hidden:          hidden,
-			ProjectID:       row.ProjectID,
-			EventID:         row.EventID,
-			ChallengeID:     row.ChallengeID,
-			Tracks:          []model.Track{}, // Will be populated by resolver if needed
-			UserHasListened: []model.Track{}, // Will be populated by resolver if needed
-			NextTrack:       nil,             // Will be populated by resolver if needed
+			// Items, UserCompletedItems, NextItem, TotalItems, and CompletedItemCount will be populated by resolvers
 		}, nil
 
 	case "STREAK":
