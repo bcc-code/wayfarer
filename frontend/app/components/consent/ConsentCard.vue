@@ -163,16 +163,11 @@ const changing = ref(false)
             <Icon name="lucide:check" class="size-6" />
             {{ $t('consent.accepted') }}
           </span>
-          <!-- <DesignDrawer :title="$t('consent.changeConsent')"> -->
-          <DesignButton
-            size="small"
-            variant="secondary"
-            class="grow-0"
-            @click="changing = true"
-          >
-            {{ $t('consent.change') }}
-          </DesignButton>
-          <!-- <template #content>
+          <DesignDrawer :title="$t('consent.changeConsent')">
+            <DesignButton size="small" variant="secondary" class="grow-0">
+              {{ $t('consent.change') }}
+            </DesignButton>
+            <template #content>
               <p class="text-label text-text-default px-default">
                 {{
                   $t('consent.changeDescription', {
@@ -181,7 +176,7 @@ const changing = ref(false)
                 }}
               </p>
             </template>
-          </DesignDrawer> -->
+          </DesignDrawer>
         </div>
       </template>
       <template v-else-if="localStatus === ConsentAction.Rejected">
