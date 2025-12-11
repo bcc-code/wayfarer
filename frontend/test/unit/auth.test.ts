@@ -518,7 +518,7 @@ describe('Authentication Flow', () => {
 
   describe('Callback Page', () => {
     describe('Token Validation', () => {
-      const CALLBACK_URL = 'http://localhost:8080/callback'
+      const TOKEN_URL = 'http://localhost:8080/token'
 
       it('should validate token with backend on mount', async () => {
         const inputToken = 'incoming-token-from-oauth'
@@ -538,7 +538,7 @@ describe('Authentication Flow', () => {
         const { token } = route.query
         if (token) {
           const response = await fetch(
-            `${config.public.callbackUrl}?token=${token}`,
+            `${config.public.tokenUrl}?token=${token}`,
             { method: 'GET' },
           )
           if (response && response.token) {
@@ -548,7 +548,7 @@ describe('Authentication Flow', () => {
         }
 
         expect(fetch).toHaveBeenCalledWith(
-          `${CALLBACK_URL}?token=${inputToken}`,
+          `${TOKEN_URL}?token=${inputToken}`,
           { method: 'GET' },
         )
         expect(setAccessToken).toHaveBeenCalledWith(validatedToken)
@@ -570,7 +570,7 @@ describe('Authentication Flow', () => {
         const config = mockUseRuntimeConfig()
 
         const response = await fetch(
-          `${config.public.callbackUrl}?token=${inputToken}`,
+          `${config.public.tokenUrl}?token=${inputToken}`,
         )
         if (response && response.token) {
           setAccessToken(response.token)
@@ -593,7 +593,7 @@ describe('Authentication Flow', () => {
         const config = mockUseRuntimeConfig()
 
         const response = await fetch(
-          `${config.public.callbackUrl}?token=${inputToken}`,
+          `${config.public.tokenUrl}?token=${inputToken}`,
         )
         if (response && response.token) {
           setAccessToken(response.token)
@@ -621,7 +621,7 @@ describe('Authentication Flow', () => {
         const config = mockUseRuntimeConfig()
 
         const response = await fetch(
-          `${config.public.callbackUrl}?token=${inputToken}`,
+          `${config.public.tokenUrl}?token=${inputToken}`,
         )
         if (response && response.token) {
           setAccessToken(response.token)
@@ -672,7 +672,7 @@ describe('Authentication Flow', () => {
 
         try {
           const response = await fetch(
-            `${config.public.callbackUrl}?token=${invalidToken}`,
+            `${config.public.tokenUrl}?token=${invalidToken}`,
           )
           if (response && response.token) {
             setAccessToken(response.token)
@@ -703,7 +703,7 @@ describe('Authentication Flow', () => {
 
         try {
           const response = await fetch(
-            `${config.public.callbackUrl}?token=${expiredToken}`,
+            `${config.public.tokenUrl}?token=${expiredToken}`,
           )
           if (response && response.token) {
             setAccessToken(response.token)
@@ -735,7 +735,7 @@ describe('Authentication Flow', () => {
 
         try {
           const response = await fetch(
-            `${config.public.callbackUrl}?token=${inputToken}`,
+            `${config.public.tokenUrl}?token=${inputToken}`,
           )
           if (response && response.token) {
             setAccessToken(response.token)
@@ -768,7 +768,7 @@ describe('Authentication Flow', () => {
 
         try {
           const response = await fetch(
-            `${config.public.callbackUrl}?token=${inputToken}`,
+            `${config.public.tokenUrl}?token=${inputToken}`,
           )
           if (response && response.token) {
             setAccessToken(response.token)
@@ -796,7 +796,7 @@ describe('Authentication Flow', () => {
         const config = mockUseRuntimeConfig()
 
         const response = await fetch(
-          `${config.public.callbackUrl}?token=${inputToken}`,
+          `${config.public.tokenUrl}?token=${inputToken}`,
         )
         if (response && response.token) {
           setAccessToken(response.token)
@@ -826,7 +826,7 @@ describe('Authentication Flow', () => {
         const config = mockUseRuntimeConfig()
 
         const response = await fetch(
-          `${config.public.callbackUrl}?token=${inputToken}`,
+          `${config.public.tokenUrl}?token=${inputToken}`,
         )
         if (response && response.token) {
           setAccessToken(response.token)
@@ -860,7 +860,7 @@ describe('Authentication Flow', () => {
         const config = mockUseRuntimeConfig()
 
         const response = await fetch(
-          `${config.public.callbackUrl}?token=${inputToken}`,
+          `${config.public.tokenUrl}?token=${inputToken}`,
         )
         if (response && response.token) {
           setAccessToken(response.token)
@@ -894,7 +894,7 @@ describe('Authentication Flow', () => {
         const config = mockUseRuntimeConfig()
 
         const response = await fetch(
-          `${config.public.callbackUrl}?token=${inputToken}`,
+          `${config.public.tokenUrl}?token=${inputToken}`,
         )
         if (response && response.token) {
           setAccessToken(response.token)
@@ -924,7 +924,7 @@ describe('Authentication Flow', () => {
         const config = mockUseRuntimeConfig()
 
         try {
-          await fetch(`${config.public.callbackUrl}?token=${inputToken}`)
+          await fetch(`${config.public.tokenUrl}?token=${inputToken}`)
         } catch (error) {
           console.error('Token validation failed:', error)
         }
@@ -948,7 +948,7 @@ describe('Authentication Flow', () => {
         const config = mockUseRuntimeConfig()
 
         try {
-          await fetch(`${config.public.callbackUrl}?token=${inputToken}`)
+          await fetch(`${config.public.tokenUrl}?token=${inputToken}`)
         } catch (error) {
           errorState.value =
             error instanceof Error ? error.message : 'Unknown error'
@@ -972,7 +972,7 @@ describe('Authentication Flow', () => {
 
         try {
           const response = await fetch(
-            `${config.public.callbackUrl}?token=${inputToken}`,
+            `${config.public.tokenUrl}?token=${inputToken}`,
           )
           if (response && response.token) {
             setAccessToken(response.token)
@@ -1003,7 +1003,7 @@ describe('Authentication Flow', () => {
         // First attempt - fails
         try {
           const response = await fetch(
-            `${config.public.callbackUrl}?token=${inputToken}`,
+            `${config.public.tokenUrl}?token=${inputToken}`,
           )
           if (response && response.token) {
             setAccessToken(response.token)
@@ -1016,7 +1016,7 @@ describe('Authentication Flow', () => {
 
         // Retry - succeeds
         const response = await fetch(
-          `${config.public.callbackUrl}?token=${inputToken}`,
+          `${config.public.tokenUrl}?token=${inputToken}`,
         )
         if (response && response.token) {
           setAccessToken(response.token)
@@ -1851,7 +1851,7 @@ describe('Authentication Flow', () => {
       // Step 4: Token validated with backend
       fetch.mockResolvedValue({ token: validatedToken })
       const response = await fetch(
-        `${config.public.callbackUrl}?token=${oauthToken}`,
+        `${config.public.tokenUrl}?token=${oauthToken}`,
       )
 
       // Step 5: Stored in cookie
@@ -2110,7 +2110,7 @@ describe('Authentication Flow', () => {
       const config = mockUseRuntimeConfig()
 
       const response = await fetch(
-        `${config.public.callbackUrl}?token=${tamperedToken}`,
+        `${config.public.tokenUrl}?token=${tamperedToken}`,
       )
 
       // Tampered token should be rejected by backend

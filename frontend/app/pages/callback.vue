@@ -29,7 +29,7 @@ onMounted(async () => {
 
   try {
     const response = await $fetch<{ token: string }>(
-      `${config.public.callbackUrl}?token=${token}`,
+      `${config.public.tokenUrl}?token=${token}`,
       { method: 'GET' },
     )
 

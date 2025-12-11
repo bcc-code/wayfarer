@@ -293,7 +293,7 @@ export function mockUseRuntimeConfig() {
   return {
     public: {
       apiUrl: 'http://localhost:8080/graphql',
-      callbackUrl: 'http://localhost:8080/callback',
+      tokenUrl: 'http://localhost:8080/token',
       loginUrl: 'https://login.example.com/auth',
     },
   }

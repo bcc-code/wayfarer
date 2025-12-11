@@ -285,7 +285,7 @@ We've created a comprehensive set of mock utilities for testing auth functionali
 - **`mockCreateError()`** - Mock Nuxt error creation
 - **`mockWindowLocation(pathname)`** - Mock window.location
 - **`mockUseRoute(query)`** - Mock Nuxt route with query parameters
-- **`mockUseRuntimeConfig()`** - Mock Nuxt runtime config (apiUrl, callbackUrl, loginUrl)
+- **`mockUseRuntimeConfig()`** - Mock Nuxt runtime config (apiUrl, tokenUrl, loginUrl)
 - **`mockFetch()`** - Mock $fetch for backend API calls
 - **`createMockFetchResponse(data, ok, status)`** - Mock fetch responses
 

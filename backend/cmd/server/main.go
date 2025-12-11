@@ -268,7 +268,7 @@ func main() {
 	}
 	slog.Info("Profiling endpoints enabled at /debug/pprof")
 
-	// Authentication callback endpoint (no JWT middleware)
+	// Authentication token endpoint (no JWT middleware)
 	authHandler := &handlers.AuthHandler{
 		DB:            db,
 		Cfg:           cfg,
@@ -276,7 +276,7 @@ func main() {
 		MembersClient: membersClient,
 		RoleService:   roleService,
 	}
-	router.GET("/callback", authHandler.Callback)
+	router.GET("/token", authHandler.Callback)
 
 	// Webhook handler for external content events
 	webhookHandler := &handlers.WebhookHandler{
