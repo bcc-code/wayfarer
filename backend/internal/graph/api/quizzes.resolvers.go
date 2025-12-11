@@ -7,6 +7,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/ulid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -814,32 +816,25 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		params.Timespentseconds = &tss
 	}
 
-	// Check if response already exists (update instead of create)
-	existing, _ := r.DB.Queries.GetQuizResponseBySubmissionAndQuestion(ctx, sqlc.GetQuizResponseBySubmissionAndQuestionParams{
-		Submissionid: submissionID,
-		Questionid:   input.QuestionID,
-	})
-
-	var response *sqlc.QuizResponse
-	if existing.ID != "" {
-		// Update existing response
-		updateParams := sqlc.UpdateQuizResponseParams{
-			ID:                existing.ID,
-			Selectedanswerids: params.Selectedanswerids,
-			Textresponse:      params.Textresponse,
-			Numberresponse:    params.Numberresponse,
-			Jsonresponse:      params.Jsonresponse,
-			Iscorrect:         params.Iscorrect,
-			Timespentseconds:  params.Timespentseconds,
-		}
-		response, err = r.DB.Queries.UpdateQuizResponse(ctx, updateParams)
-	} else {
-		// Create new response
-		response, err = r.DB.Queries.CreateQuizResponse(ctx, params)
-	}
-
+	// Try to create new response
+	response, err := r.DB.Queries.CreateQuizResponse(ctx, params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to save response: %w", err)
+		// Check for duplicate key error (unique violation on submission_id + question_id)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			// Race condition: another request created the response first
+			// Fetch the existing response and return it
+			existing, fetchErr := r.DB.Queries.GetQuizResponseBySubmissionAndQuestion(ctx, sqlc.GetQuizResponseBySubmissionAndQuestionParams{
+				Submissionid: submissionID,
+				Questionid:   input.QuestionID,
+			})
+			if fetchErr != nil {
+				return nil, fmt.Errorf("failed to fetch existing response: %w", fetchErr)
+			}
+			response = existing
+		} else {
+			return nil, fmt.Errorf("failed to save response: %w", err)
+		}
 	}
 
 	r.Cache.InvalidateQuizSubmission(submissionID)

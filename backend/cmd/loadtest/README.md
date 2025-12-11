@@ -39,6 +39,9 @@ make loadtest-quick
 | `make loadtest-stress` | Stress test: 200 VUs for 10 minutes |
 | `make loadtest-spike` | Spike test only: ramp 0 -> 500 -> 0 VUs |
 | `make loadtest-leaderboard` | Leaderboard stress: 100 requests/second |
+| `make loadtest-quiz` | Quiz load test: 20 VUs for 5 minutes |
+| `make loadtest-quiz-quick` | Quick quiz test: 5 VUs for 1 minute |
+| `make loadtest-quiz-stress` | Quiz stress test: 10 RPS for 5 minutes |
 | `make loadtest-gen` | Generate tokens only (1000 users) |
 | `make loadtest-gen-all` | Generate tokens for all users (up to 10k) |
 
@@ -63,6 +66,21 @@ Focused testing of database-intensive leaderboard queries:
 - Constant 100 requests/second
 - 50% global standings, 30% local, 20% team
 
+### 4. Quiz Load Test (`quiz-scenario.js`)
+Tests the complete quiz flow: get quiz details, start quiz, answer all questions, finalize.
+- `quiz_completion`: Steady load of users completing quizzes
+- `quiz_spike`: Spike test with many concurrent quiz takers
+- `quiz_stress`: High-frequency quiz completions
+
+**Prerequisites for Quiz Tests:**
+1. Insert the test quiz into the database:
+   ```bash
+   # Set your project and challenge IDs, then run:
+   psql $DATABASE_URL -v project_id="'YOUR_PROJECT_ID'" -v challenge_id="'YOUR_CHALLENGE_ID'" \
+     -f ./cmd/loadtest/scripts/insert_quiz.sql
+   ```
+2. The quiz ID defaults to `QZ01ARQN6LOADTEST00000QUIZ`, or set via `QUIZ_ID` env var
+
 ## Configuration
 
 ### Environment Variables
@@ -76,6 +94,10 @@ Focused testing of database-intensive leaderboard queries:
 | `LEADERBOARD_START` | 0s | When leaderboard test starts |
 | `LEADERBOARD_DURATION` | 5m | Duration of leaderboard test |
 | `LEADERBOARD_RPS` | 100 | Requests per second |
+| `QUIZ_ID` | QZ01LOADTESTQUIZ000000000000 | Quiz ID to test |
+| `QUIZ_VUS` | 20 | Virtual users for quiz test |
+| `QUIZ_RPS` | 10 | Requests per second for quiz stress test |
+| `STRESS_DURATION` | 5m | Duration of quiz stress test |
 
 ### Token Generator Flags
 
@@ -127,6 +149,7 @@ cmd/loadtest/
         main.go          # Go tool to generate JWT tokens
     k6/
         scenarios.js     # Main test script
+        quiz-scenario.js # Quiz-specific test scenarios
         lib/
             graphql.js   # GraphQL HTTP helpers
         queries/
@@ -136,6 +159,9 @@ cmd/loadtest/
             standings-local.js
             standings-unit.js
             challenge.js
+            quiz.js      # Quiz query/mutation helpers
+    scripts/
+        insert_quiz.sql  # SQL script to insert test quiz
     config.json          # Generated tokens (gitignored)
     README.md
 ```

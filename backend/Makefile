@@ -125,3 +125,15 @@ loadtest-spike: loadtest-gen ## Run spike test only (500 VUs)
 loadtest-leaderboard: loadtest-gen ## Run leaderboard stress test only (100 RPS)
 	@echo "Running leaderboard stress test..."
 	@k6 run --env LEADERBOARD_RPS=100 --env LEADERBOARD_DURATION=5m ./cmd/loadtest/k6/leaderboard.js
+
+loadtest-quiz: loadtest-gen ## Run quiz load test (20 VUs, 5 minutes)
+	@echo "Running quiz load test..."
+	@k6 run --env QUIZ_VUS=20 --env DURATION=5m ./cmd/loadtest/k6/quiz-scenario.js
+
+loadtest-quiz-quick: loadtest-gen ## Run quick quiz load test (5 VUs, 1 minute)
+	@echo "Running quick quiz load test..."
+	@k6 run --env QUIZ_VUS=5 --env DURATION=1m ./cmd/loadtest/k6/quiz-scenario.js
+
+loadtest-quiz-stress: loadtest-gen-all ## Run quiz stress test (10 RPS, 5 minutes)
+	@echo "Running quiz stress test..."
+	@k6 run --env QUIZ_RPS=10 --env STRESS_DURATION=5m ./cmd/loadtest/k6/quiz-scenario.js
