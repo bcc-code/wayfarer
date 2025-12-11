@@ -157,7 +157,7 @@ const tab = computed({
       <template v-else-if="data">
         <header class="my-12">
           <div class="space-y-2">
-            <NuxtImg
+            <img
               v-if="state.branding.logo"
               :src="state.branding.logo"
               width="64"
@@ -272,7 +272,7 @@ const tab = computed({
               ]"
             >
               <template #image-cell="{ row }">
-                <NuxtImg
+                <img
                   v-if="row.original.image"
                   :src="row.original.image"
                   height="32"
@@ -390,7 +390,7 @@ const tab = computed({
               ]"
             >
               <template #image-cell="{ row }">
-                <NuxtImg
+                <img
                   v-if="row.original.imageCompleted"
                   :src="row.original.imageCompleted"
                   height="32"

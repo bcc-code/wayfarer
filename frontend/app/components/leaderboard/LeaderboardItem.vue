@@ -41,7 +41,7 @@ const getColorClasses = (
         !hideMedal && getColorClasses(item.rank, 'dark'),
       ]"
     >
-      <NuxtImg
+      <img
         v-if="!hideMedal && item.rank && item.rank <= 3"
         :src="`/images/medals/${item.rank}.png`"
         class="col-span-full row-span-full object-cover"
