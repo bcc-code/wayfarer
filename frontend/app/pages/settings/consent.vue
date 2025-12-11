@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { data, fetching, error, executeQuery: refetch } = useConsentsPageQuery()
+const { data, error, executeQuery: refetch } = useConsentsPageQuery()
 const hasCompletedOnboarding = useLocalStorage('hasCompletedOnboarding', false)
 
 function finishOnboarding() {
@@ -13,6 +13,44 @@ const hasPendingInternalConsents = computed(() => {
   )
   if (!pending) return false
   return pending.length > 0
+})
+
+// We want to preserve the order of the consents, even when data is refetched
+const initialSorting = ref<string[]>([])
+watch(
+  data,
+  (newData) => {
+    if (newData) {
+      initialSorting.value = [
+        ...newData.me.consentStatus.pendingConsents,
+        ...newData.me.consentStatus.acceptedConsents,
+        ...newData.me.consentStatus.rejectedConsents,
+      ].map((c) => (c.__typename === 'Consent' ? c.id : c.consent.id))
+    }
+  },
+  {
+    once: true,
+  },
+)
+
+const allConsents = computed(() => {
+  if (!data.value) return []
+  return [
+    ...data.value.me.consentStatus.pendingConsents,
+    ...data.value.me.consentStatus.acceptedConsents,
+    ...data.value.me.consentStatus.rejectedConsents,
+  ]
+})
+
+const sortedConsents = computed(() => {
+  if (!data.value) return []
+  return initialSorting.value
+    .map((id) =>
+      allConsents.value.find((c) =>
+        c.__typename === 'Consent' ? c.id === id : c.consent.id === id,
+      ),
+    )
+    .filter(Boolean)
 })
 </script>
 
@@ -37,25 +75,15 @@ const hasPendingInternalConsents = computed(() => {
       </DesignPanel>
     </LocaleSelector>
 
-    <LoadingState v-if="fetching" />
-    <ErrorState v-else-if="error" :error />
-    <div v-else-if="data" class="space-y-list-section-gap px-default">
+    <ErrorState v-if="error" :error />
+    <div
+      v-else-if="data"
+      class="space-y-list-section-gap px-default py-list-outside"
+    >
       <ConsentCard
-        v-for="consent in data.me.consentStatus.pendingConsents"
-        :key="consent.id"
-        :consent
-        @update="refetch"
-      />
-      <ConsentCard
-        v-for="consent in data.me.consentStatus.acceptedConsents"
-        :key="consent.id"
-        :consent
-        @update="refetch"
-      />
-      <ConsentCard
-        v-for="consent in data.me.consentStatus.rejectedConsents"
-        :key="consent.id"
-        :consent
+        v-for="consent in sortedConsents"
+        :key="consent!.id"
+        :consent="consent!"
         @update="refetch"
       />
     </div>

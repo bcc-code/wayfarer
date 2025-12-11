@@ -82,7 +82,7 @@ function getScoreJournalName(
   <DesignDrawer v-model:open="open" :title="$t('pages.pointHistory')">
     <slot />
     <template #content>
-      <p class="text-label text-text-default p-medium mb-list-section-gap">
+      <p class="text-label text-text-default p-medium pt-0 mb-list-section-gap">
         {{ $t('pointHistory.explanation') }}
       </p>
 

@@ -16,6 +16,15 @@ const { track } = useAnalytics()
 const { executeMutation: acceptConsent } = useAcceptConsentMutation()
 const { executeMutation: rejectConsent } = useRejectConsentMutation()
 
+const initialStatus = computed(() => {
+  if (props.consent.__typename == 'UserConsent') {
+    return props.consent.action
+  }
+  return 'pending'
+})
+
+const localStatus = ref<'pending' | ConsentAction>(initialStatus.value)
+
 function handleAccept() {
   const consentId =
     props.consent.__typename === 'UserConsent'
@@ -27,6 +36,8 @@ function handleAccept() {
       return
     }
     track(AnalyticsEvent.ConsentAccepted, { consent_id: consentId })
+    localStatus.value = ConsentAction.Accepted
+    changing.value = false
     emit('update')
   })
 }
@@ -42,6 +53,8 @@ function handleReject() {
       return
     }
     track(AnalyticsEvent.ConsentRejected, { consent_id: consentId })
+    localStatus.value = ConsentAction.Rejected
+    changing.value = false
     emit('update')
   })
 }
@@ -58,13 +71,6 @@ const body = computed(() => {
     return props.consent.consent.body.html
   }
   return props.consent.body.html
-})
-
-const status = computed(() => {
-  if (props.consent.__typename == 'UserConsent') {
-    return props.consent.action
-  }
-  return 'pending'
 })
 
 const managedBy = computed(() => {
@@ -102,7 +108,7 @@ const changing = ref(false)
     <div class="text-label text-text-muted" v-html="body" />
 
     <template v-if="isRemote">
-      <template v-if="status === ConsentAction.Accepted">
+      <template v-if="localStatus === ConsentAction.Accepted">
         <div class="flex justify-between items-center">
           <span class="text-label text-accent-positive flex items-center gap-1">
             <Icon name="lucide:check" class="size-6" />
@@ -125,7 +131,7 @@ const changing = ref(false)
       </template>
     </template>
     <template v-else>
-      <template v-if="status === 'pending' || changing">
+      <template v-if="localStatus === 'pending' || changing">
         <ConsentDetails :consent>
           <button
             class="text-label text-accent-contrast py-2 flex items-center gap-1"
@@ -151,17 +157,22 @@ const changing = ref(false)
           {{ $t('consent.rejectButton') }}
         </DesignButton>
       </template>
-      <template v-else-if="status === ConsentAction.Accepted">
+      <template v-else-if="localStatus === ConsentAction.Accepted">
         <div class="flex justify-between items-center">
           <span class="text-label text-accent-positive flex items-center gap-1">
             <Icon name="lucide:check" class="size-6" />
             {{ $t('consent.accepted') }}
           </span>
-          <DesignDrawer :title="$t('consent.changeConsent')">
-            <DesignButton size="small" variant="secondary" class="grow-0">
-              {{ $t('consent.change') }}
-            </DesignButton>
-            <template #content>
+          <!-- <DesignDrawer :title="$t('consent.changeConsent')"> -->
+          <DesignButton
+            size="small"
+            variant="secondary"
+            class="grow-0"
+            @click="changing = true"
+          >
+            {{ $t('consent.change') }}
+          </DesignButton>
+          <!-- <template #content>
               <p class="text-label text-text-default px-default">
                 {{
                   $t('consent.changeDescription', {
@@ -170,10 +181,10 @@ const changing = ref(false)
                 }}
               </p>
             </template>
-          </DesignDrawer>
+          </DesignDrawer> -->
         </div>
       </template>
-      <template v-else-if="status === ConsentAction.Rejected">
+      <template v-else-if="localStatus === ConsentAction.Rejected">
         <div class="flex justify-between items-center">
           <span class="text-label text-accent-negative flex items-center gap-1">
             <Icon name="lucide:x" class="size-6" />

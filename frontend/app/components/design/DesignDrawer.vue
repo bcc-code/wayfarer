@@ -33,7 +33,7 @@ const close = () => {
       <slot />
     </template>
     <template #content>
-      <TitleBar :title="title" size="small">
+      <TitleBar :title="title" size="small" :animate="false">
         <template #action>
           <DesignIconButton v-if="dismissible" icon="lucide:x" @click="close" />
         </template>

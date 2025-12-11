@@ -26,7 +26,9 @@ const body = computed(() => {
   <DesignDrawer :title>
     <slot />
     <template #content>
-      <div class="text-label text-text-default" v-html="body" />
+      <div class="p-medium">
+        <div class="text-label text-text-default prose-sm" v-html="body" />
+      </div>
     </template>
   </DesignDrawer>
 </template>

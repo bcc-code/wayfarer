@@ -7,9 +7,11 @@ withDefaults(
     shadow?: boolean
     blurred?: boolean
     size?: 'large' | 'small'
+    animate?: boolean
   }>(),
   {
     size: 'large',
+    animate: true,
   },
 )
 
@@ -17,7 +19,7 @@ const { y } = useWindowScroll()
 const hasScrolled = computed(() => y.value > 25)
 
 const classes = cva(
-  'relative flex items-center justify-between gap-4 px-6 pb-3',
+  'relative flex items-start justify-between gap-4 px-6 pb-3',
   {
     variants: {
       size: {
@@ -41,6 +43,26 @@ const classes = cva(
     },
   },
 )
+
+const actionsClasses = cva(
+  ' right-6 bottom-3 size-11 transition-all duration-300 ease-out',
+  {
+    variants: {
+      size: {
+        large: '',
+        small: '',
+      },
+      hasScrolled: {
+        true: 'top-1/2 -translate-y-1/2',
+        false: 'bottom-3',
+      },
+      animate: {
+        true: 'absolute',
+        false: '',
+      },
+    },
+  },
+)
 </script>
 
 <template>
@@ -53,26 +75,19 @@ const classes = cva(
       <h1
         v-if="title"
         :class="[
-          'text-text-default absolute transition-all duration-300 ease-out',
+          'text-text-default transition-all duration-300 ease-out',
           {
             'text-heading bottom-3 left-6 translate-x-0 translate-y-0':
               !hasScrolled,
             'text-label top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2':
               hasScrolled,
+            absolute: animate,
           },
         ]"
       >
         {{ title }}
       </h1>
-      <div
-        :class="[
-          'absolute right-6 bottom-3 size-11 transition-all duration-300 ease-out',
-          {
-            'bottom-3': !hasScrolled,
-            'top-1/2 -translate-y-1/2': hasScrolled,
-          },
-        ]"
-      >
+      <div :class="actionsClasses({ hasScrolled, size, animate })">
         <slot name="action" />
       </div>
     </header>
