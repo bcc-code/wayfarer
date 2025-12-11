@@ -1,7 +1,12 @@
 <script setup lang="ts">
 const { isTeamLead } = useAuth()
 const { isAuthReady } = useAuthReady()
-const { data, error, fetching } = useStandingsUnitPageQuery({
+const {
+  data,
+  error,
+  fetching,
+  executeQuery: refetch,
+} = useStandingsUnitPageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
@@ -54,7 +59,7 @@ async function saveChanges() {
     await assignTeamLead({ teamId: id, userId: form.teamLeadId })
   }
 
-  reloadNuxtApp()
+  refetch()
 }
 
 // Team lead selector
