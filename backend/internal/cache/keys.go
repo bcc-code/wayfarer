@@ -83,7 +83,7 @@ const (
 	PrefixLatestConsents = "latestconsents"
 
 	// External content
-	PrefixExternalContent       = "externalcontent:"
+	PrefixExternalContent        = "externalcontent:"
 	PrefixExternalContentsFilter = "externalcontentsfilter:"
 	PrefixExternalContentsCount  = "externalcontentscount:"
 )

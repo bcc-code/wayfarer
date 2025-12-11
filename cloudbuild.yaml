@@ -1,0 +1,32 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg=NUXT_PUBLIC_API_URL=${_NUXT_PUBLIC_API_URL}'
+      - '--build-arg=NUXT_PUBLIC_CALLBACK_URL=${_NUXT_PUBLIC_CALLBACK_URL}'
+      - '--build-arg=NUXT_PUBLIC_LOGIN_URL=${_NUXT_PUBLIC_LOGIN_URL}'
+      - '--build-arg=NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY=${_NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY}'
+      - '--build-arg=NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL=${_NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL}'
+      - '-t'
+      - '${_IMAGE_NAME}:${SHORT_SHA}'
+      - '-t'
+      - '${_IMAGE_NAME}:latest'
+      - '.'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_IMAGE_NAME}'
+
+substitutions:
+  _IMAGE_NAME: 'gcr.io/${PROJECT_ID}/wayfarer'
+  _NUXT_PUBLIC_API_URL: ''
+  _NUXT_PUBLIC_CALLBACK_URL: ''
+  _NUXT_PUBLIC_LOGIN_URL: ''
+  _NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY: ''
+  _NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL: ''
+
+images:
+  - '${_IMAGE_NAME}:${SHORT_SHA}'
+  - '${_IMAGE_NAME}:latest'

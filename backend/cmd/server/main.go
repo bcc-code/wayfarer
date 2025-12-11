@@ -8,6 +8,8 @@ import (
 	"net/http/pprof"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -297,6 +299,54 @@ func main() {
 	router.POST("/graphql", middleware.LanguageExtractor(), middleware.JWTAuth(cfg.JWT), graphqlHandler(apiHandler))
 	if cfg.Server.Environment != "production" {
 		router.GET("/graphql", gin.WrapH(playground.Handler("GraphQL API", "/graphql")))
+	}
+
+	// Serve frontend static files if configured
+	if cfg.Server.StaticFilesPath != "" {
+		staticPath := cfg.Server.StaticFilesPath
+		indexPath := filepath.Join(staticPath, "index.html")
+
+		if _, err := os.Stat(indexPath); err == nil {
+			slog.Info("Serving static files", "path", staticPath)
+
+			// Serve Nuxt build output directories
+			router.Static("/_nuxt", filepath.Join(staticPath, "_nuxt"))
+
+			// Serve root static files
+			router.StaticFile("/favicon.ico", filepath.Join(staticPath, "favicon.ico"))
+			router.StaticFile("/favicon.svg", filepath.Join(staticPath, "favicon.svg"))
+			router.StaticFile("/manifest.webmanifest", filepath.Join(staticPath, "manifest.webmanifest"))
+			router.StaticFile("/robots.txt", filepath.Join(staticPath, "robots.txt"))
+			router.StaticFile("/apple-touch-icon-180x180.png", filepath.Join(staticPath, "apple-touch-icon-180x180.png"))
+			router.StaticFile("/pwa-64x64.png", filepath.Join(staticPath, "pwa-64x64.png"))
+			router.StaticFile("/pwa-192x192.png", filepath.Join(staticPath, "pwa-192x192.png"))
+			router.StaticFile("/pwa-512x512.png", filepath.Join(staticPath, "pwa-512x512.png"))
+			router.StaticFile("/maskable-icon-512x512.png", filepath.Join(staticPath, "maskable-icon-512x512.png"))
+
+			// SPA fallback: serve index.html for unmatched routes
+			router.NoRoute(func(c *gin.Context) {
+				// Only serve index.html for GET requests
+				if c.Request.Method != http.MethodGet {
+					c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+					return
+				}
+
+				// Skip API paths that weren't matched
+				path := c.Request.URL.Path
+				if strings.HasPrefix(path, "/api/") ||
+					strings.HasPrefix(path, "/graphql") ||
+					strings.HasPrefix(path, "/debug/") ||
+					strings.HasPrefix(path, "/metrics/") ||
+					strings.HasPrefix(path, "/ssf/") {
+					c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+					return
+				}
+
+				c.File(indexPath)
+			})
+		} else {
+			slog.Warn("Static files not found, frontend serving disabled", "path", staticPath)
+		}
 	}
 
 	// Create HTTP server

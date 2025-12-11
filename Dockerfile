@@ -1,5 +1,27 @@
-# Build stage
-FROM golang:1.25 AS builder
+# Stage 1: Build frontend
+FROM node:22-slim AS frontend-builder
+
+# Build arguments for frontend environment
+ARG NUXT_PUBLIC_API_URL
+ARG NUXT_PUBLIC_CALLBACK_URL
+ARG NUXT_PUBLIC_LOGIN_URL
+ARG NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY
+ARG NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+WORKDIR /build
+
+# Copy package files first for better caching
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+# Copy frontend source and build
+COPY frontend/ ./
+RUN pnpm run build
+
+# Stage 2: Build Go backend
+FROM golang:1.25 AS backend-builder
 
 WORKDIR /build
 
@@ -16,20 +38,26 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -o server \
     ./cmd/server
 
-# Runtime stage
+# Stage 3: Runtime
 FROM scratch
 
 # Copy CA certificates for HTTPS
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=backend-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-# Copy binary
-COPY --from=builder /build/server /server
+# Copy backend binary
+COPY --from=backend-builder /build/server /server
+
+# Copy frontend static files
+COPY --from=frontend-builder /build/.output/public /static
 
 # Run as non-root user
 USER 65534
 
 # Expose API port
 EXPOSE 8080
+
+# Set default static files path
+ENV STATIC_FILES_PATH=/static
 
 # Run the server
 ENTRYPOINT ["/server"]

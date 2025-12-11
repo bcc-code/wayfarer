@@ -12,29 +12,29 @@ import (
 
 // Entity prefixes (2 characters each)
 const (
-	PrefixChurch               = "CH" // Churches
-	PrefixUser                 = "US" // Users
-	PrefixUserRole             = "UR" // User Roles
-	PrefixProject              = "PR" // Projects
-	PrefixEvent                = "EV" // Events
-	PrefixSuperTeam            = "ST" // SuperTeams
-	PrefixTeam                 = "TM" // Teams
-	PrefixStreak               = "SK" // Streaks
-	PrefixStreakRelevantDay    = "SD" // Streak Relevant Days
-	PrefixChallenge            = "CL" // Challenges
-	PrefixAchievement   = "AC" // Achievements
-	PrefixContentItem   = "CI" // Content Achievement Items
-	PrefixScoreJournal  = "SJ" // Score Journal
-	PrefixContentEvent         = "CE" // External Content Events
-	PrefixConsent              = "CN" // Consents
-	PrefixUserConsent          = "UC" // User Consent Acceptances (deprecated, use PrefixUserConsentHistory)
-	PrefixUserConsentHistory   = "UH" // User Consent History
-	PrefixExternalContent      = "EC" // External Content (synced from external sources like SSF)
-	PrefixQuiz                 = "QZ" // Quizzes
-	PrefixQuizQuestion         = "QQ" // Quiz Questions
-	PrefixQuizAnswer           = "QA" // Quiz Predefined Answers
-	PrefixQuizSubmission       = "QS" // Quiz Submissions
-	PrefixQuizResponse         = "QR" // Quiz Responses
+	PrefixChurch             = "CH" // Churches
+	PrefixUser               = "US" // Users
+	PrefixUserRole           = "UR" // User Roles
+	PrefixProject            = "PR" // Projects
+	PrefixEvent              = "EV" // Events
+	PrefixSuperTeam          = "ST" // SuperTeams
+	PrefixTeam               = "TM" // Teams
+	PrefixStreak             = "SK" // Streaks
+	PrefixStreakRelevantDay  = "SD" // Streak Relevant Days
+	PrefixChallenge          = "CL" // Challenges
+	PrefixAchievement        = "AC" // Achievements
+	PrefixContentItem        = "CI" // Content Achievement Items
+	PrefixScoreJournal       = "SJ" // Score Journal
+	PrefixContentEvent       = "CE" // External Content Events
+	PrefixConsent            = "CN" // Consents
+	PrefixUserConsent        = "UC" // User Consent Acceptances (deprecated, use PrefixUserConsentHistory)
+	PrefixUserConsentHistory = "UH" // User Consent History
+	PrefixExternalContent    = "EC" // External Content (synced from external sources like SSF)
+	PrefixQuiz               = "QZ" // Quizzes
+	PrefixQuizQuestion       = "QQ" // Quiz Questions
+	PrefixQuizAnswer         = "QA" // Quiz Predefined Answers
+	PrefixQuizSubmission     = "QS" // Quiz Submissions
+	PrefixQuizResponse       = "QR" // Quiz Responses
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
