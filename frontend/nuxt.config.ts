@@ -8,6 +8,7 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     '@nuxtjs/i18n',
     '@vite-pwa/nuxt',
+    '@posthog/nuxt',
   ],
   devtools: { enabled: false },
   ssr: false,
@@ -69,6 +70,9 @@ export default defineNuxtConfig({
   },
   experimental: {
     typedPages: true,
+  },
+  sourcemap: {
+    client: 'hidden',
   },
   vite: {
     optimizeDeps: {
@@ -265,6 +269,19 @@ export default defineNuxtConfig({
           purpose: 'maskable',
         },
       ],
+    },
+  },
+
+  posthogConfig: {
+    publicKey: 'phc_l88yVnYQJShvE2rFd1f7Cask76jMuK7qLVVyPlA9FLl',
+    host: 'https://eu.i.posthog.com',
+    clientConfig: {
+      capture_exceptions: true,
+    },
+    sourcemaps: {
+      enabled: true,
+      personalApiKey: import.meta.env.NUXT_POSTHOG_API_KEY,
+      envId: import.meta.env.NUXT_POSTHOG_PROJECT_ID,
     },
   },
 
