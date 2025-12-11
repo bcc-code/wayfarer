@@ -8,8 +8,14 @@ mutation UpdateAchievement($id: ID!, $input: UpdateAchievementInput!) {
   }
 }
 
-mutation CreateSimpleAchievement($input: CreateSimpleAchievementInput!) {
-  createSimpleAchievement(input: $input) {
+mutation CreateContentAchievement($input: CreateContentAchievementInput!) {
+  createContentAchievement(input: $input) {
+    id
+  }
+}
+
+mutation CreateQuizAchievement($input: CreateQuizAchievementInput!) {
+  createQuizAchievement(input: $input) {
     id
   }
 }
@@ -20,14 +26,8 @@ mutation CreateStreakAchievement($input: CreateStreakAchievementInput!) {
   }
 }
 
-mutation CreateReadingAchievement($input: CreateReadingAchievementInput!) {
-  createReadingAchievement(input: $input) {
-    id
-  }
-}
-
-mutation CreateListeningAchievement($input: CreateListeningAchievementInput!) {
-  createListeningAchievement(input: $input) {
+mutation CreateSimpleAchievement($input: CreateSimpleAchievementInput!) {
+  createSimpleAchievement(input: $input) {
     id
   }
 }

@@ -26,11 +26,7 @@ gql(`
                 id
                 name
               }
-              ... on ReadingAchievement {
-                id
-                name
-              }
-              ... on ListeningAchievement {
+              ... on ContentAchievement {
                 id
                 name
               }

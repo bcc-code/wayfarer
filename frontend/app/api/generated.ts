@@ -66,20 +66,6 @@ export type AgeRangeInput = {
   min: Scalars['Int']['input'];
 };
 
-export type Article = {
-  __typename?: 'Article';
-  author: Scalars['String']['output'];
-  id: Scalars['ID']['output'];
-  title: Scalars['String']['output'];
-  url?: Maybe<Scalars['String']['output']>;
-};
-
-export type ArticleInput = {
-  author: Scalars['String']['input'];
-  title: Scalars['String']['input'];
-  url?: InputMaybe<Scalars['String']['input']>;
-};
-
 export type AssignRoleInput = {
   role: RoleType;
   scopeId?: InputMaybe<Scalars['ID']['input']>;
@@ -257,6 +243,36 @@ export type ConsentStatus = {
   rejectedConsents: Array<UserConsent>;
 };
 
+export type ContentAchievement = Achievement & {
+  __typename?: 'ContentAchievement';
+  achievedAt?: Maybe<Scalars['DateTime']['output']>;
+  challenge?: Maybe<Challenge>;
+  completedItemCount: Scalars['Int']['output'];
+  description: Scalars['String']['output'];
+  event?: Maybe<Event>;
+  hidden: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  image?: Maybe<Scalars['String']['output']>;
+  items: Array<ContentItem>;
+  name: Scalars['String']['output'];
+  nextItem?: Maybe<ContentItem>;
+  points: Scalars['Int']['output'];
+  project: Project;
+  totalItems: Scalars['Int']['output'];
+  userCompletedItems: Array<ContentItem>;
+};
+
+export type ContentItem = {
+  __typename?: 'ContentItem';
+  externalContent: ExternalContent;
+  id: Scalars['ID']['output'];
+  sortOrder: Scalars['Int']['output'];
+};
+
+export type ContentItemInput = {
+  externalContentId: Scalars['ID']['input'];
+};
+
 export type CreateChallengeInput = {
   allowSelfCompletion?: InputMaybe<Scalars['Boolean']['input']>;
   buttonText: Scalars['String']['input'];
@@ -277,23 +293,35 @@ export type CreateChurchInput = {
   name: Scalars['String']['input'];
 };
 
-export type CreateEventInput = {
-  description: Scalars['String']['input'];
-  endDate: Scalars['DateTime']['input'];
-  name: Scalars['String']['input'];
-  startDate: Scalars['DateTime']['input'];
-};
-
-export type CreateListeningAchievementInput = {
+export type CreateContentAchievementFromExternalContentInput = {
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   description: Scalars['String']['input'];
   eventId?: InputMaybe<Scalars['ID']['input']>;
+  externalContentIds: Array<Scalars['ID']['input']>;
   hidden: Scalars['Boolean']['input'];
   image?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   points: Scalars['Int']['input'];
   projectId: Scalars['ID']['input'];
-  tracks: Array<TrackInput>;
+};
+
+export type CreateContentAchievementInput = {
+  challengeId?: InputMaybe<Scalars['ID']['input']>;
+  description: Scalars['String']['input'];
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  hidden: Scalars['Boolean']['input'];
+  image?: InputMaybe<Scalars['String']['input']>;
+  items: Array<ContentItemInput>;
+  name: Scalars['String']['input'];
+  points: Scalars['Int']['input'];
+  projectId: Scalars['ID']['input'];
+};
+
+export type CreateEventInput = {
+  description: Scalars['String']['input'];
+  endDate: Scalars['DateTime']['input'];
+  name: Scalars['String']['input'];
+  startDate: Scalars['DateTime']['input'];
 };
 
 export type CreatePredefinedAnswerInput = {
@@ -349,18 +377,6 @@ export type CreateQuizQuestionInput = {
   questionType: QuizQuestionType;
   stepValue?: InputMaybe<Scalars['Float']['input']>;
   timeoutSeconds?: InputMaybe<Scalars['Int']['input']>;
-};
-
-export type CreateReadingAchievementInput = {
-  articles: Array<ArticleInput>;
-  challengeId?: InputMaybe<Scalars['ID']['input']>;
-  description: Scalars['String']['input'];
-  eventId?: InputMaybe<Scalars['ID']['input']>;
-  hidden: Scalars['Boolean']['input'];
-  image?: InputMaybe<Scalars['String']['input']>;
-  name: Scalars['String']['input'];
-  points: Scalars['Int']['input'];
-  projectId: Scalars['ID']['input'];
 };
 
 export type CreateScoreAdjustmentInput = {
@@ -512,6 +528,68 @@ export type ExternalChallenge = Challenge & {
   visibleAt?: Maybe<Scalars['DateTime']['output']>;
 };
 
+export type ExternalContent = {
+  __typename?: 'ExternalContent';
+  contentId?: Maybe<Scalars['String']['output']>;
+  contentType: ExternalContentType;
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  planId: Scalars['String']['output'];
+  publishedAt?: Maybe<Scalars['DateTime']['output']>;
+  source: Scalars['String']['output'];
+  syncedAt: Scalars['DateTime']['output'];
+  taskId: Scalars['String']['output'];
+  title?: Maybe<Scalars['String']['output']>;
+  translations: Array<ExternalContentTranslation>;
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+export type ExternalContentConnection = {
+  __typename?: 'ExternalContentConnection';
+  edges: Array<ExternalContentEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type ExternalContentEdge = {
+  __typename?: 'ExternalContentEdge';
+  cursor: Scalars['String']['output'];
+  node: ExternalContent;
+};
+
+export type ExternalContentFilter = {
+  contentId?: InputMaybe<Scalars['String']['input']>;
+  contentType?: InputMaybe<ExternalContentType>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  planId?: InputMaybe<Scalars['String']['input']>;
+  publishedAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  publishedBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  source?: InputMaybe<Scalars['String']['input']>;
+  taskId?: InputMaybe<Scalars['String']['input']>;
+};
+
+export enum ExternalContentSortBy {
+  CreatedAtAsc = 'CREATED_AT_ASC',
+  CreatedAtDesc = 'CREATED_AT_DESC',
+  PublishedAtAsc = 'PUBLISHED_AT_ASC',
+  PublishedAtDesc = 'PUBLISHED_AT_DESC'
+}
+
+export type ExternalContentTranslation = {
+  __typename?: 'ExternalContentTranslation';
+  languageCode: Scalars['String']['output'];
+  title?: Maybe<Scalars['String']['output']>;
+};
+
+export enum ExternalContentType {
+  BibleChapter = 'BIBLE_CHAPTER',
+  BibleVerses = 'BIBLE_VERSES',
+  BookChapter = 'BOOK_CHAPTER',
+  MediaEpisode = 'MEDIA_EPISODE',
+  PeriodicalArticle = 'PERIODICAL_ARTICLE',
+  Song = 'SONG'
+}
+
 export type FreeTextQuestion = QuizQuestion & {
   __typename?: 'FreeTextQuestion';
   id: Scalars['ID']['output'];
@@ -605,23 +683,6 @@ export type LeaderboardFilter = {
   teamId?: InputMaybe<Scalars['ID']['input']>;
 };
 
-export type ListeningAchievement = Achievement & {
-  __typename?: 'ListeningAchievement';
-  achievedAt?: Maybe<Scalars['DateTime']['output']>;
-  challenge?: Maybe<Challenge>;
-  description: Scalars['String']['output'];
-  event?: Maybe<Event>;
-  hidden: Scalars['Boolean']['output'];
-  id: Scalars['ID']['output'];
-  image?: Maybe<Scalars['String']['output']>;
-  name: Scalars['String']['output'];
-  nextTrack: Track;
-  points: Scalars['Int']['output'];
-  project: Project;
-  tracks: Array<Track>;
-  userHasListened: Array<Track>;
-};
-
 export type MarkdownText = {
   __typename?: 'MarkdownText';
   html: Scalars['String']['output'];
@@ -652,13 +713,13 @@ export type Mutation = {
   completeChallenge: Challenge;
   createChallenge: Challenge;
   createConsent: Consent;
+  createContentAchievement: ContentAchievement;
+  createContentAchievementFromExternalContent: ContentAchievement;
   createEvent: Event;
-  createListeningAchievement: ListeningAchievement;
   createProject: Project;
   createQuiz: Quiz;
   createQuizAchievement: QuizAchievement;
   createQuizSubmission: QuizSubmission;
-  createReadingAchievement: ReadingAchievement;
   createScoreAdjustment: ScoreJournal;
   createSimpleAchievement: SimpleAchievement;
   createStreak: Streak;
@@ -681,8 +742,7 @@ export type Mutation = {
   joinProject: Project;
   joinTeam: Team;
   linkAchievementToChallenge: Achievement;
-  markArticleAsRead: ReadingAchievement;
-  markTrackAsListened: ListeningAchievement;
+  markContentItemCompleted: Array<ContentAchievement>;
   moveEvent: Event;
   publishChallenge: Challenge;
   publishQuiz: Quiz;
@@ -704,18 +764,16 @@ export type Mutation = {
   uncompleteChallenge: Scalars['Boolean']['output'];
   unenrollFromChallenge: Scalars['Boolean']['output'];
   unenrollUserFromChallenge: Scalars['Boolean']['output'];
-  unmarkArticleAsRead: ReadingAchievement;
-  unmarkTrackAsListened: ListeningAchievement;
+  unmarkContentItemCompleted: Array<ContentAchievement>;
   updateAchievement: Achievement;
   updateAvatar: User;
   updateChallenge: Challenge;
   updateConsent: Consent;
+  updateContentAchievement: ContentAchievement;
   updateEvent: Event;
-  updateListeningAchievement: ListeningAchievement;
   updateProject: Project;
   updateQuiz: Quiz;
   updateQuizQuestion: QuizQuestion;
-  updateReadingAchievement: ReadingAchievement;
   updateStreak: Streak;
   updateStreakAchievement: StreakAchievement;
   updateSuperTeam: SuperTeam;
@@ -855,14 +913,19 @@ export type MutationCreateConsentArgs = {
 };
 
 
-export type MutationCreateEventArgs = {
-  input: CreateEventInput;
-  projectId: Scalars['ID']['input'];
+export type MutationCreateContentAchievementArgs = {
+  input: CreateContentAchievementInput;
 };
 
 
-export type MutationCreateListeningAchievementArgs = {
-  input: CreateListeningAchievementInput;
+export type MutationCreateContentAchievementFromExternalContentArgs = {
+  input: CreateContentAchievementFromExternalContentInput;
+};
+
+
+export type MutationCreateEventArgs = {
+  input: CreateEventInput;
+  projectId: Scalars['ID']['input'];
 };
 
 
@@ -886,11 +949,6 @@ export type MutationCreateQuizSubmissionArgs = {
   quizId: Scalars['ID']['input'];
   responses: Array<SubmitQuizAnswerInput>;
   userId: Scalars['ID']['input'];
-};
-
-
-export type MutationCreateReadingAchievementArgs = {
-  input: CreateReadingAchievementInput;
 };
 
 
@@ -1008,16 +1066,8 @@ export type MutationLinkAchievementToChallengeArgs = {
 };
 
 
-export type MutationMarkArticleAsReadArgs = {
-  achievementId: Scalars['ID']['input'];
-  articleId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-
-export type MutationMarkTrackAsListenedArgs = {
-  achievementId: Scalars['ID']['input'];
-  trackId: Scalars['ID']['input'];
+export type MutationMarkContentItemCompletedArgs = {
+  externalContentId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
 
@@ -1145,16 +1195,8 @@ export type MutationUnenrollUserFromChallengeArgs = {
 };
 
 
-export type MutationUnmarkArticleAsReadArgs = {
-  achievementId: Scalars['ID']['input'];
-  articleId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-
-export type MutationUnmarkTrackAsListenedArgs = {
-  achievementId: Scalars['ID']['input'];
-  trackId: Scalars['ID']['input'];
+export type MutationUnmarkContentItemCompletedArgs = {
+  externalContentId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
 
@@ -1185,15 +1227,15 @@ export type MutationUpdateConsentArgs = {
 };
 
 
-export type MutationUpdateEventArgs = {
+export type MutationUpdateContentAchievementArgs = {
   id: Scalars['ID']['input'];
-  input: UpdateEventInput;
+  input: UpdateContentAchievementInput;
 };
 
 
-export type MutationUpdateListeningAchievementArgs = {
+export type MutationUpdateEventArgs = {
   id: Scalars['ID']['input'];
-  input: UpdateListeningAchievementInput;
+  input: UpdateEventInput;
 };
 
 
@@ -1212,12 +1254,6 @@ export type MutationUpdateQuizArgs = {
 export type MutationUpdateQuizQuestionArgs = {
   id: Scalars['ID']['input'];
   input: UpdateQuizQuestionInput;
-};
-
-
-export type MutationUpdateReadingAchievementArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateReadingAchievementInput;
 };
 
 
@@ -1372,6 +1408,8 @@ export type Query = {
   currentProject: Project;
   event: Event;
   events: EventConnection;
+  externalContent: ExternalContent;
+  externalContents: ExternalContentConnection;
   me: User;
   myCurrentEvent: Event;
   myCurrentProject: Project;
@@ -1456,6 +1494,21 @@ export type QueryEventsArgs = {
   filter?: InputMaybe<EventFilter>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryExternalContentArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryExternalContentsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  filter: ExternalContentFilter;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  sortBy?: InputMaybe<ExternalContentSortBy>;
 };
 
 
@@ -1727,23 +1780,6 @@ export type QuizSubmissionEdge = {
   node: QuizSubmission;
 };
 
-export type ReadingAchievement = Achievement & {
-  __typename?: 'ReadingAchievement';
-  achievedAt?: Maybe<Scalars['DateTime']['output']>;
-  articles: Array<Article>;
-  challenge?: Maybe<Challenge>;
-  description: Scalars['String']['output'];
-  event?: Maybe<Event>;
-  hidden: Scalars['Boolean']['output'];
-  id: Scalars['ID']['output'];
-  image?: Maybe<Scalars['String']['output']>;
-  name: Scalars['String']['output'];
-  nextArticle: Article;
-  points: Scalars['Int']['output'];
-  project: Project;
-  userHasRead: Array<Article>;
-};
-
 export type RevokeRoleInput = {
   role: RoleType;
   scopeId?: InputMaybe<Scalars['ID']['input']>;
@@ -1811,7 +1847,7 @@ export type ScoreJournalFilter = {
   sourceType?: InputMaybe<ScoreSourceType>;
 };
 
-export type ScoreSource = Event | ExternalChallenge | ListeningAchievement | QuizChallenge | ReadingAchievement | SimpleAchievement | SimpleChallenge | StreakAchievement;
+export type ScoreSource = ContentAchievement | Event | ExternalChallenge | QuizAchievement | QuizChallenge | SimpleAchievement | SimpleChallenge | StreakAchievement;
 
 export enum ScoreSourceType {
   Achievement = 'ACHIEVEMENT',
@@ -2003,20 +2039,6 @@ export type TeamMember = {
   user: User;
 };
 
-export type Track = {
-  __typename?: 'Track';
-  description: Scalars['String']['output'];
-  id: Scalars['ID']['output'];
-  image?: Maybe<Scalars['String']['output']>;
-  name: Scalars['String']['output'];
-};
-
-export type TrackInput = {
-  description: Scalars['String']['input'];
-  image?: InputMaybe<Scalars['String']['input']>;
-  name: Scalars['String']['input'];
-};
-
 export type UpdateAchievementInput = {
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
@@ -2048,22 +2070,22 @@ export type UpdateChurchInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type UpdateEventInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  endDate?: InputMaybe<Scalars['DateTime']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  startDate?: InputMaybe<Scalars['DateTime']['input']>;
-};
-
-export type UpdateListeningAchievementInput = {
+export type UpdateContentAchievementInput = {
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   eventId?: InputMaybe<Scalars['ID']['input']>;
   hidden?: InputMaybe<Scalars['Boolean']['input']>;
   image?: InputMaybe<Scalars['String']['input']>;
+  items?: InputMaybe<Array<ContentItemInput>>;
   name?: InputMaybe<Scalars['String']['input']>;
   points?: InputMaybe<Scalars['Int']['input']>;
-  tracks?: InputMaybe<Array<TrackInput>>;
+};
+
+export type UpdateEventInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  endDate?: InputMaybe<Scalars['DateTime']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  startDate?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
 export type UpdateProjectInput = {
@@ -2097,17 +2119,6 @@ export type UpdateQuizQuestionInput = {
   questionText?: InputMaybe<Scalars['String']['input']>;
   stepValue?: InputMaybe<Scalars['Float']['input']>;
   timeoutSeconds?: InputMaybe<Scalars['Int']['input']>;
-};
-
-export type UpdateReadingAchievementInput = {
-  articles?: InputMaybe<Array<ArticleInput>>;
-  challengeId?: InputMaybe<Scalars['ID']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  eventId?: InputMaybe<Scalars['ID']['input']>;
-  hidden?: InputMaybe<Scalars['Boolean']['input']>;
-  image?: InputMaybe<Scalars['String']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  points?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type UpdateStreakAchievementInput = {
@@ -2220,11 +2231,11 @@ export type PointHistoryQueryVariables = Exact<{
 
 
 export type PointHistoryQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', journal: { __typename?: 'ScoreJournalConnection', edges: Array<{ __typename?: 'ScoreJournalEdge', node: { __typename?: 'ScoreJournal', id: string, sourceType: ScoreSourceType, reason?: string | null, points: number, createdAt: any, source?:
+            | { __typename: 'ContentAchievement', id: string, name: string }
             | { __typename: 'Event', id: string, name: string }
             | { __typename: 'ExternalChallenge', id: string, name: string }
-            | { __typename: 'ListeningAchievement', id: string, name: string }
+            | { __typename: 'QuizAchievement', id: string, name: string }
             | { __typename: 'QuizChallenge', id: string, name: string }
-            | { __typename: 'ReadingAchievement', id: string, name: string }
             | { __typename: 'SimpleAchievement', id: string, name: string }
             | { __typename: 'SimpleChallenge', id: string, name: string }
             | { __typename: 'StreakAchievement', id: string, name: string }
@@ -2249,19 +2260,25 @@ export type UpdateAchievementMutationVariables = Exact<{
 
 
 export type UpdateAchievementMutation = { __typename?: 'Mutation', updateAchievement:
-    | { __typename?: 'ListeningAchievement', id: string }
+    | { __typename?: 'ContentAchievement', id: string }
     | { __typename?: 'QuizAchievement', id: string }
-    | { __typename?: 'ReadingAchievement', id: string }
     | { __typename?: 'SimpleAchievement', id: string }
     | { __typename?: 'StreakAchievement', id: string }
    };
 
-export type CreateSimpleAchievementMutationVariables = Exact<{
-  input: CreateSimpleAchievementInput;
+export type CreateContentAchievementMutationVariables = Exact<{
+  input: CreateContentAchievementInput;
 }>;
 
 
-export type CreateSimpleAchievementMutation = { __typename?: 'Mutation', createSimpleAchievement: { __typename?: 'SimpleAchievement', id: string } };
+export type CreateContentAchievementMutation = { __typename?: 'Mutation', createContentAchievement: { __typename?: 'ContentAchievement', id: string } };
+
+export type CreateQuizAchievementMutationVariables = Exact<{
+  input: CreateQuizAchievementInput;
+}>;
+
+
+export type CreateQuizAchievementMutation = { __typename?: 'Mutation', createQuizAchievement: { __typename?: 'QuizAchievement', id: string } };
 
 export type CreateStreakAchievementMutationVariables = Exact<{
   input: CreateStreakAchievementInput;
@@ -2270,19 +2287,12 @@ export type CreateStreakAchievementMutationVariables = Exact<{
 
 export type CreateStreakAchievementMutation = { __typename?: 'Mutation', createStreakAchievement: { __typename?: 'StreakAchievement', id: string } };
 
-export type CreateReadingAchievementMutationVariables = Exact<{
-  input: CreateReadingAchievementInput;
+export type CreateSimpleAchievementMutationVariables = Exact<{
+  input: CreateSimpleAchievementInput;
 }>;
 
 
-export type CreateReadingAchievementMutation = { __typename?: 'Mutation', createReadingAchievement: { __typename?: 'ReadingAchievement', id: string } };
-
-export type CreateListeningAchievementMutationVariables = Exact<{
-  input: CreateListeningAchievementInput;
-}>;
-
-
-export type CreateListeningAchievementMutation = { __typename?: 'Mutation', createListeningAchievement: { __typename?: 'ListeningAchievement', id: string } };
+export type CreateSimpleAchievementMutation = { __typename?: 'Mutation', createSimpleAchievement: { __typename?: 'SimpleAchievement', id: string } };
 
 export type DeleteChallengeMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -2512,9 +2522,8 @@ export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
-      | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename?: 'ContentAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'QuizAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
     >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank?: number | null } | null } } };
@@ -2567,9 +2576,8 @@ export type AdminProjectAchievementPageQueryVariables = Exact<{
 
 
 export type AdminProjectAchievementPageQuery = { __typename?: 'Query', achievement:
-    | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image?: string | null, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename?: 'ContentAchievement', id: string, name: string, description: string, image?: string | null, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
     | { __typename?: 'QuizAchievement', id: string, name: string, description: string, image?: string | null, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
     | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
     | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
    };
@@ -2619,9 +2627,8 @@ export type AdminProjectPageQueryVariables = Exact<{
 
 
 export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } }, achievements: { __typename?: 'AchievementConnection', edges: Array<{ __typename?: 'AchievementEdge', node:
-        | { __typename?: 'ListeningAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
+        | { __typename?: 'ContentAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
         | { __typename?: 'QuizAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
-        | { __typename?: 'ReadingAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
         | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
         | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
        }> }, events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string, description: string } }> }, challenges: { __typename?: 'ChallengeConnection', edges: Array<{ __typename?: 'ChallengeEdge', node:
@@ -2720,11 +2727,7 @@ export const PointHistoryDocument = gql`
               id
               name
             }
-            ... on ReadingAchievement {
-              id
-              name
-            }
-            ... on ListeningAchievement {
+            ... on ContentAchievement {
               id
               name
             }
@@ -2806,16 +2809,27 @@ export const UpdateAchievementDocument = gql`
 export function useUpdateAchievementMutation() {
   return Urql.useMutation<UpdateAchievementMutation, UpdateAchievementMutationVariables>(UpdateAchievementDocument);
 };
-export const CreateSimpleAchievementDocument = gql`
-    mutation CreateSimpleAchievement($input: CreateSimpleAchievementInput!) {
-  createSimpleAchievement(input: $input) {
+export const CreateContentAchievementDocument = gql`
+    mutation CreateContentAchievement($input: CreateContentAchievementInput!) {
+  createContentAchievement(input: $input) {
     id
   }
 }
     `;
 
-export function useCreateSimpleAchievementMutation() {
-  return Urql.useMutation<CreateSimpleAchievementMutation, CreateSimpleAchievementMutationVariables>(CreateSimpleAchievementDocument);
+export function useCreateContentAchievementMutation() {
+  return Urql.useMutation<CreateContentAchievementMutation, CreateContentAchievementMutationVariables>(CreateContentAchievementDocument);
+};
+export const CreateQuizAchievementDocument = gql`
+    mutation CreateQuizAchievement($input: CreateQuizAchievementInput!) {
+  createQuizAchievement(input: $input) {
+    id
+  }
+}
+    `;
+
+export function useCreateQuizAchievementMutation() {
+  return Urql.useMutation<CreateQuizAchievementMutation, CreateQuizAchievementMutationVariables>(CreateQuizAchievementDocument);
 };
 export const CreateStreakAchievementDocument = gql`
     mutation CreateStreakAchievement($input: CreateStreakAchievementInput!) {
@@ -2828,27 +2842,16 @@ export const CreateStreakAchievementDocument = gql`
 export function useCreateStreakAchievementMutation() {
   return Urql.useMutation<CreateStreakAchievementMutation, CreateStreakAchievementMutationVariables>(CreateStreakAchievementDocument);
 };
-export const CreateReadingAchievementDocument = gql`
-    mutation CreateReadingAchievement($input: CreateReadingAchievementInput!) {
-  createReadingAchievement(input: $input) {
+export const CreateSimpleAchievementDocument = gql`
+    mutation CreateSimpleAchievement($input: CreateSimpleAchievementInput!) {
+  createSimpleAchievement(input: $input) {
     id
   }
 }
     `;
 
-export function useCreateReadingAchievementMutation() {
-  return Urql.useMutation<CreateReadingAchievementMutation, CreateReadingAchievementMutationVariables>(CreateReadingAchievementDocument);
-};
-export const CreateListeningAchievementDocument = gql`
-    mutation CreateListeningAchievement($input: CreateListeningAchievementInput!) {
-  createListeningAchievement(input: $input) {
-    id
-  }
-}
-    `;
-
-export function useCreateListeningAchievementMutation() {
-  return Urql.useMutation<CreateListeningAchievementMutation, CreateListeningAchievementMutationVariables>(CreateListeningAchievementDocument);
+export function useCreateSimpleAchievementMutation() {
+  return Urql.useMutation<CreateSimpleAchievementMutation, CreateSimpleAchievementMutationVariables>(CreateSimpleAchievementDocument);
 };
 export const DeleteChallengeDocument = gql`
     mutation DeleteChallenge($id: ID!) {
