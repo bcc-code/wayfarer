@@ -27,11 +27,13 @@ const leaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
   }
   return result
 })
+
+const debouncedFetching = useDebounce(fetching, 200)
 </script>
 
 <template>
   <div>
-    <LoadingState v-if="fetching" />
+    <LoadingState v-if="debouncedFetching" />
     <ErrorState v-else-if="error" :error />
     <template v-else-if="data">
       <div
