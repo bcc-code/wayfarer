@@ -1,32 +1,61 @@
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: gcr.io/cloud-builders/docker
     args:
-      - 'build'
+      - build
+      - '--no-cache'
       - '--build-arg=NUXT_PUBLIC_API_URL=${_NUXT_PUBLIC_API_URL}'
       - '--build-arg=NUXT_PUBLIC_CALLBACK_URL=${_NUXT_PUBLIC_CALLBACK_URL}'
       - '--build-arg=NUXT_PUBLIC_LOGIN_URL=${_NUXT_PUBLIC_LOGIN_URL}'
       - '--build-arg=NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY=${_NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY}'
       - '--build-arg=NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL=${_NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL}'
       - '-t'
-      - '${_IMAGE_NAME}:${SHORT_SHA}'
-      - '-t'
-      - '${_IMAGE_NAME}:latest'
-      - '.'
-
-  - name: 'gcr.io/cloud-builders/docker'
+      - >-
+        $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+      - .
+      - '-f'
+      - Dockerfile
+    id: Build
+  - name: gcr.io/cloud-builders/docker
     args:
-      - 'push'
-      - '--all-tags'
-      - '${_IMAGE_NAME}'
-
+      - push
+      - >-
+        $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+    id: Push
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    args:
+      - run
+      - services
+      - update
+      - $_SERVICE_NAME
+      - '--platform=managed'
+      - >-
+        --image=$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+      - >-
+        --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
+      - '--region=$_DEPLOY_REGION'
+      - '--quiet'
+    id: Deploy
+    entrypoint: gcloud
+images:
+  - >-
+    $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+options:
+  substitutionOption: ALLOW_LOOSE
+  logging: CLOUD_LOGGING_ONLY
 substitutions:
-  _IMAGE_NAME: 'gcr.io/${PROJECT_ID}/wayfarer'
+  _AR_HOSTNAME: europe-west3-docker.pkg.dev
+  _AR_REPOSITORY: cloud-run-source-deploy
+  _AR_PROJECT_ID: bccm-pc25
+  _TRIGGER_ID: d196933f-2bff-4650-b5f2-a1c4939af295
+  _PLATFORM: managed
+  _SERVICE_NAME: wayfarer
+  _DEPLOY_REGION: europe-west3
   _NUXT_PUBLIC_API_URL: ''
   _NUXT_PUBLIC_CALLBACK_URL: ''
   _NUXT_PUBLIC_LOGIN_URL: ''
   _NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY: ''
   _NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL: ''
-
-images:
-  - '${_IMAGE_NAME}:${SHORT_SHA}'
-  - '${_IMAGE_NAME}:latest'
+tags:
+  - gcp-cloud-build-deploy-cloud-run
+  - gcp-cloud-build-deploy-cloud-run-managed
+  - wayfarer
