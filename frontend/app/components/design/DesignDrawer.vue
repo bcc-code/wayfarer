@@ -21,7 +21,7 @@ const close = () => {
     v-model:open="open"
     :ui="{
       content:
-        'bg-background-default rounded-t-modal h-full gradient-border ring-0',
+        'bg-background-default rounded-t-modal h-full gradient-border ring-0 max-w-xl mx-auto',
       overlay: 'bg-black/50',
     }"
     should-scale-background

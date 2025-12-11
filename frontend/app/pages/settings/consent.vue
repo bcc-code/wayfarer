@@ -94,7 +94,7 @@ const sortedConsents = computed(() => {
       <DesignButton
         variant="secondary"
         size="large"
-        class="w-full"
+        class="w-full max-w-md mx-auto"
         @click="finishOnboarding"
       >
         {{ $t('consent.continue') }}
