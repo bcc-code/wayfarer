@@ -58,3 +58,6 @@ tmp/
 *~
 \#*\#
 .\#*
+
+# Load testing
+cmd/loadtest/config.json

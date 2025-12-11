@@ -95,3 +95,33 @@ jaeger-logs: ## View Jaeger logs
 
 jaeger-ps: ## Show Jaeger container status
 	@cd ../docker/jaeger && docker compose ps
+
+## Load Testing Commands
+
+loadtest-gen: ## Generate JWT tokens for load testing (run after seed-large)
+	@echo "Generating load test tokens..."
+	@go run ./cmd/loadtest/tokengen -limit 1000 -output ./cmd/loadtest/config.json
+
+loadtest-gen-all: ## Generate tokens for all seeded users (up to 10k)
+	@echo "Generating load test tokens for all users..."
+	@go run ./cmd/loadtest/tokengen -limit 10000 -output ./cmd/loadtest/config.json
+
+loadtest: loadtest-gen ## Run default load test (50 VUs, 5 minutes)
+	@echo "Running load test..."
+	@k6 run ./cmd/loadtest/k6/steady.js
+
+loadtest-quick: loadtest-gen ## Run quick load test (10 VUs, 1 minute)
+	@echo "Running quick load test..."
+	@k6 run --env STEADY_VUS=10 --env DURATION=1m ./cmd/loadtest/k6/steady.js
+
+loadtest-stress: loadtest-gen-all ## Run stress test (200 VUs, 10 minutes)
+	@echo "Running stress test..."
+	@k6 run --env STEADY_VUS=200 --env DURATION=10m ./cmd/loadtest/k6/steady.js
+
+loadtest-spike: loadtest-gen ## Run spike test only (500 VUs)
+	@echo "Running spike test..."
+	@k6 run --env SPIKE_PEAK=500 --env SPIKE_HOLD=2m ./cmd/loadtest/k6/spike.js
+
+loadtest-leaderboard: loadtest-gen ## Run leaderboard stress test only (100 RPS)
+	@echo "Running leaderboard stress test..."
+	@k6 run --env LEADERBOARD_RPS=100 --env LEADERBOARD_DURATION=5m ./cmd/loadtest/k6/leaderboard.js
