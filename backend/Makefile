@@ -1,4 +1,4 @@
-.PHONY: help generate migrate seed test gqltest build clean
+.PHONY: help generate migrate seed test build clean
 
 help: ## Display this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -41,14 +41,6 @@ test: ## Run all tests
 
 test-coverage: test ## Run tests and show coverage report
 	@go tool cover -html=coverage.out
-
-gqltest: ## Run GraphQL tests in parallel
-	@echo "Running GraphQL tests..."
-	@go run ./cmd/gqltest --parallel testcases/
-
-gqltest-update: ## Update GraphQL test snapshots
-	@echo "Updating GraphQL test snapshots..."
-	@go run ./cmd/gqltest-update testcases/
 
 build: ## Build all binaries
 	@echo "Building binaries..."
