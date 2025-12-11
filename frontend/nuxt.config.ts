@@ -2,7 +2,6 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   modules: [
     '@nuxt/ui',
-    '@nuxt/fonts',
     '@nuxt/test-utils',
     '@nuxt/eslint',
     '@vueuse/nuxt',
@@ -280,9 +279,5 @@ export default defineNuxtConfig({
   colorMode: {
     preference: 'dark',
     fallback: 'dark',
-  },
-
-  fonts: {
-    provider: 'google',
   },
 })
