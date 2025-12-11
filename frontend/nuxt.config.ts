@@ -8,7 +8,6 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     '@nuxtjs/i18n',
     '@vite-pwa/nuxt',
-    '@posthog/nuxt',
   ],
   devtools: { enabled: false },
   ssr: false,
@@ -34,12 +33,6 @@ export default defineNuxtConfig({
           rel: 'icon',
           href: '/favicon.ico',
           sizes: '32x32',
-        },
-        {
-          rel: 'icon',
-          type: 'image/svg+xml',
-          href: '/favicon.svg',
-          sizes: 'any',
         },
         {
           rel: 'apple-touch-icon',
@@ -69,16 +62,13 @@ export default defineNuxtConfig({
       apiUrl: 'http://localhost:8080/graphql',
       callbackUrl: 'http://localhost:8080/callback',
       loginUrl: 'https://app.bcc.media/r/sigve-test',
-      posthogKey: '',
-      posthogHost: 'https://eu.i.posthog.com',
-      vapidPublicKey: '', // Set via NUXT_PUBLIC_VAPID_PUBLIC_KEY env var
+      rudderstackWriteKey: '',
+      rudderstackDataPlaneUrl: '',
+      vapidPublicKey: '',
     },
   },
   experimental: {
     typedPages: true,
-  },
-  sourcemap: {
-    client: 'hidden',
   },
   vite: {
     optimizeDeps: {
@@ -99,6 +89,7 @@ export default defineNuxtConfig({
         'cva',
         'zod',
         '@internationalized/date',
+        '@rudderstack/analytics-js',
       ],
     },
   },
@@ -274,19 +265,6 @@ export default defineNuxtConfig({
           purpose: 'maskable',
         },
       ],
-    },
-  },
-
-  posthogConfig: {
-    publicKey: 'phc_l88yVnYQJShvE2rFd1f7Cask76jMuK7qLVVyPlA9FLl',
-    host: 'https://eu.i.posthog.com',
-    clientConfig: {
-      capture_exceptions: true,
-    },
-    sourcemaps: {
-      enabled: true,
-      personalApiKey: import.meta.env.NUXT_POSTHOG_API_KEY,
-      envId: import.meta.env.NUXT_POSTHOG_PROJECT_ID,
     },
   },
 

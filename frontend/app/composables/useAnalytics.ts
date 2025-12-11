@@ -1,21 +1,28 @@
-export function useAnalytics() {
-  const { $posthog } = useNuxtApp()
+import type { ApiObject, IdentifyTraits } from '@rudderstack/analytics-js'
 
-  function track(event: AnalyticsEvent, properties?: Record<string, unknown>) {
-    $posthog().capture(event, properties)
+export function useAnalytics() {
+  const { $rudderstack } = useNuxtApp()
+
+  function track(event: AnalyticsEvent, properties?: ApiObject) {
+    $rudderstack.track(event, properties)
   }
 
-  function identify(userId: string, properties?: Record<string, unknown>) {
-    $posthog().identify(userId, properties)
+  function identify(userId: string, traits?: IdentifyTraits) {
+    $rudderstack.identify(userId, traits)
+  }
+
+  function page() {
+    $rudderstack.page()
   }
 
   function reset() {
-    $posthog().reset()
+    $rudderstack.reset()
   }
 
   return {
     track,
     identify,
+    page,
     reset,
   }
 }

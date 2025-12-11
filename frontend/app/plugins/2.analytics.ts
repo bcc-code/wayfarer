@@ -2,10 +2,13 @@ export default defineNuxtPlugin(() => {
   const { me } = useAuth()
   const { identify } = useAnalytics()
 
+  let identifiedUserId: string
+
   watch(
     () => me.value,
     (currentMe) => {
-      if (currentMe) {
+      if (currentMe && currentMe.id !== identifiedUserId) {
+        identifiedUserId = currentMe.id
         hashUserId(currentMe.id).then((hashedId) => {
           identify(hashedId, {
             age_group: getAgeGroup(currentMe.age),
