@@ -24,8 +24,10 @@ query ProfilePage {
     achievements {
       id
       name
-      description
-      image
+      descriptionPending
+      descriptionCompleted
+      imagePending
+      imageCompleted
       hidden
       achievedAt
       points

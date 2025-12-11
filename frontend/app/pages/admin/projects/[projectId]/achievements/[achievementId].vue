@@ -12,8 +12,10 @@ gql(`
     achievement(id: $achievementId) {
       id
       name
-      description
-      image
+      descriptionPending
+      descriptionCompleted
+      imagePending
+      imageCompleted
       achievedAt
       points
       hidden

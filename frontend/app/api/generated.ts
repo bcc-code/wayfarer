@@ -26,11 +26,13 @@ export type Scalars = {
 export type Achievement = {
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
-  description: Scalars['String']['output'];
+  descriptionCompleted: Scalars['String']['output'];
+  descriptionPending: Scalars['String']['output'];
   event?: Maybe<Event>;
   hidden: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
-  image?: Maybe<Scalars['String']['output']>;
+  imageCompleted: Scalars['String']['output'];
+  imagePending: Scalars['String']['output'];
   name: Scalars['String']['output'];
   points: Scalars['Int']['output'];
   project: Project;
@@ -220,6 +222,7 @@ export type Consent = {
   managedBy?: Maybe<Scalars['String']['output']>;
   managementType: ConsentManagementType;
   publishedAt?: Maybe<Scalars['DateTime']['output']>;
+  shortText: Scalars['String']['output'];
   title: Scalars['String']['output'];
   url?: Maybe<Scalars['String']['output']>;
   userHistory: Array<UserConsentHistoryEntry>;
@@ -248,11 +251,13 @@ export type ContentAchievement = Achievement & {
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   completedItemCount: Scalars['Int']['output'];
-  description: Scalars['String']['output'];
+  descriptionCompleted: Scalars['String']['output'];
+  descriptionPending: Scalars['String']['output'];
   event?: Maybe<Event>;
   hidden: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
-  image?: Maybe<Scalars['String']['output']>;
+  imageCompleted: Scalars['String']['output'];
+  imagePending: Scalars['String']['output'];
   items: Array<ContentItem>;
   name: Scalars['String']['output'];
   nextItem?: Maybe<ContentItem>;
@@ -295,11 +300,13 @@ export type CreateChurchInput = {
 
 export type CreateContentAchievementFromExternalContentInput = {
   challengeId?: InputMaybe<Scalars['ID']['input']>;
-  description: Scalars['String']['input'];
+  descriptionCompleted: Scalars['String']['input'];
+  descriptionPending: Scalars['String']['input'];
   eventId?: InputMaybe<Scalars['ID']['input']>;
   externalContentIds: Array<Scalars['ID']['input']>;
   hidden: Scalars['Boolean']['input'];
-  image?: InputMaybe<Scalars['String']['input']>;
+  imageCompleted: Scalars['String']['input'];
+  imagePending: Scalars['String']['input'];
   name: Scalars['String']['input'];
   points: Scalars['Int']['input'];
   projectId: Scalars['ID']['input'];
@@ -307,10 +314,12 @@ export type CreateContentAchievementFromExternalContentInput = {
 
 export type CreateContentAchievementInput = {
   challengeId?: InputMaybe<Scalars['ID']['input']>;
-  description: Scalars['String']['input'];
+  descriptionCompleted: Scalars['String']['input'];
+  descriptionPending: Scalars['String']['input'];
   eventId?: InputMaybe<Scalars['ID']['input']>;
   hidden: Scalars['Boolean']['input'];
-  image?: InputMaybe<Scalars['String']['input']>;
+  imageCompleted: Scalars['String']['input'];
+  imagePending: Scalars['String']['input'];
   items: Array<ContentItemInput>;
   name: Scalars['String']['input'];
   points: Scalars['Int']['input'];
@@ -341,9 +350,11 @@ export type CreateProjectInput = {
 
 export type CreateQuizAchievementInput = {
   challengeId?: InputMaybe<Scalars['ID']['input']>;
-  description: Scalars['String']['input'];
+  descriptionCompleted: Scalars['String']['input'];
+  descriptionPending: Scalars['String']['input'];
   hidden: Scalars['Boolean']['input'];
-  image?: InputMaybe<Scalars['String']['input']>;
+  imageCompleted: Scalars['String']['input'];
+  imagePending: Scalars['String']['input'];
   minScorePercentage?: InputMaybe<Scalars['Int']['input']>;
   name: Scalars['String']['input'];
   points: Scalars['Int']['input'];
@@ -390,10 +401,12 @@ export type CreateScoreAdjustmentInput = {
 
 export type CreateSimpleAchievementInput = {
   challengeId?: InputMaybe<Scalars['ID']['input']>;
-  description: Scalars['String']['input'];
+  descriptionCompleted: Scalars['String']['input'];
+  descriptionPending: Scalars['String']['input'];
   eventId?: InputMaybe<Scalars['ID']['input']>;
   hidden: Scalars['Boolean']['input'];
-  image?: InputMaybe<Scalars['String']['input']>;
+  imageCompleted: Scalars['String']['input'];
+  imagePending: Scalars['String']['input'];
   name: Scalars['String']['input'];
   points: Scalars['Int']['input'];
   projectId: Scalars['ID']['input'];
@@ -401,10 +414,12 @@ export type CreateSimpleAchievementInput = {
 
 export type CreateStreakAchievementInput = {
   challengeId?: InputMaybe<Scalars['ID']['input']>;
-  description: Scalars['String']['input'];
+  descriptionCompleted: Scalars['String']['input'];
+  descriptionPending: Scalars['String']['input'];
   eventId?: InputMaybe<Scalars['ID']['input']>;
   hidden: Scalars['Boolean']['input'];
-  image?: InputMaybe<Scalars['String']['input']>;
+  imageCompleted: Scalars['String']['input'];
+  imagePending: Scalars['String']['input'];
   name: Scalars['String']['input'];
   neededStreak: Scalars['Int']['input'];
   points: Scalars['Int']['input'];
@@ -908,6 +923,7 @@ export type MutationCreateConsentArgs = {
   key: Scalars['String']['input'];
   managedBy?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
+  shortText?: InputMaybe<Scalars['String']['input']>;
   title: Scalars['String']['input'];
   url?: InputMaybe<Scalars['String']['input']>;
 };
@@ -1222,6 +1238,7 @@ export type MutationUpdateConsentArgs = {
   body?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
+  shortText?: InputMaybe<Scalars['String']['input']>;
   title?: InputMaybe<Scalars['String']['input']>;
   url?: InputMaybe<Scalars['String']['input']>;
 };
@@ -1663,11 +1680,13 @@ export type QuizAchievement = Achievement & {
   __typename?: 'QuizAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
-  description: Scalars['String']['output'];
+  descriptionCompleted: Scalars['String']['output'];
+  descriptionPending: Scalars['String']['output'];
   event?: Maybe<Event>;
   hidden: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
-  image?: Maybe<Scalars['String']['output']>;
+  imageCompleted: Scalars['String']['output'];
+  imagePending: Scalars['String']['output'];
   minScorePercentage?: Maybe<Scalars['Int']['output']>;
   name: Scalars['String']['output'];
   points: Scalars['Int']['output'];
@@ -1860,11 +1879,13 @@ export type SimpleAchievement = Achievement & {
   __typename?: 'SimpleAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
-  description: Scalars['String']['output'];
+  descriptionCompleted: Scalars['String']['output'];
+  descriptionPending: Scalars['String']['output'];
   event?: Maybe<Event>;
   hidden: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
-  image?: Maybe<Scalars['String']['output']>;
+  imageCompleted: Scalars['String']['output'];
+  imagePending: Scalars['String']['output'];
   name: Scalars['String']['output'];
   points: Scalars['Int']['output'];
   project: Project;
@@ -1910,11 +1931,13 @@ export type StreakAchievement = Achievement & {
   __typename?: 'StreakAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
-  description: Scalars['String']['output'];
+  descriptionCompleted: Scalars['String']['output'];
+  descriptionPending: Scalars['String']['output'];
   event?: Maybe<Event>;
   hidden: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
-  image?: Maybe<Scalars['String']['output']>;
+  imageCompleted: Scalars['String']['output'];
+  imagePending: Scalars['String']['output'];
   name: Scalars['String']['output'];
   neededStreak: Scalars['Int']['output'];
   points: Scalars['Int']['output'];
@@ -2041,10 +2064,12 @@ export type TeamMember = {
 
 export type UpdateAchievementInput = {
   challengeId?: InputMaybe<Scalars['ID']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
+  descriptionCompleted?: InputMaybe<Scalars['String']['input']>;
+  descriptionPending?: InputMaybe<Scalars['String']['input']>;
   eventId?: InputMaybe<Scalars['ID']['input']>;
   hidden?: InputMaybe<Scalars['Boolean']['input']>;
-  image?: InputMaybe<Scalars['String']['input']>;
+  imageCompleted?: InputMaybe<Scalars['String']['input']>;
+  imagePending?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   points?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -2072,10 +2097,12 @@ export type UpdateChurchInput = {
 
 export type UpdateContentAchievementInput = {
   challengeId?: InputMaybe<Scalars['ID']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
+  descriptionCompleted?: InputMaybe<Scalars['String']['input']>;
+  descriptionPending?: InputMaybe<Scalars['String']['input']>;
   eventId?: InputMaybe<Scalars['ID']['input']>;
   hidden?: InputMaybe<Scalars['Boolean']['input']>;
-  image?: InputMaybe<Scalars['String']['input']>;
+  imageCompleted?: InputMaybe<Scalars['String']['input']>;
+  imagePending?: InputMaybe<Scalars['String']['input']>;
   items?: InputMaybe<Array<ContentItemInput>>;
   name?: InputMaybe<Scalars['String']['input']>;
   points?: InputMaybe<Scalars['Int']['input']>;
@@ -2123,10 +2150,12 @@ export type UpdateQuizQuestionInput = {
 
 export type UpdateStreakAchievementInput = {
   challengeId?: InputMaybe<Scalars['ID']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
+  descriptionCompleted?: InputMaybe<Scalars['String']['input']>;
+  descriptionPending?: InputMaybe<Scalars['String']['input']>;
   eventId?: InputMaybe<Scalars['ID']['input']>;
   hidden?: InputMaybe<Scalars['Boolean']['input']>;
-  image?: InputMaybe<Scalars['String']['input']>;
+  imageCompleted?: InputMaybe<Scalars['String']['input']>;
+  imagePending?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   neededStreak?: InputMaybe<Scalars['Int']['input']>;
   points?: InputMaybe<Scalars['Int']['input']>;
@@ -2522,10 +2551,10 @@ export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
-      | { __typename?: 'ContentAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'QuizAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename?: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
     >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank?: number | null } | null } } };
 
 export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
@@ -2576,10 +2605,10 @@ export type AdminProjectAchievementPageQueryVariables = Exact<{
 
 
 export type AdminProjectAchievementPageQuery = { __typename?: 'Query', achievement:
-    | { __typename?: 'ContentAchievement', id: string, name: string, description: string, image?: string | null, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename?: 'QuizAchievement', id: string, name: string, description: string, image?: string | null, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename?: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
    };
 
 export type AdminProjectAchievementsNewPageQueryVariables = Exact<{
@@ -2627,10 +2656,10 @@ export type AdminProjectPageQueryVariables = Exact<{
 
 
 export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } }, achievements: { __typename?: 'AchievementConnection', edges: Array<{ __typename?: 'AchievementEdge', node:
-        | { __typename?: 'ContentAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
-        | { __typename?: 'QuizAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
-        | { __typename?: 'SimpleAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
-        | { __typename?: 'StreakAchievement', id: string, name: string, description: string, image?: string | null, points: number, hidden: boolean }
+        | { __typename?: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, points: number, hidden: boolean }
+        | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, points: number, hidden: boolean }
+        | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, points: number, hidden: boolean }
+        | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, points: number, hidden: boolean }
        }> }, events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string, description: string } }> }, challenges: { __typename?: 'ChallengeConnection', edges: Array<{ __typename?: 'ChallengeEdge', node:
         | { __typename?: 'ExternalChallenge', id: string, name: string, description: any, image?: string | null }
         | { __typename?: 'QuizChallenge', id: string, name: string, description: any, image?: string | null }
@@ -3287,8 +3316,10 @@ export const ProfilePageDocument = gql`
     achievements {
       id
       name
-      description
-      image
+      descriptionPending
+      descriptionCompleted
+      imagePending
+      imageCompleted
       hidden
       achievedAt
       points
@@ -3554,8 +3585,10 @@ export const AdminProjectAchievementPageDocument = gql`
   achievement(id: $achievementId) {
     id
     name
-    description
-    image
+    descriptionPending
+    descriptionCompleted
+    imagePending
+    imageCompleted
     achievedAt
     points
     hidden
@@ -3722,8 +3755,10 @@ export const AdminProjectPageDocument = gql`
       node {
         id
         name
-        description
-        image
+        descriptionPending
+        descriptionCompleted
+        imagePending
+        imageCompleted
         points
         hidden
       }

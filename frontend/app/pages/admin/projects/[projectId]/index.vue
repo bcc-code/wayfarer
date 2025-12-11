@@ -32,8 +32,10 @@ gql(`
         node {
           id
           name
-          description
-          image
+          descriptionPending
+          descriptionCompleted
+          imagePending
+          imageCompleted
           points
           hidden
         }
@@ -389,8 +391,8 @@ const tab = computed({
             >
               <template #image-cell="{ row }">
                 <NuxtImg
-                  v-if="row.original.image"
-                  :src="row.original.image"
+                  v-if="row.original.imageCompleted"
+                  :src="row.original.imageCompleted"
                   height="32"
                   width="32"
                   class="bg-muted size-8 rounded"

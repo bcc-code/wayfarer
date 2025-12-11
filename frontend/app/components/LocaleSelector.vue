@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { locale, locales, setLocale } = useI18n()
+const { track } = useAnalytics()
 
 const selectedLocale = computed({
   get() {
@@ -8,6 +9,12 @@ const selectedLocale = computed({
   set(value) {
     setLocale(value)
   },
+})
+
+watch(locale, (newLocale, oldLocale) => {
+  if (oldLocale) {
+    track(AnalyticsEvent.LanguageChanged, { from: oldLocale, to: newLocale })
+  }
 })
 </script>
 

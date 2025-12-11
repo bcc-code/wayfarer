@@ -32,8 +32,13 @@ watch(open, (isOpen) => {
         class="grid aspect-square place-items-center overflow-hidden rounded-full"
       >
         <NuxtImg
-          v-if="achievement.image && achievement.achievedAt != null"
-          :src="achievement.image"
+          v-if="achievement.imageCompleted && achievement.achievedAt != null"
+          :src="achievement.imageCompleted"
+          class="size-full object-cover"
+        />
+        <NuxtImg
+          v-else-if="achievement.imagePending"
+          :src="achievement.imagePending"
           class="size-full object-cover"
         />
         <NuxtImg
@@ -51,8 +56,15 @@ watch(open, (isOpen) => {
             ]"
           >
             <NuxtImg
-              v-if="achievement.image && achievement.achievedAt != null"
-              :src="achievement.image"
+              v-if="
+                achievement.imageCompleted && achievement.achievedAt != null
+              "
+              :src="achievement.imageCompleted"
+              class="size-full object-cover"
+            />
+            <NuxtImg
+              v-else-if="achievement.imagePending"
+              :src="achievement.imagePending"
               class="size-full object-cover"
             />
             <NuxtImg
@@ -68,7 +80,11 @@ watch(open, (isOpen) => {
               {{ achievement.name }}
             </h3>
             <p class="text-label">
-              {{ achievement.description }}
+              {{
+                achievement.achievedAt
+                  ? achievement.descriptionCompleted
+                  : achievement.descriptionPending
+              }}
             </p>
           </div>
           <div
