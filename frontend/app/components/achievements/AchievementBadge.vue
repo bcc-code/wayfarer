@@ -31,17 +31,17 @@ watch(open, (isOpen) => {
       <button
         class="grid aspect-square place-items-center overflow-hidden rounded-full"
       >
-        <NuxtImg
+        <img
           v-if="achievement.imageCompleted && achievement.achievedAt != null"
           :src="achievement.imageCompleted"
           class="size-full object-cover"
         />
-        <NuxtImg
+        <img
           v-else-if="achievement.imagePending"
           :src="achievement.imagePending"
           class="size-full object-cover"
         />
-        <NuxtImg
+        <img
           v-else
           src="/images/achievement-placeholder.png"
           class="size-full object-cover"
@@ -55,19 +55,19 @@ watch(open, (isOpen) => {
               { 'shadow-large': achievement.achievedAt },
             ]"
           >
-            <NuxtImg
+            <img
               v-if="
                 achievement.imageCompleted && achievement.achievedAt != null
               "
               :src="achievement.imageCompleted"
               class="size-full object-cover"
             />
-            <NuxtImg
+            <img
               v-else-if="achievement.imagePending"
               :src="achievement.imagePending"
               class="size-full object-cover"
             />
-            <NuxtImg
+            <img
               v-else
               src="/images/achievement-placeholder.png"
               class="size-full object-cover"

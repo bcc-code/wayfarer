@@ -311,7 +311,6 @@ func main() {
 
 			// Serve Nuxt build output directories
 			router.Static("/_nuxt", filepath.Join(staticPath, "_nuxt"))
-			router.Static("/_ipx", filepath.Join(staticPath, "_ipx"))
 			router.Static("/images", filepath.Join(staticPath, "images"))
 
 			// Serve root static files

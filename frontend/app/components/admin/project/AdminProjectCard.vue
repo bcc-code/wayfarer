@@ -38,7 +38,7 @@ const accentColor = computed(() => {
       </p>
     </div>
     <div class="flex shrink-0 flex-col items-end justify-between">
-      <NuxtImg
+      <img
         v-if="project.branding.logo"
         :src="project.branding.logo"
         height="32"
