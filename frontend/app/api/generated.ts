@@ -2542,9 +2542,9 @@ export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', challenges: Array<
-      | { __typename?: 'ExternalChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null }
-      | { __typename?: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null }
-      | { __typename?: 'SimpleChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null }
+      | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null }
+      | { __typename: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null }
+      | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null }
     > } };
 
 export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
@@ -2713,6 +2713,11 @@ export type AdminUsersPageQueryVariables = Exact<{
 
 
 export type AdminUsersPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'UserEdge', cursor: string, node: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, church: { __typename?: 'Church', name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType }> } }> } };
+
+export type StandingsPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', myTeam?: { __typename?: 'Team', id: string } | null } };
 
 
 export const ProjectRulesDocument = gql`
@@ -3273,6 +3278,7 @@ export const ChallengesPageDocument = gql`
     query ChallengesPage {
   myCurrentProject {
     challenges {
+      __typename
       id
       name
       description
@@ -3281,6 +3287,13 @@ export const ChallengesPageDocument = gql`
       publishedAt
       endTime
       visibleAt
+      userCompletedAt
+      ... on SimpleChallenge {
+        allowSelfCompletion
+      }
+      ... on ExternalChallenge {
+        url
+      }
     }
   }
 }
@@ -3997,4 +4010,17 @@ export const AdminUsersPageDocument = gql`
 
 export function useAdminUsersPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminUsersPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminUsersPageQuery, AdminUsersPageQueryVariables | undefined>({ query: AdminUsersPageDocument, variables: undefined, ...options });
+};
+export const StandingsPageDocument = gql`
+    query StandingsPage {
+  myCurrentProject {
+    myTeam {
+      id
+    }
+  }
+}
+    `;
+
+export function useStandingsPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<StandingsPageQuery, StandingsPageQueryVariables | undefined>({ query: StandingsPageDocument, variables: undefined, ...options });
 };

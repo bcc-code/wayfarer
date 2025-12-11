@@ -1,7 +1,11 @@
-<script setup lang="ts" generic="Tab extends { label: string; value: string }">
+<script
+  setup
+  lang="ts"
+  generic="Tab extends { label: string; value: string; enabled?: boolean }"
+>
 import { cva } from 'cva'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     tabs: Tab[]
     variant?: 'primary' | 'secondary'
@@ -38,12 +42,16 @@ const buttonClasses = cva('text-accent-contrast relative grow', {
     },
   },
 })
+
+const enabledTabs = computed(() =>
+  props.tabs.filter((tab) => tab.enabled !== false),
+)
 </script>
 
 <template>
   <div :class="containerClasses({ variant })">
     <button
-      v-for="tab in tabs"
+      v-for="tab in enabledTabs"
       :key="tab.value"
       :class="buttonClasses({ variant, active: tab.value == modelValue })"
       @click="modelValue = tab.value"

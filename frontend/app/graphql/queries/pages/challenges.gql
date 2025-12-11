@@ -1,6 +1,7 @@
 query ChallengesPage {
   myCurrentProject {
     challenges {
+      __typename
       id
       name
       description
@@ -9,6 +10,13 @@ query ChallengesPage {
       publishedAt
       endTime
       visibleAt
+      userCompletedAt
+      ... on SimpleChallenge {
+        allowSelfCompletion
+      }
+      ... on ExternalChallenge {
+        url
+      }
     }
   }
 }

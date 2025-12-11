@@ -13,6 +13,19 @@ const tab = computed({
     params.tab = newTab
   },
 })
+
+gql(`
+  query StandingsPage {
+    myCurrentProject {
+      myTeam {
+        id
+      }
+    }
+  }
+`)
+
+const { data } = await useStandingsPageQuery()
+const hasUnit = computed(() => Boolean(data.value?.myCurrentProject.myTeam?.id))
 </script>
 
 <template>
@@ -23,7 +36,7 @@ const tab = computed({
         :tabs="[
           { label: $t('standings.global'), value: 'global' },
           { label: $t('standings.local'), value: 'local' },
-          { label: $t('standings.unit'), value: 'unit' },
+          { label: $t('standings.unit'), value: 'unit', enabled: hasUnit },
         ]"
         class="mb-default -mt-list-outside"
       />
