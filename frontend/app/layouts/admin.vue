@@ -79,7 +79,7 @@ const groups = computed(() => [
 </script>
 
 <template>
-  <div>
+  <div class="bg-default h-full">
     <header class="border-default border-b">
       <UContainer class="flex items-center gap-6 lg:gap-12">
         <NuxtLink to="/admin" class="font-serif text-xl">
