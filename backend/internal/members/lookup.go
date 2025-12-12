@@ -103,3 +103,12 @@ func (c *Client) GetOrganizationsByIDs(ctx context.Context, ids []uuid.UUID) ([]
 
 	return out, nil
 }
+
+// GetAllOrganizations returns all organizations from the Members API.
+func (c *Client) GetAllOrganizations(ctx context.Context) ([]Organization, error) {
+	orgs, err := get[[]Organization](ctx, c, fmt.Sprintf("v2/orgs?limit=999&fields=%s", orgFields))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get organizations: %w", err)
+	}
+	return *orgs, nil
+}

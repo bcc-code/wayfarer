@@ -232,3 +232,49 @@ func (q *Queries) GetChurchesFilteredCursor(ctx context.Context, arg GetChurches
 	}
 	return items, nil
 }
+
+const UpsertChurch = `-- name: UpsertChurch :one
+INSERT INTO churches (id, external_id, name, country, category)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (external_id)
+DO UPDATE SET
+    name = EXCLUDED.name,
+    country = EXCLUDED.country,
+    updated_at = NOW()
+RETURNING id, external_id, name, country, category
+`
+
+type UpsertChurchParams struct {
+	ID         string `json:"id"`
+	ExternalID *int32 `json:"external_id"`
+	Name       string `json:"name"`
+	Country    string `json:"country"`
+	Category   string `json:"category"`
+}
+
+type UpsertChurchRow struct {
+	ID         string `json:"id"`
+	ExternalID *int32 `json:"external_id"`
+	Name       string `json:"name"`
+	Country    string `json:"country"`
+	Category   string `json:"category"`
+}
+
+func (q *Queries) UpsertChurch(ctx context.Context, arg UpsertChurchParams) (*UpsertChurchRow, error) {
+	row := q.db.QueryRow(ctx, UpsertChurch,
+		arg.ID,
+		arg.ExternalID,
+		arg.Name,
+		arg.Country,
+		arg.Category,
+	)
+	var i UpsertChurchRow
+	err := row.Scan(
+		&i.ID,
+		&i.ExternalID,
+		&i.Name,
+		&i.Country,
+		&i.Category,
+	)
+	return &i, err
+}

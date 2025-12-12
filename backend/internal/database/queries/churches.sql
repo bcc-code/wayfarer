@@ -39,3 +39,13 @@ WHERE
 INSERT INTO churches (id, external_id, name, country, category)
 VALUES (@id, @external_id, @name, @country, @category)
 RETURNING id, external_id, name, country, category;
+
+-- name: UpsertChurch :one
+INSERT INTO churches (id, external_id, name, country, category)
+VALUES (@id, @external_id, @name, @country, @category)
+ON CONFLICT (external_id)
+DO UPDATE SET
+    name = EXCLUDED.name,
+    country = EXCLUDED.country,
+    updated_at = NOW()
+RETURNING id, external_id, name, country, category;
