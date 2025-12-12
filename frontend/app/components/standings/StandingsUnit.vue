@@ -111,6 +111,7 @@ function selectTeamLead(userId: string) {
               <DesignDrawer
                 v-model:open="showLeadSelector"
                 :title="$t('unit.selectUnitLeader')"
+                nested
               >
                 <template #content>
                   <div class="gap-list-section-gap flex flex-col">

@@ -3,6 +3,7 @@ withDefaults(
   defineProps<{
     title: string
     dismissible?: boolean
+    nested?: boolean
   }>(),
   {
     dismissible: true,
@@ -27,6 +28,7 @@ const close = () => {
     should-scale-background
     :set-background-color-on-scale="false"
     :handle="false"
+    :nested
     :dismissible
   >
     <template #default>
