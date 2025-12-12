@@ -29,7 +29,7 @@ watch(open, (isOpen) => {
       "
     >
       <button
-        class="grid aspect-square place-items-center overflow-hidden rounded-full"
+        class="grid aspect-square size-full place-items-center overflow-hidden rounded-full"
       >
         <img
           v-if="achievement.imageCompleted && achievement.achievedAt != null"
