@@ -17,9 +17,11 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // CreateQuiz is the resolver for the createQuiz field.
@@ -609,17 +611,25 @@ func (r *mutationResolver) CreateQuizAchievement(ctx context.Context, input mode
 
 // StartQuiz is the resolver for the startQuiz field.
 func (r *mutationResolver) StartQuiz(ctx context.Context, quizID string) (*model.QuizSubmission, error) {
+	ctx, span := otel.StartSpan(ctx, "quiz.start",
+		attribute.String("quiz.id", quizID),
+	)
+	defer span.End()
+
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
 		return nil, fmt.Errorf("user not authenticated")
 	}
+	otel.SetUserID(span, userID)
 
 	// Load quiz
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, quizID)
 	quiz, err := thunk()
 	if err != nil {
+		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
 	}
+	otel.SetProjectID(span, quiz.ProjectID)
 
 	// Check if quiz is published
 	if quiz.PublishedAt == nil || quiz.PublishedAt.Time.After(time.Now()) {
@@ -649,14 +659,17 @@ func (r *mutationResolver) StartQuiz(ctx context.Context, quizID string) (*model
 	})
 	if active.ID != "" {
 		// Return existing active submission
+		span.SetAttributes(attribute.Bool("submission.resumed", true))
 		return convertSubmissionRowToModel(active), nil
 	}
 
 	// Load questions
 	questions, err := r.Loaders.QuizQuestionsByQuizLoader.Load(ctx, quizID)()
 	if err != nil {
+		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load questions: %w", err)
 	}
+	span.SetAttributes(attribute.Int("questions.count", len(questions)))
 
 	// Build question order
 	questionOrder := make([]string, len(questions))
@@ -692,6 +705,7 @@ func (r *mutationResolver) StartQuiz(ctx context.Context, quizID string) (*model
 	// Marshal question order to JSON
 	questionOrderJSON, err := json.Marshal(questionOrder)
 	if err != nil {
+		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to marshal question order: %w", err)
 	}
 
@@ -706,8 +720,11 @@ func (r *mutationResolver) StartQuiz(ctx context.Context, quizID string) (*model
 		Maxscore:      int32(maxScore),
 	})
 	if err != nil {
+		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to create submission: %w", err)
 	}
+	otel.SetSubmissionID(span, submissionID)
+	span.SetAttributes(attribute.Bool("submission.resumed", false))
 
 	// Invalidate cached submissions for this user and quiz
 	r.Cache.Delete(cache.QuizSubmissionsByUserKey(userID))
@@ -718,16 +735,25 @@ func (r *mutationResolver) StartQuiz(ctx context.Context, quizID string) (*model
 
 // SubmitQuizAnswer is the resolver for the submitQuizAnswer field.
 func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID string, input model.SubmitQuizAnswerInput) (model.QuizResponse, error) {
+	ctx, span := otel.StartSpan(ctx, "quiz.submit_answer",
+		attribute.String("submission.id", submissionID),
+		attribute.String("question.id", input.QuestionID),
+	)
+	defer span.End()
+
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
 		return nil, fmt.Errorf("user not authenticated")
 	}
+	otel.SetUserID(span, userID)
 
 	// Load submission
 	submission, err := r.DB.Queries.GetQuizSubmissionByID(ctx, submissionID)
 	if err != nil {
+		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load submission: %w", err)
 	}
+	otel.SetQuizID(span, submission.QuizID)
 
 	// Verify ownership
 	if submission.UserID != userID {
@@ -747,8 +773,10 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 	// Load question to validate
 	question, err := r.DB.Queries.GetQuizQuestionByID(ctx, input.QuestionID)
 	if err != nil {
+		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
+	span.SetAttributes(attribute.String("question.type", question.QuestionType))
 
 	// Check question belongs to quiz
 	if question.QuizID != submission.QuizID {
@@ -844,16 +872,26 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 
 // FinalizeQuiz is the resolver for the finalizeQuiz field.
 func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string) (*model.QuizSubmission, error) {
+	ctx, span := otel.StartSpan(ctx, "quiz.finalize",
+		attribute.String("submission.id", submissionID),
+	)
+	defer span.End()
+
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
 		return nil, fmt.Errorf("user not authenticated")
 	}
+	otel.SetUserID(span, userID)
 
 	// Load submission
+	ctx, loadSpan := otel.StartSpan(ctx, "quiz.finalize.load_submission")
 	submission, err := r.DB.Queries.GetQuizSubmissionByID(ctx, submissionID)
+	loadSpan.End()
 	if err != nil {
+		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load submission: %w", err)
 	}
+	otel.SetQuizID(span, submission.QuizID)
 
 	// Verify ownership
 	if submission.UserID != userID {
@@ -871,8 +909,11 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	}
 
 	// Begin transaction
+	ctx, txSpan := otel.StartSpan(ctx, "quiz.finalize.transaction")
 	tx, err := r.DB.Pool.Begin(ctx)
 	if err != nil {
+		txSpan.End()
+		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer func() {
@@ -881,22 +922,35 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	qtx := r.DB.Queries.WithTx(tx)
 
 	// Calculate score using single query (no loop)
+	ctx, scoreSpan := otel.StartSpan(ctx, "quiz.finalize.calculate_score")
 	scoreResult, err := qtx.CalculateSubmissionScore(ctx, submissionID)
 	if err != nil {
+		scoreSpan.End()
+		txSpan.End()
+		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to calculate score: %w", err)
 	}
 
 	score := int(scoreResult.Score)
 	maxScore := int(scoreResult.MaxScore)
+	scoreSpan.SetAttributes(
+		attribute.Int("score.value", score),
+		attribute.Int("score.max", maxScore),
+	)
+	scoreSpan.End()
 
 	// Load quiz for completion points
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, submission.QuizID)
 	quiz, err := thunk()
 	if err != nil {
+		txSpan.End()
+		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
 	}
+	otel.SetProjectID(span, quiz.ProjectID)
 
 	// Update submission
+	ctx, updateSpan := otel.StartSpan(ctx, "quiz.finalize.update_submission")
 	now := time.Now()
 	scoreVal := int32(score)
 	pointsVal := int32(quiz.CompletionPoints)
@@ -906,16 +960,24 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 		Score:         &scoreVal,
 		Pointsawarded: &pointsVal,
 	})
+	updateSpan.End()
 	if err != nil {
+		txSpan.End()
+		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to update submission: %w", err)
 	}
 
 	// Create score journal entry if points > 0
 	if quiz.CompletionPoints > 0 {
+		ctx, journalSpan := otel.StartSpan(ctx, "quiz.finalize.create_score_journal")
+
 		// Load challenge to get event ID
 		challengeThunk := r.Loaders.ChallengeByIDLoader.Load(ctx, quiz.ChallengeID)
 		challenge, err := challengeThunk()
 		if err != nil {
+			journalSpan.End()
+			txSpan.End()
+			otel.RecordError(span, err)
 			return nil, fmt.Errorf("failed to load challenge: %w", err)
 		}
 
@@ -933,13 +995,19 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 		}
 
 		_, err = qtx.CreateScoreJournalEntry(ctx, journalParams)
+		journalSpan.End()
 		if err != nil {
+			txSpan.End()
+			otel.RecordError(span, err)
 			return nil, fmt.Errorf("failed to create score journal entry: %w", err)
 		}
 	}
 
 	// Check quiz achievements and auto-award
+	ctx, achSpan := otel.StartSpan(ctx, "quiz.finalize.check_achievements")
 	achievements, _ := qtx.GetQuizAchievementsByQuizID(ctx, quiz.ID)
+	achSpan.SetAttributes(attribute.Int("achievements.count", len(achievements)))
+	achievementsAwarded := 0
 	for _, ach := range achievements {
 		shouldAward := true
 
@@ -966,16 +1034,26 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 				// Log error but don't fail the entire quiz finalization
 				// User still completed the quiz successfully
 				fmt.Printf("warning: failed to award achievement %s to user %s: %v\n", ach.AchievementID, userID, err)
+			} else {
+				achievementsAwarded++
 			}
 		}
 	}
+	achSpan.SetAttributes(attribute.Int("achievements.awarded", achievementsAwarded))
+	achSpan.End()
 
 	// Commit transaction
 	if err := tx.Commit(ctx); err != nil {
+		otel.SetTransactionSuccess(txSpan, false)
+		txSpan.End()
+		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
+	otel.SetTransactionSuccess(txSpan, true)
+	txSpan.End()
 
 	// Auto-complete the associated challenge (after transaction commits)
+	ctx, challengeSpan := otel.StartSpan(ctx, "quiz.finalize.complete_challenge")
 	_, err = r.DB.Queries.CompleteUserChallenge(ctx, sqlc.CompleteUserChallengeParams{
 		Userid:      userID,
 		Challengeid: quiz.ChallengeID,
@@ -985,12 +1063,15 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 		// Log but don't fail - quiz is finalized, challenge completion is secondary
 		fmt.Printf("warning: failed to auto-complete challenge %s for user %s: %v\n", quiz.ChallengeID, userID, err)
 	}
+	challengeSpan.End()
 
 	// Invalidate caches
+	ctx, cacheSpan := otel.StartSpan(ctx, "quiz.finalize.cache_invalidation")
 	r.Cache.InvalidateQuizSubmission(submissionID)
 	r.Cache.InvalidateProject(quiz.ProjectID)
 	r.Cache.InvalidateChallenge(quiz.ChallengeID)
 	r.Cache.InvalidateUser(userID)
+	cacheSpan.End()
 
 	return convertSubmissionRowToModel(updatedSubmission), nil
 }
@@ -1217,12 +1298,28 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 
 // Quiz is the resolver for the quiz field.
 func (r *queryResolver) Quiz(ctx context.Context, id string) (*model.Quiz, error) {
+	ctx, span := otel.StartSpan(ctx, "quiz.get",
+		attribute.String("quiz.id", id),
+	)
+	defer span.End()
+
 	// Load quiz with visibility check
-	return r.LoadQuizWithVisibility(ctx, id)
+	quiz, err := r.LoadQuizWithVisibility(ctx, id)
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, err
+	}
+	if quiz != nil {
+		otel.SetProjectID(span, quiz.ProjectID)
+	}
+	return quiz, nil
 }
 
 // Quizzes is the resolver for the quizzes field.
 func (r *queryResolver) Quizzes(ctx context.Context, filter *model.QuizFilter, first *int, after *string, last *int, before *string) (*model.QuizConnection, error) {
+	ctx, span := otel.StartSpan(ctx, "quiz.list")
+	defer span.End()
+
 	// Build filter params
 	var projectID, challengeID *string
 	var ids []string
@@ -1237,6 +1334,9 @@ func (r *queryResolver) Quizzes(ctx context.Context, filter *model.QuizFilter, f
 		}
 		if filter.PublishedBefore != nil {
 			publishedBefore = &filter.PublishedBefore.Time
+		}
+		if projectID != nil {
+			otel.SetProjectID(span, *projectID)
 		}
 	}
 
@@ -1345,17 +1445,25 @@ func (r *queryResolver) Quizzes(ctx context.Context, filter *model.QuizFilter, f
 
 // QuizSubmission is the resolver for the quizSubmission field.
 func (r *queryResolver) QuizSubmission(ctx context.Context, id string) (*model.QuizSubmission, error) {
+	ctx, span := otel.StartSpan(ctx, "quiz.get_submission",
+		attribute.String("submission.id", id),
+	)
+	defer span.End()
+
 	// Get authenticated user ID
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
 		return nil, fmt.Errorf("user not authenticated")
 	}
+	otel.SetUserID(span, userID)
 
 	// Load submission
 	row, err := r.DB.Queries.GetQuizSubmissionByID(ctx, id)
 	if err != nil {
+		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz submission: %w", err)
 	}
+	otel.SetQuizID(span, row.QuizID)
 
 	// Verify user owns this submission (or is admin)
 	if row.UserID != userID {
@@ -1363,6 +1471,7 @@ func (r *queryResolver) QuizSubmission(ctx context.Context, id string) (*model.Q
 		thunk := r.Loaders.QuizByIDLoader.Load(ctx, row.QuizID)
 		quiz, err := thunk()
 		if err != nil {
+			otel.RecordError(span, err)
 			return nil, fmt.Errorf("failed to load quiz: %w", err)
 		}
 
@@ -1376,11 +1485,17 @@ func (r *queryResolver) QuizSubmission(ctx context.Context, id string) (*model.Q
 
 // QuizSubmissions is the resolver for the quizSubmissions field.
 func (r *queryResolver) QuizSubmissions(ctx context.Context, quizID string, userID *string, first *int, after *string, last *int, before *string) (*model.QuizSubmissionConnection, error) {
+	ctx, span := otel.StartSpan(ctx, "quiz.list_submissions",
+		attribute.String("quiz.id", quizID),
+	)
+	defer span.End()
+
 	// Get authenticated user ID
 	authUserID, ok := middleware.GetUserID(ctx)
 	if !ok || authUserID == "" {
 		return nil, fmt.Errorf("user not authenticated")
 	}
+	otel.SetUserID(span, authUserID)
 
 	// Load quiz to check authorization
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, quizID)

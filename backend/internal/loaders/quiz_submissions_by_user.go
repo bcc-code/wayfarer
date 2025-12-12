@@ -8,12 +8,16 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/graph-gophers/dataloader/v7"
 )
 
 // quizSubmissionsByUserBatchFunc batches loading quiz submissions by user IDs
 func quizSubmissionsByUserBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context.Context, []string) []*dataloader.Result[[]*model.QuizSubmission] {
 	return func(ctx context.Context, userIDs []string) []*dataloader.Result[[]*model.QuizSubmission] {
+		ctx, span := otel.StartDataloaderSpan(ctx, "QuizSubmissionsByUser", len(userIDs))
+		defer span.End()
+
 		// Check cache first for each user ID
 		submissionsMap := make(map[string][]*model.QuizSubmission)
 		missingIDs := []string{}
@@ -28,6 +32,9 @@ func quizSubmissionsByUserBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 			}
 			missingIDs = append(missingIDs, userID)
 		}
+
+		// Record cache statistics
+		otel.RecordCacheHitMiss(span, len(userIDs)-len(missingIDs), len(missingIDs))
 
 		// Query database only for cache misses
 		if len(missingIDs) > 0 {
