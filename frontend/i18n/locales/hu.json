@@ -1,1 +1,97 @@
-{}
+{
+  "error": {
+    "title": "Hoppá! Valami baj történt"
+  },
+  "quiz": {
+    "wrongAnswer": "Helytelen válasz",
+    "correctAnswer": "Helyes válasz:",
+    "yourAnswer": "Válaszod",
+    "lockAnswer": "Válasz zárolása",
+    "nextQuestion": "Következő kérdés",
+    "questionNumber": "{current} ból {total}",
+    "continue": "Folytatás",
+    "done": "Kész",
+    "result": {
+      "receivedNoPoints": "Nem szereztél pontot.",
+      "receivedPoints": "{points} pontot gyűjtöttél.",
+      "betterLuckNextTime": "Legközelebb több szerencsét!",
+      "wellDone": "Szép munka!",
+      "perfect": "Tökéletes!"
+    }
+  },
+  "pages": {
+    "standings": "Állás",
+    "unit": "A te egységed",
+    "profile": "A profilod",
+    "challenges": "Feladatok",
+    "challenge": "Feladat",
+    "settings": "Beállítások",
+    "pointHistory": "Pontok története",
+    "getPoints": "Pontok gyűjtése",
+    "consents": "Hozzájárulás"
+  },
+  "navigation": {
+    "standings": "Állás",
+    "profile": "Profil",
+    "challenges": "Feladatok"
+  },
+  "emptyState": "Itt nincs semmi látnivaló.",
+  "settings": {
+    "language": "Alkalmazás nyelve",
+    "colorMode": "Színes mód",
+    "colorModes": {
+      "system": "Rendszer",
+      "light": "Világos",
+      "dark": "Sötét"
+    },
+    "consents": "Hozzájárulás",
+    "notifications": "Értesítések",
+    "notificationsEnabled": "Be",
+    "notificationsDisabled": "Ki",
+    "addToHomeScreen": "Alkalmazás hozzáadása a kezdőképernyőhöz",
+    "privacyPolicy": "Adatvédelmi irányelvek"
+  },
+  "standings": {
+    "global": "Top 20",
+    "unit": "A te egységed",
+    "local": "Helyi",
+    "you": "Te",
+    "getPointsButton": "Pontok gyűjtése",
+    "units": "Egységek",
+    "personal": "Személyes"
+  },
+  "pointHistory": {
+    "pointHistoryButton": "Pontok története",
+    "explanation": "Itt láthatod, miért kaptál – vagy vesztettél – pontokat."
+  },
+  "unit": {
+    "editUnit": "Egység szerkesztése",
+    "unitLeader": "Egységvezető",
+    "saveChanges": "Módosítások mentése",
+    "unitName": "Egység neve",
+    "noUnitLeader": "Nincs egységvezető",
+    "selectUnitLeader": "Egységvezető választása"
+  },
+  "place": "hely",
+  "points": "Pont",
+  "givesYouXPoints": "{points} -pontot ad",
+  "consent": {
+    "accepted": "Elfogadva",
+    "rejected": "Elutasítva",
+    "acceptButton": "Egyetértek",
+    "rejectButton": "Feltételek elutasítása",
+    "bannerTitle": "Van néhány hozzájárulás, amit figyelembe kell venned.",
+    "bannerButton": "Ugrás a beleegyezési beállításokhoz",
+    "readButton": "Olvasd el a felhasználási feltételeket",
+    "readTitle": "Általános Szerződési Feltételek",
+    "change": "Változás",
+    "goToConsent": "Ugrás a beleegyezéshez",
+    "continue": "Folytatás",
+    "changeDescription": "Ha módosítani szeretnéd a beleegyezésedet, kérjük, vedd fel velünk a kapcsolatot a következő címen: {email}",
+    "changeConsent": "Beleegyezés módosítása"
+  },
+  "achievement": {
+    "title": "Díj",
+    "unlocked": "Elérted!"
+  }
+}
