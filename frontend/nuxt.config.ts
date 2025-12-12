@@ -160,11 +160,6 @@ export default defineNuxtConfig({
         file: 'hu.json',
       },
       {
-        name: 'Khasi',
-        code: 'kha',
-        file: 'kha.json',
-      },
-      {
         name: 'മലയാളം',
         code: 'ml',
         file: 'ml.json',
