@@ -114,25 +114,25 @@ function selectTeamLead(userId: string) {
                 nested
               >
                 <template #content>
-                  <div class="gap-list-section-gap flex flex-col">
-                    <DesignPanel
-                      v-for="member in teamMembers"
+                  <DesignPanel class="gap-list-section-inset flex flex-col">
+                    <template
+                      v-for="(member, index) in teamMembers"
                       :key="member.id"
-                      class="cursor-pointer"
-                      @click="selectTeamLead(member.id)"
                     >
-                      <div class="flex items-center gap-2.5 px-3 py-2">
-                        <span class="text-label flex-1">
-                          {{ member.name }}
-                        </span>
+                      <hr v-if="index > 0" class="border-border-default mx-3" />
+                      <button
+                        class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
+                        @click="selectTeamLead(member.id)"
+                      >
+                        <p class="text-label">{{ member.name }}</p>
                         <Icon
                           v-if="member.id === form.teamLeadId"
                           name="lucide:check"
-                          class="text-accent size-5"
+                          class="size-6"
                         />
-                      </div>
-                    </DesignPanel>
-                  </div>
+                      </button>
+                    </template>
+                  </DesignPanel>
                 </template>
               </DesignDrawer>
               <div class="p-default flex grow flex-col justify-end">
