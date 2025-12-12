@@ -256,12 +256,17 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 			displayName = member.DisplayName
 
 			// Compute name for backward compatibility
-			if displayName != "" {
-				computedName = displayName
-			} else if firstName != "" && lastName != "" {
+			if firstName != "" && lastName != "" {
 				computedName = firstName + " " + lastName
 			} else if firstName != "" {
 				computedName = firstName
+			} else if displayName != "" {
+				computedName = displayName
+			}
+
+			// Generate display name if API didn't provide one
+			if displayName == "" {
+				displayName = generateDisplayName(firstName, lastName, computedName)
 			}
 
 			// Parse birthdate if available
@@ -307,6 +312,11 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 	if computedName == "" {
 		computedName = claims.FirstName
 		firstName = claims.FirstName
+	}
+
+	// Ensure display name is set (fallback case when API wasn't available)
+	if displayName == "" {
+		displayName = generateDisplayName(firstName, lastName, computedName)
 	}
 
 	// Normalize gender to match database constraint (MALE, FEMALE)
@@ -407,4 +417,13 @@ func normalizeGender(gender string) string {
 		return "FEMALE"
 	}
 	return "UNKNOWN"
+}
+
+// generateDisplayName creates a display name in the format "FirstName L." if both names are provided,
+// otherwise returns the fallback name
+func generateDisplayName(firstName, lastName, fallbackName string) string {
+	if firstName != "" && lastName != "" {
+		return firstName + " " + string([]rune(lastName)[0]) + "."
+	}
+	return fallbackName
 }
