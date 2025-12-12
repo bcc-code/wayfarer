@@ -954,6 +954,17 @@ func (q *Queries) GetProjectsFilteredCursor(ctx context.Context, arg GetProjects
 	return items, nil
 }
 
+const ProjectExists = `-- name: ProjectExists :one
+SELECT EXISTS(SELECT 1 FROM projects WHERE id = $1::text)
+`
+
+func (q *Queries) ProjectExists(ctx context.Context, projectid string) (bool, error) {
+	row := q.db.QueryRow(ctx, ProjectExists, projectid)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const UpdateProject = `-- name: UpdateProject :one
 UPDATE projects
 SET

@@ -396,6 +396,23 @@ type ScoreJournal struct {
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
+// Runtime configuration key-value store
+type Setting struct {
+	// Unique setting identifier (e.g., current_project_id, log_level)
+	Key        string   `json:"key"`
+	ValueText  *string  `json:"value_text"`
+	ValueInt   *int64   `json:"value_int"`
+	ValueBool  *bool    `json:"value_bool"`
+	ValueFloat *float64 `json:"value_float"`
+	ValueJson  []byte   `json:"value_json"`
+	// Indicates which value column to use: text, int, bool, float, or json
+	ValueType string `json:"value_type"`
+	// Human-readable description of the setting
+	Description *string            `json:"description"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Streak struct {
 	ID          string             `json:"id"`
 	ProjectID   string             `json:"project_id"`

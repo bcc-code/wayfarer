@@ -502,8 +502,10 @@ func (r *queryResolver) Projects(ctx context.Context, filter *model.ProjectFilte
 
 // MyProjects is the resolver for the myProjects field.
 func (r *queryResolver) MyProjects(ctx context.Context) ([]model.Project, error) {
-	// Hardcoded project ID for now
-	projectID := "PR01K9VZ8684DP9R4W3ZEV526E5X"
+	projectID, err := r.Settings.GetCurrentProjectID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current project ID: %w", err)
+	}
 
 	// Use translation-aware wrapper to fetch project
 	project, err := r.LoadProjectWithTranslation(ctx, projectID)
@@ -516,8 +518,10 @@ func (r *queryResolver) MyProjects(ctx context.Context) ([]model.Project, error)
 
 // MyCurrentProject is the resolver for the myCurrentProject field.
 func (r *queryResolver) MyCurrentProject(ctx context.Context) (*model.Project, error) {
-	// Hardcoded project ID for now
-	projectID := "PR01K9VZ8684DP9R4W3ZEV526E5X"
+	projectID, err := r.Settings.GetCurrentProjectID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current project ID: %w", err)
+	}
 
 	// Use translation-aware wrapper to fetch project
 	return r.LoadProjectWithTranslation(ctx, projectID)
@@ -525,8 +529,10 @@ func (r *queryResolver) MyCurrentProject(ctx context.Context) (*model.Project, e
 
 // CurrentProject is the resolver for the currentProject field.
 func (r *queryResolver) CurrentProject(ctx context.Context) (*model.Project, error) {
-	// Hardcoded project ID for now
-	projectID := "PR01K9VZ8684DP9R4W3ZEV526E5X"
+	projectID, err := r.Settings.GetCurrentProjectID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current project ID: %w", err)
+	}
 
 	// Use translation-aware wrapper to fetch project
 	return r.LoadProjectWithTranslation(ctx, projectID)

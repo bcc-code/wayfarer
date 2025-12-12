@@ -24,6 +24,7 @@ type Resolver struct {
 	Cache              *cache.CacheWithRegistry
 	RoleService        *services.RoleService
 	LeaderboardService *services.LeaderboardService
+	Settings           *services.SettingsService
 }
 
 // getUserChallengeCompletedAt returns the completion timestamp for the current user and challenge

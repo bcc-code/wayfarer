@@ -265,3 +265,6 @@ RETURNING id, name, description, rules, start_date, end_date, logo_url,
     color_dark_text_default, color_dark_text_muted, color_dark_text_hint,
     color_dark_shadow_default, color_dark_shadow_blank, color_dark_border_default,
     rounding, archived;
+
+-- name: ProjectExists :one
+SELECT EXISTS(SELECT 1 FROM projects WHERE id = @projectid::text);

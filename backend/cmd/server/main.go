@@ -162,6 +162,15 @@ func main() {
 	leaderboardService := services.NewLeaderboardService(db.Queries, cacheInstance.Cache, dataLoaders)
 	slog.Info("LeaderboardService initialized with caching and loaders")
 
+	// Initialize SettingsService
+	settingsService, err := services.NewSettingsService(ctx, db.Queries, lgr)
+	if err != nil {
+		slog.Error("Failed to initialize SettingsService", "error", err)
+		os.Exit(1)
+	}
+	defer settingsService.Stop()
+	slog.Info("SettingsService initialized with background refresh")
+
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{
 		DB:                 db,
@@ -169,6 +178,7 @@ func main() {
 		Cache:              cacheInstance,
 		RoleService:        roleService,
 		LeaderboardService: leaderboardService,
+		Settings:           settingsService,
 	}
 
 	apiHandler := handler.New(api.NewExecutableSchema(api.Config{
