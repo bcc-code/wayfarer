@@ -16,6 +16,7 @@ export default defineNuxtConfig({
   app: {
     rootAttrs: {
       'data-vaul-drawer-wrapper': '',
+      class: 'bg-background-default',
     },
     head: {
       title: 'Interact',

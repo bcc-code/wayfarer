@@ -30,6 +30,7 @@ const close = () => {
     :handle="false"
     :nested
     :dismissible
+    :prevent-scroll-restoration="false"
   >
     <template #default>
       <slot />
