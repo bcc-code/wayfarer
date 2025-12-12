@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -12,7 +13,10 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	grpcoauth "google.golang.org/grpc/credentials/oauth"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -39,13 +43,25 @@ func InitTracer(ctx context.Context, cfg Config) (*TracerProvider, error) {
 		return nil, nil
 	}
 
-	// Create resource with service information
-	res, err := resource.New(ctx,
+	// Build resource attributes
+	resourceAttrs := []resource.Option{
 		resource.WithAttributes(
 			semconv.ServiceName(cfg.ServiceName),
 			semconv.ServiceVersion(cfg.ServiceVersion),
 		),
-	)
+	}
+
+	// Add GCP cloud attributes if project ID is available
+	gcpProjectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
+	if gcpProjectID != "" {
+		resourceAttrs = append(resourceAttrs, resource.WithAttributes(
+			semconv.CloudProviderGCP,
+			semconv.CloudAccountID(gcpProjectID),
+		))
+	}
+
+	// Create resource with service information
+	res, err := resource.New(ctx, resourceAttrs...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource: %w", err)
 	}
@@ -60,6 +76,17 @@ func InitTracer(ctx context.Context, cfg Config) (*TracerProvider, error) {
 			otlptracegrpc.WithInsecure(),
 			otlptracegrpc.WithDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
 		)
+	} else {
+		// Use TLS with Google Application Default Credentials
+		tokenSource, err := google.DefaultTokenSource(ctx, "https://www.googleapis.com/auth/trace.append")
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Google default token source: %w", err)
+		}
+		opts = append(opts,
+			otlptracegrpc.WithDialOption(grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, ""))),
+			otlptracegrpc.WithDialOption(grpc.WithPerRPCCredentials(grpcoauth.TokenSource{TokenSource: tokenSource})),
+		)
+		slog.Info("OpenTelemetry: using Google Cloud credentials")
 	}
 
 	exporter, err := otlptrace.New(ctx, otlptracegrpc.NewClient(opts...))
@@ -98,12 +125,16 @@ func InitTracer(ctx context.Context, cfg Config) (*TracerProvider, error) {
 		propagation.Baggage{},
 	))
 
-	slog.Info("OpenTelemetry tracer initialized successfully",
+	logAttrs := []any{
 		"service", cfg.ServiceName,
 		"version", cfg.ServiceVersion,
 		"endpoint", cfg.ExporterEndpoint,
 		"insecure", cfg.ExporterInsecure,
-	)
+	}
+	if gcpProjectID != "" {
+		logAttrs = append(logAttrs, "gcp_project", gcpProjectID)
+	}
+	slog.Info("OpenTelemetry tracer initialized successfully", logAttrs...)
 
 	return &TracerProvider{
 		provider: provider,
