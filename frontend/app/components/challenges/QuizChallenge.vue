@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import type { ChallengePageQuery } from '~/api/generated'
-
-type QuizChallengeData = Extract<
-  ChallengePageQuery['challenge'],
-  { __typename: 'QuizChallenge' }
->
+import type { QuizChallengeData } from './quiz/types'
 
 const props = defineProps<{
   challenge: QuizChallengeData
@@ -34,23 +29,46 @@ const activeSubmission = computed(() => {
 })
 
 const questions = computed(() => {
+  if (props.challenge.quiz.randomizeQuestions) {
+    return activeSubmission.value?.orderedQuestions.toSorted(
+      () => Math.random() - 0.5,
+    )
+  }
   return activeSubmission.value?.orderedQuestions
 })
 </script>
 
 <template>
-  <PageLayout>
+  <PageLayout :bottom-padding="false">
     <template #action>
       <NuxtLink :to="{ name: 'challenges' }">
         <DesignIconButton icon="lucide:x" />
       </NuxtLink>
     </template>
     <template #title>
-      <QuizProgress :submission="activeSubmission" />
+      <QuizProgress v-if="activeSubmission" :submission="activeSubmission" />
     </template>
 
-    <div v-for="question in questions" :key="question.id">
-      {{ question.questionText }}
-    </div>
+    <template v-if="questions?.length">
+      <template v-for="question in questions" :key="question.id">
+        <QuizPredefinedQuestion
+          v-if="question.__typename === 'PredefinedQuestion'"
+          :question="question"
+          :total-questions="questions.length"
+        />
+        <QuizNumberQuestion
+          v-else-if="question.__typename === 'NumberQuestion'"
+          :question="question"
+        />
+        <QuizJsonQuestion
+          v-else-if="question.__typename === 'JsonQuestion'"
+          :question="question"
+        />
+        <QuizFreeTextQuestion
+          v-else-if="question.__typename === 'FreeTextQuestion'"
+          :question="question"
+        />
+      </template>
+    </template>
   </PageLayout>
 </template>

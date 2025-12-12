@@ -18,6 +18,9 @@ withDefaults(
   <div class="flex min-h-full flex-col">
     <div class="sticky top-0 z-10">
       <TitleBar :title="title" :blurred :shadow>
+        <template #title>
+          <slot name="title" />
+        </template>
         <template #action>
           <slot name="action" />
         </template>

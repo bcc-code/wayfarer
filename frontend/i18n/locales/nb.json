@@ -5,7 +5,12 @@
   "quiz": {
     "wrongAnswer": "Feil svar",
     "correctAnswer": "Riktig svar",
-    "yourAnswer": "Ditt svar"
+    "yourAnswer": "Ditt svar",
+    "lockAnswer": "Lås svar",
+    "nextQuestion": "Neste spørsmål",
+    "questionNumber": "{current} av {total}",
+    "continue": "Fortsett",
+    "done": "Ferdig"
   },
   "pages": {
     "standings": "Standings",

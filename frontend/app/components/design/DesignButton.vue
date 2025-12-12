@@ -5,6 +5,7 @@ withDefaults(
   defineProps<{
     variant?: 'primary' | 'secondary' | 'tertiary'
     size?: 'small' | 'medium' | 'large'
+    disabled?: boolean
   }>(),
   {
     variant: 'primary',
@@ -30,13 +31,17 @@ const classes = cva(
         large:
           'px-button-large-horizontal py-button-large-vertical rounded-button-large',
       },
+      disabled: {
+        true: 'opacity-50 pointer-events-none',
+        false: '',
+      },
     },
   },
 )
 </script>
 
 <template>
-  <button :class="classes({ size, variant })">
+  <button :class="classes({ size, variant, disabled })">
     <slot />
   </button>
 </template>

@@ -9,7 +9,7 @@ type QuizChallengeData = Extract<
 type QuizSubmissionData = QuizChallengeData['quiz']['userSubmissions'][number]
 
 defineProps<{
-  submission?: QuizSubmissionData
+  submission: QuizSubmissionData
 }>()
 
 const dotClass = cva('', {
@@ -24,8 +24,7 @@ const dotClass = cva('', {
 
 <template>
   <div
-    v-if="submission"
-    class="bg-background-raised gradient-border px-5 py-2 rounded-button-medium flex items-center gap-medium"
+    class="bg-background-raised relative gradient-border px-5 py-2 rounded-button-medium flex items-center gap-medium h-11"
   >
     <div
       v-for="question in submission.orderedQuestions"

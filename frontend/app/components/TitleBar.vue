@@ -72,21 +72,23 @@ const actionsClasses = cva(
     :enabled="blurred"
   >
     <header :class="classes({ hasScrolled, size })">
-      <h1
-        v-if="title"
-        :class="[
-          'text-text-default transition-all duration-300 ease-out',
-          {
-            'text-heading bottom-3 left-6 translate-x-0 translate-y-0':
-              !hasScrolled,
-            'text-label top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2':
-              hasScrolled,
-            absolute: animate,
-          },
-        ]"
-      >
-        {{ title }}
-      </h1>
+      <slot name="title">
+        <h1
+          v-if="title"
+          :class="[
+            'text-text-default transition-all duration-300 ease-out',
+            {
+              'text-heading bottom-3 left-6 translate-x-0 translate-y-0':
+                !hasScrolled,
+              'text-label top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2':
+                hasScrolled,
+              absolute: animate,
+            },
+          ]"
+        >
+          {{ title }}
+        </h1>
+      </slot>
       <div :class="actionsClasses({ hasScrolled, size, animate })">
         <slot name="action" />
       </div>
