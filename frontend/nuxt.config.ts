@@ -32,7 +32,7 @@ export default defineNuxtConfig({
         {
           rel: 'icon',
           href: '/favicon.ico',
-          sizes: '32x32',
+          sizes: '48x48',
         },
         {
           rel: 'apple-touch-icon',
@@ -243,7 +243,7 @@ export default defineNuxtConfig({
       theme_color: '#E8DFA7',
       name: 'Interact',
       short_name: 'Interact',
-      orientation: 'portrait',
+      display: 'standalone',
       icons: [
         {
           src: 'pwa-64x64.png',
@@ -266,6 +266,21 @@ export default defineNuxtConfig({
           sizes: '512x512',
           type: 'image/png',
           purpose: 'maskable',
+        },
+      ],
+      shortcuts: [
+        {
+          name: 'Your local church',
+          short_name: 'Local church',
+          description: 'View your local churches standings',
+          url: '/standings/local',
+          icons: [
+            {
+              src: 'pwa-192x192.png',
+              sizes: '192x192',
+              type: 'image/png',
+            },
+          ],
         },
       ],
     },
