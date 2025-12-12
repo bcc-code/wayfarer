@@ -13,9 +13,7 @@ func New(environment string, level slog.Level) *slog.Logger {
 	var handler slog.Handler
 
 	if environment == "production" {
-		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level: level,
-		})
+		handler = newGCPHandler(level)
 	} else {
 		handler = newDevHandler(level)
 	}
