@@ -1,13 +1,57 @@
 <script setup lang="ts">
-import type { PredefinedQuestionData } from './types'
+import type { PredefinedQuestionData, QuestionResult } from './types'
 
-defineProps<{
+const props = defineProps<{
   question: PredefinedQuestionData
   totalQuestions: number
+  currentIndex: number
+  submissionId: string
 }>()
+
+const emit = defineEmits<{
+  answerSubmitted: [result: QuestionResult]
+}>()
+
+const { executeMutation: submitAnswer } = useSubmitQuizAnswerMutation()
 
 const selectedAnswer = ref<string>()
 const isAnswerConfirmed = ref(false)
+const isSubmitting = ref(false)
+const submittedResult = ref<{ isCorrect: boolean | null } | null>(null)
+
+async function handleLockAnswer() {
+  if (!selectedAnswer.value || isSubmitting.value) return
+
+  isSubmitting.value = true
+
+  const result = await submitAnswer({
+    submissionId: props.submissionId,
+    input: {
+      questionId: props.question.id,
+      selectedAnswerIds: [selectedAnswer.value],
+    },
+  })
+
+  if (result.data?.submitQuizAnswer) {
+    const response = result.data.submitQuizAnswer
+    const isCorrect =
+      response.__typename === 'PredefinedResponse'
+        ? (response.isCorrect ?? null)
+        : null
+
+    submittedResult.value = { isCorrect }
+    isAnswerConfirmed.value = true
+  }
+
+  isSubmitting.value = false
+}
+
+function handleContinue() {
+  emit('answerSubmitted', {
+    questionId: props.question.id,
+    isCorrect: submittedResult.value?.isCorrect ?? null,
+  })
+}
 </script>
 
 <template>
@@ -16,7 +60,7 @@ const isAnswerConfirmed = ref(false)
       <p class="text-caption text-text-muted">
         {{
           $t('quiz.questionNumber', {
-            current: question.questionOrder,
+            current: currentIndex + 1,
             total: totalQuestions,
           })
         }}
@@ -34,18 +78,31 @@ const isAnswerConfirmed = ref(false)
         :text="alternative.answerText"
         :highlighted="selectedAnswer === alternative.id"
         :confirmed="isAnswerConfirmed"
-        :correct="alternative.isCorrect === true"
-        :wrong="alternative.isCorrect === false"
-        @click="selectedAnswer = alternative.id"
+        :correct="isAnswerConfirmed && alternative.isCorrect === true"
+        :wrong="
+          isAnswerConfirmed &&
+          selectedAnswer === alternative.id &&
+          alternative.isCorrect === false
+        "
+        :selected="selectedAnswer === alternative.id"
+        :disabled="isAnswerConfirmed"
+        @click="!isAnswerConfirmed && (selectedAnswer = alternative.id)"
       />
     </template>
 
     <DesignButton
+      v-if="!isAnswerConfirmed"
       size="large"
       class="grow-0"
-      :disabled="selectedAnswer === undefined"
+      :disabled="selectedAnswer === undefined || isSubmitting"
+      :loading="isSubmitting"
+      @click="handleLockAnswer"
     >
       {{ $t('quiz.lockAnswer') }}
+    </DesignButton>
+
+    <DesignButton v-else size="large" class="grow-0" @click="handleContinue">
+      {{ $t('quiz.continue') }}
     </DesignButton>
   </div>
 </template>

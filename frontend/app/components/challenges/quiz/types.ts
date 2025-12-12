@@ -1,4 +1,4 @@
-import type { ChallengePageQuery } from '~/api/generated'
+import type { ChallengePageQuery, SubmitQuizAnswerMutation } from '~/api/generated'
 
 export type QuizChallengeData = Extract<
   ChallengePageQuery['challenge'],
@@ -9,6 +9,15 @@ export type QuizSubmission =
   QuizChallengeData['quiz']['userSubmissions'][number]
 
 export type OrderedQuestion = QuizSubmission['orderedQuestions'][number]
+
+export type QuizResponseData = QuizSubmission['responses'][number]
+
+export type PredefinedResponseData = Extract<
+  QuizResponseData,
+  { __typename: 'PredefinedResponse' }
+>
+
+export type SubmitAnswerResponse = SubmitQuizAnswerMutation['submitQuizAnswer']
 
 export type PredefinedQuestionData = Extract<
   OrderedQuestion,
@@ -29,3 +38,8 @@ export type FreeTextQuestionData = Extract<
   OrderedQuestion,
   { __typename: 'FreeTextQuestion' }
 >
+
+export interface QuestionResult {
+  questionId: string
+  isCorrect: boolean | null
+}

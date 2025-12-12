@@ -6,6 +6,7 @@ mutation StartQuiz($quizId: ID!) {
     isExpired
     questionOrder
     orderedQuestions {
+      __typename
       id
       questionText
       questionOrder
@@ -30,5 +31,37 @@ mutation StartQuiz($quizId: ID!) {
       name
       timeoutSeconds
     }
+  }
+}
+
+mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+  submitQuizAnswer(submissionId: $submissionId, input: $input) {
+    __typename
+    id
+    answeredAt
+    timeSpentSeconds
+    question {
+      id
+    }
+    ... on PredefinedResponse {
+      isCorrect
+      selectedAnswerIds
+      selectedAnswers {
+        id
+        answerText
+        isCorrect
+      }
+    }
+  }
+}
+
+mutation FinalizeQuiz($submissionId: ID!) {
+  finalizeQuiz(submissionId: $submissionId) {
+    id
+    completedAt
+    score
+    maxScore
+    scorePercentage
+    pointsAwarded
   }
 }

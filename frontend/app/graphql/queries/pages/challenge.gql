@@ -37,7 +37,7 @@ query ChallengePage($challengeId: ID!) {
           score
           maxScore
           scorePercentage
-          scorePercentage
+          pointsAwarded
           orderedQuestions {
             __typename
             id
@@ -64,6 +64,9 @@ query ChallengePage($challengeId: ID!) {
             id
             answeredAt
             timeSpentSeconds
+            question {
+              id
+            }
             ... on FreeTextResponse {
               textResponse
             }

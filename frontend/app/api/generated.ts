@@ -2420,11 +2420,51 @@ export type StartQuizMutationVariables = Exact<{
 
 
 export type StartQuizMutation = { __typename?: 'Mutation', startQuiz: { __typename?: 'QuizSubmission', id: string, startedAt: any, expiresAt?: any | null, isExpired: boolean, questionOrder: Array<string>, orderedQuestions: Array<
-      | { __typename?: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
-      | { __typename?: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
-      | { __typename?: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
-      | { __typename?: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
+      | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+      | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+      | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+      | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
     >, quiz: { __typename?: 'Quiz', id: string, name: string, timeoutSeconds?: number | null } } };
+
+export type SubmitQuizAnswerMutationVariables = Exact<{
+  submissionId: Scalars['ID']['input'];
+  input: SubmitQuizAnswerInput;
+}>;
+
+
+export type SubmitQuizAnswerMutation = { __typename?: 'Mutation', submitQuizAnswer:
+    | { __typename: 'FreeTextResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+        | { __typename?: 'FreeTextQuestion', id: string }
+        | { __typename?: 'JsonQuestion', id: string }
+        | { __typename?: 'NumberQuestion', id: string }
+        | { __typename?: 'PredefinedQuestion', id: string }
+       }
+    | { __typename: 'JsonResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+        | { __typename?: 'FreeTextQuestion', id: string }
+        | { __typename?: 'JsonQuestion', id: string }
+        | { __typename?: 'NumberQuestion', id: string }
+        | { __typename?: 'PredefinedQuestion', id: string }
+       }
+    | { __typename: 'NumberResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+        | { __typename?: 'FreeTextQuestion', id: string }
+        | { __typename?: 'JsonQuestion', id: string }
+        | { __typename?: 'NumberQuestion', id: string }
+        | { __typename?: 'PredefinedQuestion', id: string }
+       }
+    | { __typename: 'PredefinedResponse', isCorrect?: boolean | null, selectedAnswerIds: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, isCorrect?: boolean | null }>, question:
+        | { __typename?: 'FreeTextQuestion', id: string }
+        | { __typename?: 'JsonQuestion', id: string }
+        | { __typename?: 'NumberQuestion', id: string }
+        | { __typename?: 'PredefinedQuestion', id: string }
+       }
+   };
+
+export type FinalizeQuizMutationVariables = Exact<{
+  submissionId: Scalars['ID']['input'];
+}>;
+
+
+export type FinalizeQuizMutation = { __typename?: 'Mutation', finalizeQuiz: { __typename?: 'QuizSubmission', id: string, completedAt?: any | null, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null } };
 
 export type AssignRoleMutationVariables = Exact<{
   input: AssignRoleInput;
@@ -2524,16 +2564,36 @@ export type ChallengePageQueryVariables = Exact<{
 
 export type ChallengePageQuery = { __typename?: 'Query', challenge:
     | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null }
-    | { __typename: 'QuizChallenge', id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, publishedAt?: any | null, endTime?: any | null, userCanStart: boolean, userActiveSubmission?: { __typename?: 'QuizSubmission', id: string } | null, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, orderedQuestions: Array<
+    | { __typename: 'QuizChallenge', id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, publishedAt?: any | null, endTime?: any | null, userCanStart: boolean, userActiveSubmission?: { __typename?: 'QuizSubmission', id: string } | null, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null, orderedQuestions: Array<
             | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
             | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
             | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
             | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
           >, responses: Array<
-            | { __typename: 'FreeTextResponse', textResponse: string, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null }
-            | { __typename: 'JsonResponse', jsonResponse: any, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null }
-            | { __typename: 'NumberResponse', numberResponse: number, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null }
-            | { __typename: 'PredefinedResponse', isCorrect?: boolean | null, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
+            | { __typename: 'FreeTextResponse', textResponse: string, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+                | { __typename?: 'FreeTextQuestion', id: string }
+                | { __typename?: 'JsonQuestion', id: string }
+                | { __typename?: 'NumberQuestion', id: string }
+                | { __typename?: 'PredefinedQuestion', id: string }
+               }
+            | { __typename: 'JsonResponse', jsonResponse: any, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+                | { __typename?: 'FreeTextQuestion', id: string }
+                | { __typename?: 'JsonQuestion', id: string }
+                | { __typename?: 'NumberQuestion', id: string }
+                | { __typename?: 'PredefinedQuestion', id: string }
+               }
+            | { __typename: 'NumberResponse', numberResponse: number, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+                | { __typename?: 'FreeTextQuestion', id: string }
+                | { __typename?: 'JsonQuestion', id: string }
+                | { __typename?: 'NumberQuestion', id: string }
+                | { __typename?: 'PredefinedQuestion', id: string }
+               }
+            | { __typename: 'PredefinedResponse', isCorrect?: boolean | null, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }>, question:
+                | { __typename?: 'FreeTextQuestion', id: string }
+                | { __typename?: 'JsonQuestion', id: string }
+                | { __typename?: 'NumberQuestion', id: string }
+                | { __typename?: 'PredefinedQuestion', id: string }
+               }
           > }> } }
     | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null }
    };
@@ -3015,6 +3075,7 @@ export const StartQuizDocument = gql`
     isExpired
     questionOrder
     orderedQuestions {
+      __typename
       id
       questionText
       questionOrder
@@ -3045,6 +3106,48 @@ export const StartQuizDocument = gql`
 
 export function useStartQuizMutation() {
   return Urql.useMutation<StartQuizMutation, StartQuizMutationVariables>(StartQuizDocument);
+};
+export const SubmitQuizAnswerDocument = gql`
+    mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+  submitQuizAnswer(submissionId: $submissionId, input: $input) {
+    __typename
+    id
+    answeredAt
+    timeSpentSeconds
+    question {
+      id
+    }
+    ... on PredefinedResponse {
+      isCorrect
+      selectedAnswerIds
+      selectedAnswers {
+        id
+        answerText
+        isCorrect
+      }
+    }
+  }
+}
+    `;
+
+export function useSubmitQuizAnswerMutation() {
+  return Urql.useMutation<SubmitQuizAnswerMutation, SubmitQuizAnswerMutationVariables>(SubmitQuizAnswerDocument);
+};
+export const FinalizeQuizDocument = gql`
+    mutation FinalizeQuiz($submissionId: ID!) {
+  finalizeQuiz(submissionId: $submissionId) {
+    id
+    completedAt
+    score
+    maxScore
+    scorePercentage
+    pointsAwarded
+  }
+}
+    `;
+
+export function useFinalizeQuizMutation() {
+  return Urql.useMutation<FinalizeQuizMutation, FinalizeQuizMutationVariables>(FinalizeQuizDocument);
 };
 export const AssignRoleDocument = gql`
     mutation AssignRole($input: AssignRoleInput!) {
@@ -3218,7 +3321,7 @@ export const ChallengePageDocument = gql`
           score
           maxScore
           scorePercentage
-          scorePercentage
+          pointsAwarded
           orderedQuestions {
             __typename
             id
@@ -3245,6 +3348,9 @@ export const ChallengePageDocument = gql`
             id
             answeredAt
             timeSpentSeconds
+            question {
+              id
+            }
             ... on FreeTextResponse {
               textResponse
             }

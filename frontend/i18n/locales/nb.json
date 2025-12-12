@@ -10,7 +10,14 @@
     "nextQuestion": "Neste spørsmål",
     "questionNumber": "{current} av {total}",
     "continue": "Fortsett",
-    "done": "Ferdig"
+    "done": "Ferdig",
+    "result": {
+      "receivedNoPoints": "Du samlet ingen poeng.",
+      "receivedPoints": "Du samlet {points} poeng.",
+      "betterLuckNextTime": "Bedre lykke neste gang!",
+      "wellDone": "Bra jobbet!",
+      "perfect": "Perfekt!"
+    }
   },
   "pages": {
     "standings": "Standings",
@@ -71,7 +78,7 @@
   "consent": {
     "accepted": "Godtatt",
     "rejected": "Avslått",
-    "acceptButton": "Jeg godtar vilkårene",
+    "acceptButton": "Jeg samtykker",
     "rejectButton": "Avslå vilkårene",
     "bannerTitle": "Du har samtykker du må ta stilling til",
     "bannerButton": "Gå til samtykke-instillinger",

@@ -7,10 +7,12 @@ defineProps<{
   confirmed?: boolean
   wrong?: boolean
   correct?: boolean
+  disabled?: boolean
+  selected?: boolean
 }>()
 
 const classes = cva(
-  'border-2 relative text-label rounded-list p-medium flex gap-list-section-inset text-center justify-center items-center min-h-22',
+  'border-2 relative text-label rounded-list p-medium flex gap-list-section-inset text-center justify-center items-center min-h-22 transition-colors',
   {
     variants: {
       highlighted: {
@@ -27,6 +29,10 @@ const classes = cva(
       },
       correct: {
         true: '',
+        false: '',
+      },
+      disabled: {
+        true: 'cursor-default',
         false: '',
       },
     },
@@ -51,17 +57,33 @@ const classes = cva(
         correct: true,
         class: 'border-accent-positive',
       },
+      {
+        confirmed: true,
+        wrong: false,
+        correct: false,
+        class: 'border-border-default opacity-50',
+      },
     ],
   },
 )
 </script>
 
 <template>
-  <button :class="classes({ highlighted, confirmed, wrong, correct })">
+  <button
+    :class="classes({ highlighted, confirmed, wrong, correct, disabled })"
+    :disabled="disabled"
+  >
     {{ text }}
 
     <span
-      v-if="confirmed && wrong"
+      v-if="confirmed && wrong && selected"
+      class="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 text-label text-on-accent bg-accent-negative rounded-full pl-2 pr-3 py-1 flex gap-1 items-center"
+    >
+      <Icon name="lucide:x" class="size-6" />
+      {{ $t('quiz.yourAnswer') }}
+    </span>
+    <span
+      v-else-if="confirmed && wrong && !selected"
       class="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 text-label text-on-accent bg-accent-negative rounded-full pl-2 pr-3 py-1 flex gap-1 items-center"
     >
       <Icon name="lucide:x" class="size-6" />
