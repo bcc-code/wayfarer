@@ -19,7 +19,15 @@ const questionResults = ref<QuestionResult[]>([])
 const quizCompleted = ref(false)
 const finalResult = ref<FinalizeQuizMutation['finalizeQuiz'] | null>(null)
 const startedSubmission = ref<StartQuizMutation['startQuiz'] | null>(null)
-const isLoading = ref(false)
+
+// Start with loading true if we need to start a quiz (no active submission and can start)
+const needsToStartQuiz = computed(() => {
+  return (
+    !props.challenge.quiz.userActiveSubmission?.id &&
+    props.challenge.quiz.userCanStart
+  )
+})
+const isLoading = ref(needsToStartQuiz.value)
 
 // Check if user has a completed submission (quiz already taken)
 const completedSubmission = computed(() => {
@@ -46,8 +54,7 @@ const canStartQuiz = computed(() => {
 
 onMounted(async () => {
   // If there's no active submission and we can start, start the quiz
-  if (!props.challenge.quiz.userActiveSubmission?.id && canStartQuiz.value) {
-    isLoading.value = true
+  if (needsToStartQuiz.value) {
     const result = await startQuiz({
       quizId: props.challenge.quiz.id,
     })
@@ -164,6 +171,23 @@ async function handleAnswerSubmitted(result: QuestionResult) {
         v-else-if="currentQuestion.__typename === 'FreeTextQuestion'"
         :question="currentQuestion"
       />
+    </template>
+
+    <!-- Fallback: show completed submission result even if retakes are allowed -->
+    <template v-else-if="completedSubmission">
+      <QuizResult
+        :score="completedSubmission.score ?? 0"
+        :max-score="completedSubmission.maxScore ?? 0"
+        :points-awarded="completedSubmission.pointsAwarded ?? 0"
+        :results="completedSubmissionResults"
+      />
+    </template>
+
+    <!-- Final fallback: show loading for any unexpected state -->
+    <template v-else>
+      <div class="flex items-center justify-center grow">
+        <LoadingState />
+      </div>
     </template>
   </PageLayout>
 </template>
