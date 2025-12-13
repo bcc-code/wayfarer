@@ -35,6 +35,7 @@ const (
 	PrefixQuizAnswer         = "QA" // Quiz Predefined Answers
 	PrefixQuizSubmission     = "QS" // Quiz Submissions
 	PrefixQuizResponse       = "QR" // Quiz Responses
+	PrefixFileUpload         = "FL" // File Uploads
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -170,6 +171,11 @@ func NewQuizSubmissionID() string {
 // NewQuizResponseID generates a new ID for a quiz response (QR prefix)
 func NewQuizResponseID() string {
 	return newID(PrefixQuizResponse)
+}
+
+// NewFileUploadID generates a new ID for a file upload (FL prefix)
+func NewFileUploadID() string {
+	return newID(PrefixFileUpload)
 }
 
 // Validation functions
@@ -319,4 +325,9 @@ func IsQuizSubmissionID(id string) bool {
 // IsQuizResponseID validates a quiz response ID
 func IsQuizResponseID(id string) bool {
 	return IsValidID(id, PrefixQuizResponse)
+}
+
+// IsFileUploadID validates a file upload ID
+func IsFileUploadID(id string) bool {
+	return IsValidID(id, PrefixFileUpload)
 }

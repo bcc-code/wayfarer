@@ -22,6 +22,7 @@ type Config struct {
 	Auth0    Auth0Config
 	OTEL     OTELConfig
 	SSF      SSFConfig
+	S3       S3Config
 }
 
 // ServerConfig holds HTTP server configuration
@@ -95,6 +96,16 @@ type SSFConfig struct {
 	SyncKey   string        // Static key for sync endpoint authentication
 }
 
+// S3Config holds AWS S3 configuration for file uploads
+type S3Config struct {
+	Bucket          string // S3 bucket name
+	Region          string // AWS region
+	AccessKeyID     string // AWS access key ID (used locally, optional on Cloud Run)
+	SecretAccessKey string // AWS secret access key (used locally, optional on Cloud Run)
+	PublicBaseURL   string // Public base URL for uploaded files
+	RoleARN         string // AWS role ARN for OIDC auth on Cloud Run
+}
+
 // Load reads all environment variables and returns a Config struct
 // This should be called once at application startup
 func Load() (*Config, error) {
@@ -154,6 +165,14 @@ func Load() (*Config, error) {
 			DebugMode: getEnvAsBool("SSF_DEBUG_MODE", false),
 			Timeout:   getEnvAsDuration("SSF_API_TIMEOUT", 10*time.Second),
 			SyncKey:   getEnv("SSF_SYNC_KEY", ""),
+		},
+		S3: S3Config{
+			Bucket:          getEnv("AWS_S3_BUCKET", ""),
+			Region:          getEnv("AWS_S3_REGION", "us-east-1"),
+			AccessKeyID:     getEnv("AWS_S3_ACCESS_KEY_ID", ""),
+			SecretAccessKey: getEnv("AWS_S3_SECRET_ACCESS_KEY", ""),
+			PublicBaseURL:   getEnv("AWS_S3_PUBLIC_BASE_URL", ""),
+			RoleARN:         getEnv("AWS_S3_ROLE_ARN", ""),
 		},
 	}
 

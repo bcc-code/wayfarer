@@ -2,24 +2,55 @@ type: http_request
 model: http_request
 id: rq_CreateContentAchievement
 createdAt: 2025-12-11T12:00:00
-updatedAt: 2025-12-13T19:24:01.550689
+updatedAt: 2025-12-13T19:54:29.988232
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Achievements
 authentication: {}
 authenticationType: null
 body:
-  query: "mutation CreateContentAchievement() {\n  createContentAchievement(input: {\n    name: \"Leseplan uke 1\"\n    descriptionPending: \"Fullfør uke 1 av leseplanen (5. januar-9. januar).\"\n    descriptionCompleted: \"Gratulerer med å ha fullført den første uken i leseplanen! Fortsett slik.\"\n    \n  }) {\n    id\n    name\n    points\n    hidden\n    totalItems\n    items {\n      id\n      sortOrder\n      externalContent {\n        id\n        planId\n        taskId\n        contentId\n        contentType\n        title\n      }\n    }\n    project {\n      id\n      name\n    }\n    event {\n      id\n      name\n    }\n    challenge {\n      id\n      name\n    }\n  }\n}\n"
-  variables: |
-    {
-      "input": {
-        "name": "Content Achievement",
-        "description": "Complete all content items to earn this achievement",
-        "projectId": "PR01K9W1Y51ARG5DCHJXR9VW8DKN",
-        "points": 50,
-        "hidden": false,
-        "items": [
-          {"externalContentId": "EC01KBMJ4JM86GE2BXNQ4QRHXX5J"}
-        ]
+  query: |
+    mutation CreateContentAchievement {
+      createContentAchievement(input: {
+        name: "Leseplan uke 1"
+        descriptionPending: "Fullfør uke 1 av leseplanen (5. januar-9. januar)."
+        descriptionCompleted: "Gratulerer med å ha fullført den første uken i leseplanen! Fortsett slik."
+        notificationText: "Ladder to Heaven:\nNy utmerkelse oppnådd🎖 Gratulerer med å ha fullført første uke av leseplanen!"
+        imagePending: ""
+        imageCompleted: ""
+        projectId: "PR01K9VZ8684DP9R4W3ZEV526E5X"
+        points: 10
+        hidden: false
+        items: []
+      }) {
+        id
+        name
+        points
+        hidden
+        totalItems
+        items {
+          id
+          sortOrder
+          externalContent {
+            id
+            planId
+            taskId
+            contentId
+            contentType
+            title
+          }
+        }
+        project {
+          id
+          name
+        }
+        event {
+          id
+          name
+        }
+        challenge {
+          id
+          name
+        }
       }
     }
 bodyType: graphql

@@ -171,6 +171,14 @@ func main() {
 	defer settingsService.Stop()
 	slog.Info("SettingsService initialized with background refresh")
 
+	// Initialize S3 upload service
+	s3Service, err := services.NewS3Service(ctx, cfg.S3)
+	if err != nil {
+		slog.Error("Failed to initialize S3 service", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("S3 service initialized", "bucket", cfg.S3.Bucket, "region", cfg.S3.Region)
+
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{
 		DB:                 db,
@@ -294,6 +302,13 @@ func main() {
 		Cache: cacheInstance,
 	}
 	router.POST("/api/v1/content-events", middleware.APIKeyAuth(cfg.APIKey), webhookHandler.HandleContentEvent)
+
+	// File upload handler
+	uploadHandler := &handlers.UploadHandler{
+		DB:        db,
+		S3Service: s3Service,
+	}
+	router.POST("/api/upload", middleware.JWTAuth(cfg.JWT), uploadHandler.HandleFileUpload)
 
 	// SSF sync endpoint (triggered by external cron/scheduler)
 	if ssfSyncService != nil && cfg.SSF.SyncKey != "" {

@@ -179,6 +179,24 @@ type ExternalContentTranslation struct {
 	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
 }
 
+// Stores metadata for files uploaded to S3 via /api/upload endpoint
+type FileUpload struct {
+	ID string `json:"id"`
+	// Original filename as uploaded by user
+	Filename string `json:"filename"`
+	// ULID-based filename stored in S3
+	StoredFilename string `json:"stored_filename"`
+	// File size in bytes
+	FileSize int32 `json:"file_size"`
+	// MIME type detected from file header
+	MimeType string `json:"mime_type"`
+	// Full public URL to access the file
+	PublicUrl string `json:"public_url"`
+	// User ID of admin who uploaded the file
+	UploadedBy string             `json:"uploaded_by"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
 type LeaderboardEventChurch struct {
 	EventID   string             `json:"event_id"`
 	ChurchID  string             `json:"church_id"`
