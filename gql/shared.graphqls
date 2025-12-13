@@ -376,6 +376,7 @@ interface Achievement {
     name: String!
     descriptionPending: String!
     descriptionCompleted: String!
+    notificationText: String!
     imagePending: String!
     imageCompleted: String!
     project: Project! @goField(forceResolver: true)
@@ -393,6 +394,7 @@ type SimpleAchievement implements Achievement {
     name: String!
     descriptionPending: String!
     descriptionCompleted: String!
+    notificationText: String!
     imagePending: String!
     imageCompleted: String!
     project: Project! @goField(forceResolver: true)
@@ -408,6 +410,7 @@ type ContentAchievement implements Achievement {
     name: String!
     descriptionPending: String!
     descriptionCompleted: String!
+    notificationText: String!
     imagePending: String!
     imageCompleted: String!
     project: Project! @goField(forceResolver: true)
@@ -429,6 +432,7 @@ type StreakAchievement implements Achievement {
     name: String!
     descriptionPending: String!
     descriptionCompleted: String!
+    notificationText: String!
     imagePending: String!
     imageCompleted: String!
     project: Project! @goField(forceResolver: true)
@@ -446,6 +450,7 @@ type QuizAchievement implements Achievement {
     name: String!
     descriptionPending: String!
     descriptionCompleted: String!
+    notificationText: String!
     imagePending: String!
     imageCompleted: String!
     project: Project! @goField(forceResolver: true)
@@ -725,6 +730,7 @@ input CreateSimpleAchievementInput {
     name: String!
     descriptionPending: String!
     descriptionCompleted: String!
+    notificationText: String!
     imagePending: String!
     imageCompleted: String!
     projectId: ID!
@@ -738,6 +744,7 @@ input CreateContentAchievementInput {
     name: String!
     descriptionPending: String!
     descriptionCompleted: String!
+    notificationText: String!
     imagePending: String!
     imageCompleted: String!
     projectId: ID!
@@ -752,6 +759,7 @@ input CreateStreakAchievementInput {
     name: String!
     descriptionPending: String!
     descriptionCompleted: String!
+    notificationText: String!
     imagePending: String!
     imageCompleted: String!
     projectId: ID!
@@ -767,6 +775,7 @@ input CreateQuizAchievementInput {
     name: String!
     descriptionPending: String!
     descriptionCompleted: String!
+    notificationText: String!
     imagePending: String!
     imageCompleted: String!
     projectId: ID!
@@ -868,6 +877,7 @@ input UpdateAchievementInput {
     name: String
     descriptionPending: String
     descriptionCompleted: String
+    notificationText: String
     imagePending: String
     imageCompleted: String
     eventId: ID
@@ -880,6 +890,7 @@ input UpdateContentAchievementInput {
     name: String
     descriptionPending: String
     descriptionCompleted: String
+    notificationText: String
     imagePending: String
     imageCompleted: String
     eventId: ID
@@ -893,6 +904,7 @@ input UpdateStreakAchievementInput {
     name: String
     descriptionPending: String
     descriptionCompleted: String
+    notificationText: String
     imagePending: String
     imageCompleted: String
     eventId: ID

@@ -2,48 +2,13 @@ type: http_request
 model: http_request
 id: rq_CreateContentAchievement
 createdAt: 2025-12-11T12:00:00
-updatedAt: 2025-12-11T08:32:00.104182
+updatedAt: 2025-12-13T17:42:53.341427
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Achievements
 authentication: {}
 authenticationType: null
 body:
-  query: |
-    mutation CreateContentAchievement($input: CreateContentAchievementInput!) {
-      createContentAchievement(input: $input) {
-        id
-        name
-        description
-        image
-        points
-        hidden
-        totalItems
-        items {
-          id
-          sortOrder
-          externalContent {
-            id
-            planId
-            taskId
-            contentId
-            contentType
-            title
-          }
-        }
-        project {
-          id
-          name
-        }
-        event {
-          id
-          name
-        }
-        challenge {
-          id
-          name
-        }
-      }
-    }
+  query: "mutation CreateContentAchievement() {\n  createContentAchievement(input: {\n    name: \"Leseplan uke 1\"\n    descriptionPending: \"Fullfør uke 1 av leseplanen (5. januar-9. januar).\"\n    descriptionCompleted: \"Gratulerer med å ha fullført den første uken i leseplanen! Fortsett slik.\"\n    \n  }) {\n    id\n    name\n    points\n    hidden\n    totalItems\n    items {\n      id\n      sortOrder\n      externalContent {\n        id\n        planId\n        taskId\n        contentId\n        contentType\n        title\n      }\n    }\n    project {\n      id\n      name\n    }\n    event {\n      id\n      name\n    }\n    challenge {\n      id\n      name\n    }\n  }\n}\n"
   variables: |
     {
       "input": {

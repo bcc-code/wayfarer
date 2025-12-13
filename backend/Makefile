@@ -6,6 +6,7 @@ help: ## Display this help message
 generate: ## Generate GraphQL code
 	@echo "Generating GraphQL API..."
 	@go run github.com/99designs/gqlgen generate --config gqlgen.yml
+	@sqlc generate
 
 migrate: ## Run database migrations
 	@echo "Running migrations..."

@@ -209,6 +209,7 @@ CREATE TABLE achievements (
     name VARCHAR(255) NOT NULL,
     description_pending TEXT NOT NULL,
     description_completed TEXT NOT NULL,
+    notification_text TEXT NOT NULL DEFAULT '',
     image_pending VARCHAR(500) NOT NULL,
     image_completed VARCHAR(500) NOT NULL,
     points INT NOT NULL DEFAULT 0,
@@ -421,6 +422,7 @@ CREATE TABLE achievement_translations (
     name VARCHAR(255),
     description_pending TEXT,
     description_completed TEXT,
+    notification_text TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     PRIMARY KEY (achievement_id, language_code)

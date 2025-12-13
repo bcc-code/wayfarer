@@ -23,6 +23,7 @@ type Achievement struct {
 	DescriptionCompleted string             `json:"description_completed"`
 	ImagePending         string             `json:"image_pending"`
 	ImageCompleted       string             `json:"image_completed"`
+	NotificationText     string             `json:"notification_text"`
 }
 
 type AchievementTranslation struct {
@@ -33,6 +34,7 @@ type AchievementTranslation struct {
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	DescriptionPending   *string            `json:"description_pending"`
 	DescriptionCompleted *string            `json:"description_completed"`
+	NotificationText     *string            `json:"notification_text"`
 }
 
 type Challenge struct {

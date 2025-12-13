@@ -41,6 +41,7 @@ func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input mo
 		Name:                 input.Name,
 		DescriptionPending:   input.DescriptionPending,
 		DescriptionCompleted: input.DescriptionCompleted,
+		NotificationText:     input.NotificationText,
 		ImagePending:         input.ImagePending,
 		ImageCompleted:       input.ImageCompleted,
 		Points:               int32(input.Points),
@@ -75,6 +76,7 @@ func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input mo
 		Name:                 achievement.Name,
 		DescriptionPending:   achievement.DescriptionPending,
 		DescriptionCompleted: achievement.DescriptionCompleted,
+		NotificationText:     achievement.NotificationText,
 		ImagePending:         achievement.ImagePending,
 		ImageCompleted:       achievement.ImageCompleted,
 		Points:               int(achievement.Points),
@@ -121,6 +123,7 @@ func (r *mutationResolver) CreateContentAchievement(ctx context.Context, input m
 		Name:                 input.Name,
 		DescriptionPending:   input.DescriptionPending,
 		DescriptionCompleted: input.DescriptionCompleted,
+		NotificationText:     input.NotificationText,
 		ImagePending:         input.ImagePending,
 		ImageCompleted:       input.ImageCompleted,
 		Points:               int32(input.Points),
@@ -178,6 +181,7 @@ func (r *mutationResolver) CreateContentAchievement(ctx context.Context, input m
 		Name:                 achievement.Name,
 		DescriptionPending:   achievement.DescriptionPending,
 		DescriptionCompleted: achievement.DescriptionCompleted,
+		NotificationText:     achievement.NotificationText,
 		ImagePending:         achievement.ImagePending,
 		ImageCompleted:       achievement.ImageCompleted,
 		Points:               int(achievement.Points),
@@ -225,6 +229,7 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 		Name:                 input.Name,
 		DescriptionPending:   input.DescriptionPending,
 		DescriptionCompleted: input.DescriptionCompleted,
+		NotificationText:     input.NotificationText,
 		ImagePending:         input.ImagePending,
 		ImageCompleted:       input.ImageCompleted,
 		Points:               int32(input.Points),
@@ -274,6 +279,7 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 		Name:                 achievement.Name,
 		DescriptionPending:   achievement.DescriptionPending,
 		DescriptionCompleted: achievement.DescriptionCompleted,
+		NotificationText:     achievement.NotificationText,
 		ImagePending:         achievement.ImagePending,
 		ImageCompleted:       achievement.ImageCompleted,
 		Points:               int(achievement.Points),
@@ -329,6 +335,7 @@ func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, inp
 		Name:                 input.Name,
 		DescriptionPending:   input.DescriptionPending,
 		DescriptionCompleted: input.DescriptionCompleted,
+		NotificationText:     input.NotificationText,
 		ImagePending:         input.ImagePending,
 		ImageCompleted:       input.ImageCompleted,
 		EventID:              input.EventID,
@@ -418,12 +425,13 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 		qtx := r.DB.Queries.WithTx(tx)
 
 		// Update common fields if provided
-		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
+		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.NotificationText != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
 			params := sqlc.UpdateAchievementParams{
 				ID:                   id,
 				Name:                 input.Name,
 				DescriptionPending:   input.DescriptionPending,
 				DescriptionCompleted: input.DescriptionCompleted,
+				NotificationText:     input.NotificationText,
 				ImagePending:         input.ImagePending,
 				ImageCompleted:       input.ImageCompleted,
 				EventID:              input.EventID,
@@ -561,12 +569,13 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 		qtx := r.DB.Queries.WithTx(tx)
 
 		// Update common fields if provided
-		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
+		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.NotificationText != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
 			params := sqlc.UpdateAchievementParams{
 				ID:                   id,
 				Name:                 input.Name,
 				DescriptionPending:   input.DescriptionPending,
 				DescriptionCompleted: input.DescriptionCompleted,
+				NotificationText:     input.NotificationText,
 				ImagePending:         input.ImagePending,
 				ImageCompleted:       input.ImageCompleted,
 				EventID:              input.EventID,

@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_UoznZfyyMQ
 createdAt: 2025-12-02T17:09:43.355455
-updatedAt: 2025-12-12T09:40:31.198446
+updatedAt: 2025-12-12T15:55:31.955353
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -20,10 +20,6 @@ body:
         }
       }
       currentProject{
-        id
-        name
-      }
-      project(id: "PR01K9W1Y51ARG5DCHJXR9VW8DKN"){
         journal{
           edges{
             node{
@@ -47,7 +43,7 @@ body:
           descriptionPending
           descriptionCompleted
           imagePending
-          imageComplete
+          imageCompleted
           id
           name
           hidden

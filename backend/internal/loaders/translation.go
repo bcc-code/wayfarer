@@ -30,6 +30,7 @@ type Translation struct {
 	Description          *string // Used by most entity types
 	DescriptionPending   *string // Only for achievements
 	DescriptionCompleted *string // Only for achievements
+	NotificationText     *string // Only for achievements
 	Rules                *string // Only for projects
 	ButtonText           *string // Only for challenges
 	Title                *string // Only for articles and consents
@@ -244,6 +245,7 @@ func queryTranslations(ctx context.Context, db *database.DB, entityType string, 
 				Name:                 row.Name,
 				DescriptionPending:   row.DescriptionPending,
 				DescriptionCompleted: row.DescriptionCompleted,
+				NotificationText:     row.NotificationText,
 			}
 		}
 		return translations, nil

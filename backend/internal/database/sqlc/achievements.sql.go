@@ -147,6 +147,7 @@ INSERT INTO achievements (
     name,
     description_pending,
     description_completed,
+    notification_text,
     image_pending,
     image_completed,
     points,
@@ -162,9 +163,10 @@ INSERT INTO achievements (
     $8::text,
     $9::text,
     $10::text,
-    $11::int,
-    $12::bool
-) RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed
+    $11::text,
+    $12::int,
+    $13::bool
+) RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed, notification_text
 `
 
 type CreateAchievementParams struct {
@@ -176,6 +178,7 @@ type CreateAchievementParams struct {
 	Name                 string `json:"name"`
 	DescriptionPending   string `json:"description_pending"`
 	DescriptionCompleted string `json:"description_completed"`
+	NotificationText     string `json:"notification_text"`
 	ImagePending         string `json:"image_pending"`
 	ImageCompleted       string `json:"image_completed"`
 	Points               int32  `json:"points"`
@@ -193,6 +196,7 @@ func (q *Queries) CreateAchievement(ctx context.Context, arg CreateAchievementPa
 		arg.Name,
 		arg.DescriptionPending,
 		arg.DescriptionCompleted,
+		arg.NotificationText,
 		arg.ImagePending,
 		arg.ImageCompleted,
 		arg.Points,
@@ -214,6 +218,7 @@ func (q *Queries) CreateAchievement(ctx context.Context, arg CreateAchievementPa
 		&i.DescriptionCompleted,
 		&i.ImagePending,
 		&i.ImageCompleted,
+		&i.NotificationText,
 	)
 	return &i, err
 }
@@ -321,6 +326,7 @@ SELECT
     a.name,
     a.description_pending,
     a.description_completed,
+    a.notification_text,
     a.image_pending,
     a.image_completed,
     a.points,
@@ -359,6 +365,7 @@ type GetAchievementsByIDsRow struct {
 	Name                 string             `json:"name"`
 	DescriptionPending   string             `json:"description_pending"`
 	DescriptionCompleted string             `json:"description_completed"`
+	NotificationText     string             `json:"notification_text"`
 	ImagePending         string             `json:"image_pending"`
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
@@ -389,6 +396,7 @@ func (q *Queries) GetAchievementsByIDs(ctx context.Context, ids []string) ([]*Ge
 			&i.Name,
 			&i.DescriptionPending,
 			&i.DescriptionCompleted,
+			&i.NotificationText,
 			&i.ImagePending,
 			&i.ImageCompleted,
 			&i.Points,
@@ -420,6 +428,7 @@ SELECT
     a.name,
     a.description_pending,
     a.description_completed,
+    a.notification_text,
     a.image_pending,
     a.image_completed,
     a.points,
@@ -447,6 +456,7 @@ type GetAchievementsByProjectIDsRow struct {
 	Name                 string             `json:"name"`
 	DescriptionPending   string             `json:"description_pending"`
 	DescriptionCompleted string             `json:"description_completed"`
+	NotificationText     string             `json:"notification_text"`
 	ImagePending         string             `json:"image_pending"`
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
@@ -476,6 +486,7 @@ func (q *Queries) GetAchievementsByProjectIDs(ctx context.Context, projectIds []
 			&i.Name,
 			&i.DescriptionPending,
 			&i.DescriptionCompleted,
+			&i.NotificationText,
 			&i.ImagePending,
 			&i.ImageCompleted,
 			&i.Points,
@@ -506,6 +517,7 @@ SELECT
     a.name,
     a.description_pending,
     a.description_completed,
+    a.notification_text,
     a.image_pending,
     a.image_completed,
     a.points,
@@ -563,6 +575,7 @@ type GetAchievementsFilteredCursorRow struct {
 	Name                 string             `json:"name"`
 	DescriptionPending   string             `json:"description_pending"`
 	DescriptionCompleted string             `json:"description_completed"`
+	NotificationText     string             `json:"notification_text"`
 	ImagePending         string             `json:"image_pending"`
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
@@ -601,6 +614,7 @@ func (q *Queries) GetAchievementsFilteredCursor(ctx context.Context, arg GetAchi
 			&i.Name,
 			&i.DescriptionPending,
 			&i.DescriptionCompleted,
+			&i.NotificationText,
 			&i.ImagePending,
 			&i.ImageCompleted,
 			&i.Points,
@@ -760,6 +774,7 @@ SELECT DISTINCT
     a.name,
     a.description_pending,
     a.description_completed,
+    a.notification_text,
     a.image_pending,
     a.image_completed,
     a.points,
@@ -794,6 +809,7 @@ type GetPublishedContentAchievementsByExternalContentRow struct {
 	Name                 string             `json:"name"`
 	DescriptionPending   string             `json:"description_pending"`
 	DescriptionCompleted string             `json:"description_completed"`
+	NotificationText     string             `json:"notification_text"`
 	ImagePending         string             `json:"image_pending"`
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
@@ -822,6 +838,7 @@ func (q *Queries) GetPublishedContentAchievementsByExternalContent(ctx context.C
 			&i.Name,
 			&i.DescriptionPending,
 			&i.DescriptionCompleted,
+			&i.NotificationText,
 			&i.ImagePending,
 			&i.ImageCompleted,
 			&i.Points,
@@ -1100,21 +1117,23 @@ SET
     name = CASE WHEN $1::text IS NOT NULL THEN $1::text ELSE name END,
     description_pending = CASE WHEN $2::text IS NOT NULL THEN $2::text ELSE description_pending END,
     description_completed = CASE WHEN $3::text IS NOT NULL THEN $3::text ELSE description_completed END,
-    image_pending = CASE WHEN $4::text IS NOT NULL THEN $4::text ELSE image_pending END,
-    image_completed = CASE WHEN $5::text IS NOT NULL THEN $5::text ELSE image_completed END,
-    event_id = CASE WHEN $6::text IS NOT NULL THEN $6::text ELSE event_id END,
-    challenge_id = CASE WHEN $7::text IS NOT NULL THEN $7::text ELSE challenge_id END,
-    points = CASE WHEN $8::int IS NOT NULL THEN $8::int ELSE points END,
-    hidden = CASE WHEN $9::bool IS NOT NULL THEN $9::bool ELSE hidden END,
+    notification_text = CASE WHEN $4::text IS NOT NULL THEN $4::text ELSE notification_text END,
+    image_pending = CASE WHEN $5::text IS NOT NULL THEN $5::text ELSE image_pending END,
+    image_completed = CASE WHEN $6::text IS NOT NULL THEN $6::text ELSE image_completed END,
+    event_id = CASE WHEN $7::text IS NOT NULL THEN $7::text ELSE event_id END,
+    challenge_id = CASE WHEN $8::text IS NOT NULL THEN $8::text ELSE challenge_id END,
+    points = CASE WHEN $9::int IS NOT NULL THEN $9::int ELSE points END,
+    hidden = CASE WHEN $10::bool IS NOT NULL THEN $10::bool ELSE hidden END,
     updated_at = now()
-WHERE id = $10::text
-RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed
+WHERE id = $11::text
+RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed, notification_text
 `
 
 type UpdateAchievementParams struct {
 	Name                 *string `json:"name"`
 	DescriptionPending   *string `json:"description_pending"`
 	DescriptionCompleted *string `json:"description_completed"`
+	NotificationText     *string `json:"notification_text"`
 	ImagePending         *string `json:"image_pending"`
 	ImageCompleted       *string `json:"image_completed"`
 	EventID              *string `json:"event_id"`
@@ -1130,6 +1149,7 @@ func (q *Queries) UpdateAchievement(ctx context.Context, arg UpdateAchievementPa
 		arg.Name,
 		arg.DescriptionPending,
 		arg.DescriptionCompleted,
+		arg.NotificationText,
 		arg.ImagePending,
 		arg.ImageCompleted,
 		arg.EventID,
@@ -1154,6 +1174,7 @@ func (q *Queries) UpdateAchievement(ctx context.Context, arg UpdateAchievementPa
 		&i.DescriptionCompleted,
 		&i.ImagePending,
 		&i.ImageCompleted,
+		&i.NotificationText,
 	)
 	return &i, err
 }

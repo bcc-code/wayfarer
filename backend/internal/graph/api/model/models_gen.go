@@ -17,6 +17,7 @@ type Achievement interface {
 	GetName() string
 	GetDescriptionPending() string
 	GetDescriptionCompleted() string
+	GetNotificationText() string
 	GetImagePending() string
 	GetImageCompleted() string
 	GetProject() *Project
@@ -229,6 +230,7 @@ type ContentAchievement struct {
 	Name                 string            `json:"name"`
 	DescriptionPending   string            `json:"descriptionPending"`
 	DescriptionCompleted string            `json:"descriptionCompleted"`
+	NotificationText     string            `json:"notificationText"`
 	ImagePending         string            `json:"imagePending"`
 	ImageCompleted       string            `json:"imageCompleted"`
 	Project              *Project          `json:"project"`
@@ -252,6 +254,7 @@ func (this ContentAchievement) GetID() string                    { return this.I
 func (this ContentAchievement) GetName() string                  { return this.Name }
 func (this ContentAchievement) GetDescriptionPending() string    { return this.DescriptionPending }
 func (this ContentAchievement) GetDescriptionCompleted() string  { return this.DescriptionCompleted }
+func (this ContentAchievement) GetNotificationText() string      { return this.NotificationText }
 func (this ContentAchievement) GetImagePending() string          { return this.ImagePending }
 func (this ContentAchievement) GetImageCompleted() string        { return this.ImageCompleted }
 func (this ContentAchievement) GetProject() *Project             { return this.Project }
@@ -312,6 +315,7 @@ type CreateContentAchievementInput struct {
 	Name                 string             `json:"name"`
 	DescriptionPending   string             `json:"descriptionPending"`
 	DescriptionCompleted string             `json:"descriptionCompleted"`
+	NotificationText     string             `json:"notificationText"`
 	ImagePending         string             `json:"imagePending"`
 	ImageCompleted       string             `json:"imageCompleted"`
 	ProjectID            string             `json:"projectId"`
@@ -348,6 +352,7 @@ type CreateQuizAchievementInput struct {
 	Name                 string  `json:"name"`
 	DescriptionPending   string  `json:"descriptionPending"`
 	DescriptionCompleted string  `json:"descriptionCompleted"`
+	NotificationText     string  `json:"notificationText"`
 	ImagePending         string  `json:"imagePending"`
 	ImageCompleted       string  `json:"imageCompleted"`
 	ProjectID            string  `json:"projectId"`
@@ -399,6 +404,7 @@ type CreateSimpleAchievementInput struct {
 	Name                 string  `json:"name"`
 	DescriptionPending   string  `json:"descriptionPending"`
 	DescriptionCompleted string  `json:"descriptionCompleted"`
+	NotificationText     string  `json:"notificationText"`
 	ImagePending         string  `json:"imagePending"`
 	ImageCompleted       string  `json:"imageCompleted"`
 	ProjectID            string  `json:"projectId"`
@@ -412,6 +418,7 @@ type CreateStreakAchievementInput struct {
 	Name                 string  `json:"name"`
 	DescriptionPending   string  `json:"descriptionPending"`
 	DescriptionCompleted string  `json:"descriptionCompleted"`
+	NotificationText     string  `json:"notificationText"`
 	ImagePending         string  `json:"imagePending"`
 	ImageCompleted       string  `json:"imageCompleted"`
 	ProjectID            string  `json:"projectId"`
@@ -843,6 +850,7 @@ type QuizAchievement struct {
 	Name                 string            `json:"name"`
 	DescriptionPending   string            `json:"descriptionPending"`
 	DescriptionCompleted string            `json:"descriptionCompleted"`
+	NotificationText     string            `json:"notificationText"`
 	ImagePending         string            `json:"imagePending"`
 	ImageCompleted       string            `json:"imageCompleted"`
 	Project              *Project          `json:"project"`
@@ -865,6 +873,7 @@ func (this QuizAchievement) GetID() string                    { return this.ID }
 func (this QuizAchievement) GetName() string                  { return this.Name }
 func (this QuizAchievement) GetDescriptionPending() string    { return this.DescriptionPending }
 func (this QuizAchievement) GetDescriptionCompleted() string  { return this.DescriptionCompleted }
+func (this QuizAchievement) GetNotificationText() string      { return this.NotificationText }
 func (this QuizAchievement) GetImagePending() string          { return this.ImagePending }
 func (this QuizAchievement) GetImageCompleted() string        { return this.ImageCompleted }
 func (this QuizAchievement) GetProject() *Project             { return this.Project }
@@ -1035,6 +1044,7 @@ type SimpleAchievement struct {
 	Name                 string            `json:"name"`
 	DescriptionPending   string            `json:"descriptionPending"`
 	DescriptionCompleted string            `json:"descriptionCompleted"`
+	NotificationText     string            `json:"notificationText"`
 	ImagePending         string            `json:"imagePending"`
 	ImageCompleted       string            `json:"imageCompleted"`
 	Project              *Project          `json:"project"`
@@ -1053,6 +1063,7 @@ func (this SimpleAchievement) GetID() string                    { return this.ID
 func (this SimpleAchievement) GetName() string                  { return this.Name }
 func (this SimpleAchievement) GetDescriptionPending() string    { return this.DescriptionPending }
 func (this SimpleAchievement) GetDescriptionCompleted() string  { return this.DescriptionCompleted }
+func (this SimpleAchievement) GetNotificationText() string      { return this.NotificationText }
 func (this SimpleAchievement) GetImagePending() string          { return this.ImagePending }
 func (this SimpleAchievement) GetImageCompleted() string        { return this.ImageCompleted }
 func (this SimpleAchievement) GetProject() *Project             { return this.Project }
@@ -1122,6 +1133,7 @@ type StreakAchievement struct {
 	Name                 string            `json:"name"`
 	DescriptionPending   string            `json:"descriptionPending"`
 	DescriptionCompleted string            `json:"descriptionCompleted"`
+	NotificationText     string            `json:"notificationText"`
 	ImagePending         string            `json:"imagePending"`
 	ImageCompleted       string            `json:"imageCompleted"`
 	Project              *Project          `json:"project"`
@@ -1143,6 +1155,7 @@ func (this StreakAchievement) GetID() string                    { return this.ID
 func (this StreakAchievement) GetName() string                  { return this.Name }
 func (this StreakAchievement) GetDescriptionPending() string    { return this.DescriptionPending }
 func (this StreakAchievement) GetDescriptionCompleted() string  { return this.DescriptionCompleted }
+func (this StreakAchievement) GetNotificationText() string      { return this.NotificationText }
 func (this StreakAchievement) GetImagePending() string          { return this.ImagePending }
 func (this StreakAchievement) GetImageCompleted() string        { return this.ImageCompleted }
 func (this StreakAchievement) GetProject() *Project             { return this.Project }
@@ -1262,6 +1275,7 @@ type UpdateAchievementInput struct {
 	Name                 *string `json:"name,omitempty"`
 	DescriptionPending   *string `json:"descriptionPending,omitempty"`
 	DescriptionCompleted *string `json:"descriptionCompleted,omitempty"`
+	NotificationText     *string `json:"notificationText,omitempty"`
 	ImagePending         *string `json:"imagePending,omitempty"`
 	ImageCompleted       *string `json:"imageCompleted,omitempty"`
 	EventID              *string `json:"eventId,omitempty"`
@@ -1295,6 +1309,7 @@ type UpdateContentAchievementInput struct {
 	Name                 *string            `json:"name,omitempty"`
 	DescriptionPending   *string            `json:"descriptionPending,omitempty"`
 	DescriptionCompleted *string            `json:"descriptionCompleted,omitempty"`
+	NotificationText     *string            `json:"notificationText,omitempty"`
 	ImagePending         *string            `json:"imagePending,omitempty"`
 	ImageCompleted       *string            `json:"imageCompleted,omitempty"`
 	EventID              *string            `json:"eventId,omitempty"`
@@ -1348,6 +1363,7 @@ type UpdateStreakAchievementInput struct {
 	Name                 *string `json:"name,omitempty"`
 	DescriptionPending   *string `json:"descriptionPending,omitempty"`
 	DescriptionCompleted *string `json:"descriptionCompleted,omitempty"`
+	NotificationText     *string `json:"notificationText,omitempty"`
 	ImagePending         *string `json:"imagePending,omitempty"`
 	ImageCompleted       *string `json:"imageCompleted,omitempty"`
 	EventID              *string `json:"eventId,omitempty"`

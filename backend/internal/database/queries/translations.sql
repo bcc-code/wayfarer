@@ -38,7 +38,7 @@ WHERE challenge_id = ANY(@entity_ids::text[])
   AND language_code = @language_code::text;
 
 -- name: GetAchievementTranslationsByIDs :many
-SELECT achievement_id, language_code, name, description_pending, description_completed
+SELECT achievement_id, language_code, name, description_pending, description_completed, notification_text
 FROM achievement_translations
 WHERE achievement_id = ANY(@entity_ids::text[])
   AND language_code = @language_code::text;
