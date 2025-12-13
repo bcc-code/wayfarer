@@ -2,8 +2,12 @@ package services
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
+	"strings"
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -35,6 +39,19 @@ func (t gcpTokenFetcher) GetIdentityToken() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get identity token from metadata server: %w", err)
 	}
+
+	// Debug: decode and log JWT claims
+	parts := strings.Split(token, ".")
+	if len(parts) == 3 {
+		payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+		if err == nil {
+			var claims map[string]interface{}
+			if json.Unmarshal(payload, &claims) == nil {
+				slog.Info("OIDC token claims", "aud", claims["aud"], "iss", claims["iss"], "sub", claims["sub"], "email", claims["email"])
+			}
+		}
+	}
+
 	return []byte(token), nil
 }
 
