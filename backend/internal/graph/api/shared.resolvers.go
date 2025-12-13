@@ -875,6 +875,17 @@ func (r *quizSubmissionResolver) Quiz(ctx context.Context, obj *model.QuizSubmis
 
 // User is the resolver for the user field on QuizSubmission.
 func (r *quizSubmissionResolver) User(ctx context.Context, obj *model.QuizSubmission) (*model.User, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !canAccessUser(ctx, r.RoleService, currentUserID, obj.UserID) {
+		return nil, fmt.Errorf("permission denied")
+	}
+
 	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
 	return thunk()
 }
@@ -975,6 +986,17 @@ func (r *scoreJournalResolver) Project(ctx context.Context, obj *model.ScoreJour
 
 // User is the resolver for the user field.
 func (r *scoreJournalResolver) User(ctx context.Context, obj *model.ScoreJournal) (*model.User, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !canAccessUser(ctx, r.RoleService, currentUserID, obj.UserID) {
+		return nil, fmt.Errorf("permission denied")
+	}
+
 	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
 	user, err := thunk()
 	if err != nil {
@@ -1058,6 +1080,17 @@ func (r *scoreJournalResolver) AwardedBy(ctx context.Context, obj *model.ScoreJo
 	// Only return user if source_type is MANUAL
 	if obj.SourceType != model.ScoreSourceTypeManual || obj.AwardedByID == nil {
 		return nil, nil
+	}
+
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !canAccessUser(ctx, r.RoleService, currentUserID, *obj.AwardedByID) {
+		return nil, fmt.Errorf("permission denied")
 	}
 
 	thunk := r.Loaders.UserByIDLoader.Load(ctx, *obj.AwardedByID)
@@ -1308,12 +1341,21 @@ func (r *superTeamResolver) Members(ctx context.Context, obj *model.SuperTeam, f
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// Check permissions: only admins and project admins can see super team members
-	isAdmin := r.RoleService.IsAdmin(ctx, currentUserID) || r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M)
-	isProjectAdmin := r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, obj.ProjectID)
+	// Check permissions - only admins, project admins can access super team members
+	allowed := false
 
-	if !isAdmin && !isProjectAdmin {
-		return nil, fmt.Errorf("permission denied: only admins and project admins can view super team members")
+	// 1. Admins/SuperAdmins/M2M can see all super team members
+	if r.RoleService.IsAdmin(ctx, currentUserID) || r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) {
+		allowed = true
+	}
+
+	// 2. Project admins can see members of super teams in their projects
+	if !allowed && r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, obj.ProjectID) {
+		allowed = true
+	}
+
+	if !allowed {
+		return nil, fmt.Errorf("permission denied: you do not have access to this super team's members")
 	}
 
 	// Decode cursors if provided
@@ -1449,14 +1491,7 @@ func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.Te
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// Load current user to get their church ID
-	currentUserThunk := r.Loaders.UserByIDLoader.Load(ctx, currentUserID)
-	currentUser, err := currentUserThunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load current user: %w", err)
-	}
-
-	// Check permissions in order of precedence
+	// Check permissions - only admins, project admins, and team leads can access team members
 	allowed := false
 
 	// 1. Admins/SuperAdmins/M2M can see all team members
@@ -1464,39 +1499,13 @@ func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.Te
 		allowed = true
 	}
 
-	// 2. Team leads can see members of teams they lead
-	if !allowed && r.RoleService.HasRoleInTeam(ctx, currentUserID, services.RoleTeamLead, obj.ID) {
-		allowed = true
-	}
-
-	// 3. Project admins can see members of teams in their projects
+	// 2. Project admins can see members of teams in their projects
 	if !allowed && r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, obj.ProjectID) {
 		allowed = true
 	}
 
-	// 4. Regular users can see members of teams in projects they participate in
-	if !allowed {
-		// Check if user participates in the team's project
-		projectsThunk := r.Loaders.ProjectsByUserLoader.Load(ctx, currentUserID)
-		userProjects, err := projectsThunk()
-		if err != nil {
-			return nil, fmt.Errorf("failed to load user projects: %w", err)
-		}
-
-		for _, project := range userProjects {
-			if project.ID == obj.ProjectID {
-				allowed = true
-				break
-			}
-		}
-	}
-
-	// 5. Church admins can see members of teams in projects their church participates in
-	if !allowed && r.RoleService.HasRoleInChurch(ctx, currentUserID, services.RoleChurchAdmin, currentUser.ChurchID) {
-		// Church admin can see members of teams in projects their church participates in
-		// Note: This is a simplified implementation that grants access based on the church admin role
-		// A more precise implementation would query user_projects to verify the church actually
-		// participates in this specific project
+	// 3. Team leads can see members of teams they lead
+	if !allowed && r.RoleService.HasRoleInTeam(ctx, currentUserID, services.RoleTeamLead, obj.ID) {
 		allowed = true
 	}
 
@@ -1561,6 +1570,17 @@ func (r *teamMemberResolver) Church(ctx context.Context, obj *model.TeamMember) 
 
 // User is the resolver for the user field.
 func (r *teamMemberResolver) User(ctx context.Context, obj *model.TeamMember) (*model.User, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !canAccessUser(ctx, r.RoleService, currentUserID, obj.UserID) {
+		return nil, fmt.Errorf("permission denied")
+	}
+
 	// Use dataloader to fetch user
 	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
 	user, err := thunk()
@@ -1707,6 +1727,17 @@ func (r *userRoleResolver) User(ctx context.Context, obj *model.UserRole) (*mode
 	// Use the dataloader to fetch the full user data
 	if obj.User == nil {
 		return nil, fmt.Errorf("user ID not set in UserRole")
+	}
+
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !canAccessUser(ctx, r.RoleService, currentUserID, obj.User.ID) {
+		return nil, fmt.Errorf("permission denied")
 	}
 
 	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.User.ID)
