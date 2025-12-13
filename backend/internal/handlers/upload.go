@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -147,6 +148,7 @@ func (h *UploadHandler) HandleFileUpload(c *gin.Context) {
 	// Upload to S3
 	publicURL, err := h.S3Service.UploadFile(ctx, bytes.NewReader(buffer.Bytes()), storedFilename, mimeType, fileSize)
 	if err != nil {
+		slog.Error("Failed to upload file to S3", "error", err, "filename", storedFilename, "size", fileSize)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upload file to S3"})
 		return
 	}
@@ -162,6 +164,7 @@ func (h *UploadHandler) HandleFileUpload(c *gin.Context) {
 		UploadedBy:     userID,
 	})
 	if err != nil {
+		slog.Error("Failed to save file record to database", "error", err, "fileID", fileID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file record"})
 		return
 	}
