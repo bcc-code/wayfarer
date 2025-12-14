@@ -1,0 +1,31 @@
+type: http_request
+model: http_request
+id: rq_AMAUdMp639
+createdAt: 2025-12-13T21:46:01.137805
+updatedAt: 2025-12-13T21:51:15.496758
+workspaceId: wk_XKsmbMdFg7
+folderId: null
+authentication: {}
+authenticationType: null
+body:
+  form:
+  - enabled: true
+    file: /Users/matjaz/wallz/wallhaven-yx615d.jpg
+    id: 5n4ZW3BXCX
+    name: file
+  - enabled: true
+    id: RhawcT6Ga2
+    name: ''
+    value: ''
+bodyType: multipart/form-data
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: multipart/form-data
+  id: uewSFKRdFH
+method: POST
+name: Introspection Copy
+sortPriority: 16000.001
+url: ${[ HOST ]}/api/upload
+urlParameters: []

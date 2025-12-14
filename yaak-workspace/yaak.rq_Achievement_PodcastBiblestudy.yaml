@@ -1,0 +1,67 @@
+type: http_request
+model: http_request
+id: rq_Achievement_PodcastBiblestudy
+createdAt: 2025-12-13T12:00:00
+updatedAt: 2025-12-13T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation CreateContentAchievement {
+      createContentAchievement(input: {
+        name: "Podcast biblestudy"
+        descriptionPending: "Lytt til alle episodene av Hidden Treasures-podcasten for uke 7-12 (16. februar – 27. mars)."
+        descriptionCompleted: "Gratulerer med å ha lyttet til uke 7-12 av Hidden Treasures podcast!"
+        notificationText: "Ladder to Heaven:\nNy utmerkelse oppnådd🎖 Gratulerer med å ha lyttet til podcasten fra uke 7-12!"
+        imagePending: ""
+        imageCompleted: ""
+        projectId: "PR01K9VZ8684DP9R4W3ZEV526E5X"
+        points: 10
+        hidden: false
+        items: []
+      }) {
+        id
+        name
+        points
+        hidden
+        totalItems
+        items {
+          id
+          sortOrder
+          externalContent {
+            id
+            planId
+            taskId
+            contentId
+            contentType
+            title
+          }
+        }
+        project {
+          id
+          name
+        }
+        event {
+          id
+          name
+        }
+        challenge {
+          id
+          name
+        }
+      }
+    }
+bodyType: graphql
+description: Create achievement - Podcast biblestudy
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_Achievement_PodcastBiblestudy
+method: POST
+name: Achievement - Podcast biblestudy
+sortPriority: 3206.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

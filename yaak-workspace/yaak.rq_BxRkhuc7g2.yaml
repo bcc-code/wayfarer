@@ -1,0 +1,29 @@
+type: http_request
+model: http_request
+id: rq_BxRkhuc7g2
+createdAt: 2025-12-14T20:43:18.654056
+updatedAt: 2025-12-14T20:43:57.108436
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_U4FqjQ2Ma5
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation {
+      publishChallenge(id: "CL01KCF90HEY2RAT3D333NNCGGA7", publishedAt: "2025-01-10T00:00:00"){
+        id
+      }
+    }
+  variables: ''
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: xraigN0HxK
+method: POST
+name: Publish Challenge
+sortPriority: 1000.0029
+url: ${[ HOST ]}/graphql
+urlParameters: []

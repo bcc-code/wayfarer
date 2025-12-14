@@ -236,8 +236,14 @@ func (c *CacheWithRegistry) InvalidateSuperTeam(superTeamID string) {
 }
 
 // InvalidateChallenge invalidates all cache entries related to a challenge
-func (c *CacheWithRegistry) InvalidateChallenge(challengeID string) {
+func (c *CacheWithRegistry) InvalidateChallenge(challengeID, projectID string, eventID *string) {
 	c.Delete(ChallengeKey(challengeID))
+
+	// Invalidate challenge list caches for project and event
+	c.Delete(ChallengesByProjectKey(projectID))
+	if eventID != nil {
+		c.Delete(ChallengesByEventKey(*eventID))
+	}
 
 	// All challenge list/filter queries (any filter combination)
 	// These are invalidated globally since filter query cache keys are hashed

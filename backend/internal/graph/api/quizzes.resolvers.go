@@ -575,9 +575,22 @@ func (r *mutationResolver) CreateQuizAchievement(ctx context.Context, input mode
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
+	// Load challenge to get eventID for cache invalidation
+	challengeThunk := r.Loaders.ChallengeByIDLoader.Load(ctx, quiz.ChallengeID)
+	challenge, err := challengeThunk()
+	if err != nil {
+		// Log but don't fail - cache invalidation is secondary
+		fmt.Printf("warning: failed to load challenge %s for cache invalidation: %v\n", quiz.ChallengeID, err)
+	}
+
 	// Invalidate caches
 	r.Cache.InvalidateProject(input.ProjectID)
-	r.Cache.InvalidateChallenge(quiz.ChallengeID)
+	if challenge != nil {
+		eventID := getChallengeEventID(challenge)
+		r.Cache.InvalidateChallenge(quiz.ChallengeID, input.ProjectID, eventID)
+	} else {
+		r.Cache.InvalidateChallenge(quiz.ChallengeID, input.ProjectID, nil)
+	}
 
 	// Convert to GraphQL model
 	var minScorePercentage *int
@@ -1069,7 +1082,18 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	ctx, cacheSpan := otel.StartSpan(ctx, "quiz.finalize.cache_invalidation")
 	r.Cache.InvalidateQuizSubmission(submissionID)
 	r.Cache.InvalidateProject(quiz.ProjectID)
-	r.Cache.InvalidateChallenge(quiz.ChallengeID)
+
+	// Load challenge to get eventID for cache invalidation
+	challengeThunk := r.Loaders.ChallengeByIDLoader.Load(ctx, quiz.ChallengeID)
+	challenge, challengeErr := challengeThunk()
+	if challengeErr != nil {
+		fmt.Printf("warning: failed to load challenge %s for cache invalidation: %v\n", quiz.ChallengeID, challengeErr)
+		r.Cache.InvalidateChallenge(quiz.ChallengeID, quiz.ProjectID, nil)
+	} else {
+		eventID := getChallengeEventID(challenge)
+		r.Cache.InvalidateChallenge(quiz.ChallengeID, quiz.ProjectID, eventID)
+	}
+
 	r.Cache.InvalidateUser(userID)
 	cacheSpan.End()
 

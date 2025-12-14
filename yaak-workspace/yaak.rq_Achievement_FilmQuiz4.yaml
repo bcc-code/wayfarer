@@ -1,0 +1,67 @@
+type: http_request
+model: http_request
+id: rq_Achievement_FilmQuiz4
+createdAt: 2025-12-13T12:00:00
+updatedAt: 2025-12-13T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation CreateContentAchievement {
+      createContentAchievement(input: {
+        name: "Johannes & Polykarp – Film 4 Quiz"
+        descriptionPending: "Se Johannes & Polykarp film del 4 og svar på quizen under utfordringer."
+        descriptionCompleted: "Gratulerer med å ha besvart quizen til Johannes & Polykarp film del 4!"
+        notificationText: "Ladder to Heaven:\nNy utmerkelse oppnådd🎖 Du har besvart quizen til film 4!"
+        imagePending: ""
+        imageCompleted: ""
+        projectId: "PR01K9VZ8684DP9R4W3ZEV526E5X"
+        points: 10
+        hidden: false
+        items: []
+      }) {
+        id
+        name
+        points
+        hidden
+        totalItems
+        items {
+          id
+          sortOrder
+          externalContent {
+            id
+            planId
+            taskId
+            contentId
+            contentType
+            title
+          }
+        }
+        project {
+          id
+          name
+        }
+        event {
+          id
+          name
+        }
+        challenge {
+          id
+          name
+        }
+      }
+    }
+bodyType: graphql
+description: Create achievement - Film 4 Quiz
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_Achievement_FilmQuiz4
+method: POST
+name: Achievement - Film 4 Quiz
+sortPriority: 3214.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

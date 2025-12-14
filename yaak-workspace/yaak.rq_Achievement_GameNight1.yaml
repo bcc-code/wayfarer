@@ -1,0 +1,54 @@
+type: http_request
+model: http_request
+id: rq_Achievement_GameNight1
+createdAt: 2025-12-13T12:00:00
+updatedAt: 2025-12-13T20:02:48.928628
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation {
+      createSimpleAchievement(input: {
+        name: "Game Night 1 - Unitoppgave"
+        descriptionPending: "Ved å delta på Game Night 1 mottar du 50 poeng. Motta ytterligere poeng (opp mot 1000) ved å gjennomføre utfordringen så raskt som mulig."
+        descriptionCompleted: "Gratulerer med å ha gjennomført unitoppgaven i Game Night 1"
+        notificationText: "Ladder to Heaven:\nNy utmerkelse oppnådd🎖 Gratulerer med å ha gjennomført unitoppgaven i Game Night 1!"
+        imagePending: ""
+        imageCompleted: ""
+        projectId: "PR01K9VZ8684DP9R4W3ZEV526E5X"
+        points: 50
+        hidden: false
+      }) {
+        id
+        name
+        points
+        hidden
+        project {
+          id
+          name
+        }
+        event {
+          id
+          name
+        }
+        challenge {
+          id
+          name
+        }
+      }
+    }
+  variables: ''
+bodyType: graphql
+description: Create achievement - Game Night 1
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_Achievement_GameNight1
+method: POST
+name: Achievement - Game Night 1
+sortPriority: 3208.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

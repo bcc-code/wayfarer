@@ -1,0 +1,67 @@
+type: http_request
+model: http_request
+id: rq_Achievement_TrofastLeser
+createdAt: 2025-12-13T12:00:00
+updatedAt: 2025-12-13T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation CreateContentAchievement {
+      createContentAchievement(input: {
+        name: "Trofast leser"
+        descriptionPending: "Fullfør alle 12 ukene av leseplanen (05. januar – 27. mars)."
+        descriptionCompleted: "Fantastisk! Du har fullført hele leseplanen!"
+        notificationText: "Ny utmerkelse oppnådd🎖 Gratulerer med å ha fullført hele leseplanen!"
+        imagePending: ""
+        imageCompleted: ""
+        projectId: "PR01K9VZ8684DP9R4W3ZEV526E5X"
+        points: 10
+        hidden: false
+        items: []
+      }) {
+        id
+        name
+        points
+        hidden
+        totalItems
+        items {
+          id
+          sortOrder
+          externalContent {
+            id
+            planId
+            taskId
+            contentId
+            contentType
+            title
+          }
+        }
+        project {
+          id
+          name
+        }
+        event {
+          id
+          name
+        }
+        challenge {
+          id
+          name
+        }
+      }
+    }
+bodyType: graphql
+description: Create achievement - Trofast leser
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_Achievement_TrofastLeser
+method: POST
+name: Achievement - Trofast leser
+sortPriority: 3204.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

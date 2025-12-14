@@ -1,0 +1,33 @@
+type: http_request
+model: http_request
+id: rq_AXCCa3TDMo
+createdAt: 2025-12-14T20:40:19.180815
+updatedAt: 2025-12-14T20:41:53.285328
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_U4FqjQ2Ma5
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation {
+      updateChallenge(id: "CL01KCF90HEY2RAT3D333NNCGGA7",
+                     input: {
+                       visibleAt: "2025-12-01T00:00:00"
+                       startedAt: "2025-12-01T00:00:00"
+                     }){
+        id
+      }
+    }
+  variables: ''
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: xraigN0HxK
+method: POST
+name: Update Challenge
+sortPriority: 1000.0019
+url: ${[ HOST ]}/graphql
+urlParameters: []

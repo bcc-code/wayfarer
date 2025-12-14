@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_PublishQuiz
 createdAt: 2025-12-08T12:00:00
-updatedAt: 2025-12-08T12:00:00
+updatedAt: 2025-12-14T20:39:10.720815
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Quizzes
 authentication: {}
@@ -18,7 +18,7 @@ body:
     }
   variables: |
     {
-      "id": "QZ01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "id": "QZ01KCF91CSRSGJWA3JKYHR587GS",
       "publishedAt": "2025-12-08T12:00:00Z"
     }
 bodyType: graphql

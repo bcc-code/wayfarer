@@ -1,0 +1,67 @@
+type: http_request
+model: http_request
+id: rq_Achievement_LeseplanWarmup
+createdAt: 2025-12-13T12:00:00
+updatedAt: 2025-12-13T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation CreateContentAchievement {
+      createContentAchievement(input: {
+        name: "Leseplan warm-up"
+        descriptionPending: "Fullfør de seks første ukene av leseplanen (5. januar – 13. februar)"
+        descriptionCompleted: "Gratulerer med å ha fullført de 6 første uker i leseplanen! Godt jobbet!"
+        notificationText: "Ladder to Heaven:\nNy utmerkelse oppnådd🎖 Gratulerer med å ha fullført de 6 første ukene av leseplanen!"
+        imagePending: ""
+        imageCompleted: ""
+        projectId: "PR01K9VZ8684DP9R4W3ZEV526E5X"
+        points: 10
+        hidden: false
+        items: []
+      }) {
+        id
+        name
+        points
+        hidden
+        totalItems
+        items {
+          id
+          sortOrder
+          externalContent {
+            id
+            planId
+            taskId
+            contentId
+            contentType
+            title
+          }
+        }
+        project {
+          id
+          name
+        }
+        event {
+          id
+          name
+        }
+        challenge {
+          id
+          name
+        }
+      }
+    }
+bodyType: graphql
+description: Create achievement - Leseplan warm-up
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_Achievement_LeseplanWarmup
+method: POST
+name: Achievement - Leseplan warm-up
+sortPriority: 3202.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

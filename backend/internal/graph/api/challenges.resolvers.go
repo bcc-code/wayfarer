@@ -175,11 +175,11 @@ func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input
 	}
 
 	// Invalidate cache
-	r.Cache.InvalidateChallenge(id)
+	existingEventID := getChallengeEventID(existingChallenge)
+	r.Cache.InvalidateChallenge(id, projectID, existingEventID)
 	r.Cache.InvalidateProject(projectID)
 
 	// Invalidate old event if it existed
-	existingEventID := getChallengeEventID(existingChallenge)
 	if existingEventID != nil {
 		r.Cache.InvalidateEvent(*existingEventID)
 	}
@@ -220,7 +220,8 @@ func (r *mutationResolver) DeleteChallenge(ctx context.Context, id string) (bool
 	}
 
 	// Invalidate cache
-	r.Cache.InvalidateChallenge(id)
+	eventID := getChallengeEventID(existingChallenge)
+	r.Cache.InvalidateChallenge(id, projectID, eventID)
 	r.Cache.InvalidateProject(projectID)
 
 	return true, nil
@@ -256,7 +257,9 @@ func (r *mutationResolver) PublishChallenge(ctx context.Context, id string, publ
 	}
 
 	// Invalidate cache
-	r.Cache.InvalidateChallenge(id)
+	projectID := getChallengeProjectID(existingChallenge)
+	eventID := getChallengeEventID(existingChallenge)
+	r.Cache.InvalidateChallenge(id, projectID, eventID)
 
 	// Convert to GraphQL model
 	return convertPublishChallengeRowToChallenge(row), nil
@@ -305,10 +308,10 @@ func (r *mutationResolver) AssignChallengeToEvent(ctx context.Context, challenge
 	}
 
 	// Invalidate cache
-	r.Cache.InvalidateChallenge(challengeID)
+	existingEventID := getChallengeEventID(existingChallenge)
+	r.Cache.InvalidateChallenge(challengeID, existingProjectID, existingEventID)
 
 	// Invalidate old event if it exists
-	existingEventID := getChallengeEventID(existingChallenge)
 	if existingEventID != nil {
 		r.Cache.InvalidateEvent(*existingEventID)
 	}
@@ -328,7 +331,8 @@ func (r *mutationResolver) BulkPublishChallenges(ctx context.Context, ids []stri
 	}
 
 	// Load all challenges to verify they exist and check authorization
-	for _, id := range ids {
+	challenges := make([]model.Challenge, len(ids))
+	for i, id := range ids {
 		thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, id)
 		challenge, err := thunk()
 		if err != nil {
@@ -339,6 +343,7 @@ func (r *mutationResolver) BulkPublishChallenges(ctx context.Context, ids []stri
 		if !r.RoleService.CanManageProject(ctx, userID, getChallengeProjectID(challenge)) {
 			return nil, fmt.Errorf("unauthorized to publish challenge %s", id)
 		}
+		challenges[i] = challenge
 	}
 
 	// Publish challenges in database
@@ -351,8 +356,10 @@ func (r *mutationResolver) BulkPublishChallenges(ctx context.Context, ids []stri
 	}
 
 	// Invalidate cache for all challenges
-	for _, id := range ids {
-		r.Cache.InvalidateChallenge(id)
+	for i, id := range ids {
+		projectID := getChallengeProjectID(challenges[i])
+		eventID := getChallengeEventID(challenges[i])
+		r.Cache.InvalidateChallenge(id, projectID, eventID)
 	}
 
 	// Convert to GraphQL models
@@ -373,7 +380,7 @@ func (r *mutationResolver) SetChallengeVisibility(ctx context.Context, id string
 
 	// Load challenge for authorization
 	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, id)
-	_, err := thunk()
+	challenge, err := thunk()
 	if err != nil {
 		return nil, fmt.Errorf("challenge not found: %w", err)
 	}
@@ -394,7 +401,9 @@ func (r *mutationResolver) SetChallengeVisibility(ctx context.Context, id string
 	}
 
 	// Cache invalidation
-	r.Cache.InvalidateChallenge(id)
+	projectID := getChallengeProjectID(challenge)
+	eventID := getChallengeEventID(challenge)
+	r.Cache.InvalidateChallenge(id, projectID, eventID)
 
 	// Convert and return
 	return convertUpdateChallengeTimestampsRowToChallenge(row), nil
@@ -409,7 +418,7 @@ func (r *mutationResolver) SetChallengeRequirements(ctx context.Context, id stri
 
 	// Load challenge for authorization
 	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, id)
-	_, err := thunk()
+	challenge, err := thunk()
 	if err != nil {
 		return nil, fmt.Errorf("challenge not found: %w", err)
 	}
@@ -428,7 +437,9 @@ func (r *mutationResolver) SetChallengeRequirements(ctx context.Context, id stri
 	}
 
 	// Cache invalidation
-	r.Cache.InvalidateChallenge(id)
+	projectID := getChallengeProjectID(challenge)
+	eventID := getChallengeEventID(challenge)
+	r.Cache.InvalidateChallenge(id, projectID, eventID)
 
 	// Convert and return
 	return convertUpdateChallengeRequirementsRowToChallenge(row), nil
@@ -527,7 +538,9 @@ func (r *mutationResolver) EnrollInChallenge(ctx context.Context, challengeID st
 
 	// Cache invalidation
 	r.Cache.InvalidateUser(userID)
-	r.Cache.InvalidateChallenge(challengeID)
+	projectID := getChallengeProjectID(challenge)
+	eventID := getChallengeEventID(challenge)
+	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
 	// Prime the cache with the enrollment timestamp AFTER invalidation
 	if enrolledAt.Valid {
@@ -548,7 +561,14 @@ func (r *mutationResolver) UnenrollFromChallenge(ctx context.Context, challengeI
 		return false, fmt.Errorf("user not authenticated")
 	}
 
-	err := r.DB.Queries.UnenrollUserFromChallenge(ctx, sqlc.UnenrollUserFromChallengeParams{
+	// Load challenge to get project/event IDs for cache invalidation
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
+	challenge, err := thunk()
+	if err != nil {
+		return false, fmt.Errorf("challenge not found: %w", err)
+	}
+
+	err = r.DB.Queries.UnenrollUserFromChallenge(ctx, sqlc.UnenrollUserFromChallengeParams{
 		Userid:      userID,
 		Challengeid: challengeID,
 	})
@@ -557,7 +577,9 @@ func (r *mutationResolver) UnenrollFromChallenge(ctx context.Context, challengeI
 	}
 
 	r.Cache.InvalidateUser(userID)
-	r.Cache.InvalidateChallenge(challengeID)
+	projectID := getChallengeProjectID(challenge)
+	eventID := getChallengeEventID(challenge)
+	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
 	return true, nil
 }
@@ -588,7 +610,9 @@ func (r *mutationResolver) EnrollUserInChallenge(ctx context.Context, userID str
 
 	// Cache invalidation
 	r.Cache.InvalidateUser(userID)
-	r.Cache.InvalidateChallenge(challengeID)
+	projectID := getChallengeProjectID(challenge)
+	eventID := getChallengeEventID(challenge)
+	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
 	// Prime the cache with the enrollment timestamp AFTER invalidation
 	if enrolledAt.Valid {
@@ -606,7 +630,14 @@ func (r *mutationResolver) UnenrollUserFromChallenge(ctx context.Context, userID
 		return false, fmt.Errorf("user not authenticated")
 	}
 
-	err := r.DB.Queries.UnenrollUserFromChallenge(ctx, sqlc.UnenrollUserFromChallengeParams{
+	// Load challenge to get project/event IDs for cache invalidation
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
+	challenge, err := thunk()
+	if err != nil {
+		return false, fmt.Errorf("challenge not found: %w", err)
+	}
+
+	err = r.DB.Queries.UnenrollUserFromChallenge(ctx, sqlc.UnenrollUserFromChallengeParams{
 		Userid:      userID,
 		Challengeid: challengeID,
 	})
@@ -615,7 +646,9 @@ func (r *mutationResolver) UnenrollUserFromChallenge(ctx context.Context, userID
 	}
 
 	r.Cache.InvalidateUser(userID)
-	r.Cache.InvalidateChallenge(challengeID)
+	projectID := getChallengeProjectID(challenge)
+	eventID := getChallengeEventID(challenge)
+	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
 	return true, nil
 }
@@ -657,7 +690,9 @@ func (r *mutationResolver) BulkEnrollUsersInChallenge(ctx context.Context, targe
 	for _, userID := range userIds {
 		r.Cache.InvalidateUser(userID)
 	}
-	r.Cache.InvalidateChallenge(challengeID)
+	projectID := getChallengeProjectID(challenge)
+	eventID := getChallengeEventID(challenge)
+	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
 	// Return challenge for each user (same challenge, no dataloader needed)
 	translatedChallenge := r.ApplyTranslationToChallenge(ctx, challenge)
@@ -674,6 +709,13 @@ func (r *mutationResolver) BulkUnenrollUsersFromChallenge(ctx context.Context, t
 	_, ok := middleware.GetUserID(ctx)
 	if !ok {
 		return false, fmt.Errorf("user not authenticated")
+	}
+
+	// Load challenge to get project/event IDs for cache invalidation
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
+	challenge, err := thunk()
+	if err != nil {
+		return false, fmt.Errorf("challenge not found: %w", err)
 	}
 
 	// Resolve target to user IDs
@@ -697,7 +739,9 @@ func (r *mutationResolver) BulkUnenrollUsersFromChallenge(ctx context.Context, t
 	for _, userID := range userIds {
 		r.Cache.InvalidateUser(userID)
 	}
-	r.Cache.InvalidateChallenge(challengeID)
+	projectID := getChallengeProjectID(challenge)
+	eventID := getChallengeEventID(challenge)
+	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
 	return true, nil
 }
@@ -735,7 +779,9 @@ func (r *mutationResolver) CompleteChallenge(ctx context.Context, userID string,
 
 	// Cache invalidation
 	r.Cache.InvalidateUser(userID)
-	r.Cache.InvalidateChallenge(challengeID)
+	projectID := getChallengeProjectID(challenge)
+	eventID := getChallengeEventID(challenge)
+	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
 	// Return challenge with translations
 	return r.ApplyTranslationToChallenge(ctx, challenge), nil
@@ -749,8 +795,15 @@ func (r *mutationResolver) UncompleteChallenge(ctx context.Context, userID strin
 		return false, fmt.Errorf("user not authenticated")
 	}
 
+	// Load challenge to get project/event IDs for cache invalidation
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
+	challenge, err := thunk()
+	if err != nil {
+		return false, fmt.Errorf("challenge not found: %w", err)
+	}
+
 	// Delete the completion record
-	err := r.DB.Queries.UncompleteUserFromChallenge(ctx, sqlc.UncompleteUserFromChallengeParams{
+	err = r.DB.Queries.UncompleteUserFromChallenge(ctx, sqlc.UncompleteUserFromChallengeParams{
 		Userid:      userID,
 		Challengeid: challengeID,
 	})
@@ -760,7 +813,9 @@ func (r *mutationResolver) UncompleteChallenge(ctx context.Context, userID strin
 
 	// Cache invalidation
 	r.Cache.InvalidateUser(userID)
-	r.Cache.InvalidateChallenge(challengeID)
+	projectID := getChallengeProjectID(challenge)
+	eventID := getChallengeEventID(challenge)
+	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
 	return true, nil
 }
@@ -813,7 +868,9 @@ func (r *mutationResolver) BulkCompleteChallenges(ctx context.Context, target mo
 	for _, userID := range userIds {
 		r.Cache.InvalidateUser(userID)
 	}
-	r.Cache.InvalidateChallenge(challengeID)
+	projectID := getChallengeProjectID(challenge)
+	eventID := getChallengeEventID(challenge)
+	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
 	// Return challenge for each user (same challenge, no dataloader needed)
 	translatedChallenge := r.ApplyTranslationToChallenge(ctx, challenge)

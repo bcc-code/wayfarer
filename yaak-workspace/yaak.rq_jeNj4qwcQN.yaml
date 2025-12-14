@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_jeNj4qwcQN
 createdAt: 2025-12-08T08:28:18.920390
-updatedAt: 2025-12-10T12:22:31.955509
+updatedAt: 2025-12-14T20:39:54.430088
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_U4FqjQ2Ma5
 authentication: {}
@@ -13,11 +13,12 @@ body:
       me {
         id
       }
-      challenge(id: "CL01K9VZ87EPZMZMK17E9KM7ZH8Z") {
+      challenge(id: "CL01KCF90HEY2RAT3D333NNCGGA7") {
         __typename
         id
         name
         description
+        publishedAt
         ... on SimpleChallenge {
           allowSelfCompletion
         }

@@ -1,0 +1,67 @@
+type: http_request
+model: http_request
+id: rq_Achievement_Streakmaster
+createdAt: 2025-12-13T12:00:00
+updatedAt: 2025-12-13T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation CreateContentAchievement {
+      createContentAchievement(input: {
+        name: "Streakmaster"
+        descriptionPending: "Oppnå full streak. Det vil si lytt til alle episodene av Hidden Treasures-podcasten for uke 1-12 (5. januar – 27. mars) innen 24 timer etter de er publisert."
+        descriptionCompleted: "Wow! Gratulerer med 12 ukers streak på Hidden Treasure podcast!"
+        notificationText: "Ladder to Heaven:\nNy utmerkelse oppnådd🎖 Full streak på 12 uker med Hidden Treasures podcast!"
+        imagePending: ""
+        imageCompleted: ""
+        projectId: "PR01K9VZ8684DP9R4W3ZEV526E5X"
+        points: 10
+        hidden: false
+        items: []
+      }) {
+        id
+        name
+        points
+        hidden
+        totalItems
+        items {
+          id
+          sortOrder
+          externalContent {
+            id
+            planId
+            taskId
+            contentId
+            contentType
+            title
+          }
+        }
+        project {
+          id
+          name
+        }
+        event {
+          id
+          name
+        }
+        challenge {
+          id
+          name
+        }
+      }
+    }
+bodyType: graphql
+description: Create achievement - Streakmaster
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_Achievement_Streakmaster
+method: POST
+name: Achievement - Streakmaster
+sortPriority: 3207.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

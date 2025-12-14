@@ -2,36 +2,13 @@ type: http_request
 model: http_request
 id: rq_UpdateQuiz
 createdAt: 2025-12-08T12:00:00
-updatedAt: 2025-12-08T21:07:52.267634
+updatedAt: 2025-12-14T20:33:22.017366
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Quizzes
 authentication: {}
 authenticationType: null
 body:
-  query: |
-    mutation UpdateQuiz($id: ID!, $input: UpdateQuizInput!) {
-      updateQuiz(id: $id, input: $input) {
-        id
-        name
-        description
-        timeoutSeconds
-        randomizeQuestions
-        revealCorrectAnswers
-        allowRetakes
-        completionPoints
-        publishedAt
-        endTime
-      }
-    }
-  variables: |
-    {
-      "id": "QZ01KBZWN4PRARY23WRKV63CTYRG",
-      "input": {
-        "name": "Updated Quiz Name",
-        "description": "Updated description",
-        "completionPoints": 150
-      }
-    }
+  query: "mutation UpdateQuiz {\n  updateQuiz(id: \"QZ01KCF91CSRSGJWA3JKYHR587GS\", input: {\n    \n  }) {\n    id\n    name\n    description\n    timeoutSeconds\n    randomizeQuestions\n    revealCorrectAnswers\n    allowRetakes\n    completionPoints\n    publishedAt\n    endTime\n  }\n}\n"
 bodyType: graphql
 description: Update an existing quiz (admin only)
 headers:

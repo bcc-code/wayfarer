@@ -2,13 +2,26 @@ type: http_request
 model: http_request
 id: rq_8gxK7RqpaW
 createdAt: 2025-12-13T17:40:10.683519
-updatedAt: 2025-12-13T17:41:04.851186
+updatedAt: 2025-12-14T20:32:07.431588
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_U4FqjQ2Ma5
 authentication: {}
 authenticationType: null
 body:
-  query: "mutation {\n  createChallenge(input:{\n    type: \n  }){\n    id\n  }\n}\n"
+  query: |
+    mutation {
+      createChallenge(input:{
+        type: QUIZ
+        name: "Heartbeat Quiz"
+        description: "A quiz to play during Heartbeat"
+        buttonText: "Join now!"
+        requiresTeamMembership: false
+        requiresSuperTeamMembership: false
+      }, projectId: "PR01K9VZ8684DP9R4W3ZEV526E5X",
+                     eventId: "EV01KCF9091B68644DTZTHZVDVGJ"){
+        id
+      }
+    }
   variables: ''
 bodyType: graphql
 description: ''

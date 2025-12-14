@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_AddQuizQuestion
 createdAt: 2025-12-08T12:00:00
-updatedAt: 2025-12-08T21:07:58.825836
+updatedAt: 2025-12-14T20:38:34.327534
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Quizzes
 authentication: {}
@@ -33,31 +33,30 @@ body:
     }
   variables: |
     {
-      "quizId": "QZ01KBZWN4PRARY23WRKV63CTYRG",
+      "quizId": "QZ01KCF91CSRSGJWA3JKYHR587GS",
       "input": {
         "questionType": "PREDEFINED",
-        "questionText": "What is the capital of Norway?",
-        "questionOrder": 1,
-        "timeoutSeconds": 30,
+        "questionText": "I 2. Mosebok 28:29-30, hva bar Aron over sitt hjerte når han gikk inn i helligdommen?",
+        "questionOrder": 3,
         "allowMultipleSelection": false,
         "predefinedAnswers": [
           {
-            "answerText": "Oslo",
-            "isCorrect": true,
+            "answerText": "Tavlene med de ti bud",
+            "isCorrect": false,
             "answerOrder": 1
           },
           {
-            "answerText": "Bergen",
-            "isCorrect": false,
+            "answerText": "Navnene til Israels sønner i domsbrystduken",
+            "isCorrect": true,
             "answerOrder": 2
           },
           {
-            "answerText": "Trondheim",
+            "answerText": "En gullkrone",
             "isCorrect": false,
             "answerOrder": 3
           },
           {
-            "answerText": "Stavanger",
+            "answerText": "Arons stav",
             "isCorrect": false,
             "answerOrder": 4
           }
