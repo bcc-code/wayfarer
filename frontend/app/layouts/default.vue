@@ -145,7 +145,7 @@ const showNavigation = computed(() => {
         <ul
           class="bg-background-raised shadow-large rounded-navigation p-navigation-inset relative mx-auto grid w-full max-w-xl grid-cols-3"
         >
-          <li v-for="link in links" :key="link.label" class="grow">
+          <li v-for="link in links" :key="link.label" class="grow z-10">
             <NuxtLink
               :to="link.to"
               class="px-default rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5 transition-all duration-150 ease-out"
