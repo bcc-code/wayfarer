@@ -110,17 +110,29 @@ watch(data, (newData) => {
 })
 
 const route = useRoute()
-const activeMenuItem = ref()
+const activeMenuItem = ref<HTMLElement | null>(null)
 
-watch(
-  () => route.path,
-  () => {
-    nextTick(() => {
-      activeMenuItem.value = document.querySelector(`[aria-current="page"]`)
-    })
-  },
-  { immediate: true },
-)
+// Find the active menu item after route changes or on mount
+// Uses a small delay to ensure NuxtLink has set aria-current="page"
+function updateActiveMenuItem() {
+  const el = document.querySelector<HTMLElement>(`[aria-current="page"]`)
+  if (el) {
+    activeMenuItem.value = el
+  } else {
+    // Retry after a short delay if not found (initial hydration)
+    setTimeout(() => {
+      activeMenuItem.value = document.querySelector<HTMLElement>(
+        `[aria-current="page"]`,
+      )
+    }, 50)
+  }
+}
+
+watch(() => route.path, updateActiveMenuItem)
+
+onMounted(() => {
+  updateActiveMenuItem()
+})
 
 const { left, height, width, top } = useElementBounding(activeMenuItem)
 
