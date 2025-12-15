@@ -22,6 +22,8 @@ const (
 	UserRolesKey contextKey = "user_roles"
 	// LanguageKey is the context key for the preferred language
 	LanguageKey contextKey = "language"
+	// UserAgentKey is the context key for the User-Agent header
+	UserAgentKey contextKey = "user_agent"
 )
 
 // WayfarerClaims represents the JWT claims issued by Wayfarer
@@ -135,4 +137,13 @@ func GetUserRoles(ctx context.Context) []string {
 		return []string{}
 	}
 	return userRoles
+}
+
+// GetUserAgent retrieves the user agent from the context
+func GetUserAgent(ctx context.Context) string {
+	userAgent, ok := ctx.Value(UserAgentKey).(string)
+	if !ok {
+		return ""
+	}
+	return userAgent
 }

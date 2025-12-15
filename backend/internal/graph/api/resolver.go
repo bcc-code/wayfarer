@@ -12,6 +12,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/services/push"
 )
 
 // This file will not be regenerated automatically.
@@ -25,6 +26,7 @@ type Resolver struct {
 	RoleService        *services.RoleService
 	LeaderboardService *services.LeaderboardService
 	Settings           *services.SettingsService
+	PushService        *push.Service
 	InstanceID         string
 }
 

@@ -1,0 +1,81 @@
+# ==================== Push Notification Types ====================
+
+enum NotificationType {
+    ACHIEVEMENT_UNLOCKED
+    CHALLENGE_AVAILABLE
+    GENERIC
+}
+
+type PushNotificationPreference {
+    notificationType: NotificationType!
+    enabled: Boolean!
+    updatedAt: DateTime!
+}
+
+type SendPushNotificationResult {
+    success: Boolean!
+    totalRecipients: Int!
+    successfulDeliveries: Int!
+    failedDeliveries: Int!
+}
+
+type PushSubscription {
+    id: ID!
+    createdAt: DateTime!
+}
+
+# ==================== Push Notification Inputs ====================
+
+input SendPushNotificationInput {
+    type: NotificationType!
+    title: String!
+    body: String!
+    url: String
+    tag: String
+    # Targeting (at least one must be specified)
+    userIds: [ID!]
+    teamIds: [ID!]
+    projectIds: [ID!]
+    eventIds: [ID!]
+    allUsers: Boolean
+}
+
+input SetNotificationPreferenceInput {
+    notificationType: NotificationType!
+    enabled: Boolean!
+}
+
+input RegisterPushSubscriptionInput {
+    endpoint: String!
+    p256dh: String!
+    auth: String!
+}
+
+# ==================== Push Notification Queries ====================
+
+extend type Query {
+    # Get the current user's notification preferences
+    myPushNotificationPreferences: [PushNotificationPreference!]! @requireRole(roles: ["user"])
+
+    # Check if push notifications are configured on the server
+    pushNotificationsEnabled: Boolean!
+
+    # Get the VAPID public key for client-side push subscription
+    vapidPublicKey: String!
+}
+
+# ==================== Push Notification Mutations ====================
+
+extend type Mutation {
+    # Register a push subscription for the current user
+    registerPushSubscription(input: RegisterPushSubscriptionInput!): PushSubscription! @requireRole(roles: ["user"])
+
+    # Unregister a push subscription by endpoint
+    unregisterPushSubscription(endpoint: String!): Boolean! @requireRole(roles: ["user"])
+
+    # Set a notification preference for the current user
+    setNotificationPreference(input: SetNotificationPreferenceInput!): PushNotificationPreference! @requireRole(roles: ["user"])
+
+    # Send a push notification to targeted recipients (admin only)
+    sendPushNotification(input: SendPushNotificationInput!): SendPushNotificationResult! @requireRole(roles: ["admin", "superadmin"])
+}

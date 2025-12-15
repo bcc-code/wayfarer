@@ -32,6 +32,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ssf"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -188,6 +189,15 @@ func main() {
 	}
 	slog.Info("S3 service initialized", "bucket", cfg.S3.Bucket, "region", cfg.S3.Region)
 
+	// Initialize push notification service
+	var pushService *push.Service
+	if cfg.VAPID.PublicKey != "" && cfg.VAPID.PrivateKey != "" {
+		pushService = push.NewService(db.Queries, cfg.VAPID, lgr)
+		slog.Info("Push notification service initialized")
+	} else {
+		slog.Warn("Push notification service not initialized - VAPID keys not configured")
+	}
+
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{
 		DB:                 db,
@@ -196,6 +206,7 @@ func main() {
 		RoleService:        roleService,
 		LeaderboardService: leaderboardService,
 		Settings:           settingsService,
+		PushService:        pushService,
 		InstanceID:         cacheSync.InstanceID(),
 	}
 
@@ -458,6 +469,10 @@ func graphqlHandler(h *handler.Server) gin.HandlerFunc {
 		if language, exists := c.Get("language"); exists {
 			ctx = context.WithValue(ctx, middleware.LanguageKey, language)
 		}
+
+		// Transfer User-Agent header
+		userAgent := c.GetHeader("User-Agent")
+		ctx = context.WithValue(ctx, middleware.UserAgentKey, userAgent)
 
 		// Create new request with updated context
 		r := c.Request.WithContext(ctx)

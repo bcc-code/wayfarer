@@ -1,0 +1,10 @@
+mutation RegisterPushSubscription($input: RegisterPushSubscriptionInput!) {
+  registerPushSubscription(input: $input) {
+    id
+    createdAt
+  }
+}
+
+mutation UnregisterPushSubscription($endpoint: String!) {
+  unregisterPushSubscription(endpoint: $endpoint)
+}

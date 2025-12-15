@@ -839,6 +839,17 @@ type ProjectFilter struct {
 	EndDateBefore   *scalars.DateTime `json:"endDateBefore,omitempty"`
 }
 
+type PushNotificationPreference struct {
+	NotificationType NotificationType `json:"notificationType"`
+	Enabled          bool             `json:"enabled"`
+	UpdatedAt        scalars.DateTime `json:"updatedAt"`
+}
+
+type PushSubscription struct {
+	ID        string           `json:"id"`
+	CreatedAt scalars.DateTime `json:"createdAt"`
+}
+
 type Query struct {
 }
 
@@ -1005,6 +1016,12 @@ type QuizSubmissionEdge struct {
 	Node   *QuizSubmission `json:"node"`
 }
 
+type RegisterPushSubscriptionInput struct {
+	Endpoint string `json:"endpoint"`
+	P256dh   string `json:"p256dh"`
+	Auth     string `json:"auth"`
+}
+
 type RevokeRoleInput struct {
 	UserID    string     `json:"userId"`
 	Role      RoleType   `json:"role"`
@@ -1056,6 +1073,31 @@ type ScoreJournalFilter struct {
 	ChallengeID *string          `json:"challengeId,omitempty"`
 	SourceType  *ScoreSourceType `json:"sourceType,omitempty"`
 	Ids         []string         `json:"ids,omitempty"`
+}
+
+type SendPushNotificationInput struct {
+	Type       NotificationType `json:"type"`
+	Title      string           `json:"title"`
+	Body       string           `json:"body"`
+	URL        *string          `json:"url,omitempty"`
+	Tag        *string          `json:"tag,omitempty"`
+	UserIds    []string         `json:"userIds,omitempty"`
+	TeamIds    []string         `json:"teamIds,omitempty"`
+	ProjectIds []string         `json:"projectIds,omitempty"`
+	EventIds   []string         `json:"eventIds,omitempty"`
+	AllUsers   *bool            `json:"allUsers,omitempty"`
+}
+
+type SendPushNotificationResult struct {
+	Success              bool `json:"success"`
+	TotalRecipients      int  `json:"totalRecipients"`
+	SuccessfulDeliveries int  `json:"successfulDeliveries"`
+	FailedDeliveries     int  `json:"failedDeliveries"`
+}
+
+type SetNotificationPreferenceInput struct {
+	NotificationType NotificationType `json:"notificationType"`
+	Enabled          bool             `json:"enabled"`
 }
 
 type SimpleAchievement struct {
@@ -2045,6 +2087,63 @@ func (e *LeaderboardEntryTag) UnmarshalJSON(b []byte) error {
 }
 
 func (e LeaderboardEntryTag) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type NotificationType string
+
+const (
+	NotificationTypeAchievementUnlocked NotificationType = "ACHIEVEMENT_UNLOCKED"
+	NotificationTypeChallengeAvailable  NotificationType = "CHALLENGE_AVAILABLE"
+	NotificationTypeGeneric             NotificationType = "GENERIC"
+)
+
+var AllNotificationType = []NotificationType{
+	NotificationTypeAchievementUnlocked,
+	NotificationTypeChallengeAvailable,
+	NotificationTypeGeneric,
+}
+
+func (e NotificationType) IsValid() bool {
+	switch e {
+	case NotificationTypeAchievementUnlocked, NotificationTypeChallengeAvailable, NotificationTypeGeneric:
+		return true
+	}
+	return false
+}
+
+func (e NotificationType) String() string {
+	return string(e)
+}
+
+func (e *NotificationType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = NotificationType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid NotificationType", str)
+	}
+	return nil
+}
+
+func (e NotificationType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *NotificationType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e NotificationType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

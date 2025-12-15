@@ -1,0 +1,43 @@
+type: http_request
+model: http_request
+id: rq_SendPushNotificationToUser
+createdAt: 2025-12-15T12:00:00
+updatedAt: 2025-12-15T21:50:30.547170
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_PushNotifications
+authentication:
+  token: ${[ TOKEN ]}
+  tokenPrefix: Bearer
+authenticationType: bearer
+body:
+  query: |
+    mutation SendPushNotification($input: SendPushNotificationInput!) {
+      sendPushNotification(input: $input) {
+        success
+        totalRecipients
+        successfulDeliveries
+        failedDeliveries
+      }
+    }
+  variables: |
+    {
+      "input": {
+        "type": "GENERIC",
+        "title": "Test Notification",
+        "body": "This is a test push notification!",
+        "url": "https://example.com",
+        "userIds": ["US01KC94QWRKD621DPGCJ94SVQMC"]
+      }
+    }
+bodyType: graphql
+description: Send a push notification to all devices for a specific user
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_SendPushNotificationToUser
+method: POST
+name: Send Push Notification to User
+sortPriority: 0.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

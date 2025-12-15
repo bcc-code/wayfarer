@@ -1,7 +1,21 @@
 <script setup lang="ts">
 const { me } = useAuth()
 
-const notificationsEnabled = ref(false)
+const {
+  subscribe,
+  unsubscribe,
+  isSubscribed,
+  isSupported: isPushSupported,
+  isLoading: isPushLoading,
+} = usePushNotifications()
+
+async function toggleNotifications(enabled: boolean) {
+  if (enabled) {
+    await subscribe()
+  } else {
+    await unsubscribe()
+  }
+}
 </script>
 
 <template>
@@ -31,11 +45,20 @@ const notificationsEnabled = ref(false)
             </DesignButton>
           </div>
         </ColorModeSelector>
-        <hr class="border-border-default mx-3" />
-        <button class="flex items-center justify-between gap-2.5 px-3 py-2">
-          <p class="text-label">{{ $t('settings.notifications') }}</p>
-          <DesignSwitch v-model="notificationsEnabled" />
-        </button>
+        <template v-if="isPushSupported">
+          <hr class="border-border-default mx-3" />
+          <button
+            class="flex items-center justify-between gap-2.5 px-3 py-2"
+            :disabled="isPushLoading"
+          >
+            <p class="text-label">{{ $t('settings.notifications') }}</p>
+            <DesignSwitch
+              :model-value="isSubscribed"
+              :disabled="isPushLoading"
+              @update:model-value="toggleNotifications"
+            />
+          </button>
+        </template>
       </DesignPanel>
       <DesignPanel class="gap-list-section-inset flex flex-col">
         <button
