@@ -5,11 +5,7 @@ query StandingsUnitPage {
       id
       name
       memberLeaderboard {
-        id
-        name
-        tags
-        rank
-        score
+        ...LeaderboardEntryFields
       }
     }
   }

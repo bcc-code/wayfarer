@@ -2301,6 +2301,50 @@ export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, membersId: string, gender: Gender, birthdate: string, age?: number | null, church: { __typename?: 'Church', id: string, name: string, country: string, category: ChurchCategory }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType, church?: { __typename?: 'Church', id: string } | null, team?: { __typename?: 'Team', id: string } | null, project?: { __typename?: 'Project', id: string } | null } | null }> } };
 
+export type ColorSetFieldsFragment = { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string };
+
+export type BrandingColorsFieldsFragment = { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } };
+
+export type BrandingFieldsFragment = { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } };
+
+export type LeaderboardEntryFieldsFragment = { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> };
+
+export type LeaderboardEntryWithDescriptionFieldsFragment = { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> };
+
+export type PredefinedAnswerFieldsFragment = { __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null };
+
+type QuizQuestionFields_FreeTextQuestion_Fragment = { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null };
+
+type QuizQuestionFields_JsonQuestion_Fragment = { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null };
+
+type QuizQuestionFields_NumberQuestion_Fragment = { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null };
+
+type QuizQuestionFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> };
+
+export type QuizQuestionFieldsFragment =
+  | QuizQuestionFields_FreeTextQuestion_Fragment
+  | QuizQuestionFields_JsonQuestion_Fragment
+  | QuizQuestionFields_NumberQuestion_Fragment
+  | QuizQuestionFields_PredefinedQuestion_Fragment
+;
+
+type QuizQuestionUserFields_FreeTextQuestion_Fragment = { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null };
+
+type QuizQuestionUserFields_JsonQuestion_Fragment = { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null };
+
+type QuizQuestionUserFields_NumberQuestion_Fragment = { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null };
+
+type QuizQuestionUserFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> };
+
+export type QuizQuestionUserFieldsFragment =
+  | QuizQuestionUserFields_FreeTextQuestion_Fragment
+  | QuizQuestionUserFields_JsonQuestion_Fragment
+  | QuizQuestionUserFields_NumberQuestion_Fragment
+  | QuizQuestionUserFields_PredefinedQuestion_Fragment
+;
+
+export type QuizSubmissionResultFieldsFragment = { __typename?: 'QuizSubmission', id: string, completedAt?: any | null, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null };
+
 export type DeleteAchievementMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -2716,7 +2760,7 @@ export type StandingsLocalPageQuery = { __typename?: 'Query', me: { __typename?:
 export type StandingsUnitPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type StandingsUnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, myTeam?: { __typename?: 'Team', id: string, name: string, memberLeaderboard: Array<{ __typename?: 'LeaderboardEntry', id: string, name: string, tags: Array<LeaderboardEntryTag>, rank?: number | null, score: number }> } | null } };
+export type StandingsUnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, myTeam?: { __typename?: 'Team', id: string, name: string, memberLeaderboard: Array<{ __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> }> } | null } };
 
 export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2726,7 +2770,7 @@ export type AdminSidebarQuery = { __typename?: 'Query', projects: { __typename?:
 export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } };
+export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } };
 
 export type AdminHomePageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2739,10 +2783,10 @@ export type AdminProjectAchievementPageQueryVariables = Exact<{
 
 
 export type AdminProjectAchievementPageQuery = { __typename?: 'Query', achievement:
-    | { __typename?: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename?: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
    };
 
 export type AdminProjectAchievementsNewPageQueryVariables = Exact<{
@@ -2750,7 +2794,7 @@ export type AdminProjectAchievementsNewPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectAchievementsNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string } };
+export type AdminProjectAchievementsNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } };
 
 export type AdminProjectChallengePageQueryVariables = Exact<{
   challengeId: Scalars['ID']['input'];
@@ -2758,14 +2802,14 @@ export type AdminProjectChallengePageQueryVariables = Exact<{
 
 
 export type AdminProjectChallengePageQuery = { __typename?: 'Query', challenge:
-    | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, image?: string | null, buttonText: string, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, image?: string | null, buttonText: string, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
     | { __typename: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, image?: string | null, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, questions: Array<
           | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
           | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
           | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
           | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
-        > }, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, image?: string | null, buttonText: string, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string } }
+        > }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, image?: string | null, buttonText: string, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
    };
 
 export type AdminProjectChallengeNewPageQueryVariables = Exact<{
@@ -2773,7 +2817,7 @@ export type AdminProjectChallengeNewPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectChallengeNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string }, events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string } }> } };
+export type AdminProjectChallengeNewPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } }, events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string } }> } };
 
 export type AdminProjectEditPageQueryVariables = Exact<{
   projectId: Scalars['ID']['input'];
@@ -2858,7 +2902,119 @@ export type StandingsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type StandingsPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', myTeam?: { __typename?: 'Team', id: string } | null } };
 
-
+export const ColorSetFieldsFragmentDoc = gql`
+    fragment ColorSetFields on ColorSet {
+  accent
+  accentContrast
+  onAccent
+  backgroundDefault
+  backgroundRaised
+  backgroundIndent
+  textDefault
+  textMuted
+  textHint
+  shadowDefault
+  shadowBlank
+  borderDefault
+}
+    `;
+export const BrandingColorsFieldsFragmentDoc = gql`
+    fragment BrandingColorsFields on Colors {
+  light {
+    ...ColorSetFields
+  }
+  dark {
+    ...ColorSetFields
+  }
+}
+    ${ColorSetFieldsFragmentDoc}`;
+export const BrandingFieldsFragmentDoc = gql`
+    fragment BrandingFields on Branding {
+  logo
+  rounding
+  colors {
+    ...BrandingColorsFields
+  }
+}
+    ${BrandingColorsFieldsFragmentDoc}`;
+export const LeaderboardEntryFieldsFragmentDoc = gql`
+    fragment LeaderboardEntryFields on LeaderboardEntry {
+  id
+  name
+  score
+  rank
+  tags
+}
+    `;
+export const LeaderboardEntryWithDescriptionFieldsFragmentDoc = gql`
+    fragment LeaderboardEntryWithDescriptionFields on LeaderboardEntry {
+  id
+  name
+  description
+  score
+  rank
+  tags
+}
+    `;
+export const PredefinedAnswerFieldsFragmentDoc = gql`
+    fragment PredefinedAnswerFields on QuizPredefinedAnswer {
+  id
+  answerText
+  answerOrder
+  isCorrect
+}
+    `;
+export const QuizQuestionFieldsFragmentDoc = gql`
+    fragment QuizQuestionFields on QuizQuestion {
+  __typename
+  id
+  questionText
+  questionOrder
+  timeoutSeconds
+  points
+  ... on PredefinedQuestion {
+    allowMultipleSelection
+    predefinedAnswers {
+      ...PredefinedAnswerFields
+    }
+  }
+  ... on NumberQuestion {
+    minValue
+    maxValue
+    stepValue
+  }
+}
+    ${PredefinedAnswerFieldsFragmentDoc}`;
+export const QuizQuestionUserFieldsFragmentDoc = gql`
+    fragment QuizQuestionUserFields on QuizQuestion {
+  __typename
+  id
+  questionText
+  questionOrder
+  timeoutSeconds
+  ... on PredefinedQuestion {
+    allowMultipleSelection
+    predefinedAnswers {
+      ...PredefinedAnswerFields
+    }
+  }
+  ... on NumberQuestion {
+    minValue
+    maxValue
+    stepValue
+  }
+}
+    ${PredefinedAnswerFieldsFragmentDoc}`;
+export const QuizSubmissionResultFieldsFragmentDoc = gql`
+    fragment QuizSubmissionResultFields on QuizSubmission {
+  id
+  completedAt
+  score
+  maxScore
+  scorePercentage
+  pointsAwarded
+}
+    `;
 export const ProjectRulesDocument = gql`
     query ProjectRules {
   myCurrentProject {
@@ -3172,29 +3328,10 @@ export function useUpdateQuizMutation() {
 export const AddQuizQuestionDocument = gql`
     mutation AddQuizQuestion($quizId: ID!, $input: CreateQuizQuestionInput!) {
   addQuizQuestion(quizId: $quizId, input: $input) {
-    __typename
-    id
-    questionText
-    questionOrder
-    timeoutSeconds
-    points
-    ... on PredefinedQuestion {
-      allowMultipleSelection
-      predefinedAnswers {
-        id
-        answerText
-        answerOrder
-        isCorrect
-      }
-    }
-    ... on NumberQuestion {
-      minValue
-      maxValue
-      stepValue
-    }
+    ...QuizQuestionFields
   }
 }
-    `;
+    ${QuizQuestionFieldsFragmentDoc}`;
 
 export function useAddQuizQuestionMutation() {
   return Urql.useMutation<AddQuizQuestionMutation, AddQuizQuestionMutationVariables>(AddQuizQuestionDocument);
@@ -3202,29 +3339,10 @@ export function useAddQuizQuestionMutation() {
 export const UpdateQuizQuestionDocument = gql`
     mutation UpdateQuizQuestion($id: ID!, $input: UpdateQuizQuestionInput!) {
   updateQuizQuestion(id: $id, input: $input) {
-    __typename
-    id
-    questionText
-    questionOrder
-    timeoutSeconds
-    points
-    ... on PredefinedQuestion {
-      allowMultipleSelection
-      predefinedAnswers {
-        id
-        answerText
-        answerOrder
-        isCorrect
-      }
-    }
-    ... on NumberQuestion {
-      minValue
-      maxValue
-      stepValue
-    }
+    ...QuizQuestionFields
   }
 }
-    `;
+    ${QuizQuestionFieldsFragmentDoc}`;
 
 export function useUpdateQuizQuestionMutation() {
   return Urql.useMutation<UpdateQuizQuestionMutation, UpdateQuizQuestionMutationVariables>(UpdateQuizQuestionDocument);
@@ -3247,25 +3365,7 @@ export const StartQuizDocument = gql`
     isExpired
     questionOrder
     orderedQuestions {
-      __typename
-      id
-      questionText
-      questionOrder
-      timeoutSeconds
-      ... on PredefinedQuestion {
-        allowMultipleSelection
-        predefinedAnswers {
-          id
-          answerText
-          answerOrder
-          isCorrect
-        }
-      }
-      ... on NumberQuestion {
-        minValue
-        maxValue
-        stepValue
-      }
+      ...QuizQuestionUserFields
     }
     quiz {
       id
@@ -3274,7 +3374,7 @@ export const StartQuizDocument = gql`
     }
   }
 }
-    `;
+    ${QuizQuestionUserFieldsFragmentDoc}`;
 
 export function useStartQuizMutation() {
   return Urql.useMutation<StartQuizMutation, StartQuizMutationVariables>(StartQuizDocument);
@@ -3308,15 +3408,10 @@ export function useSubmitQuizAnswerMutation() {
 export const FinalizeQuizDocument = gql`
     mutation FinalizeQuiz($submissionId: ID!) {
   finalizeQuiz(submissionId: $submissionId) {
-    id
-    completedAt
-    score
-    maxScore
-    scorePercentage
-    pointsAwarded
+    ...QuizSubmissionResultFields
   }
 }
-    `;
+    ${QuizSubmissionResultFieldsFragmentDoc}`;
 
 export function useFinalizeQuizMutation() {
   return Urql.useMutation<FinalizeQuizMutation, FinalizeQuizMutationVariables>(FinalizeQuizDocument);
@@ -3495,25 +3590,7 @@ export const ChallengePageDocument = gql`
           scorePercentage
           pointsAwarded
           orderedQuestions {
-            __typename
-            id
-            questionText
-            questionOrder
-            timeoutSeconds
-            ... on NumberQuestion {
-              minValue
-              maxValue
-              stepValue
-            }
-            ... on PredefinedQuestion {
-              allowMultipleSelection
-              predefinedAnswers {
-                id
-                answerText
-                answerOrder
-                isCorrect
-              }
-            }
+            ...QuizQuestionUserFields
           }
           responses {
             __typename
@@ -3535,10 +3612,7 @@ export const ChallengePageDocument = gql`
             ... on PredefinedResponse {
               isCorrect
               selectedAnswers {
-                id
-                answerText
-                answerOrder
-                isCorrect
+                ...PredefinedAnswerFields
               }
             }
           }
@@ -3547,7 +3621,8 @@ export const ChallengePageDocument = gql`
     }
   }
 }
-    `;
+    ${QuizQuestionUserFieldsFragmentDoc}
+${PredefinedAnswerFieldsFragmentDoc}`;
 
 export function useChallengePageQuery(options?: Omit<Urql.UseQueryArgs<never, ChallengePageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<ChallengePageQuery, ChallengePageQueryVariables | undefined>({ query: ChallengePageDocument, variables: undefined, ...options });
@@ -3702,26 +3777,16 @@ export const StandingsGlobalPageDocument = gql`
     leaderboard(entityType: $entityType, filter: $filter, first: $first) {
       edges {
         node {
-          id
-          name
-          description
-          score
-          rank
-          tags
+          ...LeaderboardEntryWithDescriptionFields
         }
       }
       me {
-        id
-        name
-        description
-        score
-        rank
-        tags
+        ...LeaderboardEntryWithDescriptionFields
       }
     }
   }
 }
-    `;
+    ${LeaderboardEntryWithDescriptionFieldsFragmentDoc}`;
 
 export function useStandingsGlobalPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsGlobalPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<StandingsGlobalPageQuery, StandingsGlobalPageQueryVariables | undefined>({ query: StandingsGlobalPageDocument, variables: undefined, ...options });
@@ -3739,24 +3804,16 @@ export const StandingsLocalPageDocument = gql`
     leaderboard(entityType: $entityType, filter: $filter) {
       edges {
         node {
-          id
-          name
-          score
-          rank
-          tags
+          ...LeaderboardEntryFields
         }
       }
       me {
-        id
-        name
-        score
-        rank
-        tags
+        ...LeaderboardEntryFields
       }
     }
   }
 }
-    `;
+    ${LeaderboardEntryFieldsFragmentDoc}`;
 
 export function useStandingsLocalPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsLocalPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<StandingsLocalPageQuery, StandingsLocalPageQueryVariables | undefined>({ query: StandingsLocalPageDocument, variables: undefined, ...options });
@@ -3769,16 +3826,12 @@ export const StandingsUnitPageDocument = gql`
       id
       name
       memberLeaderboard {
-        id
-        name
-        tags
-        rank
-        score
+        ...LeaderboardEntryFields
       }
     }
   }
 }
-    `;
+    ${LeaderboardEntryFieldsFragmentDoc}`;
 
 export function useStandingsUnitPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsUnitPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<StandingsUnitPageQuery, StandingsUnitPageQueryVariables | undefined>({ query: StandingsUnitPageDocument, variables: undefined, ...options });
@@ -3805,42 +3858,11 @@ export const CurrentProjectDocument = gql`
     query CurrentProject {
   myCurrentProject {
     branding {
-      logo
-      colors {
-        dark {
-          accent
-          accentContrast
-          onAccent
-          backgroundDefault
-          backgroundRaised
-          backgroundIndent
-          textDefault
-          textMuted
-          textHint
-          shadowDefault
-          shadowBlank
-          borderDefault
-        }
-        light {
-          accent
-          accentContrast
-          onAccent
-          backgroundDefault
-          backgroundRaised
-          backgroundIndent
-          textDefault
-          textMuted
-          textHint
-          shadowDefault
-          shadowBlank
-          borderDefault
-        }
-      }
-      rounding
+      ...BrandingFields
     }
   }
 }
-    `;
+    ${BrandingFieldsFragmentDoc}`;
 
 export function useCurrentProjectQuery(options?: Omit<Urql.UseQueryArgs<never, CurrentProjectQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<CurrentProjectQuery, CurrentProjectQueryVariables | undefined>({ query: CurrentProjectDocument, variables: undefined, ...options });
@@ -3896,10 +3918,15 @@ export const AdminProjectAchievementPageDocument = gql`
     project {
       id
       name
+      branding {
+        colors {
+          ...BrandingColorsFields
+        }
+      }
     }
   }
 }
-    `;
+    ${BrandingColorsFieldsFragmentDoc}`;
 
 export function useAdminProjectAchievementPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectAchievementPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectAchievementPageQuery, AdminProjectAchievementPageQueryVariables | undefined>({ query: AdminProjectAchievementPageDocument, variables: undefined, ...options });
@@ -3909,9 +3936,14 @@ export const AdminProjectAchievementsNewPageDocument = gql`
   project(id: $projectId) {
     id
     name
+    branding {
+      colors {
+        ...BrandingColorsFields
+      }
+    }
   }
 }
-    `;
+    ${BrandingColorsFieldsFragmentDoc}`;
 
 export function useAdminProjectAchievementsNewPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectAchievementsNewPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectAchievementsNewPageQuery, AdminProjectAchievementsNewPageQueryVariables | undefined>({ query: AdminProjectAchievementsNewPageDocument, variables: undefined, ...options });
@@ -3931,6 +3963,11 @@ export const AdminProjectChallengePageDocument = gql`
     project {
       id
       name
+      branding {
+        colors {
+          ...BrandingColorsFields
+        }
+      }
     }
     ... on SimpleChallenge {
       allowSelfCompletion
@@ -3950,32 +3987,14 @@ export const AdminProjectChallengePageDocument = gql`
         allowRetakes
         completionPoints
         questions {
-          __typename
-          id
-          questionText
-          questionOrder
-          timeoutSeconds
-          points
-          ... on PredefinedQuestion {
-            allowMultipleSelection
-            predefinedAnswers {
-              id
-              answerText
-              answerOrder
-              isCorrect
-            }
-          }
-          ... on NumberQuestion {
-            minValue
-            maxValue
-            stepValue
-          }
+          ...QuizQuestionFields
         }
       }
     }
   }
 }
-    `;
+    ${BrandingColorsFieldsFragmentDoc}
+${QuizQuestionFieldsFragmentDoc}`;
 
 export function useAdminProjectChallengePageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectChallengePageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectChallengePageQuery, AdminProjectChallengePageQueryVariables | undefined>({ query: AdminProjectChallengePageDocument, variables: undefined, ...options });
@@ -3985,6 +4004,11 @@ export const AdminProjectChallengeNewPageDocument = gql`
   project(id: $projectId) {
     id
     name
+    branding {
+      colors {
+        ...BrandingColorsFields
+      }
+    }
   }
   events(first: 100, filter: {projectId: $projectId}) {
     edges {
@@ -3995,7 +4019,7 @@ export const AdminProjectChallengeNewPageDocument = gql`
     }
   }
 }
-    `;
+    ${BrandingColorsFieldsFragmentDoc}`;
 
 export function useAdminProjectChallengeNewPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectChallengeNewPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectChallengeNewPageQuery, AdminProjectChallengeNewPageQueryVariables | undefined>({ query: AdminProjectChallengeNewPageDocument, variables: undefined, ...options });
@@ -4010,38 +4034,7 @@ export const AdminProjectEditPageDocument = gql`
     endDate
     archivedAt
     branding {
-      logo
-      rounding
-      colors {
-        light {
-          accent
-          accentContrast
-          onAccent
-          backgroundDefault
-          backgroundRaised
-          backgroundIndent
-          textDefault
-          textMuted
-          textHint
-          shadowDefault
-          shadowBlank
-          borderDefault
-        }
-        dark {
-          accent
-          accentContrast
-          onAccent
-          backgroundDefault
-          backgroundRaised
-          backgroundIndent
-          textDefault
-          textMuted
-          textHint
-          shadowDefault
-          shadowBlank
-          borderDefault
-        }
-      }
+      ...BrandingFields
     }
     rules {
       markdown
@@ -4049,7 +4042,7 @@ export const AdminProjectEditPageDocument = gql`
     }
   }
 }
-    `;
+    ${BrandingFieldsFragmentDoc}`;
 
 export function useAdminProjectEditPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectEditPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectEditPageQuery, AdminProjectEditPageQueryVariables | undefined>({ query: AdminProjectEditPageDocument, variables: undefined, ...options });

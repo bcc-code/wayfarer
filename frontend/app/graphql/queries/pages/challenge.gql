@@ -39,25 +39,7 @@ query ChallengePage($challengeId: ID!) {
           scorePercentage
           pointsAwarded
           orderedQuestions {
-            __typename
-            id
-            questionText
-            questionOrder
-            timeoutSeconds
-            ... on NumberQuestion {
-              minValue
-              maxValue
-              stepValue
-            }
-            ... on PredefinedQuestion {
-              allowMultipleSelection
-              predefinedAnswers {
-                id
-                answerText
-                answerOrder
-                isCorrect
-              }
-            }
+            ...QuizQuestionUserFields
           }
           responses {
             __typename
@@ -79,10 +61,7 @@ query ChallengePage($challengeId: ID!) {
             ... on PredefinedResponse {
               isCorrect
               selectedAnswers {
-                id
-                answerText
-                answerOrder
-                isCorrect
+                ...PredefinedAnswerFields
               }
             }
           }
