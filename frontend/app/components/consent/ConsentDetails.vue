@@ -27,7 +27,10 @@ const body = computed(() => {
     <slot />
     <template #content>
       <div class="p-medium">
-        <div class="text-label text-text-default prose-sm" v-html="body" />
+        <div
+          class="text-label text-text-default prose-sm [&_a]:text-accent-contrast [&_a]:underline"
+          v-html="body"
+        />
       </div>
     </template>
   </DesignDrawer>
