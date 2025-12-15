@@ -1443,6 +1443,7 @@ export type Query = {
   events: EventConnection;
   externalContent: ExternalContent;
   externalContents: ExternalContentConnection;
+  instanceID: Scalars['String']['output'];
   me: User;
   myCurrentEvent: Event;
   myCurrentProject: Project;
@@ -2799,9 +2800,9 @@ export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typenam
         | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, points: number, hidden: boolean }
         | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, points: number, hidden: boolean }
        }> }, challenges: { __typename?: 'ChallengeConnection', edges: Array<{ __typename?: 'ChallengeEdge', node:
-        | { __typename?: 'ExternalChallenge', id: string, name: string, description: any, image?: string | null }
-        | { __typename?: 'QuizChallenge', id: string, name: string, description: any, image?: string | null }
-        | { __typename?: 'SimpleChallenge', id: string, name: string, description: any, image?: string | null }
+        | { __typename: 'ExternalChallenge', id: string, name: string, description: any, image?: string | null }
+        | { __typename: 'QuizChallenge', id: string, name: string, description: any, image?: string | null }
+        | { __typename: 'SimpleChallenge', id: string, name: string, description: any, image?: string | null }
        }> } };
 
 export type AdminProjectStreakPageQueryVariables = Exact<{
@@ -4110,6 +4111,7 @@ export const AdminProjectPageDocument = gql`
   challenges(first: 50, filter: {projectId: $projectId}) {
     edges {
       node {
+        __typename
         id
         name
         description
