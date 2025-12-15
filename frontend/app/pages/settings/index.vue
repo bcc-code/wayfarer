@@ -1,5 +1,7 @@
 <script setup lang="ts">
 const { me } = useAuth()
+
+const notificationsEnabled = ref(false)
 </script>
 
 <template>
@@ -32,9 +34,7 @@ const { me } = useAuth()
         <hr class="border-border-default mx-3" />
         <button class="flex items-center justify-between gap-2.5 px-3 py-2">
           <p class="text-label">{{ $t('settings.notifications') }}</p>
-          <DesignButton size="small" variant="secondary" class="grow-0">
-            {{ $t('settings.notificationsEnabled') }}
-          </DesignButton>
+          <DesignSwitch v-model="notificationsEnabled" />
         </button>
       </DesignPanel>
       <DesignPanel class="gap-list-section-inset flex flex-col">
