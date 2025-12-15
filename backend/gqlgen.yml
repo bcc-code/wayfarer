@@ -15,6 +15,7 @@ schema:
   - ../gql/consents.graphqls
   - ../gql/quizzes.graphqls
   - ../gql/external_content.graphqls
+  - ../gql/admin.graphqls
 
 # Generated code locations
 exec:

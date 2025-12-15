@@ -361,6 +361,7 @@ type ComplexityRoot struct {
 		BulkEnrollUsersInChallenge                  func(childComplexity int, target model.EnrollmentTargetInput, challengeID string) int
 		BulkPublishChallenges                       func(childComplexity int, ids []string, publishedAt scalars.DateTime) int
 		BulkUnenrollUsersFromChallenge              func(childComplexity int, target model.EnrollmentTargetInput, challengeID string) int
+		ClearAllCache                               func(childComplexity int) int
 		CompleteChallenge                           func(childComplexity int, userID string, challengeID string, completedAt *scalars.DateTime) int
 		CreateChallenge                             func(childComplexity int, projectID string, eventID string, input model.CreateChallengeInput) int
 		CreateConsent                               func(childComplexity int, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) int
@@ -1019,6 +1020,7 @@ type MutationResolver interface {
 	FinalizeQuiz(ctx context.Context, submissionID string) (*model.QuizSubmission, error)
 	CreateQuizSubmission(ctx context.Context, quizID string, userID string, responses []model.SubmitQuizAnswerInput, completedAt *scalars.DateTime) (*model.QuizSubmission, error)
 	CreateContentAchievementFromExternalContent(ctx context.Context, input model.CreateContentAchievementFromExternalContentInput) (*model.ContentAchievement, error)
+	ClearAllCache(ctx context.Context) (bool, error)
 }
 type NumberQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.NumberQuestion) (*model.Quiz, error)
@@ -2450,6 +2452,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.BulkUnenrollUsersFromChallenge(childComplexity, args["target"].(model.EnrollmentTargetInput), args["challengeId"].(string)), true
+	case "Mutation.clearAllCache":
+		if e.complexity.Mutation.ClearAllCache == nil {
+			break
+		}
+
+		return e.complexity.Mutation.ClearAllCache(childComplexity), true
 	case "Mutation.completeChallenge":
 		if e.complexity.Mutation.CompleteChallenge == nil {
 			break
@@ -7237,6 +7245,10 @@ extend type Query {
 extend type Mutation {
     # Create content achievement directly from external content
     createContentAchievementFromExternalContent(input: CreateContentAchievementFromExternalContentInput!): ContentAchievement! @requireRole(roles: ["admin", "superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/admin.graphqls", Input: `extend type Mutation {
+    clearAllCache: Boolean! @requireRole(roles: ["admin", "superadmin"])
 }
 `, BuiltIn: false},
 }
@@ -20968,6 +20980,53 @@ func (ec *executionContext) fieldContext_Mutation_createContentAchievementFromEx
 	if fc.Args, err = ec.field_Mutation_createContentAchievementFromExternalContent_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_clearAllCache(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_clearAllCache,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Mutation().ClearAllCache(ctx)
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal bool
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal bool
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_clearAllCache(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
 	}
 	return fc, nil
 }
@@ -41480,6 +41539,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createContentAchievementFromExternalContent":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createContentAchievementFromExternalContent(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "clearAllCache":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_clearAllCache(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
