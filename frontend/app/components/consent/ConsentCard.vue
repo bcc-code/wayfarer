@@ -66,13 +66,6 @@ const title = computed(() => {
   return props.consent.title
 })
 
-const body = computed(() => {
-  if (props.consent.__typename == 'UserConsent') {
-    return props.consent.consent.body.html
-  }
-  return props.consent.body.html
-})
-
 const shortText = computed(() => {
   if (props.consent.__typename == 'UserConsent') {
     return props.consent.consent.shortText
@@ -157,7 +150,7 @@ const changing = ref(false)
         </DesignButton>
         <DesignButton
           variant="tertiary"
-          size="large"
+          size="small"
           class="w-full"
           @click="handleReject"
         >
