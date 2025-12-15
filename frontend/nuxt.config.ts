@@ -21,7 +21,7 @@ export default defineNuxtConfig({
     head: {
       title: 'Interact',
       viewport:
-        'width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no',
+        'width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no',
       charset: 'utf-8',
       meta: [
         {
