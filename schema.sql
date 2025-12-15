@@ -535,6 +535,9 @@ CREATE TABLE quiz_questions (
     max_value DECIMAL,
     step_value DECIMAL,
 
+    -- Points for this question (null = use quiz default)
+    points INT,
+
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
 
@@ -605,6 +608,9 @@ CREATE TABLE quiz_responses (
 
     -- Correctness (null for FREE_TEXT and JSON types)
     is_correct BOOLEAN,
+
+    -- Points earned for this response (null if not correct or not gradable)
+    points_earned INT,
 
     -- Timing
     answered_at TIMESTAMPTZ DEFAULT now(),

@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -326,3 +327,173 @@ func TestBuildQuizCacheKeyParams(t *testing.T) {
 // for the Resolver type and its dependencies. The codebase currently only has unit tests for
 // helper functions. The mutation resolvers should be tested through integration tests or
 // manual testing with a real database.
+
+// TestConvertQuestionPoints tests the convertQuestionPoints helper function
+func TestConvertQuestionPoints(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    *int32
+		expected *int
+	}{
+		{
+			name:     "nil input returns nil",
+			input:    nil,
+			expected: nil,
+		},
+		{
+			name:     "zero points",
+			input:    int32Ptr(0),
+			expected: intPtr(0),
+		},
+		{
+			name:     "positive points",
+			input:    int32Ptr(10),
+			expected: intPtr(10),
+		},
+		{
+			name:     "large points value",
+			input:    int32Ptr(1000),
+			expected: intPtr(1000),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := convertQuestionPoints(tt.input)
+			if tt.expected == nil {
+				assert.Nil(t, result)
+			} else {
+				require.NotNil(t, result)
+				assert.Equal(t, *tt.expected, *result)
+			}
+		})
+	}
+}
+
+// TestConvertToPredefinedQuestionWithPoints tests that points are correctly included in question conversion
+func TestConvertToPredefinedQuestionWithPoints(t *testing.T) {
+	tests := []struct {
+		name           string
+		points         *int32
+		expectedPoints *int
+	}{
+		{
+			name:           "nil points",
+			points:         nil,
+			expectedPoints: nil,
+		},
+		{
+			name:           "with points value",
+			points:         int32Ptr(5),
+			expectedPoints: intPtr(5),
+		},
+		{
+			name:           "zero points",
+			points:         int32Ptr(0),
+			expectedPoints: intPtr(0),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			row := &mockQuestionRow{
+				id:            "QQ001",
+				quizID:        "QZ001",
+				questionType:  "PREDEFINED",
+				questionText:  "Test question?",
+				questionOrder: 1,
+				points:        tt.points,
+			}
+
+			result := convertToPredefinedQuestion(row)
+			require.NotNil(t, result)
+			assert.Equal(t, "QQ001", result.ID)
+
+			if tt.expectedPoints == nil {
+				assert.Nil(t, result.Points)
+			} else {
+				require.NotNil(t, result.Points)
+				assert.Equal(t, *tt.expectedPoints, *result.Points)
+			}
+		})
+	}
+}
+
+// TestConvertResponseRowWithPointsEarned tests that pointsEarned is correctly included in response conversion
+func TestConvertResponseRowWithPointsEarned(t *testing.T) {
+	tests := []struct {
+		name                 string
+		pointsEarned         *int32
+		expectedPointsEarned *int
+	}{
+		{
+			name:                 "nil points earned",
+			pointsEarned:         nil,
+			expectedPointsEarned: nil,
+		},
+		{
+			name:                 "with points earned",
+			pointsEarned:         int32Ptr(10),
+			expectedPointsEarned: intPtr(10),
+		},
+		{
+			name:                 "zero points earned",
+			pointsEarned:         int32Ptr(0),
+			expectedPointsEarned: intPtr(0),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			row := &sqlc.QuizResponse{
+				ID:           "QR001",
+				SubmissionID: "QS001",
+				QuestionID:   "QQ001",
+				PointsEarned: tt.pointsEarned,
+			}
+
+			result := convertResponseRowToInterface(row, "PREDEFINED")
+			require.NotNil(t, result)
+
+			predefinedResponse, ok := result.(*model.PredefinedResponse)
+			require.True(t, ok)
+			assert.Equal(t, "QR001", predefinedResponse.ID)
+
+			if tt.expectedPointsEarned == nil {
+				assert.Nil(t, predefinedResponse.PointsEarned)
+			} else {
+				require.NotNil(t, predefinedResponse.PointsEarned)
+				assert.Equal(t, *tt.expectedPointsEarned, *predefinedResponse.PointsEarned)
+			}
+		})
+	}
+}
+
+// mockQuestionRow implements quizQuestionRow for testing
+type mockQuestionRow struct {
+	id                     string
+	quizID                 string
+	questionType           string
+	questionText           string
+	questionOrder          int32
+	allowMultipleSelection *bool
+	timeoutSeconds         *int32
+	points                 *int32
+}
+
+func (m *mockQuestionRow) GetID() string                   { return m.id }
+func (m *mockQuestionRow) GetQuizID() string               { return m.quizID }
+func (m *mockQuestionRow) GetQuestionType() string         { return m.questionType }
+func (m *mockQuestionRow) GetQuestionText() string         { return m.questionText }
+func (m *mockQuestionRow) GetQuestionOrder() int32         { return m.questionOrder }
+func (m *mockQuestionRow) GetAllowMultipleSelection() *bool { return m.allowMultipleSelection }
+func (m *mockQuestionRow) GetMinValue() pgtype.Numeric     { return pgtype.Numeric{} }
+func (m *mockQuestionRow) GetMaxValue() pgtype.Numeric     { return pgtype.Numeric{} }
+func (m *mockQuestionRow) GetStepValue() pgtype.Numeric    { return pgtype.Numeric{} }
+func (m *mockQuestionRow) GetTimeoutSeconds() *int32       { return m.timeoutSeconds }
+func (m *mockQuestionRow) GetPoints() *int32               { return m.points }
+
+// Helper functions for tests
+func int32Ptr(v int32) *int32 {
+	return &v
+}

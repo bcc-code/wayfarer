@@ -506,6 +506,7 @@ interface QuizQuestion {
     questionText: String!
     questionOrder: Int!
     timeoutSeconds: Int
+    points: Int
 }
 
 type PredefinedQuestion implements QuizQuestion {
@@ -514,6 +515,7 @@ type PredefinedQuestion implements QuizQuestion {
     questionText: String!
     questionOrder: Int!
     timeoutSeconds: Int
+    points: Int
     allowMultipleSelection: Boolean!
     predefinedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
 }
@@ -524,6 +526,7 @@ type FreeTextQuestion implements QuizQuestion {
     questionText: String!
     questionOrder: Int!
     timeoutSeconds: Int
+    points: Int
 }
 
 type NumberQuestion implements QuizQuestion {
@@ -532,6 +535,7 @@ type NumberQuestion implements QuizQuestion {
     questionText: String!
     questionOrder: Int!
     timeoutSeconds: Int
+    points: Int
     minValue: Float
     maxValue: Float
     stepValue: Float
@@ -543,6 +547,7 @@ type JsonQuestion implements QuizQuestion {
     questionText: String!
     questionOrder: Int!
     timeoutSeconds: Int
+    points: Int
 }
 
 type QuizPredefinedAnswer {
@@ -582,6 +587,7 @@ interface QuizResponse {
     question: QuizQuestion! @goField(forceResolver: true)
     answeredAt: DateTime
     timeSpentSeconds: Int
+    pointsEarned: Int
 }
 
 type PredefinedResponse implements QuizResponse {
@@ -590,6 +596,7 @@ type PredefinedResponse implements QuizResponse {
     question: QuizQuestion! @goField(forceResolver: true)
     answeredAt: DateTime
     timeSpentSeconds: Int
+    pointsEarned: Int
     selectedAnswerIds: [ID!]!
     selectedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
     isCorrect: Boolean
@@ -601,6 +608,7 @@ type FreeTextResponse implements QuizResponse {
     question: QuizQuestion! @goField(forceResolver: true)
     answeredAt: DateTime
     timeSpentSeconds: Int
+    pointsEarned: Int
     textResponse: String!
 }
 
@@ -610,6 +618,7 @@ type NumberResponse implements QuizResponse {
     question: QuizQuestion! @goField(forceResolver: true)
     answeredAt: DateTime
     timeSpentSeconds: Int
+    pointsEarned: Int
     numberResponse: Float!
 }
 
@@ -619,6 +628,7 @@ type JsonResponse implements QuizResponse {
     question: QuizQuestion! @goField(forceResolver: true)
     answeredAt: DateTime
     timeSpentSeconds: Int
+    pointsEarned: Int
     jsonResponse: JSON!
 }
 
@@ -826,6 +836,7 @@ input CreateQuizQuestionInput {
     questionText: String!
     questionOrder: Int!
     timeoutSeconds: Int
+    points: Int
 
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]
@@ -845,6 +856,7 @@ input UpdateQuizQuestionInput {
     questionText: String
     questionOrder: Int
     timeoutSeconds: Int
+    points: Int
 
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]

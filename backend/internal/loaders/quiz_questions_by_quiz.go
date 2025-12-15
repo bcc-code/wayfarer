@@ -50,6 +50,13 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 			for _, row := range rows {
 				var question model.QuizQuestion
 
+				// Convert points from *int32 to *int
+				var points *int
+				if row.Points != nil {
+					p := int(*row.Points)
+					points = &p
+				}
+
 				switch row.QuestionType {
 				case "PREDEFINED":
 					allowMultiple := false
@@ -62,6 +69,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 						QuestionOrder:          int(row.QuestionOrder),
 						AllowMultipleSelection: allowMultiple,
 						QuizID:                 row.QuizID,
+						Points:                 points,
 					}
 				case "FREE_TEXT":
 					question = &model.FreeTextQuestion{
@@ -69,6 +77,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 						QuestionText:  row.QuestionText,
 						QuestionOrder: int(row.QuestionOrder),
 						QuizID:        row.QuizID,
+						Points:        points,
 					}
 				case "NUMBER":
 					var minValue, maxValue, stepValue *float64
@@ -95,6 +104,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 						MaxValue:      maxValue,
 						StepValue:     stepValue,
 						QuizID:        row.QuizID,
+						Points:        points,
 					}
 				case "JSON":
 					question = &model.JSONQuestion{
@@ -102,6 +112,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 						QuestionText:  row.QuestionText,
 						QuestionOrder: int(row.QuestionOrder),
 						QuizID:        row.QuizID,
+						Points:        points,
 					}
 				default:
 					// Default to FreeTextQuestion for unknown types
@@ -110,6 +121,7 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 						QuestionText:  row.QuestionText,
 						QuestionOrder: int(row.QuestionOrder),
 						QuizID:        row.QuizID,
+						Points:        points,
 					}
 				}
 

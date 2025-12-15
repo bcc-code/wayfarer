@@ -164,6 +164,7 @@ type quizQuestionRow interface {
 	GetMaxValue() pgtype.Numeric
 	GetStepValue() pgtype.Numeric
 	GetTimeoutSeconds() *int32
+	GetPoints() *int32
 }
 
 // Adapter for sqlc.CreateQuizQuestionRow
@@ -183,6 +184,7 @@ func (r createQuizQuestionRowAdapter) GetMinValue() pgtype.Numeric  { return r.M
 func (r createQuizQuestionRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
 func (r createQuizQuestionRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
 func (r createQuizQuestionRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
+func (r createQuizQuestionRowAdapter) GetPoints() *int32            { return r.Points }
 
 // Adapter for sqlc.UpdateQuizQuestionRow
 type updateQuizQuestionRowAdapter struct {
@@ -201,6 +203,7 @@ func (r updateQuizQuestionRowAdapter) GetMinValue() pgtype.Numeric  { return r.M
 func (r updateQuizQuestionRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
 func (r updateQuizQuestionRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
 func (r updateQuizQuestionRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
+func (r updateQuizQuestionRowAdapter) GetPoints() *int32            { return r.Points }
 
 // Adapter for sqlc.GetQuizQuestionByIDRow
 type getQuizQuestionByIDRowAdapter struct {
@@ -219,6 +222,7 @@ func (r getQuizQuestionByIDRowAdapter) GetMinValue() pgtype.Numeric  { return r.
 func (r getQuizQuestionByIDRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
 func (r getQuizQuestionByIDRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
 func (r getQuizQuestionByIDRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
+func (r getQuizQuestionByIDRowAdapter) GetPoints() *int32            { return r.Points }
 
 // Adapter for sqlc.GetQuizQuestionsByIDsRow
 type getQuizQuestionsByIDsRowAdapter struct {
@@ -237,6 +241,7 @@ func (r getQuizQuestionsByIDsRowAdapter) GetMinValue() pgtype.Numeric  { return 
 func (r getQuizQuestionsByIDsRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
 func (r getQuizQuestionsByIDsRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
 func (r getQuizQuestionsByIDsRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
+func (r getQuizQuestionsByIDsRowAdapter) GetPoints() *int32            { return r.Points }
 
 // Adapter for sqlc.GetQuizQuestionsByQuizIDRow
 type getQuizQuestionsByQuizIDRowAdapter struct {
@@ -255,6 +260,7 @@ func (r getQuizQuestionsByQuizIDRowAdapter) GetMinValue() pgtype.Numeric  { retu
 func (r getQuizQuestionsByQuizIDRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
 func (r getQuizQuestionsByQuizIDRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
 func (r getQuizQuestionsByQuizIDRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
+func (r getQuizQuestionsByQuizIDRowAdapter) GetPoints() *int32            { return r.Points }
 
 // Adapter for sqlc.GetQuizQuestionsByQuizIDsRow
 type getQuizQuestionsByQuizIDsRowAdapter struct {
@@ -273,6 +279,7 @@ func (r getQuizQuestionsByQuizIDsRowAdapter) GetMinValue() pgtype.Numeric  { ret
 func (r getQuizQuestionsByQuizIDsRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
 func (r getQuizQuestionsByQuizIDsRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
 func (r getQuizQuestionsByQuizIDsRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
+func (r getQuizQuestionsByQuizIDsRowAdapter) GetPoints() *int32            { return r.Points }
 
 // convertQuizQuestionRowToInterface converts a database row to the appropriate QuizQuestion implementation
 func convertQuizQuestionRowToInterface(row quizQuestionRow) model.QuizQuestion {
@@ -299,6 +306,14 @@ func convertQuestionTimeoutSeconds(ts *int32) *int {
 	return &v
 }
 
+func convertQuestionPoints(pts *int32) *int {
+	if pts == nil {
+		return nil
+	}
+	v := int(*pts)
+	return &v
+}
+
 func convertToPredefinedQuestion(row quizQuestionRow) *model.PredefinedQuestion {
 	allowMultiple := false
 	if row.GetAllowMultipleSelection() != nil {
@@ -310,6 +325,7 @@ func convertToPredefinedQuestion(row quizQuestionRow) *model.PredefinedQuestion 
 		QuestionText:           row.GetQuestionText(),
 		QuestionOrder:          int(row.GetQuestionOrder()),
 		TimeoutSeconds:         convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
+		Points:                 convertQuestionPoints(row.GetPoints()),
 		AllowMultipleSelection: allowMultiple,
 	}
 }
@@ -321,6 +337,7 @@ func convertToFreeTextQuestion(row quizQuestionRow) *model.FreeTextQuestion {
 		QuestionText:   row.GetQuestionText(),
 		QuestionOrder:  int(row.GetQuestionOrder()),
 		TimeoutSeconds: convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
+		Points:         convertQuestionPoints(row.GetPoints()),
 	}
 }
 
@@ -347,6 +364,7 @@ func convertToNumberQuestion(row quizQuestionRow) *model.NumberQuestion {
 		QuestionText:   row.GetQuestionText(),
 		QuestionOrder:  int(row.GetQuestionOrder()),
 		TimeoutSeconds: convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
+		Points:         convertQuestionPoints(row.GetPoints()),
 		MinValue:       minValue,
 		MaxValue:       maxValue,
 		StepValue:      stepValue,
@@ -360,6 +378,7 @@ func convertToJsonQuestion(row quizQuestionRow) *model.JSONQuestion {
 		QuestionText:   row.GetQuestionText(),
 		QuestionOrder:  int(row.GetQuestionOrder()),
 		TimeoutSeconds: convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
+		Points:         convertQuestionPoints(row.GetPoints()),
 	}
 }
 
@@ -448,22 +467,28 @@ func convertResponseRowToInterface(row *sqlc.QuizResponse, questionType string) 
 		timeSpentSeconds = &tss
 	}
 
+	var pointsEarned *int
+	if row.PointsEarned != nil {
+		pe := int(*row.PointsEarned)
+		pointsEarned = &pe
+	}
+
 	switch questionType {
 	case "PREDEFINED":
-		return convertToPredefinedResponse(row, answeredAt, timeSpentSeconds)
+		return convertToPredefinedResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
 	case "FREE_TEXT":
-		return convertToFreeTextResponse(row, answeredAt, timeSpentSeconds)
+		return convertToFreeTextResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
 	case "NUMBER":
-		return convertToNumberResponse(row, answeredAt, timeSpentSeconds)
+		return convertToNumberResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
 	case "JSON":
-		return convertToJsonResponse(row, answeredAt, timeSpentSeconds)
+		return convertToJsonResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
 	default:
 		// Default to FreeTextResponse for unknown types
-		return convertToFreeTextResponse(row, answeredAt, timeSpentSeconds)
+		return convertToFreeTextResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
 	}
 }
 
-func convertToPredefinedResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int) *model.PredefinedResponse {
+func convertToPredefinedResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int) *model.PredefinedResponse {
 	var selectedAnswerIDs []string
 	if row.SelectedAnswerIds != nil {
 		_ = json.Unmarshal(row.SelectedAnswerIds, &selectedAnswerIDs)
@@ -476,10 +501,11 @@ func convertToPredefinedResponse(row *sqlc.QuizResponse, answeredAt *scalars.Dat
 		IsCorrect:         row.IsCorrect,
 		AnsweredAt:        answeredAt,
 		TimeSpentSeconds:  timeSpentSeconds,
+		PointsEarned:      pointsEarned,
 	}
 }
 
-func convertToFreeTextResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int) *model.FreeTextResponse {
+func convertToFreeTextResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int) *model.FreeTextResponse {
 	textResponse := ""
 	if row.TextResponse != nil {
 		textResponse = *row.TextResponse
@@ -491,10 +517,11 @@ func convertToFreeTextResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateT
 		TextResponse:     textResponse,
 		AnsweredAt:       answeredAt,
 		TimeSpentSeconds: timeSpentSeconds,
+		PointsEarned:     pointsEarned,
 	}
 }
 
-func convertToNumberResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int) *model.NumberResponse {
+func convertToNumberResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int) *model.NumberResponse {
 	var numberResponse float64
 	if row.NumberResponse.Valid {
 		val, _ := row.NumberResponse.Float64Value()
@@ -507,10 +534,11 @@ func convertToNumberResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTim
 		NumberResponse:   numberResponse,
 		AnsweredAt:       answeredAt,
 		TimeSpentSeconds: timeSpentSeconds,
+		PointsEarned:     pointsEarned,
 	}
 }
 
-func convertToJsonResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int) *model.JSONResponse {
+func convertToJsonResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int) *model.JSONResponse {
 	jsonResponse := ""
 	if row.JsonResponse != nil {
 		jsonResponse = string(row.JsonResponse)
@@ -522,5 +550,6 @@ func convertToJsonResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime,
 		JSONResponse:     jsonResponse,
 		AnsweredAt:       answeredAt,
 		TimeSpentSeconds: timeSpentSeconds,
+		PointsEarned:     pointsEarned,
 	}
 }

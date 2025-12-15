@@ -54,6 +54,7 @@ type QuizQuestion interface {
 	GetQuestionText() string
 	GetQuestionOrder() int
 	GetTimeoutSeconds() *int
+	GetPoints() *int
 }
 
 type QuizResponse interface {
@@ -63,6 +64,7 @@ type QuizResponse interface {
 	GetQuestion() QuizQuestion
 	GetAnsweredAt() *scalars.DateTime
 	GetTimeSpentSeconds() *int
+	GetPointsEarned() *int
 }
 
 type ScoreSource interface {
@@ -384,6 +386,7 @@ type CreateQuizQuestionInput struct {
 	QuestionText           string                        `json:"questionText"`
 	QuestionOrder          int                           `json:"questionOrder"`
 	TimeoutSeconds         *int                          `json:"timeoutSeconds,omitempty"`
+	Points                 *int                          `json:"points,omitempty"`
 	AllowMultipleSelection *bool                         `json:"allowMultipleSelection,omitempty"`
 	PredefinedAnswers      []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
 	MinValue               *float64                      `json:"minValue,omitempty"`
@@ -599,6 +602,7 @@ type FreeTextQuestion struct {
 	QuestionText   string `json:"questionText"`
 	QuestionOrder  int    `json:"questionOrder"`
 	TimeoutSeconds *int   `json:"timeoutSeconds,omitempty"`
+	Points         *int   `json:"points,omitempty"`
 	QuizID         string `json:"-"`
 }
 
@@ -608,6 +612,7 @@ func (this FreeTextQuestion) GetQuiz() *Quiz          { return this.Quiz }
 func (this FreeTextQuestion) GetQuestionText() string { return this.QuestionText }
 func (this FreeTextQuestion) GetQuestionOrder() int   { return this.QuestionOrder }
 func (this FreeTextQuestion) GetTimeoutSeconds() *int { return this.TimeoutSeconds }
+func (this FreeTextQuestion) GetPoints() *int         { return this.Points }
 
 type FreeTextResponse struct {
 	ID               string            `json:"id"`
@@ -615,6 +620,7 @@ type FreeTextResponse struct {
 	Question         QuizQuestion      `json:"question"`
 	AnsweredAt       *scalars.DateTime `json:"answeredAt,omitempty"`
 	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
+	PointsEarned     *int              `json:"pointsEarned,omitempty"`
 	TextResponse     string            `json:"textResponse"`
 	QuestionID       string            `json:"-"`
 	SubmissionID     string            `json:"-"`
@@ -626,6 +632,7 @@ func (this FreeTextResponse) GetSubmission() *QuizSubmission   { return this.Sub
 func (this FreeTextResponse) GetQuestion() QuizQuestion        { return this.Question }
 func (this FreeTextResponse) GetAnsweredAt() *scalars.DateTime { return this.AnsweredAt }
 func (this FreeTextResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
+func (this FreeTextResponse) GetPointsEarned() *int            { return this.PointsEarned }
 
 type JSONQuestion struct {
 	ID             string `json:"id"`
@@ -633,6 +640,7 @@ type JSONQuestion struct {
 	QuestionText   string `json:"questionText"`
 	QuestionOrder  int    `json:"questionOrder"`
 	TimeoutSeconds *int   `json:"timeoutSeconds,omitempty"`
+	Points         *int   `json:"points,omitempty"`
 	QuizID         string `json:"-"`
 }
 
@@ -642,6 +650,7 @@ func (this JSONQuestion) GetQuiz() *Quiz          { return this.Quiz }
 func (this JSONQuestion) GetQuestionText() string { return this.QuestionText }
 func (this JSONQuestion) GetQuestionOrder() int   { return this.QuestionOrder }
 func (this JSONQuestion) GetTimeoutSeconds() *int { return this.TimeoutSeconds }
+func (this JSONQuestion) GetPoints() *int         { return this.Points }
 
 type JSONResponse struct {
 	ID               string            `json:"id"`
@@ -649,6 +658,7 @@ type JSONResponse struct {
 	Question         QuizQuestion      `json:"question"`
 	AnsweredAt       *scalars.DateTime `json:"answeredAt,omitempty"`
 	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
+	PointsEarned     *int              `json:"pointsEarned,omitempty"`
 	JSONResponse     string            `json:"jsonResponse"`
 	QuestionID       string            `json:"-"`
 	SubmissionID     string            `json:"-"`
@@ -660,6 +670,7 @@ func (this JSONResponse) GetSubmission() *QuizSubmission   { return this.Submiss
 func (this JSONResponse) GetQuestion() QuizQuestion        { return this.Question }
 func (this JSONResponse) GetAnsweredAt() *scalars.DateTime { return this.AnsweredAt }
 func (this JSONResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
+func (this JSONResponse) GetPointsEarned() *int            { return this.PointsEarned }
 
 type LeaderboardConnection struct {
 	Edges      []LeaderboardEdge `json:"edges"`
@@ -704,6 +715,7 @@ type NumberQuestion struct {
 	QuestionText   string   `json:"questionText"`
 	QuestionOrder  int      `json:"questionOrder"`
 	TimeoutSeconds *int     `json:"timeoutSeconds,omitempty"`
+	Points         *int     `json:"points,omitempty"`
 	MinValue       *float64 `json:"minValue,omitempty"`
 	MaxValue       *float64 `json:"maxValue,omitempty"`
 	StepValue      *float64 `json:"stepValue,omitempty"`
@@ -716,6 +728,7 @@ func (this NumberQuestion) GetQuiz() *Quiz          { return this.Quiz }
 func (this NumberQuestion) GetQuestionText() string { return this.QuestionText }
 func (this NumberQuestion) GetQuestionOrder() int   { return this.QuestionOrder }
 func (this NumberQuestion) GetTimeoutSeconds() *int { return this.TimeoutSeconds }
+func (this NumberQuestion) GetPoints() *int         { return this.Points }
 
 type NumberResponse struct {
 	ID               string            `json:"id"`
@@ -723,6 +736,7 @@ type NumberResponse struct {
 	Question         QuizQuestion      `json:"question"`
 	AnsweredAt       *scalars.DateTime `json:"answeredAt,omitempty"`
 	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
+	PointsEarned     *int              `json:"pointsEarned,omitempty"`
 	NumberResponse   float64           `json:"numberResponse"`
 	QuestionID       string            `json:"-"`
 	SubmissionID     string            `json:"-"`
@@ -734,6 +748,7 @@ func (this NumberResponse) GetSubmission() *QuizSubmission   { return this.Submi
 func (this NumberResponse) GetQuestion() QuizQuestion        { return this.Question }
 func (this NumberResponse) GetAnsweredAt() *scalars.DateTime { return this.AnsweredAt }
 func (this NumberResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
+func (this NumberResponse) GetPointsEarned() *int            { return this.PointsEarned }
 
 type PageInfo struct {
 	HasNextPage     bool    `json:"hasNextPage"`
@@ -748,6 +763,7 @@ type PredefinedQuestion struct {
 	QuestionText           string                 `json:"questionText"`
 	QuestionOrder          int                    `json:"questionOrder"`
 	TimeoutSeconds         *int                   `json:"timeoutSeconds,omitempty"`
+	Points                 *int                   `json:"points,omitempty"`
 	AllowMultipleSelection bool                   `json:"allowMultipleSelection"`
 	PredefinedAnswers      []QuizPredefinedAnswer `json:"predefinedAnswers"`
 	QuizID                 string                 `json:"-"`
@@ -759,6 +775,7 @@ func (this PredefinedQuestion) GetQuiz() *Quiz          { return this.Quiz }
 func (this PredefinedQuestion) GetQuestionText() string { return this.QuestionText }
 func (this PredefinedQuestion) GetQuestionOrder() int   { return this.QuestionOrder }
 func (this PredefinedQuestion) GetTimeoutSeconds() *int { return this.TimeoutSeconds }
+func (this PredefinedQuestion) GetPoints() *int         { return this.Points }
 
 type PredefinedResponse struct {
 	ID                string                 `json:"id"`
@@ -766,6 +783,7 @@ type PredefinedResponse struct {
 	Question          QuizQuestion           `json:"question"`
 	AnsweredAt        *scalars.DateTime      `json:"answeredAt,omitempty"`
 	TimeSpentSeconds  *int                   `json:"timeSpentSeconds,omitempty"`
+	PointsEarned      *int                   `json:"pointsEarned,omitempty"`
 	SelectedAnswerIds []string               `json:"selectedAnswerIds"`
 	SelectedAnswers   []QuizPredefinedAnswer `json:"selectedAnswers"`
 	IsCorrect         *bool                  `json:"isCorrect,omitempty"`
@@ -779,6 +797,7 @@ func (this PredefinedResponse) GetSubmission() *QuizSubmission   { return this.S
 func (this PredefinedResponse) GetQuestion() QuizQuestion        { return this.Question }
 func (this PredefinedResponse) GetAnsweredAt() *scalars.DateTime { return this.AnsweredAt }
 func (this PredefinedResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
+func (this PredefinedResponse) GetPointsEarned() *int            { return this.PointsEarned }
 
 type Project struct {
 	ID           string                  `json:"id"`
@@ -1352,6 +1371,7 @@ type UpdateQuizQuestionInput struct {
 	QuestionText           *string                       `json:"questionText,omitempty"`
 	QuestionOrder          *int                          `json:"questionOrder,omitempty"`
 	TimeoutSeconds         *int                          `json:"timeoutSeconds,omitempty"`
+	Points                 *int                          `json:"points,omitempty"`
 	AllowMultipleSelection *bool                         `json:"allowMultipleSelection,omitempty"`
 	PredefinedAnswers      []CreatePredefinedAnswerInput `json:"predefinedAnswers,omitempty"`
 	MinValue               *float64                      `json:"minValue,omitempty"`

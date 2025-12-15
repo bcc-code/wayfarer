@@ -279,6 +279,7 @@ type ComplexityRoot struct {
 
 	FreeTextQuestion struct {
 		ID             func(childComplexity int) int
+		Points         func(childComplexity int) int
 		QuestionOrder  func(childComplexity int) int
 		QuestionText   func(childComplexity int) int
 		Quiz           func(childComplexity int) int
@@ -288,6 +289,7 @@ type ComplexityRoot struct {
 	FreeTextResponse struct {
 		AnsweredAt       func(childComplexity int) int
 		ID               func(childComplexity int) int
+		PointsEarned     func(childComplexity int) int
 		Question         func(childComplexity int) int
 		Submission       func(childComplexity int) int
 		TextResponse     func(childComplexity int) int
@@ -296,6 +298,7 @@ type ComplexityRoot struct {
 
 	JsonQuestion struct {
 		ID             func(childComplexity int) int
+		Points         func(childComplexity int) int
 		QuestionOrder  func(childComplexity int) int
 		QuestionText   func(childComplexity int) int
 		Quiz           func(childComplexity int) int
@@ -306,6 +309,7 @@ type ComplexityRoot struct {
 		AnsweredAt       func(childComplexity int) int
 		ID               func(childComplexity int) int
 		JSONResponse     func(childComplexity int) int
+		PointsEarned     func(childComplexity int) int
 		Question         func(childComplexity int) int
 		Submission       func(childComplexity int) int
 		TimeSpentSeconds func(childComplexity int) int
@@ -432,6 +436,7 @@ type ComplexityRoot struct {
 		ID             func(childComplexity int) int
 		MaxValue       func(childComplexity int) int
 		MinValue       func(childComplexity int) int
+		Points         func(childComplexity int) int
 		QuestionOrder  func(childComplexity int) int
 		QuestionText   func(childComplexity int) int
 		Quiz           func(childComplexity int) int
@@ -443,6 +448,7 @@ type ComplexityRoot struct {
 		AnsweredAt       func(childComplexity int) int
 		ID               func(childComplexity int) int
 		NumberResponse   func(childComplexity int) int
+		PointsEarned     func(childComplexity int) int
 		Question         func(childComplexity int) int
 		Submission       func(childComplexity int) int
 		TimeSpentSeconds func(childComplexity int) int
@@ -458,6 +464,7 @@ type ComplexityRoot struct {
 	PredefinedQuestion struct {
 		AllowMultipleSelection func(childComplexity int) int
 		ID                     func(childComplexity int) int
+		Points                 func(childComplexity int) int
 		PredefinedAnswers      func(childComplexity int) int
 		QuestionOrder          func(childComplexity int) int
 		QuestionText           func(childComplexity int) int
@@ -469,6 +476,7 @@ type ComplexityRoot struct {
 		AnsweredAt        func(childComplexity int) int
 		ID                func(childComplexity int) int
 		IsCorrect         func(childComplexity int) int
+		PointsEarned      func(childComplexity int) int
 		Question          func(childComplexity int) int
 		SelectedAnswerIds func(childComplexity int) int
 		SelectedAnswers   func(childComplexity int) int
@@ -1996,6 +2004,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FreeTextQuestion.ID(childComplexity), true
+	case "FreeTextQuestion.points":
+		if e.complexity.FreeTextQuestion.Points == nil {
+			break
+		}
+
+		return e.complexity.FreeTextQuestion.Points(childComplexity), true
 	case "FreeTextQuestion.questionOrder":
 		if e.complexity.FreeTextQuestion.QuestionOrder == nil {
 			break
@@ -2033,6 +2047,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FreeTextResponse.ID(childComplexity), true
+	case "FreeTextResponse.pointsEarned":
+		if e.complexity.FreeTextResponse.PointsEarned == nil {
+			break
+		}
+
+		return e.complexity.FreeTextResponse.PointsEarned(childComplexity), true
 	case "FreeTextResponse.question":
 		if e.complexity.FreeTextResponse.Question == nil {
 			break
@@ -2064,6 +2084,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JsonQuestion.ID(childComplexity), true
+	case "JsonQuestion.points":
+		if e.complexity.JsonQuestion.Points == nil {
+			break
+		}
+
+		return e.complexity.JsonQuestion.Points(childComplexity), true
 	case "JsonQuestion.questionOrder":
 		if e.complexity.JsonQuestion.QuestionOrder == nil {
 			break
@@ -2107,6 +2133,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JsonResponse.JSONResponse(childComplexity), true
+	case "JsonResponse.pointsEarned":
+		if e.complexity.JsonResponse.PointsEarned == nil {
+			break
+		}
+
+		return e.complexity.JsonResponse.PointsEarned(childComplexity), true
 	case "JsonResponse.question":
 		if e.complexity.JsonResponse.Question == nil {
 			break
@@ -3191,6 +3223,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NumberQuestion.MinValue(childComplexity), true
+	case "NumberQuestion.points":
+		if e.complexity.NumberQuestion.Points == nil {
+			break
+		}
+
+		return e.complexity.NumberQuestion.Points(childComplexity), true
 	case "NumberQuestion.questionOrder":
 		if e.complexity.NumberQuestion.QuestionOrder == nil {
 			break
@@ -3240,6 +3278,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NumberResponse.NumberResponse(childComplexity), true
+	case "NumberResponse.pointsEarned":
+		if e.complexity.NumberResponse.PointsEarned == nil {
+			break
+		}
+
+		return e.complexity.NumberResponse.PointsEarned(childComplexity), true
 	case "NumberResponse.question":
 		if e.complexity.NumberResponse.Question == nil {
 			break
@@ -3296,6 +3340,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PredefinedQuestion.ID(childComplexity), true
+	case "PredefinedQuestion.points":
+		if e.complexity.PredefinedQuestion.Points == nil {
+			break
+		}
+
+		return e.complexity.PredefinedQuestion.Points(childComplexity), true
 	case "PredefinedQuestion.predefinedAnswers":
 		if e.complexity.PredefinedQuestion.PredefinedAnswers == nil {
 			break
@@ -3345,6 +3395,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PredefinedResponse.IsCorrect(childComplexity), true
+	case "PredefinedResponse.pointsEarned":
+		if e.complexity.PredefinedResponse.PointsEarned == nil {
+			break
+		}
+
+		return e.complexity.PredefinedResponse.PointsEarned(childComplexity), true
 	case "PredefinedResponse.question":
 		if e.complexity.PredefinedResponse.Question == nil {
 			break
@@ -5930,6 +5986,7 @@ interface QuizQuestion {
     questionText: String!
     questionOrder: Int!
     timeoutSeconds: Int
+    points: Int
 }
 
 type PredefinedQuestion implements QuizQuestion {
@@ -5938,6 +5995,7 @@ type PredefinedQuestion implements QuizQuestion {
     questionText: String!
     questionOrder: Int!
     timeoutSeconds: Int
+    points: Int
     allowMultipleSelection: Boolean!
     predefinedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
 }
@@ -5948,6 +6006,7 @@ type FreeTextQuestion implements QuizQuestion {
     questionText: String!
     questionOrder: Int!
     timeoutSeconds: Int
+    points: Int
 }
 
 type NumberQuestion implements QuizQuestion {
@@ -5956,6 +6015,7 @@ type NumberQuestion implements QuizQuestion {
     questionText: String!
     questionOrder: Int!
     timeoutSeconds: Int
+    points: Int
     minValue: Float
     maxValue: Float
     stepValue: Float
@@ -5967,6 +6027,7 @@ type JsonQuestion implements QuizQuestion {
     questionText: String!
     questionOrder: Int!
     timeoutSeconds: Int
+    points: Int
 }
 
 type QuizPredefinedAnswer {
@@ -6006,6 +6067,7 @@ interface QuizResponse {
     question: QuizQuestion! @goField(forceResolver: true)
     answeredAt: DateTime
     timeSpentSeconds: Int
+    pointsEarned: Int
 }
 
 type PredefinedResponse implements QuizResponse {
@@ -6014,6 +6076,7 @@ type PredefinedResponse implements QuizResponse {
     question: QuizQuestion! @goField(forceResolver: true)
     answeredAt: DateTime
     timeSpentSeconds: Int
+    pointsEarned: Int
     selectedAnswerIds: [ID!]!
     selectedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
     isCorrect: Boolean
@@ -6025,6 +6088,7 @@ type FreeTextResponse implements QuizResponse {
     question: QuizQuestion! @goField(forceResolver: true)
     answeredAt: DateTime
     timeSpentSeconds: Int
+    pointsEarned: Int
     textResponse: String!
 }
 
@@ -6034,6 +6098,7 @@ type NumberResponse implements QuizResponse {
     question: QuizQuestion! @goField(forceResolver: true)
     answeredAt: DateTime
     timeSpentSeconds: Int
+    pointsEarned: Int
     numberResponse: Float!
 }
 
@@ -6043,6 +6108,7 @@ type JsonResponse implements QuizResponse {
     question: QuizQuestion! @goField(forceResolver: true)
     answeredAt: DateTime
     timeSpentSeconds: Int
+    pointsEarned: Int
     jsonResponse: JSON!
 }
 
@@ -6250,6 +6316,7 @@ input CreateQuizQuestionInput {
     questionText: String!
     questionOrder: Int!
     timeoutSeconds: Int
+    points: Int
 
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]
@@ -6269,6 +6336,7 @@ input UpdateQuizQuestionInput {
     questionText: String
     questionOrder: Int
     timeoutSeconds: Int
+    points: Int
 
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]
@@ -13529,6 +13597,35 @@ func (ec *executionContext) fieldContext_FreeTextQuestion_timeoutSeconds(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _FreeTextQuestion_points(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextQuestion_points,
+		func(ctx context.Context) (any, error) {
+			return obj.Points, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextQuestion_points(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FreeTextResponse_id(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextResponse) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -13692,6 +13789,35 @@ func (ec *executionContext) _FreeTextResponse_timeSpentSeconds(ctx context.Conte
 }
 
 func (ec *executionContext) fieldContext_FreeTextResponse_timeSpentSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FreeTextResponse_pointsEarned(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextResponse_pointsEarned,
+		func(ctx context.Context) (any, error) {
+			return obj.PointsEarned, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextResponse_pointsEarned(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "FreeTextResponse",
 		Field:      field,
@@ -13914,6 +14040,35 @@ func (ec *executionContext) fieldContext_JsonQuestion_timeoutSeconds(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _JsonQuestion_points(ctx context.Context, field graphql.CollectedField, obj *model.JSONQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonQuestion_points,
+		func(ctx context.Context) (any, error) {
+			return obj.Points, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonQuestion_points(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _JsonResponse_id(ctx context.Context, field graphql.CollectedField, obj *model.JSONResponse) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -14077,6 +14232,35 @@ func (ec *executionContext) _JsonResponse_timeSpentSeconds(ctx context.Context, 
 }
 
 func (ec *executionContext) fieldContext_JsonResponse_timeSpentSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JsonResponse_pointsEarned(ctx context.Context, field graphql.CollectedField, obj *model.JSONResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonResponse_pointsEarned,
+		func(ctx context.Context) (any, error) {
+			return obj.PointsEarned, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonResponse_pointsEarned(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "JsonResponse",
 		Field:      field,
@@ -20969,6 +21153,35 @@ func (ec *executionContext) fieldContext_NumberQuestion_timeoutSeconds(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _NumberQuestion_points(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberQuestion_points,
+		func(ctx context.Context) (any, error) {
+			return obj.Points, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberQuestion_points(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NumberQuestion_minValue(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -21219,6 +21432,35 @@ func (ec *executionContext) _NumberResponse_timeSpentSeconds(ctx context.Context
 }
 
 func (ec *executionContext) fieldContext_NumberResponse_timeSpentSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberResponse_pointsEarned(ctx context.Context, field graphql.CollectedField, obj *model.NumberResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberResponse_pointsEarned,
+		func(ctx context.Context) (any, error) {
+			return obj.PointsEarned, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberResponse_pointsEarned(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "NumberResponse",
 		Field:      field,
@@ -21557,6 +21799,35 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_timeoutSeconds(_ con
 	return fc, nil
 }
 
+func (ec *executionContext) _PredefinedQuestion_points(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedQuestion_points,
+		func(ctx context.Context) (any, error) {
+			return obj.Points, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedQuestion_points(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PredefinedQuestion_allowMultipleSelection(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -21790,6 +22061,35 @@ func (ec *executionContext) _PredefinedResponse_timeSpentSeconds(ctx context.Con
 }
 
 func (ec *executionContext) fieldContext_PredefinedResponse_timeSpentSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PredefinedResponse_pointsEarned(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedResponse_pointsEarned,
+		func(ctx context.Context) (any, error) {
+			return obj.PointsEarned, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedResponse_pointsEarned(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PredefinedResponse",
 		Field:      field,
@@ -35514,7 +35814,7 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionType", "questionText", "questionOrder", "timeoutSeconds", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue"}
+	fieldsInOrder := [...]string{"questionType", "questionText", "questionOrder", "timeoutSeconds", "points", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -35549,6 +35849,13 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.TimeoutSeconds = data
+		case "points":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("points"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Points = data
 		case "allowMultipleSelection":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowMultipleSelection"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -37327,7 +37634,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionText", "questionOrder", "timeoutSeconds", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue"}
+	fieldsInOrder := [...]string{"questionText", "questionOrder", "timeoutSeconds", "points", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -37355,6 +37662,13 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.TimeoutSeconds = data
+		case "points":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("points"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Points = data
 		case "allowMultipleSelection":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowMultipleSelection"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -39954,6 +40268,8 @@ func (ec *executionContext) _FreeTextQuestion(ctx context.Context, sel ast.Selec
 			}
 		case "timeoutSeconds":
 			out.Values[i] = ec._FreeTextQuestion_timeoutSeconds(ctx, field, obj)
+		case "points":
+			out.Values[i] = ec._FreeTextQuestion_points(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -40069,6 +40385,8 @@ func (ec *executionContext) _FreeTextResponse(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._FreeTextResponse_answeredAt(ctx, field, obj)
 		case "timeSpentSeconds":
 			out.Values[i] = ec._FreeTextResponse_timeSpentSeconds(ctx, field, obj)
+		case "pointsEarned":
+			out.Values[i] = ec._FreeTextResponse_pointsEarned(ctx, field, obj)
 		case "textResponse":
 			out.Values[i] = ec._FreeTextResponse_textResponse(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -40161,6 +40479,8 @@ func (ec *executionContext) _JsonQuestion(ctx context.Context, sel ast.Selection
 			}
 		case "timeoutSeconds":
 			out.Values[i] = ec._JsonQuestion_timeoutSeconds(ctx, field, obj)
+		case "points":
+			out.Values[i] = ec._JsonQuestion_points(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -40276,6 +40596,8 @@ func (ec *executionContext) _JsonResponse(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._JsonResponse_answeredAt(ctx, field, obj)
 		case "timeSpentSeconds":
 			out.Values[i] = ec._JsonResponse_timeSpentSeconds(ctx, field, obj)
+		case "pointsEarned":
+			out.Values[i] = ec._JsonResponse_pointsEarned(ctx, field, obj)
 		case "jsonResponse":
 			out.Values[i] = ec._JsonResponse_jsonResponse(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -41249,6 +41571,8 @@ func (ec *executionContext) _NumberQuestion(ctx context.Context, sel ast.Selecti
 			}
 		case "timeoutSeconds":
 			out.Values[i] = ec._NumberQuestion_timeoutSeconds(ctx, field, obj)
+		case "points":
+			out.Values[i] = ec._NumberQuestion_points(ctx, field, obj)
 		case "minValue":
 			out.Values[i] = ec._NumberQuestion_minValue(ctx, field, obj)
 		case "maxValue":
@@ -41370,6 +41694,8 @@ func (ec *executionContext) _NumberResponse(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._NumberResponse_answeredAt(ctx, field, obj)
 		case "timeSpentSeconds":
 			out.Values[i] = ec._NumberResponse_timeSpentSeconds(ctx, field, obj)
+		case "pointsEarned":
+			out.Values[i] = ec._NumberResponse_pointsEarned(ctx, field, obj)
 		case "numberResponse":
 			out.Values[i] = ec._NumberResponse_numberResponse(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -41510,6 +41836,8 @@ func (ec *executionContext) _PredefinedQuestion(ctx context.Context, sel ast.Sel
 			}
 		case "timeoutSeconds":
 			out.Values[i] = ec._PredefinedQuestion_timeoutSeconds(ctx, field, obj)
+		case "points":
+			out.Values[i] = ec._PredefinedQuestion_points(ctx, field, obj)
 		case "allowMultipleSelection":
 			out.Values[i] = ec._PredefinedQuestion_allowMultipleSelection(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -41666,6 +41994,8 @@ func (ec *executionContext) _PredefinedResponse(ctx context.Context, sel ast.Sel
 			out.Values[i] = ec._PredefinedResponse_answeredAt(ctx, field, obj)
 		case "timeSpentSeconds":
 			out.Values[i] = ec._PredefinedResponse_timeSpentSeconds(ctx, field, obj)
+		case "pointsEarned":
+			out.Values[i] = ec._PredefinedResponse_pointsEarned(ctx, field, obj)
 		case "selectedAnswerIds":
 			out.Values[i] = ec._PredefinedResponse_selectedAnswerIds(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

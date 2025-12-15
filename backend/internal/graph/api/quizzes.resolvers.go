@@ -279,6 +279,10 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 		ts := int32(*input.TimeoutSeconds)
 		params.Timeoutseconds = &ts
 	}
+	if input.Points != nil {
+		pts := int32(*input.Points)
+		params.Points = &pts
+	}
 
 	// Create question
 	questionRow, err := qtx.CreateQuizQuestion(ctx, params)
@@ -373,6 +377,10 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	if input.TimeoutSeconds != nil {
 		ts := int32(*input.TimeoutSeconds)
 		params.Timeoutseconds = &ts
+	}
+	if input.Points != nil {
+		pts := int32(*input.Points)
+		params.Points = &pts
 	}
 
 	// Update question
@@ -852,6 +860,11 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		// JSON is not graded - leave is_correct NULL
 	}
 
+	// Calculate points_earned for correct answers
+	if params.Iscorrect != nil && *params.Iscorrect && question.Points != nil {
+		params.Pointsearned = question.Points
+	}
+
 	if input.TimeSpentSeconds != nil {
 		tss := int32(*input.TimeSpentSeconds)
 		params.Timespentseconds = &tss
@@ -872,15 +885,43 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 			if fetchErr != nil {
 				return nil, fmt.Errorf("failed to fetch existing response: %w", fetchErr)
 			}
-			response = existing
-		} else {
-			return nil, fmt.Errorf("failed to save response: %w", err)
+			r.Cache.InvalidateQuizSubmission(submissionID)
+			// Convert existing response to QuizResponse model
+			existingAsModel := &sqlc.QuizResponse{
+				ID:                existing.ID,
+				SubmissionID:      existing.SubmissionID,
+				QuestionID:        existing.QuestionID,
+				SelectedAnswerIds: existing.SelectedAnswerIds,
+				TextResponse:      existing.TextResponse,
+				NumberResponse:    existing.NumberResponse,
+				JsonResponse:      existing.JsonResponse,
+				IsCorrect:         existing.IsCorrect,
+				PointsEarned:      existing.PointsEarned,
+				AnsweredAt:        existing.AnsweredAt,
+				TimeSpentSeconds:  existing.TimeSpentSeconds,
+			}
+			return convertResponseRowToInterface(existingAsModel, question.QuestionType), nil
 		}
+		return nil, fmt.Errorf("failed to save response: %w", err)
 	}
 
 	r.Cache.InvalidateQuizSubmission(submissionID)
 
-	return convertResponseRowToInterface(response, question.QuestionType), nil
+	// Convert response to QuizResponse model
+	responseAsModel := &sqlc.QuizResponse{
+		ID:                response.ID,
+		SubmissionID:      response.SubmissionID,
+		QuestionID:        response.QuestionID,
+		SelectedAnswerIds: response.SelectedAnswerIds,
+		TextResponse:      response.TextResponse,
+		NumberResponse:    response.NumberResponse,
+		JsonResponse:      response.JsonResponse,
+		IsCorrect:         response.IsCorrect,
+		PointsEarned:      response.PointsEarned,
+		AnsweredAt:        response.AnsweredAt,
+		TimeSpentSeconds:  response.TimeSpentSeconds,
+	}
+	return convertResponseRowToInterface(responseAsModel, question.QuestionType), nil
 }
 
 // FinalizeQuiz is the resolver for the finalizeQuiz field.
@@ -962,11 +1003,28 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	}
 	otel.SetProjectID(span, quiz.ProjectID)
 
+	// Calculate total points: completion points + per-answer points
+	ctx, pointsSpan := otel.StartSpan(ctx, "quiz.finalize.calculate_points")
+	perAnswerPoints, err := qtx.CalculateSubmissionPointsFromResponses(ctx, submissionID)
+	if err != nil {
+		pointsSpan.End()
+		txSpan.End()
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to calculate per-answer points: %w", err)
+	}
+	totalPoints := int32(quiz.CompletionPoints) + perAnswerPoints
+	pointsSpan.SetAttributes(
+		attribute.Int("points.completion", quiz.CompletionPoints),
+		attribute.Int("points.per_answer", int(perAnswerPoints)),
+		attribute.Int("points.total", int(totalPoints)),
+	)
+	pointsSpan.End()
+
 	// Update submission
 	ctx, updateSpan := otel.StartSpan(ctx, "quiz.finalize.update_submission")
 	now := time.Now()
 	scoreVal := int32(score)
-	pointsVal := int32(quiz.CompletionPoints)
+	pointsVal := totalPoints
 	updatedSubmission, err := qtx.UpdateQuizSubmission(ctx, sqlc.UpdateQuizSubmissionParams{
 		ID:            submissionID,
 		Completedat:   pgtype.Timestamptz{Time: now, Valid: true},
@@ -981,7 +1039,7 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	}
 
 	// Create score journal entry if points > 0
-	if quiz.CompletionPoints > 0 {
+	if totalPoints > 0 {
 		ctx, journalSpan := otel.StartSpan(ctx, "quiz.finalize.create_score_journal")
 
 		// Load challenge to get event ID
@@ -999,7 +1057,7 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 			ID:          journalID,
 			ProjectID:   quiz.ProjectID,
 			UserID:      userID,
-			Points:      int32(quiz.CompletionPoints),
+			Points:      totalPoints,
 			SourceType:  "QUIZ",
 			SourceID:    &quiz.ID,
 			Reason:      &quiz.Name,
@@ -1258,6 +1316,12 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 			responseParams.Jsonresponse = []byte(*responseInput.JSONResponse)
 		}
 
+		// Calculate points_earned for correct answers
+		if isCorrect != nil && *isCorrect && foundQuestion.GetPoints() != nil {
+			pts := int32(*foundQuestion.GetPoints())
+			responseParams.Pointsearned = &pts
+		}
+
 		if responseInput.TimeSpentSeconds != nil {
 			tss := int32(*responseInput.TimeSpentSeconds)
 			responseParams.Timespentseconds = &tss
@@ -1282,9 +1346,15 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 			Completedat: pgtype.Timestamptz{Time: completedAt.Time, Valid: true},
 		}
 
-		if quiz.CompletionPoints > 0 {
-			pointsVal := int32(quiz.CompletionPoints)
-			updateParams.Pointsawarded = &pointsVal
+		// Calculate total points: completion points + per-answer points
+		perAnswerPoints, err := qtx.CalculateSubmissionPointsFromResponses(ctx, submissionID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to calculate per-answer points: %w", err)
+		}
+		totalPoints := int32(quiz.CompletionPoints) + perAnswerPoints
+
+		if totalPoints > 0 {
+			updateParams.Pointsawarded = &totalPoints
 
 			// Create score journal entry
 			journalID := ulid.NewScoreJournalID()
@@ -1294,7 +1364,7 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 				UserID:     userID,
 				SourceType: "QUIZ",
 				SourceID:   &quizID,
-				Points:     int32(quiz.CompletionPoints),
+				Points:     totalPoints,
 				Reason:     &quiz.Name,
 			})
 			if err != nil {

@@ -356,6 +356,7 @@ type QuizQuestion struct {
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 	TimeoutSeconds         *int32             `json:"timeout_seconds"`
+	Points                 *int32             `json:"points"`
 }
 
 type QuizQuestionTranslation struct {
@@ -377,6 +378,7 @@ type QuizResponse struct {
 	IsCorrect         *bool              `json:"is_correct"`
 	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
 	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
+	PointsEarned      *int32             `json:"points_earned"`
 }
 
 type QuizSubmission struct {
