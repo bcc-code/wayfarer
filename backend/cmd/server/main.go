@@ -303,6 +303,13 @@ func main() {
 	}
 	router.POST("/api/v1/content-events", middleware.APIKeyAuth(cfg.APIKey), webhookHandler.HandleContentEvent)
 
+	// Consent webhook handler for external consent events
+	consentWebhookHandler := &handlers.ConsentWebhookHandler{
+		DB:    db,
+		Cache: cacheInstance,
+	}
+	router.POST("/api/v1/consent-events", middleware.APIKeyAuth(cfg.APIKey), consentWebhookHandler.HandleConsentEvent)
+
 	// File upload handler
 	uploadHandler := &handlers.UploadHandler{
 		DB:        db,

@@ -481,17 +481,17 @@ type mockQuestionRow struct {
 	points                 *int32
 }
 
-func (m *mockQuestionRow) GetID() string                   { return m.id }
-func (m *mockQuestionRow) GetQuizID() string               { return m.quizID }
-func (m *mockQuestionRow) GetQuestionType() string         { return m.questionType }
-func (m *mockQuestionRow) GetQuestionText() string         { return m.questionText }
-func (m *mockQuestionRow) GetQuestionOrder() int32         { return m.questionOrder }
+func (m *mockQuestionRow) GetID() string                    { return m.id }
+func (m *mockQuestionRow) GetQuizID() string                { return m.quizID }
+func (m *mockQuestionRow) GetQuestionType() string          { return m.questionType }
+func (m *mockQuestionRow) GetQuestionText() string          { return m.questionText }
+func (m *mockQuestionRow) GetQuestionOrder() int32          { return m.questionOrder }
 func (m *mockQuestionRow) GetAllowMultipleSelection() *bool { return m.allowMultipleSelection }
-func (m *mockQuestionRow) GetMinValue() pgtype.Numeric     { return pgtype.Numeric{} }
-func (m *mockQuestionRow) GetMaxValue() pgtype.Numeric     { return pgtype.Numeric{} }
-func (m *mockQuestionRow) GetStepValue() pgtype.Numeric    { return pgtype.Numeric{} }
-func (m *mockQuestionRow) GetTimeoutSeconds() *int32       { return m.timeoutSeconds }
-func (m *mockQuestionRow) GetPoints() *int32               { return m.points }
+func (m *mockQuestionRow) GetMinValue() pgtype.Numeric      { return pgtype.Numeric{} }
+func (m *mockQuestionRow) GetMaxValue() pgtype.Numeric      { return pgtype.Numeric{} }
+func (m *mockQuestionRow) GetStepValue() pgtype.Numeric     { return pgtype.Numeric{} }
+func (m *mockQuestionRow) GetTimeoutSeconds() *int32        { return m.timeoutSeconds }
+func (m *mockQuestionRow) GetPoints() *int32                { return m.points }
 
 // Helper functions for tests
 func int32Ptr(v int32) *int32 {

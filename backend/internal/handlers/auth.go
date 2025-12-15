@@ -349,6 +349,9 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
+	// Process any pending consent events for this user
+	h.processPendingConsentEvents(ctx, newUser.ID, claims.PersonID)
+
 	// Convert CreateUserRow to GetUserByMembersIDRow
 	return &sqlc.GetUserByMembersIDRow{
 		ID:          newUser.ID,
@@ -426,4 +429,85 @@ func generateDisplayName(firstName, lastName, fallbackName string) string {
 		return firstName + " " + string([]rune(lastName)[0]) + "."
 	}
 	return fallbackName
+}
+
+// processPendingConsentEvents processes any pending consent events for a newly registered user
+func (h *AuthHandler) processPendingConsentEvents(ctx context.Context, userID, membersID string) {
+	// Get all pending consent events for this members_id
+	pendingEvents, err := h.DB.Queries.GetPendingConsentEventsByMembersID(ctx, membersID)
+	if err != nil {
+		slog.Error("auth: failed to get pending consent events",
+			"user_id", userID,
+			"members_id", membersID,
+			"error", err,
+		)
+		return
+	}
+
+	if len(pendingEvents) == 0 {
+		return
+	}
+
+	slog.Info("auth: processing pending consent events for new user",
+		"user_id", userID,
+		"members_id", membersID,
+		"count", len(pendingEvents),
+	)
+
+	for _, event := range pendingEvents {
+		// Get the latest published consent by key
+		consent, err := h.DB.Queries.GetLatestPublishedConsentByKey(ctx, event.ConsentKey)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				slog.Warn("auth: consent not found for pending event, skipping",
+					"consent_key", event.ConsentKey,
+					"pending_id", event.ID,
+				)
+				continue
+			}
+			slog.Error("auth: failed to get consent for pending event",
+				"consent_key", event.ConsentKey,
+				"error", err,
+			)
+			continue
+		}
+
+		// Create consent history record
+		historyID := ulid.NewUserConsentHistoryID()
+
+		_, err = h.DB.Queries.CreateUserConsentHistory(ctx, sqlc.CreateUserConsentHistoryParams{
+			ID:         historyID,
+			UserID:     userID,
+			ConsentID:  consent.ID,
+			ConsentKey: event.ConsentKey,
+			Action:     event.Action,
+			OccurredAt: event.OccurredAt,
+			Source:     event.Source,
+		})
+		if err != nil {
+			slog.Error("auth: failed to create consent history from pending event",
+				"error", err,
+				"user_id", userID,
+				"consent_key", event.ConsentKey,
+				"pending_id", event.ID,
+			)
+			continue
+		}
+
+		slog.Info("auth: created consent history from pending event",
+			"history_id", historyID,
+			"user_id", userID,
+			"consent_key", event.ConsentKey,
+			"action", event.Action,
+		)
+	}
+
+	// Delete all processed pending events
+	err = h.DB.Queries.DeletePendingConsentEventsByMembersID(ctx, membersID)
+	if err != nil {
+		slog.Error("auth: failed to delete processed pending consent events",
+			"members_id", membersID,
+			"error", err,
+		)
+	}
 }
