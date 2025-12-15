@@ -78,7 +78,13 @@ const sortedConsents = computed(() => {
     <ErrorState v-if="error" :error />
     <div
       v-else-if="data"
-      class="space-y-list-section-gap px-default py-list-outside"
+      :class="[
+        'space-y-list-section-gap',
+        {
+          'px-default py-list-outside': !hasCompletedOnboarding,
+          'p-list-outside': hasCompletedOnboarding,
+        },
+      ]"
     >
       <ConsentCard
         v-for="consent in sortedConsents"
