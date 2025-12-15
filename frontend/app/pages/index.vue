@@ -8,21 +8,24 @@ const { data, error, fetching } = useProfilePageQuery({
 const showBanner = useLocalStorage('showBanner', false, {
   listenToStorageChanges: true,
 })
+const hasCompletedOnboarding = useLocalStorage('hasCompletedOnboarding', false)
+
+// Watch for pending consents and redirect if user hasn't completed onboarding
 watch(
   () => data.value?.me.consentStatus.pendingConsents.length,
   (pending) => {
-    if (pending && !showBanner.value) {
-      showBanner.value = true
+    if (pending) {
+      if (!showBanner.value) {
+        showBanner.value = true
+      }
+      // Redirect to consent page if user hasn't completed onboarding
+      if (!hasCompletedOnboarding.value) {
+        navigateTo({ name: 'settings-consent' })
+      }
     }
   },
+  { immediate: true },
 )
-
-const hasCompletedOnboarding = useLocalStorage('hasCompletedOnboarding', false)
-onMounted(() => {
-  if (!hasCompletedOnboarding.value && showBanner.value) {
-    navigateTo({ name: 'settings-consent' })
-  }
-})
 
 const remotePendingConsents = computed(() => {
   return data.value?.me.consentStatus.pendingConsents.filter(
