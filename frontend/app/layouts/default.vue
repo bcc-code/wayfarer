@@ -152,7 +152,7 @@ const showNavigation = computed(() => {
     </div>
     <div v-if="showNavigation" class="fixed inset-x-0 bottom-0">
       <ProgressiveBlur
-        class="p-navigation-outside pb-[calc(var(--spacing-navigation-outside)+env(safe-area-inset-bottom))] from-shadow-blank/0 to-shadow-default bg-linear-to-b"
+        class="p-navigation-outside pb-[max(var(--spacing-navigation-outside),env(safe-area-inset-bottom))] from-shadow-blank/0 to-shadow-default bg-linear-to-b"
       >
         <ul
           class="bg-background-raised shadow-large rounded-navigation p-navigation-inset relative mx-auto grid w-full max-w-xl grid-cols-3"
