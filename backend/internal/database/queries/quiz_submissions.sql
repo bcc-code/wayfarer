@@ -3,6 +3,13 @@ SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_orde
 FROM quiz_submissions
 WHERE id = @id::text;
 
+-- name: GetQuizSubmissionByIDForUpdate :one
+-- Acquires a row-level lock to prevent concurrent finalization
+SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+FROM quiz_submissions
+WHERE id = @id::text
+FOR UPDATE;
+
 -- name: GetQuizSubmissionsByIDs :many
 SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
 FROM quiz_submissions

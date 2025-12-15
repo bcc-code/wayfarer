@@ -937,9 +937,25 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	}
 	otel.SetUserID(span, userID)
 
-	// Load submission
+	// Begin transaction first - we need to acquire the lock before validation
+	ctx, txSpan := otel.StartSpan(ctx, "quiz.finalize.transaction")
+	tx, err := r.DB.Pool.Begin(ctx)
+	if err != nil {
+		txSpan.End()
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	txSuccess := false
+	defer func() {
+		_ = tx.Rollback(ctx)
+		otel.SetTransactionSuccess(txSpan, txSuccess)
+		txSpan.End()
+	}()
+	qtx := r.DB.Queries.WithTx(tx)
+
+	// Load submission with FOR UPDATE lock to prevent concurrent finalization
 	ctx, loadSpan := otel.StartSpan(ctx, "quiz.finalize.load_submission")
-	submission, err := r.DB.Queries.GetQuizSubmissionByID(ctx, submissionID)
+	submission, err := qtx.GetQuizSubmissionByIDForUpdate(ctx, submissionID)
 	loadSpan.End()
 	if err != nil {
 		otel.RecordError(span, err)
@@ -962,25 +978,11 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 		return nil, fmt.Errorf("submission expired")
 	}
 
-	// Begin transaction
-	ctx, txSpan := otel.StartSpan(ctx, "quiz.finalize.transaction")
-	tx, err := r.DB.Pool.Begin(ctx)
-	if err != nil {
-		txSpan.End()
-		otel.RecordError(span, err)
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer func() {
-		_ = tx.Rollback(ctx)
-	}()
-	qtx := r.DB.Queries.WithTx(tx)
-
 	// Calculate score using single query (no loop)
 	ctx, scoreSpan := otel.StartSpan(ctx, "quiz.finalize.calculate_score")
 	scoreResult, err := qtx.CalculateSubmissionScore(ctx, submissionID)
 	if err != nil {
 		scoreSpan.End()
-		txSpan.End()
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to calculate score: %w", err)
 	}
@@ -997,7 +999,6 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, submission.QuizID)
 	quiz, err := thunk()
 	if err != nil {
-		txSpan.End()
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
 	}
@@ -1008,7 +1009,6 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	perAnswerPoints, err := qtx.CalculateSubmissionPointsFromResponses(ctx, submissionID)
 	if err != nil {
 		pointsSpan.End()
-		txSpan.End()
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to calculate per-answer points: %w", err)
 	}
@@ -1033,7 +1033,6 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	})
 	updateSpan.End()
 	if err != nil {
-		txSpan.End()
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to update submission: %w", err)
 	}
@@ -1047,7 +1046,6 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 		challenge, err := challengeThunk()
 		if err != nil {
 			journalSpan.End()
-			txSpan.End()
 			otel.RecordError(span, err)
 			return nil, fmt.Errorf("failed to load challenge: %w", err)
 		}
@@ -1068,7 +1066,6 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 		_, err = qtx.CreateScoreJournalEntry(ctx, journalParams)
 		journalSpan.End()
 		if err != nil {
-			txSpan.End()
 			otel.RecordError(span, err)
 			return nil, fmt.Errorf("failed to create score journal entry: %w", err)
 		}
@@ -1115,13 +1112,10 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 
 	// Commit transaction
 	if err := tx.Commit(ctx); err != nil {
-		otel.SetTransactionSuccess(txSpan, false)
-		txSpan.End()
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-	otel.SetTransactionSuccess(txSpan, true)
-	txSpan.End()
+	txSuccess = true
 
 	// Auto-complete the associated challenge (after transaction commits)
 	ctx, challengeSpan := otel.StartSpan(ctx, "quiz.finalize.complete_challenge")

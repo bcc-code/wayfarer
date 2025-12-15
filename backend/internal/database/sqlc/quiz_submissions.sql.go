@@ -192,6 +192,33 @@ func (q *Queries) GetQuizSubmissionByID(ctx context.Context, id string) (*QuizSu
 	return &i, err
 }
 
+const GetQuizSubmissionByIDForUpdate = `-- name: GetQuizSubmissionByIDForUpdate :one
+SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+FROM quiz_submissions
+WHERE id = $1::text
+FOR UPDATE
+`
+
+// Acquires a row-level lock to prevent concurrent finalization
+func (q *Queries) GetQuizSubmissionByIDForUpdate(ctx context.Context, id string) (*QuizSubmission, error) {
+	row := q.db.QueryRow(ctx, GetQuizSubmissionByIDForUpdate, id)
+	var i QuizSubmission
+	err := row.Scan(
+		&i.ID,
+		&i.QuizID,
+		&i.UserID,
+		&i.StartedAt,
+		&i.CompletedAt,
+		&i.ExpiresAt,
+		&i.QuestionOrder,
+		&i.Score,
+		&i.MaxScore,
+		&i.PointsAwarded,
+		&i.CreatedAt,
+	)
+	return &i, err
+}
+
 const GetQuizSubmissionsByIDs = `-- name: GetQuizSubmissionsByIDs :many
 SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
 FROM quiz_submissions
