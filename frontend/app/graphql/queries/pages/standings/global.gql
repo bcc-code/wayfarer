@@ -8,21 +8,11 @@ query StandingsGlobalPage(
     leaderboard(entityType: $entityType, filter: $filter, first: $first) {
       edges {
         node {
-          id
-          name
-          description
-          score
-          rank
-          tags
+          ...LeaderboardEntryWithDescriptionFields
         }
       }
       me {
-        id
-        name
-        description
-        score
-        rank
-        tags
+        ...LeaderboardEntryWithDescriptionFields
       }
     }
   }

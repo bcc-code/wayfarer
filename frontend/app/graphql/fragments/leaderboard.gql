@@ -1,0 +1,16 @@
+fragment LeaderboardEntryFields on LeaderboardEntry {
+  id
+  name
+  score
+  rank
+  tags
+}
+
+fragment LeaderboardEntryWithDescriptionFields on LeaderboardEntry {
+  id
+  name
+  description
+  score
+  rank
+  tags
+}

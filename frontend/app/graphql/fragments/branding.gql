@@ -1,0 +1,31 @@
+fragment ColorSetFields on ColorSet {
+  accent
+  accentContrast
+  onAccent
+  backgroundDefault
+  backgroundRaised
+  backgroundIndent
+  textDefault
+  textMuted
+  textHint
+  shadowDefault
+  shadowBlank
+  borderDefault
+}
+
+fragment BrandingColorsFields on Colors {
+  light {
+    ...ColorSetFields
+  }
+  dark {
+    ...ColorSetFields
+  }
+}
+
+fragment BrandingFields on Branding {
+  logo
+  rounding
+  colors {
+    ...BrandingColorsFields
+  }
+}

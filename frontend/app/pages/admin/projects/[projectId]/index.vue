@@ -44,6 +44,7 @@ gql(`
     challenges(first: 50, filter: { projectId: $projectId }) {
       edges {
         node {
+          __typename
           id
           name
           description
@@ -195,6 +196,7 @@ const tab = computed({
                 { accessorKey: 'image' },
                 { accessorKey: 'name' },
                 { accessorKey: 'description' },
+                { accessorKey: 'type', header: 'Type' },
                 { id: 'actions' },
               ]"
             >
@@ -206,6 +208,15 @@ const tab = computed({
                   width="32"
                   class="bg-muted size-8 rounded"
                 />
+              </template>
+              <template #type-cell="{ row }">
+                {{
+                  row.original.__typename === 'ExternalChallenge'
+                    ? 'External'
+                    : row.original.__typename === 'QuizChallenge'
+                      ? 'Quiz'
+                      : 'Simple'
+                }}
               </template>
               <template #actions-cell="{ row }">
                 <div class="flex justify-end gap-2">

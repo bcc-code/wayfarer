@@ -27,38 +27,7 @@ gql(`
   query CurrentProject {
     myCurrentProject {
       branding {
-        logo
-        colors{
-          dark{
-            accent
-            accentContrast
-            onAccent
-            backgroundDefault
-            backgroundRaised
-            backgroundIndent
-            textDefault
-            textMuted
-            textHint
-            shadowDefault
-            shadowBlank
-            borderDefault
-          }
-          light{
-            accent
-            accentContrast
-            onAccent
-            backgroundDefault
-            backgroundRaised
-            backgroundIndent
-            textDefault
-            textMuted
-            textHint
-            shadowDefault
-            shadowBlank
-            borderDefault
-          }
-        }
-        rounding
+        ...BrandingFields
       }
     }
   }
@@ -155,7 +124,7 @@ const showNavigation = computed(() => {
         class="p-navigation-outside pb-[max(var(--spacing-navigation-outside),env(safe-area-inset-bottom))] from-shadow-blank/0 to-shadow-default bg-linear-to-b"
       >
         <ul
-          class="bg-background-raised shadow-large rounded-navigation p-navigation-inset relative mx-auto grid w-full max-w-xl grid-cols-3"
+          class="bg-background-raised shadow-large rounded-navigation p-navigation-inset relative mx-auto grid w-full max-w-xl grid-cols-3 gradient-border"
         >
           <li v-for="link in links" :key="link.label" class="grow z-10">
             <NuxtLink

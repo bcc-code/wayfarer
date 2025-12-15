@@ -40,7 +40,7 @@ const leaderboard: LeaderboardEntry[] = [
     class="border-default bg-background-default aspect-1/2 w-[400px] overflow-clip rounded-xl border text-start"
   >
     <PageLayout title="Preview">
-      <div class="gap-list-section-gap flex flex-col">
+      <div class="gap-list-section-gap flex flex-col p-list-outside">
         <DesignButton>Primary Button</DesignButton>
         <DesignButton variant="secondary">Secondary Button</DesignButton>
         <LeaderboardList

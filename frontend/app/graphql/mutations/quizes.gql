@@ -1,3 +1,35 @@
+# Admin mutations
+mutation CreateQuiz($input: CreateQuizInput!) {
+  createQuiz(input: $input) {
+    id
+    name
+  }
+}
+
+mutation UpdateQuiz($id: ID!, $input: UpdateQuizInput!) {
+  updateQuiz(id: $id, input: $input) {
+    id
+    name
+  }
+}
+
+mutation AddQuizQuestion($quizId: ID!, $input: CreateQuizQuestionInput!) {
+  addQuizQuestion(quizId: $quizId, input: $input) {
+    ...QuizQuestionFields
+  }
+}
+
+mutation UpdateQuizQuestion($id: ID!, $input: UpdateQuizQuestionInput!) {
+  updateQuizQuestion(id: $id, input: $input) {
+    ...QuizQuestionFields
+  }
+}
+
+mutation DeleteQuizQuestion($id: ID!) {
+  deleteQuizQuestion(id: $id)
+}
+
+# User mutations
 mutation StartQuiz($quizId: ID!) {
   startQuiz(quizId: $quizId) {
     id
@@ -6,25 +38,7 @@ mutation StartQuiz($quizId: ID!) {
     isExpired
     questionOrder
     orderedQuestions {
-      __typename
-      id
-      questionText
-      questionOrder
-      timeoutSeconds
-      ... on PredefinedQuestion {
-        allowMultipleSelection
-        predefinedAnswers {
-          id
-          answerText
-          answerOrder
-          isCorrect
-        }
-      }
-      ... on NumberQuestion {
-        minValue
-        maxValue
-        stepValue
-      }
+      ...QuizQuestionUserFields
     }
     quiz {
       id
@@ -57,11 +71,6 @@ mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
 
 mutation FinalizeQuiz($submissionId: ID!) {
   finalizeQuiz(submissionId: $submissionId) {
-    id
-    completedAt
-    score
-    maxScore
-    scorePercentage
-    pointsAwarded
+    ...QuizSubmissionResultFields
   }
 }

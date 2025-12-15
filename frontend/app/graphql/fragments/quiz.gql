@@ -1,0 +1,55 @@
+fragment PredefinedAnswerFields on QuizPredefinedAnswer {
+  id
+  answerText
+  answerOrder
+  isCorrect
+}
+
+fragment QuizQuestionFields on QuizQuestion {
+  __typename
+  id
+  questionText
+  questionOrder
+  timeoutSeconds
+  points
+  ... on PredefinedQuestion {
+    allowMultipleSelection
+    predefinedAnswers {
+      ...PredefinedAnswerFields
+    }
+  }
+  ... on NumberQuestion {
+    minValue
+    maxValue
+    stepValue
+  }
+}
+
+# Variant without points (used in user-facing quiz)
+fragment QuizQuestionUserFields on QuizQuestion {
+  __typename
+  id
+  questionText
+  questionOrder
+  timeoutSeconds
+  ... on PredefinedQuestion {
+    allowMultipleSelection
+    predefinedAnswers {
+      ...PredefinedAnswerFields
+    }
+  }
+  ... on NumberQuestion {
+    minValue
+    maxValue
+    stepValue
+  }
+}
+
+fragment QuizSubmissionResultFields on QuizSubmission {
+  id
+  completedAt
+  score
+  maxScore
+  scorePercentage
+  pointsAwarded
+}
