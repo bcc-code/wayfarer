@@ -45,27 +45,29 @@ const state = ref<'pending' | 'completed'>('pending')
       </div>
       <div class="flex flex-col items-center gap-1 text-center text-balance">
         <h3 class="text-heading">
-          {{ achievement.name }}
+          {{ achievement.name || 'Achievement Name' }}
         </h3>
-        <p class="text-label">
-          {{
-            state === 'completed'
-              ? achievement.descriptionCompleted
-              : achievement.descriptionPending
-          }}
+        <p v-if="state === 'completed' && achievement.descriptionCompleted" class="text-label">
+          {{ achievement.descriptionCompleted }}
+        </p>
+        <p v-else-if="state === 'pending' && achievement.descriptionPending" class="text-label">
+          {{ achievement.descriptionPending }}
+        </p>
+        <p v-else class="text-label text-text-muted">
+          No description
         </p>
       </div>
       <div
         v-if="state === 'completed'"
         class="rounded-full bg-background-indent py-2 px-3 text-label text-accent-contrast"
       >
-        +{{ achievement.points }} {{ $t('points') }}
+        +{{ achievement.points ?? 0 }} {{ $t('points') }}
       </div>
       <div
         v-else
         class="rounded-full bg-background-indent py-2 px-3 text-label text-text-muted"
       >
-        {{ $t('givesYouXPoints', { points: achievement.points }) }}
+        {{ $t('givesYouXPoints', { points: achievement.points ?? 0 }) }}
       </div>
     </div>
   </div>
