@@ -30,6 +30,8 @@ All primary keys use prefixed ULIDs for better readability and debugging:
 - `RA` - Reading Achievement Articles
 - `LT` - Listening Achievement Tracks
 - `SA` - Score Adjustments
+- `PS` - Push Subscriptions
+- `PN` - Push Notification Log
 
 ### Core Entities
 

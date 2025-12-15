@@ -7,6 +7,7 @@ require (
 	github.com/99designs/gqlgen v0.17.81
 	github.com/Code-Hex/go-generics-cache v1.5.1
 	github.com/MicahParks/keyfunc/v3 v3.7.0
+	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/aws/aws-sdk-go-v2 v1.41.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.5
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.5

@@ -775,6 +775,7 @@ export type Mutation = {
   publishQuiz: Quiz;
   recordStreakActivity: StreakAchievement;
   regenerateJoinCode: Team;
+  registerPushSubscription: PushSubscription;
   rejectConsent: UserConsent;
   removeTeamMembers: Team;
   removeUserFromProject: User;
@@ -784,14 +785,17 @@ export type Mutation = {
   revokeSuperTeamAchievement: Scalars['Boolean']['output'];
   revokeTeamAchievement: Scalars['Boolean']['output'];
   selfCompleteChallenge: SimpleChallenge;
+  sendPushNotification: SendPushNotificationResult;
   setChallengeRequirements: Challenge;
   setChallengeVisibility: Challenge;
+  setNotificationPreference: PushNotificationPreference;
   startQuiz: QuizSubmission;
   submitQuizAnswer: QuizResponse;
   uncompleteChallenge: Scalars['Boolean']['output'];
   unenrollFromChallenge: Scalars['Boolean']['output'];
   unenrollUserFromChallenge: Scalars['Boolean']['output'];
   unmarkContentItemCompleted: Array<ContentAchievement>;
+  unregisterPushSubscription: Scalars['Boolean']['output'];
   updateAchievement: Achievement;
   updateAvatar: User;
   updateChallenge: Challenge;
@@ -1130,6 +1134,11 @@ export type MutationRegenerateJoinCodeArgs = {
 };
 
 
+export type MutationRegisterPushSubscriptionArgs = {
+  input: RegisterPushSubscriptionInput;
+};
+
+
 export type MutationRejectConsentArgs = {
   consentId: Scalars['ID']['input'];
 };
@@ -1181,6 +1190,11 @@ export type MutationSelfCompleteChallengeArgs = {
 };
 
 
+export type MutationSendPushNotificationArgs = {
+  input: SendPushNotificationInput;
+};
+
+
 export type MutationSetChallengeRequirementsArgs = {
   id: Scalars['ID']['input'];
   requiresSuperTeamMembership?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1192,6 +1206,11 @@ export type MutationSetChallengeVisibilityArgs = {
   id: Scalars['ID']['input'];
   startedAt?: InputMaybe<Scalars['DateTime']['input']>;
   visibleAt: Scalars['DateTime']['input'];
+};
+
+
+export type MutationSetNotificationPreferenceArgs = {
+  input: SetNotificationPreferenceInput;
 };
 
 
@@ -1226,6 +1245,11 @@ export type MutationUnenrollUserFromChallengeArgs = {
 export type MutationUnmarkContentItemCompletedArgs = {
   externalContentId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationUnregisterPushSubscriptionArgs = {
+  endpoint: Scalars['String']['input'];
 };
 
 
@@ -1308,6 +1332,12 @@ export type MutationUpdateTeamArgs = {
   id: Scalars['ID']['input'];
   input: UpdateTeamInput;
 };
+
+export enum NotificationType {
+  AchievementUnlocked = 'ACHIEVEMENT_UNLOCKED',
+  ChallengeAvailable = 'CHALLENGE_AVAILABLE',
+  Generic = 'GENERIC'
+}
 
 export type NumberQuestion = QuizQuestion & {
   __typename?: 'NumberQuestion';
@@ -1427,6 +1457,19 @@ export type ProjectFilter = {
   startDateBefore?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
+export type PushNotificationPreference = {
+  __typename?: 'PushNotificationPreference';
+  enabled: Scalars['Boolean']['output'];
+  notificationType: NotificationType;
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+export type PushSubscription = {
+  __typename?: 'PushSubscription';
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
   achievement: Achievement;
@@ -1443,14 +1486,17 @@ export type Query = {
   events: EventConnection;
   externalContent: ExternalContent;
   externalContents: ExternalContentConnection;
+  instanceID: Scalars['String']['output'];
   me: User;
   myCurrentEvent: Event;
   myCurrentProject: Project;
   myEvents: Array<Event>;
   myProjects: Array<Project>;
+  myPushNotificationPreferences: Array<PushNotificationPreference>;
   pendingConsents: Array<Consent>;
   project: Project;
   projects: ProjectConnection;
+  pushNotificationsEnabled: Scalars['Boolean']['output'];
   quiz: Quiz;
   quizSubmission: QuizSubmission;
   quizSubmissions: QuizSubmissionConnection;
@@ -1466,6 +1512,7 @@ export type Query = {
   userRoles: Array<UserRole>;
   users: UserConnection;
   usersWithRole: Array<User>;
+  vapidPublicKey: Scalars['String']['output'];
 };
 
 
@@ -1818,6 +1865,12 @@ export type QuizSubmissionEdge = {
   node: QuizSubmission;
 };
 
+export type RegisterPushSubscriptionInput = {
+  auth: Scalars['String']['input'];
+  endpoint: Scalars['String']['input'];
+  p256dh: Scalars['String']['input'];
+};
+
 export type RevokeRoleInput = {
   role: RoleType;
   scopeId?: InputMaybe<Scalars['ID']['input']>;
@@ -1893,6 +1946,32 @@ export enum ScoreSourceType {
   Event = 'EVENT',
   Manual = 'MANUAL'
 }
+
+export type SendPushNotificationInput = {
+  allUsers?: InputMaybe<Scalars['Boolean']['input']>;
+  body: Scalars['String']['input'];
+  eventIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  projectIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  tag?: InputMaybe<Scalars['String']['input']>;
+  teamIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  title: Scalars['String']['input'];
+  type: NotificationType;
+  url?: InputMaybe<Scalars['String']['input']>;
+  userIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+export type SendPushNotificationResult = {
+  __typename?: 'SendPushNotificationResult';
+  failedDeliveries: Scalars['Int']['output'];
+  success: Scalars['Boolean']['output'];
+  successfulDeliveries: Scalars['Int']['output'];
+  totalRecipients: Scalars['Int']['output'];
+};
+
+export type SetNotificationPreferenceInput = {
+  enabled: Scalars['Boolean']['input'];
+  notificationType: NotificationType;
+};
 
 export type SimpleAchievement = Achievement & {
   __typename?: 'SimpleAchievement';
@@ -2439,6 +2518,20 @@ export type DeleteProjectMutationVariables = Exact<{
 
 export type DeleteProjectMutation = { __typename?: 'Mutation', deleteProject: boolean };
 
+export type RegisterPushSubscriptionMutationVariables = Exact<{
+  input: RegisterPushSubscriptionInput;
+}>;
+
+
+export type RegisterPushSubscriptionMutation = { __typename?: 'Mutation', registerPushSubscription: { __typename?: 'PushSubscription', id: string, createdAt: any } };
+
+export type UnregisterPushSubscriptionMutationVariables = Exact<{
+  endpoint: Scalars['String']['input'];
+}>;
+
+
+export type UnregisterPushSubscriptionMutation = { __typename?: 'Mutation', unregisterPushSubscription: boolean };
+
 export type StartQuizMutationVariables = Exact<{
   quizId: Scalars['ID']['input'];
 }>;
@@ -2668,6 +2761,11 @@ export type StandingsUnitPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type StandingsUnitPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, myTeam?: { __typename?: 'Team', id: string, name: string, memberLeaderboard: Array<{ __typename?: 'LeaderboardEntry', id: string, name: string, tags: Array<LeaderboardEntryTag>, rank?: number | null, score: number }> } | null } };
+
+export type VapidPublicKeyQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type VapidPublicKeyQuery = { __typename?: 'Query', vapidPublicKey: string };
 
 export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3090,6 +3188,27 @@ export const DeleteProjectDocument = gql`
 
 export function useDeleteProjectMutation() {
   return Urql.useMutation<DeleteProjectMutation, DeleteProjectMutationVariables>(DeleteProjectDocument);
+};
+export const RegisterPushSubscriptionDocument = gql`
+    mutation RegisterPushSubscription($input: RegisterPushSubscriptionInput!) {
+  registerPushSubscription(input: $input) {
+    id
+    createdAt
+  }
+}
+    `;
+
+export function useRegisterPushSubscriptionMutation() {
+  return Urql.useMutation<RegisterPushSubscriptionMutation, RegisterPushSubscriptionMutationVariables>(RegisterPushSubscriptionDocument);
+};
+export const UnregisterPushSubscriptionDocument = gql`
+    mutation UnregisterPushSubscription($endpoint: String!) {
+  unregisterPushSubscription(endpoint: $endpoint)
+}
+    `;
+
+export function useUnregisterPushSubscriptionMutation() {
+  return Urql.useMutation<UnregisterPushSubscriptionMutation, UnregisterPushSubscriptionMutationVariables>(UnregisterPushSubscriptionDocument);
 };
 export const StartQuizDocument = gql`
     mutation StartQuiz($quizId: ID!) {
@@ -3635,6 +3754,15 @@ export const StandingsUnitPageDocument = gql`
 
 export function useStandingsUnitPageQuery(options?: Omit<Urql.UseQueryArgs<never, StandingsUnitPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<StandingsUnitPageQuery, StandingsUnitPageQueryVariables | undefined>({ query: StandingsUnitPageDocument, variables: undefined, ...options });
+};
+export const VapidPublicKeyDocument = gql`
+    query VapidPublicKey {
+  vapidPublicKey
+}
+    `;
+
+export function useVapidPublicKeyQuery(options?: Omit<Urql.UseQueryArgs<never, VapidPublicKeyQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<VapidPublicKeyQuery, VapidPublicKeyQueryVariables | undefined>({ query: VapidPublicKeyDocument, variables: undefined, ...options });
 };
 export const AdminSidebarDocument = gql`
     query AdminSidebar {

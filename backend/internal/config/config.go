@@ -23,6 +23,7 @@ type Config struct {
 	OTEL     OTELConfig
 	SSF      SSFConfig
 	S3       S3Config
+	VAPID    VAPIDConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -106,6 +107,13 @@ type S3Config struct {
 	RoleARN         string // AWS role ARN for OIDC auth on Cloud Run
 }
 
+// VAPIDConfig holds VAPID keys for web push notifications
+type VAPIDConfig struct {
+	PublicKey  string // VAPID public key (base64 URL-safe)
+	PrivateKey string // VAPID private key (base64 URL-safe)
+	Subject    string // Contact email (mailto:admin@example.com)
+}
+
 // Load reads all environment variables and returns a Config struct
 // This should be called once at application startup
 func Load() (*Config, error) {
@@ -173,6 +181,11 @@ func Load() (*Config, error) {
 			SecretAccessKey: getEnv("AWS_S3_SECRET_ACCESS_KEY", ""),
 			PublicBaseURL:   getEnv("AWS_S3_PUBLIC_BASE_URL", ""),
 			RoleARN:         getEnv("AWS_S3_ROLE_ARN", ""),
+		},
+		VAPID: VAPIDConfig{
+			PublicKey:  getEnv("VAPID_PUBLIC_KEY", ""),
+			PrivateKey: getEnv("VAPID_PRIVATE_KEY", ""),
+			Subject:    getEnv("VAPID_SUBJECT", ""),
 		},
 	}
 

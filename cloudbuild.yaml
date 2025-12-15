@@ -8,6 +8,7 @@ steps:
       - '--build-arg=NUXT_PUBLIC_LOGIN_URL=${_NUXT_PUBLIC_LOGIN_URL}'
       - '--build-arg=NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY=${_NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY}'
       - '--build-arg=NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL=${_NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL}'
+      - '--build-arg=NUXT_PUBLIC_VAPID_PUBLIC_KEY=${_NUXT_PUBLIC_VAPID_PUBLIC_KEY}'
       - '-t'
       - >-
         $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
@@ -55,6 +56,7 @@ substitutions:
   _NUXT_PUBLIC_LOGIN_URL: ''
   _NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY: ''
   _NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL: ''
+  _NUXT_PUBLIC_VAPID_PUBLIC_KEY: ''
 tags:
   - gcp-cloud-build-deploy-cloud-run
   - gcp-cloud-build-deploy-cloud-run-managed

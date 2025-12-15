@@ -37,6 +37,8 @@ const (
 	PrefixQuizResponse        = "QR" // Quiz Responses
 	PrefixFileUpload          = "FL" // File Uploads
 	PrefixPendingConsentEvent = "PC" // Pending Consent Events (for users not yet registered)
+	PrefixPushSubscription    = "PS" // Push Subscriptions
+	PrefixPushNotification    = "PN" // Push Notification Log
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -190,6 +192,16 @@ func NewInstanceID() string {
 // NewPendingConsentEventID generates a new ID for a pending consent event (PC prefix)
 func NewPendingConsentEventID() string {
 	return newID(PrefixPendingConsentEvent)
+}
+
+// NewPushSubscriptionID generates a new ID for a push subscription (PS prefix)
+func NewPushSubscriptionID() string {
+	return newID(PrefixPushSubscription)
+}
+
+// NewPushNotificationID generates a new ID for a push notification log entry (PN prefix)
+func NewPushNotificationID() string {
+	return newID(PrefixPushNotification)
 }
 
 // Validation functions
@@ -349,4 +361,14 @@ func IsFileUploadID(id string) bool {
 // IsPendingConsentEventID validates a pending consent event ID
 func IsPendingConsentEventID(id string) bool {
 	return IsValidID(id, PrefixPendingConsentEvent)
+}
+
+// IsPushSubscriptionID validates a push subscription ID
+func IsPushSubscriptionID(id string) bool {
+	return IsValidID(id, PrefixPushSubscription)
+}
+
+// IsPushNotificationID validates a push notification log ID
+func IsPushNotificationID(id string) bool {
+	return IsValidID(id, PrefixPushNotification)
 }

@@ -317,6 +317,39 @@ type ProjectTranslation struct {
 	Rules        *string            `json:"rules"`
 }
 
+type PushNotificationLog struct {
+	ID                   string             `json:"id"`
+	NotificationType     string             `json:"notification_type"`
+	Title                string             `json:"title"`
+	Body                 string             `json:"body"`
+	Url                  *string            `json:"url"`
+	Data                 []byte             `json:"data"`
+	TargetCriteria       []byte             `json:"target_criteria"`
+	SentBy               *string            `json:"sent_by"`
+	SentAt               pgtype.Timestamptz `json:"sent_at"`
+	TotalRecipients      int32              `json:"total_recipients"`
+	SuccessfulDeliveries int32              `json:"successful_deliveries"`
+	FailedDeliveries     int32              `json:"failed_deliveries"`
+}
+
+type PushNotificationPreference struct {
+	UserID           string             `json:"user_id"`
+	NotificationType string             `json:"notification_type"`
+	Enabled          bool               `json:"enabled"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+type PushSubscription struct {
+	ID        string             `json:"id"`
+	UserID    string             `json:"user_id"`
+	Endpoint  string             `json:"endpoint"`
+	P256dhKey string             `json:"p256dh_key"`
+	AuthKey   string             `json:"auth_key"`
+	UserAgent *string            `json:"user_agent"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Quiz struct {
 	ID                   string             `json:"id"`
 	ProjectID            string             `json:"project_id"`

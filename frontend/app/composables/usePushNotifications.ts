@@ -1,3 +1,8 @@
+import {
+  useRegisterPushSubscriptionMutation,
+  useUnregisterPushSubscriptionMutation,
+} from '~/api/generated'
+
 /**
  * Composable for managing push notification subscriptions
  *
@@ -14,15 +19,21 @@
  */
 export function usePushNotifications() {
   const config = useRuntimeConfig()
+  const { executeMutation: registerSubscription } =
+    useRegisterPushSubscriptionMutation()
+  const { executeMutation: unregisterSubscription } =
+    useUnregisterPushSubscriptionMutation()
 
   const isSupported = computed(() => {
-    if (import.meta.server) return false
-    return 'serviceWorker' in navigator && 'PushManager' in window
+    if (typeof window === 'undefined') return false
+    return (
+      'serviceWorker' in navigator &&
+      'PushManager' in window &&
+      typeof Notification !== 'undefined'
+    )
   })
 
-  const permission = ref<NotificationPermission>(
-    import.meta.client ? Notification.permission : 'default',
-  )
+  const permission = ref<NotificationPermission>('default')
 
   const subscription = ref<PushSubscription | null>(null)
   const isSubscribed = computed(() => subscription.value !== null)
@@ -62,6 +73,8 @@ export function usePushNotifications() {
    * Returns the subscription object to send to your backend
    */
   async function subscribe(): Promise<PushSubscription | null> {
+    console.log('[Push] Subscribe called, isSupported:', isSupported.value)
+
     if (!isSupported.value) {
       error.value = new Error('Push notifications are not supported')
       return null
@@ -72,41 +85,59 @@ export function usePushNotifications() {
 
     try {
       // Request permission if not already granted
+      console.log('[Push] Current permission:', permission.value)
       if (permission.value !== 'granted') {
         const result = await requestPermission()
+        console.log('[Push] Permission result:', result)
         if (result !== 'granted') {
           error.value = new Error('Notification permission denied')
           return null
         }
       }
 
+      console.log('[Push] Getting service worker registration...')
       const registration = await navigator.serviceWorker.ready
+      console.log('[Push] Service worker ready')
 
       // Check for existing subscription
       let sub = await registration.pushManager.getSubscription()
+      console.log('[Push] Existing subscription:', sub)
 
       if (!sub) {
-        // Create new subscription
-        // VAPID public key should come from your backend/config
-        const vapidPublicKey = config.public.vapidPublicKey as
-          | string
-          | undefined
+        // Get VAPID public key from config
+        const vapidPublicKey = config.public.vapidPublicKey as string | undefined
+        console.log('[Push] VAPID public key:', vapidPublicKey ? 'present' : 'missing')
 
         if (!vapidPublicKey) {
           error.value = new Error('VAPID public key not configured')
           return null
         }
 
+        console.log('[Push] Creating new push subscription...')
         sub = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
         })
+        console.log('[Push] New subscription created:', sub)
       }
 
       subscription.value = sub
 
-      // Send subscription to backend
-      await sendSubscriptionToBackend(sub)
+      // Send subscription to backend via GraphQL
+      const input = {
+        endpoint: sub.endpoint,
+        p256dh: arrayBufferToBase64(sub.getKey('p256dh')),
+        auth: arrayBufferToBase64(sub.getKey('auth')),
+      }
+      console.log('[Push] Registering subscription:', input)
+
+      const result = await registerSubscription({ input })
+      console.log('[Push] Registration result:', result)
+
+      if (result.error) {
+        console.error('[Push] Registration error:', result.error)
+        throw new Error(result.error.message)
+      }
 
       return sub
     } catch (err) {
@@ -129,8 +160,14 @@ export function usePushNotifications() {
     error.value = null
 
     try {
-      // Remove from backend first
-      await removeSubscriptionFromBackend(subscription.value)
+      // Remove from backend via GraphQL
+      const result = await unregisterSubscription({
+        endpoint: subscription.value.endpoint,
+      })
+
+      if (result.error) {
+        throw new Error(result.error.message)
+      }
 
       // Then unsubscribe locally
       await subscription.value.unsubscribe()
@@ -147,65 +184,9 @@ export function usePushNotifications() {
     }
   }
 
-  /**
-   * Send the push subscription to your backend
-   */
-  async function sendSubscriptionToBackend(
-    sub: PushSubscription,
-  ): Promise<void> {
-    const { getAccessToken } = useAuth()
-    const token = await getAccessToken()
-
-    // TODO: Replace with your actual GraphQL mutation or API call
-    const response = await fetch(`${config.public.apiUrl}/push/subscribe`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        endpoint: sub.endpoint,
-        keys: {
-          p256dh: arrayBufferToBase64(sub.getKey('p256dh')),
-          auth: arrayBufferToBase64(sub.getKey('auth')),
-        },
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to save subscription on server')
-    }
-  }
-
-  /**
-   * Remove the push subscription from your backend
-   */
-  async function removeSubscriptionFromBackend(
-    sub: PushSubscription,
-  ): Promise<void> {
-    const { getAccessToken } = useAuth()
-    const token = await getAccessToken()
-
-    // TODO: Replace with your actual GraphQL mutation or API call
-    const response = await fetch(`${config.public.apiUrl}/push/unsubscribe`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        endpoint: sub.endpoint,
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to remove subscription from server')
-    }
-  }
-
   // Initialize: check for existing subscription
   onMounted(async () => {
-    if (isSupported.value) {
+    if (isSupported.value && typeof Notification !== 'undefined') {
       permission.value = Notification.permission
       await getSubscription()
     }

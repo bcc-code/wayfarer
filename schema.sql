@@ -659,3 +659,41 @@ CREATE TABLE quiz_answer_translations (
     updated_at TIMESTAMPTZ DEFAULT now(),
     PRIMARY KEY (answer_id, language_code)
 );
+
+-- Push Notification Tables
+
+CREATE TABLE push_subscriptions (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^PS[0-9A-Z]{26}$'),
+    user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh_key TEXT NOT NULL,
+    auth_key TEXT NOT NULL,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    INDEX idx_push_subscriptions_user_id (user_id)
+);
+
+CREATE TABLE push_notification_preferences (
+    user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    notification_type VARCHAR(50) NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT true,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, notification_type)
+);
+
+CREATE TABLE push_notification_log (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^PN[0-9A-Z]{26}$'),
+    notification_type VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+    url TEXT,
+    data JSONB,
+    target_criteria JSONB NOT NULL,
+    sent_by CHAR(28) REFERENCES users(id) ON DELETE SET NULL,
+    sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    total_recipients INT NOT NULL DEFAULT 0,
+    successful_deliveries INT NOT NULL DEFAULT 0,
+    failed_deliveries INT NOT NULL DEFAULT 0,
+    INDEX idx_push_notification_log_sent_at (sent_at)
+);
