@@ -1172,6 +1172,8 @@ WITH ranked_scores AS (
       AND lep.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lep.score <= $3::int)
       AND ($4::text = '' OR u.church_id = $4::text)
+      AND ($5::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) >= $5::int)
+      AND ($6::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) <= $6::int)
 )
 SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
@@ -1183,6 +1185,8 @@ type GetFullEventPersonLeaderboardParams struct {
 	Minscore int32  `json:"minscore"`
 	Maxscore int32  `json:"maxscore"`
 	Churchid string `json:"churchid"`
+	Minage   int32  `json:"minage"`
+	Maxage   int32  `json:"maxage"`
 }
 
 type GetFullEventPersonLeaderboardRow struct {
@@ -1200,6 +1204,8 @@ func (q *Queries) GetFullEventPersonLeaderboard(ctx context.Context, arg GetFull
 		arg.Minscore,
 		arg.Maxscore,
 		arg.Churchid,
+		arg.Minage,
+		arg.Maxage,
 	)
 	if err != nil {
 		return nil, err
@@ -1419,6 +1425,8 @@ WITH ranked_scores AS (
       AND lpp.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpp.score <= $3::int)
       AND ($4::text = '' OR u.church_id = $4::text)
+      AND ($5::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) >= $5::int)
+      AND ($6::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) <= $6::int)
 )
 SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
@@ -1430,6 +1438,8 @@ type GetFullProjectPersonLeaderboardParams struct {
 	Minscore  int32  `json:"minscore"`
 	Maxscore  int32  `json:"maxscore"`
 	Churchid  string `json:"churchid"`
+	Minage    int32  `json:"minage"`
+	Maxage    int32  `json:"maxage"`
 }
 
 type GetFullProjectPersonLeaderboardRow struct {
@@ -1447,6 +1457,8 @@ func (q *Queries) GetFullProjectPersonLeaderboard(ctx context.Context, arg GetFu
 		arg.Minscore,
 		arg.Maxscore,
 		arg.Churchid,
+		arg.Minage,
+		arg.Maxage,
 	)
 	if err != nil {
 		return nil, err

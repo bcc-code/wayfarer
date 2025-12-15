@@ -112,6 +112,8 @@ WITH ranked_scores AS (
       AND lpp.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR lpp.score <= @maxscore::int)
       AND (@churchid::text = '' OR u.church_id = @churchid::text)
+      AND (@minage::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) >= @minage::int)
+      AND (@maxage::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) <= @maxage::int)
 )
 SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
@@ -501,6 +503,8 @@ WITH ranked_scores AS (
       AND lep.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR lep.score <= @maxscore::int)
       AND (@churchid::text = '' OR u.church_id = @churchid::text)
+      AND (@minage::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) >= @minage::int)
+      AND (@maxage::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) <= @maxage::int)
 )
 SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores

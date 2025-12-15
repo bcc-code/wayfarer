@@ -859,6 +859,8 @@ func (s *LeaderboardService) buildFullProjectPersonParams(params LeaderboardPara
 		Churchid:  getFilterString(params.Filter, "churchId"),
 		Minscore:  getFilterInt(params.Filter, "minScore"),
 		Maxscore:  getFilterInt(params.Filter, "maxScore"),
+		Minage:    getFilterInt(params.Filter, "minAge"),
+		Maxage:    getFilterInt(params.Filter, "maxAge"),
 	}
 }
 
@@ -1123,6 +1125,8 @@ func (s *LeaderboardService) buildFullEventPersonParams(params LeaderboardParams
 		Churchid: getFilterString(params.Filter, "churchId"),
 		Minscore: getFilterInt(params.Filter, "minScore"),
 		Maxscore: getFilterInt(params.Filter, "maxScore"),
+		Minage:   getFilterInt(params.Filter, "minAge"),
+		Maxage:   getFilterInt(params.Filter, "maxAge"),
 	}
 }
 
