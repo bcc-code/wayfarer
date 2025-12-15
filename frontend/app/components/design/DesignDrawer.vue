@@ -38,7 +38,11 @@ const close = () => {
     <template #content>
       <TitleBar :title="title" size="small" :animate="false">
         <template #action>
-          <DesignIconButton v-if="dismissible" icon="lucide:x" @click="close" />
+          <DesignIconButton
+            v-if="dismissible"
+            icon="IconClose"
+            @click="close"
+          />
         </template>
       </TitleBar>
       <div

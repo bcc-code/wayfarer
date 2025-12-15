@@ -38,7 +38,7 @@ const remotePendingConsents = computed(() => {
   <PageLayout :title="data?.me.name">
     <template #action>
       <NuxtLink :to="{ name: 'settings' }">
-        <DesignIconButton icon="lucide:settings" />
+        <DesignIconButton icon="IconSettings" />
       </NuxtLink>
     </template>
 

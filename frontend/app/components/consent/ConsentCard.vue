@@ -111,7 +111,7 @@ const changing = ref(false)
       <template v-if="localStatus === ConsentAction.Accepted">
         <div class="flex justify-between items-center">
           <span class="text-label text-accent-positive flex items-center gap-1">
-            <Icon name="lucide:check" class="size-6" />
+            <Icon name="IconCheck" class="size-6" />
             {{ $t('consent.accepted') }}
           </span>
           <NuxtLink :to="url" external>
@@ -125,7 +125,7 @@ const changing = ref(false)
         <NuxtLink :to="url">
           <DesignButton size="large" class="w-full">
             <span>{{ $t('consent.goToConsent') }}</span>
-            <Icon name="lucide:external-link" />
+            <Icon name="IconExternalLink" class="size-5" />
           </DesignButton>
         </NuxtLink>
       </template>
@@ -137,7 +137,7 @@ const changing = ref(false)
             class="text-label text-accent-contrast py-2 flex items-center gap-1"
           >
             {{ $t('consent.readButton') }}
-            <Icon name="lucide:arrow-right" />
+            <Icon name="IconArrowRight" />
           </button>
         </ConsentDetails>
         <DesignButton
@@ -163,12 +163,12 @@ const changing = ref(false)
             class="text-label text-accent-contrast py-2 flex items-center gap-1"
           >
             {{ $t('consent.readButton') }}
-            <Icon name="lucide:arrow-right" />
+            <Icon name="IconArrowRight" />
           </button>
         </ConsentDetails>
         <div class="flex justify-between items-center">
           <span class="text-label text-accent-positive flex items-center gap-1">
-            <Icon name="lucide:check" class="size-6" />
+            <Icon name="IconCheck" class="size-6" />
             {{ $t('consent.accepted') }}
           </span>
           <DesignDrawer :title="$t('consent.changeConsent')">
@@ -193,12 +193,12 @@ const changing = ref(false)
             class="text-label text-accent-contrast py-2 flex items-center gap-1"
           >
             {{ $t('consent.readButton') }}
-            <Icon name="lucide:arrow-right" />
+            <Icon name="IconArrowRight" />
           </button>
         </ConsentDetails>
         <div class="flex justify-between items-center">
           <span class="text-label text-accent-negative flex items-center gap-1">
-            <Icon name="lucide:x" class="size-6" />
+            <Icon name="IconClose" class="size-6" />
             {{ $t('consent.rejected') }}
           </span>
           <DesignButton

@@ -113,7 +113,7 @@ async function handleAnswerSubmitted(result: QuestionResult) {
   <PageLayout :bottom-padding="false">
     <template #action>
       <NuxtLink :to="{ name: 'challenges' }">
-        <DesignIconButton icon="lucide:x" />
+        <DesignIconButton icon="IconClose" />
       </NuxtLink>
     </template>
     <template #title>

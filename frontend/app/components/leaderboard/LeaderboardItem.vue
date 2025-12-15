@@ -70,7 +70,7 @@ const getColorClasses = (
         v-if="badge"
         class="text-caption text-accent-contrast flex items-center gap-0.5"
       >
-        <Icon name="lucide:badge-check" class="size-3.5" />
+        <Icon name="IconVerified" class="size-3.5" />
         <span>{{ badge }}</span>
       </p>
       <p v-else-if="item.description" class="text-caption text-muted truncate">

@@ -15,7 +15,7 @@ defineProps<{
   <PageLayout>
     <template #action>
       <NuxtLink :to="{ name: 'challenges' }">
-        <DesignIconButton icon="lucide:x" />
+        <DesignIconButton icon="IconClose" />
       </NuxtLink>
     </template>
   </PageLayout>

@@ -22,7 +22,7 @@ async function toggleNotifications(enabled: boolean) {
   <PageLayout :title="$t('pages.settings')" :bottom-padding="false">
     <template #action>
       <NuxtLink :to="{ name: 'index' }">
-        <DesignIconButton icon="lucide:x" />
+        <DesignIconButton icon="IconClose" />
       </NuxtLink>
     </template>
 
@@ -65,7 +65,7 @@ async function toggleNotifications(enabled: boolean) {
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
         >
           <p class="text-label">{{ $t('settings.addToHomeScreen') }}</p>
-          <Icon name="lucide:chevron-right" class="size-6" />
+          <Icon name="IconChevronRight" class="size-6" />
         </button>
         <hr class="border-border-default mx-3" />
         <NuxtLink
@@ -73,7 +73,7 @@ async function toggleNotifications(enabled: boolean) {
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
         >
           <p class="text-label">{{ $t('settings.privacyPolicy') }}</p>
-          <Icon name="lucide:chevron-right" class="size-6" />
+          <Icon name="IconChevronRight" class="size-6" />
         </NuxtLink>
         <hr class="border-border-default mx-3" />
         <NuxtLink
@@ -81,7 +81,7 @@ async function toggleNotifications(enabled: boolean) {
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
         >
           <p class="text-label">{{ $t('settings.consents') }}</p>
-          <Icon name="lucide:chevron-right" class="size-6" />
+          <Icon name="IconChevronRight" class="size-6" />
         </NuxtLink>
       </DesignPanel>
       <div

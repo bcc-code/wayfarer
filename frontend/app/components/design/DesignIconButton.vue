@@ -31,6 +31,6 @@ const classes = cva('aspect-square relative grid place-items-center', {
 
 <template>
   <button :class="classes({ variant, size })">
-    <Icon :name="icon" />
+    <Icon :name="icon" class="size-5" />
   </button>
 </template>

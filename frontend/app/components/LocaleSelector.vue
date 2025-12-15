@@ -32,7 +32,7 @@ watch(locale, (newLocale, oldLocale) => {
             <p class="text-label">{{ l.name }}</p>
             <Icon
               v-if="selectedLocale === l.code"
-              name="lucide:check"
+              name="IconCheck"
               class="size-6"
             />
           </button>

@@ -58,7 +58,7 @@ const sortedConsents = computed(() => {
   <PageLayout :title="$t('pages.consents')">
     <template v-if="hasCompletedOnboarding" #action>
       <NuxtLink :to="{ name: 'settings' }">
-        <DesignIconButton icon="lucide:x" />
+        <DesignIconButton icon="IconClose" />
       </NuxtLink>
     </template>
 

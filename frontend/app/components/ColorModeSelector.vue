@@ -46,7 +46,7 @@ watch(
             <p class="text-label">{{ m.name() }}</p>
             <Icon
               v-if="selectedColorMode === m.code"
-              name="lucide:check"
+              name="IconCheck"
               class="size-6"
             />
           </button>
