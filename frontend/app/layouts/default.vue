@@ -110,17 +110,29 @@ watch(data, (newData) => {
 })
 
 const route = useRoute()
-const activeMenuItem = ref()
+const activeMenuItem = ref<HTMLElement | null>(null)
 
-watch(
-  () => route.path,
-  () => {
-    nextTick(() => {
-      activeMenuItem.value = document.querySelector(`[aria-current="page"]`)
-    })
-  },
-  { immediate: true },
-)
+// Find the active menu item after route changes or on mount
+// Uses a small delay to ensure NuxtLink has set aria-current="page"
+function updateActiveMenuItem() {
+  const el = document.querySelector<HTMLElement>(`[aria-current="page"]`)
+  if (el) {
+    activeMenuItem.value = el
+  } else {
+    // Retry after a short delay if not found (initial hydration)
+    setTimeout(() => {
+      activeMenuItem.value = document.querySelector<HTMLElement>(
+        `[aria-current="page"]`,
+      )
+    }, 50)
+  }
+}
+
+watch(() => route.path, updateActiveMenuItem)
+
+onMounted(() => {
+  updateActiveMenuItem()
+})
 
 const { left, height, width, top } = useElementBounding(activeMenuItem)
 
@@ -140,12 +152,12 @@ const showNavigation = computed(() => {
     </div>
     <div v-if="showNavigation" class="fixed inset-x-0 bottom-0">
       <ProgressiveBlur
-        class="p-navigation-outside pb-[calc(var(--spacing-navigation-outside)+env(safe-area-inset-bottom))] from-shadow-blank/0 to-shadow-default bg-linear-to-b"
+        class="p-navigation-outside pb-[max(var(--spacing-navigation-outside),env(safe-area-inset-bottom))] from-shadow-blank/0 to-shadow-default bg-linear-to-b"
       >
         <ul
           class="bg-background-raised shadow-large rounded-navigation p-navigation-inset relative mx-auto grid w-full max-w-xl grid-cols-3"
         >
-          <li v-for="link in links" :key="link.label" class="grow">
+          <li v-for="link in links" :key="link.label" class="grow z-10">
             <NuxtLink
               :to="link.to"
               class="px-default rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5 transition-all duration-150 ease-out"

@@ -12,30 +12,31 @@ import (
 
 // Entity prefixes (2 characters each)
 const (
-	PrefixChurch             = "CH" // Churches
-	PrefixUser               = "US" // Users
-	PrefixUserRole           = "UR" // User Roles
-	PrefixProject            = "PR" // Projects
-	PrefixEvent              = "EV" // Events
-	PrefixSuperTeam          = "ST" // SuperTeams
-	PrefixTeam               = "TM" // Teams
-	PrefixStreak             = "SK" // Streaks
-	PrefixStreakRelevantDay  = "SD" // Streak Relevant Days
-	PrefixChallenge          = "CL" // Challenges
-	PrefixAchievement        = "AC" // Achievements
-	PrefixContentItem        = "CI" // Content Achievement Items
-	PrefixScoreJournal       = "SJ" // Score Journal
-	PrefixContentEvent       = "CE" // External Content Events
-	PrefixConsent            = "CN" // Consents
-	PrefixUserConsent        = "UC" // User Consent Acceptances (deprecated, use PrefixUserConsentHistory)
-	PrefixUserConsentHistory = "UH" // User Consent History
-	PrefixExternalContent    = "EC" // External Content (synced from external sources like SSF)
-	PrefixQuiz               = "QZ" // Quizzes
-	PrefixQuizQuestion       = "QQ" // Quiz Questions
-	PrefixQuizAnswer         = "QA" // Quiz Predefined Answers
-	PrefixQuizSubmission     = "QS" // Quiz Submissions
-	PrefixQuizResponse       = "QR" // Quiz Responses
-	PrefixFileUpload         = "FL" // File Uploads
+	PrefixChurch              = "CH" // Churches
+	PrefixUser                = "US" // Users
+	PrefixUserRole            = "UR" // User Roles
+	PrefixProject             = "PR" // Projects
+	PrefixEvent               = "EV" // Events
+	PrefixSuperTeam           = "ST" // SuperTeams
+	PrefixTeam                = "TM" // Teams
+	PrefixStreak              = "SK" // Streaks
+	PrefixStreakRelevantDay   = "SD" // Streak Relevant Days
+	PrefixChallenge           = "CL" // Challenges
+	PrefixAchievement         = "AC" // Achievements
+	PrefixContentItem         = "CI" // Content Achievement Items
+	PrefixScoreJournal        = "SJ" // Score Journal
+	PrefixContentEvent        = "CE" // External Content Events
+	PrefixConsent             = "CN" // Consents
+	PrefixUserConsent         = "UC" // User Consent Acceptances (deprecated, use PrefixUserConsentHistory)
+	PrefixUserConsentHistory  = "UH" // User Consent History
+	PrefixExternalContent     = "EC" // External Content (synced from external sources like SSF)
+	PrefixQuiz                = "QZ" // Quizzes
+	PrefixQuizQuestion        = "QQ" // Quiz Questions
+	PrefixQuizAnswer          = "QA" // Quiz Predefined Answers
+	PrefixQuizSubmission      = "QS" // Quiz Submissions
+	PrefixQuizResponse        = "QR" // Quiz Responses
+	PrefixFileUpload          = "FL" // File Uploads
+	PrefixPendingConsentEvent = "PC" // Pending Consent Events (for users not yet registered)
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -184,6 +185,11 @@ func NewInstanceID() string {
 	entropyMutex.Lock()
 	defer entropyMutex.Unlock()
 	return ulid.MustNew(ulid.Timestamp(time.Now()), entropy).String()
+}
+
+// NewPendingConsentEventID generates a new ID for a pending consent event (PC prefix)
+func NewPendingConsentEventID() string {
+	return newID(PrefixPendingConsentEvent)
 }
 
 // Validation functions
@@ -338,4 +344,9 @@ func IsQuizResponseID(id string) bool {
 // IsFileUploadID validates a file upload ID
 func IsFileUploadID(id string) bool {
 	return IsValidID(id, PrefixFileUpload)
+}
+
+// IsPendingConsentEventID validates a pending consent event ID
+func IsPendingConsentEventID(id string) bool {
+	return IsValidID(id, PrefixPendingConsentEvent)
 }

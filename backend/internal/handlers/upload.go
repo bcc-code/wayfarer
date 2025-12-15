@@ -39,14 +39,14 @@ type UploadHandler struct {
 }
 
 type uploadResponse struct {
-	ID              string `json:"id"`
-	Filename        string `json:"filename"`
-	StoredFilename  string `json:"storedFilename"`
-	FileSize        int    `json:"fileSize"`
-	MimeType        string `json:"mimeType"`
-	PublicURL       string `json:"publicUrl"`
-	UploadedBy      string `json:"uploadedBy"`
-	CreatedAt       string `json:"createdAt"`
+	ID             string `json:"id"`
+	Filename       string `json:"filename"`
+	StoredFilename string `json:"storedFilename"`
+	FileSize       int    `json:"fileSize"`
+	MimeType       string `json:"mimeType"`
+	PublicURL      string `json:"publicUrl"`
+	UploadedBy     string `json:"uploadedBy"`
+	CreatedAt      string `json:"createdAt"`
 }
 
 // HandleFileUpload handles the file upload endpoint

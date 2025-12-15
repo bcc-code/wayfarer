@@ -253,6 +253,22 @@ type LeaderboardProjectTeam struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+// Stores consent events for users not yet registered in Wayfarer
+type PendingConsentEvent struct {
+	ID string `json:"id"`
+	// BCC Members person_id (UUID) of the user
+	MembersID string `json:"members_id"`
+	// Key identifying the consent type
+	ConsentKey string `json:"consent_key"`
+	// ACCEPTED or REJECTED
+	Action string `json:"action"`
+	// When the consent action occurred (from external system)
+	OccurredAt pgtype.Timestamptz `json:"occurred_at"`
+	// API key source that submitted this event
+	Source    *string            `json:"source"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type Project struct {
 	ID                          string             `json:"id"`
 	Name                        string             `json:"name"`

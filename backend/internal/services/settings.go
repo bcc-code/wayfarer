@@ -24,11 +24,11 @@ type SettingsQuerier interface {
 
 // SettingsService manages runtime configuration with in-memory caching
 type SettingsService struct {
-	queries      SettingsQuerier
-	settingsMap  atomic.Value // stores map[string]sqlc.Setting
-	logger       *slog.Logger
-	stopRefresh  chan struct{}
-	refreshDone  chan struct{}
+	queries     SettingsQuerier
+	settingsMap atomic.Value // stores map[string]sqlc.Setting
+	logger      *slog.Logger
+	stopRefresh chan struct{}
+	refreshDone chan struct{}
 }
 
 // NewSettingsService creates a new settings service and starts background refresh

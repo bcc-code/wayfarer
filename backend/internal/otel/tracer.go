@@ -16,8 +16,8 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	grpcoauth "google.golang.org/grpc/credentials/oauth"
 	"google.golang.org/grpc/credentials/insecure"
+	grpcoauth "google.golang.org/grpc/credentials/oauth"
 )
 
 // TracerProvider holds the OpenTelemetry tracer provider and related resources
