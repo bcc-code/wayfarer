@@ -17,6 +17,13 @@ import {
  * await unsubscribe()
  * ```
  */
+// Shared state across all composable instances
+const permission = ref<NotificationPermission>('default')
+const subscription = ref<PushSubscription | null>(null)
+const isLoading = ref(false)
+const error = ref<Error | null>(null)
+const isInitialized = ref(false)
+
 export function usePushNotifications() {
   const config = useRuntimeConfig()
   const { executeMutation: registerSubscription } =
@@ -26,6 +33,8 @@ export function usePushNotifications() {
 
   const isSupported = computed(() => {
     if (typeof window === 'undefined') return false
+    // Service workers don't work in dev mode
+    if (import.meta.env.DEV) return false
     return (
       'serviceWorker' in navigator &&
       'PushManager' in window &&
@@ -33,12 +42,7 @@ export function usePushNotifications() {
     )
   })
 
-  const permission = ref<NotificationPermission>('default')
-
-  const subscription = ref<PushSubscription | null>(null)
   const isSubscribed = computed(() => subscription.value !== null)
-  const isLoading = ref(false)
-  const error = ref<Error | null>(null)
 
   /**
    * Get the current push subscription if it exists
@@ -91,6 +95,7 @@ export function usePushNotifications() {
         console.log('[Push] Permission result:', result)
         if (result !== 'granted') {
           error.value = new Error('Notification permission denied')
+          isLoading.value = false
           return null
         }
       }
@@ -105,11 +110,17 @@ export function usePushNotifications() {
 
       if (!sub) {
         // Get VAPID public key from config
-        const vapidPublicKey = config.public.vapidPublicKey as string | undefined
-        console.log('[Push] VAPID public key:', vapidPublicKey ? 'present' : 'missing')
+        const vapidPublicKey = config.public.vapidPublicKey as
+          | string
+          | undefined
+        console.log(
+          '[Push] VAPID public key:',
+          vapidPublicKey ? 'present' : 'missing',
+        )
 
         if (!vapidPublicKey) {
           error.value = new Error('VAPID public key not configured')
+          isLoading.value = false
           return null
         }
 
@@ -184,9 +195,11 @@ export function usePushNotifications() {
     }
   }
 
-  // Initialize: check for existing subscription
+  // Initialize: check for existing subscription (only once)
   onMounted(async () => {
+    if (isInitialized.value) return
     if (isSupported.value && typeof Notification !== 'undefined') {
+      isInitialized.value = true
       permission.value = Notification.permission
       await getSubscription()
     }

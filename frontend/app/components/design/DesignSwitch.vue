@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { cva } from 'cva'
 
+defineProps<{
+  disabled?: boolean
+}>()
+
 const modelValue = defineModel<boolean>({ required: true })
 
 const thumbClasses = cva(
@@ -10,6 +14,10 @@ const thumbClasses = cva(
       checked: {
         true: 'translate-x-6.5',
         false: 'translate-x-0',
+      },
+      disabled: {
+        true: 'opacity-50',
+        false: '',
       },
     },
   },
@@ -23,14 +31,21 @@ const trackClasses = cva(
         true: 'bg-accent-positive',
         false: 'bg-background-indent',
       },
+      disabled: {
+        true: 'opacity-50',
+        false: '',
+      },
     },
   },
 )
 </script>
 
 <template>
-  <label :class="trackClasses({ checked: modelValue })">
-    <input type="checkbox" class="hidden" v-model="modelValue" />
-    <div :class="thumbClasses({ checked: modelValue })" />
+  <label
+    :class="trackClasses({ checked: modelValue, disabled })"
+    :data-checked="modelValue"
+  >
+    <input v-model="modelValue" :disabled type="checkbox" class="hidden" />
+    <div :class="thumbClasses({ checked: modelValue, disabled })" />
   </label>
 </template>

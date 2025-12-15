@@ -47,17 +47,14 @@ async function toggleNotifications(enabled: boolean) {
         </ColorModeSelector>
         <template v-if="isPushSupported">
           <hr class="border-border-default mx-3" />
-          <button
-            class="flex items-center justify-between gap-2.5 px-3 py-2"
-            :disabled="isPushLoading"
-          >
+          <label class="flex items-center justify-between gap-2.5 px-3 py-2">
             <p class="text-label">{{ $t('settings.notifications') }}</p>
             <DesignSwitch
               :model-value="isSubscribed"
               :disabled="isPushLoading"
               @update:model-value="toggleNotifications"
             />
-          </button>
+          </label>
         </template>
       </DesignPanel>
       <DesignPanel class="gap-list-section-inset flex flex-col">
