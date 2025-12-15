@@ -17,38 +17,7 @@ gql(`
       endDate
       archivedAt
       branding {
-        logo
-        rounding
-        colors {
-          light {
-            accent
-            accentContrast
-            onAccent
-            backgroundDefault
-            backgroundRaised
-            backgroundIndent
-            textDefault
-            textMuted
-            textHint
-            shadowDefault
-            shadowBlank
-            borderDefault
-          }
-          dark {
-            accent
-            accentContrast
-            onAccent
-            backgroundDefault
-            backgroundRaised
-            backgroundIndent
-            textDefault
-            textMuted
-            textHint
-            shadowDefault
-            shadowBlank
-            borderDefault
-          }
-        }
+        ...BrandingFields
       }
       rules {
         markdown

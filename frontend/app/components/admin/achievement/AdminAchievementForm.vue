@@ -13,6 +13,7 @@ const props = defineProps<{
     points: number
     hidden: boolean
   }
+  colors?: Colors
   submitLabel: string
   onDelete?: () => void
 }>()
@@ -148,6 +149,8 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         Delete Achievement
       </UButton>
     </UForm>
-    <AdminAchievementPreview :achievement="state" />
+    <AdminThemedPreview :colors="colors">
+      <AdminAchievementPreview :achievement="state" />
+    </AdminThemedPreview>
   </div>
 </template>

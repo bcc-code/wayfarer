@@ -20,6 +20,11 @@ gql(`
       project {
         id
         name
+        branding {
+          colors {
+            ...BrandingColorsFields
+          }
+        }
       }
     }
   }
@@ -158,6 +163,7 @@ async function handleDelete() {
       <AdminAchievementForm
         v-else-if="initialData"
         :initial-data="initialData"
+        :colors="data?.achievement.project.branding.colors"
         submit-label="Save changes"
         :on-delete="handleDelete"
         @submit="handleSubmit"

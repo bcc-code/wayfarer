@@ -18,6 +18,7 @@ const props = defineProps<{
   }
   quizData?: QuizFormData
   projectId?: string
+  colors?: Colors
   submitLabel: string
   isEditMode?: boolean
   onDelete?: () => void
@@ -249,6 +250,8 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
       </div>
     </div>
 
-    <AdminChallengeCardPreview :challenge="state" />
+    <AdminThemedPreview :colors="colors">
+      <AdminChallengeCardPreview :challenge="state" />
+    </AdminThemedPreview>
   </div>
 </template>

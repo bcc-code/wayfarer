@@ -22,6 +22,11 @@ gql(`
       project {
         id
         name
+        branding {
+          colors {
+            ...BrandingColorsFields
+          }
+        }
       }
       ... on SimpleChallenge {
         allowSelfCompletion
@@ -41,26 +46,7 @@ gql(`
           allowRetakes
           completionPoints
           questions {
-            __typename
-            id
-            questionText
-            questionOrder
-            timeoutSeconds
-            points
-            ... on PredefinedQuestion {
-              allowMultipleSelection
-              predefinedAnswers {
-                id
-                answerText
-                answerOrder
-                isCorrect
-              }
-            }
-            ... on NumberQuestion {
-              minValue
-              maxValue
-              stepValue
-            }
+            ...QuizQuestionFields
           }
         }
       }
@@ -419,6 +405,7 @@ async function handleDelete() {
         :initial-data="initialData"
         :quiz-data="quizData"
         :project-id="route.params.projectId"
+        :colors="data?.challenge.project.branding.colors"
         submit-label="Save changes"
         is-edit-mode
         :on-delete="handleDelete"

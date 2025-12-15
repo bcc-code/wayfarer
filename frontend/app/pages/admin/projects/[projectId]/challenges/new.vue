@@ -12,6 +12,11 @@ gql(`
     project(id: $projectId) {
       id
       name
+      branding {
+        colors {
+          ...BrandingColorsFields
+        }
+      }
     }
     events(first: 100, filter: { projectId: $projectId }) {
       edges {
@@ -192,6 +197,7 @@ async function handleSubmit(formData: ChallengeFormData) {
       <h1 class="mb-6 text-2xl font-bold">Create Challenge</h1>
       <AdminChallengeForm
         :project-id="route.params.projectId"
+        :colors="data?.project.branding.colors"
         submit-label="Create Challenge"
         @submit="handleSubmit"
       >

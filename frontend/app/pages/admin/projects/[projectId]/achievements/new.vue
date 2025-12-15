@@ -9,6 +9,11 @@ gql(`
     project(id: $projectId) {
       id
       name
+      branding {
+        colors {
+          ...BrandingColorsFields
+        }
+      }
     }
   }
 `)
@@ -101,6 +106,7 @@ async function handleSubmit(formData: {
     <UContainer class="py-12">
       <h1 class="mb-6 text-2xl font-bold">Create Achievement</h1>
       <AdminAchievementForm
+        :colors="data?.project.branding.colors"
         submit-label="Create Achievement"
         @submit="handleSubmit"
       />
