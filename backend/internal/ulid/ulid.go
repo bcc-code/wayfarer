@@ -178,6 +178,14 @@ func NewFileUploadID() string {
 	return newID(PrefixFileUpload)
 }
 
+// NewInstanceID generates a new instance ID (no prefix, just raw ULID)
+// Used for identifying server instances in distributed cache invalidation
+func NewInstanceID() string {
+	entropyMutex.Lock()
+	defer entropyMutex.Unlock()
+	return ulid.MustNew(ulid.Timestamp(time.Now()), entropy).String()
+}
+
 // Validation functions
 
 // IsValidID checks if an ID has the correct format and prefix

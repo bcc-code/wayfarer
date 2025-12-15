@@ -25,6 +25,7 @@ type Resolver struct {
 	RoleService        *services.RoleService
 	LeaderboardService *services.LeaderboardService
 	Settings           *services.SettingsService
+	InstanceID         string
 }
 
 // getUserChallengeCompletedAt returns the completion timestamp for the current user and challenge

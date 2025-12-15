@@ -530,6 +530,7 @@ type ComplexityRoot struct {
 		Events           func(childComplexity int, filter *model.EventFilter, first *int, after *string, last *int, before *string) int
 		ExternalContent  func(childComplexity int, id string) int
 		ExternalContents func(childComplexity int, filter model.ExternalContentFilter, sortBy *model.ExternalContentSortBy, first *int, after *string, last *int, before *string) int
+		InstanceID       func(childComplexity int) int
 		Me               func(childComplexity int) int
 		MyCurrentEvent   func(childComplexity int) int
 		MyCurrentProject func(childComplexity int) int
@@ -1054,6 +1055,7 @@ type ProjectResolver interface {
 }
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
+	InstanceID(ctx context.Context) (string, error)
 	Project(ctx context.Context, id string) (*model.Project, error)
 	Projects(ctx context.Context, filter *model.ProjectFilter, first *int, after *string, last *int, before *string) (*model.ProjectConnection, error)
 	MyProjects(ctx context.Context) ([]model.Project, error)
@@ -3718,6 +3720,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.ExternalContents(childComplexity, args["filter"].(model.ExternalContentFilter), args["sortBy"].(*model.ExternalContentSortBy), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
+	case "Query.instanceID":
+		if e.complexity.Query.InstanceID == nil {
+			break
+		}
+
+		return e.complexity.Query.InstanceID(childComplexity), true
 	case "Query.me":
 		if e.complexity.Query.Me == nil {
 			break
@@ -6767,6 +6775,7 @@ schema {
 
 type Query {
     me: User!
+    instanceID: String!
 }
 
 type Mutation {
@@ -23103,6 +23112,35 @@ func (ec *executionContext) fieldContext_Query_me(_ context.Context, field graph
 				return ec.fieldContext_User_consentStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_instanceID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_instanceID,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().InstanceID(ctx)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_instanceID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -42634,6 +42672,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_me(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "instanceID":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_instanceID(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

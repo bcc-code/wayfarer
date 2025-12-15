@@ -1,8 +1,11 @@
 package cache
 
 import (
+	"context"
 	"sync"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // KeyRegistry tracks all keys in the cache for tag-based bulk invalidation
@@ -116,6 +119,8 @@ func extractPrefixes(key string) []string {
 type CacheWithRegistry struct {
 	*Cache
 	registry *KeyRegistry
+	sync     *CacheSync
+	pool     *pgxpool.Pool
 }
 
 // NewCacheWithRegistry creates a cache with key registry support
@@ -129,6 +134,19 @@ func NewCacheWithRegistry(cfg Config) (*CacheWithRegistry, error) {
 		Cache:    cache,
 		registry: NewKeyRegistry(),
 	}, nil
+}
+
+// SetSync configures the cache sync for cross-instance invalidation
+func (c *CacheWithRegistry) SetSync(sync *CacheSync, pool *pgxpool.Pool) {
+	c.sync = sync
+	c.pool = pool
+}
+
+// broadcast sends an invalidation message to other instances if sync is configured
+func (c *CacheWithRegistry) broadcast(msg InvalidationMessage) {
+	if c.sync != nil && c.pool != nil {
+		c.sync.BroadcastWithPool(context.Background(), c.pool, msg)
+	}
 }
 
 // Set stores a value and registers the key
@@ -171,8 +189,14 @@ func (c *CacheWithRegistry) Clear() {
 
 // Invalidation helper functions for common operations
 
-// InvalidateUser invalidates all cache entries related to a user
+// InvalidateUser invalidates all cache entries related to a user and broadcasts to other instances
 func (c *CacheWithRegistry) InvalidateUser(userID string) {
+	c.invalidateUserLocal(userID)
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeUser, ID: userID})
+}
+
+// invalidateUserLocal invalidates user cache entries on this instance only
+func (c *CacheWithRegistry) invalidateUserLocal(userID string) {
 	c.Delete(UserKey(userID))
 	c.Delete(ProjectsByUserKey(userID))
 	c.Delete(UserRolesKey(userID))
@@ -182,8 +206,14 @@ func (c *CacheWithRegistry) InvalidateUser(userID string) {
 	c.DeletePrefix(PrefixUserChallengeCompletions + userID)
 }
 
-// InvalidateProject invalidates all cache entries related to a project
+// InvalidateProject invalidates all cache entries related to a project and broadcasts to other instances
 func (c *CacheWithRegistry) InvalidateProject(projectID string) {
+	c.invalidateProjectLocal(projectID)
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeProject, ID: projectID})
+}
+
+// invalidateProjectLocal invalidates project cache entries on this instance only
+func (c *CacheWithRegistry) invalidateProjectLocal(projectID string) {
 	// Direct project entity
 	c.Delete(ProjectKey(projectID))
 
@@ -208,8 +238,14 @@ func (c *CacheWithRegistry) InvalidateProject(projectID string) {
 	c.DeletePrefix("team:leaderboard:")
 }
 
-// InvalidateEvent invalidates all cache entries related to an event
+// InvalidateEvent invalidates all cache entries related to an event and broadcasts to other instances
 func (c *CacheWithRegistry) InvalidateEvent(eventID string) {
+	c.invalidateEventLocal(eventID)
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeEvent, ID: eventID})
+}
+
+// invalidateEventLocal invalidates event cache entries on this instance only
+func (c *CacheWithRegistry) invalidateEventLocal(eventID string) {
 	c.Delete(EventKey(eventID))
 	c.DeletePrefix("event:" + eventID)
 
@@ -219,8 +255,14 @@ func (c *CacheWithRegistry) InvalidateEvent(eventID string) {
 	c.DeletePrefix(PrefixEventsCount)
 }
 
-// InvalidateTeam invalidates all cache entries related to a team
+// InvalidateTeam invalidates all cache entries related to a team and broadcasts to other instances
 func (c *CacheWithRegistry) InvalidateTeam(teamID string) {
+	c.invalidateTeamLocal(teamID)
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeTeam, ID: teamID})
+}
+
+// invalidateTeamLocal invalidates team cache entries on this instance only
+func (c *CacheWithRegistry) invalidateTeamLocal(teamID string) {
 	c.Delete(TeamKey(teamID))
 	c.Delete(TeamMembersByTeamKey(teamID))
 	c.Delete(TeamMemberLeaderboardKey(teamID))
@@ -228,15 +270,31 @@ func (c *CacheWithRegistry) InvalidateTeam(teamID string) {
 	c.DeletePrefix("team:" + teamID)
 }
 
-// InvalidateSuperTeam invalidates all cache entries related to a super team
+// InvalidateSuperTeam invalidates all cache entries related to a super team and broadcasts to other instances
 func (c *CacheWithRegistry) InvalidateSuperTeam(superTeamID string) {
+	c.invalidateSuperTeamLocal(superTeamID)
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeSuperTeam, ID: superTeamID})
+}
+
+// invalidateSuperTeamLocal invalidates super team cache entries on this instance only
+func (c *CacheWithRegistry) invalidateSuperTeamLocal(superTeamID string) {
 	c.Delete(SuperTeamKey(superTeamID))
 	c.Delete(TeamsBySuperTeamKey(superTeamID))
 	c.DeletePrefix("superteam:" + superTeamID)
 }
 
-// InvalidateChallenge invalidates all cache entries related to a challenge
+// InvalidateChallenge invalidates all cache entries related to a challenge and broadcasts to other instances
 func (c *CacheWithRegistry) InvalidateChallenge(challengeID, projectID string, eventID *string) {
+	c.invalidateChallengeLocal(challengeID, projectID, eventID)
+	msg := InvalidationMessage{Type: InvalidationTypeChallenge, ID: challengeID, ProjectID: projectID}
+	if eventID != nil {
+		msg.EventID = *eventID
+	}
+	c.broadcast(msg)
+}
+
+// invalidateChallengeLocal invalidates challenge cache entries on this instance only
+func (c *CacheWithRegistry) invalidateChallengeLocal(challengeID, projectID string, eventID *string) {
 	c.Delete(ChallengeKey(challengeID))
 
 	// Invalidate challenge list caches for project and event
@@ -256,8 +314,14 @@ func (c *CacheWithRegistry) InvalidateChallenge(challengeID, projectID string, e
 	c.DeletePrefix(PrefixUserChallengeCompletions)
 }
 
-// InvalidateAchievement invalidates all cache entries related to an achievement
+// InvalidateAchievement invalidates all cache entries related to an achievement and broadcasts to other instances
 func (c *CacheWithRegistry) InvalidateAchievement(achievementID string) {
+	c.invalidateAchievementLocal(achievementID)
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeAchievement, ID: achievementID})
+}
+
+// invalidateAchievementLocal invalidates achievement cache entries on this instance only
+func (c *CacheWithRegistry) invalidateAchievementLocal(achievementID string) {
 	c.Delete(AchievementKey(achievementID))
 
 	// All achievement list/filter queries (any filter combination)
@@ -266,8 +330,14 @@ func (c *CacheWithRegistry) InvalidateAchievement(achievementID string) {
 	c.DeletePrefix(PrefixAchievementsCount)
 }
 
-// InvalidateQuiz invalidates all cache entries related to a quiz
+// InvalidateQuiz invalidates all cache entries related to a quiz and broadcasts to other instances
 func (c *CacheWithRegistry) InvalidateQuiz(quizID string) {
+	c.invalidateQuizLocal(quizID)
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeQuiz, ID: quizID})
+}
+
+// invalidateQuizLocal invalidates quiz cache entries on this instance only
+func (c *CacheWithRegistry) invalidateQuizLocal(quizID string) {
 	c.Delete(QuizKey(quizID))
 
 	// All quiz list/filter queries

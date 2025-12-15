@@ -35,6 +35,11 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	return user, nil
 }
 
+// InstanceID is the resolver for the instanceID field.
+func (r *queryResolver) InstanceID(ctx context.Context) (string, error) {
+	return r.Resolver.InstanceID, nil
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
