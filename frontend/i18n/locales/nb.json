@@ -7,7 +7,6 @@
     "correctAnswer": "Riktig svar",
     "yourAnswer": "Ditt svar",
     "lockAnswer": "Lås svar",
-    "nextQuestion": "Neste spørsmål",
     "questionNumber": "{current} av {total}",
     "continue": "Fortsett",
     "done": "Ferdig",
@@ -20,20 +19,17 @@
     }
   },
   "pages": {
-    "standings": "Standings",
-    "unit": "Din unit",
-    "profile": "Din profil",
-    "challenges": "Oppgaver",
-    "challenge": "Oppgave",
+    "standings": "Topplister",
+    "challenges": "Utfordringer",
     "settings": "Innstillinger",
     "pointHistory": "Poenghistorikk",
     "getPoints": "Få poeng",
     "consents": "Samtykke"
   },
   "navigation": {
-    "standings": "Standings",
-    "profile": "Profil",
-    "challenges": "Oppgaver"
+    "standings": "Topplister",
+    "profile": "Min side",
+    "challenges": "Utfordringer"
   },
   "emptyState": "Ingenting å se her",
   "settings": {
@@ -46,8 +42,6 @@
     },
     "consents": "Samtykke",
     "notifications": "Varslinger",
-    "notificationsEnabled": "På",
-    "notificationsDisabled": "Av",
     "addToHomeScreen": "Legg til app på hjem skjerm",
     "privacyPolicy": "Personvernerklæring"
   },
@@ -72,7 +66,7 @@
     "noUnitLeader": "Ingen unitleder",
     "selectUnitLeader": "Velg unitleder"
   },
-  "place": "plass",
+  "place": "plassering",
   "points": "poeng",
   "givesYouXPoints": "Gir deg {points} poeng",
   "consent": {
@@ -83,7 +77,6 @@
     "bannerTitle": "Du har samtykker du må ta stilling til",
     "bannerButton": "Gå til samtykke-instillinger",
     "readButton": "Les vilkår",
-    "readTitle": "Vilkår",
     "change": "Endre",
     "goToConsent": "Gå til samtykke",
     "continue": "Gå videre",
