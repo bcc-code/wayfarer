@@ -8,7 +8,7 @@ const state = ref<'pending' | 'completed'>('pending')
 
 <template>
   <div
-    class="border-default bg-background-default aspect-1/2 w-[400px] overflow-clip rounded-xl border text-start"
+    class="border-default bg-background-default aspect-1/2 w-[400px] overflow-clip rounded-xl border text-start p-list-outside"
   >
     <div
       class="flex h-full flex-col items-center justify-center gap-6 relative"
@@ -19,7 +19,7 @@ const state = ref<'pending' | 'completed'>('pending')
           { value: 'pending', label: 'Not Completed' },
           { value: 'completed', label: 'Completed' },
         ]"
-        class="absolute top-4"
+        class="absolute top-0"
       />
       <div
         :class="[
@@ -47,15 +47,19 @@ const state = ref<'pending' | 'completed'>('pending')
         <h3 class="text-heading">
           {{ achievement.name || 'Achievement Name' }}
         </h3>
-        <p v-if="state === 'completed' && achievement.descriptionCompleted" class="text-label">
+        <p
+          v-if="state === 'completed' && achievement.descriptionCompleted"
+          class="text-label"
+        >
           {{ achievement.descriptionCompleted }}
         </p>
-        <p v-else-if="state === 'pending' && achievement.descriptionPending" class="text-label">
+        <p
+          v-else-if="state === 'pending' && achievement.descriptionPending"
+          class="text-label"
+        >
           {{ achievement.descriptionPending }}
         </p>
-        <p v-else class="text-label text-text-muted">
-          No description
-        </p>
+        <p v-else class="text-label text-text-muted">No description</p>
       </div>
       <div
         v-if="state === 'completed'"

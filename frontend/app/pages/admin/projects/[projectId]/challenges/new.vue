@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@nuxt/ui'
-import z from 'zod'
+import type { ChallengeFormData } from '~/components/admin/challenge/AdminChallengeForm.vue'
+import type { QuizFormData } from '~/components/admin/quiz/AdminQuizForm.vue'
 
 definePageMeta({
   layout: 'admin',
@@ -26,7 +26,6 @@ gql(`
 
 const route = useRoute('admin-projects-projectId-challenges-new')
 const toast = useToast()
-const { executeMutation } = useCreateChallengeMutation()
 
 const { isAuthReady } = useAuthReady()
 const { data } = useAdminProjectChallengeNewPageQuery({
@@ -36,58 +35,128 @@ const { data } = useAdminProjectChallengeNewPageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
-const schema = z.object({
-  eventId: z.string().min(1, 'Event is required'),
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().optional(),
-  image: z.string().optional(),
-  url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  buttonText: z.string().min(1, 'Button text is required'),
-  endTime: z.string().optional(),
-})
-type Schema = z.infer<typeof schema>
-const state = reactive<Schema>({
-  eventId: '',
-  name: '',
-  description: undefined,
-  image: undefined,
-  url: undefined,
-  buttonText: '',
-  endTime: undefined,
+const { executeMutation } = useCreateChallengeMutation()
+const { executeMutation: createQuiz } = useCreateQuizMutation()
+const { executeMutation: addQuizQuestion } = useAddQuizQuestionMutation()
+
+const eventId = ref('')
+
+const eventOptions = computed(() => {
+  return (
+    data.value?.events.edges.map((e) => ({
+      value: e.node.id,
+      label: e.node.name,
+    })) ?? []
+  )
 })
 
-async function createChallenge(event: FormSubmitEvent<Schema>) {
-  if (!event.data) {
+async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
+  const createResult = await createQuiz({
+    input: {
+      projectId: route.params.projectId,
+      challengeId,
+      name: quizFormData.name,
+      description: quizFormData.description,
+      image: quizFormData.image,
+      timeoutSeconds: quizFormData.timeoutSeconds,
+      randomizeQuestions: quizFormData.randomizeQuestions,
+      revealCorrectAnswers: quizFormData.revealCorrectAnswers,
+      allowRetakes: quizFormData.allowRetakes,
+      completionPoints: quizFormData.completionPoints,
+    },
+  })
+
+  if (createResult.error) {
+    throw new Error(createResult.error.message)
+  }
+
+  const quizId = createResult.data?.createQuiz.id
+  if (!quizId) {
+    throw new Error('Failed to create quiz')
+  }
+
+  // Add questions
+  for (const question of quizFormData.questions) {
+    await addQuizQuestion({
+      quizId,
+      input: {
+        questionType: question.questionType,
+        questionText: question.questionText,
+        questionOrder: question.questionOrder,
+        timeoutSeconds: question.timeoutSeconds,
+        points: question.points,
+        allowMultipleSelection: question.allowMultipleSelection,
+        predefinedAnswers: question.predefinedAnswers?.map((a) => ({
+          answerText: a.answerText,
+          isCorrect: a.isCorrect,
+          answerOrder: a.answerOrder,
+        })),
+        minValue: question.minValue,
+        maxValue: question.maxValue,
+        stepValue: question.stepValue,
+      },
+    })
+  }
+}
+
+async function handleSubmit(formData: ChallengeFormData) {
+  if (!eventId.value) {
+    toast.add({
+      title: 'Error',
+      description: 'Please select an event',
+      color: 'error',
+    })
     return
   }
 
-  const { eventId, ...input } = event.data
+  const { type, allowSelfCompletion, url, quiz, ...rest } = formData
 
-  executeMutation({
+  // Only include type-specific fields
+  const input = {
+    ...rest,
+    type,
+    ...(type === ChallengeType.Simple && { allowSelfCompletion }),
+    ...(type === ChallengeType.External && { url }),
+  }
+
+  const response = await executeMutation({
     projectId: route.params.projectId,
-    eventId,
+    eventId: eventId.value,
     input,
-  }).then((response) => {
-    if (response.error) {
+  })
+
+  if (response.error) {
+    toast.add({
+      title: response.error.name,
+      description: response.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  // Handle quiz if this is a quiz challenge
+  const challengeId = response.data?.createChallenge.id
+  if (type === ChallengeType.Quiz && quiz && challengeId) {
+    try {
+      await saveQuiz(quiz, challengeId)
+    } catch (err) {
       toast.add({
-        title: response.error.name,
-        description: response.error.message,
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to save quiz',
         color: 'error',
       })
       return
     }
-    if (!response.data) {
-      return
-    }
-    toast.add({
-      title: 'Success',
-      description: 'Challenge created successfully',
-      color: 'success',
-    })
-    navigateTo({
-      name: 'admin-projects-projectId',
-      params: { projectId: route.params.projectId },
-    })
+  }
+
+  toast.add({
+    title: 'Success',
+    description: 'Challenge created successfully',
+    color: 'success',
+  })
+  navigateTo({
+    name: 'admin-projects-projectId',
+    params: { projectId: route.params.projectId },
   })
 }
 </script>
@@ -121,79 +190,22 @@ async function createChallenge(event: FormSubmitEvent<Schema>) {
     </div>
     <UContainer class="py-12">
       <h1 class="mb-6 text-2xl font-bold">Create Challenge</h1>
-      <div class="grid grid-cols-2">
-        <UForm
-          :state
-          :schema="schema"
-          loading-auto
-          class="flex max-w-md flex-col gap-6"
-          @submit.prevent="createChallenge"
-        >
-        <UFormField name="eventId" label="Event">
-          <USelect
-            v-model="state.eventId"
-            :items="
-              data?.events.edges.map((e) => ({
-                value: e.node.id,
-                label: e.node.name,
-              })) || []
-            "
-            required
-            class="w-full"
-          />
-        </UFormField>
-        <UFormField name="name" label="Name">
-          <UInput v-model="state.name" size="xl" required class="w-full" />
-        </UFormField>
-        <UFormField
-          name="description"
-          label="Description"
-          hint="(optional)"
-          help="Supports HTML formatting"
-        >
-          <UTextarea v-model="state.description" class="w-full" autoresize />
-        </UFormField>
-        <UFormField
-          name="image"
-          label="Image URL"
-          hint="(optional)"
-          help="URL to an image for this challenge"
-        >
-          <UInput v-model="state.image" size="xl" class="w-full" />
-        </UFormField>
-        <UFormField
-          name="url"
-          label="Challenge URL"
-          hint="(optional)"
-          help="External link for the challenge"
-        >
-          <UInput v-model="state.url" size="xl" class="w-full" />
-        </UFormField>
-        <UFormField name="buttonText" label="Button Text">
-          <UInput
-            v-model="state.buttonText"
-            size="xl"
-            required
-            class="w-full"
-          />
-        </UFormField>
-        <UFormField
-          name="endTime"
-          label="End Time"
-          hint="(optional)"
-          help="When this challenge expires"
-        >
-          <UInput
-            v-model="state.endTime"
-            type="datetime-local"
-            size="xl"
-            class="w-full"
-          />
-        </UFormField>
-        <UButton type="submit" size="lg" block>Create Challenge</UButton>
-        </UForm>
-        <AdminChallengeCardPreview :challenge="state" />
-      </div>
+      <AdminChallengeForm
+        :project-id="route.params.projectId"
+        submit-label="Create Challenge"
+        @submit="handleSubmit"
+      >
+        <template #before-type>
+          <UFormField name="eventId" label="Event">
+            <USelect
+              v-model="eventId"
+              :items="eventOptions"
+              required
+              class="w-full"
+            />
+          </UFormField>
+        </template>
+      </AdminChallengeForm>
     </UContainer>
   </div>
 </template>

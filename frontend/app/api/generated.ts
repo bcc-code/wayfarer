@@ -2439,6 +2439,54 @@ export type DeleteProjectMutationVariables = Exact<{
 
 export type DeleteProjectMutation = { __typename?: 'Mutation', deleteProject: boolean };
 
+export type CreateQuizMutationVariables = Exact<{
+  input: CreateQuizInput;
+}>;
+
+
+export type CreateQuizMutation = { __typename?: 'Mutation', createQuiz: { __typename?: 'Quiz', id: string, name: string } };
+
+export type UpdateQuizMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateQuizInput;
+}>;
+
+
+export type UpdateQuizMutation = { __typename?: 'Mutation', updateQuiz: { __typename?: 'Quiz', id: string, name: string } };
+
+export type AddQuizQuestionMutationVariables = Exact<{
+  quizId: Scalars['ID']['input'];
+  input: CreateQuizQuestionInput;
+}>;
+
+
+export type AddQuizQuestionMutation = { __typename?: 'Mutation', addQuizQuestion:
+    | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
+    | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
+    | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
+    | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
+   };
+
+export type UpdateQuizQuestionMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateQuizQuestionInput;
+}>;
+
+
+export type UpdateQuizQuestionMutation = { __typename?: 'Mutation', updateQuizQuestion:
+    | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
+    | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
+    | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
+    | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
+   };
+
+export type DeleteQuizQuestionMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteQuizQuestionMutation = { __typename?: 'Mutation', deleteQuizQuestion: boolean };
+
 export type StartQuizMutationVariables = Exact<{
   quizId: Scalars['ID']['input'];
 }>;
@@ -2709,9 +2757,14 @@ export type AdminProjectChallengePageQueryVariables = Exact<{
 
 
 export type AdminProjectChallengePageQuery = { __typename?: 'Query', challenge:
-    | { __typename?: 'ExternalChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename?: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string } }
-    | { __typename?: 'SimpleChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, image?: string | null, buttonText: string, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, image?: string | null, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, questions: Array<
+          | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
+          | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
+          | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
+          | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
+        > }, project: { __typename?: 'Project', id: string, name: string } }
+    | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, image?: string | null, buttonText: string, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string } }
    };
 
 export type AdminProjectChallengeNewPageQueryVariables = Exact<{
@@ -3090,6 +3143,99 @@ export const DeleteProjectDocument = gql`
 
 export function useDeleteProjectMutation() {
   return Urql.useMutation<DeleteProjectMutation, DeleteProjectMutationVariables>(DeleteProjectDocument);
+};
+export const CreateQuizDocument = gql`
+    mutation CreateQuiz($input: CreateQuizInput!) {
+  createQuiz(input: $input) {
+    id
+    name
+  }
+}
+    `;
+
+export function useCreateQuizMutation() {
+  return Urql.useMutation<CreateQuizMutation, CreateQuizMutationVariables>(CreateQuizDocument);
+};
+export const UpdateQuizDocument = gql`
+    mutation UpdateQuiz($id: ID!, $input: UpdateQuizInput!) {
+  updateQuiz(id: $id, input: $input) {
+    id
+    name
+  }
+}
+    `;
+
+export function useUpdateQuizMutation() {
+  return Urql.useMutation<UpdateQuizMutation, UpdateQuizMutationVariables>(UpdateQuizDocument);
+};
+export const AddQuizQuestionDocument = gql`
+    mutation AddQuizQuestion($quizId: ID!, $input: CreateQuizQuestionInput!) {
+  addQuizQuestion(quizId: $quizId, input: $input) {
+    __typename
+    id
+    questionText
+    questionOrder
+    timeoutSeconds
+    points
+    ... on PredefinedQuestion {
+      allowMultipleSelection
+      predefinedAnswers {
+        id
+        answerText
+        answerOrder
+        isCorrect
+      }
+    }
+    ... on NumberQuestion {
+      minValue
+      maxValue
+      stepValue
+    }
+  }
+}
+    `;
+
+export function useAddQuizQuestionMutation() {
+  return Urql.useMutation<AddQuizQuestionMutation, AddQuizQuestionMutationVariables>(AddQuizQuestionDocument);
+};
+export const UpdateQuizQuestionDocument = gql`
+    mutation UpdateQuizQuestion($id: ID!, $input: UpdateQuizQuestionInput!) {
+  updateQuizQuestion(id: $id, input: $input) {
+    __typename
+    id
+    questionText
+    questionOrder
+    timeoutSeconds
+    points
+    ... on PredefinedQuestion {
+      allowMultipleSelection
+      predefinedAnswers {
+        id
+        answerText
+        answerOrder
+        isCorrect
+      }
+    }
+    ... on NumberQuestion {
+      minValue
+      maxValue
+      stepValue
+    }
+  }
+}
+    `;
+
+export function useUpdateQuizQuestionMutation() {
+  return Urql.useMutation<UpdateQuizQuestionMutation, UpdateQuizQuestionMutationVariables>(UpdateQuizQuestionDocument);
+};
+export const DeleteQuizQuestionDocument = gql`
+    mutation DeleteQuizQuestion($id: ID!) {
+  deleteQuizQuestion(id: $id)
+}
+    `;
+
+export function useDeleteQuizQuestionMutation() {
+  return Urql.useMutation<DeleteQuizQuestionMutation, DeleteQuizQuestionMutationVariables>(DeleteQuizQuestionDocument);
 };
 export const StartQuizDocument = gql`
     mutation StartQuiz($quizId: ID!) {
@@ -3772,16 +3918,59 @@ export function useAdminProjectAchievementsNewPageQuery(options?: Omit<Urql.UseQ
 export const AdminProjectChallengePageDocument = gql`
     query AdminProjectChallengePage($challengeId: ID!) {
   challenge(id: $challengeId) {
+    __typename
     id
     name
     description
     image
     buttonText
-    publishedAt
+    visibleAt
+    startedAt
     endTime
     project {
       id
       name
+    }
+    ... on SimpleChallenge {
+      allowSelfCompletion
+    }
+    ... on ExternalChallenge {
+      url
+    }
+    ... on QuizChallenge {
+      quiz {
+        id
+        name
+        description
+        image
+        timeoutSeconds
+        randomizeQuestions
+        revealCorrectAnswers
+        allowRetakes
+        completionPoints
+        questions {
+          __typename
+          id
+          questionText
+          questionOrder
+          timeoutSeconds
+          points
+          ... on PredefinedQuestion {
+            allowMultipleSelection
+            predefinedAnswers {
+              id
+              answerText
+              answerOrder
+              isCorrect
+            }
+          }
+          ... on NumberQuestion {
+            minValue
+            maxValue
+            stepValue
+          }
+        }
+      }
     }
   }
 }
