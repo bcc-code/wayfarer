@@ -179,6 +179,14 @@ func NewFileUploadID() string {
 	return newID(PrefixFileUpload)
 }
 
+// NewInstanceID generates a new instance ID (no prefix, just raw ULID)
+// Used for identifying server instances in distributed cache invalidation
+func NewInstanceID() string {
+	entropyMutex.Lock()
+	defer entropyMutex.Unlock()
+	return ulid.MustNew(ulid.Timestamp(time.Now()), entropy).String()
+}
+
 // NewPendingConsentEventID generates a new ID for a pending consent event (PC prefix)
 func NewPendingConsentEventID() string {
 	return newID(PrefixPendingConsentEvent)

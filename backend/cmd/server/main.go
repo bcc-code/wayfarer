@@ -149,6 +149,15 @@ func main() {
 	defer cacheInstance.Close()
 	slog.Info("Cache initialized", "default_ttl", "15m", "max_cost", "100MB")
 
+	// Initialize cache sync for cross-instance invalidation via PostgreSQL NOTIFY/LISTEN
+	cacheSync := cache.NewCacheSync(cacheInstance, cfg.Database.URL)
+	if err := cacheSync.Start(ctx); err != nil {
+		slog.Warn("Failed to start cache sync, continuing without cross-instance invalidation", "error", err)
+	} else {
+		cacheInstance.SetSync(cacheSync, db.Pool)
+		defer cacheSync.Stop()
+	}
+
 	// Initialize DataLoaders (shared globally across all requests)
 	// Dataloaders handle request batching while Ristretto cache handles data caching
 	dataLoaders := loaders.NewLoaders(db, cacheInstance)
@@ -187,6 +196,7 @@ func main() {
 		RoleService:        roleService,
 		LeaderboardService: leaderboardService,
 		Settings:           settingsService,
+		InstanceID:         cacheSync.InstanceID(),
 	}
 
 	apiHandler := handler.New(api.NewExecutableSchema(api.Config{
