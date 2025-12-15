@@ -1,0 +1,44 @@
+type: http_request
+model: http_request
+id: rq_5zWKFzmbGY
+createdAt: 2025-12-14T21:49:01.948267
+updatedAt: 2025-12-14T21:52:01.050134
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_qhH6J7tuNv
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation {
+      updateProject(
+        id: "PR01K9VZ8684DP9R4W3ZEV526E5X"
+        input: {name: "Den siste lunsjen (med Heartbeat i 2025)", description: "Vel, også den første, men hvem teller egentlig!", rules: "# The rules\nFirst, Why are you even here? You need rules for lunch? \n\nAlso yes I got tired of copy pasting english text into AI and asking it to translate"}
+      ) {
+        name
+        rules {
+          markdown
+          html
+        }
+      }
+    }
+  variables: ''
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: ykj3tfsHHJ
+- enabled: true
+  name: ''
+  value: ''
+  id: YGdtvWfsZs
+- enabled: true
+  name: ''
+  value: ''
+  id: 0s4xJY0Rq9
+method: POST
+name: Update Project
+sortPriority: 0.001
+url: ${[ HOST ]}/graphql
+urlParameters: []
