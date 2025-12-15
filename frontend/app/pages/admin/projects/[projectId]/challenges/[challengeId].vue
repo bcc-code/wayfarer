@@ -174,13 +174,14 @@ async function deleteChallenge() {
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
       <template v-else-if="data">
-        <UForm
-          :state
-          :schema="schema"
-          loading-auto
-          class="flex max-w-md flex-col gap-6"
-          @submit.prevent="updateChallenge"
-        >
+        <div class="grid grid-cols-2">
+          <UForm
+            :state
+            :schema="schema"
+            loading-auto
+            class="flex max-w-md flex-col gap-6"
+            @submit.prevent="updateChallenge"
+          >
           <UFormField name="name" label="Name">
             <UInput v-model="state.name" size="xl" required class="w-full" />
           </UFormField>
@@ -253,6 +254,8 @@ async function deleteChallenge() {
             Delete Challenge
           </UButton>
         </UForm>
+          <AdminChallengeCardPreview :challenge="state" />
+        </div>
       </template>
     </UContainer>
   </div>

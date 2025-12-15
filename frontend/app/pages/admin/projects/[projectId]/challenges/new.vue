@@ -121,13 +121,14 @@ async function createChallenge(event: FormSubmitEvent<Schema>) {
     </div>
     <UContainer class="py-12">
       <h1 class="mb-6 text-2xl font-bold">Create Challenge</h1>
-      <UForm
-        :state
-        :schema="schema"
-        loading-auto
-        class="flex max-w-md flex-col gap-6"
-        @submit.prevent="createChallenge"
-      >
+      <div class="grid grid-cols-2">
+        <UForm
+          :state
+          :schema="schema"
+          loading-auto
+          class="flex max-w-md flex-col gap-6"
+          @submit.prevent="createChallenge"
+        >
         <UFormField name="eventId" label="Event">
           <USelect
             v-model="state.eventId"
@@ -190,7 +191,9 @@ async function createChallenge(event: FormSubmitEvent<Schema>) {
           />
         </UFormField>
         <UButton type="submit" size="lg" block>Create Challenge</UButton>
-      </UForm>
+        </UForm>
+        <AdminChallengeCardPreview :challenge="state" />
+      </div>
     </UContainer>
   </div>
 </template>
