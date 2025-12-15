@@ -73,6 +73,13 @@ const body = computed(() => {
   return props.consent.body.html
 })
 
+const shortText = computed(() => {
+  if (props.consent.__typename == 'UserConsent') {
+    return props.consent.consent.shortText
+  }
+  return props.consent.shortText
+})
+
 const managedBy = computed(() => {
   if (props.consent.__typename == 'UserConsent') {
     return props.consent.consent.managedBy
@@ -105,7 +112,7 @@ const changing = ref(false)
       </p>
       <h3 class="text-title text-text-default pr-2">{{ title }}</h3>
     </div>
-    <div class="text-label text-text-muted" v-html="body" />
+    <div class="text-label text-text-muted" v-html="shortText" />
 
     <template v-if="isRemote">
       <template v-if="localStatus === ConsentAction.Accepted">
@@ -158,6 +165,14 @@ const changing = ref(false)
         </DesignButton>
       </template>
       <template v-else-if="localStatus === ConsentAction.Accepted">
+        <ConsentDetails :consent>
+          <button
+            class="text-label text-accent-contrast py-2 flex items-center gap-1"
+          >
+            {{ $t('consent.readButton') }}
+            <Icon name="lucide:arrow-right" />
+          </button>
+        </ConsentDetails>
         <div class="flex justify-between items-center">
           <span class="text-label text-accent-positive flex items-center gap-1">
             <Icon name="lucide:check" class="size-6" />
@@ -180,6 +195,14 @@ const changing = ref(false)
         </div>
       </template>
       <template v-else-if="localStatus === ConsentAction.Rejected">
+        <ConsentDetails :consent>
+          <button
+            class="text-label text-accent-contrast py-2 flex items-center gap-1"
+          >
+            {{ $t('consent.readButton') }}
+            <Icon name="lucide:arrow-right" />
+          </button>
+        </ConsentDetails>
         <div class="flex justify-between items-center">
           <span class="text-label text-accent-negative flex items-center gap-1">
             <Icon name="lucide:x" class="size-6" />

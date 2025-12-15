@@ -34,6 +34,7 @@ export type Achievement = {
   imageCompleted: Scalars['String']['output'];
   imagePending: Scalars['String']['output'];
   name: Scalars['String']['output'];
+  notificationText: Scalars['String']['output'];
   points: Scalars['Int']['output'];
   project: Project;
 };
@@ -261,6 +262,7 @@ export type ContentAchievement = Achievement & {
   items: Array<ContentItem>;
   name: Scalars['String']['output'];
   nextItem?: Maybe<ContentItem>;
+  notificationText: Scalars['String']['output'];
   points: Scalars['Int']['output'];
   project: Project;
   totalItems: Scalars['Int']['output'];
@@ -322,6 +324,7 @@ export type CreateContentAchievementInput = {
   imagePending: Scalars['String']['input'];
   items: Array<ContentItemInput>;
   name: Scalars['String']['input'];
+  notificationText: Scalars['String']['input'];
   points: Scalars['Int']['input'];
   projectId: Scalars['ID']['input'];
 };
@@ -357,6 +360,7 @@ export type CreateQuizAchievementInput = {
   imagePending: Scalars['String']['input'];
   minScorePercentage?: InputMaybe<Scalars['Int']['input']>;
   name: Scalars['String']['input'];
+  notificationText: Scalars['String']['input'];
   points: Scalars['Int']['input'];
   projectId: Scalars['ID']['input'];
   quizId: Scalars['ID']['input'];
@@ -408,6 +412,7 @@ export type CreateSimpleAchievementInput = {
   imageCompleted: Scalars['String']['input'];
   imagePending: Scalars['String']['input'];
   name: Scalars['String']['input'];
+  notificationText: Scalars['String']['input'];
   points: Scalars['Int']['input'];
   projectId: Scalars['ID']['input'];
 };
@@ -422,6 +427,7 @@ export type CreateStreakAchievementInput = {
   imagePending: Scalars['String']['input'];
   name: Scalars['String']['input'];
   neededStreak: Scalars['Int']['input'];
+  notificationText: Scalars['String']['input'];
   points: Scalars['Int']['input'];
   projectId: Scalars['ID']['input'];
   streakId: Scalars['ID']['input'];
@@ -1689,6 +1695,7 @@ export type QuizAchievement = Achievement & {
   imagePending: Scalars['String']['output'];
   minScorePercentage?: Maybe<Scalars['Int']['output']>;
   name: Scalars['String']['output'];
+  notificationText: Scalars['String']['output'];
   points: Scalars['Int']['output'];
   project: Project;
   quiz: Quiz;
@@ -1887,6 +1894,7 @@ export type SimpleAchievement = Achievement & {
   imageCompleted: Scalars['String']['output'];
   imagePending: Scalars['String']['output'];
   name: Scalars['String']['output'];
+  notificationText: Scalars['String']['output'];
   points: Scalars['Int']['output'];
   project: Project;
 };
@@ -1940,6 +1948,7 @@ export type StreakAchievement = Achievement & {
   imagePending: Scalars['String']['output'];
   name: Scalars['String']['output'];
   neededStreak: Scalars['Int']['output'];
+  notificationText: Scalars['String']['output'];
   points: Scalars['Int']['output'];
   project: Project;
   streak: Streak;
@@ -2071,6 +2080,7 @@ export type UpdateAchievementInput = {
   imageCompleted?: InputMaybe<Scalars['String']['input']>;
   imagePending?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  notificationText?: InputMaybe<Scalars['String']['input']>;
   points?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -2105,6 +2115,7 @@ export type UpdateContentAchievementInput = {
   imagePending?: InputMaybe<Scalars['String']['input']>;
   items?: InputMaybe<Array<ContentItemInput>>;
   name?: InputMaybe<Scalars['String']['input']>;
+  notificationText?: InputMaybe<Scalars['String']['input']>;
   points?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -2158,6 +2169,7 @@ export type UpdateStreakAchievementInput = {
   imagePending?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   neededStreak?: InputMaybe<Scalars['Int']['input']>;
+  notificationText?: InputMaybe<Scalars['String']['input']>;
   points?: InputMaybe<Scalars['Int']['input']>;
   streakId?: InputMaybe<Scalars['ID']['input']>;
 };
@@ -2610,7 +2622,7 @@ export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __
 export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
+export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
       | { __typename?: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
@@ -2620,7 +2632,7 @@ export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User'
 export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ConsentsPageQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
+export type ConsentsPageQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
 
 export type StandingsGlobalPageQueryVariables = Exact<{
   entityType: LeaderboardEntityType;
@@ -3423,6 +3435,7 @@ export const ProfilePageDocument = gql`
         body {
           html
         }
+        shortText
         url
         managementType
         managedBy
@@ -3469,6 +3482,7 @@ export const ConsentsPageDocument = gql`
         body {
           html
         }
+        shortText
         publishedAt
         managedBy
         managementType
@@ -3483,6 +3497,7 @@ export const ConsentsPageDocument = gql`
           body {
             html
           }
+          shortText
           managedBy
           managementType
           url
@@ -3499,6 +3514,7 @@ export const ConsentsPageDocument = gql`
           body {
             html
           }
+          shortText
           managedBy
           managementType
           url

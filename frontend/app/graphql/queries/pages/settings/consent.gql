@@ -10,6 +10,7 @@ query ConsentsPage {
         body {
           html
         }
+        shortText
         publishedAt
         managedBy
         managementType
@@ -24,6 +25,7 @@ query ConsentsPage {
           body {
             html
           }
+          shortText
           managedBy
           managementType
           url
@@ -40,6 +42,7 @@ query ConsentsPage {
           body {
             html
           }
+          shortText
           managedBy
           managementType
           url
