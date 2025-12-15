@@ -16,6 +16,7 @@ gql(`
       descriptionCompleted
       imagePending
       imageCompleted
+      notificationText
       achievedAt
       points
       hidden
@@ -39,16 +40,22 @@ const { data, fetching, error } = useAdminProjectAchievementPageQuery({
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
-  image: z.string().optional(),
+  descriptionPending: z.string().min(1, 'Description is required'),
+  descriptionCompleted: z.string().min(1, 'Description is required'),
+  notificationText: z.string().min(1, 'Notification text is required'),
+  imagePending: z.string().optional(),
+  imageCompleted: z.string().optional(),
   points: z.number().min(0, 'Points must be at least 0'),
   hidden: z.boolean(),
 })
 type Schema = z.infer<typeof schema>
 const state = reactive<Schema>({
   name: '',
-  description: '',
-  image: undefined,
+  descriptionPending: '',
+  descriptionCompleted: '',
+  notificationText: '',
+  imagePending: '',
+  imageCompleted: '',
   points: 0,
   hidden: false,
 })
@@ -58,8 +65,11 @@ watch(
   (d) => {
     if (d) {
       state.name = d.achievement.name
-      state.description = d.achievement.description
-      state.image = d.achievement.image ?? undefined
+      state.descriptionPending = d.achievement.descriptionPending
+      state.descriptionCompleted = d.achievement.descriptionCompleted
+      state.notificationText = d.achievement.notificationText
+      state.imagePending = d.achievement.imagePending
+      state.imageCompleted = d.achievement.imageCompleted
       state.points = d.achievement.points
       state.hidden = d.achievement.hidden
     }
@@ -170,58 +180,85 @@ async function deleteAchievement() {
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
       <template v-else-if="data">
-        <UForm
-          :state
-          :schema="schema"
-          loading-auto
-          class="flex max-w-md flex-col gap-6"
-          @submit.prevent="updateAchievement"
-        >
-          <UFormField name="name" label="Name">
-            <UInput v-model="state.name" size="xl" required class="w-full" />
-          </UFormField>
-          <UFormField name="description" label="Description">
-            <UTextarea
-              v-model="state.description"
-              class="w-full"
-              autoresize
-              required
-            />
-          </UFormField>
-          <UFormField
-            name="image"
-            label="Image URL"
-            hint="(optional)"
-            help="URL to an image for this achievement"
+        <div class="grid grid-cols-2">
+          <UForm
+            :state
+            :schema="schema"
+            loading-auto
+            class="flex max-w-md flex-col gap-6"
+            @submit.prevent="updateAchievement"
           >
-            <UInput v-model="state.image" size="xl" class="w-full" />
-          </UFormField>
-          <UFormField name="points" label="Points">
-            <UInput
-              v-model.number="state.points"
-              type="number"
-              size="xl"
-              required
-              class="w-full"
-            />
-          </UFormField>
-          <UFormField name="hidden" label="Hidden">
-            <UCheckbox
-              v-model="state.hidden"
-              label="Hide this achievement from users until they earn it"
-            />
-          </UFormField>
-          <UButton type="submit" size="lg" block>Save changes</UButton>
-          <UButton
-            color="error"
-            variant="ghost"
-            size="lg"
-            block
-            @click="deleteAchievement"
-          >
-            Delete Achievement
-          </UButton>
-        </UForm>
+            <UFormField name="name" label="Name">
+              <UInput v-model="state.name" size="xl" required class="w-full" />
+            </UFormField>
+            <UFormField name="description" label="Description (Pending)">
+              <UTextarea
+                v-model="state.descriptionPending"
+                class="w-full"
+                autoresize
+                required
+              />
+            </UFormField>
+            <UFormField name="description" label="Description (Completed)">
+              <UTextarea
+                v-model="state.descriptionCompleted"
+                class="w-full"
+                autoresize
+                required
+              />
+            </UFormField>
+            <UFormField name="description" label="Notification text">
+              <UTextarea
+                v-model="state.notificationText"
+                class="w-full"
+                autoresize
+                required
+              />
+            </UFormField>
+            <UFormField
+              name="image"
+              label="Image URL (Pending)"
+              hint="(optional)"
+              help="URL to an image for this achievement"
+            >
+              <UInput v-model="state.imagePending" size="xl" class="w-full" />
+            </UFormField>
+            <UFormField
+              name="image"
+              label="Image URL (Completed)"
+              hint="(optional)"
+              help="URL to an image for this achievement"
+            >
+              <UInput v-model="state.imageCompleted" size="xl" class="w-full" />
+            </UFormField>
+            <UFormField name="points" label="Points">
+              <UInput
+                v-model.number="state.points"
+                type="number"
+                size="xl"
+                required
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField name="hidden" label="Hidden">
+              <UCheckbox
+                v-model="state.hidden"
+                label="Hide this achievement from users until they earn it"
+              />
+            </UFormField>
+            <UButton type="submit" size="lg" block>Save changes</UButton>
+            <UButton
+              color="error"
+              variant="ghost"
+              size="lg"
+              block
+              @click="deleteAchievement"
+            >
+              Delete Achievement
+            </UButton>
+          </UForm>
+          <AdminAchievementPreview :achievement="state" />
+        </div>
       </template>
     </UContainer>
   </div>
