@@ -815,56 +815,7 @@ func (r *quizPredefinedAnswerResolver) Question(ctx context.Context, obj *model.
 
 // IsCorrect is the resolver for the isCorrect field on QuizPredefinedAnswer.
 func (r *quizPredefinedAnswerResolver) IsCorrect(ctx context.Context, obj *model.QuizPredefinedAnswer) (*bool, error) {
-	// Load question to get quiz ID
-	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load question: %w", err)
-	}
-
-	// Load quiz to check reveal setting
-	thunk := r.Loaders.QuizByIDLoader.Load(ctx, row.QuizID)
-	quiz, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load quiz: %w", err)
-	}
-
-	// Check if user is authenticated
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return nil, nil // Not authenticated
-	}
-
-	// Admins can always see correct answers for quizzes they manage
-	if r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
-		return &obj.IsCorrectValue, nil
-	}
-
-	// If reveal_correct_answers is false, never reveal to regular users
-	if !quiz.RevealCorrectAnswers {
-		return nil, nil
-	}
-
-	// Check if user has completed the quiz
-	submissionsThunk := r.Loaders.QuizSubmissionsByUserLoader.Load(ctx, userID)
-	submissions, err := submissionsThunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load submissions: %w", err)
-	}
-
-	var userCompleted bool
-	for _, sub := range submissions {
-		if sub.QuizID == quiz.ID && sub.CompletedAt != nil {
-			userCompleted = true
-			break
-		}
-	}
-
-	// Only reveal if user completed the quiz
-	if userCompleted {
-		return &obj.IsCorrectValue, nil
-	}
-
-	return nil, nil
+	return &obj.IsCorrectValue, nil
 }
 
 // Quiz is the resolver for the quiz field on QuizSubmission.
