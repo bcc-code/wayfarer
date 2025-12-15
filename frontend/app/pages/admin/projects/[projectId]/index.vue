@@ -41,15 +41,6 @@ gql(`
         }
       }
     }
-    events(first: 50, filter: { projectId: $projectId }) {
-      edges {
-        node {
-          id
-          name
-          description
-        }
-      }
-    }
     challenges(first: 50, filter: { projectId: $projectId }) {
       edges {
         node {
@@ -57,15 +48,6 @@ gql(`
           name
           description
           image
-        }
-      }
-    }
-    streaks(first: 50, filter: { projectId: $projectId }) {
-      edges {
-        node {
-          id
-          name
-          description
         }
       }
     }
@@ -116,7 +98,7 @@ const toast = useToast()
 
 // Tabs state management
 const params = useUrlSearchParams('history')
-const fallbackTab = useLocalStorage('fallback-tab', 'events')
+const fallbackTab = useLocalStorage('fallback-tab', 'achievements')
 const tab = computed({
   get() {
     if (typeof params.tab === 'string') return params.tab
@@ -186,70 +168,15 @@ const tab = computed({
         <UTabs
           v-model="tab"
           :items="[
-            { value: 'events', label: 'Events', slot: 'events' },
-            { value: 'challenges', label: 'Challenges', slot: 'challenges' },
-            { value: 'streaks', label: 'Streaks', slot: 'streaks' },
             {
               value: 'achievements',
               label: 'Achievements',
               slot: 'achievements',
             },
+            { value: 'challenges', label: 'Challenges', slot: 'challenges' },
           ]"
           variant="link"
         >
-          <template #events>
-            <div class="my-2">
-              <UButton
-                icon="lucide:plus"
-                :to="{
-                  name: 'admin-projects-projectId-events-new',
-                  params: { projectId: route.params.projectId },
-                }"
-              >
-                Create Event
-              </UButton>
-            </div>
-            <UTable
-              :data="data.events.edges.map((e) => e.node)"
-              :columns="[
-                { accessorKey: 'name' },
-                { accessorKey: 'description' },
-                { id: 'actions' },
-              ]"
-            >
-              <template #actions-cell="{ row }">
-                <div class="flex justify-end gap-2">
-                  <UDropdownMenu
-                    :items="[
-                      {
-                        label: 'Edit',
-                        to: {
-                          name: 'admin-projects-projectId-events-eventId',
-                          params: {
-                            projectId: route.params.projectId,
-                            eventId: row.original.id,
-                          },
-                        },
-                      },
-                      {
-                        label: 'Copy ID',
-                        onClick: () => {
-                          copy(row.original.id)
-                          toast.add({
-                            title: 'Copied',
-                            description: 'ID copied to clipboard',
-                            color: 'success',
-                          })
-                        },
-                      },
-                    ]"
-                  >
-                    <UButton icon="lucide:ellipsis" variant="ghost" size="sm" />
-                  </UDropdownMenu>
-                </div>
-              </template>
-            </UTable>
-          </template>
           <template #challenges>
             <div class="my-2">
               <UButton
@@ -313,59 +240,6 @@ const tab = computed({
               </template>
             </UTable>
           </template>
-          <template #streaks>
-            <div class="my-2">
-              <UButton
-                icon="lucide:plus"
-                :to="{
-                  name: 'admin-projects-projectId-streaks-new',
-                  params: { projectId: route.params.projectId },
-                }"
-              >
-                Create Streak
-              </UButton>
-            </div>
-            <UTable
-              :data="data.streaks.edges.map((e) => e.node)"
-              :columns="[
-                { accessorKey: 'name' },
-                { accessorKey: 'description' },
-                { id: 'actions' },
-              ]"
-            >
-              <template #actions-cell="{ row }">
-                <div class="flex justify-end gap-2">
-                  <UDropdownMenu
-                    :items="[
-                      {
-                        label: 'Edit',
-                        to: {
-                          name: 'admin-projects-projectId-streaks-streakId',
-                          params: {
-                            projectId: route.params.projectId,
-                            streakId: row.original.id,
-                          },
-                        },
-                      },
-                      {
-                        label: 'Copy ID',
-                        onClick: () => {
-                          copy(row.original.id)
-                          toast.add({
-                            title: 'Copied',
-                            description: 'ID copied to clipboard',
-                            color: 'success',
-                          })
-                        },
-                      },
-                    ]"
-                  >
-                    <UButton icon="lucide:ellipsis" variant="ghost" size="sm" />
-                  </UDropdownMenu>
-                </div>
-              </template>
-            </UTable>
-          </template>
           <template #achievements>
             <div class="my-2">
               <UButton
@@ -395,7 +269,14 @@ const tab = computed({
                   :src="row.original.imageCompleted"
                   height="32"
                   width="32"
-                  class="bg-muted size-8 rounded"
+                  class="size-8 rounded aspect-square"
+                />
+                <img
+                  v-else
+                  src="/images/achievement-placeholder.png"
+                  height="32"
+                  width="32"
+                  class="size-8 rounded aspect-square"
                 />
               </template>
               <template #hidden-cell="{ row }">

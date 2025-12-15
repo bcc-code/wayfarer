@@ -386,6 +386,7 @@ export type CreateQuizQuestionInput = {
   allowMultipleSelection?: InputMaybe<Scalars['Boolean']['input']>;
   maxValue?: InputMaybe<Scalars['Float']['input']>;
   minValue?: InputMaybe<Scalars['Float']['input']>;
+  points?: InputMaybe<Scalars['Int']['input']>;
   predefinedAnswers?: InputMaybe<Array<CreatePredefinedAnswerInput>>;
   questionOrder: Scalars['Int']['input'];
   questionText: Scalars['String']['input'];
@@ -614,6 +615,7 @@ export enum ExternalContentType {
 export type FreeTextQuestion = QuizQuestion & {
   __typename?: 'FreeTextQuestion';
   id: Scalars['ID']['output'];
+  points?: Maybe<Scalars['Int']['output']>;
   questionOrder: Scalars['Int']['output'];
   questionText: Scalars['String']['output'];
   quiz: Quiz;
@@ -624,6 +626,7 @@ export type FreeTextResponse = QuizResponse & {
   __typename?: 'FreeTextResponse';
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
+  pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
   submission: QuizSubmission;
   textResponse: Scalars['String']['output'];
@@ -638,6 +641,7 @@ export enum Gender {
 export type JsonQuestion = QuizQuestion & {
   __typename?: 'JsonQuestion';
   id: Scalars['ID']['output'];
+  points?: Maybe<Scalars['Int']['output']>;
   questionOrder: Scalars['Int']['output'];
   questionText: Scalars['String']['output'];
   quiz: Quiz;
@@ -649,6 +653,7 @@ export type JsonResponse = QuizResponse & {
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
   jsonResponse: Scalars['JSON']['output'];
+  pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
   submission: QuizSubmission;
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
@@ -731,6 +736,7 @@ export type Mutation = {
   bulkEnrollUsersInChallenge: Array<Challenge>;
   bulkPublishChallenges: Array<Challenge>;
   bulkUnenrollUsersFromChallenge: Scalars['Boolean']['output'];
+  clearAllCache: Scalars['Boolean']['output'];
   completeChallenge: Challenge;
   createChallenge: Challenge;
   createConsent: Consent;
@@ -1308,6 +1314,7 @@ export type NumberQuestion = QuizQuestion & {
   id: Scalars['ID']['output'];
   maxValue?: Maybe<Scalars['Float']['output']>;
   minValue?: Maybe<Scalars['Float']['output']>;
+  points?: Maybe<Scalars['Int']['output']>;
   questionOrder: Scalars['Int']['output'];
   questionText: Scalars['String']['output'];
   quiz: Quiz;
@@ -1320,6 +1327,7 @@ export type NumberResponse = QuizResponse & {
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
   numberResponse: Scalars['Float']['output'];
+  pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
   submission: QuizSubmission;
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
@@ -1337,6 +1345,7 @@ export type PredefinedQuestion = QuizQuestion & {
   __typename?: 'PredefinedQuestion';
   allowMultipleSelection: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
+  points?: Maybe<Scalars['Int']['output']>;
   predefinedAnswers: Array<QuizPredefinedAnswer>;
   questionOrder: Scalars['Int']['output'];
   questionText: Scalars['String']['output'];
@@ -1349,6 +1358,7 @@ export type PredefinedResponse = QuizResponse & {
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
   isCorrect?: Maybe<Scalars['Boolean']['output']>;
+  pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
   selectedAnswerIds: Array<Scalars['ID']['output']>;
   selectedAnswers: Array<QuizPredefinedAnswer>;
@@ -1754,6 +1764,7 @@ export type QuizPredefinedAnswer = {
 
 export type QuizQuestion = {
   id: Scalars['ID']['output'];
+  points?: Maybe<Scalars['Int']['output']>;
   questionOrder: Scalars['Int']['output'];
   questionText: Scalars['String']['output'];
   quiz: Quiz;
@@ -1770,6 +1781,7 @@ export enum QuizQuestionType {
 export type QuizResponse = {
   answeredAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
+  pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
   submission: QuizSubmission;
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
@@ -2152,6 +2164,7 @@ export type UpdateQuizQuestionInput = {
   allowMultipleSelection?: InputMaybe<Scalars['Boolean']['input']>;
   maxValue?: InputMaybe<Scalars['Float']['input']>;
   minValue?: InputMaybe<Scalars['Float']['input']>;
+  points?: InputMaybe<Scalars['Int']['input']>;
   predefinedAnswers?: InputMaybe<Array<CreatePredefinedAnswerInput>>;
   questionOrder?: InputMaybe<Scalars['Int']['input']>;
   questionText?: InputMaybe<Scalars['String']['input']>;
@@ -2732,11 +2745,11 @@ export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typenam
         | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, points: number, hidden: boolean }
         | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, points: number, hidden: boolean }
         | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, points: number, hidden: boolean }
-       }> }, events: { __typename?: 'EventConnection', edges: Array<{ __typename?: 'EventEdge', node: { __typename?: 'Event', id: string, name: string, description: string } }> }, challenges: { __typename?: 'ChallengeConnection', edges: Array<{ __typename?: 'ChallengeEdge', node:
+       }> }, challenges: { __typename?: 'ChallengeConnection', edges: Array<{ __typename?: 'ChallengeEdge', node:
         | { __typename?: 'ExternalChallenge', id: string, name: string, description: any, image?: string | null }
         | { __typename?: 'QuizChallenge', id: string, name: string, description: any, image?: string | null }
         | { __typename?: 'SimpleChallenge', id: string, name: string, description: any, image?: string | null }
-       }> }, streaks: { __typename?: 'StreakConnection', edges: Array<{ __typename?: 'StreakEdge', node: { __typename?: 'Streak', id: string, name: string, description: string } }> } };
+       }> } };
 
 export type AdminProjectStreakPageQueryVariables = Exact<{
   streakId: Scalars['ID']['input'];
@@ -3904,15 +3917,6 @@ export const AdminProjectPageDocument = gql`
       }
     }
   }
-  events(first: 50, filter: {projectId: $projectId}) {
-    edges {
-      node {
-        id
-        name
-        description
-      }
-    }
-  }
   challenges(first: 50, filter: {projectId: $projectId}) {
     edges {
       node {
@@ -3920,15 +3924,6 @@ export const AdminProjectPageDocument = gql`
         name
         description
         image
-      }
-    }
-  }
-  streaks(first: 50, filter: {projectId: $projectId}) {
-    edges {
-      node {
-        id
-        name
-        description
       }
     }
   }
