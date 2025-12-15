@@ -5,11 +5,18 @@ const props = defineProps<{
 
 const { track } = useAnalytics()
 
+const externalUrl = computed(() => {
+  if (props.challenge.__typename === 'ExternalChallenge') {
+    return props.challenge.url
+  }
+  return null
+})
+
 function onChallengeClick() {
   track(AnalyticsEvent.ChallengeLinkClicked, {
     challenge_id: props.challenge.id,
     challenge_name: props.challenge.name,
-    is_external: !!props.challenge.url,
+    is_external: !!externalUrl.value,
   })
 }
 </script>
@@ -30,7 +37,7 @@ function onChallengeClick() {
       <div class="mt-auto grid">
         <NuxtLink
           :to="
-            challenge.url || {
+            externalUrl || {
               name: 'challenges-challengeId',
               params: { challengeId: challenge.id },
             }

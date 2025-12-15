@@ -17,6 +17,11 @@ query ChallengesPage {
       ... on ExternalChallenge {
         url
       }
+      ... on QuizChallenge {
+        quiz {
+          userCanStart
+        }
+      }
     }
   }
 }
