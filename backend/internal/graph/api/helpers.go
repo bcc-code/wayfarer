@@ -273,9 +273,20 @@ func buildLeaderboardConnection(
 	}, nil
 }
 
-// MaxPersonLeaderboardEntries is the maximum number of entries a normal user can see
-// in a PERSONS type leaderboard
-const MaxPersonLeaderboardEntries = 20
+// CalculatePersonLeaderboardLimit returns the maximum number of entries a normal user can see
+// in a PERSONS type leaderboard, based on the total number of entries in the filtered leaderboard.
+// Rules:
+//   - totalCount >= 50: show top 20
+//   - 20 <= totalCount < 50: show top 10
+//   - totalCount < 20: show top 3
+func CalculatePersonLeaderboardLimit(totalCount int) int {
+	if totalCount >= 50 {
+		return 20
+	} else if totalCount >= 20 {
+		return 10
+	}
+	return 3
+}
 
 // PersonLeaderboardFilterResult contains the result of filtering person leaderboard entries
 type PersonLeaderboardFilterResult struct {
@@ -284,17 +295,20 @@ type PersonLeaderboardFilterResult struct {
 }
 
 // FilterPersonLeaderboardEntries filters leaderboard entries for normal users
-// to only include entries with rank <= MaxPersonLeaderboardEntries.
+// to only include entries with rank <= dynamic limit based on totalCount.
 // It also adjusts the 'first' pagination parameter accordingly.
 func FilterPersonLeaderboardEntries(
 	entries []services.LeaderboardEntry,
+	totalCount int,
 	first *int,
 	after *string,
 ) PersonLeaderboardFilterResult {
+	maxLimit := CalculatePersonLeaderboardLimit(totalCount)
+
 	// Filter entries to only include those with rank <= max
 	filteredEntries := make([]services.LeaderboardEntry, 0, len(entries))
 	for _, entry := range entries {
-		if entry.Rank <= int64(MaxPersonLeaderboardEntries) {
+		if entry.Rank <= int64(maxLimit) {
 			filteredEntries = append(filteredEntries, entry)
 		}
 	}
@@ -305,7 +319,7 @@ func FilterPersonLeaderboardEntries(
 	if after != nil && *after != "" {
 		afterRank, err := parseRankCursor(*after)
 		if err == nil {
-			remaining := MaxPersonLeaderboardEntries - int(afterRank)
+			remaining := maxLimit - int(afterRank)
 			if remaining <= 0 {
 				// All entries beyond limit, return empty
 				return PersonLeaderboardFilterResult{
@@ -320,8 +334,8 @@ func FilterPersonLeaderboardEntries(
 		}
 	} else {
 		// No after cursor, cap first at max
-		if first == nil || *first > MaxPersonLeaderboardEntries {
-			cappedFirst := MaxPersonLeaderboardEntries
+		if first == nil || *first > maxLimit {
+			cappedFirst := maxLimit
 			adjustedFirst = &cappedFirst
 		}
 	}
