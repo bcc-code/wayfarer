@@ -11,9 +11,12 @@ export default defineNuxtPlugin(async () => {
   }
 
   try {
-    const registration = await navigator.serviceWorker.register('/sw.js', {
-      scope: '/',
-    })
+    const registration = await navigator.serviceWorker.register(
+      import.meta.env.DEV ? '/dev-sw.js?dev-sw' : '/service-worker.js',
+      {
+        scope: '/',
+      },
+    )
     console.log('[PWA] Service worker registered:', registration.scope)
   } catch (error) {
     console.error('[PWA] Service worker registration failed:', error)

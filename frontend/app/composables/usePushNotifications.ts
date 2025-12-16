@@ -33,8 +33,6 @@ export function usePushNotifications() {
 
   const isSupported = computed(() => {
     if (typeof window === 'undefined') return false
-    // Service workers don't work in dev mode
-    if (import.meta.env.DEV) return false
     return (
       'serviceWorker' in navigator &&
       'PushManager' in window &&
