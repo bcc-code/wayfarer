@@ -103,7 +103,13 @@ onMounted(() => {
   updateActiveMenuItem()
 })
 
+const navRef = ref<HTMLElement | null>(null)
+const { left: navLeft, top: navTop } = useElementBounding(navRef)
 const { left, height, width, top } = useElementBounding(activeMenuItem)
+
+// Calculate position relative to the nav container
+const relativeLeft = computed(() => left.value - navLeft.value)
+const relativeTop = computed(() => top.value - navTop.value)
 
 const showNavigation = computed(() => {
   const path = route.path
@@ -124,6 +130,7 @@ const showNavigation = computed(() => {
         class="p-navigation-outside pb-[max(var(--spacing-navigation-outside),env(safe-area-inset-bottom))] from-shadow-blank/0 to-shadow-default bg-linear-to-b"
       >
         <ul
+          ref="navRef"
           class="bg-background-raised shadow-large rounded-navigation p-navigation-inset relative mx-auto grid w-full max-w-xl grid-cols-3 gradient-border"
         >
           <li v-for="link in links" :key="link.label" class="grow z-10">
@@ -141,10 +148,10 @@ const showNavigation = computed(() => {
             </NuxtLink>
           </li>
           <div
-            class="rounded-navigation-inset bg-background-indent fixed aspect-square transition-all duration-150 ease-out"
+            class="rounded-navigation-inset bg-background-indent absolute aspect-square transition-all duration-150 ease-out"
             :style="{
-              left: left + 'px',
-              top: top + 'px',
+              left: relativeLeft + 'px',
+              top: relativeTop + 'px',
               height: height + 'px',
               width: width + 'px',
             }"
