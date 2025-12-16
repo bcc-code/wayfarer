@@ -5,7 +5,6 @@ const { me } = useAuth()
 const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useStandingsLocalPageQuery({
   variables: computed(() => ({
-    entityType: entityType.value,
     filter: {
       churchId: me.value?.church.id,
       ageRange: { min: 14, max: 36 },
@@ -14,14 +13,30 @@ const { data, error, fetching } = useStandingsLocalPageQuery({
   pause: computed(() => !isAuthReady.value || !me.value?.church.id),
 })
 
-const leaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
+const personLeaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
   if (!data.value) return []
-
   const result = []
   result.push(
-    ...data.value.myCurrentProject.leaderboard.edges.map((edge) => edge.node),
+    ...data.value.myCurrentProject.personLeaderboard.edges.map(
+      (edge) => edge.node,
+    ),
   )
-  const me = data.value?.myCurrentProject.leaderboard.me
+  const me = data.value?.myCurrentProject.personLeaderboard.me
+  if (me && !result.find((entry) => entry.id === me.id)) {
+    result.push(me)
+  }
+  return result
+})
+
+const unitLeaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
+  if (!data.value) return []
+  const result = []
+  result.push(
+    ...data.value.myCurrentProject.unitLeaderboard.edges.map(
+      (edge) => edge.node,
+    ),
+  )
+  const me = data.value?.myCurrentProject.unitLeaderboard.me
   if (me && !result.find((entry) => entry.id === me.id)) {
     result.push(me)
   }
@@ -29,6 +44,15 @@ const leaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
 })
 
 const debouncedFetching = useDebounce(fetching, 200)
+
+const totalPersons = computed(() => {
+  const totalCount = data.value?.myCurrentProject.personLeaderboard.totalCount
+
+  if (!totalCount) return 0
+  if (totalCount >= 50) return 20
+  if (totalCount > 20) return 10
+  return 3
+})
 </script>
 
 <template>
@@ -48,7 +72,7 @@ const debouncedFetching = useDebounce(fetching, 200)
         v-model="entityType"
         :tabs="[
           {
-            label: $t('standings.personal'),
+            label: $t('standings.localTop', { amount: totalPersons }),
             value: LeaderboardEntityType.Persons,
             icon: 'IconUser',
           },
@@ -69,8 +93,18 @@ const debouncedFetching = useDebounce(fetching, 200)
         </template>
       </DesignTabs>
       <LeaderboardList
-        v-if="leaderboard?.length"
-        :leaderboard="leaderboard"
+        v-if="
+          personLeaderboard?.length &&
+          entityType === LeaderboardEntityType.Persons
+        "
+        :leaderboard="personLeaderboard"
+        hide-medals
+      />
+      <LeaderboardList
+        v-if="
+          unitLeaderboard?.length && entityType === LeaderboardEntityType.Teams
+        "
+        :leaderboard="unitLeaderboard"
         hide-medals
       />
     </template>

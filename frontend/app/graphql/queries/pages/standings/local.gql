@@ -1,7 +1,4 @@
-query StandingsLocalPage(
-  $entityType: LeaderboardEntityType!
-  $filter: LeaderboardFilter
-) {
+query StandingsLocalPage($filter: LeaderboardFilter) {
   me {
     church {
       id
@@ -10,7 +7,19 @@ query StandingsLocalPage(
   }
   myCurrentProject {
     id
-    leaderboard(entityType: $entityType, filter: $filter) {
+    personLeaderboard: leaderboard(entityType: PERSONS, filter: $filter) {
+      totalCount
+      edges {
+        node {
+          ...LeaderboardEntryFields
+        }
+      }
+      me {
+        ...LeaderboardEntryFields
+      }
+    }
+    unitLeaderboard: leaderboard(entityType: TEAMS, filter: $filter) {
+      totalCount
       edges {
         node {
           ...LeaderboardEntryFields

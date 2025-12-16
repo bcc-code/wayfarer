@@ -2842,12 +2842,11 @@ export type StandingsGlobalPageQueryVariables = Exact<{
 export type StandingsGlobalPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, description: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null } } };
 
 export type StandingsLocalPageQueryVariables = Exact<{
-  entityType: LeaderboardEntityType;
   filter?: InputMaybe<LeaderboardFilter>;
 }>;
 
 
-export type StandingsLocalPageQuery = { __typename?: 'Query', me: { __typename?: 'User', church: { __typename?: 'Church', id: string, name: string } }, myCurrentProject: { __typename?: 'Project', id: string, leaderboard: { __typename?: 'LeaderboardConnection', edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null } } };
+export type StandingsLocalPageQuery = { __typename?: 'Query', me: { __typename?: 'User', church: { __typename?: 'Church', id: string, name: string } }, myCurrentProject: { __typename?: 'Project', id: string, personLeaderboard: { __typename?: 'LeaderboardConnection', totalCount: number, edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null }, unitLeaderboard: { __typename?: 'LeaderboardConnection', totalCount: number, edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } }>, me?: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> } | null } } };
 
 export type StandingsUnitPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3912,7 +3911,7 @@ export function useStandingsGlobalPageQuery(options?: Omit<Urql.UseQueryArgs<nev
   return Urql.useQuery<StandingsGlobalPageQuery, StandingsGlobalPageQueryVariables | undefined>({ query: StandingsGlobalPageDocument, variables: undefined, ...options });
 };
 export const StandingsLocalPageDocument = gql`
-    query StandingsLocalPage($entityType: LeaderboardEntityType!, $filter: LeaderboardFilter) {
+    query StandingsLocalPage($filter: LeaderboardFilter) {
   me {
     church {
       id
@@ -3921,7 +3920,19 @@ export const StandingsLocalPageDocument = gql`
   }
   myCurrentProject {
     id
-    leaderboard(entityType: $entityType, filter: $filter) {
+    personLeaderboard: leaderboard(entityType: PERSONS, filter: $filter) {
+      totalCount
+      edges {
+        node {
+          ...LeaderboardEntryFields
+        }
+      }
+      me {
+        ...LeaderboardEntryFields
+      }
+    }
+    unitLeaderboard: leaderboard(entityType: TEAMS, filter: $filter) {
+      totalCount
       edges {
         node {
           ...LeaderboardEntryFields
