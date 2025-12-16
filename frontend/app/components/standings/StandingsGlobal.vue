@@ -30,10 +30,9 @@ const leaderboard = computed<LeaderboardEntry[]>(() => {
   <div>
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
-    <LeaderboardList
-      v-else-if="leaderboard?.length"
-      :leaderboard="leaderboard"
-    />
+    <template v-else-if="leaderboard?.length">
+      <LeaderboardList :leaderboard="leaderboard" />
+    </template>
     <EmptyState v-else :title="$t('emptyStates.standings')" />
   </div>
 </template>
