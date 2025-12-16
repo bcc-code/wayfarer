@@ -18,7 +18,7 @@ withDefaults(
 const { y } = useWindowScroll()
 const hasScrolled = computed(() => y.value > 25)
 
-const classes = cva(
+const headerClasses = cva(
   'relative flex items-start justify-between gap-4 px-6 pb-3',
   {
     variants: {
@@ -27,6 +27,10 @@ const classes = cva(
         small: '',
       },
       hasScrolled: {
+        true: '',
+        false: '',
+      },
+      animate: {
         true: '',
         false: '',
       },
@@ -44,23 +48,59 @@ const classes = cva(
   },
 )
 
-const actionsClasses = cva(
-  ' right-6 bottom-3 size-11 transition-all duration-300 ease-out',
+const headingClasses = cva(
+  'text-text-default transition-all duration-300 ease-out',
   {
     variants: {
-      size: {
-        large: '',
-        small: '',
-      },
       hasScrolled: {
-        true: 'top-1/2 -translate-y-1/2',
-        false: 'bottom-3',
+        false: '',
+        true: '',
+      },
+      animate: {
+        true: 'absolute',
+        false: 'text-heading',
+      },
+    },
+    compoundVariants: [
+      {
+        hasScrolled: true,
+        animate: true,
+        class: 'text-label top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
+      },
+      {
+        hasScrolled: false,
+        animate: true,
+        class: 'text-heading bottom-3 left-6 translate-x-0 translate-y-0',
+      },
+    ],
+  },
+)
+
+const actionsClasses = cva(
+  'right-6 bottom-3 size-11 transition-all duration-300 ease-out',
+  {
+    variants: {
+      hasScrolled: {
+        true: '',
+        false: '',
       },
       animate: {
         true: 'absolute',
         false: '',
       },
     },
+    compoundVariants: [
+      {
+        hasScrolled: false,
+        animate: true,
+        class: 'bottom-3',
+      },
+      {
+        hasScrolled: true,
+        animate: true,
+        class: 'top-1/2 -translate-y-1/2',
+      },
+    ],
   },
 )
 </script>
@@ -71,25 +111,13 @@ const actionsClasses = cva(
     :class="[shadow && 'from-shadow-blank/0 to-shadow-default bg-linear-to-t']"
     :enabled="blurred"
   >
-    <header :class="classes({ hasScrolled, size })">
+    <header :class="headerClasses({ hasScrolled, size, animate })">
       <slot name="title">
-        <h1
-          v-if="title"
-          :class="[
-            'text-text-default transition-all duration-300 ease-out',
-            {
-              'text-heading bottom-3 left-6 translate-x-0 translate-y-0':
-                !hasScrolled,
-              'text-label top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2':
-                hasScrolled,
-              absolute: animate,
-            },
-          ]"
-        >
+        <h1 v-if="title" :class="headingClasses({ hasScrolled, animate })">
           {{ title }}
         </h1>
       </slot>
-      <div :class="actionsClasses({ hasScrolled, size, animate })">
+      <div :class="actionsClasses({ hasScrolled, animate })">
         <slot name="action" />
       </div>
     </header>
