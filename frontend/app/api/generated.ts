@@ -3730,7 +3730,10 @@ export const ChallengePageDocument = gql`
             ... on PredefinedResponse {
               isCorrect
               selectedAnswers {
-                ...PredefinedAnswerFields
+                id
+                answerText
+                answerOrder
+                isCorrect
               }
             }
           }
@@ -3739,8 +3742,7 @@ export const ChallengePageDocument = gql`
     }
   }
 }
-    ${QuizQuestionUserFieldsFragmentDoc}
-${PredefinedAnswerFieldsFragmentDoc}`;
+    ${QuizQuestionUserFieldsFragmentDoc}`;
 
 export function useChallengePageQuery(options?: Omit<Urql.UseQueryArgs<never, ChallengePageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<ChallengePageQuery, ChallengePageQueryVariables | undefined>({ query: ChallengePageDocument, variables: undefined, ...options });

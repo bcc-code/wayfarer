@@ -15,6 +15,7 @@
     "lockAnswer": "Lås svar",
     "questionNumber": "{current} av {total}",
     "continue": "Fortsett",
+    "nextQuestion": "Neste spørsmål",
     "done": "Ferdig",
     "result": {
       "receivedNoPoints": "Du samlet ingen poeng.",

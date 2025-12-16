@@ -61,7 +61,10 @@ query ChallengePage($challengeId: ID!) {
             ... on PredefinedResponse {
               isCorrect
               selectedAnswers {
-                ...PredefinedAnswerFields
+                id
+                answerText
+                answerOrder
+                isCorrect
               }
             }
           }

@@ -52,6 +52,14 @@ function handleContinue() {
     isCorrect: submittedResult.value?.isCorrect ?? null,
   })
 }
+
+const { t } = useI18n()
+const continueText = computed(() => {
+  if (props.currentIndex === props.totalQuestions - 1) {
+    return t('quiz.continue')
+  }
+  return t('quiz.nextQuestion')
+})
 </script>
 
 <template>
@@ -102,7 +110,7 @@ function handleContinue() {
     </DesignButton>
 
     <DesignButton v-else size="large" class="grow-0" @click="handleContinue">
-      {{ $t('quiz.continue') }}
+      {{ continueText }}
     </DesignButton>
   </div>
 </template>
