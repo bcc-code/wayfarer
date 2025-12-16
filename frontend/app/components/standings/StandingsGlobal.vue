@@ -34,6 +34,6 @@ const leaderboard = computed<LeaderboardEntry[]>(() => {
       v-else-if="leaderboard?.length"
       :leaderboard="leaderboard"
     />
-    <EmptyState v-else />
+    <EmptyState v-else :title="$t('emptyStates.standings')" />
   </div>
 </template>

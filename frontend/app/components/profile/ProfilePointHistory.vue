@@ -126,7 +126,7 @@ function getScoreJournalName(
           />
         </template>
       </DesignPanel>
-      <EmptyState v-else />
+      <EmptyState v-else :title="$t('emptyStates.pointHistory')" />
     </template>
   </DesignDrawer>
 </template>

@@ -38,6 +38,6 @@ const visibleChallenges = computed(() => {
         :challenge
       />
     </div>
-    <EmptyState v-else />
+    <EmptyState v-else :title="$t('emptyStates.challenges')" />
   </PageLayout>
 </template>

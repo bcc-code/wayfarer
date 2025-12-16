@@ -156,6 +156,6 @@ function selectTeamLead(userId: string) {
         hide-medals
       />
     </template>
-    <EmptyState v-else />
+    <EmptyState v-else :title="$t('emptyStates.unit')" />
   </div>
 </template>

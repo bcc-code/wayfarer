@@ -74,6 +74,6 @@ const debouncedFetching = useDebounce(fetching, 200)
         hide-medals
       />
     </template>
-    <EmptyState v-else />
+    <EmptyState v-else :title="$t('emptyStates.standings')" />
   </div>
 </template>

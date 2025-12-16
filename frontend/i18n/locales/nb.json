@@ -2,6 +2,12 @@
   "error": {
     "title": "Oops! Noe gikk galt"
   },
+  "emptyStates": {
+    "standings": "Ingen toppliste ennå",
+    "unit": "Ingen toppliste for din unit ennå",
+    "challenges": "Ingen utfordringer ennå",
+    "pointHistory": "Ingen poeng ennå"
+  },
   "quiz": {
     "wrongAnswer": "Feil svar",
     "correctAnswer": "Riktig svar",
@@ -47,12 +53,12 @@
   },
   "standings": {
     "global": "Topp 20",
-    "unit": "Din unit",
+    "unit": "Min unit",
     "local": "Lokalt",
     "you": "Deg",
     "getPointsButton": "Få poeng",
     "units": "Units",
-    "personal": "Personlig"
+    "localTop": "Topp {amount}"
   },
   "pointHistory": {
     "pointHistoryButton": "Poenghistorikk",
