@@ -37,7 +37,7 @@ export default defineNuxtConfig({
         },
         {
           rel: 'apple-touch-icon',
-          href: '/test.png',
+          href: '/apple-touch-icon-180x180.png',
           sizes: '180x180',
         },
       ],
@@ -242,23 +242,23 @@ export default defineNuxtConfig({
       display: 'standalone',
       icons: [
         {
-          src: 'test.png',
+          src: 'pwa-64x64.png',
           sizes: '64x64',
           type: 'image/png',
         },
         {
-          src: 'test.png',
+          src: 'pwa-192x192.png',
           sizes: '192x192',
           type: 'image/png',
         },
         {
-          src: 'test.png',
+          src: 'pwa-512x512.png',
           sizes: '512x512',
           type: 'image/png',
           purpose: 'any',
         },
         {
-          src: 'test.png',
+          src: 'maskable-icon-512x512.png',
           sizes: '512x512',
           type: 'image/png',
           purpose: 'maskable',
