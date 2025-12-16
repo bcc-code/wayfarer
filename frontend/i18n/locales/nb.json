@@ -53,13 +53,15 @@
     "privacyPolicy": "Personvernerklæring"
   },
   "standings": {
-    "global": "Topp 20",
+    "global": "Globalt",
     "unit": "Min unit",
     "local": "Lokalt",
     "you": "Deg",
     "getPointsButton": "Få poeng",
     "units": "Units",
-    "localTop": "Topp {amount}"
+    "top": "Topp {amount}",
+    "u18": "U18",
+    "o18": "O18"
   },
   "pointHistory": {
     "pointHistoryButton": "Poenghistorikk",

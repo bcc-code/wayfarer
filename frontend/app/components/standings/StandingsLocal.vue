@@ -7,7 +7,7 @@ const { data, error, fetching } = useStandingsLocalPageQuery({
   variables: computed(() => ({
     filter: {
       churchId: me.value?.church.id,
-      ageRange: { min: 14, max: 36 },
+      ageRange: { min: 13, max: 37 },
     },
   })),
   pause: computed(() => !isAuthReady.value || !me.value?.church.id),
@@ -72,11 +72,13 @@ const totalPersons = computed(() => {
         v-model="entityType"
         :tabs="[
           {
-            label: $t('standings.localTop', { amount: totalPersons }),
+            key: 'persons',
+            label: $t('standings.top', { amount: totalPersons }),
             value: LeaderboardEntityType.Persons,
             icon: 'IconUser',
           },
           {
+            key: 'units',
             label: $t('standings.units'),
             value: LeaderboardEntityType.Teams,
             icon: 'IconUsers',

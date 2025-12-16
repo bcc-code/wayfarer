@@ -1,7 +1,10 @@
 <script
   setup
   lang="ts"
-  generic="Tab extends { label: string; value: string; enabled?: boolean }"
+  generic="
+    T,
+    Tab extends { key: string; label: string; value: T; enabled?: boolean }
+  "
 >
 import { cva } from 'cva'
 
@@ -52,8 +55,13 @@ const enabledTabs = computed(() =>
   <div :class="containerClasses({ variant })">
     <button
       v-for="tab in enabledTabs"
-      :key="tab.value"
-      :class="buttonClasses({ variant, active: tab.value == modelValue })"
+      :key="tab.key"
+      :class="
+        buttonClasses({
+          variant,
+          active: JSON.stringify(tab.value) == JSON.stringify(modelValue),
+        })
+      "
       @click="modelValue = tab.value"
     >
       <slot name="tab" :tab>{{ tab.label }}</slot>
