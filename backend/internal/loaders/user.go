@@ -52,6 +52,12 @@ func userByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 				// Build consent status for this user
 				consentStatus := buildConsentStatus(row.ID, latestConsents, userConsentsMap)
 
+				// Use display_name if available, otherwise fall back to name
+				displayName := row.Name
+				if row.DisplayName != nil && *row.DisplayName != "" {
+					displayName = *row.DisplayName
+				}
+
 				user := &model.User{
 					ID:            row.ID,
 					MembersID:     row.MembersID,
@@ -59,7 +65,7 @@ func userByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 					ChurchID:      row.ChurchID,
 					Birthdate:     birthdateStr,
 					Email:         row.Email,
-					Name:          row.Name,
+					Name:          displayName,
 					Image:         row.AvatarUrl,
 					ConsentStatus: consentStatus,
 				}
