@@ -64,12 +64,13 @@ const headingClasses = cva('text-text-default', {
       hasScrolled: true,
       animate: true,
       class:
-        'text-label top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 absolute',
+        'text-label top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 absolute text-center',
     },
     {
       hasScrolled: false,
       animate: true,
-      class: 'text-heading bottom-3 left-6 translate-x-0 translate-y-0',
+      class:
+        'text-heading bottom-3 left-6 translate-x-0 translate-y-0 max-w-[calc(100%-6rem)]',
     },
   ],
 })
