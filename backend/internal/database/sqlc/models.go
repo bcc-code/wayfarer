@@ -269,6 +269,12 @@ type PendingConsentEvent struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
+type PhraseAsyncJob struct {
+	AsyncRequestID string             `json:"async_request_id"`
+	JobUid         string             `json:"job_uid"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+}
+
 type Project struct {
 	ID                          string             `json:"id"`
 	Name                        string             `json:"name"`
@@ -557,6 +563,12 @@ type TeamTranslation struct {
 	Description  *string            `json:"description"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type TranslationHash struct {
+	Collection string             `json:"collection"`
+	Hash       []byte             `json:"hash"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
 }
 
 type User struct {

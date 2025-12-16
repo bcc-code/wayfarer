@@ -34,6 +34,8 @@ import (
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ssf"
+	"github.com/bcc-media/wayfarer/translations"
+	"github.com/bcc-media/wayfarer/translations/phrase"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/ravilushqa/otelgqlgen"
@@ -139,6 +141,35 @@ func main() {
 		ssfSyncService = ssf.NewSyncService(ssfClient, db.Queries, lgr)
 	} else {
 		slog.Warn("SSF API client not initialized - missing API key")
+	}
+
+	// Initialize translations service with Phrase provider
+	var translationsService *translations.Service
+	if cfg.Phrase.Enabled && cfg.Phrase.ProjectUID != "" {
+		phraseClient := phrase.NewClient(
+			db.Queries,
+			phrase.Config{
+				BaseURL:     cfg.Phrase.BaseURL,
+				Username:    cfg.Phrase.Username,
+				Password:    cfg.Phrase.Password,
+				ProjectUID:  cfg.Phrase.ProjectUID,
+				CallbackURL: cfg.Phrase.CallbackURL,
+				UserUID:     cfg.Phrase.UserUID,
+				Debug:       cfg.Phrase.Debug,
+			},
+			cfg.Phrase.Languages,
+		)
+		phraseClient.SetDebug(cfg.Phrase.Debug)
+		slog.Info("Phrase translation client initialized",
+			"base_url", cfg.Phrase.BaseURL,
+			"project_uid", cfg.Phrase.ProjectUID,
+			"languages", cfg.Phrase.Languages,
+		)
+
+		translationsService = translations.NewService(db.Queries, phraseClient)
+		slog.Info("Translation service initialized")
+	} else {
+		slog.Warn("Translation service not initialized - Phrase not enabled or missing configuration")
 	}
 
 	// Initialize cache with default configuration
@@ -346,6 +377,19 @@ func main() {
 		}
 		router.POST("/ssf/sync/:slug", ssfHandler.HandleSyncPlan)
 		slog.Info("SSF sync endpoint registered at POST /ssf/sync/:slug")
+	}
+
+	// Translation endpoints (export and webhook)
+	if translationsService != nil && cfg.Phrase.ExportKey != "" {
+		translationsHandler := handlers.NewTranslationsHandler(translationsService, cfg.Phrase.ExportKey)
+		router.POST("/api/translations/webhook", translationsHandler.HandleWebhook)
+		router.POST("/api/translations/export/all", translationsHandler.HandleExportAll)
+		router.POST("/api/translations/export/:collection", translationsHandler.HandleExport)
+		slog.Info("Translation endpoints registered",
+			"webhook", "POST /api/translations/webhook",
+			"export_all", "POST /api/translations/export/all",
+			"export_collection", "POST /api/translations/export/:collection",
+		)
 	}
 
 	// GraphQL API endpoint

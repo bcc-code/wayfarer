@@ -1,0 +1,27 @@
+type: http_request
+model: http_request
+id: rq_ExportAllTranslations
+createdAt: 2025-12-16T12:00:00
+updatedAt: 2025-12-16T13:33:03.058258
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Translations
+authentication: {}
+authenticationType: null
+body:
+  text: ''
+bodyType: null
+description: Export all translatable collections to Phrase
+headers:
+- enabled: true
+  name: X-Export-Key
+  value: your-export-key-for-translation-sync
+  id: hdr_TranslationsExportKey
+- enabled: true
+  name: ''
+  value: ''
+  id: HFCUZG5ckN
+method: POST
+name: Export All Collections
+sortPriority: 0.0
+url: ${[ HOST ]}/api/translations/export/all
+urlParameters: []

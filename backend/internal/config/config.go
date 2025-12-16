@@ -24,6 +24,7 @@ type Config struct {
 	SSF      SSFConfig
 	S3       S3Config
 	VAPID    VAPIDConfig
+	Phrase   PhraseConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -114,6 +115,20 @@ type VAPIDConfig struct {
 	Subject    string // Contact email (mailto:admin@example.com)
 }
 
+// PhraseConfig holds Phrase TMS (Translation Management System) configuration
+type PhraseConfig struct {
+	Enabled     bool     // Enable/disable Phrase integration
+	BaseURL     string   // Phrase API base URL
+	Username    string   // Phrase username for authentication
+	Password    string   // Phrase password for authentication
+	ProjectUID  string   // Phrase project UID (separate project for Wayfarer)
+	CallbackURL string   // Webhook callback URL for completed translations
+	UserUID     string   // Phrase user UID for notifications
+	Debug       bool     // Enable verbose request/response logging
+	Languages   []string // Target languages for translation (configurable list)
+	ExportKey   string   // Static key for export endpoint authentication (like SSF.SyncKey)
+}
+
 // Load reads all environment variables and returns a Config struct
 // This should be called once at application startup
 func Load() (*Config, error) {
@@ -186,6 +201,18 @@ func Load() (*Config, error) {
 			PublicKey:  getEnv("VAPID_PUBLIC_KEY", ""),
 			PrivateKey: getEnv("VAPID_PRIVATE_KEY", ""),
 			Subject:    getEnv("VAPID_SUBJECT", ""),
+		},
+		Phrase: PhraseConfig{
+			Enabled:     getEnvAsBool("PHRASE_ENABLED", false),
+			BaseURL:     getEnv("PHRASE_BASE_URL", "https://cloud.memsource.com/web/api2"),
+			Username:    getEnv("PHRASE_USERNAME", ""),
+			Password:    getEnv("PHRASE_PASSWORD", ""),
+			ProjectUID:  getEnv("PHRASE_PROJECT_UID", ""),
+			CallbackURL: getEnv("PHRASE_CALLBACK_URL", ""),
+			UserUID:     getEnv("PHRASE_USER_UID", ""),
+			Debug:       getEnvAsBool("PHRASE_DEBUG", false),
+			Languages:   parseLanguages(getEnv("PHRASE_TARGET_LANGUAGES", "da,de,en,fr,fi,hu,it,nl,pl,pt,ro,es,ru")),
+			ExportKey:   getEnv("TRANSLATIONS_EXPORT_KEY", ""),
 		},
 	}
 
@@ -276,4 +303,21 @@ func parseAPIKeys(value string) map[string]string {
 	}
 
 	return keys
+}
+
+// parseLanguages parses comma-separated language codes
+// Format: "da,de,en,fr"
+// Returns a slice of language codes
+func parseLanguages(value string) []string {
+	if value == "" {
+		return []string{}
+	}
+	parts := strings.Split(value, ",")
+	languages := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if lang := strings.TrimSpace(part); lang != "" {
+			languages = append(languages, lang)
+		}
+	}
+	return languages
 }

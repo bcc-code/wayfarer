@@ -27,8 +27,11 @@ require (
 	github.com/jaswdr/faker v1.19.1
 	github.com/joho/godotenv v1.5.1
 	github.com/oklog/ulid/v2 v2.1.1
+	github.com/orsinium-labs/enum v1.5.0
 	github.com/pressly/goose/v3 v3.26.0
 	github.com/ravilushqa/otelgqlgen v0.19.0
+	github.com/rs/zerolog v1.34.0
+	github.com/samber/lo v1.52.0
 	github.com/sony/gobreaker/v2 v2.2.1
 	github.com/sqlc-dev/sqlc v1.30.0
 	github.com/stretchr/testify v1.11.1
@@ -43,6 +46,7 @@ require (
 	golang.org/x/oauth2 v0.32.0
 	golang.org/x/text v0.31.0
 	google.golang.org/grpc v1.77.0
+	gopkg.in/guregu/null.v4 v4.0.0
 )
 
 require (
@@ -118,6 +122,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
