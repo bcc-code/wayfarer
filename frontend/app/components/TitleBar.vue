@@ -48,33 +48,31 @@ const headerClasses = cva(
   },
 )
 
-const headingClasses = cva(
-  'text-text-default transition-all duration-300 ease-out',
-  {
-    variants: {
-      hasScrolled: {
-        false: '',
-        true: '',
-      },
-      animate: {
-        true: 'absolute',
-        false: 'text-heading',
-      },
+const headingClasses = cva('text-text-default', {
+  variants: {
+    hasScrolled: {
+      false: '',
+      true: '',
     },
-    compoundVariants: [
-      {
-        hasScrolled: true,
-        animate: true,
-        class: 'text-label top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
-      },
-      {
-        hasScrolled: false,
-        animate: true,
-        class: 'text-heading bottom-3 left-6 translate-x-0 translate-y-0',
-      },
-    ],
+    animate: {
+      true: '',
+      false: 'text-heading',
+    },
   },
-)
+  compoundVariants: [
+    {
+      hasScrolled: true,
+      animate: true,
+      class:
+        'text-label top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 absolute',
+    },
+    {
+      hasScrolled: false,
+      animate: true,
+      class: 'text-heading bottom-3 left-6 translate-x-0 translate-y-0',
+    },
+  ],
+})
 
 const actionsClasses = cva(
   'right-6 bottom-3 size-11 transition-all duration-300 ease-out',
