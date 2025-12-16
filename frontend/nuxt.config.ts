@@ -285,6 +285,9 @@ export default defineNuxtConfig({
   posthogConfig: {
     publicKey: 'phc_l88yVnYQJShvE2rFd1f7Cask76jMuK7qLVVyPlA9FLl',
     host: 'https://eu.i.posthog.com',
+    clientConfig: {
+      opt_out_capturing_by_default: import.meta.dev,
+    },
   },
 
   colorMode: {
