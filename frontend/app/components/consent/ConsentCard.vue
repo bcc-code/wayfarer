@@ -193,7 +193,7 @@ const changing = ref(false)
             class="text-label text-accent-contrast py-2 flex items-center gap-1"
           >
             {{ $t('consent.readButton') }}
-            <Icon name="IconArrowRight" />
+            <Icon name="IconArrowRight" class="size-5" />
           </button>
         </ConsentDetails>
         <div class="flex justify-between items-center">
