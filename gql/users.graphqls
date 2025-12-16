@@ -7,7 +7,7 @@ extend type Query {
 
 extend type Mutation {
     # Profile management
-    updateAvatar(file: Upload!): User! @requireRole(roles: ["user"])
+    updateAvatar(file: Upload!): User!
 
     # Admin user management
     assignUserToProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
