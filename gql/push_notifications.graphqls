@@ -55,7 +55,7 @@ input RegisterPushSubscriptionInput {
 
 extend type Query {
     # Get the current user's notification preferences
-    myPushNotificationPreferences: [PushNotificationPreference!]! @requireRole(roles: ["user"])
+    myPushNotificationPreferences: [PushNotificationPreference!]!
 
     # Check if push notifications are configured on the server
     pushNotificationsEnabled: Boolean!
@@ -68,13 +68,13 @@ extend type Query {
 
 extend type Mutation {
     # Register a push subscription for the current user
-    registerPushSubscription(input: RegisterPushSubscriptionInput!): PushSubscription! @requireRole(roles: ["user"])
+    registerPushSubscription(input: RegisterPushSubscriptionInput!): PushSubscription!
 
     # Unregister a push subscription by endpoint
-    unregisterPushSubscription(endpoint: String!): Boolean! @requireRole(roles: ["user"])
+    unregisterPushSubscription(endpoint: String!): Boolean!
 
     # Set a notification preference for the current user
-    setNotificationPreference(input: SetNotificationPreferenceInput!): PushNotificationPreference! @requireRole(roles: ["user"])
+    setNotificationPreference(input: SetNotificationPreferenceInput!): PushNotificationPreference!
 
     # Send a push notification to targeted recipients (admin only)
     sendPushNotification(input: SendPushNotificationInput!): SendPushNotificationResult! @requireRole(roles: ["admin", "superadmin"])

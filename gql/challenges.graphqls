@@ -36,8 +36,8 @@ extend type Mutation {
     selfCompleteChallenge(challengeId: ID!): SimpleChallenge!
 
     # User self-enrollment
-    enrollInChallenge(challengeId: ID!): Challenge! @requireRole(roles: ["user"])
-    unenrollFromChallenge(challengeId: ID!): Boolean! @requireRole(roles: ["user"])
+    enrollInChallenge(challengeId: ID!): Challenge!
+    unenrollFromChallenge(challengeId: ID!): Boolean!
 
     # Admin enrollment
     enrollUserInChallenge(userId: ID!, challengeId: ID!): Challenge! @requireRole(roles: ["admin", "superadmin", "m2m"])

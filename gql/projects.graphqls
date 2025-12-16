@@ -10,7 +10,7 @@ extend type Query {
 
 extend type Mutation {
     # User participation
-    joinProject(projectId: ID!): Project! @requireRole(roles: ["user"])
+    joinProject(projectId: ID!): Project!
 
     # Admin management
     createProject(input: CreateProjectInput!): Project! @requireRole(roles: ["admin", "superadmin"])

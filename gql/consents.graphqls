@@ -47,7 +47,7 @@ extend type Query {
     consent(id: ID!): Consent!
 
     # Get pending consents for the current user
-    pendingConsents: [Consent!]! @requireRole(roles: ["user"])
+    pendingConsents: [Consent!]!
 }
 
 # ==================== Consent Mutations ====================

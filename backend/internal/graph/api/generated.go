@@ -6948,7 +6948,7 @@ extend type Query {
 
 extend type Mutation {
     # User participation
-    joinProject(projectId: ID!): Project! @requireRole(roles: ["user"])
+    joinProject(projectId: ID!): Project!
 
     # Admin management
     createProject(input: CreateProjectInput!): Project! @requireRole(roles: ["admin", "superadmin"])
@@ -6969,7 +6969,7 @@ extend type Query {
 
 extend type Mutation {
     # User participation
-    joinEvent(eventId: ID!): Event! @requireRole(roles: ["user"])
+    joinEvent(eventId: ID!): Event!
 
     # Admin management
     createEvent(projectId: ID!, input: CreateEventInput!): Event! @requireRole(roles: ["admin", "superadmin"])
@@ -6990,7 +6990,7 @@ extend type Query {
 
 extend type Mutation {
     # User participation
-    joinTeam(code: ID!): Team! @requireRole(roles: ["user"])
+    joinTeam(code: ID!): Team!
 
     # Team management
     createTeam(projectId: ID!, input: CreateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin"])
@@ -7089,8 +7089,8 @@ extend type Mutation {
     selfCompleteChallenge(challengeId: ID!): SimpleChallenge!
 
     # User self-enrollment
-    enrollInChallenge(challengeId: ID!): Challenge! @requireRole(roles: ["user"])
-    unenrollFromChallenge(challengeId: ID!): Boolean! @requireRole(roles: ["user"])
+    enrollInChallenge(challengeId: ID!): Challenge!
+    unenrollFromChallenge(challengeId: ID!): Boolean!
 
     # Admin enrollment
     enrollUserInChallenge(userId: ID!, challengeId: ID!): Challenge! @requireRole(roles: ["admin", "superadmin", "m2m"])
@@ -7128,7 +7128,7 @@ extend type Query {
 
 extend type Mutation {
     # Profile management
-    updateAvatar(file: Upload!): User! @requireRole(roles: ["user"])
+    updateAvatar(file: Upload!): User!
 
     # Admin user management
     assignUserToProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
@@ -7214,7 +7214,7 @@ extend type Query {
     consent(id: ID!): Consent!
 
     # Get pending consents for the current user
-    pendingConsents: [Consent!]! @requireRole(roles: ["user"])
+    pendingConsents: [Consent!]!
 }
 
 # ==================== Consent Mutations ====================
@@ -7471,7 +7471,7 @@ input RegisterPushSubscriptionInput {
 
 extend type Query {
     # Get the current user's notification preferences
-    myPushNotificationPreferences: [PushNotificationPreference!]! @requireRole(roles: ["user"])
+    myPushNotificationPreferences: [PushNotificationPreference!]!
 
     # Check if push notifications are configured on the server
     pushNotificationsEnabled: Boolean!
@@ -7484,13 +7484,13 @@ extend type Query {
 
 extend type Mutation {
     # Register a push subscription for the current user
-    registerPushSubscription(input: RegisterPushSubscriptionInput!): PushSubscription! @requireRole(roles: ["user"])
+    registerPushSubscription(input: RegisterPushSubscriptionInput!): PushSubscription!
 
     # Unregister a push subscription by endpoint
-    unregisterPushSubscription(endpoint: String!): Boolean! @requireRole(roles: ["user"])
+    unregisterPushSubscription(endpoint: String!): Boolean!
 
     # Set a notification preference for the current user
-    setNotificationPreference(input: SetNotificationPreferenceInput!): PushNotificationPreference! @requireRole(roles: ["user"])
+    setNotificationPreference(input: SetNotificationPreferenceInput!): PushNotificationPreference!
 
     # Send a push notification to targeted recipients (admin only)
     sendPushNotification(input: SendPushNotificationInput!): SendPushNotificationResult! @requireRole(roles: ["admin", "superadmin"])
@@ -15125,25 +15125,7 @@ func (ec *executionContext) _Mutation_joinProject(ctx context.Context, field gra
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().JoinProject(ctx, fc.Args["projectId"].(string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal *model.Project
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Project
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProject,
 		true,
 		true,
@@ -15522,25 +15504,7 @@ func (ec *executionContext) _Mutation_joinEvent(ctx context.Context, field graph
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().JoinEvent(ctx, fc.Args["eventId"].(string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal *model.Event
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Event
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEvent,
 		true,
 		true,
@@ -15889,25 +15853,7 @@ func (ec *executionContext) _Mutation_joinTeam(ctx context.Context, field graphq
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().JoinTeam(ctx, fc.Args["code"].(string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal *model.Team
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Team
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeam,
 		true,
 		true,
@@ -18650,25 +18596,7 @@ func (ec *executionContext) _Mutation_enrollInChallenge(ctx context.Context, fie
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().EnrollInChallenge(ctx, fc.Args["challengeId"].(string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal model.Challenge
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal model.Challenge
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge,
 		true,
 		true,
@@ -18709,25 +18637,7 @@ func (ec *executionContext) _Mutation_unenrollFromChallenge(ctx context.Context,
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().UnenrollFromChallenge(ctx, fc.Args["challengeId"].(string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal bool
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal bool
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNBoolean2bool,
 		true,
 		true,
@@ -19390,25 +19300,7 @@ func (ec *executionContext) _Mutation_updateAvatar(ctx context.Context, field gr
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().UpdateAvatar(ctx, fc.Args["file"].(graphql.Upload))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal *model.User
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.User
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUser,
 		true,
 		true,
@@ -21330,25 +21222,7 @@ func (ec *executionContext) _Mutation_registerPushSubscription(ctx context.Conte
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().RegisterPushSubscription(ctx, fc.Args["input"].(model.RegisterPushSubscriptionInput))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal *model.PushSubscription
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.PushSubscription
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNPushSubscription2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPushSubscription,
 		true,
 		true,
@@ -21395,25 +21269,7 @@ func (ec *executionContext) _Mutation_unregisterPushSubscription(ctx context.Con
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().UnregisterPushSubscription(ctx, fc.Args["endpoint"].(string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal bool
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal bool
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNBoolean2bool,
 		true,
 		true,
@@ -21454,25 +21310,7 @@ func (ec *executionContext) _Mutation_setNotificationPreference(ctx context.Cont
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Mutation().SetNotificationPreference(ctx, fc.Args["input"].(model.SetNotificationPreferenceInput))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal *model.PushNotificationPreference
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.PushNotificationPreference
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNPushNotificationPreference2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPushNotificationPreference,
 		true,
 		true,
@@ -25429,25 +25267,7 @@ func (ec *executionContext) _Query_pendingConsents(ctx context.Context, field gr
 		func(ctx context.Context) (any, error) {
 			return ec.resolvers.Query().PendingConsents(ctx)
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal []model.Consent
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal []model.Consent
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNConsent2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsentᚄ,
 		true,
 		true,
@@ -25970,25 +25790,7 @@ func (ec *executionContext) _Query_myPushNotificationPreferences(ctx context.Con
 		func(ctx context.Context) (any, error) {
 			return ec.resolvers.Query().MyPushNotificationPreferences(ctx)
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal []model.PushNotificationPreference
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal []model.PushNotificationPreference
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNPushNotificationPreference2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPushNotificationPreferenceᚄ,
 		true,
 		true,
