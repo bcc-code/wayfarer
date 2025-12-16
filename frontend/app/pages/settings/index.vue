@@ -60,8 +60,8 @@ async function toggleNotifications(enabled: boolean) {
       </DesignPanel>
       <DesignPanel class="gap-list-section-inset flex flex-col">
         <button
-          class="flex items-center justify-between gap-2.5 px-3 py-2 h-12 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="$pwa?.isPWAInstalled"
+          class="flex items-center justify-between gap-2.5 px-3 py-2 h-12 disabled:opacity-25 disabled:cursor-not-allowed"
+          :disabled="!($pwa?.showInstallPrompt && !$pwa?.isPWAInstalled)"
           @click="$pwa?.install()"
         >
           <p class="text-label">{{ $t('settings.addToHomeScreen') }}</p>
