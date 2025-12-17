@@ -166,7 +166,7 @@ INSERT INTO achievements (
     $11::text,
     $12::int,
     $13::bool
-) RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed, notification_text
+) RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed, notification_text, sort_order
 `
 
 type CreateAchievementParams struct {
@@ -219,6 +219,7 @@ func (q *Queries) CreateAchievement(ctx context.Context, arg CreateAchievementPa
 		&i.ImagePending,
 		&i.ImageCompleted,
 		&i.NotificationText,
+		&i.SortOrder,
 	)
 	return &i, err
 }
@@ -444,7 +445,7 @@ LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 WHERE a.project_id = ANY($1::text[])
     AND a.hidden = false
-ORDER BY a.project_id, a.created_at DESC
+ORDER BY a.project_id, a.sort_order, a.created_at DESC
 `
 
 type GetAchievementsByProjectIDsRow struct {
@@ -623,6 +624,97 @@ func (q *Queries) GetAchievementsFilteredCursor(ctx context.Context, arg GetAchi
 			&i.UpdatedAt,
 			&i.ContentAchievementID,
 			&i.ContentItems,
+			&i.StreakID,
+			&i.NeededStreak,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetAllAchievementsByProjectID = `-- name: GetAllAchievementsByProjectID :many
+SELECT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description_pending,
+    a.description_completed,
+    a.notification_text,
+    a.image_pending,
+    a.image_completed,
+    a.points,
+    a.hidden,
+    a.sort_order,
+    a.created_at,
+    a.updated_at,
+    ca.achievement_id AS content_achievement_id,
+    sa.streak_id,
+    sa.needed_streak
+FROM achievements a
+LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
+LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+WHERE a.project_id = $1::text
+ORDER BY a.sort_order, a.created_at DESC
+`
+
+type GetAllAchievementsByProjectIDRow struct {
+	ID                   string             `json:"id"`
+	AchievementType      string             `json:"achievement_type"`
+	ProjectID            string             `json:"project_id"`
+	EventID              *string            `json:"event_id"`
+	ChallengeID          *string            `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	DescriptionPending   string             `json:"description_pending"`
+	DescriptionCompleted string             `json:"description_completed"`
+	NotificationText     string             `json:"notification_text"`
+	ImagePending         string             `json:"image_pending"`
+	ImageCompleted       string             `json:"image_completed"`
+	Points               int32              `json:"points"`
+	Hidden               *bool              `json:"hidden"`
+	SortOrder            int32              `json:"sort_order"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	ContentAchievementID *string            `json:"content_achievement_id"`
+	StreakID             *string            `json:"streak_id"`
+	NeededStreak         *int32             `json:"needed_streak"`
+}
+
+// Returns all achievements for a project including hidden ones, ordered by sort_order
+func (q *Queries) GetAllAchievementsByProjectID(ctx context.Context, projectID string) ([]*GetAllAchievementsByProjectIDRow, error) {
+	rows, err := q.db.Query(ctx, GetAllAchievementsByProjectID, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetAllAchievementsByProjectIDRow{}
+	for rows.Next() {
+		var i GetAllAchievementsByProjectIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AchievementType,
+			&i.ProjectID,
+			&i.EventID,
+			&i.ChallengeID,
+			&i.Name,
+			&i.DescriptionPending,
+			&i.DescriptionCompleted,
+			&i.NotificationText,
+			&i.ImagePending,
+			&i.ImageCompleted,
+			&i.Points,
+			&i.Hidden,
+			&i.SortOrder,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ContentAchievementID,
 			&i.StreakID,
 			&i.NeededStreak,
 		); err != nil {
@@ -1126,7 +1218,7 @@ SET
     hidden = CASE WHEN $10::bool IS NOT NULL THEN $10::bool ELSE hidden END,
     updated_at = now()
 WHERE id = $11::text
-RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed, notification_text
+RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed, notification_text, sort_order
 `
 
 type UpdateAchievementParams struct {
@@ -1175,8 +1267,25 @@ func (q *Queries) UpdateAchievement(ctx context.Context, arg UpdateAchievementPa
 		&i.ImagePending,
 		&i.ImageCompleted,
 		&i.NotificationText,
+		&i.SortOrder,
 	)
 	return &i, err
+}
+
+const UpdateAchievementSortOrder = `-- name: UpdateAchievementSortOrder :exec
+UPDATE achievements
+SET sort_order = $1::int, updated_at = now()
+WHERE id = $2::text
+`
+
+type UpdateAchievementSortOrderParams struct {
+	SortOrder int32  `json:"sort_order"`
+	ID        string `json:"id"`
+}
+
+func (q *Queries) UpdateAchievementSortOrder(ctx context.Context, arg UpdateAchievementSortOrderParams) error {
+	_, err := q.db.Exec(ctx, UpdateAchievementSortOrder, arg.SortOrder, arg.ID)
+	return err
 }
 
 const UpdateStreakAchievementData = `-- name: UpdateStreakAchievementData :exec

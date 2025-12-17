@@ -214,6 +214,7 @@ CREATE TABLE achievements (
     image_completed VARCHAR(500) NOT NULL,
     points INT NOT NULL DEFAULT 0,
     hidden BOOLEAN DEFAULT false,
+    sort_order INT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     INDEX idx_achievements_project (project_id),

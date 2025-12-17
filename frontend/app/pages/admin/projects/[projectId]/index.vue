@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { VueDraggable } from 'vue-draggable-plus'
+
 definePageMeta({
   layout: 'admin',
   middleware: 'admin',
@@ -56,7 +58,12 @@ gql(`
 `)
 
 const { isAuthReady } = useAuthReady()
-const { data, error, fetching } = useAdminProjectPageQuery({
+const {
+  data,
+  error,
+  fetching,
+  executeQuery: refetch,
+} = useAdminProjectPageQuery({
   variables: {
     projectId: route.params.projectId,
   },
@@ -111,6 +118,51 @@ const tab = computed({
     fallbackTab.value = tab
   },
 })
+
+// Achievement reordering
+type AchievementNode = AdminProjectPageQuery['achievements']['edges'][number]['node']
+const achievements = ref<AchievementNode[]>([])
+
+watch(
+  () => data.value?.achievements.edges,
+  (edges) => {
+    if (edges) {
+      achievements.value = edges.map((e) => e.node)
+    }
+  },
+  { immediate: true },
+)
+
+const { executeMutation: reorderAchievements } = useReorderAchievementsMutation()
+const isReordering = ref(false)
+
+async function handleReorder() {
+  if (isReordering.value) return
+  isReordering.value = true
+
+  const result = await reorderAchievements({
+    projectId: route.params.projectId,
+    achievementIds: achievements.value.map((a) => a.id),
+  })
+
+  isReordering.value = false
+
+  if (result.error) {
+    toast.add({
+      title: 'Failed to reorder',
+      description: result.error.message,
+      color: 'error',
+    })
+    // Refetch to restore original order
+    refetch({ requestPolicy: 'network-only' })
+    return
+  }
+
+  toast.add({
+    title: 'Order saved',
+    color: 'success',
+  })
+}
 </script>
 
 <template>
@@ -263,40 +315,47 @@ const tab = computed({
                 Create Achievement
               </UButton>
             </div>
-            <UTable
-              :data="data.achievements.edges.map((e) => e.node)"
-              :columns="[
-                { accessorKey: 'image' },
-                { accessorKey: 'name' },
-                { accessorKey: 'description' },
-                { accessorKey: 'points' },
-                { accessorKey: 'hidden' },
-                { id: 'actions' },
-              ]"
-            >
-              <template #image-cell="{ row }">
-                <img
-                  v-if="row.original.imageCompleted"
-                  :src="row.original.imageCompleted"
-                  height="32"
-                  width="32"
-                  class="size-8 rounded aspect-square"
-                />
-                <img
-                  v-else
-                  src="/images/achievement-placeholder.png"
-                  height="32"
-                  width="32"
-                  class="size-8 rounded aspect-square"
-                />
-              </template>
-              <template #hidden-cell="{ row }">
-                <div>
-                  <UIcon v-if="row.original.hidden" name="lucide:check" />
-                </div>
-              </template>
-              <template #actions-cell="{ row }">
-                <div class="flex justify-end gap-2">
+            <div class="border-default rounded-lg border">
+              <VueDraggable
+                v-model="achievements"
+                handle=".drag-handle"
+                ghost-class="opacity-50"
+                @end="handleReorder"
+              >
+                <div
+                  v-for="achievement in achievements"
+                  :key="achievement.id"
+                  class="border-default flex items-center gap-4 border-b px-4 py-3 last:border-b-0"
+                >
+                  <div class="drag-handle text-muted cursor-grab active:cursor-grabbing">
+                    <UIcon name="lucide:grip-vertical" class="size-5" />
+                  </div>
+                  <img
+                    v-if="achievement.imageCompleted"
+                    :src="achievement.imageCompleted"
+                    height="32"
+                    width="32"
+                    class="size-8 shrink-0 rounded"
+                  />
+                  <img
+                    v-else
+                    src="/images/achievement-placeholder.png"
+                    height="32"
+                    width="32"
+                    class="size-8 shrink-0 rounded"
+                  />
+                  <div class="min-w-0 flex-1">
+                    <div class="font-medium">{{ achievement.name }}</div>
+                    <div class="text-dimmed truncate text-sm">
+                      {{ achievement.descriptionPending }}
+                    </div>
+                  </div>
+                  <div class="text-muted shrink-0 text-sm">
+                    {{ achievement.points }} pts
+                  </div>
+                  <UBadge v-if="achievement.hidden" variant="soft" color="warning">
+                    Hidden
+                  </UBadge>
                   <UDropdownMenu
                     :items="[
                       {
@@ -305,14 +364,14 @@ const tab = computed({
                           name: 'admin-projects-projectId-achievements-achievementId',
                           params: {
                             projectId: route.params.projectId,
-                            achievementId: row.original.id,
+                            achievementId: achievement.id,
                           },
                         },
                       },
                       {
                         label: 'Copy ID',
                         onClick: () => {
-                          copy(row.original.id)
+                          copy(achievement.id)
                           toast.add({
                             title: 'Copied',
                             description: 'ID copied to clipboard',
@@ -325,8 +384,14 @@ const tab = computed({
                     <UButton icon="lucide:ellipsis" variant="ghost" size="sm" />
                   </UDropdownMenu>
                 </div>
-              </template>
-            </UTable>
+              </VueDraggable>
+              <div
+                v-if="achievements.length === 0"
+                class="text-dimmed py-8 text-center"
+              >
+                No achievements yet
+              </div>
+            </div>
           </template>
         </UTabs>
       </template>

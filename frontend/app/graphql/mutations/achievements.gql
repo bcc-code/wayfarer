@@ -31,3 +31,9 @@ mutation CreateSimpleAchievement($input: CreateSimpleAchievementInput!) {
     id
   }
 }
+
+mutation ReorderAchievements($projectId: ID!, $achievementIds: [ID!]!) {
+  reorderAchievements(projectId: $projectId, achievementIds: $achievementIds) {
+    id
+  }
+}

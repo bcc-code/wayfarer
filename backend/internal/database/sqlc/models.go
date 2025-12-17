@@ -24,6 +24,7 @@ type Achievement struct {
 	ImagePending         string             `json:"image_pending"`
 	ImageCompleted       string             `json:"image_completed"`
 	NotificationText     string             `json:"notification_text"`
+	SortOrder            int32              `json:"sort_order"`
 }
 
 type AchievementTranslation struct {
