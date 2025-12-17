@@ -26,7 +26,6 @@ const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   descriptionPending: z.string().min(1, 'Description is required'),
   descriptionCompleted: z.string().min(1, 'Description is required'),
-  notificationText: z.string().min(1, 'Notification text is required'),
   imagePending: z.string().optional(),
   imageCompleted: z.string().optional(),
   points: z.number().min(0, 'Points must be at least 0'),
@@ -38,7 +37,6 @@ const state = reactive<Schema>({
   name: props.initialData?.name ?? '',
   descriptionPending: props.initialData?.descriptionPending ?? '',
   descriptionCompleted: props.initialData?.descriptionCompleted ?? '',
-  notificationText: props.initialData?.notificationText ?? '',
   imagePending: props.initialData?.imagePending ?? '',
   imageCompleted: props.initialData?.imageCompleted ?? '',
   points: props.initialData?.points ?? 0,
@@ -53,7 +51,6 @@ watch(
       state.name = data.name
       state.descriptionPending = data.descriptionPending
       state.descriptionCompleted = data.descriptionCompleted
-      state.notificationText = data.notificationText
       state.imagePending = data.imagePending
       state.imageCompleted = data.imageCompleted
       state.points = data.points
@@ -93,14 +90,6 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
       <UFormField name="descriptionCompleted" label="Description (Completed)">
         <UTextarea
           v-model="state.descriptionCompleted"
-          class="w-full"
-          autoresize
-          required
-        />
-      </UFormField>
-      <UFormField name="notificationText" label="Notification text">
-        <UTextarea
-          v-model="state.notificationText"
           class="w-full"
           autoresize
           required
