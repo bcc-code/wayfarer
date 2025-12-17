@@ -62,6 +62,12 @@ const links = computed<NavigationMenuItem[]>(() => [
     active: route.fullPath.includes('/users'),
     to: '/admin/users',
   },
+  {
+    label: 'Consents',
+    icon: 'lucide:file-check',
+    active: route.fullPath.includes('/consents'),
+    to: '/admin/consents',
+  },
 ])
 
 const groups = computed(() => [

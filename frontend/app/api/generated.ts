@@ -2517,6 +2517,32 @@ export type RejectConsentMutationVariables = Exact<{
 
 export type RejectConsentMutation = { __typename?: 'Mutation', rejectConsent: { __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any } };
 
+export type CreateConsentMutationVariables = Exact<{
+  key: Scalars['String']['input'];
+  title: Scalars['String']['input'];
+  shortText?: InputMaybe<Scalars['String']['input']>;
+  body: Scalars['String']['input'];
+  url?: InputMaybe<Scalars['String']['input']>;
+  publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
+  isRemote?: InputMaybe<Scalars['Boolean']['input']>;
+  managedBy?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type CreateConsentMutation = { __typename?: 'Mutation', createConsent: { __typename?: 'Consent', id: string, key: string, version: number, title: string } };
+
+export type UpdateConsentMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  title?: InputMaybe<Scalars['String']['input']>;
+  shortText?: InputMaybe<Scalars['String']['input']>;
+  body?: InputMaybe<Scalars['String']['input']>;
+  url?: InputMaybe<Scalars['String']['input']>;
+  publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
+}>;
+
+
+export type UpdateConsentMutation = { __typename?: 'Mutation', updateConsent: { __typename?: 'Consent', id: string, key: string, version: number, title: string } };
+
 export type DeleteEventMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -2868,6 +2894,18 @@ export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } };
 
+export type AdminConsentPageQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type AdminConsentPageQuery = { __typename?: 'Query', consent: { __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', markdown: string, html: string } } };
+
+export type AdminConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminConsentsPageQuery = { __typename?: 'Query', consents: Array<{ __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null }> };
+
 export type AdminHomePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -2980,7 +3018,7 @@ export type AdminUserPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminUserPageQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, name: string, email: string, membersId: string, gender: Gender, birthdate: string, age?: number | null, image?: string | null, church: { __typename?: 'Church', id: string, name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType } | null }> } };
+export type AdminUserPageQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, name: string, email: string, membersId: string, gender: Gender, birthdate: string, age?: number | null, image?: string | null, church: { __typename?: 'Church', id: string, name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType } | null }>, consentStatus: { __typename?: 'ConsentStatus', acceptedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number } }>, rejectedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number } }>, pendingConsents: Array<{ __typename?: 'Consent', id: string, key: string, title: string, version: number }> } } };
 
 export type AdminUsersPageQueryVariables = Exact<{
   filter?: InputMaybe<UserFilter>;
@@ -3334,6 +3372,50 @@ export const RejectConsentDocument = gql`
 
 export function useRejectConsentMutation() {
   return Urql.useMutation<RejectConsentMutation, RejectConsentMutationVariables>(RejectConsentDocument);
+};
+export const CreateConsentDocument = gql`
+    mutation CreateConsent($key: String!, $title: String!, $shortText: String, $body: String!, $url: String, $publishedAt: DateTime, $isRemote: Boolean, $managedBy: String) {
+  createConsent(
+    key: $key
+    title: $title
+    shortText: $shortText
+    body: $body
+    url: $url
+    publishedAt: $publishedAt
+    isRemote: $isRemote
+    managedBy: $managedBy
+  ) {
+    id
+    key
+    version
+    title
+  }
+}
+    `;
+
+export function useCreateConsentMutation() {
+  return Urql.useMutation<CreateConsentMutation, CreateConsentMutationVariables>(CreateConsentDocument);
+};
+export const UpdateConsentDocument = gql`
+    mutation UpdateConsent($id: ID!, $title: String, $shortText: String, $body: String, $url: String, $publishedAt: DateTime) {
+  updateConsent(
+    id: $id
+    title: $title
+    shortText: $shortText
+    body: $body
+    url: $url
+    publishedAt: $publishedAt
+  ) {
+    id
+    key
+    version
+    title
+  }
+}
+    `;
+
+export function useUpdateConsentMutation() {
+  return Urql.useMutation<UpdateConsentMutation, UpdateConsentMutationVariables>(UpdateConsentDocument);
 };
 export const DeleteEventDocument = gql`
     mutation DeleteEvent($id: ID!) {
@@ -4007,6 +4089,47 @@ export const CurrentProjectDocument = gql`
 export function useCurrentProjectQuery(options?: Omit<Urql.UseQueryArgs<never, CurrentProjectQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<CurrentProjectQuery, CurrentProjectQueryVariables | undefined>({ query: CurrentProjectDocument, variables: undefined, ...options });
 };
+export const AdminConsentPageDocument = gql`
+    query AdminConsentPage($id: ID!) {
+  consent(id: $id) {
+    id
+    key
+    version
+    title
+    shortText
+    body {
+      markdown
+      html
+    }
+    url
+    publishedAt
+    managementType
+    managedBy
+  }
+}
+    `;
+
+export function useAdminConsentPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminConsentPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminConsentPageQuery, AdminConsentPageQueryVariables | undefined>({ query: AdminConsentPageDocument, variables: undefined, ...options });
+};
+export const AdminConsentsPageDocument = gql`
+    query AdminConsentsPage {
+  consents {
+    id
+    key
+    version
+    title
+    shortText
+    publishedAt
+    managementType
+    managedBy
+  }
+}
+    `;
+
+export function useAdminConsentsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminConsentsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminConsentsPageQuery, AdminConsentsPageQueryVariables | undefined>({ query: AdminConsentsPageDocument, variables: undefined, ...options });
+};
 export const AdminHomePageDocument = gql`
     query AdminHomePage {
   me {
@@ -4410,6 +4533,36 @@ export const AdminUserPageDocument = gql`
       scope {
         id
         type
+      }
+    }
+    consentStatus {
+      acceptedConsents {
+        id
+        action
+        actionDate
+        consent {
+          id
+          key
+          title
+          version
+        }
+      }
+      rejectedConsents {
+        id
+        action
+        actionDate
+        consent {
+          id
+          key
+          title
+          version
+        }
+      }
+      pendingConsents {
+        id
+        key
+        title
+        version
       }
     }
   }

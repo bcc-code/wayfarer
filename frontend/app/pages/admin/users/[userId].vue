@@ -29,6 +29,36 @@ gql(`
 					type
 				}
 			}
+			consentStatus {
+				acceptedConsents {
+					id
+					action
+					actionDate
+					consent {
+						id
+						key
+						title
+						version
+					}
+				}
+				rejectedConsents {
+					id
+					action
+					actionDate
+					consent {
+						id
+						key
+						title
+						version
+					}
+				}
+				pendingConsents {
+					id
+					key
+					title
+					version
+				}
+			}
 		}
 	}
 `)
@@ -253,6 +283,96 @@ async function handleRevokeRole(roleId: string, role: RoleType, scopeType?: Scop
               </div>
             </div>
             <div v-else class="text-dimmed">No roles assigned</div>
+        </UCard>
+
+        <!-- Consents Card -->
+        <UCard>
+          <template #header>
+            <h2 class="text-xl font-semibold">Consents</h2>
+          </template>
+
+          <div class="space-y-4">
+            <!-- Pending Consents -->
+            <div v-if="data.user.consentStatus.pendingConsents.length > 0">
+              <h3 class="text-muted mb-2 text-sm font-medium">Pending</h3>
+              <div class="space-y-2">
+                <div
+                  v-for="consent in data.user.consentStatus.pendingConsents"
+                  :key="consent.id"
+                  class="border-default flex items-center justify-between rounded-md border p-3"
+                >
+                  <div class="flex items-center gap-3">
+                    <UBadge variant="soft" color="warning">Pending</UBadge>
+                    <div>
+                      <span class="font-medium">{{ consent.title }}</span>
+                      <span class="text-dimmed ml-2 text-xs">v{{ consent.version }}</span>
+                    </div>
+                  </div>
+                  <code class="text-dimmed text-xs">{{ consent.key }}</code>
+                </div>
+              </div>
+            </div>
+
+            <!-- Accepted Consents -->
+            <div v-if="data.user.consentStatus.acceptedConsents.length > 0">
+              <h3 class="text-muted mb-2 text-sm font-medium">Accepted</h3>
+              <div class="space-y-2">
+                <div
+                  v-for="item in data.user.consentStatus.acceptedConsents"
+                  :key="item.id"
+                  class="border-default flex items-center justify-between rounded-md border p-3"
+                >
+                  <div class="flex items-center gap-3">
+                    <UBadge variant="soft" color="success">Accepted</UBadge>
+                    <div>
+                      <span class="font-medium">{{ item.consent.title }}</span>
+                      <span class="text-dimmed ml-2 text-xs">v{{ item.consent.version }}</span>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <code class="text-dimmed text-xs">{{ item.consent.key }}</code>
+                    <div class="text-dimmed text-xs">{{ formatDateTime(item.actionDate) }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rejected Consents -->
+            <div v-if="data.user.consentStatus.rejectedConsents.length > 0">
+              <h3 class="text-muted mb-2 text-sm font-medium">Rejected</h3>
+              <div class="space-y-2">
+                <div
+                  v-for="item in data.user.consentStatus.rejectedConsents"
+                  :key="item.id"
+                  class="border-default flex items-center justify-between rounded-md border p-3"
+                >
+                  <div class="flex items-center gap-3">
+                    <UBadge variant="soft" color="error">Rejected</UBadge>
+                    <div>
+                      <span class="font-medium">{{ item.consent.title }}</span>
+                      <span class="text-dimmed ml-2 text-xs">v{{ item.consent.version }}</span>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <code class="text-dimmed text-xs">{{ item.consent.key }}</code>
+                    <div class="text-dimmed text-xs">{{ formatDateTime(item.actionDate) }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- No consents -->
+            <div
+              v-if="
+                data.user.consentStatus.pendingConsents.length === 0 &&
+                data.user.consentStatus.acceptedConsents.length === 0 &&
+                data.user.consentStatus.rejectedConsents.length === 0
+              "
+              class="text-dimmed"
+            >
+              No consent activity
+            </div>
+          </div>
         </UCard>
       </div>
     </UContainer>

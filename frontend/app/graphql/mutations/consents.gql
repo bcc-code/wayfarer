@@ -13,3 +13,53 @@ mutation RejectConsent($consentId: ID!) {
     actionDate
   }
 }
+
+mutation CreateConsent(
+  $key: String!
+  $title: String!
+  $shortText: String
+  $body: String!
+  $url: String
+  $publishedAt: DateTime
+  $isRemote: Boolean
+  $managedBy: String
+) {
+  createConsent(
+    key: $key
+    title: $title
+    shortText: $shortText
+    body: $body
+    url: $url
+    publishedAt: $publishedAt
+    isRemote: $isRemote
+    managedBy: $managedBy
+  ) {
+    id
+    key
+    version
+    title
+  }
+}
+
+mutation UpdateConsent(
+  $id: ID!
+  $title: String
+  $shortText: String
+  $body: String
+  $url: String
+  $publishedAt: DateTime
+) {
+  updateConsent(
+    id: $id
+    title: $title
+    shortText: $shortText
+    body: $body
+    url: $url
+    publishedAt: $publishedAt
+  ) {
+    id
+    key
+    version
+    title
+  }
+}
