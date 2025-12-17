@@ -63,6 +63,7 @@ async function handleSubmit(formData: {
   name: string
   descriptionPending: string
   descriptionCompleted: string
+  notificationText: string
   imagePending?: string
   imageCompleted?: string
   points: number
