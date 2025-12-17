@@ -38,6 +38,7 @@ UPDATE consents SET
     short_text = CASE WHEN @short_text::text = '' THEN short_text ELSE @short_text::text END,
     body = CASE WHEN @body::text = '' THEN body ELSE @body::text END,
     url = CASE WHEN @url::text = '' THEN url ELSE @url::text END,
+    managed_by = CASE WHEN @managed_by::text = '' THEN managed_by ELSE @managed_by END,
     published_at = @published_at,
     updated_at = now()
 WHERE id = @id::text

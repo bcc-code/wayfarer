@@ -79,5 +79,6 @@ extend type Mutation {
         body: String
         url: String
         publishedAt: DateTime
+        managedBy: String
     ): Consent! @requireRole(roles: ["admin", "superadmin"])
 }

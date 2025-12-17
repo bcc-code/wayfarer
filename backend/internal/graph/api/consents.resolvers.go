@@ -280,8 +280,8 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 }
 
 // UpdateConsent is the resolver for the updateConsent field.
-func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime) (*model.Consent, error) {
-	var titleStr, shortTextStr, bodyStr, urlStr string
+func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime, managedBy *string) (*model.Consent, error) {
+	var titleStr, shortTextStr, bodyStr, urlStr, managedByStr string
 	if title != nil {
 		titleStr = *title
 	}
@@ -293,6 +293,9 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 	}
 	if url != nil {
 		urlStr = *url
+	}
+	if managedBy != nil {
+		managedByStr = *managedBy
 	}
 
 	var publishedAtPG pgtype.Timestamptz
@@ -306,6 +309,7 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 		ShortText:   shortTextStr,
 		Body:        bodyStr,
 		Url:         urlStr,
+		ManagedBy:   managedByStr,
 		PublishedAt: publishedAtPG,
 	})
 	if err != nil {
