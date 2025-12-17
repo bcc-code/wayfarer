@@ -1280,6 +1280,7 @@ export type MutationUpdateChallengeArgs = {
 export type MutationUpdateConsentArgs = {
   body?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
+  managedBy?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   shortText?: InputMaybe<Scalars['String']['input']>;
   title?: InputMaybe<Scalars['String']['input']>;
