@@ -73,6 +73,7 @@ watch(
           />
         </div>
       </ProfileProjectCard>
+      <UserFeedback />
     </div>
   </PageLayout>
 </template>

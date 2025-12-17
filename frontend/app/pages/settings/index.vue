@@ -84,6 +84,7 @@ async function toggleNotifications(enabled: boolean) {
           <Icon name="IconChevronRight" class="size-6" />
         </NuxtLink>
       </DesignPanel>
+      <UserFeedback />
       <div
         v-if="me"
         class="text-text-hint text-caption p-medium mt-auto text-center"

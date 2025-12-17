@@ -95,5 +95,15 @@
   "achievement": {
     "title": "Utmerkelse",
     "unlocked": "Oppnådd!"
+  },
+  "feedback": {
+    "title": "Gi oss tilbakemelding",
+    "cta": "Gi oss tilbakemelding",
+    "description": "Vi vil gjerne høre fra deg slik at vi kan gjøre tjenesten enda bedre.",
+    "send": "Send tilbakemelding",
+    "label": "Var det noe du synes var bra, eller noe som kan bli bedre?",
+    "placeholder": "Skriv tilbakemelding her...",
+    "success": "Takk for tilbakemeldingen din",
+    "validationError": "Du kan ikke sende en tom tilbakemelding"
   }
 }
