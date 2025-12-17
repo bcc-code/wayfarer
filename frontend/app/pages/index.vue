@@ -10,28 +10,40 @@ const showBanner = useLocalStorage('showBanner', false, {
 })
 const hasCompletedOnboarding = useLocalStorage('hasCompletedOnboarding', false)
 
-// Watch for pending consents and redirect if user hasn't completed onboarding
+const pendingInternal = computed(() => {
+  return data.value?.me.consentStatus.pendingConsents.filter(
+    (c) => c.managementType === ConsentManagementType.Local,
+  )
+})
+
+const pendingRemote = computed(() => {
+  return data.value?.me.consentStatus.pendingConsents.filter(
+    (c) => c.managementType === ConsentManagementType.Remote,
+  )
+})
+
 watch(
-  () => data.value?.me.consentStatus.pendingConsents.length,
+  pendingInternal,
   (pending) => {
-    if (pending) {
-      if (!showBanner.value) {
-        showBanner.value = true
-      }
-      // Redirect to consent page if user hasn't completed onboarding
-      if (!hasCompletedOnboarding.value) {
-        navigateTo({ name: 'settings-consent' })
-      }
+    if (pending?.length) {
+      hasCompletedOnboarding.value = false
+      navigateTo({ name: 'settings-consent' })
     }
   },
   { immediate: true },
 )
 
-const remotePendingConsents = computed(() => {
-  return data.value?.me.consentStatus.pendingConsents.filter(
-    (c) => c.managementType === ConsentManagementType.Remote,
-  )
-})
+watch(
+  pendingRemote,
+  (pending) => {
+    if (pending) {
+      if (!showBanner.value) {
+        showBanner.value = true
+      }
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -44,7 +56,7 @@ const remotePendingConsents = computed(() => {
 
     <LoadingState v-if="fetching" />
     <ErrorState v-else-if="error" :error />
-    <div v-else-if="data" class="space-y-list-section-gap p-list-outside">
+    <div v-else-if="data" class="space-y-default p-list-outside">
       <ProfileProjectCard
         v-if="data.myCurrentProject"
         :project-name="data.myCurrentProject.name"
@@ -54,7 +66,7 @@ const remotePendingConsents = computed(() => {
       >
         <div v-if="showBanner" class="p-small">
           <ConsentCard
-            v-for="consent in remotePendingConsents"
+            v-for="consent in pendingRemote"
             :key="consent.id"
             :consent
             class="bg-background-indent!"
