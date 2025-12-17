@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const open = ref(false)
 const message = ref<string>()
+const canContactMe = ref(false)
 const showValidationError = ref(false)
 const hasSent = ref(false)
 
@@ -60,7 +61,7 @@ function handleSubmit() {
           class="flex flex-col grow"
           @submit.prevent="handleSubmit"
         >
-          <p class="text-label text-text-muted mx-4 mb-6">
+          <p class="text-label text-text-muted mx-4 mb-4">
             {{ $t('feedback.label') }}
           </p>
           <DesignTextarea
@@ -79,6 +80,19 @@ function handleSubmit() {
               {{ $t('feedback.validationError') }}
             </p>
           </Transition>
+          <!-- <div class="px-medium py-6">
+            <UCheckbox
+              v-model="canContactMe"
+              :ui="{
+                label: 'text-label',
+                base: 'size-11 rounded-lg!',
+                container: 'h-auto',
+                root: 'gap-2',
+                indicator: 'bg-accent text-on-accent',
+              }"
+              :label="$t('feedback.canContactMe')"
+            />
+          </div> -->
           <div class="p-medium grow-0 mt-auto">
             <DesignButton size="large" class="w-full" type="submit">
               {{ $t('feedback.send') }}

@@ -107,6 +107,7 @@
     "validationError": "Du kan ikke sende en tom tilbakemelding",
     "thankYou": "Takk for hjelpen!",
     "thankYouDescription": "Dine innspill vil bli brukt til videreutvikling av tjenesten.",
-    "close": "Bare hyggelig"
+    "close": "Bare hyggelig",
+    "canContactMe": "Ja, jeg samtykker til at dere kan kontakte meg i forbindelse med tilbakemeldingen min"
   }
 }
