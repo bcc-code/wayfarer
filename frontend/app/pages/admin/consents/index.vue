@@ -42,7 +42,7 @@ const columns: TableColumn<ConsentRow>[] = [
 
 <template>
   <UContainer class="py-12">
-    <div class="mb-6 flex items-center justify-between">
+    <div class="mb-6 flex flex-col items-start gap-8">
       <h1 class="text-3xl">Consents</h1>
       <UButton icon="i-lucide-plus" :to="{ name: 'admin-consents-new' }">
         New Consent

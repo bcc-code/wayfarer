@@ -93,7 +93,7 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
       </UContainer>
     </div>
     <UContainer class="py-12">
-      <div class="mx-auto max-w-2xl">
+      <div class="max-w-2xl">
         <h1 class="mb-6 text-3xl font-bold">Create New Consent</h1>
 
         <UForm :state :schema @submit="handleSubmit">
