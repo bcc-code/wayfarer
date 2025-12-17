@@ -114,7 +114,7 @@ const changing = ref(false)
             <Icon name="IconCheck" class="size-6" />
             {{ $t('consent.accepted') }}
           </span>
-          <NuxtLink :to="url" external>
+          <NuxtLink :to="url" external target="_blank">
             <DesignButton size="small" variant="secondary" class="grow-0">
               {{ $t('consent.change') }}
             </DesignButton>
@@ -122,7 +122,7 @@ const changing = ref(false)
         </div>
       </template>
       <template v-else>
-        <NuxtLink :to="url">
+        <NuxtLink :to="url" external target="_blank">
           <DesignButton size="large" class="w-full">
             <span>{{ $t('consent.goToConsent') }}</span>
             <Icon name="IconExternalLink" class="size-5" />
