@@ -50,6 +50,7 @@ const editState = reactive({
   body: '',
   url: '',
   publishedAt: null as string | null,
+  managedBy: '',
 })
 
 function startEditing() {
@@ -59,6 +60,7 @@ function startEditing() {
     editState.body = data.value.consent.body.markdown
     editState.url = data.value.consent.url ?? ''
     editState.publishedAt = data.value.consent.publishedAt ?? null
+    editState.managedBy = data.value.consent.managedBy ?? ''
     isEditing.value = true
   }
 }
@@ -75,6 +77,7 @@ async function saveChanges() {
     body: editState.body,
     url: editState.url || null,
     publishedAt: editState.publishedAt || null,
+    managedBy: editState.managedBy || null,
   })
 
   if (result.error) {
@@ -205,6 +208,13 @@ async function publishConsent() {
                 class="w-full"
                 type="url"
                 placeholder="https://..."
+              />
+            </UFormField>
+            <UFormField label="Managed By (optional)">
+              <UInput
+                v-model="editState.managedBy"
+                class="w-full"
+                placeholder="External system identifier"
               />
             </UFormField>
           </div>

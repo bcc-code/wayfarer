@@ -48,6 +48,7 @@ mutation UpdateConsent(
   $body: String
   $url: String
   $publishedAt: DateTime
+  $managedBy: String
 ) {
   updateConsent(
     id: $id
@@ -56,6 +57,7 @@ mutation UpdateConsent(
     body: $body
     url: $url
     publishedAt: $publishedAt
+    managedBy: $managedBy
   ) {
     id
     key

@@ -1280,6 +1280,7 @@ export type MutationUpdateChallengeArgs = {
 export type MutationUpdateConsentArgs = {
   body?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
+  managedBy?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   shortText?: InputMaybe<Scalars['String']['input']>;
   title?: InputMaybe<Scalars['String']['input']>;
@@ -2558,6 +2559,7 @@ export type UpdateConsentMutationVariables = Exact<{
   body?: InputMaybe<Scalars['String']['input']>;
   url?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
+  managedBy?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -3428,7 +3430,7 @@ export function useCreateConsentMutation() {
   return Urql.useMutation<CreateConsentMutation, CreateConsentMutationVariables>(CreateConsentDocument);
 };
 export const UpdateConsentDocument = gql`
-    mutation UpdateConsent($id: ID!, $title: String, $shortText: String, $body: String, $url: String, $publishedAt: DateTime) {
+    mutation UpdateConsent($id: ID!, $title: String, $shortText: String, $body: String, $url: String, $publishedAt: DateTime, $managedBy: String) {
   updateConsent(
     id: $id
     title: $title
@@ -3436,6 +3438,7 @@ export const UpdateConsentDocument = gql`
     body: $body
     url: $url
     publishedAt: $publishedAt
+    managedBy: $managedBy
   ) {
     id
     key
