@@ -762,9 +762,10 @@ UPDATE consents SET
     short_text = CASE WHEN $2::text = '' THEN short_text ELSE $2::text END,
     body = CASE WHEN $3::text = '' THEN body ELSE $3::text END,
     url = CASE WHEN $4::text = '' THEN url ELSE $4::text END,
-    published_at = $5,
+    managed_by = CASE WHEN $5::text = '' THEN managed_by ELSE $5 END,
+    published_at = $6,
     updated_at = now()
-WHERE id = $6::text
+WHERE id = $7::text
 RETURNING id, key, version, title, short_text, body, url, published_at, is_remote, managed_by, created_at, updated_at
 `
 
@@ -773,6 +774,7 @@ type UpdateConsentParams struct {
 	ShortText   string             `json:"short_text"`
 	Body        string             `json:"body"`
 	Url         string             `json:"url"`
+	ManagedBy   string             `json:"managed_by"`
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
 	ID          string             `json:"id"`
 }
@@ -798,6 +800,7 @@ func (q *Queries) UpdateConsent(ctx context.Context, arg UpdateConsentParams) (*
 		arg.ShortText,
 		arg.Body,
 		arg.Url,
+		arg.ManagedBy,
 		arg.PublishedAt,
 		arg.ID,
 	)

@@ -108,6 +108,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.sort_order,
     a.created_at,
     a.updated_at,
     -- Content achievement data
@@ -134,9 +135,11 @@ WHERE
     (@ids::text[] IS NULL OR a.id = ANY(@ids::text[]))
     AND (@projectid::text = '' OR a.project_id = @projectid::text)
     AND (@eventid::text = '' OR a.event_id = @eventid::text)
-    AND (@aftercursor::text = '' OR a.id > @aftercursor::text)
-    AND (@beforecursor::text = '' OR a.id < @beforecursor::text)
+    AND (@aftercursor::text = '' OR (a.sort_order, a.id) > (SELECT sort_order, id FROM achievements WHERE id = @aftercursor::text))
+    AND (@beforecursor::text = '' OR (a.sort_order, a.id) < (SELECT sort_order, id FROM achievements WHERE id = @beforecursor::text))
 ORDER BY
+    CASE WHEN @isbackward::bool = true THEN a.sort_order END DESC,
+    CASE WHEN @isbackward::bool = false OR @isbackward::bool IS NULL THEN a.sort_order END ASC,
     CASE WHEN @isbackward::bool = true THEN a.id END DESC,
     CASE WHEN @isbackward::bool = false OR @isbackward::bool IS NULL THEN a.id END ASC
 LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END;

@@ -135,6 +135,8 @@ const { executeMutation: reorderAchievements } =
   useReorderAchievementsMutation()
 const isReordering = ref(false)
 
+const toast = useToast()
+
 async function handleReorder() {
   if (isReordering.value) return
   isReordering.value = true
