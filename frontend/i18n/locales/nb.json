@@ -104,6 +104,9 @@
     "label": "Var det noe du synes var bra, eller noe som kan bli bedre?",
     "placeholder": "Skriv tilbakemelding her...",
     "success": "Takk for tilbakemeldingen din",
-    "validationError": "Du kan ikke sende en tom tilbakemelding"
+    "validationError": "Du kan ikke sende en tom tilbakemelding",
+    "thankYou": "Takk for hjelpen!",
+    "thankYouDescription": "Dine innspill vil bli brukt til videreutvikling av tjenesten.",
+    "close": "Bare hyggelig"
   }
 }
