@@ -62,6 +62,7 @@ const { data, fetching, error } = useProjectRulesQuery({
   font-weight: var(--font-weight-paragraph);
   letter-spacing: var(--letter-spacing-paragraph);
   color: var(--color-text-default);
+  margin-block: 1rem;
 }
 
 #project-rules a {
