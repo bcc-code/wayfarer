@@ -523,6 +523,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.sort_order,
     a.created_at,
     a.updated_at,
     -- Content achievement data
@@ -549,9 +550,11 @@ WHERE
     ($1::text[] IS NULL OR a.id = ANY($1::text[]))
     AND ($2::text = '' OR a.project_id = $2::text)
     AND ($3::text = '' OR a.event_id = $3::text)
-    AND ($4::text = '' OR a.id > $4::text)
-    AND ($5::text = '' OR a.id < $5::text)
+    AND ($4::text = '' OR (a.sort_order, a.id) > (SELECT sort_order, id FROM achievements WHERE id = $4::text))
+    AND ($5::text = '' OR (a.sort_order, a.id) < (SELECT sort_order, id FROM achievements WHERE id = $5::text))
 ORDER BY
+    CASE WHEN $6::bool = true THEN a.sort_order END DESC,
+    CASE WHEN $6::bool = false OR $6::bool IS NULL THEN a.sort_order END ASC,
     CASE WHEN $6::bool = true THEN a.id END DESC,
     CASE WHEN $6::bool = false OR $6::bool IS NULL THEN a.id END ASC
 LIMIT CASE WHEN $7::int IS NULL THEN NULL ELSE $7::int END
@@ -581,6 +584,7 @@ type GetAchievementsFilteredCursorRow struct {
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
 	Hidden               *bool              `json:"hidden"`
+	SortOrder            int32              `json:"sort_order"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	ContentAchievementID *string            `json:"content_achievement_id"`
@@ -620,6 +624,7 @@ func (q *Queries) GetAchievementsFilteredCursor(ctx context.Context, arg GetAchi
 			&i.ImageCompleted,
 			&i.Points,
 			&i.Hidden,
+			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ContentAchievementID,
