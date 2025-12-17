@@ -37,7 +37,7 @@ async function toggleNotifications(enabled: boolean) {
             </DesignButton>
           </div>
         </LocaleSelector>
-        <hr class="border-border-default mx-3" />
+        <!-- <hr class="border-border-default mx-3" />
         <ColorModeSelector v-slot="{ selectedColorMode }">
           <div class="flex items-center justify-between gap-2.5 px-3 py-2">
             <p class="text-label">{{ $t('settings.colorMode') }}</p>
@@ -45,7 +45,7 @@ async function toggleNotifications(enabled: boolean) {
               {{ selectedColorMode?.name() }}
             </DesignButton>
           </div>
-        </ColorModeSelector>
+        </ColorModeSelector> -->
         <template v-if="isPushSupported">
           <hr class="border-border-default mx-3" />
           <label class="flex items-center justify-between gap-2.5 px-3 py-2">
