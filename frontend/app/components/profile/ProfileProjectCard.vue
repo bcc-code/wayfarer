@@ -29,7 +29,7 @@ defineProps<{
         </ProfilePointHistory>
         <ProfileGetPoints>
           <DesignButton variant="secondary">
-            {{ $t('standings.getPointsButton') }}
+            {{ $t('standings.rules') }}
           </DesignButton>
         </ProfileGetPoints>
       </div>

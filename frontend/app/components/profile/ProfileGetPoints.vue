@@ -27,7 +27,7 @@ const { data, fetching, error } = useProjectRulesQuery({
 </script>
 
 <template>
-  <DesignDrawer v-model:open="open" :title="$t('pages.getPoints')">
+  <DesignDrawer v-model:open="open" :title="$t('pages.rules')">
     <slot />
     <template #content>
       <LoadingState v-if="fetching" />
@@ -57,6 +57,19 @@ const { data, fetching, error } = useProjectRulesQuery({
 }
 
 #project-rules p {
+  font-size: var(--font-size-paragraph);
+  line-height: var(--line-height-paragraph);
+  font-weight: var(--font-weight-paragraph);
+  letter-spacing: var(--letter-spacing-paragraph);
+  color: var(--color-text-default);
+}
+
+#project-rules a {
+  color: var(--color-accent-contrast);
+  text-decoration: underline;
+}
+
+#project-rules li {
   font-size: var(--font-size-paragraph);
   line-height: var(--line-height-paragraph);
   font-weight: var(--font-weight-paragraph);
