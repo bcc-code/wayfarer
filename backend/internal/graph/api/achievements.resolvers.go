@@ -723,6 +723,50 @@ func (r *mutationResolver) LinkAchievementToChallenge(ctx context.Context, achie
 	panic(fmt.Errorf("not implemented: LinkAchievementToChallenge - linkAchievementToChallenge"))
 }
 
+// ReorderAchievements is the resolver for the reorderAchievements field.
+func (r *mutationResolver) ReorderAchievements(ctx context.Context, projectID string, achievementIds []string) ([]model.Achievement, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageProject(ctx, userID, projectID) {
+		return nil, fmt.Errorf("unauthorized to manage achievements in this project")
+	}
+
+	// Update sort_order for each achievement
+	for i, achievementID := range achievementIds {
+		err := r.DB.Queries.UpdateAchievementSortOrder(ctx, sqlc.UpdateAchievementSortOrderParams{
+			ID:        achievementID,
+			SortOrder: int32(i),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to update achievement sort order: %w", err)
+		}
+	}
+
+	// Invalidate cache for project and all affected achievements
+	r.Cache.InvalidateProject(projectID)
+	for _, achievementID := range achievementIds {
+		r.Cache.InvalidateAchievement(achievementID)
+		r.Loaders.AchievementByIDLoader.Clear(ctx, achievementID)
+	}
+
+	// Load and return reordered achievements
+	achievements := make([]model.Achievement, 0, len(achievementIds))
+	for _, achievementID := range achievementIds {
+		thunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
+		achievement, err := thunk()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load achievement: %w", err)
+		}
+		achievements = append(achievements, achievement)
+	}
+
+	return achievements, nil
+}
+
 // AwardAchievement is the resolver for the awardAchievement field.
 func (r *mutationResolver) AwardAchievement(ctx context.Context, userID string, achievementID string) (model.Achievement, error) {
 	// First, get the achievement to know which project/event it belongs to

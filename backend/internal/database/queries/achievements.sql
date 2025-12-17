@@ -63,7 +63,35 @@ LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
 WHERE a.project_id = ANY(@project_ids::text[])
     AND a.hidden = false
-ORDER BY a.project_id, a.created_at DESC;
+ORDER BY a.project_id, a.sort_order, a.created_at DESC;
+
+-- name: GetAllAchievementsByProjectID :many
+-- Returns all achievements for a project including hidden ones, ordered by sort_order
+SELECT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description_pending,
+    a.description_completed,
+    a.notification_text,
+    a.image_pending,
+    a.image_completed,
+    a.points,
+    a.hidden,
+    a.sort_order,
+    a.created_at,
+    a.updated_at,
+    ca.achievement_id AS content_achievement_id,
+    sa.streak_id,
+    sa.needed_streak
+FROM achievements a
+LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
+LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+WHERE a.project_id = @project_id::text
+ORDER BY a.sort_order, a.created_at DESC;
 
 -- name: GetAchievementsFilteredCursor :many
 SELECT
@@ -217,6 +245,11 @@ SET
     streak_id = CASE WHEN sqlc.narg('streak_id')::text IS NOT NULL THEN sqlc.narg('streak_id')::text ELSE streak_id END,
     needed_streak = CASE WHEN sqlc.narg('needed_streak')::int IS NOT NULL THEN sqlc.narg('needed_streak')::int ELSE needed_streak END
 WHERE achievement_id = @achievement_id::text;
+
+-- name: UpdateAchievementSortOrder :exec
+UPDATE achievements
+SET sort_order = @sort_order::int, updated_at = now()
+WHERE id = @id::text;
 
 -- ==================== Delete Operations ====================
 

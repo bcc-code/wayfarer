@@ -779,6 +779,7 @@ export type Mutation = {
   rejectConsent: UserConsent;
   removeTeamMembers: Team;
   removeUserFromProject: User;
+  reorderAchievements: Array<Achievement>;
   reorderQuizQuestions: Array<QuizQuestion>;
   revokeAchievement: Scalars['Boolean']['output'];
   revokeRole: Scalars['Boolean']['output'];
@@ -1153,6 +1154,12 @@ export type MutationRemoveTeamMembersArgs = {
 export type MutationRemoveUserFromProjectArgs = {
   projectId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationReorderAchievementsArgs = {
+  achievementIds: Array<Scalars['ID']['input']>;
+  projectId: Scalars['ID']['input'];
 };
 
 
@@ -2471,6 +2478,19 @@ export type CreateSimpleAchievementMutationVariables = Exact<{
 
 export type CreateSimpleAchievementMutation = { __typename?: 'Mutation', createSimpleAchievement: { __typename?: 'SimpleAchievement', id: string } };
 
+export type ReorderAchievementsMutationVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+  achievementIds: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type ReorderAchievementsMutation = { __typename?: 'Mutation', reorderAchievements: Array<
+    | { __typename?: 'ContentAchievement', id: string }
+    | { __typename?: 'QuizAchievement', id: string }
+    | { __typename?: 'SimpleAchievement', id: string }
+    | { __typename?: 'StreakAchievement', id: string }
+  > };
+
 export type DeleteChallengeMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -3315,6 +3335,17 @@ export const CreateSimpleAchievementDocument = gql`
 
 export function useCreateSimpleAchievementMutation() {
   return Urql.useMutation<CreateSimpleAchievementMutation, CreateSimpleAchievementMutationVariables>(CreateSimpleAchievementDocument);
+};
+export const ReorderAchievementsDocument = gql`
+    mutation ReorderAchievements($projectId: ID!, $achievementIds: [ID!]!) {
+  reorderAchievements(projectId: $projectId, achievementIds: $achievementIds) {
+    id
+  }
+}
+    `;
+
+export function useReorderAchievementsMutation() {
+  return Urql.useMutation<ReorderAchievementsMutation, ReorderAchievementsMutationVariables>(ReorderAchievementsDocument);
 };
 export const DeleteChallengeDocument = gql`
     mutation DeleteChallenge($id: ID!) {

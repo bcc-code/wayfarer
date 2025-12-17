@@ -20,6 +20,9 @@ extend type Mutation {
     deleteAchievement(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
     linkAchievementToChallenge(achievementId: ID!, challengeId: ID!): Achievement! @requireRole(roles: ["admin", "superadmin"])
 
+    # Reorder achievements - accepts array of achievement IDs in the desired order
+    reorderAchievements(projectId: ID!, achievementIds: [ID!]!): [Achievement!]! @requireRole(roles: ["admin", "superadmin"])
+
     # Award/revoke (M2M)
     awardAchievement(userId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
     revokeAchievement(userId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
