@@ -94,9 +94,6 @@ watch(data, () => {
   }
 })
 
-const { copy } = useClipboard()
-const toast = useToast()
-
 // Tabs state management
 const params = useUrlSearchParams('history')
 const fallbackTab = useLocalStorage('fallback-tab', 'achievements')
@@ -219,34 +216,20 @@ const tab = computed({
                 }}
               </template>
               <template #actions-cell="{ row }">
-                <div class="flex justify-end gap-2">
-                  <UDropdownMenu
-                    :items="[
-                      {
-                        label: 'Edit',
-                        to: {
-                          name: 'admin-projects-projectId-challenges-challengeId',
-                          params: {
-                            projectId: route.params.projectId,
-                            challengeId: row.original.id,
-                          },
-                        },
+                <div class="flex justify-end">
+                  <UButton
+                    variant="ghost"
+                    size="sm"
+                    :to="{
+                      name: 'admin-projects-projectId-challenges-challengeId',
+                      params: {
+                        projectId: route.params.projectId,
+                        challengeId: row.original.id,
                       },
-                      {
-                        label: 'Copy ID',
-                        onClick: () => {
-                          copy(row.original.id)
-                          toast.add({
-                            title: 'Copied',
-                            description: 'ID copied to clipboard',
-                            color: 'success',
-                          })
-                        },
-                      },
-                    ]"
+                    }"
                   >
-                    <UButton icon="lucide:ellipsis" variant="ghost" size="sm" />
-                  </UDropdownMenu>
+                    Edit
+                  </UButton>
                 </div>
               </template>
             </UTable>
@@ -296,34 +279,20 @@ const tab = computed({
                 </div>
               </template>
               <template #actions-cell="{ row }">
-                <div class="flex justify-end gap-2">
-                  <UDropdownMenu
-                    :items="[
-                      {
-                        label: 'Edit',
-                        to: {
-                          name: 'admin-projects-projectId-achievements-achievementId',
-                          params: {
-                            projectId: route.params.projectId,
-                            achievementId: row.original.id,
-                          },
-                        },
+                <div class="flex justify-end">
+                  <UButton
+                    variant="ghost"
+                    size="sm"
+                    :to="{
+                      name: 'admin-projects-projectId-achievements-achievementId',
+                      params: {
+                        projectId: route.params.projectId,
+                        achievementId: row.original.id,
                       },
-                      {
-                        label: 'Copy ID',
-                        onClick: () => {
-                          copy(row.original.id)
-                          toast.add({
-                            title: 'Copied',
-                            description: 'ID copied to clipboard',
-                            color: 'success',
-                          })
-                        },
-                      },
-                    ]"
+                    }"
                   >
-                    <UButton icon="lucide:ellipsis" variant="ghost" size="sm" />
-                  </UDropdownMenu>
+                    Edit
+                  </UButton>
                 </div>
               </template>
             </UTable>
