@@ -25,7 +25,6 @@ const close = () => {
         'bg-background-default rounded-t-modal h-full gradient-border ring-0 max-w-xl mx-auto',
       overlay: 'bg-black/50',
     }"
-    should-scale-background
     :set-background-color-on-scale="false"
     :handle="false"
     :nested
