@@ -120,7 +120,8 @@ const tab = computed({
 })
 
 // Achievement reordering
-type AchievementNode = AdminProjectPageQuery['achievements']['edges'][number]['node']
+type AchievementNode =
+  AdminProjectPageQuery['achievements']['edges'][number]['node']
 const achievements = ref<AchievementNode[]>([])
 
 watch(
@@ -133,7 +134,8 @@ watch(
   { immediate: true },
 )
 
-const { executeMutation: reorderAchievements } = useReorderAchievementsMutation()
+const { executeMutation: reorderAchievements } =
+  useReorderAchievementsMutation()
 const isReordering = ref(false)
 
 async function handleReorder() {
@@ -304,7 +306,7 @@ async function handleReorder() {
             </UTable>
           </template>
           <template #achievements>
-            <div class="my-2">
+            <div class="mt-2 mb-4">
               <UButton
                 icon="lucide:plus"
                 :to="{
@@ -320,6 +322,7 @@ async function handleReorder() {
                 v-model="achievements"
                 handle=".drag-handle"
                 ghost-class="opacity-50"
+                :animation="200"
                 @end="handleReorder"
               >
                 <div
@@ -327,7 +330,9 @@ async function handleReorder() {
                   :key="achievement.id"
                   class="border-default flex items-center gap-4 border-b px-4 py-3 last:border-b-0"
                 >
-                  <div class="drag-handle text-muted cursor-grab active:cursor-grabbing">
+                  <div
+                    class="drag-handle text-muted cursor-grab active:cursor-grabbing"
+                  >
                     <UIcon name="lucide:grip-vertical" class="size-5" />
                   </div>
                   <img
@@ -353,7 +358,11 @@ async function handleReorder() {
                   <div class="text-muted shrink-0 text-sm">
                     {{ achievement.points }} pts
                   </div>
-                  <UBadge v-if="achievement.hidden" variant="soft" color="warning">
+                  <UBadge
+                    v-if="achievement.hidden"
+                    variant="soft"
+                    color="warning"
+                  >
                     Hidden
                   </UBadge>
                   <UDropdownMenu
