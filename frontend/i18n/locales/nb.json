@@ -30,7 +30,7 @@
     "challenges": "Utfordringer",
     "settings": "Innstillinger",
     "pointHistory": "Poenghistorikk",
-    "getPoints": "Få poeng",
+    "rules": "Regler",
     "consents": "Samtykke"
   },
   "navigation": {
@@ -57,7 +57,7 @@
     "unit": "Min unit",
     "local": "Lokalt",
     "you": "Deg",
-    "getPointsButton": "Få poeng",
+    "rules": "Regler",
     "units": "Units",
     "top": "Topp {amount}",
     "u18": "U18",
