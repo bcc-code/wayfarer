@@ -1,1 +1,99 @@
-{}
+{
+  "error": {
+    "title": "Ups! Etwas ist schiefgelaufen"
+  },
+  "emptyStates": {
+    "standings": "Noch keine Bestenliste",
+    "unit": "Noch keine Bestenliste für deine Unit",
+    "challenges": "Noch keine Herausforderungen",
+    "pointHistory": "Noch keine Punkte"
+  },
+  "quiz": {
+    "wrongAnswer": "Falsche Antwort",
+    "correctAnswer": "Richtige Antwort",
+    "yourAnswer": "Deine Antwort",
+    "lockAnswer": "Antwort sperren",
+    "questionNumber": "{current} von {total}",
+    "continue": "Weiter",
+    "nextQuestion": "Nächste Frage",
+    "done": "Fertig",
+    "result": {
+      "receivedNoPoints": "Du hast keine Punkte gesammelt.",
+      "receivedPoints": "Du hast {points} Punkte gesammelt.",
+      "betterLuckNextTime": "Viel Glück beim nächsten Mal!",
+      "wellDone": "Gut gemacht!",
+      "perfect": "Perfekt."
+    }
+  },
+  "pages": {
+    "standings": "Bestenlisten",
+    "challenges": "Herausforderungen",
+    "settings": "Einstellungen",
+    "pointHistory": "Punktestand",
+    "rules": "Regeln",
+    "consents": "Einverständnis"
+  },
+  "navigation": {
+    "standings": "Bestenlisten",
+    "profile": "Meine Seite",
+    "challenges": "Herausforderungen"
+  },
+  "emptyState": "Hier gibt's nichts zu sehen",
+  "settings": {
+    "language": "App-Sprache",
+    "colorMode": "Farbmodus",
+    "colorModes": {
+      "system": "System",
+      "light": "Hell",
+      "dark": "Dunkel"
+    },
+    "consents": "Einverständnis",
+    "notifications": "Benachrichtigungen",
+    "addToHomeScreen": "App zum Homescreen hinzufügen",
+    "privacyPolicy": "Datenschutzerklärung"
+  },
+  "standings": {
+    "global": "Global",
+    "unit": "Meine Unit",
+    "local": "Ortsgemeinden",
+    "you": "Du",
+    "rules": "Regeln",
+    "units": "Units",
+    "top": "Top {amount}",
+    "u18": "U18",
+    "o18": "Ü18"
+  },
+  "pointHistory": {
+    "pointHistoryButton": "Punktestand",
+    "explanation": "Hier kannst du sehen, wofür du Punkte bekommen – oder verloren – hast."
+  },
+  "unit": {
+    "editUnit": "Unit bearbeiten",
+    "unitLeader": "Unit-Leiter",
+    "saveChanges": "Änderungen speichern",
+    "unitName": "Name der Unit",
+    "noUnitLeader": "Kein Unit-Leiter",
+    "selectUnitLeader": "Wähle den Unit-Leiter"
+  },
+  "place": "Platzierung",
+  "points": "Punkte",
+  "givesYouXPoints": "Bringt dir {points} Punkte",
+  "consent": {
+    "accepted": "Angenommen",
+    "rejected": "Abgelehnt",
+    "acceptButton": "Ich bin einverstanden",
+    "rejectButton": "Bedingungen ablehnen",
+    "bannerTitle": "Du musst dich entscheiden, ob du zustimmst",
+    "bannerButton": "Gehe zu den Einwilligungseinstellungen",
+    "readButton": "Lies die Bedingungen",
+    "change": "Ändern",
+    "goToConsent": "Zum Einverständnis",
+    "continue": "Weiter",
+    "changeDescription": "Wenn du deine Einwilligung ändern willst, schreibe an {email}",
+    "changeConsent": "Zustimmung ändern"
+  },
+  "achievement": {
+    "title": "Auszeichnung",
+    "unlocked": "Erreicht!"
+  }
+}
