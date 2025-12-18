@@ -49,12 +49,12 @@ export function usePushNotifications() {
     if (!isSupported.value) return null
 
     try {
-      const registration = await navigator.serviceWorker.ready
+      const registration = await getServiceWorkerRegistration()
       const sub = await registration.pushManager.getSubscription()
       subscription.value = sub
       return sub
-    } catch (err) {
-      console.error('[Push] Failed to get subscription:', err)
+    } catch {
+      // Don't log timeout errors during init - service worker may not be ready yet
       return null
     }
   }
@@ -94,7 +94,8 @@ export function usePushNotifications() {
         }
       }
 
-      const registration = await navigator.serviceWorker.ready
+      // Get service worker with timeout
+      const registration = await getServiceWorkerRegistration()
 
       // Check for existing subscription
       let sub = await registration.pushManager.getSubscription()
@@ -106,15 +107,20 @@ export function usePushNotifications() {
           | undefined
 
         if (!vapidPublicKey) {
-          error.value = new Error('VAPID public key not configured')
+          error.value = new Error('Push notifications not configured')
           isLoading.value = false
           return null
         }
 
-        sub = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-        })
+        // Subscribe with timeout
+        sub = await withTimeout(
+          registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+          }),
+          PUSH_SUBSCRIBE_TIMEOUT,
+          'Push subscription timed out. Check your network connection.',
+        )
       }
 
       subscription.value = sub
@@ -203,6 +209,36 @@ export function usePushNotifications() {
     unsubscribe,
     getSubscription,
   }
+}
+
+const SW_READY_TIMEOUT = 10000 // 10 seconds
+const PUSH_SUBSCRIBE_TIMEOUT = 15000 // 15 seconds
+
+/**
+ * Promise wrapper with timeout
+ */
+function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  errorMessage: string,
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), ms),
+    ),
+  ])
+}
+
+/**
+ * Get service worker registration with timeout
+ */
+async function getServiceWorkerRegistration(): Promise<ServiceWorkerRegistration> {
+  return withTimeout(
+    navigator.serviceWorker.ready,
+    SW_READY_TIMEOUT,
+    'Service worker failed to activate. Try refreshing the page.',
+  )
 }
 
 /**

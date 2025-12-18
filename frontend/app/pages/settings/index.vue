@@ -66,7 +66,7 @@ async function toggleNotifications(enabled: boolean) {
           </p>
           <p
             v-else-if="pushError"
-            class="text-text-negative text-caption px-3 pb-2"
+            class="text-accent-negative text-caption px-3 pb-2"
           >
             {{ pushError.message }}
           </p>
