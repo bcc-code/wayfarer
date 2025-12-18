@@ -82,6 +82,9 @@ const { executeMutation: assignRole } = useAssignRoleMutation()
 const { executeMutation: revokeRole } = useRevokeRoleMutation()
 const toast = useToast()
 
+// Permissions
+const { canAssignRoles } = usePermissions()
+
 const roleOptions = [
   { label: 'User', value: RoleType.User },
   { label: 'Admin', value: RoleType.Admin },
@@ -244,6 +247,7 @@ async function handleRevokeRole(roleId: string, role: RoleType, scopeType?: Scop
               <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold">Roles & Permissions</h2>
                 <UButton
+                  v-if="canAssignRoles"
                   icon="i-lucide-plus"
                   size="sm"
                   @click="showAddRoleModal = true"
@@ -274,6 +278,7 @@ async function handleRevokeRole(roleId: string, role: RoleType, scopeType?: Scop
                   </div>
                 </div>
                 <UButton
+                  v-if="canAssignRoles"
                   icon="i-lucide-trash-2"
                   color="error"
                   variant="ghost"

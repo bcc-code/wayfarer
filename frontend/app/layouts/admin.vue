@@ -26,6 +26,8 @@ const { data } = useAdminSidebarQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
+const { canAccessUsers, canAccessTeams, canAccessConsents } = usePermissions()
+
 const projectsLinks = computed(() => {
   return data.value?.projects.edges.map(({ node: project }) => ({
     label: project.name,
@@ -38,37 +40,50 @@ const projectsLinks = computed(() => {
 
 const route = useRoute()
 
-const links = computed<NavigationMenuItem[]>(() => [
-  {
-    label: 'Home',
-    icon: 'lucide:house',
-    to: '/admin',
-  },
-  {
-    label: 'Projects',
-    icon: 'lucide:layers',
-    active: route.fullPath.includes('/projects'),
-    to: '/admin/projects',
-  },
-  {
-    label: 'Teams',
-    icon: 'lucide:users-round',
-    active: route.fullPath.includes('/teams'),
-    to: '/admin/teams',
-  },
-  {
-    label: 'Users',
-    icon: 'lucide:user',
-    active: route.fullPath.includes('/users'),
-    to: '/admin/users',
-  },
-  {
-    label: 'Consents',
-    icon: 'lucide:file-check',
-    active: route.fullPath.includes('/consents'),
-    to: '/admin/consents',
-  },
-])
+const links = computed<NavigationMenuItem[]>(() => {
+  const items: NavigationMenuItem[] = [
+    {
+      label: 'Home',
+      icon: 'lucide:house',
+      to: '/admin',
+    },
+    {
+      label: 'Projects',
+      icon: 'lucide:layers',
+      active: route.fullPath.includes('/projects'),
+      to: '/admin/projects',
+    },
+  ]
+
+  if (canAccessTeams.value) {
+    items.push({
+      label: 'Teams',
+      icon: 'lucide:users-round',
+      active: route.fullPath.includes('/teams'),
+      to: '/admin/teams',
+    })
+  }
+
+  if (canAccessUsers.value) {
+    items.push({
+      label: 'Users',
+      icon: 'lucide:user',
+      active: route.fullPath.includes('/users'),
+      to: '/admin/users',
+    })
+  }
+
+  if (canAccessConsents.value) {
+    items.push({
+      label: 'Consents',
+      icon: 'lucide:file-check',
+      active: route.fullPath.includes('/consents'),
+      to: '/admin/consents',
+    })
+  }
+
+  return items
+})
 
 const groups = computed(() => [
   {
