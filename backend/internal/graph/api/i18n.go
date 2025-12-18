@@ -447,3 +447,81 @@ func (r *Resolver) ApplyTranslationToConsent(ctx context.Context, consent *model
 	translated.BodyMarkdown = applyStringTranslation(trans.Body, consent.BodyMarkdown)
 	return &translated
 }
+
+// LoadAchievementWithTranslation loads an achievement and applies translation for the requested language
+func (r *Resolver) LoadAchievementWithTranslation(ctx context.Context, id string) (model.Achievement, error) {
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, id)
+	achievement, err := achievementThunk()
+	if err != nil {
+		return nil, err
+	}
+
+	return r.ApplyTranslationToAchievement(ctx, achievement), nil
+}
+
+// ApplyTranslationToAchievement applies translation to an already-loaded achievement
+func (r *Resolver) ApplyTranslationToAchievement(ctx context.Context, achievement model.Achievement) model.Achievement {
+	if achievement == nil {
+		return nil
+	}
+
+	lang := middleware.GetLanguage(ctx)
+	if lang == middleware.DefaultLanguage {
+		return achievement
+	}
+
+	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
+		EntityType: "achievement",
+		EntityID:   getAchievementID(achievement),
+		LangCode:   lang,
+	})()
+
+	if trans == nil {
+		return achievement
+	}
+
+	return applyAchievementTranslation(achievement, trans)
+}
+
+// getAchievementID extracts the ID from any Achievement implementation
+func getAchievementID(a model.Achievement) string {
+	switch v := a.(type) {
+	case *model.SimpleAchievement:
+		return v.ID
+	case *model.ContentAchievement:
+		return v.ID
+	case *model.StreakAchievement:
+		return v.ID
+	default:
+		return ""
+	}
+}
+
+// applyAchievementTranslation applies translation to an Achievement interface value
+func applyAchievementTranslation(achievement model.Achievement, trans *loaders.Translation) model.Achievement {
+	switch a := achievement.(type) {
+	case *model.SimpleAchievement:
+		translated := *a
+		translated.Name = applyStringTranslation(trans.Name, a.Name)
+		translated.DescriptionPending = applyStringTranslation(trans.DescriptionPending, a.DescriptionPending)
+		translated.DescriptionCompleted = applyStringTranslation(trans.DescriptionCompleted, a.DescriptionCompleted)
+		translated.NotificationText = applyStringTranslation(trans.NotificationText, a.NotificationText)
+		return &translated
+	case *model.ContentAchievement:
+		translated := *a
+		translated.Name = applyStringTranslation(trans.Name, a.Name)
+		translated.DescriptionPending = applyStringTranslation(trans.DescriptionPending, a.DescriptionPending)
+		translated.DescriptionCompleted = applyStringTranslation(trans.DescriptionCompleted, a.DescriptionCompleted)
+		translated.NotificationText = applyStringTranslation(trans.NotificationText, a.NotificationText)
+		return &translated
+	case *model.StreakAchievement:
+		translated := *a
+		translated.Name = applyStringTranslation(trans.Name, a.Name)
+		translated.DescriptionPending = applyStringTranslation(trans.DescriptionPending, a.DescriptionPending)
+		translated.DescriptionCompleted = applyStringTranslation(trans.DescriptionCompleted, a.DescriptionCompleted)
+		translated.NotificationText = applyStringTranslation(trans.NotificationText, a.NotificationText)
+		return &translated
+	default:
+		return achievement
+	}
+}

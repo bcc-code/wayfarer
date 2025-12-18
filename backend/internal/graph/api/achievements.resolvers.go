@@ -378,14 +378,8 @@ func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, inp
 		}
 	}
 
-	// Reload and return updated achievement
-	achievementThunk = r.Loaders.AchievementByIDLoader.Load(ctx, id)
-	updatedAchievement, err := achievementThunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to reload achievement: %w", err)
-	}
-
-	return updatedAchievement, nil
+	// Reload and return updated achievement with translation
+	return r.LoadAchievementWithTranslation(ctx, id)
 }
 
 // UpdateContentAchievement is the resolver for the updateContentAchievement field.
@@ -518,14 +512,13 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 		}
 	}
 
-	// Reload and return updated achievement
-	achievementThunk = r.Loaders.AchievementByIDLoader.Load(ctx, id)
-	updatedAchievement, err := achievementThunk()
+	// Reload and return updated achievement with translation
+	translated, err := r.LoadAchievementWithTranslation(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to reload achievement: %w", err)
 	}
 
-	contentAchievement, ok := updatedAchievement.(*model.ContentAchievement)
+	contentAchievement, ok := translated.(*model.ContentAchievement)
 	if !ok {
 		return nil, fmt.Errorf("updated achievement is not a content achievement")
 	}
@@ -657,14 +650,13 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 		}
 	}
 
-	// Reload and return updated achievement
-	achievementThunk = r.Loaders.AchievementByIDLoader.Load(ctx, id)
-	updatedAchievement, err := achievementThunk()
+	// Reload and return updated achievement with translation
+	translated, err := r.LoadAchievementWithTranslation(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to reload achievement: %w", err)
 	}
 
-	streakAchievement, ok := updatedAchievement.(*model.StreakAchievement)
+	streakAchievement, ok := translated.(*model.StreakAchievement)
 	if !ok {
 		return nil, fmt.Errorf("updated achievement is not a streak achievement")
 	}
@@ -753,11 +745,10 @@ func (r *mutationResolver) ReorderAchievements(ctx context.Context, projectID st
 		r.Loaders.AchievementByIDLoader.Clear(ctx, achievementID)
 	}
 
-	// Load and return reordered achievements
+	// Load and return reordered achievements with translations
 	achievements := make([]model.Achievement, 0, len(achievementIds))
 	for _, achievementID := range achievementIds {
-		thunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
-		achievement, err := thunk()
+		achievement, err := r.LoadAchievementWithTranslation(ctx, achievementID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load achievement: %w", err)
 		}
@@ -803,14 +794,8 @@ func (r *mutationResolver) AwardAchievement(ctx context.Context, userID string, 
 		r.Cache.InvalidateEvent(*eventID)
 	}
 
-	// Load and return the achievement
-	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
-	achievement, err := achievementThunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load achievement: %w", err)
-	}
-
-	return achievement, nil
+	// Load and return the achievement with translation
+	return r.LoadAchievementWithTranslation(ctx, achievementID)
 }
 
 // RevokeAchievement is the resolver for the revokeAchievement field.
@@ -893,11 +878,13 @@ func (r *mutationResolver) MarkContentItemCompleted(ctx context.Context, userID 
 		return nil, fmt.Errorf("failed to mark content item completed: %w", err)
 	}
 
-	// Convert to model and check for auto-award
+	// Convert to model, apply translations, and check for auto-award
 	result := make([]model.ContentAchievement, 0, len(achievementRows))
 	for _, row := range achievementRows {
 		contentAch := convertPublishedContentAchievementRow(row)
-		result = append(result, *contentAch)
+		// Apply translation
+		translated := r.ApplyTranslationToAchievement(ctx, contentAch)
+		result = append(result, *translated.(*model.ContentAchievement))
 
 		// Invalidate user-specific caches
 		r.Cache.Delete(cache.UserContentProgressKey(userID, row.ID))
@@ -955,11 +942,13 @@ func (r *mutationResolver) UnmarkContentItemCompleted(ctx context.Context, userI
 		return nil, fmt.Errorf("failed to unmark content item completed: %w", err)
 	}
 
-	// Convert to model and invalidate caches
+	// Convert to model, apply translations, and invalidate caches
 	result := make([]model.ContentAchievement, 0, len(achievementRows))
 	for _, row := range achievementRows {
 		contentAch := convertPublishedContentAchievementRow(row)
-		result = append(result, *contentAch)
+		// Apply translation
+		translated := r.ApplyTranslationToAchievement(ctx, contentAch)
+		result = append(result, *translated.(*model.ContentAchievement))
 
 		// Invalidate user-specific caches
 		r.Cache.Delete(cache.UserContentProgressKey(userID, row.ID))
@@ -975,14 +964,7 @@ func (r *mutationResolver) RecordStreakActivity(ctx context.Context, userID stri
 
 // Achievement is the resolver for the achievement field.
 func (r *queryResolver) Achievement(ctx context.Context, id string) (model.Achievement, error) {
-	// Use dataloader to fetch achievement
-	thunk := r.Loaders.AchievementByIDLoader.Load(ctx, id)
-	achievement, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load achievement: %w", err)
-	}
-
-	return achievement, nil
+	return r.LoadAchievementWithTranslation(ctx, id)
 }
 
 // Achievements is the resolver for the achievements field.
@@ -1072,14 +1054,14 @@ func (r *queryResolver) Achievements(ctx context.Context, filter model.Achieveme
 		}
 	}
 
-	// Convert to GraphQL model
+	// Convert to GraphQL model and apply translations
 	modelAchievements := make([]model.Achievement, len(achievementRows))
 	for i, row := range achievementRows {
 		achievement, err := convertRowToAchievement(row)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert achievement: %w", err)
 		}
-		modelAchievements[i] = achievement
+		modelAchievements[i] = r.ApplyTranslationToAchievement(ctx, achievement)
 	}
 
 	// Build connection using pagination helper

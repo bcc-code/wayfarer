@@ -691,14 +691,8 @@ func (r *mutationResolver) AwardTeamAchievement(ctx context.Context, teamID stri
 	r.Cache.InvalidateTeam(teamID)
 	r.Cache.InvalidateAchievement(achievementID)
 
-	// Load and return the achievement
-	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
-	achievement, err := achievementThunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load achievement: %w", err)
-	}
-
-	return achievement, nil
+	// Load and return the achievement with translation
+	return r.LoadAchievementWithTranslation(ctx, achievementID)
 }
 
 // RevokeTeamAchievement is the resolver for the revokeTeamAchievement field.
@@ -754,14 +748,8 @@ func (r *mutationResolver) AwardSuperTeamAchievement(ctx context.Context, superT
 	r.Cache.InvalidateSuperTeam(superTeamID)
 	r.Cache.InvalidateAchievement(achievementID)
 
-	// Load and return the achievement
-	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
-	achievement, err := achievementThunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load achievement: %w", err)
-	}
-
-	return achievement, nil
+	// Load and return the achievement with translation
+	return r.LoadAchievementWithTranslation(ctx, achievementID)
 }
 
 // RevokeSuperTeamAchievement is the resolver for the revokeSuperTeamAchievement field.

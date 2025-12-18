@@ -575,7 +575,13 @@ func (r *projectResolver) Achievements(ctx context.Context, obj *model.Project) 
 		return nil, fmt.Errorf("failed to load achievements: %w", err)
 	}
 
-	return achievements, nil
+	// Apply translations to each achievement
+	result := make([]model.Achievement, len(achievements))
+	for i, a := range achievements {
+		result[i] = r.ApplyTranslationToAchievement(ctx, a)
+	}
+
+	return result, nil
 }
 
 // Streaks is the resolver for the streaks field.
@@ -976,8 +982,7 @@ func (r *scoreJournalResolver) Source(ctx context.Context, obj *model.ScoreJourn
 	// Load appropriate source based on sourceType
 	switch obj.SourceType {
 	case model.ScoreSourceTypeAchievement:
-		thunk := r.Loaders.AchievementByIDLoader.Load(ctx, *obj.SourceID)
-		achievement, err := thunk()
+		achievement, err := r.LoadAchievementWithTranslation(ctx, *obj.SourceID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load achievement: %w", err)
 		}
