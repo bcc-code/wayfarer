@@ -3,6 +3,7 @@ package loaders
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
@@ -50,7 +51,7 @@ func userByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 				birthdateStr := row.Birthdate.Time.Format("2006-01-02")
 
 				// Build consent status for this user
-				consentStatus := buildConsentStatus(row.ID, latestConsents, userConsentsMap)
+				consentStatus := buildConsentStatus(row.ID, row.Birthdate.Time, latestConsents, userConsentsMap)
 
 				// Use display_name if available, otherwise fall back to name
 				displayName := row.Name
@@ -167,12 +168,27 @@ func fetchConsentDataForUsers(ctx context.Context, db *database.DB, c *cache.Cac
 	return latestConsents, userConsentsMap
 }
 
+// calculateAge returns the age in years based on a birthdate
+func calculateAge(birthdate time.Time) int {
+	now := time.Now()
+	age := now.Year() - birthdate.Year()
+	// Adjust if birthday hasn't occurred yet this year
+	// Compare month and day directly to handle leap years correctly
+	if now.Month() < birthdate.Month() ||
+		(now.Month() == birthdate.Month() && now.Day() < birthdate.Day()) {
+		age--
+	}
+	return age
+}
+
 // buildConsentStatus builds the ConsentStatus for a user
-func buildConsentStatus(userID string, latestConsents map[string]*model.Consent, userConsentsMap map[string]map[string]*model.UserConsent) *model.ConsentStatus {
+func buildConsentStatus(userID string, birthdate time.Time, latestConsents map[string]*model.Consent, userConsentsMap map[string]map[string]*model.UserConsent) *model.ConsentStatus {
 	userConsents := userConsentsMap[userID]
 	if userConsents == nil {
 		userConsents = make(map[string]*model.UserConsent)
 	}
+
+	userAge := calculateAge(birthdate)
 
 	pendingConsents := make([]model.Consent, 0)
 	acceptedConsents := make([]model.UserConsent, 0)
@@ -180,6 +196,11 @@ func buildConsentStatus(userID string, latestConsents map[string]*model.Consent,
 
 	// Iterate through all latest published consents
 	for _, consent := range latestConsents {
+		// Skip LOCAL (internal) consents for users under 13
+		if userAge < 13 && consent.ManagementType == model.ConsentManagementTypeLocal {
+			continue
+		}
+
 		// Check by consent key (to handle rejection persistence across versions)
 		if userConsent, hasAction := userConsents[consent.Key]; hasAction {
 			// User has taken action on this consent
