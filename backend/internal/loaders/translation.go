@@ -37,6 +37,8 @@ type Translation struct {
 	ShortText            *string // Only for consents
 	Author               *string // Only for articles
 	Body                 *string // Only for consents
+	QuestionText         *string // Only for quiz questions
+	AnswerText           *string // Only for quiz answers
 }
 
 // translationBatchFunc batches loading translations by entity type, ID, and language code
@@ -266,6 +268,61 @@ func queryTranslations(ctx context.Context, db *database.DB, entityType string, 
 				Title:     row.Title,
 				ShortText: row.ShortText,
 				Body:      row.Body,
+			}
+		}
+		return translations, nil
+
+	case "quiz":
+		rows, err := db.Queries.GetQuizTranslationsByIDs(ctx, sqlc.GetQuizTranslationsByIDsParams{
+			EntityIds:    entityIDs,
+			LanguageCode: langCode,
+		})
+		if err != nil {
+			return nil, err
+		}
+		translations := make([]*Translation, len(rows))
+		for i, row := range rows {
+			translations[i] = &Translation{
+				EntityID:    row.QuizID,
+				LangCode:    row.LanguageCode,
+				Name:        row.Name,
+				Description: row.Description,
+			}
+		}
+		return translations, nil
+
+	case "quiz_question":
+		rows, err := db.Queries.GetQuizQuestionTranslationsByIDs(ctx, sqlc.GetQuizQuestionTranslationsByIDsParams{
+			EntityIds:    entityIDs,
+			LanguageCode: langCode,
+		})
+		if err != nil {
+			return nil, err
+		}
+		translations := make([]*Translation, len(rows))
+		for i, row := range rows {
+			translations[i] = &Translation{
+				EntityID:     row.QuestionID,
+				LangCode:     row.LanguageCode,
+				QuestionText: row.QuestionText,
+			}
+		}
+		return translations, nil
+
+	case "quiz_answer":
+		rows, err := db.Queries.GetQuizAnswerTranslationsByIDs(ctx, sqlc.GetQuizAnswerTranslationsByIDsParams{
+			EntityIds:    entityIDs,
+			LanguageCode: langCode,
+		})
+		if err != nil {
+			return nil, err
+		}
+		translations := make([]*Translation, len(rows))
+		for i, row := range rows {
+			translations[i] = &Translation{
+				EntityID:   row.AnswerID,
+				LangCode:   row.LanguageCode,
+				AnswerText: row.AnswerText,
 			}
 		}
 		return translations, nil

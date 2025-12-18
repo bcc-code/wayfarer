@@ -390,6 +390,117 @@ func (r *Resolver) ApplyTranslationToStreak(ctx context.Context, streak *model.S
 // Note: Article and Track translations are now handled via ExternalContent
 // The title field on Article and Track is resolved from ExternalContent translations
 
+// LoadQuizWithTranslation loads a quiz and applies translation for the requested language
+func (r *Resolver) LoadQuizWithTranslation(ctx context.Context, id string) (*model.Quiz, error) {
+	quiz, err := r.Loaders.QuizByIDLoader.Load(ctx, id)()
+	if err != nil {
+		return nil, err
+	}
+
+	return r.ApplyTranslationToQuiz(ctx, quiz), nil
+}
+
+// ApplyTranslationToQuiz applies translation to an already-loaded quiz
+func (r *Resolver) ApplyTranslationToQuiz(ctx context.Context, quiz *model.Quiz) *model.Quiz {
+	if quiz == nil {
+		return nil
+	}
+
+	lang := middleware.GetLanguage(ctx)
+	if lang == middleware.DefaultLanguage {
+		return quiz
+	}
+
+	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
+		EntityType: "quiz",
+		EntityID:   quiz.ID,
+		LangCode:   lang,
+	})()
+
+	if trans == nil {
+		return quiz
+	}
+
+	translated := *quiz
+	translated.Name = applyStringTranslation(trans.Name, quiz.Name)
+	translated.Description = applyStringTranslation(trans.Description, quiz.Description)
+	return &translated
+}
+
+// ApplyTranslationToQuizQuestion applies translation to an already-loaded quiz question
+func (r *Resolver) ApplyTranslationToQuizQuestion(ctx context.Context, question model.QuizQuestion) model.QuizQuestion {
+	if question == nil {
+		return nil
+	}
+
+	lang := middleware.GetLanguage(ctx)
+	if lang == middleware.DefaultLanguage {
+		return question
+	}
+
+	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
+		EntityType: "quiz_question",
+		EntityID:   question.GetID(),
+		LangCode:   lang,
+	})()
+
+	if trans == nil {
+		return question
+	}
+
+	return applyQuizQuestionTranslation(question, trans)
+}
+
+// applyQuizQuestionTranslation applies translation to a QuizQuestion interface value
+func applyQuizQuestionTranslation(question model.QuizQuestion, trans *loaders.Translation) model.QuizQuestion {
+	switch q := question.(type) {
+	case *model.FreeTextQuestion:
+		translated := *q
+		translated.QuestionText = applyStringTranslation(trans.QuestionText, q.QuestionText)
+		return &translated
+	case *model.PredefinedQuestion:
+		translated := *q
+		translated.QuestionText = applyStringTranslation(trans.QuestionText, q.QuestionText)
+		return &translated
+	case *model.NumberQuestion:
+		translated := *q
+		translated.QuestionText = applyStringTranslation(trans.QuestionText, q.QuestionText)
+		return &translated
+	case *model.JSONQuestion:
+		translated := *q
+		translated.QuestionText = applyStringTranslation(trans.QuestionText, q.QuestionText)
+		return &translated
+	default:
+		return question
+	}
+}
+
+// ApplyTranslationToQuizAnswer applies translation to an already-loaded quiz predefined answer
+func (r *Resolver) ApplyTranslationToQuizAnswer(ctx context.Context, answer *model.QuizPredefinedAnswer) *model.QuizPredefinedAnswer {
+	if answer == nil {
+		return nil
+	}
+
+	lang := middleware.GetLanguage(ctx)
+	if lang == middleware.DefaultLanguage {
+		return answer
+	}
+
+	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
+		EntityType: "quiz_answer",
+		EntityID:   answer.ID,
+		LangCode:   lang,
+	})()
+
+	if trans == nil {
+		return answer
+	}
+
+	translated := *answer
+	translated.AnswerText = applyStringTranslation(trans.AnswerText, answer.AnswerText)
+	return &translated
+}
+
 // LoadConsentWithTranslation loads a consent and applies translation for the requested language
 func (r *Resolver) LoadConsentWithTranslation(ctx context.Context, id string) (*model.Consent, error) {
 	consent, err := r.Loaders.ConsentByIDLoader.Load(ctx, id)()

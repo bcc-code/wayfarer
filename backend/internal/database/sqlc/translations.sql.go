@@ -261,6 +261,126 @@ func (q *Queries) GetProjectTranslationsByIDs(ctx context.Context, arg GetProjec
 	return items, nil
 }
 
+const GetQuizAnswerTranslationsByIDs = `-- name: GetQuizAnswerTranslationsByIDs :many
+SELECT answer_id, language_code, answer_text
+FROM quiz_answer_translations
+WHERE answer_id = ANY($1::text[])
+  AND language_code = $2::text
+`
+
+type GetQuizAnswerTranslationsByIDsParams struct {
+	EntityIds    []string `json:"entity_ids"`
+	LanguageCode string   `json:"language_code"`
+}
+
+type GetQuizAnswerTranslationsByIDsRow struct {
+	AnswerID     string  `json:"answer_id"`
+	LanguageCode string  `json:"language_code"`
+	AnswerText   *string `json:"answer_text"`
+}
+
+func (q *Queries) GetQuizAnswerTranslationsByIDs(ctx context.Context, arg GetQuizAnswerTranslationsByIDsParams) ([]*GetQuizAnswerTranslationsByIDsRow, error) {
+	rows, err := q.db.Query(ctx, GetQuizAnswerTranslationsByIDs, arg.EntityIds, arg.LanguageCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetQuizAnswerTranslationsByIDsRow{}
+	for rows.Next() {
+		var i GetQuizAnswerTranslationsByIDsRow
+		if err := rows.Scan(&i.AnswerID, &i.LanguageCode, &i.AnswerText); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetQuizQuestionTranslationsByIDs = `-- name: GetQuizQuestionTranslationsByIDs :many
+SELECT question_id, language_code, question_text
+FROM quiz_question_translations
+WHERE question_id = ANY($1::text[])
+  AND language_code = $2::text
+`
+
+type GetQuizQuestionTranslationsByIDsParams struct {
+	EntityIds    []string `json:"entity_ids"`
+	LanguageCode string   `json:"language_code"`
+}
+
+type GetQuizQuestionTranslationsByIDsRow struct {
+	QuestionID   string  `json:"question_id"`
+	LanguageCode string  `json:"language_code"`
+	QuestionText *string `json:"question_text"`
+}
+
+func (q *Queries) GetQuizQuestionTranslationsByIDs(ctx context.Context, arg GetQuizQuestionTranslationsByIDsParams) ([]*GetQuizQuestionTranslationsByIDsRow, error) {
+	rows, err := q.db.Query(ctx, GetQuizQuestionTranslationsByIDs, arg.EntityIds, arg.LanguageCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetQuizQuestionTranslationsByIDsRow{}
+	for rows.Next() {
+		var i GetQuizQuestionTranslationsByIDsRow
+		if err := rows.Scan(&i.QuestionID, &i.LanguageCode, &i.QuestionText); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetQuizTranslationsByIDs = `-- name: GetQuizTranslationsByIDs :many
+SELECT quiz_id, language_code, name, description
+FROM quiz_translations
+WHERE quiz_id = ANY($1::text[])
+  AND language_code = $2::text
+`
+
+type GetQuizTranslationsByIDsParams struct {
+	EntityIds    []string `json:"entity_ids"`
+	LanguageCode string   `json:"language_code"`
+}
+
+type GetQuizTranslationsByIDsRow struct {
+	QuizID       string  `json:"quiz_id"`
+	LanguageCode string  `json:"language_code"`
+	Name         *string `json:"name"`
+	Description  *string `json:"description"`
+}
+
+func (q *Queries) GetQuizTranslationsByIDs(ctx context.Context, arg GetQuizTranslationsByIDsParams) ([]*GetQuizTranslationsByIDsRow, error) {
+	rows, err := q.db.Query(ctx, GetQuizTranslationsByIDs, arg.EntityIds, arg.LanguageCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetQuizTranslationsByIDsRow{}
+	for rows.Next() {
+		var i GetQuizTranslationsByIDsRow
+		if err := rows.Scan(
+			&i.QuizID,
+			&i.LanguageCode,
+			&i.Name,
+			&i.Description,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetStreakTranslationsByIDs = `-- name: GetStreakTranslationsByIDs :many
 SELECT streak_id, language_code, name, description
 FROM streak_translations
