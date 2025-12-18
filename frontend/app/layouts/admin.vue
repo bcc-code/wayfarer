@@ -26,7 +26,8 @@ const { data } = useAdminSidebarQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
-const { canAccessUsers, canAccessTeams, canAccessConsents } = usePermissions()
+const { canAccessUsers, canAccessTeams, canAccessConsents, canAccessScores } =
+  usePermissions()
 
 const projectsLinks = computed(() => {
   return data.value?.projects.edges.map(({ node: project }) => ({
@@ -70,6 +71,15 @@ const links = computed<NavigationMenuItem[]>(() => {
       icon: 'lucide:user',
       active: route.fullPath.includes('/users'),
       to: '/admin/users',
+    })
+  }
+
+  if (canAccessScores.value) {
+    items.push({
+      label: 'Scores',
+      icon: 'lucide:trophy',
+      active: route.fullPath.includes('/scores'),
+      to: '/admin/scores',
     })
   }
 
