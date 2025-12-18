@@ -1,8 +1,18 @@
 /// <reference lib="WebWorker" />
 
-declare let self: ServiceWorkerGlobalScope
+import { CacheableResponsePlugin } from 'workbox-cacheable-response'
+import { ExpirationPlugin } from 'workbox-expiration'
+import {
+  cleanupOutdatedCaches,
+  createHandlerBoundToURL,
+  precacheAndRoute,
+} from 'workbox-precaching'
+import { NavigationRoute, registerRoute } from 'workbox-routing'
+import { NetworkFirst } from 'workbox-strategies'
 
-// Inline push notification handlers to avoid module import issues in dev
+declare const self: ServiceWorkerGlobalScope & {
+  __WB_MANIFEST: Array<{ url: string; revision: string | null }>
+}
 interface PushPayload {
   title: string
   body: string
@@ -94,54 +104,29 @@ self.addEventListener('message', (event) => {
   }
 })
 
-// Only use workbox caching in production
-if (import.meta.env.PROD) {
-  // Dynamic import to avoid issues in dev mode
-  Promise.all([
-    import('workbox-cacheable-response'),
-    import('workbox-expiration'),
-    import('workbox-precaching'),
-    import('workbox-routing'),
-    import('workbox-strategies'),
-  ]).then(
-    ([
-      { CacheableResponsePlugin },
-      { ExpirationPlugin },
-      { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute },
-      { NavigationRoute, registerRoute },
-      { NetworkFirst },
-    ]) => {
-      const entries = self.__WB_MANIFEST || []
-      if (entries.length > 0) {
-        precacheAndRoute(entries)
-      }
-
-      cleanupOutdatedCaches()
-
-      const denylist = [
-        /^\/sw.js$/,
-        /^\/service-worker.js$/,
-        /^\/manifest-(.*).webmanifest$/,
-      ]
-
-      registerRoute(
-        ({ request, sameOrigin }) =>
-          sameOrigin && request.destination === 'manifest',
-        new NetworkFirst({
-          cacheName: 'webmanifest',
-          plugins: [
-            new CacheableResponsePlugin({ statuses: [200] }),
-            new ExpirationPlugin({ maxEntries: 100 }),
-          ],
-        }),
-      )
-
-      registerRoute(
-        new NavigationRoute(createHandlerBoundToURL('/'), { denylist }),
-      )
-    },
-  )
+// Workbox caching setup
+const entries = self.__WB_MANIFEST || []
+if (entries.length > 0) {
+  precacheAndRoute(entries)
 }
+
+cleanupOutdatedCaches()
+
+const denylist = [/^\/service-worker.js$/, /^\/manifest-(.*).webmanifest$/]
+
+registerRoute(
+  ({ request, sameOrigin }) =>
+    sameOrigin && request.destination === 'manifest',
+  new NetworkFirst({
+    cacheName: 'webmanifest',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [200] }),
+      new ExpirationPlugin({ maxEntries: 100 }),
+    ],
+  }),
+)
+
+registerRoute(new NavigationRoute(createHandlerBoundToURL('/'), { denylist }))
 
 self.addEventListener('push', onPush)
 self.addEventListener('notificationclick', onNotificationClick)
