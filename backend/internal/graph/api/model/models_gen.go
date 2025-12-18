@@ -1069,6 +1069,8 @@ type ScoreJournalEdge struct {
 }
 
 type ScoreJournalFilter struct {
+	ProjectID   *string          `json:"projectId,omitempty"`
+	UserID      *string          `json:"userId,omitempty"`
 	EventID     *string          `json:"eventId,omitempty"`
 	ChallengeID *string          `json:"challengeId,omitempty"`
 	SourceType  *ScoreSourceType `json:"sourceType,omitempty"`
