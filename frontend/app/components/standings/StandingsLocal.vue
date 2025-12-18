@@ -75,13 +75,11 @@ const totalPersons = computed(() => {
             key: 'persons',
             label: $t('standings.top', { amount: totalPersons }),
             value: LeaderboardEntityType.Persons,
-            icon: 'IconUser',
           },
           {
             key: 'units',
             label: $t('standings.units'),
             value: LeaderboardEntityType.Teams,
-            icon: 'IconUsers',
           },
         ]"
         class="mb-list-section-gap"
@@ -89,7 +87,8 @@ const totalPersons = computed(() => {
       >
         <template #tab="{ tab }">
           <div class="flex flex-col items-center gap-0.5">
-            <Icon :name="tab.icon" class="size-7" />
+            <IconUser v-if="tab.key === 'persons'" class="size-7" />
+            <IconUsers v-else class="size-7" />
             <span>{{ tab.label }}</span>
           </div>
         </template>
