@@ -112,7 +112,7 @@ const actionsClasses = cva(
   >
     <header :class="headerClasses({ hasScrolled, size, animate })">
       <slot name="title">
-        <h1 v-if="title" :class="headingClasses({ hasScrolled, animate })">
+        <h1 :class="headingClasses({ hasScrolled, animate })">
           {{ title }}
         </h1>
       </slot>

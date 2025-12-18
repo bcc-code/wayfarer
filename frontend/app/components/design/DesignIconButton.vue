@@ -13,6 +13,9 @@ withDefaults(
   },
 )
 
+const buttonRef = ref<HTMLButtonElement | null>(null)
+const { onPressStart, onPressEnd } = useButtonPress()
+
 const classes = cva('aspect-square relative grid place-items-center', {
   variants: {
     variant: {
@@ -30,7 +33,13 @@ const classes = cva('aspect-square relative grid place-items-center', {
 </script>
 
 <template>
-  <button :class="classes({ variant, size })">
+  <button
+    ref="buttonRef"
+    :class="classes({ variant, size })"
+    @pointerdown="onPressStart(buttonRef)"
+    @pointerup="onPressEnd(buttonRef)"
+    @pointerleave="onPressEnd(buttonRef)"
+  >
     <Icon :name="icon" class="size-5" />
   </button>
 </template>

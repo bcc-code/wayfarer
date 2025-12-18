@@ -197,3 +197,30 @@ export function useConfetti() {
 
   return { burst, cleanup }
 }
+
+/**
+ * Button press animation - scale down on press, spring back on release
+ */
+export function useButtonPress() {
+  function onPressStart(element: HTMLElement | null) {
+    if (!element || prefersReducedMotion()) return
+
+    gsap.to(element, {
+      scale: 0.97,
+      duration: 0.1,
+      ease: 'power2.out',
+    })
+  }
+
+  function onPressEnd(element: HTMLElement | null) {
+    if (!element || prefersReducedMotion()) return
+
+    gsap.to(element, {
+      scale: 1,
+      duration: 0.2,
+      ease: 'back.out(2)',
+    })
+  }
+
+  return { onPressStart, onPressEnd }
+}
