@@ -26,11 +26,14 @@ const leaderboard = computed<LeaderboardEntry[]>(() => {
   }
   return result
 })
+
+// Only show loading state on initial load, not on refetch
+const isInitialLoading = computed(() => fetching.value && !data.value)
 </script>
 
 <template>
   <div>
-    <LoadingState v-if="fetching" />
+    <LoadingState v-if="isInitialLoading" />
     <ErrorState v-else-if="error" :error />
     <template v-else-if="leaderboard?.length">
       <div

@@ -9,19 +9,22 @@ const props = defineProps<{
 const containerRef = ref<HTMLElement | null>(null)
 const { animate } = useStaggeredEntrance()
 
-watch(
-  () => props.leaderboard,
-  (list) => {
-    if (list.length > 0 && containerRef.value) {
-      nextTick(() => {
-        const items = containerRef.value?.querySelectorAll('.leaderboard-item')
-        if (items) {
-          animate(items)
-        }
-      })
-    }
-  },
-)
+function runAnimation() {
+  if (props.leaderboard.length > 0 && containerRef.value) {
+    nextTick(() => {
+      const items = containerRef.value?.querySelectorAll('.leaderboard-item')
+      if (items) {
+        animate(items)
+      }
+    })
+  }
+}
+
+// Animate on data change
+watch(() => props.leaderboard, runAnimation)
+
+// Animate on mount (for v-if toggling)
+onMounted(runAnimation)
 </script>
 
 <template>
