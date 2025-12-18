@@ -421,6 +421,7 @@ func main() {
 			router.StaticFile("/pwa-192x192.png", filepath.Join(staticPath, "pwa-192x192.png"))
 			router.StaticFile("/pwa-512x512.png", filepath.Join(staticPath, "pwa-512x512.png"))
 			router.StaticFile("/maskable-icon-512x512.png", filepath.Join(staticPath, "maskable-icon-512x512.png"))
+			router.StaticFile("/service-worker.js", filepath.Join(staticPath, "service-worker.js"))
 
 			// SPA fallback: serve index.html for unmatched routes
 			router.NoRoute(func(c *gin.Context) {
