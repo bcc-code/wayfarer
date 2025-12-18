@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const open = ref(false)
 const message = ref<string>()
-const canContactMe = ref(false)
+// const canContactMe = ref(false)
 const showValidationError = ref(false)
 const hasSent = ref(false)
 
@@ -103,7 +103,7 @@ function handleSubmit() {
           v-else
           class="flex flex-col items-center justify-center grow p-default text-center mb-24"
         >
-          <Icon name="IconSupport" class="size-12 mb-6" />
+          <IconSupport class="size-12 mb-6" />
           <p class="text-title mb-2">{{ $t('feedback.thankYou') }}</p>
           <p class="text-label text-text-muted mb-8">
             {{ $t('feedback.thankYouDescription') }}
