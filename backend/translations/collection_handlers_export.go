@@ -17,9 +17,10 @@ func (s *Service) getDataForProjects(ctx context.Context) ([]common.TranslationD
 
 	toSend := []common.TranslationData{}
 	for _, row := range rows {
-		value := NameDescriptionTranslation{
+		value := ProjectTranslation{
 			Name:        row.Name,
 			Description: null.StringFrom(row.Description),
+			Rules:       null.StringFromPtr(row.Rules),
 		}
 		toSend = append(toSend, common.TranslationData{
 			Language: "no", // Base language is Norwegian

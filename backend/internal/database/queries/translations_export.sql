@@ -1,7 +1,7 @@
 -- Export queries for translations - fetch base language content
 
 -- name: GetProjectsForTranslation :many
-SELECT id, name, description
+SELECT id, name, description, rules
 FROM projects
 WHERE archived = false;
 

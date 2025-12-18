@@ -1,12 +1,13 @@
 -- Import queries - upsert translated content
 
 -- name: UpsertProjectTranslation :exec
-INSERT INTO project_translations (project_id, language_code, name, description, updated_at)
-VALUES (@project_id::text, @language_code::text, @name::text, @description::text, now())
+INSERT INTO project_translations (project_id, language_code, name, description, rules, updated_at)
+VALUES (@project_id::text, @language_code::text, @name::text, @description::text, @rules::text, now())
 ON CONFLICT (project_id, language_code)
 DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
+    rules = EXCLUDED.rules,
     updated_at = now();
 
 -- name: UpsertEventTranslation :exec
