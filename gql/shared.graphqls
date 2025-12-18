@@ -1063,6 +1063,8 @@ input StreakFilter {
 }
 
 input ScoreJournalFilter {
+    projectId: ID  # Optional: filter by project (for admin queries)
+    userId: ID  # Optional: filter by user (for admin queries)
     eventId: ID  # Optional: filter by event
     challengeId: ID  # Optional: filter by challenge
     sourceType: ScoreSourceType  # Optional: filter by source type
