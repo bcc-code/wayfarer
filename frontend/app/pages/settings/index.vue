@@ -8,6 +8,8 @@ const {
   isSubscribed,
   isSupported: isPushSupported,
   isLoading: isPushLoading,
+  permission: pushPermission,
+  error: pushError,
 } = usePushNotifications()
 
 async function toggleNotifications(enabled: boolean) {
@@ -52,10 +54,22 @@ async function toggleNotifications(enabled: boolean) {
             <p class="text-label">{{ $t('settings.notifications') }}</p>
             <DesignSwitch
               :model-value="isSubscribed"
-              :disabled="isPushLoading"
+              :disabled="isPushLoading || pushPermission === 'denied'"
               @update:model-value="toggleNotifications"
             />
           </label>
+          <p
+            v-if="pushPermission === 'denied'"
+            class="text-text-hint text-caption px-3 pb-2"
+          >
+            {{ $t('settings.notificationsBlocked') }}
+          </p>
+          <p
+            v-else-if="pushError"
+            class="text-text-negative text-caption px-3 pb-2"
+          >
+            {{ pushError.message }}
+          </p>
         </template>
       </DesignPanel>
       <DesignPanel class="gap-list-section-inset flex flex-col">
