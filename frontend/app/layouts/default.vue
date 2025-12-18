@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { gsap } from 'gsap'
 import '~/assets/styles/user.css'
 
 const { t } = useI18n()
@@ -79,37 +80,60 @@ watch(data, (newData) => {
 })
 
 const route = useRoute()
-const activeMenuItem = ref<HTMLElement | null>(null)
+const navRef = ref<HTMLElement | null>(null)
+const indicatorRef = ref<HTMLElement | null>(null)
+const isFirstRender = ref(true)
 
-// Find the active menu item after route changes or on mount
-// Uses a small delay to ensure NuxtLink has set aria-current="page"
-function updateActiveMenuItem() {
-  const el = document.querySelector<HTMLElement>(`[aria-current="page"]`)
-  if (el) {
-    activeMenuItem.value = el
+function updateIndicator() {
+  if (!navRef.value || !indicatorRef.value) return
+
+  const activeLink = navRef.value.querySelector<HTMLElement>(
+    '[aria-current="page"]',
+  )
+  if (!activeLink) return
+
+  const targetLeft = activeLink.offsetLeft
+  const targetTop = activeLink.offsetTop
+  const targetWidth = activeLink.offsetWidth
+  const targetHeight = activeLink.offsetHeight
+
+  const prefersReducedMotion = window.matchMedia(
+    '(prefers-reduced-motion: reduce)',
+  ).matches
+
+  if (isFirstRender.value || prefersReducedMotion) {
+    gsap.set(indicatorRef.value, {
+      left: targetLeft,
+      top: targetTop,
+      width: targetWidth,
+      height: targetHeight,
+    })
+    isFirstRender.value = false
   } else {
-    // Retry after a short delay if not found (initial hydration)
-    setTimeout(() => {
-      activeMenuItem.value = document.querySelector<HTMLElement>(
-        `[aria-current="page"]`,
-      )
-    }, 50)
+    gsap.to(indicatorRef.value, {
+      left: targetLeft,
+      top: targetTop,
+      width: targetWidth,
+      height: targetHeight,
+      duration: 0.3,
+      ease: 'power2.out',
+    })
   }
 }
 
-watch(() => route.path, updateActiveMenuItem)
+watch(
+  () => route.path,
+  () => {
+    nextTick(() => {
+      // Small delay to ensure aria-current is set
+      setTimeout(updateIndicator, 10)
+    })
+  },
+)
 
 onMounted(() => {
-  updateActiveMenuItem()
+  setTimeout(updateIndicator, 50)
 })
-
-const navRef = ref<HTMLElement | null>(null)
-const { left: navLeft, top: navTop } = useElementBounding(navRef)
-const { left, height, width, top } = useElementBounding(activeMenuItem)
-
-// Calculate position relative to the nav container
-const relativeLeft = computed(() => left.value - navLeft.value)
-const relativeTop = computed(() => top.value - navTop.value)
 
 const showNavigation = computed(() => {
   const path = route.path
@@ -136,7 +160,7 @@ const showNavigation = computed(() => {
           <li v-for="link in links" :key="link.label" class="grow z-10">
             <NuxtLink
               :to="link.to"
-              class="px-default rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5 transition-all duration-150 ease-out"
+              class="px-default rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5"
               active-class="text-accent-contrast"
             >
               <UIcon
@@ -148,13 +172,8 @@ const showNavigation = computed(() => {
             </NuxtLink>
           </li>
           <div
-            class="rounded-navigation-inset bg-background-indent absolute aspect-square transition-all duration-150 ease-out"
-            :style="{
-              left: relativeLeft + 'px',
-              top: relativeTop + 'px',
-              height: height + 'px',
-              width: width + 'px',
-            }"
+            ref="indicatorRef"
+            class="rounded-navigation-inset bg-background-indent absolute top-0 left-0"
           />
         </ul>
       </ProgressiveBlur>
