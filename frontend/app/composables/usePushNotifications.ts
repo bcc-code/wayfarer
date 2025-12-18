@@ -151,37 +151,42 @@ export function usePushNotifications() {
     isLoading.value = true
     error.value = null
 
+    const endpoint = subscription.value.endpoint
+
     try {
-      // Remove from backend via GraphQL
-      const result = await unregisterSubscription({
-        endpoint: subscription.value.endpoint,
-      })
-
-      if (result.error) {
-        throw new Error(result.error.message)
-      }
-
-      // Then unsubscribe locally
+      // Unsubscribe locally first - this is the critical operation
       await subscription.value.unsubscribe()
       subscription.value = null
+
+      // Then remove from backend (can be retried if it fails)
+      const result = await unregisterSubscription({ endpoint })
+
+      if (result.error) {
+        // Local unsubscribe succeeded, backend failed - not critical
+        // Backend will eventually clean up stale subscriptions
+        console.warn('[Push] Backend unsubscribe failed:', result.error.message)
+      }
 
       return true
     } catch (err) {
       error.value =
         err instanceof Error ? err : new Error('Failed to unsubscribe')
-      console.error('[Push] Unsubscribe error:', err)
       return false
     } finally {
       isLoading.value = false
     }
   }
 
-  // Initialize: check for existing subscription (only once)
+  // Initialize on mount
   onMounted(async () => {
-    if (isInitialized.value) return
-    if (isSupported.value && typeof Notification !== 'undefined') {
+    if (!isSupported.value || typeof Notification === 'undefined') return
+
+    // Always sync permission state (user may have changed in browser settings)
+    permission.value = Notification.permission
+
+    // Only fetch subscription once per app lifecycle (expensive operation)
+    if (!isInitialized.value) {
       isInitialized.value = true
-      permission.value = Notification.permission
       await getSubscription()
     }
   })
