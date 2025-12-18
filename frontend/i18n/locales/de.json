@@ -49,6 +49,7 @@
     },
     "consents": "Einverständnis",
     "notifications": "Benachrichtigungen",
+    "notificationsBlocked": "Benachrichtigungen sind in den Browsereinstellungen blockiert",
     "addToHomeScreen": "App zum Homescreen hinzufügen",
     "privacyPolicy": "Datenschutzerklärung"
   },
