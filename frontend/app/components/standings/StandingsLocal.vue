@@ -57,7 +57,7 @@ const totalPersons = computed(() => {
 
 <template>
   <div>
-    <LoadingState v-if="debouncedFetching" />
+    <StandingsListSkeleton v-if="debouncedFetching" />
     <ErrorState v-else-if="error" :error />
     <template v-else-if="data">
       <div

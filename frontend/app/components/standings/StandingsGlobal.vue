@@ -33,7 +33,7 @@ const isInitialLoading = computed(() => fetching.value && !data.value)
 
 <template>
   <div>
-    <LoadingState v-if="isInitialLoading" />
+    <StandingsListSkeleton v-if="isInitialLoading" />
     <ErrorState v-else-if="error" :error />
     <template v-else-if="leaderboard?.length">
       <div

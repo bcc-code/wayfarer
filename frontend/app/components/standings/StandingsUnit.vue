@@ -73,7 +73,7 @@ function selectTeamLead(userId: string) {
 
 <template>
   <div>
-    <LoadingState v-if="fetching" />
+    <StandingsListSkeleton v-if="fetching" />
     <ErrorState v-else-if="error" :error />
     <template v-else-if="data">
       <div
