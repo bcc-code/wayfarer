@@ -134,13 +134,17 @@ function formatDate(date: string) {
     minute: '2-digit',
   })
 }
+
+const { canDeleteScoreEntry, canManageScores } = usePermissions()
 </script>
 
 <template>
   <UContainer class="py-12">
     <div class="mb-6 flex items-center justify-between">
       <h1 class="text-3xl">Score Adjustments</h1>
-      <UButton :to="{ name: 'admin-scores-new' }">New adjustment</UButton>
+      <UButton v-if="canManageScores" :to="{ name: 'admin-scores-new' }">
+        New adjustment
+      </UButton>
     </div>
     <ErrorState v-if="error" :error />
     <div v-else class="space-y-4">
@@ -185,6 +189,7 @@ function formatDate(date: string) {
         <template #actions-cell="{ row }">
           <div class="flex justify-end">
             <UButton
+              v-if="canDeleteScoreEntry"
               variant="ghost"
               color="error"
               icon="i-lucide-trash-2"

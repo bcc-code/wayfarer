@@ -39,13 +39,19 @@ const { data, error, fetching } = useAdminProjectsPageQuery({
 const { currentProjects, futureProjects, pastProjects } = useGroupedProjects(
   () => data.value?.projects.edges.map((edge) => edge.node),
 )
+
+const { canCreateProject } = usePermissions()
 </script>
 
 <template>
   <UContainer class="py-12">
     <div class="mb-12 flex flex-col items-start gap-8">
       <h1 class="text-3xl">Projects</h1>
-      <UButton icon="lucide:plus" :to="{ name: 'admin-projects-new' }">
+      <UButton
+        v-if="canCreateProject"
+        icon="lucide:plus"
+        :to="{ name: 'admin-projects-new' }"
+      >
         New Project
       </UButton>
     </div>
