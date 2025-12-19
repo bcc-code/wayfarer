@@ -1,6 +1,18 @@
 import { execSync } from 'node:child_process'
 
-const gitCommitHash = execSync('git rev-parse --short HEAD').toString().trim()
+function getAppVersion(): string {
+  if (process.env.APP_VERSION) {
+    return process.env.APP_VERSION
+  }
+
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim()
+  } catch {
+    throw new Error('APP_VERSION environment variable not set and git is not available. Set APP_VERSION in your build environment.')
+  }
+}
+
+const gitCommitHash = getAppVersion()
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',

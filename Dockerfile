@@ -8,6 +8,8 @@ ARG NUXT_PUBLIC_LOGIN_URL
 ARG NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY
 ARG NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL
 ARG NUXT_PUBLIC_VAPID_PUBLIC_KEY
+ARG NUXT_PUBLIC_IS_STAGING
+ARG APP_VERSION
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -19,6 +21,7 @@ RUN pnpm install --frozen-lockfile
 
 # Copy frontend source and build
 COPY frontend/ ./
+ENV APP_VERSION=${APP_VERSION}
 RUN pnpm run build
 
 # Stage 2: Build Go backend
