@@ -2,14 +2,20 @@
   "error": {
     "title": "Hoppá! Valami baj történt"
   },
+  "emptyStates": {
+    "standings": "Még nincs toplista",
+    "unit": "Még nincs toplista az egységed számára",
+    "challenges": "Még nincs kihívás",
+    "pointHistory": "Még nincs pont"
+  },
   "quiz": {
     "wrongAnswer": "Helytelen válasz",
     "correctAnswer": "Helyes válasz:",
     "yourAnswer": "Válaszod",
     "lockAnswer": "Válasz zárolása",
-    "nextQuestion": "Következő kérdés",
     "questionNumber": "{current} ból {total}",
     "continue": "Folytatás",
+    "nextQuestion": "Következő kérdés",
     "done": "Kész",
     "result": {
       "receivedNoPoints": "Nem szereztél pontot.",
@@ -20,20 +26,18 @@
     }
   },
   "pages": {
-    "standings": "Állás",
-    "unit": "A te egységed",
-    "profile": "A profilod",
-    "challenges": "Feladatok",
-    "challenge": "Feladat",
+    "standings": "Legnépszerűbb listák",
+    "challenges": "Kihívások",
     "settings": "Beállítások",
     "pointHistory": "Pontok története",
-    "getPoints": "Pontok gyűjtése",
-    "consents": "Hozzájárulás"
+    "rules": "Szabályok",
+    "consents": "Hozzájárulásaim",
+    "addToHomeScreen": "Alkalmazás hozzáadása a kezdőképernyőhöz"
   },
   "navigation": {
-    "standings": "Állás",
-    "profile": "Profil",
-    "challenges": "Feladatok"
+    "standings": "Legnépszerűbb listák",
+    "profile": "Az én oldalam",
+    "challenges": "Kihívások"
   },
   "emptyState": "Itt nincs semmi látnivaló.",
   "settings": {
@@ -44,21 +48,22 @@
       "light": "Világos",
       "dark": "Sötét"
     },
-    "consents": "Hozzájárulás",
+    "consents": "Hozzájárulásaim",
     "notifications": "Értesítések",
-    "notificationsEnabled": "Be",
-    "notificationsDisabled": "Ki",
+    "notificationsBlocked": "Az értesítések blokkolva vannak a böngésző beállításaiban.",
     "addToHomeScreen": "Alkalmazás hozzáadása a kezdőképernyőhöz",
     "privacyPolicy": "Adatvédelmi irányelvek"
   },
   "standings": {
-    "global": "Top 20",
-    "unit": "A te egységed",
+    "global": "Globálisan",
+    "unit": "Az én egységem",
     "local": "Helyi",
     "you": "Te",
-    "rules": "Pontok gyűjtése",
+    "rules": "Szabályok",
     "units": "Egységek",
-    "personal": "Személyes"
+    "top": "Top {amount}",
+    "u18": "U18",
+    "o18": "O18"
   },
   "pointHistory": {
     "pointHistoryButton": "Pontok története",
@@ -72,7 +77,7 @@
     "noUnitLeader": "Nincs egységvezető",
     "selectUnitLeader": "Egységvezető választása"
   },
-  "place": "hely",
+  "place": "elhelyezés",
   "points": "Pont",
   "givesYouXPoints": "{points} -pontot ad",
   "consent": {
@@ -83,7 +88,6 @@
     "bannerTitle": "Van néhány hozzájárulás, amit figyelembe kell venned.",
     "bannerButton": "Ugrás a beleegyezési beállításokhoz",
     "readButton": "Olvasd el a felhasználási feltételeket",
-    "readTitle": "Általános Szerződési Feltételek",
     "change": "Változás",
     "goToConsent": "Ugrás a beleegyezéshez",
     "continue": "Folytatás",
@@ -93,5 +97,20 @@
   "achievement": {
     "title": "Díj",
     "unlocked": "Elérted!"
+  },
+  "feedback": {
+    "title": "Adja meg véleményedet",
+    "cta": "Adja meg véleményedet",
+    "description": "Szeretnénk hallani a véleményedet, hogy szolgáltatásunkat még jobbá tehessük.",
+    "send": "Visszajelzés küldése",
+    "label": "Volt valami, amit jónak találtál, vagy valami, amit lehetne javítani?",
+    "placeholder": "Írd ide visszajelzésedet...",
+    "success": "Köszönjük visszajelzésedet",
+    "validationError": "Üres visszajelzési űrlapot nem lehet elküldeni.",
+    "lengthError": "A visszajelzés nem haladhatja meg a {max} karaktert.",
+    "thankYou": "Köszönjük a segítségedet!",
+    "thankYouDescription": "A visszajelzéseid a szolgáltatás továbbfejlesztéséhez fogjuk felhasználni.",
+    "close": "Szívesen.",
+    "canContactMe": "Igen, egyetértek azzal, hogy visszajelzésemmel kapcsolatban felvehetitek velem a kapcsolatot."
   }
 }
