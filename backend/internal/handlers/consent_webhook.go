@@ -29,7 +29,7 @@ type ConsentEventRequest struct {
 	MembersID  string    `json:"members_id" binding:"required"`
 	ConsentKey string    `json:"consent_key" binding:"required"`
 	Action     string    `json:"action" binding:"required,oneof=ACCEPTED REJECTED"`
-	Timestamp  time.Time `json:"timestamp" binding:"required"`
+	Timestamp  time.Time `json:"timestamp"`
 }
 
 // ConsentEventResponse represents the response for a consent event
@@ -120,20 +120,13 @@ func (h *ConsentWebhookHandler) HandleConsentEvent(c *gin.Context) {
 	// Create consent history record
 	historyID := ulid.NewUserConsentHistoryID()
 
-	var occurredAt pgtype.Timestamptz
-	if err := occurredAt.Scan(req.Timestamp); err != nil {
-		slog.Error("consent_webhook: failed to convert timestamp", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-		return
-	}
-
 	_, err = h.DB.Queries.CreateUserConsentHistory(ctx, sqlc.CreateUserConsentHistoryParams{
 		ID:         historyID,
 		UserID:     user.ID,
 		ConsentID:  consent.ID,
 		ConsentKey: req.ConsentKey,
 		Action:     req.Action,
-		OccurredAt: occurredAt,
+		OccurredAt: pgtype.Timestamptz{Time: req.Timestamp, Valid: !req.Timestamp.IsZero()},
 		Source:     &sourceStr,
 	})
 	if err != nil {
@@ -169,19 +162,12 @@ func (h *ConsentWebhookHandler) storePendingConsentEvent(c *gin.Context, req Con
 
 	pendingID := ulid.NewPendingConsentEventID()
 
-	var occurredAt pgtype.Timestamptz
-	if err := occurredAt.Scan(req.Timestamp); err != nil {
-		slog.Error("consent_webhook: failed to convert timestamp for pending event", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-		return
-	}
-
 	_, err := h.DB.Queries.CreatePendingConsentEvent(ctx, sqlc.CreatePendingConsentEventParams{
 		ID:         pendingID,
 		MembersID:  req.MembersID,
 		ConsentKey: req.ConsentKey,
 		Action:     req.Action,
-		OccurredAt: occurredAt,
+		OccurredAt: pgtype.Timestamptz{Time: req.Timestamp, Valid: !req.Timestamp.IsZero()},
 		Source:     &source,
 	})
 	if err != nil {
