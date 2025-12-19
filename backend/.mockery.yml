@@ -14,6 +14,8 @@ packages:
   github.com/bcc-media/wayfarer/internal/services:
     interfaces:
       RoleQuerier:
+      LanguageQuerier:
+      UserLoader:
   github.com/bcc-media/wayfarer/internal/services/push:
     interfaces:
       Querier:

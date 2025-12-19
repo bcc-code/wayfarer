@@ -1120,16 +1120,17 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	}
 	txSuccess = true
 
-	// Send push notifications for awarded achievements (after transaction commits)
+	// Send push notifications for awarded achievements (after transaction commits) with translations
 	if r.PushService != nil && len(awardedAchievementIDs) > 0 {
 		go func(achievementIDs []string, targetUserID string) {
-			achRows, err := r.DB.Queries.GetAchievementsByIDs(context.Background(), achievementIDs)
+			bgCtx := context.Background()
+			achRows, err := r.DB.Queries.GetAchievementsByIDs(bgCtx, achievementIDs)
 			if err != nil {
 				fmt.Printf("warning: failed to load achievements for notifications: %v\n", err)
 				return
 			}
 			for _, ach := range achRows {
-				r.PushService.SendAchievementNotification(context.Background(), targetUserID, push.AchievementInfo{
+				push.SendTranslatedAchievementNotification(r.PushService, r.Loaders, targetUserID, push.AchievementInfo{
 					ID:               ach.ID,
 					Name:             ach.Name,
 					NotificationText: ach.NotificationText,

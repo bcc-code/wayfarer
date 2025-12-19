@@ -1501,6 +1501,7 @@ type User struct {
 	SuperTeams    []SuperTeam    `json:"superTeams"`
 	Roles         []UserRole     `json:"roles"`
 	ConsentStatus *ConsentStatus `json:"consentStatus"`
+	Language      string         `json:"language"`
 }
 
 type UserConnection struct {

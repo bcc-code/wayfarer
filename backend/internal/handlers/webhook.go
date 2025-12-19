@@ -9,6 +9,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,7 @@ type WebhookHandler struct {
 	DB          *database.DB
 	Cache       *cache.CacheWithRegistry
 	PushService *push.Service
+	Loaders     *loaders.Loaders
 }
 
 // ContentEventRequest represents the incoming webhook payload for content events
@@ -306,9 +308,9 @@ func (h *WebhookHandler) awardAchievement(ctx context.Context, userID string, ac
 		"achievement_id", achievement.ID,
 		"points", achievement.Points)
 
-	// Send push notification in background
-	if h.PushService != nil {
-		go h.PushService.SendAchievementNotification(ctx, userID, push.AchievementInfo{
+	// Send push notification in background with translated content
+	if h.PushService != nil && h.Loaders != nil {
+		go push.SendTranslatedAchievementNotification(h.PushService, h.Loaders, userID, push.AchievementInfo{
 			ID:               achievement.ID,
 			Name:             achievement.Name,
 			NotificationText: achievement.NotificationText,

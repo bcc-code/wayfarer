@@ -176,6 +176,7 @@ type User {
     superTeams: [SuperTeam!]! @goField(forceResolver: true)
     roles: [UserRole!]! @goField(forceResolver: true)
     consentStatus: ConsentStatus!
+    language: String!
 }
 
 type Church {

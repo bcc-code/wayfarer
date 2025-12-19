@@ -229,6 +229,10 @@ func main() {
 		slog.Warn("Push notification service not initialized - VAPID keys not configured")
 	}
 
+	// Initialize LanguageService
+	languageService := services.NewLanguageService(db.Queries, cacheInstance, dataLoaders.UserByIDLoader, lgr)
+	slog.Info("LanguageService initialized")
+
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{
 		DB:                 db,
@@ -353,6 +357,7 @@ func main() {
 		DB:          db,
 		Cache:       cacheInstance,
 		PushService: pushService,
+		Loaders:     dataLoaders,
 	}
 	router.POST("/api/v1/content-events", middleware.APIKeyAuth(cfg.APIKey), webhookHandler.HandleContentEvent)
 
@@ -394,7 +399,7 @@ func main() {
 	}
 
 	// GraphQL API endpoint
-	router.POST("/graphql", middleware.LanguageExtractor(), middleware.JWTAuth(cfg.JWT), graphqlHandler(apiHandler))
+	router.POST("/graphql", middleware.LanguageExtractor(), middleware.JWTAuth(cfg.JWT), graphqlHandler(apiHandler, languageService))
 	if cfg.Server.Environment != "production" {
 		router.GET("/graphql", gin.WrapH(playground.Handler("GraphQL API", "/graphql")))
 	}
@@ -496,14 +501,16 @@ func main() {
 }
 
 // graphqlHandler wraps a GraphQL handler for use with Gin
-func graphqlHandler(h *handler.Server) gin.HandlerFunc {
+func graphqlHandler(h *handler.Server, languageService *services.LanguageService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Transfer Gin context values to request context for GraphQL resolvers
 		ctx := c.Request.Context()
 
 		// Transfer user_id if present
-		if userID, exists := c.Get("user_id"); exists {
-			ctx = context.WithValue(ctx, middleware.UserIDKey, userID)
+		var userID string
+		if uid, exists := c.Get("user_id"); exists {
+			userID = uid.(string)
+			ctx = context.WithValue(ctx, middleware.UserIDKey, uid)
 		}
 
 		// Transfer user_roles if present
@@ -512,13 +519,20 @@ func graphqlHandler(h *handler.Server) gin.HandlerFunc {
 		}
 
 		// Transfer language if present
+		var requestedLang string
 		if language, exists := c.Get("language"); exists {
+			requestedLang = language.(string)
 			ctx = context.WithValue(ctx, middleware.LanguageKey, language)
 		}
 
 		// Transfer User-Agent header
 		userAgent := c.GetHeader("User-Agent")
 		ctx = context.WithValue(ctx, middleware.UserAgentKey, userAgent)
+
+		// Sync language preference asynchronously (fire-and-forget)
+		if userID != "" && requestedLang != "" && languageService != nil {
+			go languageService.SyncUserLanguage(context.Background(), userID, requestedLang)
+		}
 
 		// Create new request with updated context
 		r := c.Request.WithContext(ctx)

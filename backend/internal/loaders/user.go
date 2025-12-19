@@ -69,6 +69,7 @@ func userByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 					Name:          displayName,
 					Image:         row.AvatarUrl,
 					ConsentStatus: consentStatus,
+					Language:      row.Language,
 				}
 
 				userMap[row.ID] = user

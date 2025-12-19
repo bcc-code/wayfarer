@@ -795,10 +795,10 @@ func (r *mutationResolver) AwardAchievement(ctx context.Context, userID string, 
 		r.Cache.InvalidateEvent(*eventID)
 	}
 
-	// Send push notification in background
+	// Send push notification in background with translated content
 	if r.PushService != nil {
 		achievement := achievementRow[0]
-		go r.PushService.SendAchievementNotification(ctx, userID, push.AchievementInfo{
+		go push.SendTranslatedAchievementNotification(r.PushService, r.Loaders, userID, push.AchievementInfo{
 			ID:               achievement.ID,
 			Name:             achievement.Name,
 			NotificationText: achievement.NotificationText,
