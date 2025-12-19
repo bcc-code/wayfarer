@@ -36,7 +36,7 @@ watch(
 watch(
   pendingRemote,
   (pending) => {
-    if (pending) {
+    if (pending?.length) {
       if (!showBanner.value) {
         showBanner.value = true
       }
