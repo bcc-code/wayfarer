@@ -31,7 +31,8 @@
     "settings": "Einstellungen",
     "pointHistory": "Punktestand",
     "rules": "Regeln",
-    "consents": "Einverständnis"
+    "consents": "Meine Einwilligungen",
+    "addToHomeScreen": "App zum Homescreen hinzufügen"
   },
   "navigation": {
     "standings": "Bestenlisten",
@@ -47,7 +48,7 @@
       "light": "Hell",
       "dark": "Dunkel"
     },
-    "consents": "Einverständnis",
+    "consents": "Meine Einwilligungen",
     "notifications": "Benachrichtigungen",
     "notificationsBlocked": "Benachrichtigungen sind in den Browsereinstellungen blockiert",
     "addToHomeScreen": "App zum Homescreen hinzufügen",
@@ -96,5 +97,20 @@
   "achievement": {
     "title": "Auszeichnung",
     "unlocked": "Erreicht!"
+  },
+  "feedback": {
+    "title": "Gib uns Feedback",
+    "cta": "Gib uns Feedback",
+    "description": "Wir freuen uns über dein Feedback, damit wir unseren Service noch besser machen können.",
+    "send": "Feedback senden",
+    "label": "Gab es etwas, das du gut fandest, oder etwas, das wir verbessern können?",
+    "placeholder": "Schreibe hier dein Feedback…",
+    "success": "Danke für dein Feedback",
+    "validationError": "Du kannst kein leeres Feedback senden",
+    "lengthError": "Die Rückmeldung darf nicht länger als {max} Zeichen sein.",
+    "thankYou": "Danke für deine Hilfe!",
+    "thankYouDescription": "Dein Feedback wird für die Weiterentwicklung des Services genutzt.",
+    "close": "Gern geschehen",
+    "canContactMe": "Ja, ich stimme zu, dass ihr mich im Zusammenhang mit meinem Feedback kontaktieren dürft."
   }
 }
