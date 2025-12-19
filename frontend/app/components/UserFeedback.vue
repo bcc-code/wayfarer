@@ -103,7 +103,7 @@ async function handleSubmit() {
           class="flex flex-col grow"
           @submit.prevent="handleSubmit"
         >
-          <p class="text-label text-text-muted mx-4 mb-4">
+          <p class="text-label mx-4 mb-4">
             {{ $t('feedback.label') }}
           </p>
           <DesignTextarea
