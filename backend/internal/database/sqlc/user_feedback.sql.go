@@ -13,10 +13,11 @@ import (
 
 const CountAllFeedback = `-- name: CountAllFeedback :one
 SELECT COUNT(*) FROM user_feedback
+WHERE ($1::text = '' OR user_id = $1::text)
 `
 
-func (q *Queries) CountAllFeedback(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, CountAllFeedback)
+func (q *Queries) CountAllFeedback(ctx context.Context, filteruserid string) (int64, error) {
+	row := q.db.QueryRow(ctx, CountAllFeedback, filteruserid)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -136,15 +137,17 @@ SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width,
 WHERE
     ($1::text = '' OR id < $1::text)
     AND ($2::text = '' OR id > $2::text)
+    AND ($3::text = '' OR user_id = $3::text)
 ORDER BY
-    CASE WHEN $3::bool = true THEN id END ASC,
-    CASE WHEN $3::bool = false OR $3::bool IS NULL THEN id END DESC
-LIMIT $4::int
+    CASE WHEN $4::bool = true THEN id END ASC,
+    CASE WHEN $4::bool = false OR $4::bool IS NULL THEN id END DESC
+LIMIT $5::int
 `
 
 type GetFeedbackCursorParams struct {
 	Aftercursor  string `json:"aftercursor"`
 	Beforecursor string `json:"beforecursor"`
+	Filteruserid string `json:"filteruserid"`
 	Isbackward   bool   `json:"isbackward"`
 	Querylimit   int32  `json:"querylimit"`
 }
@@ -153,6 +156,7 @@ func (q *Queries) GetFeedbackCursor(ctx context.Context, arg GetFeedbackCursorPa
 	rows, err := q.db.Query(ctx, GetFeedbackCursor,
 		arg.Aftercursor,
 		arg.Beforecursor,
+		arg.Filteruserid,
 		arg.Isbackward,
 		arg.Querylimit,
 	)

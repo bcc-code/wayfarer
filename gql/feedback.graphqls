@@ -39,8 +39,12 @@ type FeedbackEdge {
     node: UserFeedback!
 }
 
+input FeedbackFilter {
+    userId: ID
+}
+
 extend type Query {
-    feedback(first: Int, after: String, last: Int, before: String): FeedbackConnection! @requireRole(roles: ["admin", "superadmin"])
+    feedback(filter: FeedbackFilter, first: Int, after: String, last: Int, before: String): FeedbackConnection! @requireRole(roles: ["admin", "superadmin"])
 }
 
 extend type Mutation {

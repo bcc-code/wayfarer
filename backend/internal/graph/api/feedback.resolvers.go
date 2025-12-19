@@ -80,7 +80,7 @@ func (r *mutationResolver) SubmitFeedback(ctx context.Context, input model.Submi
 }
 
 // Feedback is the resolver for the feedback field.
-func (r *queryResolver) Feedback(ctx context.Context, first *int, after *string, last *int, before *string) (*model.FeedbackConnection, error) {
+func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilter, first *int, after *string, last *int, before *string) (*model.FeedbackConnection, error) {
 	// Default page size
 	const defaultPageSize = 20
 
@@ -112,12 +112,19 @@ func (r *queryResolver) Feedback(ctx context.Context, first *int, after *string,
 		beforeCursor = decoded
 	}
 
+	// Extract filter values
+	filterUserID := ""
+	if filter != nil && filter.UserID != nil {
+		filterUserID = *filter.UserID
+	}
+
 	// Fetch one more than requested to determine if there are more results
 	rows, err := r.DB.Queries.GetFeedbackCursor(ctx, sqlc.GetFeedbackCursorParams{
 		Aftercursor:  afterCursor,
 		Beforecursor: beforeCursor,
 		Isbackward:   isBackward,
 		Querylimit:   int32(limit + 1),
+		Filteruserid: filterUserID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch feedback: %w", err)
@@ -137,7 +144,7 @@ func (r *queryResolver) Feedback(ctx context.Context, first *int, after *string,
 	}
 
 	// Get total count
-	totalCount, err := r.DB.Queries.CountAllFeedback(ctx)
+	totalCount, err := r.DB.Queries.CountAllFeedback(ctx, filterUserID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to count feedback: %w", err)
 	}

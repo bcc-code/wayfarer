@@ -7,8 +7,8 @@ definePageMeta({
 })
 
 gql(`
-  query AdminFeedbackPage($first: Int, $after: String, $last: Int, $before: String) {
-    feedback(first: $first, after: $after, last: $last, before: $before) {
+  query AdminFeedbackPage($filter: FeedbackFilter, $first: Int, $after: String, $last: Int, $before: String) {
+    feedback(filter: $filter, first: $first, after: $after, last: $last, before: $before) {
       totalCount
       pageInfo {
         hasNextPage
@@ -124,14 +124,14 @@ function toggleRow(id: string) {
           <div class="max-w-md">
             <p
               :class="[
-                'text-sm',
+                'text-sm whitespace-normal',
                 expandedRows.has(row.original.id) ? '' : 'line-clamp-2',
               ]"
             >
               {{ row.original.message }}
             </p>
             <button
-              v-if="row.original.message.length > 100"
+              v-if="row.original.message.length > 25"
               class="text-primary text-xs hover:underline"
               @click="toggleRow(row.original.id)"
             >

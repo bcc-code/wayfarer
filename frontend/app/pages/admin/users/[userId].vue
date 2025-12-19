@@ -80,6 +80,22 @@ gql(`
 				}
 			}
 		}
+		feedback(filter: { userId: $id }, first: 10) {
+			totalCount
+			edges {
+				node {
+					id
+					message
+					canContactMe
+					userAgent
+					platform
+					screenWidth
+					screenHeight
+					appVersion
+					createdAt
+				}
+			}
+		}
 	}
 `)
 
@@ -211,6 +227,25 @@ function formatScoreDate(date: string) {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
+  })
+}
+
+// Feedback helpers
+const feedbackEntries = computed(
+  () => data.value?.feedback.edges.map((edge) => edge.node) ?? [],
+)
+
+const feedbackTotalCount = computed(
+  () => data.value?.feedback.totalCount ?? 0,
+)
+
+function formatFeedbackDate(date: string) {
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   })
 }
 </script>
@@ -475,6 +510,58 @@ function formatScoreDate(date: string) {
             </div>
           </div>
           <div v-else class="text-dimmed">No score entries</div>
+        </UCard>
+
+        <!-- Feedback Card -->
+        <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-semibold">
+                Feedback
+                <span v-if="feedbackTotalCount > 0" class="text-dimmed text-sm font-normal">
+                  ({{ feedbackTotalCount }} {{ feedbackTotalCount === 1 ? 'entry' : 'entries' }})
+                </span>
+              </h2>
+              <UButton
+                variant="ghost"
+                size="sm"
+                :to="{ name: 'admin-feedback' }"
+              >
+                View All
+              </UButton>
+            </div>
+          </template>
+
+          <div v-if="feedbackEntries.length > 0" class="space-y-3">
+            <div
+              v-for="entry in feedbackEntries"
+              :key="entry.id"
+              class="border-default rounded-md border p-3"
+            >
+              <div class="flex items-start justify-between gap-4">
+                <p class="text-sm whitespace-pre-wrap">{{ entry.message }}</p>
+                <UBadge
+                  :color="entry.canContactMe ? 'success' : 'neutral'"
+                  variant="soft"
+                  class="shrink-0"
+                >
+                  {{ entry.canContactMe ? 'Can contact' : 'No contact' }}
+                </UBadge>
+              </div>
+              <div class="text-dimmed mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                <span>{{ formatFeedbackDate(entry.createdAt) }}</span>
+                <span v-if="entry.platform">{{ entry.platform }}</span>
+                <span v-if="entry.screenWidth && entry.screenHeight">
+                  {{ entry.screenWidth }}x{{ entry.screenHeight }}
+                </span>
+                <code v-if="entry.appVersion">v{{ entry.appVersion }}</code>
+              </div>
+            </div>
+            <div v-if="feedbackTotalCount > 10" class="text-dimmed pt-2 text-center text-sm">
+              Showing 10 of {{ feedbackTotalCount }} entries
+            </div>
+          </div>
+          <div v-else class="text-dimmed">No feedback submitted</div>
         </UCard>
       </div>
     </UContainer>

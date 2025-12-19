@@ -615,6 +615,10 @@ type FeedbackEdge struct {
 	Node   *UserFeedback `json:"node"`
 }
 
+type FeedbackFilter struct {
+	UserID *string `json:"userId,omitempty"`
+}
+
 type FreeTextQuestion struct {
 	ID             string `json:"id"`
 	Quiz           *Quiz  `json:"quiz"`
