@@ -1457,6 +1457,7 @@ type UpdateTeamInput struct {
 type User struct {
 	ID            string         `json:"id"`
 	MembersID     string         `json:"membersId"`
+	PersonUUID    *string        `json:"personUuid,omitempty"`
 	Gender        Gender         `json:"gender"`
 	ChurchID      string         `json:"churchId"`
 	Church        *Church        `json:"church"`

@@ -865,6 +865,7 @@ type ComplexityRoot struct {
 		Image         func(childComplexity int) int
 		MembersID     func(childComplexity int) int
 		Name          func(childComplexity int) int
+		PersonUUID    func(childComplexity int) int
 		Projects      func(childComplexity int) int
 		Roles         func(childComplexity int) int
 		SuperTeams    func(childComplexity int) int
@@ -5376,6 +5377,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.Name(childComplexity), true
+	case "User.personUuid":
+		if e.complexity.User.PersonUUID == nil {
+			break
+		}
+
+		return e.complexity.User.PersonUUID(childComplexity), true
 	case "User.projects":
 		if e.complexity.User.Projects == nil {
 			break
@@ -5850,6 +5857,7 @@ input LeaderboardFilter {
 type User {
     id: ID!
     membersId: ID!
+    personUuid: ID
     gender: Gender!
     churchId: ID!
     church: Church! @goField(forceResolver: true)
@@ -19488,6 +19496,8 @@ func (ec *executionContext) fieldContext_Mutation_updateAvatar(ctx context.Conte
 				return ec.fieldContext_User_id(ctx, field)
 			case "membersId":
 				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
 			case "churchId":
@@ -19581,6 +19591,8 @@ func (ec *executionContext) fieldContext_Mutation_assignUserToProject(ctx contex
 				return ec.fieldContext_User_id(ctx, field)
 			case "membersId":
 				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
 			case "churchId":
@@ -19674,6 +19686,8 @@ func (ec *executionContext) fieldContext_Mutation_removeUserFromProject(ctx cont
 				return ec.fieldContext_User_id(ctx, field)
 			case "membersId":
 				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
 			case "churchId":
@@ -19767,6 +19781,8 @@ func (ec *executionContext) fieldContext_Mutation_assignUserToEvent(ctx context.
 				return ec.fieldContext_User_id(ctx, field)
 			case "membersId":
 				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
 			case "churchId":
@@ -23833,6 +23849,8 @@ func (ec *executionContext) fieldContext_Query_me(_ context.Context, field graph
 				return ec.fieldContext_User_id(ctx, field)
 			case "membersId":
 				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
 			case "churchId":
@@ -24998,6 +25016,8 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 				return ec.fieldContext_User_id(ctx, field)
 			case "membersId":
 				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
 			case "churchId":
@@ -25173,6 +25193,8 @@ func (ec *executionContext) fieldContext_Query_usersWithRole(ctx context.Context
 				return ec.fieldContext_User_id(ctx, field)
 			case "membersId":
 				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
 			case "churchId":
@@ -28434,6 +28456,8 @@ func (ec *executionContext) fieldContext_QuizSubmission_user(_ context.Context, 
 				return ec.fieldContext_User_id(ctx, field)
 			case "membersId":
 				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
 			case "churchId":
@@ -29306,6 +29330,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_user(_ context.Context, fi
 				return ec.fieldContext_User_id(ctx, field)
 			case "membersId":
 				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
 			case "churchId":
@@ -29561,6 +29587,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_awardedBy(_ context.Contex
 				return ec.fieldContext_User_id(ctx, field)
 			case "membersId":
 				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
 			case "churchId":
@@ -32963,6 +32991,8 @@ func (ec *executionContext) fieldContext_TeamMember_user(_ context.Context, fiel
 				return ec.fieldContext_User_id(ctx, field)
 			case "membersId":
 				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
 			case "churchId":
@@ -33044,6 +33074,35 @@ func (ec *executionContext) _User_membersId(ctx context.Context, field graphql.C
 }
 
 func (ec *executionContext) fieldContext_User_membersId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_personUuid(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_User_personUuid,
+		func(ctx context.Context) (any, error) {
+			return obj.PersonUUID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_User_personUuid(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
@@ -34101,6 +34160,8 @@ func (ec *executionContext) fieldContext_UserEdge_node(_ context.Context, field 
 				return ec.fieldContext_User_id(ctx, field)
 			case "membersId":
 				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
 			case "churchId":
@@ -34193,6 +34254,8 @@ func (ec *executionContext) fieldContext_UserRole_user(_ context.Context, field 
 				return ec.fieldContext_User_id(ctx, field)
 			case "membersId":
 				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
 			case "gender":
 				return ec.fieldContext_User_gender(ctx, field)
 			case "churchId":
@@ -48558,6 +48621,8 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "personUuid":
+			out.Values[i] = ec._User_personUuid(ctx, field, obj)
 		case "gender":
 			out.Values[i] = ec._User_gender(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

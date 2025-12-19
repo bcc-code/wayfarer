@@ -71,22 +71,24 @@ func (h *ConsentWebhookHandler) HandleConsentEvent(c *gin.Context) {
 		return
 	}
 
-	// Validate members_id as UUID
-	if _, err := uuid.Parse(req.MembersID); err != nil {
+	// Validate and parse members_id as UUID (this is the person_uuid)
+	parsedUUID, err := uuid.Parse(req.MembersID)
+	if err != nil {
 		slog.Warn("consent_webhook: invalid members_id UUID", "members_id", req.MembersID, "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid members_id format, must be a valid UUID"})
 		return
 	}
+	personUUID := pgtype.UUID{Bytes: parsedUUID, Valid: true}
 
 	slog.Info("consent_webhook: processing consent event",
-		"members_id", req.MembersID,
+		"person_uuid", req.MembersID,
 		"consent_key", req.ConsentKey,
 		"action", req.Action,
 		"source", sourceStr,
 	)
 
-	// Try to get user by members_id
-	user, err := h.DB.Queries.GetUserByMembersID(ctx, req.MembersID)
+	// Try to get user by person_uuid first (preferred)
+	user, err := h.DB.Queries.GetUserByPersonUUID(ctx, personUUID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			// User not found - store as pending consent event

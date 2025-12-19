@@ -161,6 +161,7 @@ input LeaderboardFilter {
 type User {
     id: ID!
     membersId: ID!
+    personUuid: ID
     gender: Gender!
     churchId: ID!
     church: Church! @goField(forceResolver: true)

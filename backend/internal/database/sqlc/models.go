@@ -587,6 +587,7 @@ type User struct {
 	LastName    *string            `json:"last_name"`
 	MiddleName  *string            `json:"middle_name"`
 	DisplayName *string            `json:"display_name"`
+	PersonUuid  pgtype.UUID        `json:"person_uuid"`
 }
 
 type UserAchievement struct {
