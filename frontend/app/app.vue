@@ -12,7 +12,7 @@ const isStaging = computed(() => config.public.isStaging || import.meta.dev)
     </NuxtLayout>
     <div
       v-if="isStaging"
-      class="fixed inset-0 border-2 border-accent-negative z-10"
+      class="fixed inset-0 border-2 border-accent-negative z-50 pointer-events-none"
     >
       <div
         class="bg-accent-negative w-max px-2 py-1 text-xs text-black rounded-br-md"
