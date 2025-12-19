@@ -1,3 +1,3 @@
 <template>
-  <USkeleton class="bg-background-raised" />
+  <USkeleton class="bg-background-default" />
 </template>
