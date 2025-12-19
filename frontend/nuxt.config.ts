@@ -71,6 +71,7 @@ export default defineNuxtConfig({
       rudderstackDataPlaneUrl: '',
       vapidPublicKey: '',
       appVersion: gitCommitHash,
+      isStaging: false,
     },
   },
   experimental: {
