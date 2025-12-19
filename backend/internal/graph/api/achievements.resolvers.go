@@ -14,6 +14,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 )
 
@@ -792,6 +793,17 @@ func (r *mutationResolver) AwardAchievement(ctx context.Context, userID string, 
 	// Invalidate event leaderboards if achievement belongs to an event
 	if eventID != nil {
 		r.Cache.InvalidateEvent(*eventID)
+	}
+
+	// Send push notification in background
+	if r.PushService != nil {
+		achievement := achievementRow[0]
+		go r.PushService.SendAchievementNotification(ctx, userID, push.AchievementInfo{
+			ID:               achievement.ID,
+			Name:             achievement.Name,
+			NotificationText: achievement.NotificationText,
+			ImageCompleted:   achievement.ImageCompleted,
+		})
 	}
 
 	// Load and return the achievement with translation

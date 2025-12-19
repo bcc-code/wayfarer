@@ -18,6 +18,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/otel"
+	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -1076,6 +1077,7 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	achievements, _ := qtx.GetQuizAchievementsByQuizID(ctx, quiz.ID)
 	achSpan.SetAttributes(attribute.Int("achievements.count", len(achievements)))
 	achievementsAwarded := 0
+	awardedAchievementIDs := make([]string, 0)
 	for _, ach := range achievements {
 		shouldAward := true
 
@@ -1104,6 +1106,7 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 				fmt.Printf("warning: failed to award achievement %s to user %s: %v\n", ach.AchievementID, userID, err)
 			} else {
 				achievementsAwarded++
+				awardedAchievementIDs = append(awardedAchievementIDs, ach.AchievementID)
 			}
 		}
 	}
@@ -1116,6 +1119,25 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 	txSuccess = true
+
+	// Send push notifications for awarded achievements (after transaction commits)
+	if r.PushService != nil && len(awardedAchievementIDs) > 0 {
+		go func(achievementIDs []string, targetUserID string) {
+			achRows, err := r.DB.Queries.GetAchievementsByIDs(context.Background(), achievementIDs)
+			if err != nil {
+				fmt.Printf("warning: failed to load achievements for notifications: %v\n", err)
+				return
+			}
+			for _, ach := range achRows {
+				r.PushService.SendAchievementNotification(context.Background(), targetUserID, push.AchievementInfo{
+					ID:               ach.ID,
+					Name:             ach.Name,
+					NotificationText: ach.NotificationText,
+					ImageCompleted:   ach.ImageCompleted,
+				})
+			}
+		}(awardedAchievementIDs, userID)
+	}
 
 	// Auto-complete the associated challenge (after transaction commits)
 	ctx, challengeSpan := otel.StartSpan(ctx, "quiz.finalize.complete_challenge")

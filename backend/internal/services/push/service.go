@@ -47,9 +47,9 @@ type TargetCriteria struct {
 
 // SendResult contains the results of a notification send operation
 type SendResult struct {
-	TotalRecipients       int
-	SuccessfulDeliveries  int
-	FailedDeliveries      int
+	TotalRecipients        int
+	SuccessfulDeliveries   int
+	FailedDeliveries       int
 	InvalidSubscriptionIDs []string
 }
 
@@ -177,6 +177,60 @@ func (s *Service) SendToUser(ctx context.Context, userID string, payload PushPay
 // SendToUsers sends a push notification to specific users
 func (s *Service) SendToUsers(ctx context.Context, userIDs []string, payload PushPayload) (*SendResult, error) {
 	return s.SendNotification(ctx, payload, TargetCriteria{UserIDs: userIDs}, nil)
+}
+
+// AchievementInfo contains the minimal information needed to send an achievement notification
+type AchievementInfo struct {
+	ID               string
+	Name             string
+	NotificationText string
+	ImageCompleted   string
+}
+
+// SendAchievementNotification sends a push notification for an achievement award.
+// This is fire-and-forget - errors are logged but do not propagate.
+// It should be called in a goroutine to avoid blocking the main flow.
+func (s *Service) SendAchievementNotification(ctx context.Context, userID string, achievement AchievementInfo) {
+	if s == nil || !s.IsConfigured() {
+		return
+	}
+
+	// Determine notification body - use fallback if notification_text is empty
+	body := achievement.NotificationText
+	if body == "" {
+		body = "You earned a new achievement!"
+	}
+
+	payload := PushPayload{
+		Title: achievement.Name,
+		Body:  body,
+		Type:  NotificationTypeAchievementUnlocked,
+		URL:   "/?achievement=" + achievement.ID,
+		Icon:  achievement.ImageCompleted,
+		Data: map[string]interface{}{
+			"achievementId": achievement.ID,
+		},
+	}
+
+	// Use background context since this may outlive the request context
+	bgCtx := context.Background()
+
+	result, err := s.SendToUser(bgCtx, userID, payload)
+	if err != nil {
+		s.logger.Error("failed to send achievement notification",
+			"error", err,
+			"user_id", userID,
+			"achievement_id", achievement.ID,
+		)
+		return
+	}
+
+	s.logger.Info("achievement notification sent",
+		"user_id", userID,
+		"achievement_id", achievement.ID,
+		"successful", result.SuccessfulDeliveries,
+		"failed", result.FailedDeliveries,
+	)
 }
 
 // resolveTargetUserIDs resolves the target criteria to a list of user IDs

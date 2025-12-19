@@ -350,8 +350,9 @@ func main() {
 
 	// Webhook handler for external content events
 	webhookHandler := &handlers.WebhookHandler{
-		DB:    db,
-		Cache: cacheInstance,
+		DB:          db,
+		Cache:       cacheInstance,
+		PushService: pushService,
 	}
 	router.POST("/api/v1/content-events", middleware.APIKeyAuth(cfg.APIKey), webhookHandler.HandleContentEvent)
 

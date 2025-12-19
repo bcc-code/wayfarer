@@ -153,46 +153,46 @@ func TestFilterPersonLeaderboardEntries(t *testing.T) {
 	// Test dynamic limits based on totalCount
 	t.Run("dynamic limit based on totalCount", func(t *testing.T) {
 		tests := []struct {
-			name              string
-			totalCount        int
-			entries           []services.LeaderboardEntry
-			expectedLimit     int
-			expectedFirstVal  *int
+			name             string
+			totalCount       int
+			entries          []services.LeaderboardEntry
+			expectedLimit    int
+			expectedFirstVal *int
 		}{
 			{
-				name:              "totalCount >= 50 gives limit of 20",
-				totalCount:        50,
-				entries:           createEntries(30),
-				expectedLimit:     20,
-				expectedFirstVal:  intPtr(20),
+				name:             "totalCount >= 50 gives limit of 20",
+				totalCount:       50,
+				entries:          createEntries(30),
+				expectedLimit:    20,
+				expectedFirstVal: intPtr(20),
 			},
 			{
-				name:              "totalCount = 49 gives limit of 10",
-				totalCount:        49,
-				entries:           createEntries(30),
-				expectedLimit:     10,
-				expectedFirstVal:  intPtr(10),
+				name:             "totalCount = 49 gives limit of 10",
+				totalCount:       49,
+				entries:          createEntries(30),
+				expectedLimit:    10,
+				expectedFirstVal: intPtr(10),
 			},
 			{
-				name:              "totalCount = 20 gives limit of 10",
-				totalCount:        20,
-				entries:           createEntries(30),
-				expectedLimit:     10,
-				expectedFirstVal:  intPtr(10),
+				name:             "totalCount = 20 gives limit of 10",
+				totalCount:       20,
+				entries:          createEntries(30),
+				expectedLimit:    10,
+				expectedFirstVal: intPtr(10),
 			},
 			{
-				name:              "totalCount = 19 gives limit of 3",
-				totalCount:        19,
-				entries:           createEntries(30),
-				expectedLimit:     3,
-				expectedFirstVal:  intPtr(3),
+				name:             "totalCount = 19 gives limit of 3",
+				totalCount:       19,
+				entries:          createEntries(30),
+				expectedLimit:    3,
+				expectedFirstVal: intPtr(3),
 			},
 			{
-				name:              "totalCount = 1 gives limit of 3",
-				totalCount:        1,
-				entries:           createEntries(5),
-				expectedLimit:     3,
-				expectedFirstVal:  intPtr(3),
+				name:             "totalCount = 1 gives limit of 3",
+				totalCount:       1,
+				entries:          createEntries(5),
+				expectedLimit:    3,
+				expectedFirstVal: intPtr(3),
 			},
 		}
 
@@ -217,10 +217,10 @@ func TestFilterPersonLeaderboardEntries(t *testing.T) {
 	// Test pagination enforcement across different limits
 	t.Run("pagination enforcement with dynamic limits", func(t *testing.T) {
 		tests := []struct {
-			name              string
-			totalCount        int
-			after             *string
-			expectedNil       bool
+			name        string
+			totalCount  int
+			after       *string
+			expectedNil bool
 		}{
 			{
 				name:        "totalCount=15, after=3 returns empty (limit=3)",

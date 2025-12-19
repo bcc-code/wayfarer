@@ -28,15 +28,15 @@ type Service struct {
 type TranslatableCollection enum.Member[string]
 
 var (
-	CollectionProjects    = TranslatableCollection{"projects"}
-	CollectionEvents      = TranslatableCollection{"events"}
-	CollectionTeams       = TranslatableCollection{"teams"}
-	CollectionSuperTeams  = TranslatableCollection{"superteams"}
-	CollectionStreaks     = TranslatableCollection{"streaks"}
-	CollectionChallenges  = TranslatableCollection{"challenges"}
+	CollectionProjects     = TranslatableCollection{"projects"}
+	CollectionEvents       = TranslatableCollection{"events"}
+	CollectionTeams        = TranslatableCollection{"teams"}
+	CollectionSuperTeams   = TranslatableCollection{"superteams"}
+	CollectionStreaks      = TranslatableCollection{"streaks"}
+	CollectionChallenges   = TranslatableCollection{"challenges"}
 	CollectionAchievements = TranslatableCollection{"achievements"}
-	CollectionQuizzes     = TranslatableCollection{"quizzes"}
-	CollectionConsents    = TranslatableCollection{"consents"}
+	CollectionQuizzes      = TranslatableCollection{"quizzes"}
+	CollectionConsents     = TranslatableCollection{"consents"}
 
 	TranslatableCollections = enum.New(
 		CollectionProjects,

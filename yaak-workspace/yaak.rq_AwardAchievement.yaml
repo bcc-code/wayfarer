@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_AwardAchievement
 createdAt: 2025-12-11T12:00:00
-updatedAt: 2025-12-11T12:00:00
+updatedAt: 2025-12-19T12:06:03.980149
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Achievements
 authentication: {}
@@ -13,7 +13,6 @@ body:
       awardAchievement(userId: $userId, achievementId: $achievementId) {
         id
         name
-        description
         points
         achievedAt
         ... on SimpleAchievement {
@@ -41,8 +40,8 @@ body:
     }
   variables: |
     {
-      "userId": "US01ARZ3NDEKTSV4RRFFQ69G5FAV",
-      "achievementId": "AC01ARZ3NDEKTSV4RRFFQ69G5FAV"
+      "userId": "US01K9W1Y4M1R19YCDX4YSACT0BK",
+      "achievementId": "AC01KC68KRN16TP9EKG7MS3EH072"
     }
 bodyType: graphql
 description: Award an achievement to a user (M2M/admin only)
