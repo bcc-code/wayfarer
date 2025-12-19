@@ -2,14 +2,20 @@
   "error": {
     "title": "Oups ! Une erreur s’est produite"
   },
+  "emptyStates": {
+    "standings": "Aucun classement pour l’instant",
+    "unit": "Aucun classement pour ton unité pour l’instant",
+    "challenges": "Aucun défi pour l'instant",
+    "pointHistory": "Aucun point pour l’instant"
+  },
   "quiz": {
     "wrongAnswer": "Mauvaise réponse",
     "correctAnswer": "Bonne réponse",
     "yourAnswer": "Ta réponse",
     "lockAnswer": "Bloquer la réponse",
-    "nextQuestion": "Question suivante",
     "questionNumber": "{current} de {total}",
     "continue": "Continuer",
+    "nextQuestion": "Question suivante",
     "done": "Terminé",
     "result": {
       "receivedNoPoints": "Tu n’as marqué aucun point.",
@@ -21,19 +27,16 @@
   },
   "pages": {
     "standings": "Classements",
-    "unit": "Ton unité",
-    "profile": "Ton profil",
-    "challenges": "Tâches",
-    "challenge": "Tâche",
+    "challenges": "Défis",
     "settings": "Paramètres",
     "pointHistory": "Historique des points",
-    "getPoints": "Gagner des points",
+    "rules": "Règles",
     "consents": "Consentement"
   },
   "navigation": {
     "standings": "Classements",
-    "profile": "Profil",
-    "challenges": "Tâches"
+    "profile": "Ma page",
+    "challenges": "Défis"
   },
   "emptyState": "Aucune activité visible",
   "settings": {
@@ -46,19 +49,19 @@
     },
     "consents": "Consentement",
     "notifications": "Notifications",
-    "notificationsEnabled": "Activées",
-    "notificationsDisabled": "Désactivées",
     "addToHomeScreen": "Ajouter l’application à l’écran d’accueil",
     "privacyPolicy": "Politique de confidentialité"
   },
   "standings": {
-    "global": "Top 20",
-    "unit": "Ton unité",
+    "global": "Mondial",
+    "unit": "Mon unité",
     "local": "Local",
     "you": "Toi",
-    "rules": "Gagner des points",
+    "rules": "Règles",
     "units": "Unités",
-    "personal": "Personnel"
+    "top": "Top {amount}",
+    "u18": "U18",
+    "o18": "O18"
   },
   "pointHistory": {
     "pointHistoryButton": "Historique des points",
@@ -83,7 +86,6 @@
     "bannerTitle": "Tu as des consentements à donner",
     "bannerButton": "Accéder aux paramètres de consentement",
     "readButton": "Lire les conditions générales",
-    "readTitle": "Conditions générales",
     "change": "Modifier",
     "goToConsent": "Aller au consentement",
     "continue": "Continuer",

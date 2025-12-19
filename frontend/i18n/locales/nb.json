@@ -31,7 +31,7 @@
     "settings": "Innstillinger",
     "pointHistory": "Poenghistorikk",
     "rules": "Regler",
-    "consents": "Samtykke"
+    "consents": "Mine samtykker"
   },
   "navigation": {
     "standings": "Topplister",
@@ -47,8 +47,9 @@
       "light": "Lys",
       "dark": "Mørk"
     },
-    "consents": "Samtykke",
+    "consents": "Mine samtykker",
     "notifications": "Varslinger",
+    "notificationsBlocked": "Varslinger er blokkert i nettleserinnstillingene",
     "addToHomeScreen": "Legg til app på hjem skjerm",
     "privacyPolicy": "Personvernerklæring"
   },

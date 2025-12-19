@@ -28,6 +28,8 @@ const { data, fetching, error } = useAdminConsentsPageQuery({
 
 const consents = computed(() => data.value?.consents ?? [])
 
+const { canManageConsents } = usePermissions()
+
 type ConsentRow = AdminConsentsPageQuery['consents'][number]
 
 const columns: TableColumn<ConsentRow>[] = [
@@ -44,7 +46,11 @@ const columns: TableColumn<ConsentRow>[] = [
   <UContainer class="py-12">
     <div class="mb-6 flex flex-col items-start gap-8">
       <h1 class="text-3xl">Consents</h1>
-      <UButton icon="i-lucide-plus" :to="{ name: 'admin-consents-new' }">
+      <UButton
+        v-if="canManageConsents"
+        icon="i-lucide-plus"
+        :to="{ name: 'admin-consents-new' }"
+      >
         New Consent
       </UButton>
     </div>

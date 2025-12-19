@@ -8,6 +8,9 @@ definePageMeta({
 
 const route = useRoute('admin-projects-projectId')
 
+const { canEditProject } = usePermissions()
+const canEdit = computed(() => canEditProject(route.params.projectId))
+
 gql(`
   query AdminProjectPage($projectId: ID!) {
     project(id: $projectId) {
@@ -205,7 +208,7 @@ async function handleReorder() {
             <p v-if="state.description" class="text-muted max-w-2xl">
               {{ state.description }}
             </p>
-            <div class="mt-4">
+            <div v-if="canEdit" class="mt-4">
               <UButton
                 variant="soft"
                 icon="lucide:pencil"
@@ -232,7 +235,7 @@ async function handleReorder() {
           variant="link"
         >
           <template #challenges>
-            <div class="my-2">
+            <div v-if="canEdit" class="my-2">
               <UButton
                 icon="lucide:plus"
                 :to="{
@@ -291,7 +294,7 @@ async function handleReorder() {
             </UTable>
           </template>
           <template #achievements>
-            <div class="mt-2 mb-4">
+            <div v-if="canEdit" class="mt-2 mb-4">
               <UButton
                 icon="lucide:plus"
                 :to="{

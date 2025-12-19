@@ -63,16 +63,7 @@ func TestConsentEventRequest_ValidationErrors(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedError:  "invalid request body",
 		},
-		{
-			name: "missing timestamp",
-			payload: map[string]interface{}{
-				"members_id":  "550e8400-e29b-41d4-a716-446655440000",
-				"consent_key": "privacy_policy",
-				"action":      "ACCEPTED",
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  "invalid request body",
-		},
+		// Note: "missing timestamp" is not a validation error - timestamp is optional
 		{
 			name: "invalid members_id format",
 			payload: map[string]interface{}{

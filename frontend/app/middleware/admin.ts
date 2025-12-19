@@ -8,12 +8,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // If no token, redirect to login
   if (!token.value) {
-    return navigateTo(
-      `${config.public.loginUrl}?redirect=${to.path}`,
-      {
-        external: true,
-      },
-    )
+    return navigateTo(`${config.public.loginUrl}?redirect=${to.path}`, {
+      external: true,
+    })
   }
 
   // Check if we already have user data
@@ -21,12 +18,16 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // If we have user data, check roles
   if (me.value) {
-    const isAdmin = me.value?.roles.some((role: any) => role.role === 'ADMIN')
-    const isSuperAdmin = me.value?.roles.some(
-      (role: any) => role.role === 'SUPERADMIN',
+    const hasAdminRole = me.value?.roles.some((role: any) =>
+      [
+        RoleType.Admin,
+        RoleType.Superadmin,
+        RoleType.ProjectAdmin,
+        RoleType.ChurchAdmin,
+      ].includes(role.role),
     )
 
-    if (!isSuperAdmin && !isAdmin) {
+    if (!hasAdminRole) {
       return createError({
         statusCode: 403,
         statusMessage: 'Forbidden',

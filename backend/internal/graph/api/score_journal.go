@@ -12,7 +12,17 @@ import (
 
 // getScoreJournal retrieves paginated score journal entries for a user in a project.
 // Used by Project.journal (user-facing) and Query.scoreJournal (admin-facing) resolvers.
+// projectID and userID can be empty strings to skip those filters.
 func (r *Resolver) getScoreJournal(ctx context.Context, projectID string, userID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
+	// Allow filter to override projectID/userID when they're empty (for admin queries)
+	if filter != nil {
+		if projectID == "" && filter.ProjectID != nil {
+			projectID = *filter.ProjectID
+		}
+		if userID == "" && filter.UserID != nil {
+			userID = *filter.UserID
+		}
+	}
 	// Decode cursors if provided
 	var afterCursor, beforeCursor *string
 	if after != nil && *after != "" {

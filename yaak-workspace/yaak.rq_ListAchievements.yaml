@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_ListAchievements
 createdAt: 2025-12-11T12:00:00
-updatedAt: 2025-12-11T08:43:26.690626
+updatedAt: 2025-12-18T12:16:04.062349
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Achievements
 authentication: {}
@@ -15,7 +15,6 @@ body:
           node {
             id
             name
-            description
             points
             hidden
             achievedAt
@@ -72,6 +71,14 @@ headers:
   name: Content-Type
   value: application/json
   id: hdr_ListAchievements
+- enabled: true
+  name: Accept-Language
+  value: fr
+  id: Z7ZTBzuxtj
+- enabled: true
+  name: ''
+  value: ''
+  id: xKXHX0J8nP
 method: POST
 name: List Achievements
 sortPriority: 4200.0

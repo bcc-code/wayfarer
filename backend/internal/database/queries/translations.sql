@@ -43,6 +43,24 @@ FROM achievement_translations
 WHERE achievement_id = ANY(@entity_ids::text[])
   AND language_code = @language_code::text;
 
+-- name: GetQuizTranslationsByIDs :many
+SELECT quiz_id, language_code, name, description
+FROM quiz_translations
+WHERE quiz_id = ANY(@entity_ids::text[])
+  AND language_code = @language_code::text;
+
+-- name: GetQuizQuestionTranslationsByIDs :many
+SELECT question_id, language_code, question_text
+FROM quiz_question_translations
+WHERE question_id = ANY(@entity_ids::text[])
+  AND language_code = @language_code::text;
+
+-- name: GetQuizAnswerTranslationsByIDs :many
+SELECT answer_id, language_code, answer_text
+FROM quiz_answer_translations
+WHERE answer_id = ANY(@entity_ids::text[])
+  AND language_code = @language_code::text;
+
 -- Delete queries for translation invalidation when base content changes
 
 -- name: DeleteProjectTranslations :exec

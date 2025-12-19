@@ -37,10 +37,12 @@ func langForExport(lang string) string {
 }
 
 func langForImport(lang string) string {
-	if l, ok := importLanguageMap[lang]; ok {
+	// Normalize to lowercase for consistent matching
+	normalizedLang := strings.ToLower(lang)
+	if l, ok := importLanguageMap[normalizedLang]; ok {
 		return l
 	}
-	return lang
+	return normalizedLang
 }
 
 // Client for Phrase TMS based on https://cloud.memsource.com/web/docs/api

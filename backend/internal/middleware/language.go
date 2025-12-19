@@ -9,7 +9,7 @@ import (
 
 // DefaultLanguage is the fallback language when no Accept-Language header is provided
 // or when the requested language has no translation
-const DefaultLanguage = "en"
+const DefaultLanguage = "no"
 
 // LanguageExtractor is a middleware that extracts the preferred language
 // from the Accept-Language header and adds it to the Gin context

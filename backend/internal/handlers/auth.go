@@ -19,6 +19,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -33,10 +34,11 @@ type AuthHandler struct {
 
 // BrunstadTVClaims represents the JWT claims from Brunstad TV
 type BrunstadTVClaims struct {
-	ChurchID  int    `json:"church_id"`
-	PersonID  string `json:"person_id"`
-	FirstName string `json:"first_name"`
-	Gender    string `json:"gender"`
+	ChurchID   int    `json:"church_id"`
+	PersonID   string `json:"person_id"`
+	PersonUUID string `json:"person_uuid"`
+	FirstName  string `json:"first_name"`
+	Gender     string `json:"gender"`
 	jwt.RegisteredClaims
 }
 
@@ -210,11 +212,61 @@ func (h *AuthHandler) findChurchByExternalID(ctx context.Context, externalID int
 	}, nil
 }
 
-// findOrCreateUser finds an existing user by members_id or creates a new one
+// findOrCreateUser finds an existing user by person_uuid or members_id, or creates a new one
 func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVClaims, churchID string) (*sqlc.GetUserByMembersIDRow, error) {
-	// Try to find existing user
+	// Parse person_uuid from claims if present
+	var personUUID pgtype.UUID
+	if claims.PersonUUID != "" {
+		parsed, parseErr := uuid.Parse(claims.PersonUUID)
+		if parseErr == nil {
+			personUUID = pgtype.UUID{Bytes: parsed, Valid: true}
+		} else {
+			slog.Warn("callback: invalid person_uuid format in JWT", "person_uuid", claims.PersonUUID, "error", parseErr)
+		}
+	}
+
+	// Try to find by person_uuid first (preferred)
+	if personUUID.Valid {
+		user, err := h.DB.Queries.GetUserByPersonUUID(ctx, personUUID)
+		if err == nil {
+			// Convert GetUserByPersonUUIDRow to GetUserByMembersIDRow
+			return &sqlc.GetUserByMembersIDRow{
+				ID:          user.ID,
+				MembersID:   user.MembersID,
+				PersonUuid:  user.PersonUuid,
+				Gender:      user.Gender,
+				ChurchID:    user.ChurchID,
+				Birthdate:   user.Birthdate,
+				Email:       user.Email,
+				Name:        user.Name,
+				FirstName:   user.FirstName,
+				LastName:    user.LastName,
+				MiddleName:  user.MiddleName,
+				DisplayName: user.DisplayName,
+				AvatarUrl:   user.AvatarUrl,
+			}, nil
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("database error while finding user by person_uuid: %w", err)
+		}
+	}
+
+	// Fallback: Try to find by members_id (old numeric ID)
 	user, err := h.DB.Queries.GetUserByMembersID(ctx, claims.PersonID)
 	if err == nil {
+		// User exists but may not have person_uuid - update if we have it
+		if personUUID.Valid && !user.PersonUuid.Valid {
+			updateErr := h.DB.Queries.UpdateUserPersonUUID(ctx, sqlc.UpdateUserPersonUUIDParams{
+				ID:         user.ID,
+				PersonUuid: personUUID,
+			})
+			if updateErr != nil {
+				slog.Warn("callback: failed to update person_uuid for existing user", "user_id", user.ID, "error", updateErr)
+			} else {
+				slog.Info("callback: updated person_uuid for existing user", "user_id", user.ID, "person_uuid", uuid.UUID(personUUID.Bytes).String())
+				user.PersonUuid = personUUID
+			}
+		}
 		return user, nil
 	}
 
@@ -254,6 +306,12 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 			lastName = member.LastName
 			middleName = member.MiddleName
 			displayName = member.DisplayName
+
+			// Get person_uuid from Members API if not in JWT
+			if !personUUID.Valid && member.Uid != uuid.Nil {
+				personUUID = pgtype.UUID{Bytes: member.Uid, Valid: true}
+				slog.Info("callback: obtained person_uuid from Members API", "person_uuid", member.Uid.String())
+			}
 
 			// Compute name for backward compatibility
 			if firstName != "" && lastName != "" {
@@ -334,6 +392,7 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 	newUser, err := h.DB.Queries.CreateUser(ctx, sqlc.CreateUserParams{
 		ID:          ulid.NewUserID(),
 		MembersID:   claims.PersonID,
+		PersonUuid:  personUUID,
 		Email:       email,
 		Name:        computedName,
 		FirstName:   toStringPtr(firstName),
@@ -349,13 +408,16 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	// Process any pending consent events for this user
-	h.processPendingConsentEvents(ctx, newUser.ID, claims.PersonID)
+	// Process any pending consent events for this user (using person_uuid if available)
+	if personUUID.Valid {
+		h.processPendingConsentEvents(ctx, newUser.ID, uuid.UUID(personUUID.Bytes).String())
+	}
 
 	// Convert CreateUserRow to GetUserByMembersIDRow
 	return &sqlc.GetUserByMembersIDRow{
 		ID:          newUser.ID,
 		MembersID:   newUser.MembersID,
+		PersonUuid:  newUser.PersonUuid,
 		Gender:      newUser.Gender,
 		ChurchID:    newUser.ChurchID,
 		Birthdate:   newUser.Birthdate,
@@ -432,13 +494,14 @@ func generateDisplayName(firstName, lastName, fallbackName string) string {
 }
 
 // processPendingConsentEvents processes any pending consent events for a newly registered user
-func (h *AuthHandler) processPendingConsentEvents(ctx context.Context, userID, membersID string) {
-	// Get all pending consent events for this members_id
-	pendingEvents, err := h.DB.Queries.GetPendingConsentEventsByMembersID(ctx, membersID)
+// personUUID is the person's UUID string used to match pending events
+func (h *AuthHandler) processPendingConsentEvents(ctx context.Context, userID, personUUID string) {
+	// Get all pending consent events for this person_uuid (stored in members_id field of pending_consent_events)
+	pendingEvents, err := h.DB.Queries.GetPendingConsentEventsByMembersID(ctx, personUUID)
 	if err != nil {
 		slog.Error("auth: failed to get pending consent events",
 			"user_id", userID,
-			"members_id", membersID,
+			"person_uuid", personUUID,
 			"error", err,
 		)
 		return
@@ -450,7 +513,7 @@ func (h *AuthHandler) processPendingConsentEvents(ctx context.Context, userID, m
 
 	slog.Info("auth: processing pending consent events for new user",
 		"user_id", userID,
-		"members_id", membersID,
+		"person_uuid", personUUID,
 		"count", len(pendingEvents),
 	)
 
@@ -503,10 +566,10 @@ func (h *AuthHandler) processPendingConsentEvents(ctx context.Context, userID, m
 	}
 
 	// Delete all processed pending events
-	err = h.DB.Queries.DeletePendingConsentEventsByMembersID(ctx, membersID)
+	err = h.DB.Queries.DeletePendingConsentEventsByMembersID(ctx, personUUID)
 	if err != nil {
 		slog.Error("auth: failed to delete processed pending consent events",
-			"members_id", membersID,
+			"person_uuid", personUUID,
 			"error", err,
 		)
 	}

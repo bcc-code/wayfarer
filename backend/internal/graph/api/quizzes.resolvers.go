@@ -1400,7 +1400,9 @@ func (r *queryResolver) Quiz(ctx context.Context, id string) (*model.Quiz, error
 	if quiz != nil {
 		otel.SetProjectID(span, quiz.ProjectID)
 	}
-	return quiz, nil
+
+	// Apply translation
+	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
 // Quizzes is the resolver for the quizzes field.
@@ -1476,12 +1478,13 @@ func (r *queryResolver) Quizzes(ctx context.Context, filter *model.QuizFilter, f
 		rows = rows[:limit]
 	}
 
-	// Convert rows to models
+	// Convert rows to models and apply translations
 	edges := make([]*model.QuizEdge, len(rows))
 	for i, row := range rows {
+		quiz := convertFilteredCursorQuizRowToQuiz(row)
 		edges[i] = &model.QuizEdge{
 			Cursor: row.ID, // Use ID as cursor
-			Node:   convertFilteredCursorQuizRowToQuiz(row),
+			Node:   r.ApplyTranslationToQuiz(ctx, quiz),
 		}
 	}
 

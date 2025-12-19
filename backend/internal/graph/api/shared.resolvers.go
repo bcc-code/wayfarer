@@ -265,7 +265,11 @@ func (r *externalChallengeResolver) UserEnrolledAt(ctx context.Context, obj *mod
 // Quiz is the resolver for the quiz field.
 func (r *freeTextQuestionResolver) Quiz(ctx context.Context, obj *model.FreeTextQuestion) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
-	return thunk()
+	quiz, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
 // Submission is the resolver for the submission field.
@@ -289,7 +293,11 @@ func (r *freeTextResponseResolver) Question(ctx context.Context, obj *model.Free
 // Quiz is the resolver for the quiz field.
 func (r *jsonQuestionResolver) Quiz(ctx context.Context, obj *model.JSONQuestion) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
-	return thunk()
+	quiz, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
 // Submission is the resolver for the submission field.
@@ -318,7 +326,11 @@ func (r *markdownTextResolver) HTML(ctx context.Context, obj *model.MarkdownText
 // Quiz is the resolver for the quiz field.
 func (r *numberQuestionResolver) Quiz(ctx context.Context, obj *model.NumberQuestion) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
-	return thunk()
+	quiz, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
 // Submission is the resolver for the submission field.
@@ -342,7 +354,11 @@ func (r *numberResponseResolver) Question(ctx context.Context, obj *model.Number
 // Quiz is the resolver for the quiz field.
 func (r *predefinedQuestionResolver) Quiz(ctx context.Context, obj *model.PredefinedQuestion) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
-	return thunk()
+	quiz, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
 
 // PredefinedAnswers is the resolver for the predefinedAnswers field.
@@ -352,10 +368,11 @@ func (r *predefinedQuestionResolver) PredefinedAnswers(ctx context.Context, obj 
 	if err != nil {
 		return nil, fmt.Errorf("failed to load predefined answers: %w", err)
 	}
-	// Convert []*model.QuizPredefinedAnswer to []model.QuizPredefinedAnswer
+	// Convert []*model.QuizPredefinedAnswer to []model.QuizPredefinedAnswer and apply translations
 	result := make([]model.QuizPredefinedAnswer, len(answers))
 	for i, a := range answers {
-		result[i] = *a
+		translated := r.ApplyTranslationToQuizAnswer(ctx, a)
+		result[i] = *translated
 	}
 	return result, nil
 }
@@ -397,11 +414,12 @@ func (r *predefinedResponseResolver) SelectedAnswers(ctx context.Context, obj *m
 		selectedSet[id] = true
 	}
 
-	// Filter to only selected answers
+	// Filter to only selected answers and apply translations
 	var result []model.QuizPredefinedAnswer
 	for _, a := range allAnswers {
 		if selectedSet[a.ID] {
-			result = append(result, *a)
+			translated := r.ApplyTranslationToQuizAnswer(ctx, a)
+			result = append(result, *translated)
 		}
 	}
 
@@ -575,7 +593,13 @@ func (r *projectResolver) Achievements(ctx context.Context, obj *model.Project) 
 		return nil, fmt.Errorf("failed to load achievements: %w", err)
 	}
 
-	return achievements, nil
+	// Apply translations to each achievement
+	result := make([]model.Achievement, len(achievements))
+	for i, a := range achievements {
+		result[i] = r.ApplyTranslationToAchievement(ctx, a)
+	}
+
+	return result, nil
 }
 
 // Streaks is the resolver for the streaks field.
@@ -608,19 +632,37 @@ func (r *projectResolver) Journal(ctx context.Context, obj *model.Project, filte
 // Project is the resolver for the project field on Quiz.
 func (r *quizResolver) Project(ctx context.Context, obj *model.Quiz) (*model.Project, error) {
 	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, obj.ProjectID)
-	return thunk()
+	project, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToProject(ctx, project), nil
 }
 
 // Challenge is the resolver for the challenge field.
 func (r *quizResolver) Challenge(ctx context.Context, obj *model.Quiz) (model.Challenge, error) {
 	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, obj.ChallengeID)
-	return thunk()
+	challenge, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToChallenge(ctx, challenge), nil
 }
 
 // Questions is the resolver for the questions field on Quiz.
 func (r *quizResolver) Questions(ctx context.Context, obj *model.Quiz) ([]model.QuizQuestion, error) {
 	thunk := r.Loaders.QuizQuestionsByQuizLoader.Load(ctx, obj.ID)
-	return thunk()
+	questions, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply translations to each question
+	result := make([]model.QuizQuestion, len(questions))
+	for i, q := range questions {
+		result[i] = r.ApplyTranslationToQuizQuestion(ctx, q)
+	}
+	return result, nil
 }
 
 // UserSubmissions is the resolver for the userSubmissions field on Quiz.
@@ -976,8 +1018,7 @@ func (r *scoreJournalResolver) Source(ctx context.Context, obj *model.ScoreJourn
 	// Load appropriate source based on sourceType
 	switch obj.SourceType {
 	case model.ScoreSourceTypeAchievement:
-		thunk := r.Loaders.AchievementByIDLoader.Load(ctx, *obj.SourceID)
-		achievement, err := thunk()
+		achievement, err := r.LoadAchievementWithTranslation(ctx, *obj.SourceID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load achievement: %w", err)
 		}

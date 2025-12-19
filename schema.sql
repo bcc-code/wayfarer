@@ -18,6 +18,7 @@ CREATE TABLE churches (
 CREATE TABLE users (
     id CHAR(28) PRIMARY KEY CHECK (id ~ '^US[0-9A-Z]{26}$'),
     members_id VARCHAR(255) UNIQUE NOT NULL,
+    person_uuid UUID,
     email VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
     gender VARCHAR(10) NOT NULL CHECK (gender IN ('MALE', 'FEMALE', 'UNKNOWN')),

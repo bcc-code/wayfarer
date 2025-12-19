@@ -40,6 +40,9 @@ gql(`
 
 const route = useRoute('admin-teams-teamId')
 
+const { canManageTeam } = usePermissions()
+const canEdit = computed(() => canManageTeam(route.params.teamId))
+
 const { isAuthReady } = useAuthReady()
 const {
   data,
@@ -237,7 +240,7 @@ function copyJoinCode() {
             <h1 class="text-3xl font-bold">{{ data.team.name }}</h1>
             <p class="text-dimmed">{{ data.team.description }}</p>
           </div>
-          <div class="flex gap-2">
+          <div v-if="canEdit" class="flex gap-2">
             <UButton v-if="!isEditing" variant="soft" @click="startEditing">
               Edit
             </UButton>
@@ -306,6 +309,7 @@ function copyJoinCode() {
                 @click="copyJoinCode"
               />
               <UButton
+                v-if="canEdit"
                 variant="ghost"
                 size="xs"
                 icon="i-lucide-refresh-cw"
@@ -354,7 +358,7 @@ function copyJoinCode() {
                   </div>
                 </div>
               </div>
-              <div class="flex items-center gap-2">
+              <div v-if="canEdit" class="flex items-center gap-2">
                 <UButton
                   v-if="!member.isTeamLead"
                   variant="ghost"

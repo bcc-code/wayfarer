@@ -26,11 +26,14 @@ const leaderboard = computed<LeaderboardEntry[]>(() => {
   }
   return result
 })
+
+// Only show loading state on initial load, not on refetch
+const isInitialLoading = computed(() => fetching.value && !data.value)
 </script>
 
 <template>
   <div>
-    <LoadingState v-if="fetching" />
+    <StandingsListSkeleton v-if="isInitialLoading" />
     <ErrorState v-else-if="error" :error />
     <template v-else-if="leaderboard?.length">
       <div
@@ -47,13 +50,11 @@ const leaderboard = computed<LeaderboardEntry[]>(() => {
             key: 'u18',
             label: $t('standings.u18'),
             value: { min: 13, max: 19 },
-            icon: 'IconBaby',
           },
           {
             key: 'o18',
             label: $t('standings.o18'),
             value: { min: 20, max: 37 },
-            icon: 'IconSmile',
           },
         ]"
         class="mb-list-section-gap"
@@ -61,7 +62,8 @@ const leaderboard = computed<LeaderboardEntry[]>(() => {
       >
         <template #tab="{ tab }">
           <div class="flex flex-col items-center gap-0.5">
-            <Icon :name="tab.icon" class="size-7" />
+            <IconBaby v-if="tab.key === 'u18'" class="size-7" />
+            <IconSmile v-else class="size-7" />
             <span>{{ tab.label }}</span>
           </div>
         </template>

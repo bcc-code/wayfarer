@@ -18,7 +18,7 @@ func TestParseAcceptLanguage(t *testing.T) {
 		{
 			name:     "empty header returns default",
 			header:   "",
-			expected: "en",
+			expected: "no",
 		},
 		{
 			name:     "simple language code",
@@ -53,7 +53,7 @@ func TestParseAcceptLanguage(t *testing.T) {
 		{
 			name:     "invalid header returns default",
 			header:   "invalid-header-format",
-			expected: "en",
+			expected: "no",
 		},
 	}
 
@@ -84,9 +84,9 @@ func TestLanguageExtractor(t *testing.T) {
 			expected: "de",
 		},
 		{
-			name:     "defaults to English when no header",
+			name:     "defaults to Norwegian when no header",
 			header:   "",
-			expected: "en",
+			expected: "no",
 		},
 	}
 
@@ -124,12 +124,12 @@ func TestGetLanguage(t *testing.T) {
 		{
 			name:     "returns default when not set",
 			ctxValue: nil,
-			expected: "en",
+			expected: "no",
 		},
 		{
 			name:     "returns default for empty string",
 			ctxValue: "",
-			expected: "en",
+			expected: "no",
 		},
 	}
 

@@ -1077,6 +1077,8 @@ type ScoreJournalEdge struct {
 }
 
 type ScoreJournalFilter struct {
+	ProjectID   *string          `json:"projectId,omitempty"`
+	UserID      *string          `json:"userId,omitempty"`
 	EventID     *string          `json:"eventId,omitempty"`
 	ChallengeID *string          `json:"challengeId,omitempty"`
 	SourceType  *ScoreSourceType `json:"sourceType,omitempty"`
@@ -1469,6 +1471,7 @@ type UpdateTeamInput struct {
 type User struct {
 	ID            string         `json:"id"`
 	MembersID     string         `json:"membersId"`
+	PersonUUID    *string        `json:"personUuid,omitempty"`
 	Gender        Gender         `json:"gender"`
 	ChurchID      string         `json:"churchId"`
 	Church        *Church        `json:"church"`

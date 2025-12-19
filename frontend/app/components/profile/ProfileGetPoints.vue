@@ -35,7 +35,7 @@ const { data, fetching, error } = useProjectRulesQuery({
       <div
         v-else-if="data?.myCurrentProject.rules"
         id="project-rules"
-        class="p-default"
+        class="p-medium"
         v-html="data.myCurrentProject.rules.html"
       />
     </template>
@@ -70,11 +70,18 @@ const { data, fetching, error } = useProjectRulesQuery({
   text-decoration: underline;
 }
 
+#project-rules ul {
+  list-style-type: disc;
+  padding-inline-start: 1.5em;
+}
+
 #project-rules li {
   font-size: var(--font-size-paragraph);
   line-height: var(--line-height-paragraph);
   font-weight: var(--font-weight-paragraph);
   letter-spacing: var(--letter-spacing-paragraph);
   color: var(--color-text-default);
+  padding-inline-start: 0.5em;
+  margin-block: 0.3em;
 }
 </style>

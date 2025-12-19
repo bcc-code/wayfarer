@@ -13,8 +13,11 @@ withDefaults(
   },
 )
 
+const buttonRef = ref<HTMLButtonElement | null>(null)
+const { onPressStart, onPressEnd } = useButtonPress()
+
 const classes = cva(
-  'relative flex items-center justify-center gap-2 text-label grow',
+  'relative flex items-center justify-center gap-2 text-label grow will-change-transform',
   {
     variants: {
       variant: {
@@ -41,7 +44,13 @@ const classes = cva(
 </script>
 
 <template>
-  <button :class="classes({ size, variant, disabled })">
+  <button
+    ref="buttonRef"
+    :class="classes({ size, variant, disabled })"
+    @pointerdown="onPressStart(buttonRef)"
+    @pointerup="onPressEnd(buttonRef)"
+    @pointerleave="onPressEnd(buttonRef)"
+  >
     <slot />
   </button>
 </template>

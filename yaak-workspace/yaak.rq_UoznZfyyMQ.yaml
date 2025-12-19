@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_UoznZfyyMQ
 createdAt: 2025-12-02T17:09:43.355455
-updatedAt: 2025-12-14T20:45:22.093793
+updatedAt: 2025-12-18T13:30:00.730595
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -90,12 +90,12 @@ headers:
   id: ykj3tfsHHJ
 - enabled: true
   name: Accept-Language
-  value: fr
+  value: en
   id: Cp6bwtKTkx
 - enabled: true
   name: ''
   value: ''
-  id: JSTvhHBKHN
+  id: 5iyGku050S
 method: POST
 name: ME
 sortPriority: 15000.0

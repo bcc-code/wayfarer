@@ -60,6 +60,26 @@ gql(`
 				}
 			}
 		}
+		adminScoreJournal(filter: { userId: $id }, first: 20) {
+			totalCount
+			edges {
+				node {
+					id
+					points
+					sourceType
+					reason
+					createdAt
+					project {
+						id
+						name
+					}
+					awardedBy {
+						id
+						name
+					}
+				}
+			}
+		}
 	}
 `)
 
@@ -81,6 +101,9 @@ const {
 const { executeMutation: assignRole } = useAssignRoleMutation()
 const { executeMutation: revokeRole } = useRevokeRoleMutation()
 const toast = useToast()
+
+// Permissions
+const { canAssignRoles } = usePermissions()
 
 const roleOptions = [
   { label: 'User', value: RoleType.User },
@@ -169,6 +192,27 @@ async function handleRevokeRole(roleId: string, role: RoleType, scopeType?: Scop
 
   refetch({ requestPolicy: 'network-only' })
 }
+
+// Score journal helpers
+const scoreEntries = computed(
+  () => data.value?.adminScoreJournal.edges.map((edge) => edge.node) ?? [],
+)
+
+const scoreTotalCount = computed(
+  () => data.value?.adminScoreJournal.totalCount ?? 0,
+)
+
+function formatSourceType(type: string) {
+  return type.charAt(0) + type.slice(1).toLowerCase()
+}
+
+function formatScoreDate(date: string) {
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
 </script>
 
 <template>
@@ -244,6 +288,7 @@ async function handleRevokeRole(roleId: string, role: RoleType, scopeType?: Scop
               <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold">Roles & Permissions</h2>
                 <UButton
+                  v-if="canAssignRoles"
                   icon="i-lucide-plus"
                   size="sm"
                   @click="showAddRoleModal = true"
@@ -274,6 +319,7 @@ async function handleRevokeRole(roleId: string, role: RoleType, scopeType?: Scop
                   </div>
                 </div>
                 <UButton
+                  v-if="canAssignRoles"
                   icon="i-lucide-trash-2"
                   color="error"
                   variant="ghost"
@@ -373,6 +419,62 @@ async function handleRevokeRole(roleId: string, role: RoleType, scopeType?: Scop
               No consent activity
             </div>
           </div>
+        </UCard>
+
+        <!-- Score Journal Card -->
+        <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-semibold">
+                Score Journal
+                <span v-if="scoreTotalCount > 0" class="text-dimmed text-sm font-normal">
+                  ({{ scoreTotalCount }} entries)
+                </span>
+              </h2>
+              <UButton
+                variant="ghost"
+                size="sm"
+                :to="{ name: 'admin-scores' }"
+              >
+                View All
+              </UButton>
+            </div>
+          </template>
+
+          <div v-if="scoreEntries.length > 0" class="space-y-2">
+            <div
+              v-for="entry in scoreEntries"
+              :key="entry.id"
+              class="border-default flex items-center justify-between rounded-md border p-3"
+            >
+              <div class="flex items-center gap-3">
+                <UBadge
+                  :color="entry.points >= 0 ? 'success' : 'error'"
+                  variant="soft"
+                >
+                  {{ entry.points >= 0 ? '+' : '' }}{{ entry.points }}
+                </UBadge>
+                <div>
+                  <span class="font-medium">{{ entry.project.name }}</span>
+                  <UBadge variant="subtle" size="xs" class="ml-2">
+                    {{ formatSourceType(entry.sourceType) }}
+                  </UBadge>
+                </div>
+              </div>
+              <div class="text-right">
+                <div v-if="entry.reason" class="text-dimmed max-w-xs truncate text-sm">
+                  {{ entry.reason }}
+                </div>
+                <div class="text-dimmed text-xs">
+                  {{ formatScoreDate(entry.createdAt) }}
+                </div>
+              </div>
+            </div>
+            <div v-if="scoreTotalCount > 20" class="text-dimmed pt-2 text-center text-sm">
+              Showing 20 of {{ scoreTotalCount }} entries
+            </div>
+          </div>
+          <div v-else class="text-dimmed">No score entries</div>
         </UCard>
       </div>
     </UContainer>

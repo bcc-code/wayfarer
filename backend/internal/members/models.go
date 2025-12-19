@@ -12,6 +12,7 @@ type result[t any] struct {
 // Member is a member with related data
 type Member struct {
 	PersonID      int
+	Uid           uuid.UUID `json:"uid"`
 	BirthDate     string
 	Email         string
 	EmailVerified bool   `json:"emailVerified"`

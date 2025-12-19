@@ -3,10 +3,17 @@ package translations
 import "gopkg.in/guregu/null.v4"
 
 // NameDescriptionTranslation is used for entities with name and description fields
-// Used by: Projects, Events, Teams, SuperTeams, Streaks
+// Used by: Events, Teams, SuperTeams, Streaks
 type NameDescriptionTranslation struct {
 	Name        string      `json:"name"`
 	Description null.String `json:"description"`
+}
+
+// ProjectTranslation includes rules in addition to name and description
+type ProjectTranslation struct {
+	Name        string      `json:"name"`
+	Description null.String `json:"description"`
+	Rules       null.String `json:"rules"`
 }
 
 // ChallengeTranslation includes button_text in addition to name and description

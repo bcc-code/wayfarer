@@ -1,25 +1,25 @@
 -- name: GetUserByID :one
-SELECT id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
+SELECT id, members_id, person_uuid, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
 FROM users
 WHERE id = @id;
 
 -- name: GetUsersByIDs :many
-SELECT id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
+SELECT id, members_id, person_uuid, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
 FROM users
 WHERE id = ANY(@ids::text[]);
 
 -- name: GetUserByMembersID :one
-SELECT id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
+SELECT id, members_id, person_uuid, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
 FROM users
 WHERE members_id = @members_id;
 
 -- name: CreateUser :one
-INSERT INTO users (id, members_id, email, name, first_name, last_name, middle_name, display_name, gender, birthdate, church_id, avatar_url)
-VALUES (@id, @members_id, @email, @name, @first_name, @last_name, @middle_name, @display_name, @gender, @birthdate, @church_id, @avatar_url)
-RETURNING id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url;
+INSERT INTO users (id, members_id, person_uuid, email, name, first_name, last_name, middle_name, display_name, gender, birthdate, church_id, avatar_url)
+VALUES (@id, @members_id, @person_uuid, @email, @name, @first_name, @last_name, @middle_name, @display_name, @gender, @birthdate, @church_id, @avatar_url)
+RETURNING id, members_id, person_uuid, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url;
 
 -- name: GetUsersFiltered :many
-SELECT DISTINCT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
+SELECT DISTINCT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
 FROM users u
 LEFT JOIN user_projects up ON u.id = up.user_id AND @projectid::text IS NOT NULL
 LEFT JOIN user_events ue ON u.id = ue.user_id AND @eventid::text IS NOT NULL
@@ -38,7 +38,7 @@ LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END
 OFFSET CASE WHEN @queryoffset::int IS NULL THEN 0 ELSE @queryoffset::int END;
 
 -- name: GetUsersFilteredCursor :many
-SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
+SELECT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
 FROM users u
 WHERE
     (@churchid::text = '' OR u.church_id = @churchid::text)
@@ -85,6 +85,7 @@ WHERE
 SELECT
     u.id,
     u.members_id,
+    u.person_uuid,
     u.gender,
     u.church_id,
     u.birthdate,
@@ -110,7 +111,7 @@ WHERE tm.team_id = ANY(@teamids::text[])
 ORDER BY tm.team_id, tm.joined_at;
 
 -- name: GetUsersBySuperTeamIDs :many
-SELECT DISTINCT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
+SELECT DISTINCT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
 FROM users u
 INNER JOIN team_members tm ON u.id = tm.user_id
 INNER JOIN teams t ON tm.team_id = t.id
@@ -125,7 +126,7 @@ WITH distinct_user_ids AS (
     INNER JOIN teams t ON tm.team_id = t.id
     WHERE t.super_team_id = @superteamid::text
 )
-SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
+SELECT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
 FROM distinct_user_ids du
 INNER JOIN users u ON du.id = u.id
 WHERE (@aftercursor::text = '' OR u.id > @aftercursor::text)
@@ -141,3 +142,21 @@ FROM users u
 INNER JOIN team_members tm ON u.id = tm.user_id
 INNER JOIN teams t ON tm.team_id = t.id
 WHERE t.super_team_id = @superteamid::text;
+
+-- name: GetUserByPersonUUID :one
+SELECT id, members_id, person_uuid, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
+FROM users
+WHERE person_uuid = @person_uuid::uuid;
+
+-- name: UpdateUserPersonUUID :exec
+UPDATE users
+SET person_uuid = @person_uuid::uuid, updated_at = now()
+WHERE id = @id::text;
+
+-- name: GetUsersWithoutPersonUUID :many
+SELECT id, members_id
+FROM users
+WHERE person_uuid IS NULL
+  AND members_id ~ '^[0-9]+$'
+ORDER BY id
+LIMIT @querylimit::int;

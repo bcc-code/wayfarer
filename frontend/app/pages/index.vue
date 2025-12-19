@@ -54,7 +54,9 @@ watch(
       </NuxtLink>
     </template>
 
-    <LoadingState v-if="fetching" />
+    <div v-if="fetching" class="space-y-default p-list-outside">
+      <ProfileProjectCardSkeleton />
+    </div>
     <ErrorState v-else-if="error" :error />
     <div v-else-if="data" class="space-y-default p-list-outside">
       <ProfileProjectCard

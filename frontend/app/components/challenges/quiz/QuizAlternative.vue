@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cva } from 'cva'
 
-defineProps<{
+const props = defineProps<{
   text: string
   highlighted?: boolean
   confirmed?: boolean
@@ -10,6 +10,24 @@ defineProps<{
   disabled?: boolean
   selected?: boolean
 }>()
+
+const buttonRef = ref<HTMLButtonElement | null>(null)
+const { shake } = useShake()
+const { pulse } = usePulse()
+
+// Watch for confirmation to trigger animations
+watch(
+  () => props.confirmed,
+  (isConfirmed) => {
+    if (!isConfirmed || !buttonRef.value) return
+
+    if (props.wrong && props.selected) {
+      shake(buttonRef.value)
+    } else if (props.correct) {
+      pulse(buttonRef.value)
+    }
+  },
+)
 
 const classes = cva(
   'border-2 relative text-label rounded-list p-medium flex gap-list-section-inset text-center justify-center items-center min-h-22 transition-colors',
@@ -70,6 +88,7 @@ const classes = cva(
 
 <template>
   <button
+    ref="buttonRef"
     :class="classes({ highlighted, confirmed, wrong, correct, disabled })"
     :disabled="disabled"
   >

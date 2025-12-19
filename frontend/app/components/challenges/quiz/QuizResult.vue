@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { gsap } from 'gsap'
 import type { QuestionResult } from './types'
 
 const props = defineProps<{
@@ -10,8 +11,19 @@ const props = defineProps<{
 
 const { t } = useI18n()
 
+const containerRef = ref<HTMLElement | null>(null)
+
+const { burst } = useConfetti()
+
+const isPerfectScore = computed(
+  () => props.score === props.maxScore && props.maxScore > 0,
+)
+
+// Animated points value for counting effect
+const animatedPoints = ref(0)
+
 const resultText = computed(() => {
-  if (props.score === props.maxScore) {
+  if (isPerfectScore.value) {
     return t('quiz.result.perfect')
   }
   if (props.score > 0) {
@@ -19,10 +31,51 @@ const resultText = computed(() => {
   }
   return t('quiz.result.betterLuckNextTime')
 })
+
+// Use computed to reactively update the translated text with animated value
+const pointsText = computed(() => {
+  if (props.score === 0) {
+    return t('quiz.result.receivedNoPoints')
+  }
+  return t('quiz.result.receivedPoints', { points: animatedPoints.value })
+})
+
+onMounted(() => {
+  // Animate points counting up
+  if (props.pointsAwarded > 0) {
+    // Check for reduced motion preference
+    const prefersReducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches
+    if (prefersReducedMotion) {
+      animatedPoints.value = props.pointsAwarded
+    } else {
+      gsap.to(animatedPoints, {
+        value: props.pointsAwarded,
+        duration: 0.8,
+        ease: 'power2.out',
+        onUpdate: () => {
+          animatedPoints.value = Math.round(animatedPoints.value)
+        },
+      })
+    }
+  }
+
+  // Confetti for perfect scores
+  if (isPerfectScore.value && containerRef.value) {
+    // Small delay for the confetti to feel more natural after the result appears
+    setTimeout(() => {
+      burst(containerRef.value)
+    }, 300)
+  }
+})
 </script>
 
 <template>
-  <div class="text-center p-default flex flex-col gap-large grow">
+  <div
+    ref="containerRef"
+    class="text-center p-default flex flex-col gap-large grow relative overflow-hidden"
+  >
     <div class="grow flex flex-col items-center justify-center gap-default">
       <QuizProgress
         size="large"
@@ -31,14 +84,10 @@ const resultText = computed(() => {
         :results
       />
 
-      <h1 class="text-heading text-text-default">
+      <h1 class="text-heading text-text-default tabular-nums">
         {{ resultText }}
         <br />
-        {{
-          score === 0
-            ? $t('quiz.result.receivedNoPoints')
-            : t('quiz.result.receivedPoints', { points: pointsAwarded })
-        }}
+        {{ pointsText }}
       </h1>
     </div>
 

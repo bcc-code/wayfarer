@@ -13,7 +13,7 @@ import (
 func (s *Service) updateProjects(ctx context.Context, data []common.TranslationData) []error {
 	errs := make([]error, 0)
 	for _, d := range data {
-		value := &NameDescriptionTranslation{}
+		value := &ProjectTranslation{}
 		err := json.Unmarshal(d.Value, value)
 		if err != nil {
 			errs = append(errs, err)
@@ -25,6 +25,7 @@ func (s *Service) updateProjects(ctx context.Context, data []common.TranslationD
 			LanguageCode: d.Language,
 			Name:         value.Name,
 			Description:  value.Description.String,
+			Rules:        value.Rules.String,
 		})
 		if err != nil {
 			errs = append(errs, err)
