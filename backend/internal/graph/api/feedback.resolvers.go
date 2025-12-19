@@ -41,8 +41,8 @@ func (r *mutationResolver) SubmitFeedback(ctx context.Context, input model.Submi
 	if err != nil {
 		return nil, fmt.Errorf("failed to check rate limit: %w", err)
 	}
-	if count >= 3 {
-		return nil, fmt.Errorf("you can only submit 3 feedback messages per day")
+	if count >= 50 {
+		return nil, fmt.Errorf("you can only submit 50 feedback messages per day")
 	}
 
 	// Generate new feedback ID

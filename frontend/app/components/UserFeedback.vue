@@ -11,18 +11,17 @@ const errorMessage = ref<string>()
 const showLengthError = ref(false)
 const maxMessageLength = 2000
 
-const { executeMutation: submitFeedback } = useSubmitFeedbackMutation()
+function reset() {
+  open.value = false
+  message.value = undefined
+  canContactMe.value = false
+  showValidationError.value = false
+  showLengthError.value = false
+  hasSent.value = false
+  errorMessage.value = undefined
+}
 
-watch(open, (isOpen) => {
-  if (!isOpen) {
-    message.value = undefined
-    canContactMe.value = false
-    showValidationError.value = false
-    showLengthError.value = false
-    hasSent.value = false
-    errorMessage.value = undefined
-  }
-})
+const { executeMutation: submitFeedback } = useSubmitFeedbackMutation()
 
 watch(message, (m) => {
   if (m?.length) {
@@ -79,6 +78,11 @@ async function handleSubmit() {
   } finally {
     isSubmitting.value = false
   }
+}
+
+function closeFeedback(cb: () => void) {
+  cb()
+  reset()
 }
 </script>
 
@@ -184,7 +188,7 @@ async function handleSubmit() {
           <p class="text-label text-text-muted mb-8">
             {{ $t('feedback.thankYouDescription') }}
           </p>
-          <DesignButton class="grow-0" @click="close">
+          <DesignButton class="grow-0" @click="() => closeFeedback(close)">
             {{ $t('feedback.close') }}
           </DesignButton>
         </div>
