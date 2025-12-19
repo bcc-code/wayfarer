@@ -1,0 +1,32 @@
+# ==================== User Feedback ====================
+
+type UserFeedback {
+    id: ID!
+    userId: ID!
+    message: String!
+    canContactMe: Boolean!
+    userAgent: String
+    platform: String
+    screenWidth: Int
+    screenHeight: Int
+    appVersion: String
+    createdAt: DateTime!
+}
+
+input DeviceMetadata {
+    userAgent: String!
+    platform: String!
+    screenWidth: Int!
+    screenHeight: Int!
+    appVersion: String
+}
+
+input SubmitFeedbackInput {
+    message: String!
+    canContactMe: Boolean!
+    device: DeviceMetadata!
+}
+
+extend type Mutation {
+    submitFeedback(input: SubmitFeedbackInput!): UserFeedback!
+}

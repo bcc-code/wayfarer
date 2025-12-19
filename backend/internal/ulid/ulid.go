@@ -39,6 +39,7 @@ const (
 	PrefixPendingConsentEvent = "PC" // Pending Consent Events (for users not yet registered)
 	PrefixPushSubscription    = "PS" // Push Subscriptions
 	PrefixPushNotification    = "PN" // Push Notification Log
+	PrefixUserFeedback        = "FB" // User Feedback
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -202,6 +203,11 @@ func NewPushSubscriptionID() string {
 // NewPushNotificationID generates a new ID for a push notification log entry (PN prefix)
 func NewPushNotificationID() string {
 	return newID(PrefixPushNotification)
+}
+
+// NewUserFeedbackID generates a new ID for user feedback (FB prefix)
+func NewUserFeedbackID() string {
+	return newID(PrefixUserFeedback)
 }
 
 // Validation functions
@@ -371,4 +377,9 @@ func IsPushSubscriptionID(id string) bool {
 // IsPushNotificationID validates a push notification log ID
 func IsPushNotificationID(id string) bool {
 	return IsValidID(id, PrefixPushNotification)
+}
+
+// IsUserFeedbackID validates a user feedback ID
+func IsUserFeedbackID(id string) bool {
+	return IsValidID(id, PrefixUserFeedback)
 }

@@ -17,6 +17,7 @@ schema:
   - ../gql/external_content.graphqls
   - ../gql/admin.graphqls
   - ../gql/push_notifications.graphqls
+  - ../gql/feedback.graphqls
 
 # Generated code locations
 exec:

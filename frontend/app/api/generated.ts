@@ -472,6 +472,14 @@ export type DateRangeInput = {
   start: Scalars['Date']['input'];
 };
 
+export type DeviceMetadata = {
+  appVersion?: InputMaybe<Scalars['String']['input']>;
+  platform: Scalars['String']['input'];
+  screenHeight: Scalars['Int']['input'];
+  screenWidth: Scalars['Int']['input'];
+  userAgent: Scalars['String']['input'];
+};
+
 export type EnrollmentTargetInput = {
   allProjectMembers?: InputMaybe<Scalars['ID']['input']>;
   churchInProject?: InputMaybe<ChurchInProjectInput>;
@@ -791,6 +799,7 @@ export type Mutation = {
   setChallengeVisibility: Challenge;
   setNotificationPreference: PushNotificationPreference;
   startQuiz: QuizSubmission;
+  submitFeedback: UserFeedback;
   submitQuizAnswer: QuizResponse;
   uncompleteChallenge: Scalars['Boolean']['output'];
   unenrollFromChallenge: Scalars['Boolean']['output'];
@@ -1223,6 +1232,11 @@ export type MutationSetNotificationPreferenceArgs = {
 
 export type MutationStartQuizArgs = {
   quizId: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitFeedbackArgs = {
+  input: SubmitFeedbackInput;
 };
 
 
@@ -2077,6 +2091,12 @@ export type StreakFilter = {
   projectId?: InputMaybe<Scalars['ID']['input']>;
 };
 
+export type SubmitFeedbackInput = {
+  canContactMe: Scalars['Boolean']['input'];
+  device: DeviceMetadata;
+  message: Scalars['String']['input'];
+};
+
 export type SubmitQuizAnswerInput = {
   jsonResponse?: InputMaybe<Scalars['JSON']['input']>;
   numberResponse?: InputMaybe<Scalars['Float']['input']>;
@@ -2342,6 +2362,20 @@ export type UserEdge = {
   node: User;
 };
 
+export type UserFeedback = {
+  __typename?: 'UserFeedback';
+  appVersion?: Maybe<Scalars['String']['output']>;
+  canContactMe: Scalars['Boolean']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  message: Scalars['String']['output'];
+  platform?: Maybe<Scalars['String']['output']>;
+  screenHeight?: Maybe<Scalars['Int']['output']>;
+  screenWidth?: Maybe<Scalars['Int']['output']>;
+  userAgent?: Maybe<Scalars['String']['output']>;
+  userId: Scalars['ID']['output'];
+};
+
 export type UserFilter = {
   churchId?: InputMaybe<Scalars['ID']['input']>;
   eventId?: InputMaybe<Scalars['ID']['input']>;
@@ -2586,6 +2620,13 @@ export type CreateEventMutationVariables = Exact<{
 
 
 export type CreateEventMutation = { __typename?: 'Mutation', createEvent: { __typename?: 'Event', id: string } };
+
+export type SubmitFeedbackMutationVariables = Exact<{
+  input: SubmitFeedbackInput;
+}>;
+
+
+export type SubmitFeedbackMutation = { __typename?: 'Mutation', submitFeedback: { __typename?: 'UserFeedback', id: string } };
 
 export type CreateProjectMutationVariables = Exact<{
   input: CreateProjectInput;
@@ -3479,6 +3520,17 @@ export const CreateEventDocument = gql`
 
 export function useCreateEventMutation() {
   return Urql.useMutation<CreateEventMutation, CreateEventMutationVariables>(CreateEventDocument);
+};
+export const SubmitFeedbackDocument = gql`
+    mutation SubmitFeedback($input: SubmitFeedbackInput!) {
+  submitFeedback(input: $input) {
+    id
+  }
+}
+    `;
+
+export function useSubmitFeedbackMutation() {
+  return Urql.useMutation<SubmitFeedbackMutation, SubmitFeedbackMutationVariables>(SubmitFeedbackDocument);
 };
 export const CreateProjectDocument = gql`
     mutation CreateProject($input: CreateProjectInput!) {

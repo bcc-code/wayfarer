@@ -1,15 +1,23 @@
 <script setup lang="ts">
+import { useSubmitFeedbackMutation } from '~/api/generated'
+
 const open = ref(false)
 const message = ref<string>()
-// const canContactMe = ref(false)
+const canContactMe = ref(false)
 const showValidationError = ref(false)
 const hasSent = ref(false)
+const isSubmitting = ref(false)
+const errorMessage = ref<string>()
+
+const { executeMutation: submitFeedback } = useSubmitFeedbackMutation()
 
 watch(open, (isOpen) => {
   if (!isOpen) {
     message.value = undefined
+    canContactMe.value = false
     showValidationError.value = false
     hasSent.value = false
+    errorMessage.value = undefined
   }
 })
 
@@ -19,13 +27,47 @@ watch(message, (m) => {
   }
 })
 
-function handleSubmit() {
+function getDeviceMetadata() {
+  const platform =
+    // @ts-expect-error userAgentData is not yet in all TypeScript DOM types
+    navigator.userAgentData?.platform || navigator.platform || 'unknown'
+
+  return {
+    userAgent: navigator.userAgent,
+    platform,
+    screenWidth: window.screen.width,
+    screenHeight: window.screen.height,
+    appVersion: useRuntimeConfig().public.appVersion,
+  }
+}
+
+async function handleSubmit() {
   if (!message.value) {
     showValidationError.value = true
     return
   }
 
-  hasSent.value = true
+  isSubmitting.value = true
+  errorMessage.value = undefined
+
+  try {
+    const result = await submitFeedback({
+      input: {
+        message: message.value,
+        canContactMe: canContactMe.value,
+        device: getDeviceMetadata(),
+      },
+    })
+
+    if (result.error) {
+      errorMessage.value = result.error.message
+      return
+    }
+
+    hasSent.value = true
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 
@@ -80,7 +122,18 @@ function handleSubmit() {
               {{ $t('feedback.validationError') }}
             </p>
           </Transition>
-          <!-- <div class="px-medium py-6">
+          <Transition
+            enter-active-class="transition ease-out duration-200"
+            enter-from-class="opacity-0 -translate-y-4"
+          >
+            <p
+              v-if="errorMessage"
+              class="text-accent-negative text-label my-2 px-4"
+            >
+              {{ errorMessage }}
+            </p>
+          </Transition>
+          <div class="px-medium py-6">
             <UCheckbox
               v-model="canContactMe"
               :ui="{
@@ -92,9 +145,14 @@ function handleSubmit() {
               }"
               :label="$t('feedback.canContactMe')"
             />
-          </div> -->
+          </div>
           <div class="p-medium grow-0 mt-auto">
-            <DesignButton size="large" class="w-full" type="submit">
+            <DesignButton
+              size="large"
+              class="w-full"
+              type="submit"
+              :disabled="isSubmitting"
+            >
               {{ $t('feedback.send') }}
             </DesignButton>
           </div>

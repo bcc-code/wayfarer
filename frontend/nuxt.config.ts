@@ -1,3 +1,7 @@
+import { execSync } from 'node:child_process'
+
+const gitCommitHash = execSync('git rev-parse --short HEAD').toString().trim()
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   modules: [
@@ -66,6 +70,7 @@ export default defineNuxtConfig({
       rudderstackWriteKey: '',
       rudderstackDataPlaneUrl: '',
       vapidPublicKey: '',
+      appVersion: gitCommitHash,
     },
   },
   experimental: {

@@ -417,6 +417,7 @@ type ComplexityRoot struct {
 		SetChallengeVisibility                      func(childComplexity int, id string, visibleAt scalars.DateTime, startedAt *scalars.DateTime) int
 		SetNotificationPreference                   func(childComplexity int, input model.SetNotificationPreferenceInput) int
 		StartQuiz                                   func(childComplexity int, quizID string) int
+		SubmitFeedback                              func(childComplexity int, input model.SubmitFeedbackInput) int
 		SubmitQuizAnswer                            func(childComplexity int, submissionID string, input model.SubmitQuizAnswerInput) int
 		UncompleteChallenge                         func(childComplexity int, userID string, challengeID string) int
 		UnenrollFromChallenge                       func(childComplexity int, challengeID string) int
@@ -897,6 +898,19 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	UserFeedback struct {
+		AppVersion   func(childComplexity int) int
+		CanContactMe func(childComplexity int) int
+		CreatedAt    func(childComplexity int) int
+		ID           func(childComplexity int) int
+		Message      func(childComplexity int) int
+		Platform     func(childComplexity int) int
+		ScreenHeight func(childComplexity int) int
+		ScreenWidth  func(childComplexity int) int
+		UserAgent    func(childComplexity int) int
+		UserID       func(childComplexity int) int
+	}
+
 	UserRole struct {
 		ID    func(childComplexity int) int
 		Role  func(childComplexity int) int
@@ -1053,6 +1067,7 @@ type MutationResolver interface {
 	UnregisterPushSubscription(ctx context.Context, endpoint string) (bool, error)
 	SetNotificationPreference(ctx context.Context, input model.SetNotificationPreferenceInput) (*model.PushNotificationPreference, error)
 	SendPushNotification(ctx context.Context, input model.SendPushNotificationInput) (*model.SendPushNotificationResult, error)
+	SubmitFeedback(ctx context.Context, input model.SubmitFeedbackInput) (*model.UserFeedback, error)
 }
 type NumberQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.NumberQuestion) (*model.Quiz, error)
@@ -3094,6 +3109,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.StartQuiz(childComplexity, args["quizId"].(string)), true
+	case "Mutation.submitFeedback":
+		if e.complexity.Mutation.SubmitFeedback == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_submitFeedback_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SubmitFeedback(childComplexity, args["input"].(model.SubmitFeedbackInput)), true
 	case "Mutation.submitQuizAnswer":
 		if e.complexity.Mutation.SubmitQuizAnswer == nil {
 			break
@@ -5475,6 +5501,67 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UserEdge.Node(childComplexity), true
 
+	case "UserFeedback.appVersion":
+		if e.complexity.UserFeedback.AppVersion == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.AppVersion(childComplexity), true
+	case "UserFeedback.canContactMe":
+		if e.complexity.UserFeedback.CanContactMe == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.CanContactMe(childComplexity), true
+	case "UserFeedback.createdAt":
+		if e.complexity.UserFeedback.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.CreatedAt(childComplexity), true
+	case "UserFeedback.id":
+		if e.complexity.UserFeedback.ID == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.ID(childComplexity), true
+	case "UserFeedback.message":
+		if e.complexity.UserFeedback.Message == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.Message(childComplexity), true
+	case "UserFeedback.platform":
+		if e.complexity.UserFeedback.Platform == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.Platform(childComplexity), true
+	case "UserFeedback.screenHeight":
+		if e.complexity.UserFeedback.ScreenHeight == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.ScreenHeight(childComplexity), true
+	case "UserFeedback.screenWidth":
+		if e.complexity.UserFeedback.ScreenWidth == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.ScreenWidth(childComplexity), true
+	case "UserFeedback.userAgent":
+		if e.complexity.UserFeedback.UserAgent == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.UserAgent(childComplexity), true
+	case "UserFeedback.userId":
+		if e.complexity.UserFeedback.UserID == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.UserID(childComplexity), true
+
 	case "UserRole.id":
 		if e.complexity.UserRole.ID == nil {
 			break
@@ -5536,6 +5623,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateTeamInput,
 		ec.unmarshalInputCreateUserInput,
 		ec.unmarshalInputDateRangeInput,
+		ec.unmarshalInputDeviceMetadata,
 		ec.unmarshalInputEnrollmentTargetInput,
 		ec.unmarshalInputEventFilter,
 		ec.unmarshalInputExternalContentFilter,
@@ -5548,6 +5636,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputSendPushNotificationInput,
 		ec.unmarshalInputSetNotificationPreferenceInput,
 		ec.unmarshalInputStreakFilter,
+		ec.unmarshalInputSubmitFeedbackInput,
 		ec.unmarshalInputSubmitQuizAnswerInput,
 		ec.unmarshalInputSuperTeamFilter,
 		ec.unmarshalInputTeamFilter,
@@ -7513,6 +7602,39 @@ extend type Mutation {
     sendPushNotification(input: SendPushNotificationInput!): SendPushNotificationResult! @requireRole(roles: ["admin", "superadmin"])
 }
 `, BuiltIn: false},
+	{Name: "../../../../gql/feedback.graphqls", Input: `# ==================== User Feedback ====================
+
+type UserFeedback {
+    id: ID!
+    userId: ID!
+    message: String!
+    canContactMe: Boolean!
+    userAgent: String
+    platform: String
+    screenWidth: Int
+    screenHeight: Int
+    appVersion: String
+    createdAt: DateTime!
+}
+
+input DeviceMetadata {
+    userAgent: String!
+    platform: String!
+    screenWidth: Int!
+    screenHeight: Int!
+    appVersion: String
+}
+
+input SubmitFeedbackInput {
+    message: String!
+    canContactMe: Boolean!
+    device: DeviceMetadata!
+}
+
+extend type Mutation {
+    submitFeedback(input: SubmitFeedbackInput!): UserFeedback!
+}
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -8621,6 +8743,17 @@ func (ec *executionContext) field_Mutation_startQuiz_args(ctx context.Context, r
 		return nil, err
 	}
 	args["quizId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_submitFeedback_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSubmitFeedbackInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSubmitFeedbackInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -21515,6 +21648,69 @@ func (ec *executionContext) fieldContext_Mutation_sendPushNotification(ctx conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_submitFeedback(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_submitFeedback,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().SubmitFeedback(ctx, fc.Args["input"].(model.SubmitFeedbackInput))
+		},
+		nil,
+		ec.marshalNUserFeedback2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserFeedback,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_submitFeedback(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserFeedback_id(ctx, field)
+			case "userId":
+				return ec.fieldContext_UserFeedback_userId(ctx, field)
+			case "message":
+				return ec.fieldContext_UserFeedback_message(ctx, field)
+			case "canContactMe":
+				return ec.fieldContext_UserFeedback_canContactMe(ctx, field)
+			case "userAgent":
+				return ec.fieldContext_UserFeedback_userAgent(ctx, field)
+			case "platform":
+				return ec.fieldContext_UserFeedback_platform(ctx, field)
+			case "screenWidth":
+				return ec.fieldContext_UserFeedback_screenWidth(ctx, field)
+			case "screenHeight":
+				return ec.fieldContext_UserFeedback_screenHeight(ctx, field)
+			case "appVersion":
+				return ec.fieldContext_UserFeedback_appVersion(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserFeedback", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_submitFeedback_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NumberQuestion_id(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -33938,6 +34134,296 @@ func (ec *executionContext) fieldContext_UserEdge_node(_ context.Context, field 
 	return fc, nil
 }
 
+func (ec *executionContext) _UserFeedback_id(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_userId(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_userId,
+		func(ctx context.Context) (any, error) {
+			return obj.UserID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_userId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_message(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_message,
+		func(ctx context.Context) (any, error) {
+			return obj.Message, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_canContactMe(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_canContactMe,
+		func(ctx context.Context) (any, error) {
+			return obj.CanContactMe, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_canContactMe(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_userAgent(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_userAgent,
+		func(ctx context.Context) (any, error) {
+			return obj.UserAgent, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_userAgent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_platform(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_platform,
+		func(ctx context.Context) (any, error) {
+			return obj.Platform, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_platform(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_screenWidth(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_screenWidth,
+		func(ctx context.Context) (any, error) {
+			return obj.ScreenWidth, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_screenWidth(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_screenHeight(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_screenHeight,
+		func(ctx context.Context) (any, error) {
+			return obj.ScreenHeight, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_screenHeight(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_appVersion(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_appVersion,
+		func(ctx context.Context) (any, error) {
+			return obj.AppVersion, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_appVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UserRole_id(ctx context.Context, field graphql.CollectedField, obj *model.UserRole) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -37296,6 +37782,61 @@ func (ec *executionContext) unmarshalInputDateRangeInput(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDeviceMetadata(ctx context.Context, obj any) (model.DeviceMetadata, error) {
+	var it model.DeviceMetadata
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"userAgent", "platform", "screenWidth", "screenHeight", "appVersion"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "userAgent":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userAgent"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserAgent = data
+		case "platform":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("platform"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Platform = data
+		case "screenWidth":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("screenWidth"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScreenWidth = data
+		case "screenHeight":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("screenHeight"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScreenHeight = data
+		case "appVersion":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("appVersion"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AppVersion = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputEnrollmentTargetInput(ctx context.Context, obj any) (model.EnrollmentTargetInput, error) {
 	var it model.EnrollmentTargetInput
 	asMap := map[string]any{}
@@ -37978,6 +38519,47 @@ func (ec *executionContext) unmarshalInputStreakFilter(ctx context.Context, obj 
 				return it, err
 			}
 			it.Ids = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSubmitFeedbackInput(ctx context.Context, obj any) (model.SubmitFeedbackInput, error) {
+	var it model.SubmitFeedbackInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"message", "canContactMe", "device"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "message":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Message = data
+		case "canContactMe":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("canContactMe"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CanContactMe = data
+		case "device":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("device"))
+			data, err := ec.unmarshalNDeviceMetadata2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDeviceMetadata(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Device = data
 		}
 	}
 
@@ -42597,6 +43179,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "sendPushNotification":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_sendPushNotification(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "submitFeedback":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_submitFeedback(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -48890,6 +49479,75 @@ func (ec *executionContext) _UserEdge(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var userFeedbackImplementors = []string{"UserFeedback"}
+
+func (ec *executionContext) _UserFeedback(ctx context.Context, sel ast.SelectionSet, obj *model.UserFeedback) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userFeedbackImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserFeedback")
+		case "id":
+			out.Values[i] = ec._UserFeedback_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "userId":
+			out.Values[i] = ec._UserFeedback_userId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "message":
+			out.Values[i] = ec._UserFeedback_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "canContactMe":
+			out.Values[i] = ec._UserFeedback_canContactMe(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "userAgent":
+			out.Values[i] = ec._UserFeedback_userAgent(ctx, field, obj)
+		case "platform":
+			out.Values[i] = ec._UserFeedback_platform(ctx, field, obj)
+		case "screenWidth":
+			out.Values[i] = ec._UserFeedback_screenWidth(ctx, field, obj)
+		case "screenHeight":
+			out.Values[i] = ec._UserFeedback_screenHeight(ctx, field, obj)
+		case "appVersion":
+			out.Values[i] = ec._UserFeedback_appVersion(ctx, field, obj)
+		case "createdAt":
+			out.Values[i] = ec._UserFeedback_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var userRoleImplementors = []string{"UserRole"}
 
 func (ec *executionContext) _UserRole(ctx context.Context, sel ast.SelectionSet, obj *model.UserRole) graphql.Marshaler {
@@ -50112,6 +50770,11 @@ func (ec *executionContext) unmarshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayf
 
 func (ec *executionContext) marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx context.Context, sel ast.SelectionSet, v scalars.DateTime) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) unmarshalNDeviceMetadata2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐDeviceMetadata(ctx context.Context, v any) (*model.DeviceMetadata, error) {
+	res, err := ec.unmarshalInputDeviceMetadata(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNEnrollmentTargetInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEnrollmentTargetInput(ctx context.Context, v any) (model.EnrollmentTargetInput, error) {
@@ -51689,6 +52352,11 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	return ret
 }
 
+func (ec *executionContext) unmarshalNSubmitFeedbackInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSubmitFeedbackInput(ctx context.Context, v any) (model.SubmitFeedbackInput, error) {
+	res, err := ec.unmarshalInputSubmitFeedbackInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNSubmitQuizAnswerInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSubmitQuizAnswerInput(ctx context.Context, v any) (model.SubmitQuizAnswerInput, error) {
 	res, err := ec.unmarshalInputSubmitQuizAnswerInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -52292,6 +52960,20 @@ func (ec *executionContext) marshalNUserEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋway
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNUserFeedback2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserFeedback(ctx context.Context, sel ast.SelectionSet, v model.UserFeedback) graphql.Marshaler {
+	return ec._UserFeedback(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUserFeedback2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserFeedback(ctx context.Context, sel ast.SelectionSet, v *model.UserFeedback) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UserFeedback(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNUserRole2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserRole(ctx context.Context, sel ast.SelectionSet, v model.UserRole) graphql.Marshaler {
