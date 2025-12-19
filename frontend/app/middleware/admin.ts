@@ -3,7 +3,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
-  const token = useCookie('token')
+  const token = useLocalStorage<string>('token', () => null)
   const config = useRuntimeConfig()
 
   // If no token, redirect to login

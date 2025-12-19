@@ -17,7 +17,7 @@ export default defineNuxtPlugin((nuxtApp) => {
       exchanges: [
         authExchange(async (utils) => {
           // Defer getting the token until the auth exchange is actually used
-          const token = useCookie('token')
+          const token = useLocalStorage<string>('token', () => null)
           let isRedirecting = false
 
           return {

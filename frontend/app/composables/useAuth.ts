@@ -38,7 +38,7 @@ gql(`
 
 export function useAuth() {
   const { reset } = useAnalytics()
-  const token = useCookie('token')
+  const token = useLocalStorage<string>('token', () => null)
   const isLoading = useState('isLoading', () => true)
   const me = useState<GetMeQuery['me'] | null | undefined>('me', () => null)
 

@@ -4,15 +4,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
-  const token = useCookie('token')
+  const token = useLocalStorage<string>('token', () => null)
   const config = useRuntimeConfig()
 
   if (!token.value) {
-    return navigateTo(
-      `${config.public.loginUrl}?redirect=${to.path}`,
-      {
-        external: true,
-      },
-    )
+    return navigateTo(`${config.public.loginUrl}?redirect=${to.path}`, {
+      external: true,
+    })
   }
 })
