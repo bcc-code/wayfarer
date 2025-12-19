@@ -146,8 +146,8 @@ func (h *ConsentWebhookHandler) HandleConsentEvent(c *gin.Context) {
 		return
 	}
 
-	// Invalidate user consent cache
-	h.Cache.Delete(cache.UserConsentsKey(user.ID))
+	// Invalidate user cache (consent status is part of the cached User object)
+	h.Cache.Delete(cache.UserKey(user.ID))
 
 	slog.Info("consent_webhook: consent event created successfully",
 		"history_id", historyID,
