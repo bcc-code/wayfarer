@@ -4,6 +4,7 @@ const props = defineProps<{
 }>()
 
 const { track } = useAnalytics()
+const { openAchievementId, clearOpenAchievementId } = useAchievementSheet()
 
 const open = ref(false)
 
@@ -14,8 +15,20 @@ watch(open, (isOpen) => {
       achievement_name: props.achievement.name,
       is_unlocked: !!props.achievement.achievedAt,
     })
+  } else if (openAchievementId.value === props.achievement.id) {
+    clearOpenAchievementId()
   }
 })
+
+watch(
+  openAchievementId,
+  (id) => {
+    if (id === props.achievement.id) {
+      open.value = true
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

@@ -46,6 +46,20 @@ watch(
   },
   { immediate: true },
 )
+
+// If there is ?achievement=<id> in the url, open the achievement sheet
+const { openAchievementSheet, openAchievementId } = useAchievementSheet()
+const route = useRoute()
+watch(
+  () => route.query.achievement,
+  (achievementId) => {
+    if (achievementId && typeof achievementId === 'string') {
+      openAchievementSheet(achievementId)
+      console.log(openAchievementId.value)
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
