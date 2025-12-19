@@ -688,3 +688,71 @@ func buildExternalContentPageInfo(params BuildExternalContentConnectionParams, e
 
 	return pageInfo
 }
+
+// BuildFeedbackConnectionParams holds parameters for building a FeedbackConnection
+type BuildFeedbackConnectionParams struct {
+	Feedbacks       []*model.UserFeedback
+	RequestedFirst  *int
+	RequestedLast   *int
+	RequestedAfter  *string
+	RequestedBefore *string
+	TotalCount      int
+	HasMore         bool
+}
+
+// BuildFeedbackConnection constructs a Relay-style connection from query results
+func BuildFeedbackConnection(params BuildFeedbackConnectionParams) *model.FeedbackConnection {
+	edges := make([]model.FeedbackEdge, len(params.Feedbacks))
+	for i, feedback := range params.Feedbacks {
+		edges[i] = model.FeedbackEdge{
+			Cursor: EncodeCursor(feedback.ID),
+			Node:   feedback,
+		}
+	}
+
+	pageInfo := buildFeedbackPageInfo(params, edges)
+
+	return &model.FeedbackConnection{
+		Edges:      edges,
+		PageInfo:   pageInfo,
+		TotalCount: params.TotalCount,
+	}
+}
+
+// buildFeedbackPageInfo constructs the PageInfo for feedback
+func buildFeedbackPageInfo(params BuildFeedbackConnectionParams, edges []model.FeedbackEdge) *model.PageInfo {
+	pageInfo := &model.PageInfo{
+		HasNextPage:     false,
+		HasPreviousPage: false,
+		StartCursor:     nil,
+		EndCursor:       nil,
+	}
+
+	if len(edges) == 0 {
+		return pageInfo
+	}
+
+	// Set start and end cursors
+	startCursor := edges[0].Cursor
+	endCursor := edges[len(edges)-1].Cursor
+	pageInfo.StartCursor = &startCursor
+	pageInfo.EndCursor = &endCursor
+
+	// Determine hasNextPage
+	if params.RequestedFirst != nil {
+		pageInfo.HasNextPage = params.HasMore
+	}
+
+	// Determine hasPreviousPage
+	if params.RequestedLast != nil {
+		pageInfo.HasPreviousPage = params.HasMore
+		// If we're paginating backward with a 'before' cursor, there must be a next page
+		if params.RequestedBefore != nil && *params.RequestedBefore != "" {
+			pageInfo.HasNextPage = true
+		}
+	} else if params.RequestedAfter != nil && *params.RequestedAfter != "" {
+		pageInfo.HasPreviousPage = true
+	}
+
+	return pageInfo
+}

@@ -455,6 +455,11 @@ models:
       title:
         resolver: true
 
+  UserFeedback:
+    fields:
+      user:
+        resolver: true
+
 # Autobind - automatically bind Go types to GraphQL types if they match by name
 autobind:
   - github.com/bcc-media/wayfarer/internal/graph/api/model

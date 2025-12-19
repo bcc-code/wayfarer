@@ -131,6 +131,13 @@ export function usePermissions() {
     return isSuperAdmin.value || isAdmin.value
   })
 
+  /**
+   * Can access the feedback page
+   */
+  const canAccessFeedback = computed(() => {
+    return isSuperAdmin.value || isAdmin.value
+  })
+
   // ============================================
   // Action Permissions
   // ============================================
@@ -248,6 +255,7 @@ export function usePermissions() {
     canAccessUsers,
     canAccessTeams,
     canAccessConsents,
+    canAccessFeedback,
 
     // Actions
     canManageScores,

@@ -74,6 +74,7 @@ type ResolverRoot interface {
 	User() UserResolver
 	UserConsent() UserConsentResolver
 	UserConsentHistoryEntry() UserConsentHistoryEntryResolver
+	UserFeedback() UserFeedbackResolver
 	UserRole() UserRoleResolver
 }
 
@@ -275,6 +276,17 @@ type ComplexityRoot struct {
 	ExternalContentTranslation struct {
 		LanguageCode func(childComplexity int) int
 		Title        func(childComplexity int) int
+	}
+
+	FeedbackConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	FeedbackEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
 	}
 
 	FreeTextQuestion struct {
@@ -549,6 +561,7 @@ type ComplexityRoot struct {
 		Events                        func(childComplexity int, filter *model.EventFilter, first *int, after *string, last *int, before *string) int
 		ExternalContent               func(childComplexity int, id string) int
 		ExternalContents              func(childComplexity int, filter model.ExternalContentFilter, sortBy *model.ExternalContentSortBy, first *int, after *string, last *int, before *string) int
+		Feedback                      func(childComplexity int, first *int, after *string, last *int, before *string) int
 		InstanceID                    func(childComplexity int) int
 		Me                            func(childComplexity int) int
 		MyCurrentEvent                func(childComplexity int) int
@@ -910,6 +923,7 @@ type ComplexityRoot struct {
 		Platform     func(childComplexity int) int
 		ScreenHeight func(childComplexity int) int
 		ScreenWidth  func(childComplexity int) int
+		User         func(childComplexity int) int
 		UserAgent    func(childComplexity int) int
 		UserID       func(childComplexity int) int
 	}
@@ -1146,6 +1160,7 @@ type QueryResolver interface {
 	MyPushNotificationPreferences(ctx context.Context) ([]model.PushNotificationPreference, error)
 	PushNotificationsEnabled(ctx context.Context) (bool, error)
 	VapidPublicKey(ctx context.Context) (string, error)
+	Feedback(ctx context.Context, first *int, after *string, last *int, before *string) (*model.FeedbackConnection, error)
 }
 type QuizResolver interface {
 	Project(ctx context.Context, obj *model.Quiz) (*model.Project, error)
@@ -1263,6 +1278,9 @@ type UserConsentResolver interface {
 }
 type UserConsentHistoryEntryResolver interface {
 	Consent(ctx context.Context, obj *model.UserConsentHistoryEntry) (*model.Consent, error)
+}
+type UserFeedbackResolver interface {
+	User(ctx context.Context, obj *model.UserFeedback) (*model.User, error)
 }
 type UserRoleResolver interface {
 	User(ctx context.Context, obj *model.UserRole) (*model.User, error)
@@ -2055,6 +2073,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ExternalContentTranslation.Title(childComplexity), true
+
+	case "FeedbackConnection.edges":
+		if e.complexity.FeedbackConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.FeedbackConnection.Edges(childComplexity), true
+	case "FeedbackConnection.pageInfo":
+		if e.complexity.FeedbackConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.FeedbackConnection.PageInfo(childComplexity), true
+	case "FeedbackConnection.totalCount":
+		if e.complexity.FeedbackConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.FeedbackConnection.TotalCount(childComplexity), true
+
+	case "FeedbackEdge.cursor":
+		if e.complexity.FeedbackEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.FeedbackEdge.Cursor(childComplexity), true
+	case "FeedbackEdge.node":
+		if e.complexity.FeedbackEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.FeedbackEdge.Node(childComplexity), true
 
 	case "FreeTextQuestion.id":
 		if e.complexity.FreeTextQuestion.ID == nil {
@@ -3894,6 +3944,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.ExternalContents(childComplexity, args["filter"].(model.ExternalContentFilter), args["sortBy"].(*model.ExternalContentSortBy), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
+	case "Query.feedback":
+		if e.complexity.Query.Feedback == nil {
+			break
+		}
+
+		args, err := ec.field_Query_feedback_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Feedback(childComplexity, args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
 	case "Query.instanceID":
 		if e.complexity.Query.InstanceID == nil {
 			break
@@ -5582,6 +5643,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UserFeedback.ScreenWidth(childComplexity), true
+	case "UserFeedback.user":
+		if e.complexity.UserFeedback.User == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.User(childComplexity), true
 	case "UserFeedback.userAgent":
 		if e.complexity.UserFeedback.UserAgent == nil {
 			break
@@ -7645,6 +7712,7 @@ extend type Mutation {
 type UserFeedback {
     id: ID!
     userId: ID!
+    user: User!
     message: String!
     canContactMe: Boolean!
     userAgent: String
@@ -7667,6 +7735,21 @@ input SubmitFeedbackInput {
     message: String!
     canContactMe: Boolean!
     device: DeviceMetadata!
+}
+
+type FeedbackConnection {
+    edges: [FeedbackEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type FeedbackEdge {
+    cursor: String!
+    node: UserFeedback!
+}
+
+extend type Query {
+    feedback(first: Int, after: String, last: Int, before: String): FeedbackConnection! @requireRole(roles: ["admin", "superadmin"])
 }
 
 extend type Mutation {
@@ -9452,6 +9535,32 @@ func (ec *executionContext) field_Query_externalContents_args(ctx context.Contex
 		return nil, err
 	}
 	args["before"] = arg5
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_feedback_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg3
 	return args, nil
 }
 
@@ -13963,6 +14072,191 @@ func (ec *executionContext) fieldContext_ExternalContentTranslation_title(_ cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FeedbackConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FeedbackConnection_edges,
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		ec.marshalNFeedbackEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFeedbackEdgeᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FeedbackConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FeedbackConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "cursor":
+				return ec.fieldContext_FeedbackEdge_cursor(ctx, field)
+			case "node":
+				return ec.fieldContext_FeedbackEdge_node(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FeedbackEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FeedbackConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FeedbackConnection_pageInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		ec.marshalNPageInfo2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPageInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FeedbackConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FeedbackConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FeedbackConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FeedbackConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FeedbackConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FeedbackConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FeedbackEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FeedbackEdge_cursor,
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FeedbackEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FeedbackEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FeedbackEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FeedbackEdge_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalNUserFeedback2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserFeedback,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FeedbackEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FeedbackEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserFeedback_id(ctx, field)
+			case "userId":
+				return ec.fieldContext_UserFeedback_userId(ctx, field)
+			case "user":
+				return ec.fieldContext_UserFeedback_user(ctx, field)
+			case "message":
+				return ec.fieldContext_UserFeedback_message(ctx, field)
+			case "canContactMe":
+				return ec.fieldContext_UserFeedback_canContactMe(ctx, field)
+			case "userAgent":
+				return ec.fieldContext_UserFeedback_userAgent(ctx, field)
+			case "platform":
+				return ec.fieldContext_UserFeedback_platform(ctx, field)
+			case "screenWidth":
+				return ec.fieldContext_UserFeedback_screenWidth(ctx, field)
+			case "screenHeight":
+				return ec.fieldContext_UserFeedback_screenHeight(ctx, field)
+			case "appVersion":
+				return ec.fieldContext_UserFeedback_appVersion(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserFeedback", field.Name)
 		},
 	}
 	return fc, nil
@@ -21824,6 +22118,8 @@ func (ec *executionContext) fieldContext_Mutation_submitFeedback(ctx context.Con
 				return ec.fieldContext_UserFeedback_id(ctx, field)
 			case "userId":
 				return ec.fieldContext_UserFeedback_userId(ctx, field)
+			case "user":
+				return ec.fieldContext_UserFeedback_user(ctx, field)
 			case "message":
 				return ec.fieldContext_UserFeedback_message(ctx, field)
 			case "canContactMe":
@@ -26385,6 +26681,73 @@ func (ec *executionContext) fieldContext_Query_vapidPublicKey(_ context.Context,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_feedback(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_feedback,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().Feedback(ctx, fc.Args["first"].(*int), fc.Args["after"].(*string), fc.Args["last"].(*int), fc.Args["before"].(*string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.FeedbackConnection
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.FeedbackConnection
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNFeedbackConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFeedbackConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_feedback(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_FeedbackConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_FeedbackConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_FeedbackConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FeedbackConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_feedback_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -34451,6 +34814,71 @@ func (ec *executionContext) fieldContext_UserFeedback_userId(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _UserFeedback_user(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_user,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.UserFeedback().User(ctx, obj)
+		},
+		nil,
+		ec.marshalNUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "membersId":
+				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "churchId":
+				return ec.fieldContext_User_churchId(ctx, field)
+			case "church":
+				return ec.fieldContext_User_church(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "image":
+				return ec.fieldContext_User_image(ctx, field)
+			case "projects":
+				return ec.fieldContext_User_projects(ctx, field)
+			case "events":
+				return ec.fieldContext_User_events(ctx, field)
+			case "teams":
+				return ec.fieldContext_User_teams(ctx, field)
+			case "superTeams":
+				return ec.fieldContext_User_superTeams(ctx, field)
+			case "roles":
+				return ec.fieldContext_User_roles(ctx, field)
+			case "consentStatus":
+				return ec.fieldContext_User_consentStatus(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UserFeedback_message(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -42136,6 +42564,99 @@ func (ec *executionContext) _ExternalContentTranslation(ctx context.Context, sel
 	return out
 }
 
+var feedbackConnectionImplementors = []string{"FeedbackConnection"}
+
+func (ec *executionContext) _FeedbackConnection(ctx context.Context, sel ast.SelectionSet, obj *model.FeedbackConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, feedbackConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FeedbackConnection")
+		case "edges":
+			out.Values[i] = ec._FeedbackConnection_edges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._FeedbackConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._FeedbackConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var feedbackEdgeImplementors = []string{"FeedbackEdge"}
+
+func (ec *executionContext) _FeedbackEdge(ctx context.Context, sel ast.SelectionSet, obj *model.FeedbackEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, feedbackEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FeedbackEdge")
+		case "cursor":
+			out.Values[i] = ec._FeedbackEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "node":
+			out.Values[i] = ec._FeedbackEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var freeTextQuestionImplementors = []string{"FreeTextQuestion", "QuizQuestion"}
 
 func (ec *executionContext) _FreeTextQuestion(ctx context.Context, sel ast.SelectionSet, obj *model.FreeTextQuestion) graphql.Marshaler {
@@ -45551,6 +46072,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_vapidPublicKey(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "feedback":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_feedback(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -49799,22 +50342,58 @@ func (ec *executionContext) _UserFeedback(ctx context.Context, sel ast.Selection
 		case "id":
 			out.Values[i] = ec._UserFeedback_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "userId":
 			out.Values[i] = ec._UserFeedback_userId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "user":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UserFeedback_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "message":
 			out.Values[i] = ec._UserFeedback_message(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "canContactMe":
 			out.Values[i] = ec._UserFeedback_canContactMe(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "userAgent":
 			out.Values[i] = ec._UserFeedback_userAgent(ctx, field, obj)
@@ -49829,7 +50408,7 @@ func (ec *executionContext) _UserFeedback(ctx context.Context, sel ast.Selection
 		case "createdAt":
 			out.Values[i] = ec._UserFeedback_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -51345,6 +51924,68 @@ func (ec *executionContext) unmarshalNExternalContentType2githubᚗcomᚋbccᚑm
 
 func (ec *executionContext) marshalNExternalContentType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐExternalContentType(ctx context.Context, sel ast.SelectionSet, v model.ExternalContentType) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) marshalNFeedbackConnection2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFeedbackConnection(ctx context.Context, sel ast.SelectionSet, v model.FeedbackConnection) graphql.Marshaler {
+	return ec._FeedbackConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNFeedbackConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFeedbackConnection(ctx context.Context, sel ast.SelectionSet, v *model.FeedbackConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FeedbackConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNFeedbackEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFeedbackEdge(ctx context.Context, sel ast.SelectionSet, v model.FeedbackEdge) graphql.Marshaler {
+	return ec._FeedbackEdge(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNFeedbackEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFeedbackEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.FeedbackEdge) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNFeedbackEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFeedbackEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {

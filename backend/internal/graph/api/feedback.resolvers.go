@@ -11,6 +11,7 @@ import (
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/ulid"
@@ -77,3 +78,105 @@ func (r *mutationResolver) SubmitFeedback(ctx context.Context, input model.Submi
 		CreatedAt:    scalars.DateTime{Time: feedback.CreatedAt.Time},
 	}, nil
 }
+
+// Feedback is the resolver for the feedback field.
+func (r *queryResolver) Feedback(ctx context.Context, first *int, after *string, last *int, before *string) (*model.FeedbackConnection, error) {
+	// Default page size
+	const defaultPageSize = 20
+
+	// Determine pagination direction and limit
+	limit := defaultPageSize
+	isBackward := false
+	if first != nil {
+		limit = *first
+	} else if last != nil {
+		limit = *last
+		isBackward = true
+	}
+
+	// Decode cursors
+	afterCursor := ""
+	beforeCursor := ""
+	if after != nil && *after != "" {
+		decoded, err := pagination.DecodeCursor(*after)
+		if err != nil {
+			return nil, fmt.Errorf("invalid after cursor: %w", err)
+		}
+		afterCursor = decoded
+	}
+	if before != nil && *before != "" {
+		decoded, err := pagination.DecodeCursor(*before)
+		if err != nil {
+			return nil, fmt.Errorf("invalid before cursor: %w", err)
+		}
+		beforeCursor = decoded
+	}
+
+	// Fetch one more than requested to determine if there are more results
+	rows, err := r.DB.Queries.GetFeedbackCursor(ctx, sqlc.GetFeedbackCursorParams{
+		Aftercursor:  afterCursor,
+		Beforecursor: beforeCursor,
+		Isbackward:   isBackward,
+		Querylimit:   int32(limit + 1),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch feedback: %w", err)
+	}
+
+	// Check if there are more results
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
+	}
+
+	// If paginating backward, reverse the results
+	if isBackward {
+		for i, j := 0, len(rows)-1; i < j; i, j = i+1, j-1 {
+			rows[i], rows[j] = rows[j], rows[i]
+		}
+	}
+
+	// Get total count
+	totalCount, err := r.DB.Queries.CountAllFeedback(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count feedback: %w", err)
+	}
+
+	// Convert to GraphQL models
+	feedbacks := make([]*model.UserFeedback, len(rows))
+	for i, row := range rows {
+		feedbacks[i] = &model.UserFeedback{
+			ID:           row.ID,
+			UserID:       row.UserID,
+			Message:      row.Message,
+			CanContactMe: row.CanContactMe,
+			UserAgent:    row.UserAgent,
+			Platform:     row.Platform,
+			ScreenWidth:  utils.Int32PtrToIntPtr(row.ScreenWidth),
+			ScreenHeight: utils.Int32PtrToIntPtr(row.ScreenHeight),
+			AppVersion:   row.AppVersion,
+			CreatedAt:    scalars.DateTime{Time: row.CreatedAt.Time},
+		}
+	}
+
+	return pagination.BuildFeedbackConnection(pagination.BuildFeedbackConnectionParams{
+		Feedbacks:       feedbacks,
+		RequestedFirst:  first,
+		RequestedLast:   last,
+		RequestedAfter:  after,
+		RequestedBefore: before,
+		TotalCount:      int(totalCount),
+		HasMore:         hasMore,
+	}), nil
+}
+
+// User is the resolver for the user field.
+func (r *userFeedbackResolver) User(ctx context.Context, obj *model.UserFeedback) (*model.User, error) {
+	userThunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
+	return userThunk()
+}
+
+// UserFeedback returns UserFeedbackResolver implementation.
+func (r *Resolver) UserFeedback() UserFeedbackResolver { return &userFeedbackResolver{r} }
+
+type userFeedbackResolver struct{ *Resolver }

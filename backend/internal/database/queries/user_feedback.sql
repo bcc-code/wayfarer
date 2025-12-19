@@ -41,3 +41,13 @@ OFFSET @offsetcount::int;
 
 -- name: CountAllFeedback :one
 SELECT COUNT(*) FROM user_feedback;
+
+-- name: GetFeedbackCursor :many
+SELECT * FROM user_feedback
+WHERE
+    (@aftercursor::text = '' OR id < @aftercursor::text)
+    AND (@beforecursor::text = '' OR id > @beforecursor::text)
+ORDER BY
+    CASE WHEN @isbackward::bool = true THEN id END ASC,
+    CASE WHEN @isbackward::bool = false OR @isbackward::bool IS NULL THEN id END DESC
+LIMIT @querylimit::int;

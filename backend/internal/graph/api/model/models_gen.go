@@ -604,6 +604,17 @@ type ExternalContentTranslation struct {
 	Title        *string `json:"title,omitempty"`
 }
 
+type FeedbackConnection struct {
+	Edges      []FeedbackEdge `json:"edges"`
+	PageInfo   *PageInfo      `json:"pageInfo"`
+	TotalCount int            `json:"totalCount"`
+}
+
+type FeedbackEdge struct {
+	Cursor string        `json:"cursor"`
+	Node   *UserFeedback `json:"node"`
+}
+
 type FreeTextQuestion struct {
 	ID             string `json:"id"`
 	Quiz           *Quiz  `json:"quiz"`
@@ -1520,6 +1531,7 @@ type UserEdge struct {
 type UserFeedback struct {
 	ID           string           `json:"id"`
 	UserID       string           `json:"userId"`
+	User         *User            `json:"user"`
 	Message      string           `json:"message"`
 	CanContactMe bool             `json:"canContactMe"`
 	UserAgent    *string          `json:"userAgent,omitempty"`

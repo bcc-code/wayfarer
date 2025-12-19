@@ -32,6 +32,7 @@ const {
   canAccessTeams,
   canAccessConsents,
   canAccessScores,
+  canAccessFeedback,
 } = usePermissions()
 
 const projectsLinks = computed(() => {
@@ -97,6 +98,15 @@ const links = computed<NavigationMenuItem[]>(() => {
       icon: 'lucide:file-check',
       active: route.fullPath.includes('/consents'),
       to: '/admin/consents',
+    })
+  }
+
+  if (canAccessFeedback.value) {
+    items.push({
+      label: 'Feedback',
+      icon: 'lucide:message-square',
+      active: route.fullPath.includes('/feedback'),
+      to: '/admin/feedback',
     })
   }
 

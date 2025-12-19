@@ -131,6 +131,60 @@ func (q *Queries) GetAllFeedback(ctx context.Context, arg GetAllFeedbackParams) 
 	return items, nil
 }
 
+const GetFeedbackCursor = `-- name: GetFeedbackCursor :many
+SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at FROM user_feedback
+WHERE
+    ($1::text = '' OR id < $1::text)
+    AND ($2::text = '' OR id > $2::text)
+ORDER BY
+    CASE WHEN $3::bool = true THEN id END ASC,
+    CASE WHEN $3::bool = false OR $3::bool IS NULL THEN id END DESC
+LIMIT $4::int
+`
+
+type GetFeedbackCursorParams struct {
+	Aftercursor  string `json:"aftercursor"`
+	Beforecursor string `json:"beforecursor"`
+	Isbackward   bool   `json:"isbackward"`
+	Querylimit   int32  `json:"querylimit"`
+}
+
+func (q *Queries) GetFeedbackCursor(ctx context.Context, arg GetFeedbackCursorParams) ([]*UserFeedback, error) {
+	rows, err := q.db.Query(ctx, GetFeedbackCursor,
+		arg.Aftercursor,
+		arg.Beforecursor,
+		arg.Isbackward,
+		arg.Querylimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*UserFeedback{}
+	for rows.Next() {
+		var i UserFeedback
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Message,
+			&i.CanContactMe,
+			&i.UserAgent,
+			&i.Platform,
+			&i.ScreenWidth,
+			&i.ScreenHeight,
+			&i.AppVersion,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetRecentFeedbackCount = `-- name: GetRecentFeedbackCount :one
 SELECT COUNT(*) FROM user_feedback
 WHERE user_id = $1::text

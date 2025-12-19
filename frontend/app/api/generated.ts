@@ -620,6 +620,19 @@ export enum ExternalContentType {
   Song = 'SONG'
 }
 
+export type FeedbackConnection = {
+  __typename?: 'FeedbackConnection';
+  edges: Array<FeedbackEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type FeedbackEdge = {
+  __typename?: 'FeedbackEdge';
+  cursor: Scalars['String']['output'];
+  node: UserFeedback;
+};
+
 export type FreeTextQuestion = QuizQuestion & {
   __typename?: 'FreeTextQuestion';
   id: Scalars['ID']['output'];
@@ -1515,6 +1528,7 @@ export type Query = {
   events: EventConnection;
   externalContent: ExternalContent;
   externalContents: ExternalContentConnection;
+  feedback: FeedbackConnection;
   instanceID: Scalars['String']['output'];
   me: User;
   myCurrentEvent: Event;
@@ -1627,6 +1641,14 @@ export type QueryExternalContentsArgs = {
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
   sortBy?: InputMaybe<ExternalContentSortBy>;
+};
+
+
+export type QueryFeedbackArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -2391,6 +2413,7 @@ export type UserFeedback = {
   platform?: Maybe<Scalars['String']['output']>;
   screenHeight?: Maybe<Scalars['Int']['output']>;
   screenWidth?: Maybe<Scalars['Int']['output']>;
+  user: User;
   userAgent?: Maybe<Scalars['String']['output']>;
   userId: Scalars['ID']['output'];
 };
@@ -2987,6 +3010,16 @@ export type AdminConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AdminConsentsPageQuery = { __typename?: 'Query', consents: Array<{ __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null }> };
+
+export type AdminFeedbackPageQueryVariables = Exact<{
+  first?: InputMaybe<Scalars['Int']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type AdminFeedbackPageQuery = { __typename?: 'Query', feedback: { __typename?: 'FeedbackConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'FeedbackEdge', cursor: string, node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, createdAt: any, user: { __typename?: 'User', id: string, name: string, email: string } } }> } };
 
 export type AdminHomePageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4264,6 +4297,42 @@ export const AdminConsentsPageDocument = gql`
 
 export function useAdminConsentsPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminConsentsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminConsentsPageQuery, AdminConsentsPageQueryVariables | undefined>({ query: AdminConsentsPageDocument, variables: undefined, ...options });
+};
+export const AdminFeedbackPageDocument = gql`
+    query AdminFeedbackPage($first: Int, $after: String, $last: Int, $before: String) {
+  feedback(first: $first, after: $after, last: $last, before: $before) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        id
+        message
+        canContactMe
+        userAgent
+        platform
+        screenWidth
+        screenHeight
+        appVersion
+        createdAt
+        user {
+          id
+          name
+          email
+        }
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminFeedbackPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminFeedbackPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminFeedbackPageQuery, AdminFeedbackPageQueryVariables | undefined>({ query: AdminFeedbackPageDocument, variables: undefined, ...options });
 };
 export const AdminHomePageDocument = gql`
     query AdminHomePage {
