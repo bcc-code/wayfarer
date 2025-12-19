@@ -120,13 +120,18 @@ func (h *ConsentWebhookHandler) HandleConsentEvent(c *gin.Context) {
 	// Create consent history record
 	historyID := ulid.NewUserConsentHistoryID()
 
+	occurredAt := req.Timestamp
+	if occurredAt.IsZero() {
+		occurredAt = time.Now()
+	}
+
 	_, err = h.DB.Queries.CreateUserConsentHistory(ctx, sqlc.CreateUserConsentHistoryParams{
 		ID:         historyID,
 		UserID:     user.ID,
 		ConsentID:  consent.ID,
 		ConsentKey: req.ConsentKey,
 		Action:     req.Action,
-		OccurredAt: pgtype.Timestamptz{Time: req.Timestamp, Valid: !req.Timestamp.IsZero()},
+		OccurredAt: pgtype.Timestamptz{Time: occurredAt, Valid: true},
 		Source:     &sourceStr,
 	})
 	if err != nil {
@@ -162,12 +167,17 @@ func (h *ConsentWebhookHandler) storePendingConsentEvent(c *gin.Context, req Con
 
 	pendingID := ulid.NewPendingConsentEventID()
 
+	occurredAt := req.Timestamp
+	if occurredAt.IsZero() {
+		occurredAt = time.Now()
+	}
+
 	_, err := h.DB.Queries.CreatePendingConsentEvent(ctx, sqlc.CreatePendingConsentEventParams{
 		ID:         pendingID,
 		MembersID:  req.MembersID,
 		ConsentKey: req.ConsentKey,
 		Action:     req.Action,
-		OccurredAt: pgtype.Timestamptz{Time: req.Timestamp, Valid: !req.Timestamp.IsZero()},
+		OccurredAt: pgtype.Timestamptz{Time: occurredAt, Valid: true},
 		Source:     &source,
 	})
 	if err != nil {
