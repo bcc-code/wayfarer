@@ -1,6 +1,5 @@
 <script setup lang="ts">
 const { me } = useAuth()
-const { $pwa } = useNuxtApp()
 
 const {
   subscribe,
@@ -73,14 +72,13 @@ async function toggleNotifications(enabled: boolean) {
         </template>
       </DesignPanel>
       <DesignPanel class="gap-list-section-inset flex flex-col">
-        <button
+        <NuxtLink
+          :to="{ name: 'settings-add-to-home' }"
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12 disabled:opacity-25 disabled:cursor-not-allowed"
-          :disabled="!($pwa?.showInstallPrompt && !$pwa?.isPWAInstalled)"
-          @click="$pwa?.install()"
         >
           <p class="text-label">{{ $t('settings.addToHomeScreen') }}</p>
           <Icon name="IconChevronRight" class="size-6" />
-        </button>
+        </NuxtLink>
         <hr class="border-border-default mx-3" />
         <NuxtLink
           to="https://bcc.media/privacy"

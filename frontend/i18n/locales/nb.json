@@ -31,7 +31,8 @@
     "settings": "Innstillinger",
     "pointHistory": "Poenghistorikk",
     "rules": "Regler",
-    "consents": "Mine samtykker"
+    "consents": "Mine samtykker",
+    "addToHomeScreen": "Legg til app på hjem-skjerm"
   },
   "navigation": {
     "standings": "Topplister",
@@ -40,7 +41,7 @@
   },
   "emptyState": "Ingenting å se her",
   "settings": {
-    "language": "Appspråk",
+    "language": "App-språk",
     "colorMode": "Fargemodus",
     "colorModes": {
       "system": "System",
@@ -50,7 +51,7 @@
     "consents": "Mine samtykker",
     "notifications": "Varslinger",
     "notificationsBlocked": "Varslinger er blokkert i nettleserinnstillingene",
-    "addToHomeScreen": "Legg til app på hjemskjerm",
+    "addToHomeScreen": "Legg til app på hjem-skjerm",
     "privacyPolicy": "Personvernerklæring"
   },
   "standings": {
