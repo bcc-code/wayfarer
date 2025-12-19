@@ -32,6 +32,42 @@ query ProfilePage {
       hidden
       achievedAt
       points
+      ... on QuizAchievement {
+        minScorePercentage
+        requireCompletion
+      }
+      ... on StreakAchievement {
+        neededStreak
+        streak {
+          name
+          description
+          status
+          relevantDays {
+            start
+            end
+          }
+          listenedDays(last: 5) {
+            date
+            active
+          }
+        }
+      }
+      ... on ContentAchievement {
+        totalItems
+        completedItemCount
+        nextItem {
+          id
+          sortOrder
+          externalContent {
+            id
+            contentType
+            planId
+            taskId
+            contentId
+            source
+          }
+        }
+      }
     }
     leaderboard(entityType: PERSONS) {
       me {

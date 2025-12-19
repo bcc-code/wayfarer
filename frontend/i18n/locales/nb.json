@@ -95,6 +95,8 @@
   },
   "achievement": {
     "title": "Utmerkelse",
-    "unlocked": "Oppnådd!"
+    "unlocked": "Oppnådd!",
+    "readNext": "Les neste",
+    "playNext": "Spill neste"
   }
 }

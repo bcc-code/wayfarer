@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
-  achievement: Partial<Achievement>
+  achievement: ProfilePageQuery['myCurrentProject']['achievements'][number]
 }>()
 
 const { track } = useAnalytics()
@@ -16,6 +16,24 @@ watch(open, (isOpen) => {
     })
   }
 })
+
+const { t } = useI18n()
+
+function buttonTextForNextItem(
+  achievement: ProfilePageQuery['myCurrentProject']['achievements'][number],
+) {
+  if (achievement.__typename !== 'ContentAchievement') return
+  if (!achievement.nextItem) return
+
+  const isReadingItem = [
+    ExternalContentType.BibleChapter,
+    ExternalContentType.BibleVerses,
+    ExternalContentType.BookChapter,
+    ExternalContentType.PeriodicalArticle,
+  ].includes(achievement.nextItem.externalContent.contentType)
+
+  return isReadingItem ? t('achievement.readNext') : t('achievement.playNext')
+}
 </script>
 
 <template>
@@ -99,6 +117,14 @@ watch(open, (isOpen) => {
           >
             {{ $t('givesYouXPoints', { points: achievement.points }) }}
           </div>
+
+          <template v-if="achievement.__typename === 'ContentAchievement'">
+            <div v-if="achievement.nextItem" class="p-medium">
+              <DesignButton size="large">
+                {{ buttonTextForNextItem(achievement) }}
+              </DesignButton>
+            </div>
+          </template>
         </div>
       </template>
     </DesignDrawer>

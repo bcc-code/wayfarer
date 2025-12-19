@@ -5,7 +5,7 @@ const props = defineProps<{
   projectName: string
   score?: number
   rank?: number | null
-  achievements?: Partial<Achievement>[]
+  achievements?: ProfilePageQuery['myCurrentProject']['achievements']
 }>()
 
 // Animated values for counting effect

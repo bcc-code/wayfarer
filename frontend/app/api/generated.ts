@@ -2887,10 +2887,10 @@ export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
-      | { __typename?: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename?: 'ContentAchievement', totalItems: number, completedItemCount: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number, nextItem?: { __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, contentType: ExternalContentType, planId: string, taskId: string, contentId?: string | null, source: string } } | null }
+      | { __typename?: 'QuizAchievement', minScorePercentage?: number | null, requireCompletion: boolean, id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename?: 'StreakAchievement', neededStreak: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number, streak: { __typename?: 'Streak', name: string, description: string, status: number, relevantDays: Array<{ __typename?: 'DateRange', start: any, end: any }>, listenedDays: Array<{ __typename?: 'StreakDay', date: any, active: boolean }> } }
     >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank?: number | null } | null } } };
 
 export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
@@ -3978,6 +3978,42 @@ export const ProfilePageDocument = gql`
       hidden
       achievedAt
       points
+      ... on QuizAchievement {
+        minScorePercentage
+        requireCompletion
+      }
+      ... on StreakAchievement {
+        neededStreak
+        streak {
+          name
+          description
+          status
+          relevantDays {
+            start
+            end
+          }
+          listenedDays(last: 5) {
+            date
+            active
+          }
+        }
+      }
+      ... on ContentAchievement {
+        totalItems
+        completedItemCount
+        nextItem {
+          id
+          sortOrder
+          externalContent {
+            id
+            contentType
+            planId
+            taskId
+            contentId
+            source
+          }
+        }
+      }
     }
     leaderboard(entityType: PERSONS) {
       me {
