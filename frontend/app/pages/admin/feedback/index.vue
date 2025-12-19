@@ -124,7 +124,7 @@ function toggleRow(id: string) {
           <div class="max-w-md">
             <p
               :class="[
-                'text-sm whitespace-normal',
+                'text-sm whitespace-pre-wrap',
                 expandedRows.has(row.original.id) ? '' : 'line-clamp-2',
               ]"
             >

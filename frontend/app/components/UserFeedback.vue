@@ -8,6 +8,8 @@ const showValidationError = ref(false)
 const hasSent = ref(false)
 const isSubmitting = ref(false)
 const errorMessage = ref<string>()
+const showLengthError = ref(false)
+const maxMessageLength = 2000
 
 const { executeMutation: submitFeedback } = useSubmitFeedbackMutation()
 
@@ -16,6 +18,7 @@ watch(open, (isOpen) => {
     message.value = undefined
     canContactMe.value = false
     showValidationError.value = false
+    showLengthError.value = false
     hasSent.value = false
     errorMessage.value = undefined
   }
@@ -24,6 +27,9 @@ watch(open, (isOpen) => {
 watch(message, (m) => {
   if (m?.length) {
     showValidationError.value = false
+  }
+  if (m && m.length <= maxMessageLength) {
+    showLengthError.value = false
   }
 })
 
@@ -44,6 +50,11 @@ function getDeviceMetadata() {
 async function handleSubmit() {
   if (!message.value) {
     showValidationError.value = true
+    return
+  }
+
+  if (message.value.length > maxMessageLength) {
+    showLengthError.value = true
     return
   }
 
@@ -108,8 +119,9 @@ async function handleSubmit() {
           </p>
           <DesignTextarea
             v-model="message"
-            :error="showValidationError"
+            :error="showValidationError || showLengthError"
             :placeholder="$t('feedback.placeholder')"
+            :maxlength="maxMessageLength"
           />
           <Transition
             enter-active-class="transition ease-out duration-200"
@@ -120,6 +132,12 @@ async function handleSubmit() {
               class="text-accent-negative text-label my-2 px-4"
             >
               {{ $t('feedback.validationError') }}
+            </p>
+            <p
+              v-else-if="showLengthError"
+              class="text-accent-negative text-label my-2 px-4"
+            >
+              {{ $t('feedback.lengthError', { max: maxMessageLength }) }}
             </p>
           </Transition>
           <Transition

@@ -26,6 +26,12 @@ func (r *mutationResolver) SubmitFeedback(ctx context.Context, input model.Submi
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
+	// Validate message length
+	const maxMessageLength = 2000
+	if len(input.Message) > maxMessageLength {
+		return nil, fmt.Errorf("feedback message is too long (max %d characters)", maxMessageLength)
+	}
+
 	// Rate limit check: max 3 submissions per 24 hours
 	since := pgtype.Timestamptz{Time: time.Now().Add(-24 * time.Hour), Valid: true}
 	count, err := r.DB.Queries.GetRecentFeedbackCount(ctx, sqlc.GetRecentFeedbackCountParams{

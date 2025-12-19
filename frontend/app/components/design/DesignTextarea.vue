@@ -1,10 +1,16 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   label?: string
   placeholder?: string
+  maxlength?: number
 }>()
 
 const modelValue = defineModel<string>()
+
+const characterCount = computed(() => modelValue.value?.length ?? 0)
+const isOverLimit = computed(
+  () => props.maxlength && characterCount.value > props.maxlength,
+)
 </script>
 
 <template>
@@ -19,5 +25,15 @@ const modelValue = defineModel<string>()
       autoresize
       class="w-full"
     />
+    <div v-if="maxlength" class="flex justify-end px-1 pt-1 tabular-nums">
+      <span
+        class="text-caption"
+        :class="{
+          'text-accent-negative': isOverLimit,
+        }"
+      >
+        {{ characterCount }} / {{ maxlength }}
+      </span>
+    </div>
   </UFormField>
 </template>

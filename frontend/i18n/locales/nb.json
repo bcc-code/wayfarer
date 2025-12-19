@@ -106,6 +106,7 @@
     "placeholder": "Skriv tilbakemelding her...",
     "success": "Takk for tilbakemeldingen din",
     "validationError": "Du kan ikke sende en tom tilbakemelding",
+    "lengthError": "Tilbakemeldingen kan ikke være mer enn {max} tegn",
     "thankYou": "Takk for hjelpen!",
     "thankYouDescription": "Dine innspill vil bli brukt til videreutvikling av tjenesten.",
     "close": "Bare hyggelig",
