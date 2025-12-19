@@ -157,5 +157,6 @@ WHERE id = @id::text;
 SELECT id, members_id
 FROM users
 WHERE person_uuid IS NULL
+  AND members_id ~ '^[0-9]+$'
 ORDER BY id
 LIMIT @querylimit::int;

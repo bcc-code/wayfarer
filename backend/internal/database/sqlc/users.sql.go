@@ -761,6 +761,7 @@ const GetUsersWithoutPersonUUID = `-- name: GetUsersWithoutPersonUUID :many
 SELECT id, members_id
 FROM users
 WHERE person_uuid IS NULL
+  AND members_id ~ '^[0-9]+$'
 ORDER BY id
 LIMIT $1::int
 `
