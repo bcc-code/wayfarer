@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"bytes"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 	"time"
@@ -49,10 +51,19 @@ func (h *ConsentWebhookHandler) HandleConsentEvent(c *gin.Context) {
 	}
 	sourceStr := source.(string)
 
+	// Read raw body first for logging on error
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		slog.Error("consent_webhook: failed to read request body", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
+		return
+	}
+	c.Request.Body = io.NopCloser(bytes.NewReader(body))
+
 	// Parse request body
 	var req ConsentEventRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		slog.Warn("consent_webhook: invalid request body", "error", err)
+		slog.Warn("consent_webhook: invalid request body", "error", err, "body", string(body))
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid request body",
 			"details": err.Error(),
