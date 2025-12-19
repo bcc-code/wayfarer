@@ -24,8 +24,8 @@ func (s *Service) updateProjects(ctx context.Context, data []common.TranslationD
 			ProjectID:    d.ID,
 			LanguageCode: d.Language,
 			Name:         value.Name,
-			Description:  value.Description.String,
-			Rules:        value.Rules.String,
+			Description:  joinLines(value.Description),
+			Rules:        joinLines(value.Rules),
 		})
 		if err != nil {
 			errs = append(errs, err)
@@ -247,7 +247,7 @@ func (s *Service) updateConsents(ctx context.Context, data []common.TranslationD
 			LanguageCode: d.Language,
 			Title:        value.Title,
 			ShortText:    value.ShortText,
-			Body:         value.Body,
+			Body:         joinLines(value.Body),
 		})
 		if err != nil {
 			errs = append(errs, err)

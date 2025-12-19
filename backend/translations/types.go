@@ -10,10 +10,11 @@ type NameDescriptionTranslation struct {
 }
 
 // ProjectTranslation includes rules in addition to name and description
+// Description and Rules are arrays of lines to preserve newlines in Phrase TMS
 type ProjectTranslation struct {
-	Name        string      `json:"name"`
-	Description null.String `json:"description"`
-	Rules       null.String `json:"rules"`
+	Name        string   `json:"name"`
+	Description []string `json:"description"`
+	Rules       []string `json:"rules"`
 }
 
 // ChallengeTranslation includes button_text in addition to name and description
@@ -32,10 +33,11 @@ type AchievementTranslation struct {
 }
 
 // ConsentTranslation includes title, short_text, and body
+// Body is an array of lines to preserve newlines in Phrase TMS
 type ConsentTranslation struct {
-	Title     string `json:"title"`
-	ShortText string `json:"short_text"`
-	Body      string `json:"body"`
+	Title     string   `json:"title"`
+	ShortText string   `json:"short_text"`
+	Body      []string `json:"body"`
 }
 
 // QuizTranslation includes nested questions and answers

@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_SendPushNotificationToUser
 createdAt: 2025-12-15T12:00:00
-updatedAt: 2025-12-15T21:50:30.547170
+updatedAt: 2025-12-19T12:12:24.141856
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_PushNotifications
 authentication:
@@ -26,7 +26,7 @@ body:
         "title": "Test Notification",
         "body": "This is a test push notification!",
         "url": "https://example.com",
-        "userIds": ["US01KC94QWRKD621DPGCJ94SVQMC"]
+        "userIds": ["US01KC9E9RT6C0VKVQQ8PQGRQDA8"]
       }
     }
 bodyType: graphql

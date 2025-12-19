@@ -19,8 +19,8 @@ func (s *Service) getDataForProjects(ctx context.Context) ([]common.TranslationD
 	for _, row := range rows {
 		value := ProjectTranslation{
 			Name:        row.Name,
-			Description: null.StringFrom(row.Description),
-			Rules:       null.StringFromPtr(row.Rules),
+			Description: splitLines(row.Description),
+			Rules:       splitLinesPtr(row.Rules),
 		}
 		toSend = append(toSend, common.TranslationData{
 			Language: "no", // Base language is Norwegian
@@ -231,7 +231,7 @@ func (s *Service) getDataForConsents(ctx context.Context) ([]common.TranslationD
 		value := ConsentTranslation{
 			Title:     row.Title,
 			ShortText: row.ShortText,
-			Body:      row.Body,
+			Body:      splitLines(row.Body),
 		}
 		toSend = append(toSend, common.TranslationData{
 			Language: "no",
