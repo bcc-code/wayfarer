@@ -133,7 +133,7 @@ async function handleSubmit() {
               {{ errorMessage }}
             </p>
           </Transition>
-          <div class="px-medium py-6">
+          <!-- <div class="px-medium py-6">
             <UCheckbox
               v-model="canContactMe"
               :ui="{
@@ -145,7 +145,7 @@ async function handleSubmit() {
               }"
               :label="$t('feedback.canContactMe')"
             />
-          </div>
+          </div> -->
           <div class="p-medium grow-0 mt-auto">
             <DesignButton
               size="large"

@@ -2342,6 +2342,7 @@ export type User = {
   image?: Maybe<Scalars['String']['output']>;
   membersId: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+  personUuid?: Maybe<Scalars['ID']['output']>;
   projects: Array<Project>;
   roles: Array<UserRole>;
   superTeams: Array<SuperTeam>;
