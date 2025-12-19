@@ -633,6 +633,19 @@ type UserEvent struct {
 	JoinedAt pgtype.Timestamptz `json:"joined_at"`
 }
 
+type UserFeedback struct {
+	ID           string             `json:"id"`
+	UserID       string             `json:"user_id"`
+	Message      string             `json:"message"`
+	CanContactMe bool               `json:"can_contact_me"`
+	UserAgent    *string            `json:"user_agent"`
+	Platform     *string            `json:"platform"`
+	ScreenWidth  *int32             `json:"screen_width"`
+	ScreenHeight *int32             `json:"screen_height"`
+	AppVersion   *string            `json:"app_version"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
 type UserProject struct {
 	UserID    string             `json:"user_id"`
 	ProjectID string             `json:"project_id"`

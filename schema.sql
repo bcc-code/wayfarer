@@ -699,3 +699,20 @@ CREATE TABLE push_notification_log (
     failed_deliveries INT NOT NULL DEFAULT 0,
     INDEX idx_push_notification_log_sent_at (sent_at)
 );
+
+-- ==================== User Feedback ====================
+
+CREATE TABLE user_feedback (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^FB[0-9A-Z]{26}$'),
+    user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    can_contact_me BOOLEAN NOT NULL DEFAULT FALSE,
+    user_agent TEXT,
+    platform TEXT,
+    screen_width INT,
+    screen_height INT,
+    app_version TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    INDEX idx_user_feedback_user_id (user_id),
+    INDEX idx_user_feedback_created_at (created_at DESC)
+);

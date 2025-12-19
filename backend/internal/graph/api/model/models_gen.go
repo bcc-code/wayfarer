@@ -470,6 +470,14 @@ type DateRangeInput struct {
 	End   scalars.Date `json:"end"`
 }
 
+type DeviceMetadata struct {
+	UserAgent    string  `json:"userAgent"`
+	Platform     string  `json:"platform"`
+	ScreenWidth  int     `json:"screenWidth"`
+	ScreenHeight int     `json:"screenHeight"`
+	AppVersion   *string `json:"appVersion,omitempty"`
+}
+
 type EnrollmentTargetInput struct {
 	UserIds           []string              `json:"userIds,omitempty"`
 	ChurchInProject   *ChurchInProjectInput `json:"churchInProject,omitempty"`
@@ -1251,6 +1259,12 @@ type StreakFilter struct {
 	Ids       []string `json:"ids,omitempty"`
 }
 
+type SubmitFeedbackInput struct {
+	Message      string          `json:"message"`
+	CanContactMe bool            `json:"canContactMe"`
+	Device       *DeviceMetadata `json:"device"`
+}
+
 type SubmitQuizAnswerInput struct {
 	QuestionID        string   `json:"questionId"`
 	SelectedAnswerIds []string `json:"selectedAnswerIds,omitempty"`
@@ -1501,6 +1515,19 @@ type UserConsentHistoryEntry struct {
 type UserEdge struct {
 	Cursor string `json:"cursor"`
 	Node   *User  `json:"node"`
+}
+
+type UserFeedback struct {
+	ID           string           `json:"id"`
+	UserID       string           `json:"userId"`
+	Message      string           `json:"message"`
+	CanContactMe bool             `json:"canContactMe"`
+	UserAgent    *string          `json:"userAgent,omitempty"`
+	Platform     *string          `json:"platform,omitempty"`
+	ScreenWidth  *int             `json:"screenWidth,omitempty"`
+	ScreenHeight *int             `json:"screenHeight,omitempty"`
+	AppVersion   *string          `json:"appVersion,omitempty"`
+	CreatedAt    scalars.DateTime `json:"createdAt"`
 }
 
 type UserFilter struct {

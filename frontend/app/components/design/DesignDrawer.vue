@@ -47,7 +47,7 @@ const close = () => {
       <div
         class="p-list-outside grow flex flex-col gap-list-section-gap overflow-auto"
       >
-        <slot name="content" />
+        <slot name="content" :close />
       </div>
     </template>
   </UDrawer>

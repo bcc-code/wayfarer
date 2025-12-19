@@ -12,6 +12,8 @@
 
 :root {
   --ui-text: var(--color-text-default);
+  --ui-error: var(--color-accent-negative);
+  --ui-success: var(--color-accent-positive);
 }
 
 body {
