@@ -375,3 +375,47 @@ func (s *RoleService) CanManageTeam(ctx context.Context, userID, teamID string) 
 func (s *RoleService) CanDeleteTeam(ctx context.Context, userID string) bool {
 	return s.IsAdmin(ctx, userID)
 }
+
+// IsProjectAdmin checks if a user has project admin role for any project
+func (s *RoleService) IsProjectAdmin(ctx context.Context, userID string) bool {
+	return s.HasRole(ctx, userID, RoleProjectAdmin)
+}
+
+// CanAccessUser checks if currentUserID can access targetUserID's User object.
+//
+// Returns true if any of these conditions are met:
+//   - currentUserID is the target user (self-access)
+//   - currentUserID has M2M role (for system integration)
+//   - currentUserID has admin or superadmin role
+//   - currentUserID has project admin role (for any project)
+//   - currentUserID is church admin for targetChurchID
+//
+// Returns false otherwise.
+func (s *RoleService) CanAccessUser(ctx context.Context, currentUserID, targetUserID, targetChurchID string) bool {
+	// Self-access always allowed
+	if currentUserID == targetUserID {
+		return true
+	}
+
+	// M2M service accounts can access any user
+	if s.HasRole(ctx, currentUserID, RoleM2M) {
+		return true
+	}
+
+	// Admins and superadmins can access any user
+	if s.IsAdmin(ctx, currentUserID) {
+		return true
+	}
+
+	// Project admins can access any user
+	if s.IsProjectAdmin(ctx, currentUserID) {
+		return true
+	}
+
+	// Church admins can access users in their church
+	if s.CanManageChurch(ctx, currentUserID, targetChurchID) {
+		return true
+	}
+
+	return false
+}

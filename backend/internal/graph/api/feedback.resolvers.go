@@ -185,8 +185,25 @@ func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilt
 
 // User is the resolver for the user field.
 func (r *userFeedbackResolver) User(ctx context.Context, obj *model.UserFeedback) (*model.User, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load user first to get churchId for authorization
 	userThunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
-	return userThunk()
+	user, err := userThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	// Check authorization with user's church
+	if !r.RoleService.CanAccessUser(ctx, currentUserID, obj.UserID, user.ChurchID) {
+		return nil, fmt.Errorf("permission denied")
+	}
+
+	return user, nil
 }
 
 // UserFeedback returns UserFeedbackResolver implementation.

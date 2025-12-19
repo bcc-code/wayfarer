@@ -57,13 +57,8 @@ func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error
 		return nil, fmt.Errorf("permission denied: you do not have access to this user")
 	}
 
-	// Check permissions
-	allowed := false
-	allowed = allowed || currentUserID == id                                                       // User accessing themselves
-	allowed = allowed || isAdmin                                                                   // Admin or SuperAdmin
-	allowed = allowed || r.RoleService.CanManageChurch(ctx, currentUserID, requestedUser.ChurchID) // Church Admin for user's church
-
-	if !allowed {
+	// Check permissions using unified access control
+	if !r.RoleService.CanAccessUser(ctx, currentUserID, id, requestedUser.ChurchID) {
 		return nil, fmt.Errorf("permission denied: you do not have access to this user")
 	}
 

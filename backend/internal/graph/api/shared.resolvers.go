@@ -874,13 +874,19 @@ func (r *quizSubmissionResolver) User(ctx context.Context, obj *model.QuizSubmis
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// Check authorization
-	if !canAccessUser(ctx, r.RoleService, currentUserID, obj.UserID) {
+	// Load user first to get churchId for authorization
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	// Check authorization with user's church
+	if !r.RoleService.CanAccessUser(ctx, currentUserID, obj.UserID, user.ChurchID) {
 		return nil, fmt.Errorf("permission denied")
 	}
 
-	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
-	return thunk()
+	return user, nil
 }
 
 // IsExpired is the resolver for the isExpired field on QuizSubmission.
@@ -985,16 +991,18 @@ func (r *scoreJournalResolver) User(ctx context.Context, obj *model.ScoreJournal
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// Check authorization
-	if !canAccessUser(ctx, r.RoleService, currentUserID, obj.UserID) {
-		return nil, fmt.Errorf("permission denied")
-	}
-
+	// Load user first to get churchId for authorization
 	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
 	user, err := thunk()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load user: %w", err)
 	}
+
+	// Check authorization with user's church
+	if !r.RoleService.CanAccessUser(ctx, currentUserID, obj.UserID, user.ChurchID) {
+		return nil, fmt.Errorf("permission denied")
+	}
+
 	return user, nil
 }
 
@@ -1080,16 +1088,18 @@ func (r *scoreJournalResolver) AwardedBy(ctx context.Context, obj *model.ScoreJo
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// Check authorization
-	if !canAccessUser(ctx, r.RoleService, currentUserID, *obj.AwardedByID) {
-		return nil, fmt.Errorf("permission denied")
-	}
-
+	// Load user first to get churchId for authorization
 	thunk := r.Loaders.UserByIDLoader.Load(ctx, *obj.AwardedByID)
 	user, err := thunk()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load user: %w", err)
 	}
+
+	// Check authorization with user's church
+	if !r.RoleService.CanAccessUser(ctx, currentUserID, *obj.AwardedByID, user.ChurchID) {
+		return nil, fmt.Errorf("permission denied")
+	}
+
 	return user, nil
 }
 
@@ -1568,17 +1578,18 @@ func (r *teamMemberResolver) User(ctx context.Context, obj *model.TeamMember) (*
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// Check authorization
-	if !canAccessUser(ctx, r.RoleService, currentUserID, obj.UserID) {
-		return nil, fmt.Errorf("permission denied")
-	}
-
-	// Use dataloader to fetch user
+	// Load user first to get churchId for authorization
 	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
 	user, err := thunk()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load user: %w", err)
 	}
+
+	// Check authorization with user's church
+	if !r.RoleService.CanAccessUser(ctx, currentUserID, obj.UserID, user.ChurchID) {
+		return nil, fmt.Errorf("permission denied")
+	}
+
 	return user, nil
 }
 
@@ -1727,15 +1738,16 @@ func (r *userRoleResolver) User(ctx context.Context, obj *model.UserRole) (*mode
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// Check authorization
-	if !canAccessUser(ctx, r.RoleService, currentUserID, obj.User.ID) {
-		return nil, fmt.Errorf("permission denied")
-	}
-
+	// Load user first to get churchId for authorization
 	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.User.ID)
 	user, err := thunk()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	// Check authorization with user's church
+	if !r.RoleService.CanAccessUser(ctx, currentUserID, obj.User.ID, user.ChurchID) {
+		return nil, fmt.Errorf("permission denied")
 	}
 
 	return user, nil
