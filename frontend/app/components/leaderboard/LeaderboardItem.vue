@@ -35,7 +35,7 @@ const getColorClasses = (
         'text-text-default grid aspect-square size-10 place-items-center rounded-full',
         {
           'border-border-default border':
-            hideMedal || (item.rank && item.rank > 3),
+            hideMedal || (item.rank && item.rank > 3) || !item.rank,
           'text-accent-contrast!': isMe && hideMedal,
         },
         !hideMedal && getColorClasses(item.rank, 'dark'),
@@ -46,7 +46,7 @@ const getColorClasses = (
         :src="`/images/medals/${item.rank}.png`"
         class="col-span-full row-span-full object-cover"
       />
-      <span class="col-span-full row-span-full">{{ item.rank }}</span>
+      <span class="col-span-full row-span-full">{{ item.rank || '–' }}</span>
     </div>
     <div class="grow truncate">
       <div class="flex gap-2">

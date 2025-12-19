@@ -59,7 +59,7 @@ onMounted(() => {
           <p class="text-label text-text-hint">{{ $t('points') }}</p>
         </div>
         <div class="flex flex-col items-center">
-          <p class="title-text tabular-nums">{{ animatedRank || '-' }}</p>
+          <p class="title-text tabular-nums">{{ animatedRank || '–' }}</p>
           <p class="text-label text-text-hint">{{ $t('place') }}</p>
         </div>
       </div>
