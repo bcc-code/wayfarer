@@ -40,6 +40,8 @@ watch(
       if (!showBanner.value) {
         showBanner.value = true
       }
+    } else {
+      showBanner.value = false
     }
   },
   { immediate: true },
