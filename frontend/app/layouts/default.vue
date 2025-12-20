@@ -160,7 +160,7 @@ const showNavigation = computed(() => {
           <li v-for="link in links" :key="link.label" class="grow z-10">
             <NuxtLink
               :to="link.to"
-              class="px-default rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5"
+              class="px-default text-center rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5"
               active-class="text-accent-contrast"
             >
               <UIcon
