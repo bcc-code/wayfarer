@@ -8,7 +8,9 @@ function getAppVersion(): string {
   try {
     return execSync('git rev-parse --short HEAD').toString().trim()
   } catch {
-    throw new Error('APP_VERSION environment variable not set and git is not available. Set APP_VERSION in your build environment.')
+    throw new Error(
+      'APP_VERSION environment variable not set and git is not available. Set APP_VERSION in your build environment.',
+    )
   }
 }
 
@@ -16,6 +18,7 @@ const gitCommitHash = getAppVersion()
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
+
   modules: [
     '@nuxt/ui',
     '@nuxt/test-utils',
@@ -24,7 +27,9 @@ export default defineNuxtConfig({
     '@nuxtjs/i18n',
     '@vite-pwa/nuxt',
     '@posthog/nuxt',
+    '@sentry/nuxt/module',
   ],
+
   devtools: { enabled: false },
   ssr: false,
   css: ['~/assets/styles/main.css'],
@@ -59,6 +64,7 @@ export default defineNuxtConfig({
       ],
     },
   },
+
   components: {
     dirs: [
       {
@@ -71,9 +77,11 @@ export default defineNuxtConfig({
       },
     ],
   },
+
   imports: {
     dirs: ['api'],
   },
+
   runtimeConfig: {
     public: {
       apiUrl: 'http://localhost:8080/graphql',
@@ -86,12 +94,15 @@ export default defineNuxtConfig({
       isStaging: false,
     },
   },
+
   experimental: {
     typedPages: true,
   },
+
   sourcemap: {
     client: 'hidden',
   },
+
   vite: {
     optimizeDeps: {
       include: [
@@ -115,6 +126,7 @@ export default defineNuxtConfig({
       ],
     },
   },
+
   routeRules: {
     // CDN cache rules
     '/manifest.webmanifest': {
@@ -297,5 +309,10 @@ export default defineNuxtConfig({
   colorMode: {
     preference: 'dark',
     fallback: 'dark',
+  },
+
+  sentry: {
+    org: 'bcc-media-sti',
+    project: 'interact',
   },
 })
