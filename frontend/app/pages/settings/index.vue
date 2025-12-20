@@ -81,7 +81,7 @@ async function toggleNotifications(enabled: boolean) {
         </NuxtLink>
         <hr class="border-border-default mx-3" />
         <NuxtLink
-          to="https://bcc.media/privacy"
+          to="https://bcc.media/personvern"
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
         >
           <p class="text-label">{{ $t('settings.privacyPolicy') }}</p>
