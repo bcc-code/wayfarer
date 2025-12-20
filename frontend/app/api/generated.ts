@@ -781,6 +781,7 @@ export type Mutation = {
   deleteAchievement: Scalars['Boolean']['output'];
   deleteChallenge: Scalars['Boolean']['output'];
   deleteEvent: Scalars['Boolean']['output'];
+  deleteFeedback: Scalars['Boolean']['output'];
   deleteProject: Scalars['Boolean']['output'];
   deleteQuiz: Scalars['Boolean']['output'];
   deleteQuizQuestion: Scalars['Boolean']['output'];
@@ -1055,6 +1056,11 @@ export type MutationDeleteChallengeArgs = {
 
 
 export type MutationDeleteEventArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteFeedbackArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -2367,6 +2373,7 @@ export type User = {
   gender: Gender;
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
+  language: Scalars['String']['output'];
   membersId: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   personUuid?: Maybe<Scalars['ID']['output']>;
@@ -2675,6 +2682,13 @@ export type SubmitFeedbackMutationVariables = Exact<{
 
 
 export type SubmitFeedbackMutation = { __typename?: 'Mutation', submitFeedback: { __typename?: 'UserFeedback', id: string } };
+
+export type DeleteFeedbackMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteFeedbackMutation = { __typename?: 'Mutation', deleteFeedback: boolean };
 
 export type CreateProjectMutationVariables = Exact<{
   input: CreateProjectInput;
@@ -3621,6 +3635,15 @@ export const SubmitFeedbackDocument = gql`
 
 export function useSubmitFeedbackMutation() {
   return Urql.useMutation<SubmitFeedbackMutation, SubmitFeedbackMutationVariables>(SubmitFeedbackDocument);
+};
+export const DeleteFeedbackDocument = gql`
+    mutation DeleteFeedback($id: ID!) {
+  deleteFeedback(id: $id)
+}
+    `;
+
+export function useDeleteFeedbackMutation() {
+  return Urql.useMutation<DeleteFeedbackMutation, DeleteFeedbackMutationVariables>(DeleteFeedbackDocument);
 };
 export const CreateProjectDocument = gql`
     mutation CreateProject($input: CreateProjectInput!) {

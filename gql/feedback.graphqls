@@ -49,4 +49,5 @@ extend type Query {
 
 extend type Mutation {
     submitFeedback(input: SubmitFeedbackInput!): UserFeedback!
+    deleteFeedback(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
 }

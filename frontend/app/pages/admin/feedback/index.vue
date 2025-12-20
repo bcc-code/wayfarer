@@ -44,7 +44,7 @@ const pagination = usePagination({
 })
 
 const { isAuthReady } = useAuthReady()
-const { data, fetching, error } = useAdminFeedbackPageQuery({
+const { data, fetching, error, executeQuery } = useAdminFeedbackPageQuery({
   variables: pagination.variables,
   pause: computed(() => !isAuthReady.value),
 })
@@ -69,6 +69,7 @@ const columns: TableColumn<FeedbackNode>[] = [
   { accessorKey: 'platform', id: 'device', header: 'Device' },
   { accessorKey: 'appVersion', header: 'Version' },
   { accessorKey: 'createdAt', header: 'Submitted' },
+  { id: 'actions' },
 ]
 
 function formatDate(date: string) {
@@ -91,6 +92,42 @@ function toggleRow(id: string) {
     expandedRows.value.add(id)
   }
 }
+
+// Delete functionality
+const { executeMutation: deleteFeedback } = useDeleteFeedbackMutation()
+const toast = useToast()
+const deleteModal = ref(false)
+const feedbackToDelete = ref<string | null>(null)
+
+function confirmDelete(id: string) {
+  feedbackToDelete.value = id
+  deleteModal.value = true
+}
+
+async function handleDelete() {
+  if (!feedbackToDelete.value) return
+
+  const result = await deleteFeedback({ id: feedbackToDelete.value })
+
+  if (result.error) {
+    toast.add({
+      title: 'Failed to delete feedback',
+      description: result.error.message,
+      color: 'error',
+    })
+  } else {
+    toast.add({
+      title: 'Feedback deleted',
+      color: 'success',
+    })
+    executeQuery({ requestPolicy: 'network-only' })
+  }
+
+  deleteModal.value = false
+  feedbackToDelete.value = null
+}
+
+const { canDeleteFeedback } = usePermissions()
 </script>
 
 <template>
@@ -125,13 +162,13 @@ function toggleRow(id: string) {
             <p
               :class="[
                 'text-sm whitespace-pre-wrap',
-                expandedRows.has(row.original.id) ? '' : 'line-clamp-2',
+                expandedRows.has(row.original.id) ? '' : 'line-clamp-4',
               ]"
             >
               {{ row.original.message }}
             </p>
             <button
-              v-if="row.original.message.length > 25"
+              v-if="row.original.message.length > 100"
               class="text-primary text-xs hover:underline"
               @click="toggleRow(row.original.id)"
             >
@@ -186,6 +223,17 @@ function toggleRow(id: string) {
             {{ formatDate(row.original.createdAt) }}
           </span>
         </template>
+        <template #actions-cell="{ row }">
+          <div class="flex justify-end">
+            <UButton
+              v-if="canDeleteFeedback"
+              variant="ghost"
+              color="error"
+              icon="i-lucide-trash-2"
+              @click="confirmDelete(row.original.id)"
+            />
+          </div>
+        </template>
       </UTable>
       <UEmpty
         v-if="!fetching && feedbacks?.length === 0"
@@ -193,5 +241,23 @@ function toggleRow(id: string) {
         description="User feedback will appear here once submitted."
       />
     </div>
+
+    <UModal v-model:open="deleteModal">
+      <template #content>
+        <div class="p-6">
+          <h3 class="mb-4 text-lg font-semibold">Delete Feedback</h3>
+          <p class="text-dimmed mb-6">
+            Are you sure you want to delete this feedback? This action cannot
+            be undone.
+          </p>
+          <div class="flex justify-end gap-3">
+            <UButton variant="ghost" @click="deleteModal = false">
+              Cancel
+            </UButton>
+            <UButton color="error" @click="handleDelete">Delete</UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
   </UContainer>
 </template>

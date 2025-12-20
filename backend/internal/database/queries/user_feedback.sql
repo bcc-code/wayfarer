@@ -53,3 +53,6 @@ ORDER BY
     CASE WHEN @isbackward::bool = true THEN id END ASC,
     CASE WHEN @isbackward::bool = false OR @isbackward::bool IS NULL THEN id END DESC
 LIMIT @querylimit::int;
+
+-- name: DeleteFeedback :exec
+DELETE FROM user_feedback WHERE id = @id::text;

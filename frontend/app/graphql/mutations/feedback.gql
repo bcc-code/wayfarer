@@ -3,3 +3,7 @@ mutation SubmitFeedback($input: SubmitFeedbackInput!) {
     id
   }
 }
+
+mutation DeleteFeedback($id: ID!) {
+  deleteFeedback(id: $id)
+}

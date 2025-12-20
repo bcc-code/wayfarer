@@ -85,6 +85,15 @@ func (r *mutationResolver) SubmitFeedback(ctx context.Context, input model.Submi
 	}, nil
 }
 
+// DeleteFeedback is the resolver for the deleteFeedback field.
+func (r *mutationResolver) DeleteFeedback(ctx context.Context, id string) (bool, error) {
+	err := r.DB.Queries.DeleteFeedback(ctx, id)
+	if err != nil {
+		return false, fmt.Errorf("failed to delete feedback: %w", err)
+	}
+	return true, nil
+}
+
 // Feedback is the resolver for the feedback field.
 func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilter, first *int, after *string, last *int, before *string) (*model.FeedbackConnection, error) {
 	// Default page size

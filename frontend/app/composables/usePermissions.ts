@@ -138,6 +138,13 @@ export function usePermissions() {
     return isSuperAdmin.value || isAdmin.value
   })
 
+  /**
+   * Can delete feedback entries
+   */
+  const canDeleteFeedback = computed(() => {
+    return isSuperAdmin.value || isAdmin.value
+  })
+
   // ============================================
   // Action Permissions
   // ============================================
@@ -256,6 +263,7 @@ export function usePermissions() {
     canAccessTeams,
     canAccessConsents,
     canAccessFeedback,
+    canDeleteFeedback,
 
     // Actions
     canManageScores,

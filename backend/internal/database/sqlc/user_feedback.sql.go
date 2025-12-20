@@ -89,6 +89,15 @@ func (q *Queries) CreateUserFeedback(ctx context.Context, arg CreateUserFeedback
 	return &i, err
 }
 
+const DeleteFeedback = `-- name: DeleteFeedback :exec
+DELETE FROM user_feedback WHERE id = $1::text
+`
+
+func (q *Queries) DeleteFeedback(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, DeleteFeedback, id)
+	return err
+}
+
 const GetAllFeedback = `-- name: GetAllFeedback :many
 SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at FROM user_feedback
 ORDER BY created_at DESC
