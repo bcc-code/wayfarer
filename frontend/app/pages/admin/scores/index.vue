@@ -168,7 +168,8 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
             :color="row.original.points >= 0 ? 'success' : 'error'"
             variant="soft"
           >
-            {{ row.original.points >= 0 ? '+' : '' }}{{ row.original.points }}
+            {{ row.original.points >= 0 ? '+' : ''
+            }}{{ formatNumber(row.original.points) }}
           </UBadge>
         </template>
         <template #sourceType-cell="{ row }">

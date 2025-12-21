@@ -104,13 +104,17 @@ watch(
             v-if="achievement.achievedAt"
             class="rounded-full bg-background-indent py-2 px-3 text-label text-accent-contrast"
           >
-            +{{ achievement.points }} {{ $t('points') }}
+            +{{ formatNumber(achievement.points ?? 0) }} {{ $t('points') }}
           </div>
           <div
             v-else-if="achievement.points"
             class="rounded-full bg-background-indent py-2 px-3 text-label text-text-muted"
           >
-            {{ $t('givesYouXPoints', { points: achievement.points }) }}
+            {{
+              $t('givesYouXPoints', {
+                points: formatNumber(achievement.points),
+              })
+            }}
           </div>
         </div>
       </template>

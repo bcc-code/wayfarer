@@ -190,11 +190,7 @@ const questionTypeOptions = [
         />
       </UFormField>
 
-      <UFormField
-        name="image"
-        label="Image URL"
-        hint="(optional)"
-      >
+      <UFormField name="image" label="Image URL" hint="(optional)">
         <UInput v-model="state.image" size="xl" class="w-full" />
       </UFormField>
 
@@ -251,11 +247,7 @@ const questionTypeOptions = [
           <h3 class="text-lg font-semibold">
             Questions ({{ questions.length }})
           </h3>
-          <UButton
-            v-if="!editingQuestion"
-            size="sm"
-            @click="addQuestion"
-          >
+          <UButton v-if="!editingQuestion" size="sm" @click="addQuestion">
             Add Question
           </UButton>
         </div>
@@ -271,11 +263,24 @@ const questionTypeOptions = [
               <div class="flex-1">
                 <div class="text-sm text-text-muted mb-1">
                   Question {{ index + 1 }} -
-                  {{ question.questionType === QuizQuestionType.Predefined ? 'Multiple Choice' : question.questionType === QuizQuestionType.Number ? 'Number' : 'Free Text' }}
+                  {{
+                    question.questionType === QuizQuestionType.Predefined
+                      ? 'Multiple Choice'
+                      : question.questionType === QuizQuestionType.Number
+                        ? 'Number'
+                        : 'Free Text'
+                  }}
                 </div>
-                <div class="font-medium">{{ question.questionText || '(No question text)' }}</div>
-                <div v-if="question.points" class="text-sm text-text-muted mt-1">
-                  {{ question.points }} point{{ question.points !== 1 ? 's' : '' }}
+                <div class="font-medium">
+                  {{ question.questionText || '(No question text)' }}
+                </div>
+                <div
+                  v-if="question.points"
+                  class="text-sm text-text-muted mt-1"
+                >
+                  {{ formatNumber(question.points) }} point{{
+                    question.points !== 1 ? 's' : ''
+                  }}
                 </div>
               </div>
               <div class="flex gap-2">

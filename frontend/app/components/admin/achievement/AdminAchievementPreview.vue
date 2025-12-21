@@ -66,13 +66,17 @@ const state = ref<'pending' | 'completed'>('pending')
           v-if="state === 'completed'"
           class="rounded-full bg-background-indent py-2 px-3 text-label text-accent-contrast"
         >
-          +{{ achievement.points ?? 0 }} {{ $t('points') }}
+          +{{ formatNumber(achievement.points ?? 0) }} {{ $t('points') }}
         </div>
         <div
           v-else
           class="rounded-full bg-background-indent py-2 px-3 text-label text-text-muted"
         >
-          {{ $t('givesYouXPoints', { points: achievement.points ?? 0 }) }}
+          {{
+            $t('givesYouXPoints', {
+              points: formatNumber(achievement.points ?? 0),
+            })
+          }}
         </div>
       </template>
     </div>

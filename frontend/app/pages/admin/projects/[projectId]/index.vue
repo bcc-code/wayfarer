@@ -344,7 +344,7 @@ async function handleReorder() {
                     </div>
                   </div>
                   <div class="text-muted shrink-0 text-sm">
-                    {{ achievement.points }} pts
+                    {{ formatNumber(achievement.points) }} pts
                   </div>
                   <UBadge
                     v-if="achievement.hidden"
