@@ -8,9 +8,9 @@
   --font-serif: 'Noto Serif', serif;
 
   /* Colors */
-  --color-accent: #ffaedf;
-  --color-accent-contrast: #5d0045;
-  --color-on-accent: #5d0045;
+  --color-accent: #222222;
+  --color-accent-contrast: #222222;
+  --color-on-accent: #ffffff;
   --color-accent-positive: #9ed63c;
   --color-accent-negative: #e86a4a;
   --color-background-default: #efefef;
@@ -89,9 +89,9 @@
 
 /* Dark mode */
 .dark {
-  --color-accent: #ffaedf;
-  --color-accent-contrast: #ffaedf;
-  --color-on-accent: #5d0045;
+  --color-accent: #ffffff;
+  --color-accent-contrast: #ffffff;
+  --color-on-accent: #222222;
   --color-accent-positive: #a5d357;
   --color-accent-negative: #e86a4a;
   --color-background-default: #222222;
