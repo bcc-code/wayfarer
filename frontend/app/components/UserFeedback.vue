@@ -47,12 +47,14 @@ function getDeviceMetadata() {
 }
 
 async function handleSubmit() {
-  if (!message.value) {
+  const trimmedMessage = message.value?.trim()
+
+  if (!trimmedMessage?.length) {
     showValidationError.value = true
     return
   }
 
-  if (message.value.length > maxMessageLength) {
+  if (trimmedMessage.length > maxMessageLength) {
     showLengthError.value = true
     return
   }
@@ -63,7 +65,7 @@ async function handleSubmit() {
   try {
     const result = await submitFeedback({
       input: {
-        message: message.value,
+        message: trimmedMessage,
         canContactMe: canContactMe.value,
         device: getDeviceMetadata(),
       },
@@ -101,7 +103,7 @@ function closeFeedback(cb: () => void) {
               {{ $t('feedback.description') }}
             </p>
           </div>
-          <Icon name="IconChevronRight" class="size-6 shrink-0" />
+          <IconChevronRight class="size-6 shrink-0" />
         </button>
       </DesignPanel>
     </slot>
