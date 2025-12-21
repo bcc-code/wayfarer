@@ -28,7 +28,7 @@ async function toggleNotifications(enabled: boolean) {
       </NuxtLink>
     </template>
 
-    <div class="space-y-list-section-gap p-list-outside">
+    <div class="space-y-list-section-gap p-list-outside grow flex flex-col">
       <DesignPanel class="gap-list-section-inset flex flex-col">
         <LocaleSelector v-slot="{ selectedLocale }">
           <div class="flex items-center justify-between gap-2.5 px-3 py-2">
@@ -109,10 +109,11 @@ async function toggleNotifications(enabled: boolean) {
       <UserFeedback />
       <div
         v-if="me"
-        class="text-text-hint text-caption p-medium mt-auto text-center"
+        class="text-text-hint text-tiny p-medium mt-auto text-center space-y-1"
       >
         <p>{{ me.id }}</p>
         <p>{{ me.church.id }}</p>
+        <p>{{ useRuntimeConfig().public.appVersion }}</p>
       </div>
     </div>
   </PageLayout>
