@@ -105,7 +105,10 @@ const changing = ref(false)
       </p>
       <h3 class="text-title text-text-default pr-2">{{ title }}</h3>
     </div>
-    <div class="text-label text-text-muted" v-html="shortText" />
+    <div
+      class="text-label text-text-muted whitespace-pre-wrap"
+      v-html="shortText"
+    />
 
     <template v-if="isRemote">
       <template v-if="localStatus === ConsentAction.Accepted">
