@@ -51,6 +51,7 @@
     "consents": "Mine samtykker",
     "notifications": "Varslinger",
     "notificationsBlocked": "Varslinger er blokkert i nettleserinnstillingene",
+    "notificationsOnlyAvailableWhenInstalled": "Varslinger er kun tilgjengelig om du legger til appen på hjem-skjermen",
     "addToHomeScreen": "Legg til app på hjem-skjerm",
     "privacyPolicy": "Personvernerklæring"
   },

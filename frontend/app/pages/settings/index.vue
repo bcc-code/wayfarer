@@ -47,29 +47,39 @@ async function toggleNotifications(enabled: boolean) {
             </DesignButton>
           </div>
         </ColorModeSelector> -->
-        <template v-if="isPushSupported">
-          <hr class="border-border-default mx-3" />
-          <label class="flex items-center justify-between gap-2.5 px-3 py-2">
-            <p class="text-label">{{ $t('settings.notifications') }}</p>
-            <DesignSwitch
-              :model-value="isSubscribed"
-              :disabled="isPushLoading || pushPermission === 'denied'"
-              @update:model-value="toggleNotifications"
-            />
-          </label>
-          <p
-            v-if="pushPermission === 'denied'"
-            class="text-text-hint text-caption px-3 pb-2"
-          >
-            {{ $t('settings.notificationsBlocked') }}
-          </p>
-          <p
-            v-else-if="pushError"
-            class="text-accent-negative text-caption px-3 pb-2"
-          >
-            {{ pushError.message }}
-          </p>
-        </template>
+        <hr class="border-border-default mx-3" />
+        <label class="flex items-center justify-between gap-2.5 px-3 py-2">
+          <p class="text-label">{{ $t('settings.notifications') }}</p>
+          <DesignSwitch
+            :model-value="isSubscribed"
+            :disabled="
+              isPushLoading ||
+              pushPermission === 'denied' ||
+              !$pwa?.isPWAInstalled ||
+              !isPushSupported
+            "
+            :loading="isPushLoading"
+            @update:model-value="toggleNotifications"
+          />
+        </label>
+        <p
+          v-if="!$pwa?.isPWAInstalled"
+          class="text-caption text-text-hint px-3 pb-2"
+        >
+          {{ $t('settings.notificationsOnlyAvailableWhenInstalled') }}
+        </p>
+        <p
+          v-else-if="pushPermission === 'denied'"
+          class="text-text-hint text-caption px-3 pb-2"
+        >
+          {{ $t('settings.notificationsBlocked') }}
+        </p>
+        <p
+          v-else-if="pushError"
+          class="text-accent-negative text-caption px-3 pb-2"
+        >
+          {{ pushError.message }}
+        </p>
       </DesignPanel>
       <DesignPanel class="gap-list-section-inset flex flex-col">
         <NuxtLink
