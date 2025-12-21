@@ -51,6 +51,7 @@
     "consents": "Hozzájárulásaim",
     "notifications": "Értesítések",
     "notificationsBlocked": "Az értesítések blokkolva vannak a böngésző beállításaiban.",
+    "notificationsOnlyAvailableWhenInstalled": "Az értesítések csak akkor érhetők el, ha az alkalmazást hozzáadod a kezdőképernyőhöz.",
     "addToHomeScreen": "Alkalmazás hozzáadása a kezdőképernyőhöz",
     "privacyPolicy": "Adatvédelmi irányelvek"
   },
