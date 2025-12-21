@@ -65,3 +65,7 @@ export function formatDateRange(startDate: string, endDate: string) {
   })
   return formatter.formatRange(start, end)
 }
+
+export function formatNumber(value: number): string {
+  return value.toLocaleString(getLocale())
+}

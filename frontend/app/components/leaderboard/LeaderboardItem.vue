@@ -84,7 +84,7 @@ const getColorClasses = (
         !hideMedal && getColorClasses(item.rank, 'light'),
       ]"
     >
-      {{ item.score }}
+      {{ item.score != null ? formatNumber(item.score) : '' }}
     </p>
   </div>
 </template>
