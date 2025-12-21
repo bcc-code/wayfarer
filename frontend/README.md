@@ -1,4 +1,4 @@
-# Wayfarer Frontend
+# Interact Frontend
 
 ## Setup
 
