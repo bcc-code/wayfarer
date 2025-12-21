@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { me } = useAuth()
+const { track } = useAnalytics()
 
 const {
   subscribe,
@@ -17,6 +18,9 @@ async function toggleNotifications(enabled: boolean) {
   } else {
     await unsubscribe()
   }
+  track(AnalyticsEvent.PushNotificationsToggled, {
+    enabled,
+  })
 }
 </script>
 

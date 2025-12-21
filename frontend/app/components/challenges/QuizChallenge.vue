@@ -11,6 +11,7 @@ const emit = defineEmits<{
   complete: []
 }>()
 
+const { track } = useAnalytics()
 const { executeMutation: startQuiz } = useStartQuizMutation()
 const { executeMutation: finalizeQuiz } = useFinalizeQuizMutation()
 
@@ -53,6 +54,12 @@ const canStartQuiz = computed(() => {
 })
 
 onMounted(async () => {
+  track(AnalyticsEvent.ChallengeOpened, {
+    challenge_id: props.challenge.id,
+    challenge_name: props.challenge.name,
+    challenge_type: 'quiz',
+  })
+
   // If there's no active submission and we can start, start the quiz
   if (needsToStartQuiz.value) {
     const result = await startQuiz({
@@ -63,6 +70,11 @@ onMounted(async () => {
     }
     isLoading.value = false
     emit('start')
+    track(AnalyticsEvent.QuizStarted, {
+      quiz_id: props.challenge.quiz.id,
+      quiz_name: props.challenge.name,
+      challenge_id: props.challenge.id,
+    })
   }
 })
 
@@ -101,10 +113,29 @@ async function handleAnswerSubmitted(result: QuestionResult) {
         finalResult.value = response.data.finalizeQuiz
         quizCompleted.value = true
         emit('complete')
+        track(AnalyticsEvent.QuizCompleted, {
+          quiz_id: props.challenge.quiz.id,
+          quiz_name: props.challenge.name,
+          submission_id: activeSubmission.value.id,
+          score: response.data.finalizeQuiz.score ?? 0,
+          max_score: response.data.finalizeQuiz.maxScore ?? 0,
+          points_awarded: response.data.finalizeQuiz.pointsAwarded ?? 0,
+        })
       }
     }
   } else {
     currentQuestionIndex.value++
+  }
+}
+
+function handleQuizAbandoned() {
+  if (activeSubmission.value && !quizCompleted.value) {
+    track(AnalyticsEvent.QuizAbandoned, {
+      quiz_id: props.challenge.quiz.id,
+      quiz_name: props.challenge.name,
+      questions_attempted: questionResults.value.length,
+      total_questions: questions.value.length,
+    })
   }
 }
 </script>
@@ -112,7 +143,7 @@ async function handleAnswerSubmitted(result: QuestionResult) {
 <template>
   <PageLayout :bottom-padding="false">
     <template #action>
-      <NuxtLink :to="{ name: 'challenges' }">
+      <NuxtLink :to="{ name: 'challenges' }" @click="handleQuizAbandoned">
         <DesignIconButton icon="IconClose" />
       </NuxtLink>
     </template>

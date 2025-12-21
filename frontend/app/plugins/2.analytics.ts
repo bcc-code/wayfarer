@@ -1,6 +1,7 @@
 export default defineNuxtPlugin(() => {
   const { me } = useAuth()
-  const { identify } = useAnalytics()
+  const { identify, page } = useAnalytics()
+  const router = useRouter()
 
   let identifiedUserId: string
 
@@ -22,4 +23,9 @@ export default defineNuxtPlugin(() => {
     },
     { immediate: true },
   )
+
+  // Track page views on navigation
+  router.afterEach(() => {
+    page()
+  })
 })

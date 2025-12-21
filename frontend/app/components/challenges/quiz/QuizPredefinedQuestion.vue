@@ -12,6 +12,7 @@ const emit = defineEmits<{
   answerSubmitted: [result: QuestionResult]
 }>()
 
+const { track } = useAnalytics()
 const { executeMutation: submitAnswer } = useSubmitQuizAnswerMutation()
 
 const selectedAnswer = ref<string>()
@@ -41,6 +42,13 @@ async function handleLockAnswer() {
 
     submittedResult.value = { isCorrect }
     isAnswerConfirmed.value = true
+
+    track(AnalyticsEvent.QuizAnswerSubmitted, {
+      question_id: props.question.id,
+      is_correct: isCorrect,
+      current_question: props.currentIndex + 1,
+      total_questions: props.totalQuestions,
+    })
   }
 
   isSubmitting.value = false

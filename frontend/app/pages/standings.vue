@@ -10,6 +10,11 @@ const tab = computed({
   set(newTab: 'global' | 'unit' | 'local') {
     const oldTab = tab.value
     track(AnalyticsEvent.LeaderboardTabChanged, { from: oldTab, to: newTab })
+    if (newTab === 'unit') {
+      track(AnalyticsEvent.TeamLeaderboardViewed, {
+        team_id: data.value?.myCurrentProject.myTeam?.id,
+      })
+    }
     params.tab = newTab
   },
 })

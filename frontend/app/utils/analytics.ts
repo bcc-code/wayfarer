@@ -7,15 +7,42 @@ export async function hashUserId(userId: string): Promise<string> {
 }
 
 export enum AnalyticsEvent {
+  // Authentication
   LoginCompleted = 'login_completed',
   LogoutCompleted = 'logout_completed',
+
+  // Challenges
+  ChallengeOpened = 'challenge_opened',
   ChallengeLinkClicked = 'challenge_link_clicked',
+
+  // Quiz
+  QuizStarted = 'quiz_started',
+  QuizAnswerSubmitted = 'quiz_answer_submitted',
+  QuizCompleted = 'quiz_completed',
+  QuizAbandoned = 'quiz_abandoned',
+
+  // Achievements
+  AchievementClicked = 'achievement_clicked',
+
+  // Leaderboard
   LeaderboardTabChanged = 'leaderboard_tab_changed',
+  TeamLeaderboardViewed = 'team_leaderboard_viewed',
+
+  // Points
   PointsHistoryOpened = 'points_history_opened',
   HowToGetPointsOpened = 'how_to_get_points_opened',
-  AchievementClicked = 'achievement_clicked',
+
+  // Push Notifications
+  PushPermissionRequested = 'push_permission_requested',
+  PushSubscriptionEnabled = 'push_subscription_enabled',
+  PushSubscriptionDisabled = 'push_subscription_disabled',
+  PushNotificationsToggled = 'push_notifications_toggled',
+
+  // Settings
   LanguageChanged = 'language_changed',
   ColorModeChanged = 'color_mode_changed',
+
+  // Consent
   ConsentAccepted = 'consent_accepted',
   ConsentRejected = 'consent_rejected',
 }

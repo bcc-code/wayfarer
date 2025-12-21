@@ -26,6 +26,7 @@ const isInitialized = ref(false)
 
 export function usePushNotifications() {
   const config = useRuntimeConfig()
+  const { track } = useAnalytics()
   const { executeMutation: registerSubscription } =
     useRegisterPushSubscriptionMutation()
   const { executeMutation: unregisterSubscription } =
@@ -67,6 +68,10 @@ export function usePushNotifications() {
 
     const result = await Notification.requestPermission()
     permission.value = result
+    track(AnalyticsEvent.PushPermissionRequested, {
+      permission_granted: result === 'granted',
+      permission_result: result,
+    })
     return result
   }
 
@@ -138,6 +143,8 @@ export function usePushNotifications() {
         throw new Error(result.error.message)
       }
 
+      track(AnalyticsEvent.PushSubscriptionEnabled)
+
       return sub
     } catch (err) {
       error.value =
@@ -172,6 +179,8 @@ export function usePushNotifications() {
         // Backend will eventually clean up stale subscriptions
         console.warn('[Push] Backend unsubscribe failed:', result.error.message)
       }
+
+      track(AnalyticsEvent.PushSubscriptionDisabled)
 
       return true
     } catch (err) {
