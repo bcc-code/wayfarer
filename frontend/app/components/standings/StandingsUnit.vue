@@ -92,7 +92,7 @@ function selectTeamLead(userId: string) {
               <DesignInput v-model="form.name" :label="$t('unit.unitName')" />
               <DesignPanel>
                 <div class="flex items-center gap-2.5 px-3 py-2">
-                  <Icon name="IconVerified" class="size-6" />
+                  <IconVerified class="size-6" />
                   <span class="text-label">{{ $t('unit.unitLeader') }}</span>
                   <DesignButton
                     variant="secondary"

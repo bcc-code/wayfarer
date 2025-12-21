@@ -98,21 +98,21 @@ const classes = cva(
       v-if="confirmed && wrong && selected"
       class="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 text-label text-on-accent bg-accent-negative rounded-full pl-2 pr-3 py-1 flex gap-1 items-center"
     >
-      <Icon name="IconClose" class="size-6" />
+      <IconClose class="size-6" />
       {{ $t('quiz.yourAnswer') }}
     </span>
     <span
       v-else-if="confirmed && wrong && !selected"
       class="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 text-label text-on-accent bg-accent-negative rounded-full pl-2 pr-3 py-1 flex gap-1 items-center"
     >
-      <Icon name="IconClose" class="size-6" />
+      <IconClose class="size-6" />
       {{ $t('quiz.wrongAnswer') }}
     </span>
     <span
       v-if="confirmed && correct"
       class="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 text-label text-on-accent bg-accent-positive rounded-full pl-2 pr-3 py-1 flex gap-1 items-center"
     >
-      <Icon name="IconCheck" class="size-6" />
+      <IconCheck class="size-6" />
       {{ $t('quiz.correctAnswer') }}
     </span>
   </button>

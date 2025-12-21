@@ -44,11 +44,7 @@ watch(
             @click="selectedColorMode = m.code"
           >
             <p class="text-label">{{ m.name() }}</p>
-            <Icon
-              v-if="selectedColorMode === m.code"
-              name="IconCheck"
-              class="size-6"
-            />
+            <IconCheck v-if="selectedColorMode === m.code" class="size-6" />
           </button>
         </template>
       </DesignPanel>

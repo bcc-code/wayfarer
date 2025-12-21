@@ -87,7 +87,7 @@ async function toggleNotifications(enabled: boolean) {
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12 disabled:opacity-25 disabled:cursor-not-allowed"
         >
           <p class="text-label">{{ $t('settings.addToHomeScreen') }}</p>
-          <Icon name="IconChevronRight" class="size-6" />
+          <IconChevronRight class="size-6" />
         </NuxtLink>
         <hr class="border-border-default mx-3" />
         <NuxtLink
@@ -95,7 +95,7 @@ async function toggleNotifications(enabled: boolean) {
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
         >
           <p class="text-label">{{ $t('settings.privacyPolicy') }}</p>
-          <Icon name="IconChevronRight" class="size-6" />
+          <IconChevronRight class="size-6" />
         </NuxtLink>
         <hr class="border-border-default mx-3" />
         <NuxtLink
@@ -103,7 +103,7 @@ async function toggleNotifications(enabled: boolean) {
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
         >
           <p class="text-label">{{ $t('settings.consents') }}</p>
-          <Icon name="IconChevronRight" class="size-6" />
+          <IconChevronRight class="size-6" />
         </NuxtLink>
       </DesignPanel>
       <UserFeedback />
