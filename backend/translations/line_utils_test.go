@@ -296,4 +296,3 @@ func TestCRLFHandling(t *testing.T) {
 		})
 	}
 }
-

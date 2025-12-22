@@ -855,12 +855,14 @@ func (s *LeaderboardService) buildProjectPersonParams(params LeaderboardParams) 
 
 func (s *LeaderboardService) buildFullProjectPersonParams(params LeaderboardParams) sqlc.GetFullProjectPersonLeaderboardParams {
 	return sqlc.GetFullProjectPersonLeaderboardParams{
-		Projectid: params.ContextID,
-		Churchid:  getFilterString(params.Filter, "churchId"),
-		Minscore:  getFilterInt(params.Filter, "minScore"),
-		Maxscore:  getFilterInt(params.Filter, "maxScore"),
-		Minage:    getFilterInt(params.Filter, "minAge"),
-		Maxage:    getFilterInt(params.Filter, "maxAge"),
+		Projectid:   params.ContextID,
+		Churchid:    getFilterString(params.Filter, "churchId"),
+		Minscore:    getFilterInt(params.Filter, "minScore"),
+		Maxscore:    getFilterInt(params.Filter, "maxScore"),
+		Minage:      getFilterInt(params.Filter, "minAge"),
+		Maxage:      getFilterInt(params.Filter, "maxAge"),
+		Teamid:      getFilterString(params.Filter, "teamId"),
+		Superteamid: getFilterString(params.Filter, "superTeamId"),
 	}
 }
 
@@ -1121,12 +1123,14 @@ func (s *LeaderboardService) buildEventPersonPositionParams(params LeaderboardPa
 
 func (s *LeaderboardService) buildFullEventPersonParams(params LeaderboardParams) sqlc.GetFullEventPersonLeaderboardParams {
 	return sqlc.GetFullEventPersonLeaderboardParams{
-		Eventid:  params.ContextID,
-		Churchid: getFilterString(params.Filter, "churchId"),
-		Minscore: getFilterInt(params.Filter, "minScore"),
-		Maxscore: getFilterInt(params.Filter, "maxScore"),
-		Minage:   getFilterInt(params.Filter, "minAge"),
-		Maxage:   getFilterInt(params.Filter, "maxAge"),
+		Eventid:     params.ContextID,
+		Churchid:    getFilterString(params.Filter, "churchId"),
+		Minscore:    getFilterInt(params.Filter, "minScore"),
+		Maxscore:    getFilterInt(params.Filter, "maxScore"),
+		Minage:      getFilterInt(params.Filter, "minAge"),
+		Maxage:      getFilterInt(params.Filter, "maxAge"),
+		Teamid:      getFilterString(params.Filter, "teamId"),
+		Superteamid: getFilterString(params.Filter, "superTeamId"),
 	}
 }
 
