@@ -54,6 +54,8 @@ type JWTConfig struct {
 	Issuer            string
 	BrunstadTVJWKSURL string
 	BrunstadTVIssuer  string
+	Auth0JWKSURL      string
+	Auth0Issuer       string
 }
 
 // APIKeyConfig holds API key authentication configuration for external systems
@@ -158,6 +160,8 @@ func Load() (*Config, error) {
 			Issuer:            getEnv("JWT_ISSUER", "wayfarer"),
 			BrunstadTVJWKSURL: getEnv("BRUNSTAD_TV_JWKS_URL", "https://api.brunstad.tv/.well-known/jwks.json"),
 			BrunstadTVIssuer:  getEnv("BRUNSTAD_TV_JWT_ISSUER", "https://api.brunstad.tv/"),
+			Auth0JWKSURL:      getEnv("AUTH0_JWKS_URL", "https://login.bcc.no/.well-known/jwks.json"),
+			Auth0Issuer:       getEnv("AUTH0_JWT_ISSUER", "https://login.bcc.no/"),
 		},
 		APIKey: APIKeyConfig{
 			Keys: parseAPIKeys(getEnv("EXTERNAL_API_KEYS", "")),

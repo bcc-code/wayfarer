@@ -93,10 +93,18 @@ func main() {
 	// Initialize JWKS for Brunstad TV JWT validation
 	jwks, err := keyfunc.NewDefault([]string{cfg.JWT.BrunstadTVJWKSURL})
 	if err != nil {
-		slog.Error("Failed to initialize JWKS", "error", err)
+		slog.Error("Failed to initialize Brunstad TV JWKS", "error", err)
 		os.Exit(1)
 	}
-	slog.Info("JWKS initialized successfully", "url", cfg.JWT.BrunstadTVJWKSURL)
+	slog.Info("Brunstad TV JWKS initialized successfully", "url", cfg.JWT.BrunstadTVJWKSURL)
+
+	// Initialize JWKS for Auth0 (login.bcc.no) JWT validation
+	auth0JWKS, err := keyfunc.NewDefault([]string{cfg.JWT.Auth0JWKSURL})
+	if err != nil {
+		slog.Error("Failed to initialize Auth0 JWKS", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("Auth0 JWKS initialized successfully", "url", cfg.JWT.Auth0JWKSURL)
 
 	// Initialize Auth0 client for Members API token management
 	var membersClient *members.Client
@@ -347,6 +355,7 @@ func main() {
 		DB:            db,
 		Cfg:           cfg,
 		JWKS:          jwks,
+		Auth0JWKS:     auth0JWKS,
 		MembersClient: membersClient,
 		RoleService:   roleService,
 	}

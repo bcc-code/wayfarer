@@ -28,6 +28,7 @@ type AuthHandler struct {
 	DB            *database.DB
 	Cfg           *config.Config
 	JWKS          keyfunc.Keyfunc
+	Auth0JWKS     keyfunc.Keyfunc
 	MembersClient *members.Client
 	RoleService   *services.RoleService
 }
@@ -39,6 +40,14 @@ type BrunstadTVClaims struct {
 	PersonUUID string `json:"person_uuid"`
 	FirstName  string `json:"first_name"`
 	Gender     string `json:"gender"`
+	jwt.RegisteredClaims
+}
+
+// Auth0Claims represents the JWT claims from Auth0 (login.bcc.no)
+type Auth0Claims struct {
+	ChurchID   int    `json:"https://login.bcc.no/claims/churchId"`
+	PersonID   int    `json:"https://login.bcc.no/claims/personId"`
+	PersonUUID string `json:"https://login.bcc.no/claims/personUid"`
 	jwt.RegisteredClaims
 }
 
@@ -54,7 +63,7 @@ type CallbackResponse struct {
 	Token string `json:"token"`
 }
 
-// Callback handles the OAuth callback from Brunstad TV
+// Callback handles the OAuth callback from Brunstad TV or Auth0
 // It validates the incoming JWT, finds or creates the user, and returns a Wayfarer JWT
 func (h *AuthHandler) Callback(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -67,18 +76,41 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		return
 	}
 
-	// 2. Validate and parse Brunstad TV JWT
-	claims, err := h.validateBrunstadTVToken(token)
-	if err != nil {
-		slog.Warn("callback: invalid token", "error", err)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
-		return
-	}
+	// 2. Validate and parse JWT - try Auth0 first, then fall back to Brunstad TV
+	var claims *BrunstadTVClaims
 
-	slog.Info("callback: validated Brunstad TV token",
-		"person_id", claims.PersonID,
-		"church_id", claims.ChurchID,
-	)
+	auth0Claims, auth0Err := h.validateAuth0Token(token)
+	if auth0Err == nil {
+		// Auth0 token validated successfully, convert to BrunstadTVClaims format
+		slog.Info("callback: validated Auth0 token",
+			"person_id", auth0Claims.PersonID,
+			"church_id", auth0Claims.ChurchID,
+		)
+		claims = &BrunstadTVClaims{
+			ChurchID:         auth0Claims.ChurchID,
+			PersonID:         strconv.Itoa(auth0Claims.PersonID),
+			PersonUUID:       auth0Claims.PersonUUID,
+			FirstName:        "", // Not provided in Auth0 token, will be fetched from Members API
+			Gender:           "", // Not provided in Auth0 token, will be fetched from Members API
+			RegisteredClaims: auth0Claims.RegisteredClaims,
+		}
+	} else {
+		// Auth0 validation failed, try Brunstad TV
+		brunstadClaims, brunstadErr := h.validateBrunstadTVToken(token)
+		if brunstadErr != nil {
+			slog.Warn("callback: invalid token",
+				"auth0_error", auth0Err,
+				"brunstad_error", brunstadErr,
+			)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
+			return
+		}
+		claims = brunstadClaims
+		slog.Info("callback: validated Brunstad TV token",
+			"person_id", claims.PersonID,
+			"church_id", claims.ChurchID,
+		)
+	}
 
 	// 3. Find church by external_id
 	church, err := h.findChurchByExternalID(ctx, int32(claims.ChurchID))
@@ -141,6 +173,37 @@ func (h *AuthHandler) validateBrunstadTVToken(tokenString string) (*BrunstadTVCl
 	// Verify issuer
 	if claims.Issuer != h.Cfg.JWT.BrunstadTVIssuer {
 		return nil, fmt.Errorf("invalid issuer: expected %s, got %s", h.Cfg.JWT.BrunstadTVIssuer, claims.Issuer)
+	}
+
+	// Verify timestamps (exp and iat are automatically validated by jwt library)
+
+	return claims, nil
+}
+
+// validateAuth0Token validates the JWT from Auth0 (login.bcc.no) using JWKS
+func (h *AuthHandler) validateAuth0Token(tokenString string) (*Auth0Claims, error) {
+	if h.Auth0JWKS == nil {
+		return nil, errors.New("Auth0 JWKS not configured")
+	}
+
+	// Parse and validate the token using Auth0 JWKS
+	token, err := jwt.ParseWithClaims(tokenString, &Auth0Claims{}, h.Auth0JWKS.Keyfunc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse token: %w", err)
+	}
+
+	if !token.Valid {
+		return nil, errors.New("token is invalid")
+	}
+
+	claims, ok := token.Claims.(*Auth0Claims)
+	if !ok {
+		return nil, errors.New("failed to parse claims")
+	}
+
+	// Verify issuer
+	if claims.Issuer != h.Cfg.JWT.Auth0Issuer {
+		return nil, fmt.Errorf("invalid issuer: expected %s, got %s", h.Cfg.JWT.Auth0Issuer, claims.Issuer)
 	}
 
 	// Verify timestamps (exp and iat are automatically validated by jwt library)
