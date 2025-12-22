@@ -18,6 +18,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/MicahParks/jwkset"
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/bcc-media/wayfarer/internal/auth0"
 	"github.com/bcc-media/wayfarer/internal/cache"
@@ -91,7 +92,8 @@ func main() {
 	slog.Info("Connected to database successfully")
 
 	// Initialize JWKS for Brunstad TV JWT validation
-	jwks, err := keyfunc.NewDefault([]string{cfg.JWT.BrunstadTVJWKSURL})
+	// Use background context to avoid request context deadline issues
+	jwks, err := keyfunc.NewDefaultCtx(ctx, []string{cfg.JWT.BrunstadTVJWKSURL})
 	if err != nil {
 		slog.Error("Failed to initialize Brunstad TV JWKS", "error", err)
 		os.Exit(1)
@@ -99,7 +101,22 @@ func main() {
 	slog.Info("Brunstad TV JWKS initialized successfully", "url", cfg.JWT.BrunstadTVJWKSURL)
 
 	// Initialize JWKS for Auth0 (login.bcc.no) JWT validation
-	auth0JWKS, err := keyfunc.NewDefault([]string{cfg.JWT.Auth0JWKSURL})
+	// Use custom storage with SkipAll to handle X5T validation issues in Auth0's JWKS
+	// Core security (RSA signature verification, expiration) is still enforced by JWT parsing
+	auth0Storage, err := jwkset.NewStorageFromHTTP(cfg.JWT.Auth0JWKSURL, jwkset.HTTPClientStorageOptions{
+		Ctx: ctx,
+		ValidateOptions: jwkset.JWKValidateOptions{
+			SkipAll: true, // Skip JWK validation that fails with Auth0's X5T mismatch
+		},
+	})
+	if err != nil {
+		slog.Error("Failed to create Auth0 JWKS storage", "error", err)
+		os.Exit(1)
+	}
+	auth0JWKS, err := keyfunc.New(keyfunc.Options{
+		Ctx:     ctx,
+		Storage: auth0Storage,
+	})
 	if err != nil {
 		slog.Error("Failed to initialize Auth0 JWKS", "error", err)
 		os.Exit(1)
