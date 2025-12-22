@@ -1174,6 +1174,32 @@ WITH ranked_scores AS (
       AND ($4::text = '' OR u.church_id = $4::text)
       AND ($5::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) >= $5::int)
       AND ($6::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) <= $6::int)
+      -- Team filtering
+      AND ($7::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          WHERE tm.user_id = u.id AND tm.team_id = $7::text
+      ))
+      AND ($8::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN teams t ON tm.team_id = t.id
+          WHERE tm.user_id = u.id AND t.super_team_id = $8::text
+      ))
+      -- Consent filter: skip if team-filtered, otherwise require leaderboard_consent
+      AND (
+          $7::text != '' OR $8::text != ''
+          OR EXISTS (
+              SELECT 1 FROM user_consent_history uch
+              WHERE uch.user_id = u.id
+                AND uch.consent_key = 'leaderboard_consent'
+                AND uch.action = 'ACCEPTED'
+                AND uch.occurred_at = (
+                    SELECT MAX(uch2.occurred_at)
+                    FROM user_consent_history uch2
+                    WHERE uch2.user_id = u.id
+                      AND uch2.consent_key = 'leaderboard_consent'
+                )
+          )
+      )
 )
 SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
@@ -1181,12 +1207,14 @@ ORDER BY rank ASC
 `
 
 type GetFullEventPersonLeaderboardParams struct {
-	Eventid  string `json:"eventid"`
-	Minscore int32  `json:"minscore"`
-	Maxscore int32  `json:"maxscore"`
-	Churchid string `json:"churchid"`
-	Minage   int32  `json:"minage"`
-	Maxage   int32  `json:"maxage"`
+	Eventid     string `json:"eventid"`
+	Minscore    int32  `json:"minscore"`
+	Maxscore    int32  `json:"maxscore"`
+	Churchid    string `json:"churchid"`
+	Minage      int32  `json:"minage"`
+	Maxage      int32  `json:"maxage"`
+	Teamid      string `json:"teamid"`
+	Superteamid string `json:"superteamid"`
 }
 
 type GetFullEventPersonLeaderboardRow struct {
@@ -1206,6 +1234,8 @@ func (q *Queries) GetFullEventPersonLeaderboard(ctx context.Context, arg GetFull
 		arg.Churchid,
 		arg.Minage,
 		arg.Maxage,
+		arg.Teamid,
+		arg.Superteamid,
 	)
 	if err != nil {
 		return nil, err
@@ -1427,6 +1457,32 @@ WITH ranked_scores AS (
       AND ($4::text = '' OR u.church_id = $4::text)
       AND ($5::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) >= $5::int)
       AND ($6::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) <= $6::int)
+      -- Team filtering
+      AND ($7::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          WHERE tm.user_id = u.id AND tm.team_id = $7::text
+      ))
+      AND ($8::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN teams t ON tm.team_id = t.id
+          WHERE tm.user_id = u.id AND t.super_team_id = $8::text
+      ))
+      -- Consent filter: skip if team-filtered, otherwise require leaderboard_consent
+      AND (
+          $7::text != '' OR $8::text != ''
+          OR EXISTS (
+              SELECT 1 FROM user_consent_history uch
+              WHERE uch.user_id = u.id
+                AND uch.consent_key = 'leaderboard_consent'
+                AND uch.action = 'ACCEPTED'
+                AND uch.occurred_at = (
+                    SELECT MAX(uch2.occurred_at)
+                    FROM user_consent_history uch2
+                    WHERE uch2.user_id = u.id
+                      AND uch2.consent_key = 'leaderboard_consent'
+                )
+          )
+      )
 )
 SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
@@ -1434,12 +1490,14 @@ ORDER BY rank ASC
 `
 
 type GetFullProjectPersonLeaderboardParams struct {
-	Projectid string `json:"projectid"`
-	Minscore  int32  `json:"minscore"`
-	Maxscore  int32  `json:"maxscore"`
-	Churchid  string `json:"churchid"`
-	Minage    int32  `json:"minage"`
-	Maxage    int32  `json:"maxage"`
+	Projectid   string `json:"projectid"`
+	Minscore    int32  `json:"minscore"`
+	Maxscore    int32  `json:"maxscore"`
+	Churchid    string `json:"churchid"`
+	Minage      int32  `json:"minage"`
+	Maxage      int32  `json:"maxage"`
+	Teamid      string `json:"teamid"`
+	Superteamid string `json:"superteamid"`
 }
 
 type GetFullProjectPersonLeaderboardRow struct {
@@ -1459,6 +1517,8 @@ func (q *Queries) GetFullProjectPersonLeaderboard(ctx context.Context, arg GetFu
 		arg.Churchid,
 		arg.Minage,
 		arg.Maxage,
+		arg.Teamid,
+		arg.Superteamid,
 	)
 	if err != nil {
 		return nil, err

@@ -114,6 +114,32 @@ WITH ranked_scores AS (
       AND (@churchid::text = '' OR u.church_id = @churchid::text)
       AND (@minage::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) >= @minage::int)
       AND (@maxage::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) <= @maxage::int)
+      -- Team filtering
+      AND (@teamid::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          WHERE tm.user_id = u.id AND tm.team_id = @teamid::text
+      ))
+      AND (@superteamid::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN teams t ON tm.team_id = t.id
+          WHERE tm.user_id = u.id AND t.super_team_id = @superteamid::text
+      ))
+      -- Consent filter: skip if team-filtered, otherwise require leaderboard_consent
+      AND (
+          @teamid::text != '' OR @superteamid::text != ''
+          OR EXISTS (
+              SELECT 1 FROM user_consent_history uch
+              WHERE uch.user_id = u.id
+                AND uch.consent_key = 'leaderboard_consent'
+                AND uch.action = 'ACCEPTED'
+                AND uch.occurred_at = (
+                    SELECT MAX(uch2.occurred_at)
+                    FROM user_consent_history uch2
+                    WHERE uch2.user_id = u.id
+                      AND uch2.consent_key = 'leaderboard_consent'
+                )
+          )
+      )
 )
 SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
@@ -505,6 +531,32 @@ WITH ranked_scores AS (
       AND (@churchid::text = '' OR u.church_id = @churchid::text)
       AND (@minage::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) >= @minage::int)
       AND (@maxage::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) <= @maxage::int)
+      -- Team filtering
+      AND (@teamid::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          WHERE tm.user_id = u.id AND tm.team_id = @teamid::text
+      ))
+      AND (@superteamid::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN teams t ON tm.team_id = t.id
+          WHERE tm.user_id = u.id AND t.super_team_id = @superteamid::text
+      ))
+      -- Consent filter: skip if team-filtered, otherwise require leaderboard_consent
+      AND (
+          @teamid::text != '' OR @superteamid::text != ''
+          OR EXISTS (
+              SELECT 1 FROM user_consent_history uch
+              WHERE uch.user_id = u.id
+                AND uch.consent_key = 'leaderboard_consent'
+                AND uch.action = 'ACCEPTED'
+                AND uch.occurred_at = (
+                    SELECT MAX(uch2.occurred_at)
+                    FROM user_consent_history uch2
+                    WHERE uch2.user_id = u.id
+                      AND uch2.consent_key = 'leaderboard_consent'
+                )
+          )
+      )
 )
 SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
