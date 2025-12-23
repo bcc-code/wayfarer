@@ -133,7 +133,7 @@ export function useAuth() {
     me.value = null
     return auth0.logout({
       logoutParams: {
-        returnTo: window.location.origin,
+        returnTo: `${window.location.origin}/logout-callback`,
       },
     })
   }

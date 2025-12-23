@@ -7,7 +7,10 @@ export function useAuthReady(providedRoute?: { path: string }) {
   const currentRoute = providedRoute || useRoute()
 
   const isAuthReady = computed(() => {
-    return !!token.value && currentRoute.path !== '/callback'
+    const isAuthPage =
+      currentRoute.path === '/auth0-callback' ||
+      currentRoute.path === '/logout-callback'
+    return !!token.value && !isAuthPage
   })
 
   return { isAuthReady }
