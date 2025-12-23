@@ -16,6 +16,7 @@
     "pwa-assets-generator": "pwa-assets-generator --preset minimal-2023 public/app-icon.png"
   },
   "dependencies": {
+    "@auth0/auth0-vue": "^2.5.0",
     "@internationalized/date": "^3.10.0",
     "@nuxt/ui": "^4.2.1",
     "@nuxtjs/i18n": "^10.2.1",

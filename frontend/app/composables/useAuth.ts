@@ -1,3 +1,5 @@
+import { useAuth0 } from '@auth0/auth0-vue'
+
 gql(`
   query GetMe {
     me {
@@ -38,11 +40,15 @@ gql(`
 
 export function useAuth() {
   const { reset } = useAnalytics()
-  const token = useLocalStorage<string>('token', () => null)
+  const auth0 = useAuth0()
+  const config = useRuntimeConfig()
+
+  // Wayfarer JWT stored in localStorage (exchanged from Auth0 token)
+  const wayfarerToken = useLocalStorage<string>('token', () => null)
   const isLoading = useState('isLoading', () => true)
   const me = useState<GetMeQuery['me'] | null | undefined>('me', () => null)
 
-  // Only fetch user data if we have a token AND we're not on the callback page
+  // Only fetch user data if we have a wayfarer token AND we're not on the callback page
   const { isAuthReady } = useAuthReady()
 
   const { data, fetching } = useGetMeQuery({
@@ -55,7 +61,7 @@ export function useAuth() {
   }
 
   // If we don't have a token, we're not loading (we're just not authenticated)
-  if (!token.value) {
+  if (!wayfarerToken.value) {
     isLoading.value = false
   }
 
@@ -80,44 +86,79 @@ export function useAuth() {
     { immediate: true },
   )
 
+  // Get the Wayfarer token for API calls
   const getAccessToken = async () => {
     try {
       while (isLoading.value) {
         await new Promise((resolve) => setTimeout(resolve, 10))
       }
-      return token.value
+      return wayfarerToken.value
     } catch {
       await loginWithRedirect()
     }
   }
 
   const getAccessTokenSilently = async () => {
-    return token.value
+    return wayfarerToken.value
+  }
+
+  // Get Auth0 access token (for exchanging with backend)
+  const getAuth0Token = async () => {
+    try {
+      return await auth0.getAccessTokenSilently()
+    } catch {
+      return null
+    }
   }
 
   const setAccessToken = (value: string) => {
-    token.value = value
+    wayfarerToken.value = value
     isLoading.value = false
   }
 
-  const config = useRuntimeConfig()
   const { track } = useAnalytics()
 
-  function loginWithRedirect() {
-    return navigateTo(
-      `${config.public.loginUrl}?redirect=${window.location.pathname}`,
-      {
-        external: true,
+  async function loginWithRedirect() {
+    return auth0.loginWithRedirect({
+      appState: {
+        targetUrl: window.location.pathname,
       },
-    )
+    })
   }
 
-  function logout() {
+  async function logout() {
     track(AnalyticsEvent.LogoutCompleted)
     reset()
-    token.value = null
+    wayfarerToken.value = null
     me.value = null
-    return navigateTo('/')
+    return auth0.logout({
+      logoutParams: {
+        returnTo: `${window.location.origin}/logout-callback`,
+      },
+    })
+  }
+
+  // Exchange Auth0 token for Wayfarer JWT
+  async function exchangeToken(): Promise<boolean> {
+    try {
+      const auth0Token = await getAuth0Token()
+      if (!auth0Token) {
+        return false
+      }
+
+      const response = await $fetch<{ token: string }>(
+        `${config.public.tokenUrl}?token=${auth0Token}`,
+        { method: 'GET' },
+      )
+
+      if (response && response.token) {
+        setAccessToken(response.token)
+        return true
+      }
+      return false
+    } catch {
+      return false
+    }
   }
 
   // Authorization
@@ -141,14 +182,27 @@ export function useAuth() {
   })
 
   return {
+    // Auth0 state
+    isAuthenticated: auth0.isAuthenticated,
+    isAuth0Loading: auth0.isLoading,
+
+    // Token methods
     getAccessTokenSilently,
     getAccessToken,
+    getAuth0Token,
     setAccessToken,
+    exchangeToken,
+
+    // Auth actions
     loginWithRedirect,
     logout,
+
+    // Loading and user state
     isLoading,
     me,
-    token,
+    token: wayfarerToken,
+
+    // Role checks
     isProjectAdmin,
     isTeamLead,
     isM2M,

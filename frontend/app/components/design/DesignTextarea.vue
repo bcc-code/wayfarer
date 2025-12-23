@@ -29,7 +29,7 @@ const isOverLimit = computed(
     <UTextarea
       v-model="modelValue"
       :ui="{
-        base: 'bg-background-indent rounded-list! focus-visible:ring-accent text-label p-medium! placeholder:text-text-hint',
+        base: 'bg-background-indent rounded-list! focus-visible:ring-accent ring-border-default text-label p-medium! placeholder:text-text-hint',
       }"
       :rows="8"
       :placeholder

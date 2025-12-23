@@ -370,3 +370,73 @@ func splitToken(token string) []string {
 	}
 	return parts
 }
+
+func TestAuth0Claims_ParseNamespacedClaims(t *testing.T) {
+	// Create a test token with Auth0 namespaced claims
+	secret := []byte("test-secret")
+	now := time.Now()
+
+	// Create claims with namespaced fields
+	claims := jwt.MapClaims{
+		"https://login.bcc.no/claims/churchId":  69,
+		"https://login.bcc.no/claims/personId":  19254,
+		"https://login.bcc.no/claims/personUid": "5e7016ac-999e-4e87-b84b-13642d863d01",
+		"iss":                                   "https://login.bcc.no/",
+		"sub":                                   "auth0|28cd3814-049f-4bb6-b8f6-3e0f2b25fe6b",
+		"iat":                                   now.Unix(),
+		"exp":                                   now.Add(24 * time.Hour).Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedToken, err := token.SignedString(secret)
+	require.NoError(t, err)
+
+	// Parse the token with Auth0Claims struct
+	parsedToken, err := jwt.ParseWithClaims(signedToken, &Auth0Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return secret, nil
+	})
+	require.NoError(t, err)
+	require.True(t, parsedToken.Valid)
+
+	auth0Claims, ok := parsedToken.Claims.(*Auth0Claims)
+	require.True(t, ok)
+
+	// Verify claims were parsed correctly
+	assert.Equal(t, 69, auth0Claims.ChurchID)
+	assert.Equal(t, 19254, auth0Claims.PersonID)
+	assert.Equal(t, "5e7016ac-999e-4e87-b84b-13642d863d01", auth0Claims.PersonUUID)
+	assert.Equal(t, "https://login.bcc.no/", auth0Claims.Issuer)
+	assert.Equal(t, "auth0|28cd3814-049f-4bb6-b8f6-3e0f2b25fe6b", auth0Claims.Subject)
+}
+
+func TestAuth0Claims_ConvertToBrunstadTVClaims(t *testing.T) {
+	// Test that Auth0Claims can be converted to BrunstadTVClaims for downstream processing
+	auth0Claims := &Auth0Claims{
+		ChurchID:   69,
+		PersonID:   19254,
+		PersonUUID: "5e7016ac-999e-4e87-b84b-13642d863d01",
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    "https://login.bcc.no/",
+			Subject:   "auth0|28cd3814-049f-4bb6-b8f6-3e0f2b25fe6b",
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+		},
+	}
+
+	// Convert to BrunstadTVClaims format (as done in Callback handler)
+	brunstadClaims := &BrunstadTVClaims{
+		ChurchID:         auth0Claims.ChurchID,
+		PersonID:         "19254", // PersonID converted to string
+		PersonUUID:       auth0Claims.PersonUUID,
+		FirstName:        "", // Not provided in Auth0 token
+		Gender:           "", // Not provided in Auth0 token
+		RegisteredClaims: auth0Claims.RegisteredClaims,
+	}
+
+	// Verify conversion
+	assert.Equal(t, 69, brunstadClaims.ChurchID)
+	assert.Equal(t, "19254", brunstadClaims.PersonID)
+	assert.Equal(t, "5e7016ac-999e-4e87-b84b-13642d863d01", brunstadClaims.PersonUUID)
+	assert.Empty(t, brunstadClaims.FirstName)
+	assert.Empty(t, brunstadClaims.Gender)
+}

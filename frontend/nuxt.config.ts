@@ -86,7 +86,9 @@ export default defineNuxtConfig({
     public: {
       apiUrl: 'http://localhost:8080/graphql',
       tokenUrl: 'http://localhost:8080/token',
-      loginUrl: 'https://app.bcc.media/r/sigve-test',
+      auth0Domain: 'login.bcc.no',
+      auth0ClientId: '',
+      auth0Audience: '',
       rudderstackWriteKey: '',
       rudderstackDataPlaneUrl: '',
       vapidPublicKey: '',

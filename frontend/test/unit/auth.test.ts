@@ -547,10 +547,9 @@ describe('Authentication Flow', () => {
           }
         }
 
-        expect(fetch).toHaveBeenCalledWith(
-          `${TOKEN_URL}?token=${inputToken}`,
-          { method: 'GET' },
-        )
+        expect(fetch).toHaveBeenCalledWith(`${TOKEN_URL}?token=${inputToken}`, {
+          method: 'GET',
+        })
         expect(setAccessToken).toHaveBeenCalledWith(validatedToken)
       })
 
@@ -1138,7 +1137,10 @@ describe('Authentication Flow', () => {
         const callbackRoutes = [
           { path: '/callback', query: {} },
           { path: '/callback', query: { token: 'abc123' } },
-          { path: '/callback', query: { token: 'abc', redirect: '/admin' } },
+          {
+            path: '/callback',
+            query: { token: 'abc', redirect: '/admin' },
+          },
         ]
 
         for (const to of callbackRoutes) {
