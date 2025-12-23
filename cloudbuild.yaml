@@ -2,20 +2,22 @@ steps:
   - name: gcr.io/cloud-builders/docker
     args:
       - build
-      - '--no-cache'
-      - '--build-arg=NUXT_PUBLIC_API_URL=${_NUXT_PUBLIC_API_URL}'
-      - '--build-arg=NUXT_PUBLIC_TOKEN_URL=${_NUXT_PUBLIC_TOKEN_URL}'
-      - '--build-arg=NUXT_PUBLIC_LOGIN_URL=${_NUXT_PUBLIC_LOGIN_URL}'
-      - '--build-arg=NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY=${_NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY}'
-      - '--build-arg=NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL=${_NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL}'
-      - '--build-arg=NUXT_PUBLIC_VAPID_PUBLIC_KEY=${_NUXT_PUBLIC_VAPID_PUBLIC_KEY}'
-      - '--build-arg=NUXT_PUBLIC_IS_STAGING=${_NUXT_PUBLIC_IS_STAGING}'
-      - '--build-arg=APP_VERSION=$SHORT_SHA'
-      - '-t'
+      - "--no-cache"
+      - "--build-arg=NUXT_PUBLIC_API_URL=${_NUXT_PUBLIC_API_URL}"
+      - "--build-arg=NUXT_PUBLIC_TOKEN_URL=${_NUXT_PUBLIC_TOKEN_URL}"
+      - "--build-arg=NUXT_PUBLIC_LOGIN_URL=${_NUXT_PUBLIC_LOGIN_URL}"
+      - "--build-arg=NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY=${_NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY}"
+      - "--build-arg=NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL=${_NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL}"
+      - "--build-arg=NUXT_PUBLIC_VAPID_PUBLIC_KEY=${_NUXT_PUBLIC_VAPID_PUBLIC_KEY}"
+      - "--build-arg=NUXT_PUBLIC_IS_STAGING=${_NUXT_PUBLIC_IS_STAGING}"
+      - "--build-arg=NUXT_PUBLIC_AUTH0_CLIENT_ID=${_NUXT_PUBLIC_AUTH0_CLIENT_ID}"
+      - "--build-arg=NUXT_PUBLIC_AUTH0_AUDIENCE=${_NUXT_PUBLIC_AUTH0_AUDIENCE}"
+      - "--build-arg=APP_VERSION=$SHORT_SHA"
+      - "-t"
       - >-
         $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
       - .
-      - '-f'
+      - "-f"
       - Dockerfile
     id: Build
   - name: gcr.io/cloud-builders/docker
@@ -24,19 +26,19 @@ steps:
       - >-
         $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
     id: Push
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
     args:
       - run
       - services
       - update
       - $_SERVICE_NAME
-      - '--platform=managed'
+      - "--platform=managed"
       - >-
         --image=$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
       - >-
         --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
-      - '--region=$_DEPLOY_REGION'
-      - '--quiet'
+      - "--region=$_DEPLOY_REGION"
+      - "--quiet"
     id: Deploy
     entrypoint: gcloud
 images:
@@ -53,13 +55,15 @@ substitutions:
   _PLATFORM: managed
   _SERVICE_NAME: wayfarer
   _DEPLOY_REGION: europe-west3
-  _NUXT_PUBLIC_API_URL: ''
-  _NUXT_PUBLIC_TOKEN_URL: ''
-  _NUXT_PUBLIC_LOGIN_URL: ''
-  _NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY: ''
-  _NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL: ''
-  _NUXT_PUBLIC_VAPID_PUBLIC_KEY: ''
-  _NUXT_PUBLIC_IS_STAGING: ''
+  _NUXT_PUBLIC_API_URL: ""
+  _NUXT_PUBLIC_TOKEN_URL: ""
+  _NUXT_PUBLIC_LOGIN_URL: ""
+  _NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY: ""
+  _NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL: ""
+  _NUXT_PUBLIC_VAPID_PUBLIC_KEY: ""
+  _NUXT_PUBLIC_IS_STAGING: ""
+  _NUXT_PUBLIC_AUTH0_CLIENT_ID: ""
+  _NUXT_PUBLIC_AUTH0_AUDIENCE: ""
 tags:
   - gcp-cloud-build-deploy-cloud-run
   - gcp-cloud-build-deploy-cloud-run-managed
