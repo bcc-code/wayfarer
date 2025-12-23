@@ -1,13 +1,13 @@
 <script setup lang="ts">
-const route = useRoute('callback')
+import { useAuth0 } from '@auth0/auth0-vue'
 
 definePageMeta({
   layout: false,
   middleware: [],
 })
 
-const config = useRuntimeConfig()
-const { setAccessToken } = useAuth()
+const auth0 = useAuth0()
+const { exchangeToken } = useAuth()
 const { track } = useAnalytics()
 
 // Use a global state to prevent multiple concurrent callbacks across component re-mounts
@@ -21,32 +21,23 @@ onMounted(async () => {
 
   processing.value = true
 
-  const { token, redirect } = route.query
-  if (!token || typeof token !== 'string') {
-    processing.value = false
-    return
-  }
-
   try {
-    const response = await $fetch<{ token: string }>(
-      `${config.public.tokenUrl}?token=${token}`,
-      { method: 'GET' },
-    )
+    // Handle the Auth0 callback and get the redirect target
+    const result = await auth0.handleRedirectCallback()
+    const targetUrl = result.appState?.targetUrl || '/'
 
-    if (response && response.token) {
-      setAccessToken(response.token)
+    // Exchange Auth0 token for Wayfarer JWT
+    const success = await exchangeToken()
+    if (success) {
       track(AnalyticsEvent.LoginCompleted)
-
-      const redirectPath =
-        redirect && typeof redirect === 'string' ? redirect : '/'
-
       // Use replace to prevent back button issues
-      await navigateTo(redirectPath, { replace: true })
-      processing.value = false
+      await navigateTo(targetUrl, { replace: true })
     } else {
-      processing.value = false
+      console.error('Failed to exchange token')
     }
-  } catch {
+  } catch (error) {
+    console.error('Callback error:', error)
+  } finally {
     processing.value = false
   }
 })
