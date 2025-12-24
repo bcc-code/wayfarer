@@ -51,6 +51,7 @@
     "consents": "Meine Einwilligungen",
     "notifications": "Benachrichtigungen",
     "notificationsBlocked": "Benachrichtigungen sind in den Browsereinstellungen blockiert",
+    "notificationsOnlyAvailableWhenInstalled": "Benachrichtigungen sind nur verfügbar, wenn du die App zu deinem Startbildschirm hinzufügst.",
     "addToHomeScreen": "App zum Homescreen hinzufügen",
     "privacyPolicy": "Datenschutzerklärung"
   },
