@@ -8,6 +8,10 @@
     "challenges": "Még nincs kihívás",
     "pointHistory": "Még nincs pont"
   },
+  "auth": {
+    "loginButton": "Bejelentkezés",
+    "logoutButton": "Kijelentkezés"
+  },
   "quiz": {
     "wrongAnswer": "Helytelen válasz",
     "correctAnswer": "Helyes válasz:",
