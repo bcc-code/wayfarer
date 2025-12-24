@@ -8,6 +8,10 @@
     "challenges": "Ingen utfordringer ennå",
     "pointHistory": "Ingen poeng ennå"
   },
+  "auth": {
+    "loginButton": "Logg inn",
+    "logoutButton": "Logg ut"
+  },
   "quiz": {
     "wrongAnswer": "Feil svar",
     "correctAnswer": "Riktig svar",

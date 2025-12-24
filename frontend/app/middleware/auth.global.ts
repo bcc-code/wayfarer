@@ -2,7 +2,11 @@ import { useAuth0 } from '@auth0/auth0-vue'
 
 export default defineNuxtRouteMiddleware(async (to) => {
   // Skip auth check for auth pages
-  if (to.path === '/auth0-callback' || to.path === '/logout-callback') {
+  if (
+    to.path === '/login' ||
+    to.path === '/auth0-callback' ||
+    to.path === '/logout-callback'
+  ) {
     return
   }
 
@@ -23,14 +27,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
       // This can happen on page refresh - redirect to callback to exchange token
       return navigateTo('/auth0-callback', { replace: true })
     } else {
-      // Not authenticated - redirect to Auth0 login
-      await auth0.loginWithRedirect({
-        appState: {
-          targetUrl: to.path,
-        },
-      })
-      // Return false to halt navigation (we're redirecting)
-      return false
+      // Not authenticated - redirect to login page
+      return navigateTo('/login', { replace: true })
     }
   }
 })

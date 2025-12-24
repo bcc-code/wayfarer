@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { me } = useAuth()
+const { me, logout } = useAuth()
 const { track } = useAnalytics()
 
 const {
@@ -111,6 +111,16 @@ async function toggleNotifications(enabled: boolean) {
         </NuxtLink>
       </DesignPanel>
       <UserFeedback />
+      <div class="flex items-center justify-center p-default">
+        <DesignButton
+          variant="secondary"
+          size="small"
+          class="grow-0"
+          @click="logout"
+        >
+          {{ $t('auth.logoutButton') }}
+        </DesignButton>
+      </div>
       <div
         v-if="me"
         class="text-text-hint text-tiny p-medium mt-auto text-center space-y-1"
