@@ -1,1 +1,121 @@
-{}
+{
+  "error": {
+    "title": "Oops! Bir şeyler ters gitti"
+  },
+  "emptyStates": {
+    "standings": "Henüz bir liste yok",
+    "unit": "Henüz üniteniz için bir liderlik tablosu yok",
+    "challenges": "Henüz hiçbir zorluk yok",
+    "pointHistory": "Henüz puan yok"
+  },
+  "auth": {
+    "loginButton": "Giriş yap",
+    "logoutButton": "Çıkış yap"
+  },
+  "quiz": {
+    "wrongAnswer": "Yanlış cevap",
+    "correctAnswer": "Doğru cevap",
+    "yourAnswer": "Cevabınız",
+    "lockAnswer": "Yanıtı kilitle",
+    "questionNumber": "{current} ile ilgili {total}",
+    "continue": "Devam edin.",
+    "nextQuestion": "Sonraki soru",
+    "done": "Bitti",
+    "result": {
+      "receivedNoPoints": "Hiç puan toplamadın.",
+      "receivedPoints": "{points} puan topladınız.",
+      "betterLuckNextTime": "Bir dahaki sefere daha iyi şanslar!",
+      "wellDone": "Aferin!",
+      "perfect": "Evet, mükemmel!"
+    }
+  },
+  "pages": {
+    "standings": "En çok dinlenenler",
+    "challenges": "Zorluklar",
+    "settings": "Ayarlar",
+    "pointHistory": "Puan geçmişi",
+    "rules": "Kurallar",
+    "consents": "Onaylarım",
+    "addToHomeScreen": "Ana ekrana uygulama ekle"
+  },
+  "navigation": {
+    "standings": "En çok dinlenenler",
+    "profile": "Benim sayfam",
+    "challenges": "Zorluklar"
+  },
+  "emptyState": "Burada görecek bir şey yok",
+  "settings": {
+    "language": "Uygulama dili",
+    "colorMode": "Renk modu",
+    "colorModes": {
+      "system": "Sistem",
+      "light": "Işık",
+      "dark": "Koyu"
+    },
+    "consents": "Onaylarım",
+    "notifications": "Uyarılar",
+    "notificationsBlocked": "Bildirimler tarayıcı ayarlarında engellenmiştir",
+    "notificationsOnlyAvailableWhenInstalled": "Bildirimler, uygulamayı ana ekrana eklediğinizde kullanılabilir hale gelir.",
+    "addToHomeScreen": "Ana ekrana uygulama ekle",
+    "privacyPolicy": "Gizlilik Politikası"
+  },
+  "standings": {
+    "global": "Küresel",
+    "unit": "Benim birimim",
+    "local": "Lokal",
+    "you": "Sana",
+    "rules": "Kurallar",
+    "units": "Birimler",
+    "top": "Üst {amount}",
+    "u18": "U18",
+    "o18": "O18"
+  },
+  "pointHistory": {
+    "pointHistoryButton": "Puan geçmişi",
+    "explanation": "Burada, hangi puanları kazandığınızı veya kaybettiğinizi görebilirsiniz."
+  },
+  "unit": {
+    "editUnit": "Birimi düzenle",
+    "unitLeader": "Başlıksız",
+    "saveChanges": "Değişiklikleri kaydet",
+    "unitName": "Birim adı",
+    "noUnitLeader": "Birim yöneticisi yok",
+    "selectUnitLeader": "Birim liderini seçin"
+  },
+  "place": "konum",
+  "points": "puan",
+  "givesYouXPoints": "{points} puan kazandırır",
+  "consent": {
+    "accepted": "Kabul edildi",
+    "rejected": "Reddedildi",
+    "acceptButton": "Onaylarım",
+    "rejectButton": "Şartları reddet",
+    "bannerTitle": "Karar vermeniz gereken onaylar var",
+    "bannerButton": "Onay ayarlarına git",
+    "readButton": "Şartları okuyun",
+    "change": "Değiştir",
+    "goToConsent": "Onay sayfasına git",
+    "continue": "Devam et",
+    "changeDescription": "Onayınızı değiştirmek için lütfen bizimle iletişime geçin {email}",
+    "changeConsent": "Onayı değiştir"
+  },
+  "achievement": {
+    "title": "Ödül",
+    "unlocked": "Başarıldı!"
+  },
+  "feedback": {
+    "title": "Geri bildirim gönderin",
+    "cta": "Geri bildirim gönderin",
+    "description": "Hizmetimizi daha da iyileştirebilmemiz için görüşlerinizi bekliyoruz.",
+    "send": "Geri bildirim gönderin",
+    "label": "Sence iyi olan bir şey var mıydı ya da geliştirilebilecek bir şey var mı?",
+    "placeholder": "Buraya yorum yazın...",
+    "success": "Geri bildiriminiz için teşekkür ederiz.",
+    "validationError": "Boş bir geri bildirim gönderemezsiniz.",
+    "lengthError": "Geri bildirim {max} karakterden fazla olamaz.",
+    "thankYou": "Yardımınız için teşekkürler!",
+    "thankYouDescription": "Görüşleriniz, hizmetin daha da geliştirilmesi için kullanılacaktır.",
+    "close": "Ne güzel.",
+    "canContactMe": "Evet, geri bildirimimle ilgili olarak benimle iletişime geçmenizi kabul ediyorum."
+  }
+}
