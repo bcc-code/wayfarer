@@ -394,6 +394,19 @@ func main() {
 	}
 	router.POST("/api/v1/consent-events", middleware.APIKeyAuth(cfg.APIKey), consentWebhookHandler.HandleConsentEvent)
 
+	// Maintenance handler for syncing user data from Members API
+	maintenanceHandler := &handlers.MaintenanceHandler{
+		DB:            db,
+		MembersClient: membersClient,
+		AuthHandler:   authHandler,
+	}
+	router.POST("/api/maintenance/sync-user-data", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncUserData)
+	router.POST("/api/maintenance/sync-user/:user_id", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncSingleUser)
+	slog.Info("Maintenance endpoints registered",
+		"batch_sync", "POST /api/maintenance/sync-user-data",
+		"single_sync", "POST /api/maintenance/sync-user/:user_id",
+	)
+
 	// File upload handler
 	uploadHandler := &handlers.UploadHandler{
 		DB:        db,

@@ -233,6 +233,34 @@ func (q *Queries) GetChurchesFilteredCursor(ctx context.Context, arg GetChurches
 	return items, nil
 }
 
+const GetDefaultChurch = `-- name: GetDefaultChurch :one
+SELECT id, external_id, name, country, category
+FROM churches
+WHERE external_id IS NULL
+LIMIT 1
+`
+
+type GetDefaultChurchRow struct {
+	ID         string `json:"id"`
+	ExternalID *int32 `json:"external_id"`
+	Name       string `json:"name"`
+	Country    string `json:"country"`
+	Category   string `json:"category"`
+}
+
+func (q *Queries) GetDefaultChurch(ctx context.Context) (*GetDefaultChurchRow, error) {
+	row := q.db.QueryRow(ctx, GetDefaultChurch)
+	var i GetDefaultChurchRow
+	err := row.Scan(
+		&i.ID,
+		&i.ExternalID,
+		&i.Name,
+		&i.Country,
+		&i.Category,
+	)
+	return &i, err
+}
+
 const UpdateChurch = `-- name: UpdateChurch :one
 UPDATE churches
 SET

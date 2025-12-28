@@ -166,3 +166,18 @@ LIMIT @querylimit::int;
 UPDATE users
 SET language = @language::text, updated_at = now()
 WHERE id = @user_id::text;
+
+-- name: GetUsersWithIncompleteData :many
+SELECT id, members_id, person_uuid, gender, church_id
+FROM users
+WHERE gender = 'UNKNOWN'
+ORDER BY id
+LIMIT @querylimit::int;
+
+-- name: UpdateUserGenderAndChurch :exec
+UPDATE users
+SET
+    gender = COALESCE(NULLIF(@gender::text, ''), gender),
+    church_id = COALESCE(NULLIF(@church_id::text, ''), church_id),
+    updated_at = now()
+WHERE id = @id::text;

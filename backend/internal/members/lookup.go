@@ -79,6 +79,28 @@ func (c *Client) GetOrganizationByOrgID(ctx context.Context, orgID int) (*Organi
 	return &(*orgs)[0], nil
 }
 
+// GetOrganizationByUID returns an organization by its UUID.
+func (c *Client) GetOrganizationByUID(ctx context.Context, uid uuid.UUID) (*Organization, error) {
+	filter := map[string]any{
+		"uid": map[string]any{
+			"_eq": uid.String(),
+		},
+	}
+
+	encoded, _ := json.Marshal(filter)
+
+	orgs, err := get[[]Organization](ctx, c, fmt.Sprintf("v2/orgs?limit=1&filter=%s&fields=%s", encoded, orgFields))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get organization: %w", err)
+	}
+
+	if len(*orgs) == 0 {
+		return nil, fmt.Errorf("organization with uid %s not found", uid.String())
+	}
+
+	return &(*orgs)[0], nil
+}
+
 // GetOrganizationsByIDs returns organizations by IDs.
 func (c *Client) GetOrganizationsByIDs(ctx context.Context, ids []uuid.UUID) ([]Organization, error) {
 	chunkedIds := utils.Chunk(ids, 800)

@@ -780,6 +780,48 @@ func (q *Queries) GetUsersFilteredCursor(ctx context.Context, arg GetUsersFilter
 	return items, nil
 }
 
+const GetUsersWithIncompleteData = `-- name: GetUsersWithIncompleteData :many
+SELECT id, members_id, person_uuid, gender, church_id
+FROM users
+WHERE gender = 'UNKNOWN'
+ORDER BY id
+LIMIT $1::int
+`
+
+type GetUsersWithIncompleteDataRow struct {
+	ID         string      `json:"id"`
+	MembersID  string      `json:"members_id"`
+	PersonUuid pgtype.UUID `json:"person_uuid"`
+	Gender     string      `json:"gender"`
+	ChurchID   string      `json:"church_id"`
+}
+
+func (q *Queries) GetUsersWithIncompleteData(ctx context.Context, querylimit int32) ([]*GetUsersWithIncompleteDataRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersWithIncompleteData, querylimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUsersWithIncompleteDataRow{}
+	for rows.Next() {
+		var i GetUsersWithIncompleteDataRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MembersID,
+			&i.PersonUuid,
+			&i.Gender,
+			&i.ChurchID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUsersWithoutPersonUUID = `-- name: GetUsersWithoutPersonUUID :many
 SELECT id, members_id
 FROM users
@@ -812,6 +854,26 @@ func (q *Queries) GetUsersWithoutPersonUUID(ctx context.Context, querylimit int3
 		return nil, err
 	}
 	return items, nil
+}
+
+const UpdateUserGenderAndChurch = `-- name: UpdateUserGenderAndChurch :exec
+UPDATE users
+SET
+    gender = COALESCE(NULLIF($1::text, ''), gender),
+    church_id = COALESCE(NULLIF($2::text, ''), church_id),
+    updated_at = now()
+WHERE id = $3::text
+`
+
+type UpdateUserGenderAndChurchParams struct {
+	Gender   string `json:"gender"`
+	ChurchID string `json:"church_id"`
+	ID       string `json:"id"`
+}
+
+func (q *Queries) UpdateUserGenderAndChurch(ctx context.Context, arg UpdateUserGenderAndChurchParams) error {
+	_, err := q.db.Exec(ctx, UpdateUserGenderAndChurch, arg.Gender, arg.ChurchID, arg.ID)
+	return err
 }
 
 const UpdateUserLanguage = `-- name: UpdateUserLanguage :exec

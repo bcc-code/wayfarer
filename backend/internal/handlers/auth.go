@@ -78,6 +78,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 
 	// 2. Validate and parse JWT - try Auth0 first, then fall back to Brunstad TV
 	var claims *BrunstadTVClaims
+	isAuth0Token := false
 
 	auth0Claims, auth0Err := h.validateAuth0Token(token)
 	if auth0Err == nil {
@@ -94,6 +95,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 			Gender:           "", // Not provided in Auth0 token, will be fetched from Members API
 			RegisteredClaims: auth0Claims.RegisteredClaims,
 		}
+		isAuth0Token = true
 	} else {
 		// Auth0 validation failed, try Brunstad TV
 		brunstadClaims, brunstadErr := h.validateBrunstadTVToken(token)
@@ -112,19 +114,94 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		)
 	}
 
-	// 3. Find church by external_id
-	church, err := h.findChurchByExternalID(ctx, int32(claims.ChurchID))
-	if err != nil {
-		slog.Error("callback: failed to find church",
-			"church_id", claims.ChurchID,
-			"error", err,
-		)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to find church"})
-		return
+	// 3. Fetch member data from Members API (needed for Auth0 tokens, optional for Brunstad TV)
+	var member *members.Member
+	var gender string
+
+	personID, parseErr := strconv.Atoi(claims.PersonID)
+	if parseErr != nil {
+		slog.Warn("callback: invalid person_id format", "person_id", claims.PersonID, "error", parseErr)
+	} else if h.MembersClient != nil {
+		var err error
+		member, err = h.MembersClient.Lookup(ctx, personID)
+		if err != nil {
+			slog.Warn("callback: failed to fetch member data from Members API",
+				"person_id", personID,
+				"error", err,
+			)
+			// Continue with fallback for Auth0 tokens
+		}
 	}
 
-	// 4. Find or create user
-	user, err := h.findOrCreateUser(ctx, claims, church.ID)
+	// 4. Determine gender
+	if member != nil && member.Gender != "" {
+		gender = normalizeGender(member.Gender)
+	} else if claims.Gender != "" {
+		gender = normalizeGender(claims.Gender)
+	} else {
+		gender = "UNKNOWN"
+	}
+
+	// 5. Find church
+	var church *sqlc.GetChurchByExternalIDRow
+	var err error
+
+	if isAuth0Token && claims.ChurchID == 0 {
+		// Auth0 token without churchId - get from member affiliations
+		if member != nil {
+			orgUID := getActiveAffiliationOrgUID(member.Affiliations)
+			if orgUID != nil {
+				church, err = h.findChurchByOrgUID(ctx, *orgUID)
+				if err != nil {
+					slog.Warn("callback: failed to find church by org UUID, using default",
+						"org_uid", orgUID.String(),
+						"error", err,
+					)
+					church, err = h.getOrCreateDefaultChurch(ctx)
+					if err != nil {
+						slog.Error("callback: failed to get default church", "error", err)
+						c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to find church"})
+						return
+					}
+				}
+			} else {
+				slog.Warn("callback: no active affiliation found, using default church",
+					"person_id", claims.PersonID,
+				)
+				church, err = h.getOrCreateDefaultChurch(ctx)
+				if err != nil {
+					slog.Error("callback: failed to get default church", "error", err)
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to find church"})
+					return
+				}
+			}
+		} else {
+			// No member data available - use default church
+			slog.Warn("callback: no member data available, using default church",
+				"person_id", claims.PersonID,
+			)
+			church, err = h.getOrCreateDefaultChurch(ctx)
+			if err != nil {
+				slog.Error("callback: failed to get default church", "error", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to find church"})
+				return
+			}
+		}
+	} else {
+		// Brunstad TV token or Auth0 with churchId - use external_id from token
+		church, err = h.findChurchByExternalID(ctx, int32(claims.ChurchID))
+		if err != nil {
+			slog.Error("callback: failed to find church",
+				"church_id", claims.ChurchID,
+				"error", err,
+			)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to find church"})
+			return
+		}
+	}
+
+	// 6. Find or create user
+	user, err := h.findOrCreateUser(ctx, claims, church.ID, member, gender)
 	if err != nil {
 		slog.Error("callback: failed to find or create user",
 			"person_id", claims.PersonID,
@@ -139,7 +216,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		"members_id", user.MembersID,
 	)
 
-	// 5. Generate Wayfarer JWT
+	// 7. Generate Wayfarer JWT
 	wayfarerToken, err := h.generateWayfarerToken(user.ID)
 	if err != nil {
 		slog.Error("callback: failed to generate token", "error", err)
@@ -147,7 +224,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		return
 	}
 
-	// 6. Return the token
+	// 8. Return the token
 	c.JSON(http.StatusOK, CallbackResponse{
 		Token: wayfarerToken,
 	})
@@ -276,7 +353,7 @@ func (h *AuthHandler) findChurchByExternalID(ctx context.Context, externalID int
 }
 
 // findOrCreateUser finds an existing user by person_uuid or members_id, or creates a new one
-func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVClaims, churchID string) (*sqlc.GetUserByMembersIDRow, error) {
+func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVClaims, churchID string, member *members.Member, gender string) (*sqlc.GetUserByMembersIDRow, error) {
 	// Parse person_uuid from claims if present
 	var personUUID pgtype.UUID
 	if claims.PersonUUID != "" {
@@ -343,7 +420,7 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 		"church_id", churchID,
 	)
 
-	// Fetch member data from Members API
+	// Extract member data if available
 	var email string
 	var firstName string
 	var lastName string
@@ -352,81 +429,69 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 	var computedName string
 	var birthdate pgtype.Date
 
-	personID, err := strconv.Atoi(claims.PersonID)
-	if err != nil {
-		slog.Warn("callback: invalid person_id format", "person_id", claims.PersonID, "error", err)
-	} else if h.MembersClient != nil {
-		member, err := h.MembersClient.Lookup(ctx, personID)
-		if err != nil {
-			slog.Warn("callback: failed to fetch member data from Members API",
-				"person_id", personID,
-				"error", err,
-			)
-		} else {
-			// Use member data from API
-			email = member.Email
-			firstName = member.FirstName
-			lastName = member.LastName
-			middleName = member.MiddleName
-			displayName = member.DisplayName
+	if member != nil {
+		// Use member data from API
+		email = member.Email
+		firstName = member.FirstName
+		lastName = member.LastName
+		middleName = member.MiddleName
+		displayName = member.DisplayName
 
-			// Get person_uuid from Members API if not in JWT
-			if !personUUID.Valid && member.Uid != uuid.Nil {
-				personUUID = pgtype.UUID{Bytes: member.Uid, Valid: true}
-				slog.Info("callback: obtained person_uuid from Members API", "person_uuid", member.Uid.String())
-			}
+		// Get person_uuid from Members API if not in JWT
+		if !personUUID.Valid && member.Uid != uuid.Nil {
+			personUUID = pgtype.UUID{Bytes: member.Uid, Valid: true}
+			slog.Info("callback: obtained person_uuid from Members API", "person_uuid", member.Uid.String())
+		}
 
-			// Compute name for backward compatibility
-			if firstName != "" && lastName != "" {
-				computedName = firstName + " " + lastName
-			} else if firstName != "" {
-				computedName = firstName
-			} else if displayName != "" {
-				computedName = displayName
-			}
+		// Compute name for backward compatibility
+		if firstName != "" && lastName != "" {
+			computedName = firstName + " " + lastName
+		} else if firstName != "" {
+			computedName = firstName
+		} else if displayName != "" {
+			computedName = displayName
+		}
 
-			// Generate display name if API didn't provide one
-			if displayName == "" {
-				displayName = generateDisplayName(firstName, lastName, computedName)
-			}
+		// Generate display name if API didn't provide one
+		if displayName == "" {
+			displayName = generateDisplayName(firstName, lastName, computedName)
+		}
 
-			// Parse birthdate if available
-			if member.BirthDate != "" {
-				parsedDate, err := time.Parse("2006-01-02", member.BirthDate)
-				if err != nil {
-					slog.Warn("callback: invalid birthdate format",
+		// Parse birthdate if available
+		if member.BirthDate != "" {
+			parsedDate, parseErr := time.Parse("2006-01-02", member.BirthDate)
+			if parseErr != nil {
+				slog.Warn("callback: invalid birthdate format",
+					"birthdate", member.BirthDate,
+					"error", parseErr,
+				)
+			} else {
+				// Validate that the birthdate is reasonable (between 1900 and today)
+				now := time.Now()
+				minDate := time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
+
+				if parsedDate.Before(minDate) {
+					slog.Warn("callback: birthdate too far in the past",
 						"birthdate", member.BirthDate,
-						"error", err,
+					)
+				} else if parsedDate.After(now) {
+					slog.Warn("callback: birthdate is in the future",
+						"birthdate", member.BirthDate,
 					)
 				} else {
-					// Validate that the birthdate is reasonable (between 1900 and today)
-					now := time.Now()
-					minDate := time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
-
-					if parsedDate.Before(minDate) {
-						slog.Warn("callback: birthdate too far in the past",
-							"birthdate", member.BirthDate,
-						)
-					} else if parsedDate.After(now) {
-						slog.Warn("callback: birthdate is in the future",
-							"birthdate", member.BirthDate,
-						)
-					} else {
-						// Valid birthdate, store it
-						birthdate = pgtype.Date{
-							Time:  parsedDate,
-							Valid: true,
-						}
+					// Valid birthdate, store it
+					birthdate = pgtype.Date{
+						Time:  parsedDate,
+						Valid: true,
 					}
 				}
 			}
-
-			slog.Info("callback: fetched member data from Members API",
-				"person_id", personID,
-				"email", email,
-				"has_birthdate", birthdate.Valid,
-			)
 		}
+
+		slog.Info("callback: using member data from Members API",
+			"email", email,
+			"has_birthdate", birthdate.Valid,
+		)
 	}
 
 	// Fallback to JWT claims if Members API data not available
@@ -439,9 +504,6 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 	if displayName == "" {
 		displayName = generateDisplayName(firstName, lastName, computedName)
 	}
-
-	// Normalize gender to match database constraint (MALE, FEMALE)
-	gender := normalizeGender(claims.Gender)
 
 	// Helper function to convert string to *string
 	toStringPtr := func(s string) *string {
@@ -545,6 +607,84 @@ func normalizeGender(gender string) string {
 		return "FEMALE"
 	}
 	return "UNKNOWN"
+}
+
+// getActiveAffiliationOrgUID returns the OrgUid of the first active affiliation.
+// Returns nil if no active affiliation is found.
+func getActiveAffiliationOrgUID(affiliations []members.Affiliation) *uuid.UUID {
+	now := time.Now()
+	for _, aff := range affiliations {
+		if !aff.Active {
+			continue
+		}
+		// Check time validity if set
+		if aff.ValidFrom != nil && now.Before(*aff.ValidFrom) {
+			continue
+		}
+		if aff.ValidTo != nil && now.After(*aff.ValidTo) {
+			continue
+		}
+		return &aff.OrgUid
+	}
+	return nil
+}
+
+// findChurchByOrgUID finds a church by looking up the org UUID in Members API first
+func (h *AuthHandler) findChurchByOrgUID(ctx context.Context, orgUID uuid.UUID) (*sqlc.GetChurchByExternalIDRow, error) {
+	if h.MembersClient == nil {
+		return nil, fmt.Errorf("Members API not configured")
+	}
+
+	org, err := h.MembersClient.GetOrganizationByUID(ctx, orgUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get organization from Members API: %w", err)
+	}
+
+	return h.findChurchByExternalID(ctx, int32(org.OrgID))
+}
+
+// DefaultChurchName is the name used for the fallback church
+const DefaultChurchName = "Unknown Church"
+
+// getOrCreateDefaultChurch returns the default church, creating it if it doesn't exist
+func (h *AuthHandler) getOrCreateDefaultChurch(ctx context.Context) (*sqlc.GetChurchByExternalIDRow, error) {
+	// Try to find existing default church (external_id IS NULL)
+	church, err := h.DB.Queries.GetDefaultChurch(ctx)
+	if err == nil {
+		return &sqlc.GetChurchByExternalIDRow{
+			ID:         church.ID,
+			ExternalID: church.ExternalID,
+			Name:       church.Name,
+			Country:    church.Country,
+			Category:   church.Category,
+		}, nil
+	}
+
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("database error while finding default church: %w", err)
+	}
+
+	// Create default church
+	newChurch, err := h.DB.Queries.CreateChurch(ctx, sqlc.CreateChurchParams{
+		ID:         ulid.NewChurchID(),
+		ExternalID: nil,
+		Name:       DefaultChurchName,
+		Country:    "Unknown",
+		Category:   "S",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create default church: %w", err)
+	}
+
+	slog.Info("callback: created default church", "church_id", newChurch.ID)
+
+	return &sqlc.GetChurchByExternalIDRow{
+		ID:         newChurch.ID,
+		ExternalID: newChurch.ExternalID,
+		Name:       newChurch.Name,
+		Country:    newChurch.Country,
+		Category:   newChurch.Category,
+	}, nil
 }
 
 // generateDisplayName creates a display name in the format "FirstName L." if both names are provided,

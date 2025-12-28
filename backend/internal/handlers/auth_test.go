@@ -8,9 +8,11 @@ import (
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/mocks"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -439,4 +441,118 @@ func TestAuth0Claims_ConvertToBrunstadTVClaims(t *testing.T) {
 	assert.Equal(t, "5e7016ac-999e-4e87-b84b-13642d863d01", brunstadClaims.PersonUUID)
 	assert.Empty(t, brunstadClaims.FirstName)
 	assert.Empty(t, brunstadClaims.Gender)
+}
+
+func TestGetActiveAffiliationOrgUID(t *testing.T) {
+	testOrgUID1 := uuid.New()
+	testOrgUID2 := uuid.New()
+	now := time.Now()
+	pastTime := now.Add(-24 * time.Hour)
+	futureTime := now.Add(24 * time.Hour)
+
+	tests := []struct {
+		name         string
+		affiliations []members.Affiliation
+		wantOrgUID   *uuid.UUID
+	}{
+		{
+			name:         "empty affiliations returns nil",
+			affiliations: []members.Affiliation{},
+			wantOrgUID:   nil,
+		},
+		{
+			name: "single active affiliation",
+			affiliations: []members.Affiliation{
+				{
+					Active: true,
+					OrgUid: testOrgUID1,
+				},
+			},
+			wantOrgUID: &testOrgUID1,
+		},
+		{
+			name: "inactive affiliation is skipped",
+			affiliations: []members.Affiliation{
+				{
+					Active: false,
+					OrgUid: testOrgUID1,
+				},
+			},
+			wantOrgUID: nil,
+		},
+		{
+			name: "first active affiliation is returned",
+			affiliations: []members.Affiliation{
+				{
+					Active: true,
+					OrgUid: testOrgUID1,
+				},
+				{
+					Active: true,
+					OrgUid: testOrgUID2,
+				},
+			},
+			wantOrgUID: &testOrgUID1,
+		},
+		{
+			name: "skips inactive, returns first active",
+			affiliations: []members.Affiliation{
+				{
+					Active: false,
+					OrgUid: testOrgUID1,
+				},
+				{
+					Active: true,
+					OrgUid: testOrgUID2,
+				},
+			},
+			wantOrgUID: &testOrgUID2,
+		},
+		{
+			name: "affiliation with ValidFrom in future is skipped",
+			affiliations: []members.Affiliation{
+				{
+					Active:    true,
+					OrgUid:    testOrgUID1,
+					ValidFrom: &futureTime,
+				},
+			},
+			wantOrgUID: nil,
+		},
+		{
+			name: "affiliation with ValidTo in past is skipped",
+			affiliations: []members.Affiliation{
+				{
+					Active:  true,
+					OrgUid:  testOrgUID1,
+					ValidTo: &pastTime,
+				},
+			},
+			wantOrgUID: nil,
+		},
+		{
+			name: "affiliation with valid time range is returned",
+			affiliations: []members.Affiliation{
+				{
+					Active:    true,
+					OrgUid:    testOrgUID1,
+					ValidFrom: &pastTime,
+					ValidTo:   &futureTime,
+				},
+			},
+			wantOrgUID: &testOrgUID1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := getActiveAffiliationOrgUID(tt.affiliations)
+			if tt.wantOrgUID == nil {
+				assert.Nil(t, result)
+			} else {
+				require.NotNil(t, result)
+				assert.Equal(t, *tt.wantOrgUID, *result)
+			}
+		})
+	}
 }

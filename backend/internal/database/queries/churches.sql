@@ -13,6 +13,12 @@ SELECT id, external_id, name, country, category
 FROM churches
 WHERE external_id = @external_id;
 
+-- name: GetDefaultChurch :one
+SELECT id, external_id, name, country, category
+FROM churches
+WHERE external_id IS NULL
+LIMIT 1;
+
 -- name: GetChurchesFilteredCursor :many
 SELECT id, external_id, name, country, category
 FROM churches
