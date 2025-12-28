@@ -29,7 +29,7 @@ gql(`
   }
 `)
 
-const { data } = await useStandingsPageQuery()
+const { data } = useStandingsPageQuery()
 const hasUnit = computed(() => Boolean(data.value?.myCurrentProject.myTeam?.id))
 </script>
 
@@ -39,9 +39,14 @@ const hasUnit = computed(() => Boolean(data.value?.myCurrentProject.myTeam?.id))
       <DesignTabs
         v-model="tab"
         :tabs="[
-          { label: $t('standings.global'), value: 'global' },
-          { label: $t('standings.local'), value: 'local' },
-          { label: $t('standings.unit'), value: 'unit', enabled: hasUnit },
+          { key: 'global', label: $t('standings.global'), value: 'global' },
+          { key: 'local', label: $t('standings.local'), value: 'local' },
+          {
+            key: 'unit',
+            label: $t('standings.unit'),
+            value: 'unit',
+            enabled: hasUnit,
+          },
         ]"
         class="mb-default -mt-list-outside"
       />
