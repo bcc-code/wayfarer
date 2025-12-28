@@ -1,6 +1,6 @@
 import { authExchange, type AuthConfig } from '@urql/exchange-auth'
 import { useAuth0 } from '@auth0/auth0-vue'
-import urql, { Client, fetchExchange } from '@urql/vue'
+import urql, { cacheExchange, Client, fetchExchange } from '@urql/vue'
 
 export default defineNuxtPlugin((nuxtApp) => {
   nuxtApp.vueApp.use(
@@ -8,6 +8,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     new Client({
       url: useRuntimeConfig().public.apiUrl,
       preferGetMethod: false,
+      requestPolicy: 'cache-and-network',
       fetchOptions() {
         return {
           headers: {
@@ -18,6 +19,7 @@ export default defineNuxtPlugin((nuxtApp) => {
         }
       },
       exchanges: [
+        cacheExchange,
         authExchange(async (utils) => {
           // Use Wayfarer token from localStorage for API calls
           const wayfarerToken = useLocalStorage<string>('token', () => null)
