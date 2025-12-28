@@ -37,6 +37,10 @@
       <DesignSkeleton class="aspect-square w-full rounded-full" />
       <DesignSkeleton class="aspect-square w-full rounded-full" />
       <DesignSkeleton class="aspect-square w-full rounded-full" />
+      <DesignSkeleton class="aspect-square w-full rounded-full" />
+      <DesignSkeleton class="aspect-square w-full rounded-full" />
+      <DesignSkeleton class="aspect-square w-full rounded-full" />
+      <DesignSkeleton class="aspect-square w-full rounded-full" />
     </div>
   </DesignCard>
 </template>
