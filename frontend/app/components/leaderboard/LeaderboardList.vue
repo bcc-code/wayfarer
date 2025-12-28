@@ -8,9 +8,12 @@ const props = defineProps<{
 
 const containerRef = ref<HTMLElement | null>(null)
 const { animate } = useStaggeredEntrance()
+const hasAnimated = ref(false)
 
 function runAnimation() {
+  if (hasAnimated.value) return
   if (props.leaderboard.length > 0 && containerRef.value) {
+    hasAnimated.value = true
     nextTick(() => {
       const items = containerRef.value?.querySelectorAll('.leaderboard-item')
       if (items) {
@@ -20,10 +23,10 @@ function runAnimation() {
   }
 }
 
-// Animate on data change
+// Animate on data change (for initial load when data arrives after mount)
 watch(() => props.leaderboard, runAnimation)
 
-// Animate on mount (for v-if toggling)
+// Animate on mount (for v-if toggling when data already exists)
 onMounted(runAnimation)
 </script>
 

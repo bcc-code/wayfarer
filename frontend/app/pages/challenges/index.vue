@@ -28,11 +28,14 @@ const visibleChallenges = computed(() => {
 // Staggered entrance animation for challenge cards
 const cardsContainer = ref<HTMLElement | null>(null)
 const { animate } = useStaggeredEntrance()
+const hasAnimated = ref(false)
 
 watch(
   () => visibleChallenges.value,
   (challenges) => {
+    if (hasAnimated.value) return
     if (challenges.length > 0 && cardsContainer.value) {
+      hasAnimated.value = true
       nextTick(() => {
         const cards = cardsContainer.value?.querySelectorAll('.challenge-card')
         if (cards) {
