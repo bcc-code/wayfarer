@@ -145,7 +145,6 @@ const groups = computed(() => [
           orientation="horizontal"
         />
         <div class="ml-auto flex gap-2">
-          <UDashboardSearchButton />
           <AdminUserMenu />
         </div>
       </UContainer>
