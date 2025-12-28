@@ -49,3 +49,13 @@ DO UPDATE SET
     country = EXCLUDED.country,
     updated_at = NOW()
 RETURNING id, external_id, name, country, category;
+
+-- name: UpdateChurch :one
+UPDATE churches
+SET
+    name = COALESCE(NULLIF(@name::text, ''), name),
+    country = COALESCE(NULLIF(@country::text, ''), country),
+    category = COALESCE(NULLIF(@category::text, ''), category),
+    updated_at = NOW()
+WHERE id = @id
+RETURNING id, external_id, name, country, category;

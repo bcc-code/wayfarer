@@ -828,6 +828,7 @@ export type Mutation = {
   updateAchievement: Achievement;
   updateAvatar: User;
   updateChallenge: Challenge;
+  updateChurch: Church;
   updateConsent: Consent;
   updateContentAchievement: ContentAchievement;
   updateEvent: Event;
@@ -1317,6 +1318,12 @@ export type MutationUpdateAvatarArgs = {
 export type MutationUpdateChallengeArgs = {
   id: Scalars['ID']['input'];
   input: UpdateChallengeInput;
+};
+
+
+export type MutationUpdateChurchArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateChurchInput;
 };
 
 
@@ -3019,6 +3026,21 @@ export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } };
 
+export type AdminChurchPageQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type AdminChurchPageQuery = { __typename?: 'Query', church: { __typename?: 'Church', id: string, name: string, country: string, category: ChurchCategory } };
+
+export type UpdateChurchMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateChurchInput;
+}>;
+
+
+export type UpdateChurchMutation = { __typename?: 'Mutation', updateChurch: { __typename?: 'Church', id: string, name: string, country: string, category: ChurchCategory } };
+
 export type AdminConsentPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -4287,6 +4309,34 @@ export const CurrentProjectDocument = gql`
 
 export function useCurrentProjectQuery(options?: Omit<Urql.UseQueryArgs<never, CurrentProjectQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<CurrentProjectQuery, CurrentProjectQueryVariables | undefined>({ query: CurrentProjectDocument, variables: undefined, ...options });
+};
+export const AdminChurchPageDocument = gql`
+    query AdminChurchPage($id: ID!) {
+  church(id: $id) {
+    id
+    name
+    country
+    category
+  }
+}
+    `;
+
+export function useAdminChurchPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminChurchPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminChurchPageQuery, AdminChurchPageQueryVariables | undefined>({ query: AdminChurchPageDocument, variables: undefined, ...options });
+};
+export const UpdateChurchDocument = gql`
+    mutation UpdateChurch($id: ID!, $input: UpdateChurchInput!) {
+  updateChurch(id: $id, input: $input) {
+    id
+    name
+    country
+    category
+  }
+}
+    `;
+
+export function useUpdateChurchMutation() {
+  return Urql.useMutation<UpdateChurchMutation, UpdateChurchMutationVariables>(UpdateChurchDocument);
 };
 export const AdminConsentPageDocument = gql`
     query AdminConsentPage($id: ID!) {

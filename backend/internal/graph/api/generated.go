@@ -441,6 +441,7 @@ type ComplexityRoot struct {
 		UpdateAchievement                           func(childComplexity int, id string, input model.UpdateAchievementInput) int
 		UpdateAvatar                                func(childComplexity int, file graphql.Upload) int
 		UpdateChallenge                             func(childComplexity int, id string, input model.UpdateChallengeInput) int
+		UpdateChurch                                func(childComplexity int, id string, input model.UpdateChurchInput) int
 		UpdateConsent                               func(childComplexity int, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime, managedBy *string) int
 		UpdateContentAchievement                    func(childComplexity int, id string, input model.UpdateContentAchievementInput) int
 		UpdateEvent                                 func(childComplexity int, id string, input model.UpdateEventInput) int
@@ -1063,6 +1064,7 @@ type MutationResolver interface {
 	AssignUserToEvent(ctx context.Context, userID string, eventID string) (*model.User, error)
 	AssignRole(ctx context.Context, input model.AssignRoleInput) (*model.UserRole, error)
 	RevokeRole(ctx context.Context, input model.RevokeRoleInput) (bool, error)
+	UpdateChurch(ctx context.Context, id string, input model.UpdateChurchInput) (*model.Church, error)
 	CreateScoreAdjustment(ctx context.Context, input model.CreateScoreAdjustmentInput) (*model.ScoreJournal, error)
 	DeleteScoreJournalEntry(ctx context.Context, id string) (bool, error)
 	AcceptConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
@@ -3300,6 +3302,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateChallenge(childComplexity, args["id"].(string), args["input"].(model.UpdateChallengeInput)), true
+	case "Mutation.updateChurch":
+		if e.complexity.Mutation.UpdateChurch == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateChurch_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateChurch(childComplexity, args["id"].(string), args["input"].(model.UpdateChurchInput)), true
 	case "Mutation.updateConsent":
 		if e.complexity.Mutation.UpdateConsent == nil {
 			break
@@ -7392,6 +7405,10 @@ extend type Query {
     church(id: ID!): Church!
     churches(filter: ChurchFilter, first: Int, after: String, last: Int, before: String): ChurchConnection!
 }
+
+extend type Mutation {
+    updateChurch(id: ID!, input: UpdateChurchInput!): Church! @requireRole(roles: ["superadmin"])
+}
 `, BuiltIn: false},
 	{Name: "../../../../gql/scoring.graphqls", Input: `# Score journal queries and mutations
 
@@ -9057,6 +9074,22 @@ func (ec *executionContext) field_Mutation_updateChallenge_args(ctx context.Cont
 	}
 	args["id"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateChallengeInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateChallengeInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateChurch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateChurchInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateChurchInput)
 	if err != nil {
 		return nil, err
 	}
@@ -20445,6 +20478,75 @@ func (ec *executionContext) fieldContext_Mutation_revokeRole(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_revokeRole_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateChurch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateChurch,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateChurch(ctx, fc.Args["id"].(string), fc.Args["input"].(model.UpdateChurchInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
+				if err != nil {
+					var zeroVal *model.Church
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.Church
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNChurch2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurch,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateChurch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Church_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Church_name(ctx, field)
+			case "country":
+				return ec.fieldContext_Church_country(ctx, field)
+			case "category":
+				return ec.fieldContext_Church_category(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Church", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateChurch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -44062,6 +44164,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updateChurch":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateChurch(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createScoreAdjustment":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createScoreAdjustment(ctx, field)
@@ -53887,6 +53996,11 @@ func (ec *executionContext) unmarshalNUpdateAchievementInput2githubᚗcomᚋbcc�
 
 func (ec *executionContext) unmarshalNUpdateChallengeInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateChallengeInput(ctx context.Context, v any) (model.UpdateChallengeInput, error) {
 	res, err := ec.unmarshalInputUpdateChallengeInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateChurchInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateChurchInput(ctx context.Context, v any) (model.UpdateChurchInput, error) {
+	res, err := ec.unmarshalInputUpdateChurchInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

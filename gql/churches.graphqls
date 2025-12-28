@@ -4,3 +4,7 @@ extend type Query {
     church(id: ID!): Church!
     churches(filter: ChurchFilter, first: Int, after: String, last: Int, before: String): ChurchConnection!
 }
+
+extend type Mutation {
+    updateChurch(id: ID!, input: UpdateChurchInput!): Church! @requireRole(roles: ["superadmin"])
+}

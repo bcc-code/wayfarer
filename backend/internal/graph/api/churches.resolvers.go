@@ -9,9 +9,51 @@ import (
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 )
+
+// UpdateChurch is the resolver for the updateChurch field.
+func (r *mutationResolver) UpdateChurch(ctx context.Context, id string, input model.UpdateChurchInput) (*model.Church, error) {
+	// Prepare update parameters - empty strings will be handled by COALESCE(NULLIF(...)) in SQL
+	name := ""
+	if input.Name != nil {
+		name = *input.Name
+	}
+
+	country := ""
+	if input.Country != nil {
+		country = *input.Country
+	}
+
+	category := ""
+	if input.Category != nil {
+		category = string(*input.Category)
+	}
+
+	// Update the church in the database
+	row, err := r.DB.Queries.UpdateChurch(ctx, sqlc.UpdateChurchParams{
+		ID:       id,
+		Name:     name,
+		Country:  country,
+		Category: category,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update church: %w", err)
+	}
+
+	// Invalidate cache for this church
+	r.Cache.Delete(cache.ChurchKey(id))
+
+	// Return the updated church
+	return &model.Church{
+		ID:       row.ID,
+		Name:     row.Name,
+		Country:  row.Country,
+		Category: model.ChurchCategory(row.Category),
+	}, nil
+}
 
 // Church is the resolver for the church field.
 func (r *queryResolver) Church(ctx context.Context, id string) (*model.Church, error) {
