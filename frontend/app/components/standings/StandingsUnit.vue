@@ -10,6 +10,8 @@ const {
   pause: computed(() => !isAuthReady.value),
 })
 
+const isInitialLoading = computed(() => fetching.value && !data.value)
+
 const teamLeader = computed(() => {
   return data.value?.myCurrentProject.myTeam?.memberLeaderboard.find((entry) =>
     entry.tags?.includes(LeaderboardEntryTag.TeamLead),
@@ -73,7 +75,7 @@ function selectTeamLead(userId: string) {
 
 <template>
   <div>
-    <StandingsListSkeleton v-if="fetching" />
+    <StandingsListSkeleton v-if="isInitialLoading" />
     <ErrorState v-else-if="error" :error />
     <template v-else-if="data">
       <div

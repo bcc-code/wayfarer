@@ -8,11 +8,13 @@ const { data, fetching, error } = useChallengePageQuery({
   },
   pause: computed(() => !isAuthReady.value),
 })
+
+const isInitialLoading = computed(() => fetching.value && !data.value)
 </script>
 
 <template>
   <div class="h-full">
-    <LoadingState v-if="fetching" />
+    <LoadingState v-if="isInitialLoading" />
     <ErrorState v-else-if="error" :error />
     <template v-else-if="data">
       <SimpleChallenge

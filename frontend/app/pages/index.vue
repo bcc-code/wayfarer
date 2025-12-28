@@ -4,6 +4,8 @@ const { data, error, fetching } = useProfilePageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
+const isInitialLoading = computed(() => fetching.value && !data.value)
+
 // Consent banner
 const showBanner = useLocalStorage('showBanner', false, {
   listenToStorageChanges: true,
@@ -70,7 +72,7 @@ watch(
       </NuxtLink>
     </template>
 
-    <div v-if="fetching" class="space-y-default p-list-outside">
+    <div v-if="isInitialLoading" class="space-y-default p-list-outside">
       <ProfileProjectCardSkeleton />
     </div>
     <ErrorState v-else-if="error" :error />

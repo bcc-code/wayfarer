@@ -5,6 +5,8 @@ const { data, fetching, error } = useChallengesPageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
+const isInitialLoading = computed(() => fetching.value && !data.value)
+
 // Filter out completed quiz challenges that can't be retaken
 const visibleChallenges = computed(() => {
   if (!data.value?.myCurrentProject.challenges) return []
@@ -44,7 +46,7 @@ watch(
 
 <template>
   <PageLayout :title="$t('pages.challenges')">
-    <LoadingState v-if="fetching" />
+    <LoadingState v-if="isInitialLoading" />
     <ErrorState v-else-if="error" :error />
     <div
       v-else-if="visibleChallenges.length"
