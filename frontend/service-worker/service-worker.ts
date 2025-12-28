@@ -32,6 +32,24 @@ interface NotificationData {
   [key: string]: unknown
 }
 
+// Track clicked notification IDs to distinguish clicks from dismissals
+// (notificationclose fires for both, but we handle clicks separately)
+const clickedNotifications = new Set<string>()
+
+async function postAnalyticsEvent(
+  event: string,
+  properties: Record<string, unknown>,
+): Promise<void> {
+  const clients = await self.clients.matchAll({ type: 'window' })
+  for (const client of clients) {
+    client.postMessage({
+      type: 'ANALYTICS_EVENT',
+      event,
+      properties,
+    })
+  }
+}
+
 async function onPush(event: PushEvent): Promise<void> {
   if (!event.data) {
     console.warn('[SW] Push event received without data')
@@ -71,7 +89,19 @@ async function onPush(event: PushEvent): Promise<void> {
     ].includes(payload.type),
   }
 
+  // Track notification received
+  await postAnalyticsEvent('notification_received', {
+    notification_id: payload.notificationId,
+    notification_type: payload.type,
+  })
+
   await self.registration.showNotification(payload.title, options)
+
+  // Track notification displayed
+  await postAnalyticsEvent('notification_displayed', {
+    notification_id: payload.notificationId,
+    notification_type: payload.type,
+  })
 }
 
 async function onNotificationClick(event: NotificationEvent): Promise<void> {
@@ -79,6 +109,20 @@ async function onNotificationClick(event: NotificationEvent): Promise<void> {
 
   const data = event.notification.data as NotificationData | undefined
   const urlToOpen = data?.url || '/'
+
+  // Mark as clicked so we don't count it as dismissed
+  if (data?.notificationId) {
+    clickedNotifications.add(data.notificationId)
+    // Clean up after 5 seconds
+    setTimeout(() => clickedNotifications.delete(data.notificationId), 5000)
+  }
+
+  // Track notification clicked
+  await postAnalyticsEvent('notification_clicked', {
+    notification_id: data?.notificationId,
+    notification_type: data?.type,
+    url: data?.url,
+  })
 
   const clients = await self.clients.matchAll({
     type: 'window',
@@ -96,6 +140,18 @@ async function onNotificationClick(event: NotificationEvent): Promise<void> {
   }
 
   await self.clients.openWindow(urlToOpen)
+}
+
+async function onNotificationClose(event: NotificationEvent): Promise<void> {
+  const data = event.notification.data as NotificationData | undefined
+
+  // Only track as dismissed if it wasn't clicked
+  if (data?.notificationId && !clickedNotifications.has(data.notificationId)) {
+    await postAnalyticsEvent('notification_dismissed', {
+      notification_id: data.notificationId,
+      notification_type: data.type,
+    })
+  }
 }
 
 self.addEventListener('message', (event) => {
@@ -130,3 +186,4 @@ registerRoute(new NavigationRoute(createHandlerBoundToURL('/'), { denylist }))
 
 self.addEventListener('push', onPush)
 self.addEventListener('notificationclick', onNotificationClick)
+self.addEventListener('notificationclose', onNotificationClose)

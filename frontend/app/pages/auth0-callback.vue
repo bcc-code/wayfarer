@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAuth0 } from '@auth0/auth0-vue'
+import { until } from '@vueuse/core'
 
 definePageMeta({
   layout: false,
@@ -8,7 +9,7 @@ definePageMeta({
 
 const route = useRoute()
 const auth0 = useAuth0()
-const { exchangeToken } = useAuth()
+const { exchangeToken, me, isLoading } = useAuth()
 const { track } = useAnalytics()
 
 // Use a global state to prevent multiple concurrent callbacks across component re-mounts
@@ -43,6 +44,19 @@ onMounted(async () => {
     if (auth0.isAuthenticated.value) {
       const success = await exchangeToken()
       if (success) {
+        // Wait for user data to load to check if this is a signup
+        await until(isLoading).toBe(false)
+
+        if (me.value?.createdAt) {
+          const createdAt = new Date(me.value.createdAt)
+          const now = new Date()
+          const isNewUser = now.getTime() - createdAt.getTime() < 60_000
+
+          if (isNewUser) {
+            track(AnalyticsEvent.SignupCompleted)
+          }
+        }
+
         track(AnalyticsEvent.LoginCompleted)
         // Use replace to prevent back button issues
         await navigateTo(targetUrl, { replace: true })

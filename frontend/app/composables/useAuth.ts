@@ -17,6 +17,7 @@ gql(`
       gender
       birthdate
       age
+      createdAt
       roles {
         id
         role

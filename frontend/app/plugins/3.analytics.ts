@@ -1,6 +1,6 @@
 export default defineNuxtPlugin(() => {
   const { me } = useAuth()
-  const { identify, page } = useAnalytics()
+  const { identify, page, track } = useAnalytics()
   const router = useRouter()
 
   let identifiedUserId: string
@@ -28,4 +28,14 @@ export default defineNuxtPlugin(() => {
   router.afterEach(() => {
     page()
   })
+
+  // Listen for analytics events from service worker
+  if (import.meta.client && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data?.type === 'ANALYTICS_EVENT') {
+        const { event: eventName, properties } = event.data
+        track(eventName as AnalyticsEvent, properties)
+      }
+    })
+  }
 })

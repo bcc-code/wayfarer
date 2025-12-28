@@ -38,6 +38,15 @@ export enum AnalyticsEvent {
   PushSubscriptionDisabled = 'push_subscription_disabled',
   PushNotificationsToggled = 'push_notifications_toggled',
 
+  // Notification Events (service worker)
+  NotificationReceived = 'notification_received',
+  NotificationDisplayed = 'notification_displayed',
+  NotificationClicked = 'notification_clicked',
+  NotificationDismissed = 'notification_dismissed',
+
+  // Signup
+  SignupCompleted = 'signup_completed',
+
   // Settings
   LanguageChanged = 'language_changed',
   ColorModeChanged = 'color_mode_changed',

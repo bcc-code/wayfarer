@@ -1484,24 +1484,25 @@ type UpdateTeamInput struct {
 }
 
 type User struct {
-	ID            string         `json:"id"`
-	MembersID     string         `json:"membersId"`
-	PersonUUID    *string        `json:"personUuid,omitempty"`
-	Gender        Gender         `json:"gender"`
-	ChurchID      string         `json:"churchId"`
-	Church        *Church        `json:"church"`
-	Birthdate     string         `json:"birthdate"`
-	Age           *int           `json:"age,omitempty"`
-	Email         string         `json:"email"`
-	Name          string         `json:"name"`
-	Image         *string        `json:"image,omitempty"`
-	Projects      []Project      `json:"projects"`
-	Events        []Event        `json:"events"`
-	Teams         []Team         `json:"teams"`
-	SuperTeams    []SuperTeam    `json:"superTeams"`
-	Roles         []UserRole     `json:"roles"`
-	ConsentStatus *ConsentStatus `json:"consentStatus"`
-	Language      string         `json:"language"`
+	ID            string           `json:"id"`
+	MembersID     string           `json:"membersId"`
+	PersonUUID    *string          `json:"personUuid,omitempty"`
+	Gender        Gender           `json:"gender"`
+	ChurchID      string           `json:"churchId"`
+	Church        *Church          `json:"church"`
+	Birthdate     string           `json:"birthdate"`
+	Age           *int             `json:"age,omitempty"`
+	Email         string           `json:"email"`
+	Name          string           `json:"name"`
+	Image         *string          `json:"image,omitempty"`
+	Projects      []Project        `json:"projects"`
+	Events        []Event          `json:"events"`
+	Teams         []Team           `json:"teams"`
+	SuperTeams    []SuperTeam      `json:"superTeams"`
+	Roles         []UserRole       `json:"roles"`
+	ConsentStatus *ConsentStatus   `json:"consentStatus"`
+	Language      string           `json:"language"`
+	CreatedAt     scalars.DateTime `json:"createdAt"`
 }
 
 type UserConnection struct {

@@ -177,6 +177,7 @@ type User {
     roles: [UserRole!]! @goField(forceResolver: true)
     consentStatus: ConsentStatus!
     language: String!
+    createdAt: DateTime!
 }
 
 type Church {

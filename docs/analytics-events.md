@@ -20,18 +20,21 @@ Each section below lists events in a table with:
 
 ### Authentication
 
-| Event Name         | When It Fires                  | Data Captured |
-| ------------------ | ------------------------------ | ------------- |
-| `login_completed`  | User successfully logs in      | None          |
-| `logout_completed` | User logs out of their account | None          |
+| Event Name         | When It Fires                                     | Data Captured |
+| ------------------ | ------------------------------------------------- | ------------- |
+| `signup_completed` | User signs up for the first time (new account)    | None          |
+| `login_completed`  | User successfully logs in (new or returning user) | None          |
+| `logout_completed` | User logs out of their account                    | None          |
 
 **Metrics & stats ideas:**
 
 - Daily/weekly/monthly active users (unique users with `login_completed`)
+- New user signups over time (`signup_completed` count)
 - Login frequency per user over time
 - Session duration (time between `login_completed` and `logout_completed`)
 - Peak login times (hour of day, day of week)
-- Returning vs new users ratio
+- Returning vs new users ratio (`login_completed` - `signup_completed` = returning logins)
+- Signup conversion rate (if tracking funnel)
 
 ### User Identity
 
@@ -156,6 +159,8 @@ Leaderboards show rankings of users, teams, or super teams by points.
 
 ## Push Notifications
 
+### Subscription Management
+
 | Event Name                   | When It Fires                                    | Data Captured                                          |
 | ---------------------------- | ------------------------------------------------ | ------------------------------------------------------ |
 | `push_permission_requested`  | App asks the browser for notification permission | `permission_granted` (true/false), `permission_result` |
@@ -170,6 +175,29 @@ Leaderboards show rankings of users, teams, or super teams by points.
 - Permission denial rate and trends over time
 - Opt-in rate by user segment (age group, church, etc.)
 - Impact of push notifications on engagement (compare active users with/without push enabled)
+
+### Notification Engagement
+
+These events track how users interact with push notifications. They are fired from the service worker when notifications are received, displayed, clicked, or dismissed.
+
+| Event Name               | When It Fires                                     | Data Captured                                 |
+| ------------------------ | ------------------------------------------------- | --------------------------------------------- |
+| `notification_received`  | Service worker receives a push notification       | `notification_id`, `notification_type`        |
+| `notification_displayed` | Notification is shown to the user                 | `notification_id`, `notification_type`        |
+| `notification_clicked`   | User clicks/taps on a notification                | `notification_id`, `notification_type`, `url` |
+| `notification_dismissed` | User dismisses a notification without clicking it | `notification_id`, `notification_type`        |
+
+> **Note**: Notification events are only tracked when the app is open in a browser tab. If no tabs are open when a notification arrives, the `notification_received` and `notification_displayed` events won't be captured. However, `notification_clicked` is always tracked since it opens the app.
+
+**Metrics & stats ideas:**
+
+- Notification click-through rate (`notification_clicked` / `notification_displayed`)
+- Dismissal rate (`notification_dismissed` / `notification_displayed`)
+- Click-through rate by notification type (achievement_unlocked vs challenge_available vs generic)
+- Most engaging notification types (highest CTR)
+- Time from display to click (engagement latency)
+- Notification-driven sessions (sessions starting with `notification_clicked`)
+- Deep link effectiveness (which URLs drive the most clicks?)
 
 ---
 
