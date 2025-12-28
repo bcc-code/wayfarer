@@ -27,6 +27,7 @@ const pendingRemote = computed(() => {
 watch(
   pendingInternal,
   (pending) => {
+    if (fetching.value) return
     if (pending?.length) {
       hasCompletedOnboarding.value = false
       navigateTo({ name: 'settings-consent' })
