@@ -1,1 +1,121 @@
-{}
+{
+  "error": {
+    "title": "¡Vaya! Algo salió mal"
+  },
+  "emptyStates": {
+    "standings": "Aún no hay ninguna lista Los mejores.",
+    "unit": "Aún no hay ninguna lista de los mejores para tu unidad.",
+    "challenges": "Aún no hay retos.",
+    "pointHistory": "Aún sin puntos"
+  },
+  "auth": {
+    "loginButton": "Acceder",
+    "logoutButton": "Desconectarse"
+  },
+  "quiz": {
+    "wrongAnswer": "Respuesta incorrecta",
+    "correctAnswer": "Respuesta correcta",
+    "yourAnswer": "Tu respuesta",
+    "lockAnswer": "Bloquear respuesta",
+    "questionNumber": "{current} de {total}",
+    "continue": "Continúa.",
+    "nextQuestion": "Siguiente pregunta",
+    "done": "Listo",
+    "result": {
+      "receivedNoPoints": "No has sumado ningún punto.",
+      "receivedPoints": "Has acumulado {points} puntos.",
+      "betterLuckNextTime": "¡Más suerte la próxima vez!",
+      "wellDone": "¡Buen trabajo!",
+      "perfect": "Sí, ¡perfecto!"
+    }
+  },
+  "pages": {
+    "standings": "Listas de éxitos",
+    "challenges": "Desafíos",
+    "settings": "Configuración",
+    "pointHistory": "Historial de puntos",
+    "rules": "Reglas",
+    "consents": "Mis consentimientos",
+    "addToHomeScreen": "Añadir aplicación a la pantalla de inicio"
+  },
+  "navigation": {
+    "standings": "Listas de éxitos",
+    "profile": "Mi página",
+    "challenges": "Desafíos"
+  },
+  "emptyState": "No hay nada que ver aquí.",
+  "settings": {
+    "language": "Idioma de la aplicación",
+    "colorMode": "Modo de color",
+    "colorModes": {
+      "system": "Sistema",
+      "light": "Luz",
+      "dark": "Oscuro"
+    },
+    "consents": "Mis consentimientos",
+    "notifications": "Alertas",
+    "notificationsBlocked": "Las notificaciones están bloqueadas en la configuración del navegador.",
+    "notificationsOnlyAvailableWhenInstalled": "Las notificaciones solo están disponibles si añades la aplicación a la pantalla de inicio.",
+    "addToHomeScreen": "Añadir aplicación a la pantalla de inicio",
+    "privacyPolicy": "Declaración de privacidad"
+  },
+  "standings": {
+    "global": "Global",
+    "unit": "Mi unidad",
+    "local": "Local",
+    "you": "¿ De tí?",
+    "rules": "Reglas",
+    "units": "Unidades",
+    "top": "Arriba {amount}",
+    "u18": "SUB-18",
+    "o18": "O18"
+  },
+  "pointHistory": {
+    "pointHistoryButton": "Historial de puntos",
+    "explanation": "Aquí puedes ver por qué has ganado o perdido puntos."
+  },
+  "unit": {
+    "editUnit": "Editar unidad",
+    "unitLeader": "Sin título",
+    "saveChanges": "Guardar cambios",
+    "unitName": "Nombre de la unidad",
+    "noUnitLeader": "Sin jefe de unidad",
+    "selectUnitLeader": "Seleccionar jefe de unidad"
+  },
+  "place": "ubicación",
+  "points": "puntos",
+  "givesYouXPoints": "Te da {points} puntos",
+  "consent": {
+    "accepted": "Aceptado.",
+    "rejected": "Rechazado",
+    "acceptButton": "Acepto",
+    "rejectButton": "Rechazar los términos",
+    "bannerTitle": "Tienes consentimientos que debes considerar",
+    "bannerButton": "Ir a la configuración de consentimiento",
+    "readButton": "Leer los términos y condiciones",
+    "change": "Cambiar",
+    "goToConsent": "Ir al consentimiento",
+    "continue": "Continuar",
+    "changeDescription": "Para modificar su consentimiento, póngase en contacto con nosotros en {email}",
+    "changeConsent": "Cambiar el consentimiento"
+  },
+  "achievement": {
+    "title": "Distinción",
+    "unlocked": "¡Conseguido!"
+  },
+  "feedback": {
+    "title": "Envíenos sus comentarios",
+    "cta": "Envíenos sus comentarios",
+    "description": "Nos gustaría conocer tu opinión para poder mejorar aún más nuestro servicio.",
+    "send": "Enviar comentarios",
+    "label": "¿Hubo algo que te gustara o algo que se pudiera mejorar?",
+    "placeholder": "Escriba aquí sus comentarios...",
+    "success": "Gracias por tu comentario.",
+    "validationError": "No puedes enviar un comentario vacío.",
+    "lengthError": "La respuesta no puede tener más de {max} caracteres.",
+    "thankYou": "¡Gracias por tu ayuda!",
+    "thankYouDescription": "Tus comentarios se utilizarán para seguir mejorando el servicio.",
+    "close": "De nada.",
+    "canContactMe": "Sí, acepto que se pongan en contacto conmigo en relación con mi comentario."
+  }
+}
