@@ -196,39 +196,28 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 		return
 	}
 
-	// Determine updates
+	// Determine updates - always sync from Members API for single user
 	var newGender string
 	var newChurchID string
 
-	// Update gender if currently UNKNOWN and member has gender
-	if user.Gender == "UNKNOWN" && member.Gender != "" {
+	// Always update gender from member data
+	if member.Gender != "" {
 		newGender = normalizeGender(member.Gender)
 	}
 
-	// Update church if using default church and member has affiliation
-	if h.isDefaultChurch(ctx, user.ChurchID) {
-		orgUID := getActiveAffiliationOrgUID(member.Affiliations)
-		if orgUID != nil {
-			church, err := h.AuthHandler.findChurchByOrgUID(ctx, *orgUID)
-			if err != nil {
-				slog.Warn("maintenance: failed to find church by org UUID",
-					"user_id", userID,
-					"org_uid", orgUID.String(),
-					"error", err,
-				)
-			} else {
-				newChurchID = church.ID
-			}
+	// Always attempt to update church from member affiliation
+	orgUID := getActiveAffiliationOrgUID(member.Affiliations)
+	if orgUID != nil {
+		church, err := h.AuthHandler.findChurchByOrgUID(ctx, *orgUID)
+		if err != nil {
+			slog.Warn("maintenance: failed to find church by org UUID",
+				"user_id", userID,
+				"org_uid", orgUID.String(),
+				"error", err,
+			)
+		} else {
+			newChurchID = church.ID
 		}
-	}
-
-	// Skip if nothing to update
-	if newGender == "" && newChurchID == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "no updates needed",
-			"user_id": userID,
-		})
-		return
 	}
 
 	// Update user
@@ -243,8 +232,8 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 		return
 	}
 
-	// Also update person_uuid if missing and available
-	if !user.PersonUuid.Valid && member.Uid != uuid.Nil {
+	// Always update person_uuid from member data
+	if member.Uid != uuid.Nil {
 		err = h.DB.Queries.UpdateUserPersonUUID(ctx, sqlc.UpdateUserPersonUUIDParams{
 			ID:         userID,
 			PersonUuid: pgtype.UUID{Bytes: member.Uid, Valid: true},
