@@ -8,6 +8,10 @@
     "challenges": "Aucun défi pour l'instant",
     "pointHistory": "Aucun point pour l’instant"
   },
+  "auth": {
+    "loginButton": "Se connecter",
+    "logoutButton": "Se déconnecter"
+  },
   "quiz": {
     "wrongAnswer": "Mauvaise réponse",
     "correctAnswer": "Bonne réponse",
@@ -51,6 +55,7 @@
     "consents": "Mes consentements",
     "notifications": "Notifications",
     "notificationsBlocked": "Les notifications sont bloquées dans les paramètres du navigateur",
+    "notificationsOnlyAvailableWhenInstalled": "Les notifications ne sont disponibles que si tu ajoutes l'application à ton écran d'accueil",
     "addToHomeScreen": "Ajouter l’application à l’écran d’accueil",
     "privacyPolicy": "Politique de confidentialité"
   },
