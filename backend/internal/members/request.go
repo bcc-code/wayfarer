@@ -5,11 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"time"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 var httpClient = &http.Client{
@@ -56,8 +53,6 @@ func sendRequest[t any](ctx context.Context, client *Client, req *http.Request) 
 func get[t any](ctx context.Context, client *Client, endpoint string) (*t, error) {
 	url := fmt.Sprintf("https://%s/%s", client.domain, endpoint)
 
-	slog.Debug("members: making request", "url", url)
-
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -65,11 +60,8 @@ func get[t any](ctx context.Context, client *Client, endpoint string) (*t, error
 
 	res, err := sendRequest[t](ctx, client, req)
 	if err != nil {
-		slog.Debug("members: request failed", "url", url, "error", err)
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-
-	slog.Debug("members: request successful", "url", url, "data", spew.Sdump(res.Data))
 
 	return &res.Data, nil
 }

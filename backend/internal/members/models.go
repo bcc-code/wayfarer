@@ -26,7 +26,7 @@ type Member struct {
 
 // Affiliation is an affiliation to an entity
 type Affiliation struct {
-	Active    bool       `json:"active"`
+	Active    bool       `json:"isActive"`
 	OrgUid    uuid.UUID  `json:"orgUid"`
 	PersonUid uuid.UUID  `json:"personUid"`
 	Uid       uuid.UUID  `json:"uid"`
