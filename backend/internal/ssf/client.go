@@ -30,7 +30,7 @@ func New(config Config, logger *slog.Logger) *Client {
 		SetBaseURL(config.BaseURL).
 		SetTimeout(config.Timeout).
 		SetHeader("Accept", "application/json").
-		SetHeader("Authorization", "Bearer "+config.APIKey)
+		SetHeader("X-SSSF-API-Key", config.APIKey)
 
 	// Configure debug logging via resty if enabled
 	if config.DebugMode {
