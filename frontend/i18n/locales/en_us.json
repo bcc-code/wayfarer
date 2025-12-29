@@ -1,1 +1,121 @@
-{}
+{
+  "error": {
+    "title": "Oops! Something went wrong"
+  },
+  "emptyStates": {
+    "standings": "No top list yet",
+    "unit": "No top list for your unit yet",
+    "challenges": "No challenges yet",
+    "pointHistory": "No points yet"
+  },
+  "auth": {
+    "loginButton": "Log in",
+    "logoutButton": "Log out"
+  },
+  "quiz": {
+    "wrongAnswer": "Incorrect answer",
+    "correctAnswer": "Correct answer",
+    "yourAnswer": "Your answer",
+    "lockAnswer": "Lock answer",
+    "questionNumber": "{current} of {total}",
+    "continue": "Continue",
+    "nextQuestion": "Done",
+    "done": "Completed",
+    "result": {
+      "receivedNoPoints": "You did not receive any points.",
+      "receivedPoints": "You received {points} points.",
+      "betterLuckNextTime": "Better luck next time!",
+      "wellDone": "Well done!",
+      "perfect": "Perfect!"
+    }
+  },
+  "pages": {
+    "standings": "Top lists",
+    "challenges": "Challenges",
+    "settings": "Settings",
+    "pointHistory": "Points history",
+    "rules": "Rules",
+    "consents": "My consents",
+    "addToHomeScreen": "Add app to home screen"
+  },
+  "navigation": {
+    "standings": "Top lists",
+    "profile": "My page",
+    "challenges": "Challenges"
+  },
+  "emptyState": "Nothing to see here",
+  "settings": {
+    "language": "App language",
+    "colorMode": "Color mode",
+    "colorModes": {
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "consents": "My consents",
+    "notifications": "Notifications",
+    "notificationsBlocked": "Notifications are blocked in your browser settings",
+    "notificationsOnlyAvailableWhenInstalled": "Notifications are only available if you add the app to your home screen",
+    "addToHomeScreen": "Add app to home screen",
+    "privacyPolicy": "Privacy policy"
+  },
+  "standings": {
+    "global": "Global",
+    "unit": "My unit",
+    "local": "Local",
+    "you": "You",
+    "rules": "Rules",
+    "units": "Units",
+    "top": "Top {amount}",
+    "u18": "U18",
+    "o18": "O18"
+  },
+  "pointHistory": {
+    "pointHistoryButton": "Points history",
+    "explanation": "Here you can see what you have received – or lost – points for."
+  },
+  "unit": {
+    "editUnit": "Edit unit",
+    "unitLeader": "Unit leader",
+    "saveChanges": "Save changes",
+    "unitName": "Unit name",
+    "noUnitLeader": "No unit leader",
+    "selectUnitLeader": "Select unit leader"
+  },
+  "place": "place",
+  "points": "points",
+  "givesYouXPoints": "Gives you {points} points",
+  "consent": {
+    "accepted": "Accepted",
+    "rejected": "Rejected",
+    "acceptButton": "I accept",
+    "rejectButton": "Reject the terms",
+    "bannerTitle": "You have consents you need to consider",
+    "bannerButton": "Go to consent settings",
+    "readButton": "Read the terms",
+    "change": "Change",
+    "goToConsent": "Go to consent",
+    "continue": "Continue",
+    "changeDescription": "To change your consent, please contact us at {email}",
+    "changeConsent": "Change consent"
+  },
+  "achievement": {
+    "title": "Award",
+    "unlocked": "Unlocked!"
+  },
+  "feedback": {
+    "title": "Give us your feedback",
+    "cta": "Give us your feedback",
+    "description": "We'd love to hear from you so we can make the service even better.",
+    "send": "Send feedback",
+    "label": "Was there anything you thought was good, or anything that could be improved?",
+    "placeholder": "Write your feedback here ...",
+    "success": "Thank you for your feedback",
+    "validationError": "You cannot send blank feedback",
+    "lengthError": "The feedback can be no more than {max} characters long",
+    "thankYou": "Thank you for your help!",
+    "thankYouDescription": "Your input will be used to further develop the service.",
+    "close": "You're welcome",
+    "canContactMe": "Yes, I agree that you can contact me in connection with my feedback"
+  }
+}

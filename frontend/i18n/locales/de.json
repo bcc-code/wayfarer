@@ -8,6 +8,10 @@
     "challenges": "Noch keine Herausforderungen",
     "pointHistory": "Noch keine Punkte"
   },
+  "auth": {
+    "loginButton": "Anmelden",
+    "logoutButton": "Abmelden"
+  },
   "quiz": {
     "wrongAnswer": "Falsche Antwort",
     "correctAnswer": "Richtige Antwort",
