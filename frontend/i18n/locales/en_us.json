@@ -19,8 +19,8 @@
     "lockAnswer": "Lock answer",
     "questionNumber": "{current} of {total}",
     "continue": "Continue",
-    "nextQuestion": "Done",
-    "done": "Completed",
+    "nextQuestion": "Next question",
+    "done": "Done",
     "result": {
       "receivedNoPoints": "You did not receive any points.",
       "receivedPoints": "You received {points} points.",
@@ -100,7 +100,7 @@
     "changeConsent": "Change consent"
   },
   "achievement": {
-    "title": "Award",
+    "title": "Achievement",
     "unlocked": "Unlocked!"
   },
   "feedback": {
