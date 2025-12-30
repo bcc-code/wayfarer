@@ -3,8 +3,8 @@
     "title": "Ups! Midagi läks valesti"
   },
   "emptyStates": {
-    "standings": "Paremusjärjestust pole veel",
-    "unit": "Paremusjärjestust sinu üksuse jaoks pole veel",
+    "standings": "Edetabelit pole veel",
+    "unit": "Edetabelit sinu üksuse jaoks pole veel",
     "challenges": "Väljakutseid pole veel",
     "pointHistory": "Punkte pole veel"
   },
@@ -30,7 +30,7 @@
     }
   },
   "pages": {
-    "standings": "Paremusjärjestuse nimekirjad",
+    "standings": "Edetabelid",
     "challenges": "Väljakutsed",
     "settings": "Seaded",
     "pointHistory": "Punktide ajalugu",
@@ -39,7 +39,7 @@
     "addToHomeScreen": "Lisa rakendus avalehele"
   },
   "navigation": {
-    "standings": "Paremusjärjestuse nimekirjad",
+    "standings": "Edetabelid",
     "profile": "Minu leht",
     "challenges": "Väljakutsed"
   },
