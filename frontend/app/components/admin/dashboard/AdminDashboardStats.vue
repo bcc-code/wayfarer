@@ -44,12 +44,7 @@ const cards = computed(() => [
   <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
     <UCard v-for="card in cards" :key="card.label">
       <div class="flex items-center gap-3">
-        <div
-          :class="[
-            'rounded-lg p-2',
-            `bg-${card.color}-500/10`,
-          ]"
-        >
+        <div :class="['rounded-lg p-2', `bg-${card.color}-500/10`]">
           <UIcon :name="card.icon" :class="`size-5 text-${card.color}-500`" />
         </div>
         <div>

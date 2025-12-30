@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
+defineProps<{
   projectId: string
   projectName: string
   entries: Array<{
@@ -31,19 +31,17 @@ const props = defineProps<{
         <span
           :class="[
             'flex size-6 items-center justify-center rounded-full text-xs font-bold',
-            index === 0 && 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400',
+            index === 0 &&
+              'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400',
             index === 1 && 'bg-gray-500/20 text-gray-600 dark:text-gray-400',
-            index === 2 && 'bg-orange-500/20 text-orange-600 dark:text-orange-400',
+            index === 2 &&
+              'bg-orange-500/20 text-orange-600 dark:text-orange-400',
             index > 2 && 'bg-muted text-muted',
           ]"
         >
           {{ entry.rank ?? index + 1 }}
         </span>
-        <UAvatar
-          :src="entry.image ?? undefined"
-          :alt="entry.name"
-          size="xs"
-        />
+        <UAvatar :src="entry.image ?? undefined" :alt="entry.name" size="xs" />
         <span class="min-w-0 flex-1 truncate text-sm">{{ entry.name }}</span>
         <span class="text-muted text-sm font-medium">
           {{ formatNumber(entry.score) }} pts

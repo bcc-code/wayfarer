@@ -18,26 +18,6 @@ gql(`
       newUsersLast7Days
       activeProjectsCount
     }
-    adminScoreJournal(first: 8) {
-      edges {
-        node {
-          id
-          points
-          sourceType
-          reason
-          createdAt
-          user {
-            id
-            name
-            image
-          }
-          project {
-            id
-            name
-          }
-        }
-      }
-    }
     feedback(first: 5) {
       edges {
         node {
@@ -98,10 +78,6 @@ const { currentProjects } = useGroupedProjects(() =>
   data.value?.projects.edges.map((edge) => edge.node),
 )
 
-const scoreEntries = computed(
-  () => data.value?.adminScoreJournal.edges.map((edge) => edge.node) ?? [],
-)
-
 const feedbackEntries = computed(
   () => data.value?.feedback.edges.map((edge) => edge.node) ?? [],
 )
@@ -134,10 +110,7 @@ const greeting = computed(() => {
 
       <div class="grid gap-6 lg:grid-cols-3">
         <div class="lg:col-span-2">
-          <AdminRecentActivity
-            :score-entries="scoreEntries"
-            :feedback-entries="feedbackEntries"
-          />
+          <AdminRecentActivity :feedback-entries="feedbackEntries" />
         </div>
 
         <div v-if="topProject">
