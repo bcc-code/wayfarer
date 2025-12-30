@@ -1,4 +1,5 @@
 import { useAuth0 } from '@auth0/auth0-vue'
+import { dbLanguageToLocale } from '~/utils/languageMapping'
 
 gql(`
   query GetMe {
@@ -8,6 +9,7 @@ gql(`
       email
       image
       membersId
+      language
       church {
         id
         name
@@ -43,6 +45,7 @@ export function useAuth() {
   const { reset } = useAnalytics()
   const auth0 = useAuth0()
   const config = useRuntimeConfig()
+  const { setLocale, locales } = useI18n()
 
   // Wayfarer JWT stored in localStorage (exchanged from Auth0 token)
   const wayfarerToken = useLocalStorage<string>('token', () => null)
@@ -83,6 +86,15 @@ export function useAuth() {
     (newMe) => {
       me.value = newMe
       isLoading.value = false
+
+      // Sync locale from user's stored preference
+      if (newMe?.language) {
+        const locale = dbLanguageToLocale(newMe.language)
+        const isValidLocale = locales.value.some((l) => l.code === locale)
+        if (isValidLocale) {
+          setLocale(locale as typeof locales.value[number]['code'])
+        }
+      }
     },
     { immediate: true },
   )
