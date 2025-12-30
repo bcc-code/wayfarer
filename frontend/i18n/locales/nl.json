@@ -1,1 +1,121 @@
-{}
+{
+  "error": {
+    "title": "Oeps! Er is iets misgegaan"
+  },
+  "emptyStates": {
+    "standings": "Nog geen toplijst",
+    "unit": "Nog geen toplijst voor je unit",
+    "challenges": "Nog geen uitdagingen",
+    "pointHistory": "Nog geen punten"
+  },
+  "auth": {
+    "loginButton": "Inloggen",
+    "logoutButton": "Uitloggen"
+  },
+  "quiz": {
+    "wrongAnswer": "Fout antwoord",
+    "correctAnswer": "Correct antwoord",
+    "yourAnswer": "Jouw antwoord",
+    "lockAnswer": "Lock antwoord",
+    "questionNumber": "{current} van {total}",
+    "continue": "Doorgaan",
+    "nextQuestion": "Volgende vraag.",
+    "done": "Klaar",
+    "result": {
+      "receivedNoPoints": "Je hebt geen punten verzameld.",
+      "receivedPoints": "Je hebt {points} punten verzameld.",
+      "betterLuckNextTime": "Meer geluk de volgende keer!",
+      "wellDone": "Goed gedaan!",
+      "perfect": "Perfect!"
+    }
+  },
+  "pages": {
+    "standings": "Toplijsten",
+    "challenges": "Uitdagingen",
+    "settings": "Instellingen",
+    "pointHistory": "Punten overzicht",
+    "rules": "Regels",
+    "consents": "Mijn toestemmingen",
+    "addToHomeScreen": "App toevoegen aan startscherm"
+  },
+  "navigation": {
+    "standings": "Toplijsten",
+    "profile": "Mijn pagina",
+    "challenges": "Uitdagingen"
+  },
+  "emptyState": "Niets te zien hier",
+  "settings": {
+    "language": "App-taal",
+    "colorMode": "Kleurmodus",
+    "colorModes": {
+      "system": "Systeem",
+      "light": "Licht",
+      "dark": "Donker"
+    },
+    "consents": "Mijn toestemmingen",
+    "notifications": "Meldingen",
+    "notificationsBlocked": "Meldingen zijn geblokkeerd in de browserinstellingen",
+    "notificationsOnlyAvailableWhenInstalled": "Meldingen zijn alleen beschikbaar als je de app toevoegt aan je startscherm.",
+    "addToHomeScreen": "App toevoegen aan startscherm",
+    "privacyPolicy": "Privacyverklaring"
+  },
+  "standings": {
+    "global": "Wereldwijd",
+    "unit": "Mijn unit",
+    "local": "Lokaal",
+    "you": "Jij",
+    "rules": "Regels",
+    "units": "Units",
+    "top": "Top {amount}",
+    "u18": "<b>U18</b>",
+    "o18": "O18"
+  },
+  "pointHistory": {
+    "pointHistoryButton": "Punten overzicht",
+    "explanation": "Hier kun je zien waarvoor je punten hebt gekregen – of verloren."
+  },
+  "unit": {
+    "editUnit": "Unit bewerken",
+    "unitLeader": "Unitleider",
+    "saveChanges": "Sla wijzigingen op",
+    "unitName": "Unit naam",
+    "noUnitLeader": "Geen unitleider",
+    "selectUnitLeader": "Kies unitleider"
+  },
+  "place": "klassering",
+  "points": "punten",
+  "givesYouXPoints": "Geeft je {points} punten",
+  "consent": {
+    "accepted": "Akkoord",
+    "rejected": "Afgewezen",
+    "acceptButton": "Ik geef mijn toestemming",
+    "rejectButton": "Weiger de voorwaarden",
+    "bannerTitle": "Je hebt toestemmingen waarover je een beslissing moet nemen",
+    "bannerButton": "Ga naar toestemmingsinstellingen",
+    "readButton": "Lees de voorwaarden",
+    "change": "Wijzigen",
+    "goToConsent": "Ga naar toestemming",
+    "continue": "Ga verder",
+    "changeDescription": "Om je toestemming te wijzigen, kun je contact met ons opnemen via {email}",
+    "changeConsent": "Wijzig toestemming"
+  },
+  "achievement": {
+    "title": "Onderscheiding",
+    "unlocked": "Behaald!"
+  },
+  "feedback": {
+    "title": "Geef ons feedback",
+    "cta": "Geef ons feedback",
+    "description": "We horen graag van je, zodat we onze service nog verder kunnen verbeteren.",
+    "send": "Zend feedback",
+    "label": "Was er iets waarvan je vond dat het goed ging, of iets wat verbeterd kan worden ?",
+    "placeholder": "Schrijf hier je feedback...",
+    "success": "Bedankt voor je feedback",
+    "validationError": "Je kunt geen lege feedback verzenden",
+    "lengthError": "De feedback mag niet langer zijn dan {max} tekens.",
+    "thankYou": "Bedankt voor je hulp!",
+    "thankYouDescription": "Je input zal worden gebruikt voor de verdere ontwikkeling van de dienst.",
+    "close": "Graag gedaan",
+    "canContactMe": "Ja, ik geef toestemming dat jullie contact met mij opnemen in verband met mijn feedback."
+  }
+}
