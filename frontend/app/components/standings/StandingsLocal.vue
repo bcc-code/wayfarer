@@ -48,7 +48,7 @@ const debouncedFetching = useDebounce(fetching, 200)
 const totalPersons = computed(() => {
   const totalCount = data.value?.myCurrentProject.personLeaderboard.totalCount
 
-  if (!totalCount) return 0
+  if (!totalCount) return 20
   if (totalCount >= 50) return 20
   if (totalCount > 20) return 10
   return 3
