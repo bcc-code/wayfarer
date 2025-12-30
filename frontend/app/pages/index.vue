@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { isAuthReady } = useAuthReady()
-const { data, error, fetching } = useProfilePageQuery({
+const { data, error, fetching, stale } = useProfilePageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
@@ -27,7 +27,7 @@ const pendingRemote = computed(() => {
 watch(
   pendingInternal,
   (pending) => {
-    if (fetching.value) return
+    if (fetching.value || stale.value) return
     if (pending?.length) {
       hasCompletedOnboarding.value = false
       navigateTo({ name: 'settings-consent' })
