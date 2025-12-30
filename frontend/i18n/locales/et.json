@@ -1,1 +1,121 @@
-{}
+{
+  "error": {
+    "title": "Ups! Midagi läks valesti"
+  },
+  "emptyStates": {
+    "standings": "Edetabelit pole veel",
+    "unit": "Edetabelit sinu üksuse jaoks pole veel",
+    "challenges": "Väljakutseid pole veel",
+    "pointHistory": "Punkte pole veel"
+  },
+  "auth": {
+    "loginButton": "Logi sisse",
+    "logoutButton": "Logi välja"
+  },
+  "quiz": {
+    "wrongAnswer": "Vale vastus",
+    "correctAnswer": "Õige vastus",
+    "yourAnswer": "Sinu vastus",
+    "lockAnswer": "Lukusta vastus",
+    "questionNumber": "{current} {total}-st",
+    "continue": "Jätka",
+    "nextQuestion": "Järgmine küsimus",
+    "done": "Valmis",
+    "result": {
+      "receivedNoPoints": "Sa ei saanud ühtegi punkti.",
+      "receivedPoints": "Sa kogusid {points} punkti.",
+      "betterLuckNextTime": "Järgmine kord läheb paremini!",
+      "wellDone": "Hästi tehtud!",
+      "perfect": "Ideaalne!"
+    }
+  },
+  "pages": {
+    "standings": "Edetabelid",
+    "challenges": "Väljakutsed",
+    "settings": "Seaded",
+    "pointHistory": "Punktide ajalugu",
+    "rules": "Reeglid",
+    "consents": "Minu nõusolekud",
+    "addToHomeScreen": "Lisa rakendus avalehele"
+  },
+  "navigation": {
+    "standings": "Edetabelid",
+    "profile": "Minu leht",
+    "challenges": "Väljakutsed"
+  },
+  "emptyState": "Siin pole midagi vaadata",
+  "settings": {
+    "language": "Rakenduse keel",
+    "colorMode": "Värvirežiim",
+    "colorModes": {
+      "system": "Süsteem",
+      "light": "Valgus",
+      "dark": "Tume"
+    },
+    "consents": "Minu nõusolekud",
+    "notifications": "Teated",
+    "notificationsBlocked": "Teated on veebilehitseja seadetes blokeeritud",
+    "notificationsOnlyAvailableWhenInstalled": "Teated on saadaval ainult juhul, kui lisad rakenduse oma avalehele",
+    "addToHomeScreen": "Lisa rakendus avalehele",
+    "privacyPolicy": "Privaatsuspoliitika"
+  },
+  "standings": {
+    "global": "Globaalne",
+    "unit": "Minu üksus",
+    "local": "Kohalik",
+    "you": "Sina",
+    "rules": "Reeglid",
+    "units": "Üksused",
+    "top": "{amount} parimat",
+    "u18": "ALLA 18-A.",
+    "o18": "ÜLE 18-A."
+  },
+  "pointHistory": {
+    "pointHistoryButton": "Punktide ajalugu",
+    "explanation": "Siin saad näha, mille eest oled punkte teeninud või kaotanud."
+  },
+  "unit": {
+    "editUnit": "Muuda üksust",
+    "unitLeader": "Üksuse juht",
+    "saveChanges": "Salvesta muudatused",
+    "unitName": "Üksuse nimi",
+    "noUnitLeader": "Üksuse juht puudub",
+    "selectUnitLeader": "Vali üksuse juht"
+  },
+  "place": "koht",
+  "points": "punktid",
+  "givesYouXPoints": "Annab sulle {points} punkti",
+  "consent": {
+    "accepted": "Nõustutud",
+    "rejected": "Tagasi lükatud",
+    "acceptButton": "Ma olen nõus",
+    "rejectButton": "Keeldu tingimustest",
+    "bannerTitle": "Sul on nõusoleku päringud, mille üle pead otsustama",
+    "bannerButton": "Mine nõusoleku seadetesse",
+    "readButton": "Loe tingimusi",
+    "change": "Muuda",
+    "goToConsent": "Mine nõusoleku juurde",
+    "continue": "Jätka",
+    "changeDescription": "Kui soovid oma nõusolekut muuta, võta meiega ühendust aadressil {email}",
+    "changeConsent": "Muuda nõusolekut"
+  },
+  "achievement": {
+    "title": "Autasu",
+    "unlocked": "Saavutatud!"
+  },
+  "feedback": {
+    "title": "Anna meile tagasisidet",
+    "cta": "Anna meile tagasisidet",
+    "description": "Meil oleks hea meel kuulda sinu arvamust, et saaksime oma teenust veelgi paremaks muuta.",
+    "send": "Saada tagasiside",
+    "label": "Kas oli midagi, mis sinu arvates oli hea, või midagi, mida võiks parandada?",
+    "placeholder": "Kirjuta oma tagasiside siia...",
+    "success": "Täname sind tagasiside eest",
+    "validationError": "Sa ei saa saata tühja tagasisidevormi.",
+    "lengthError": "Tagasiside pikkus ei tohi ületada {max} tähemärki.",
+    "thankYou": "Täname abi eest!",
+    "thankYouDescription": "Sinu ettepanekuid kasutatakse teenuse edasiarendamiseks.",
+    "close": "Palun",
+    "canContactMe": "Jah, ma nõustun, et võite minuga seoses minu tagasisidega ühendust võtta"
+  }
+}
