@@ -94,6 +94,15 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	AdminDashboardStats struct {
+		ActiveProjectsCount func(childComplexity int) int
+		NewUsersLast7Days   func(childComplexity int) int
+		TotalChallenges     func(childComplexity int) int
+		TotalPointsAwarded  func(childComplexity int) int
+		TotalProjects       func(childComplexity int) int
+		TotalUsers          func(childComplexity int) int
+	}
+
 	AgeRange struct {
 		Max func(childComplexity int) int
 		Min func(childComplexity int) int
@@ -550,6 +559,7 @@ type ComplexityRoot struct {
 	Query struct {
 		Achievement                   func(childComplexity int, id string) int
 		Achievements                  func(childComplexity int, filter model.AchievementFilter, first *int, after *string, last *int, before *string) int
+		AdminDashboardStats           func(childComplexity int) int
 		AdminScoreJournal             func(childComplexity int, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
 		Challenge                     func(childComplexity int, id string) int
 		Challenges                    func(childComplexity int, filter *model.ChallengeFilter, first *int, after *string, last *int, before *string) int
@@ -1163,6 +1173,7 @@ type QueryResolver interface {
 	QuizSubmissions(ctx context.Context, quizID string, userID *string, first *int, after *string, last *int, before *string) (*model.QuizSubmissionConnection, error)
 	ExternalContent(ctx context.Context, id string) (*model.ExternalContent, error)
 	ExternalContents(ctx context.Context, filter model.ExternalContentFilter, sortBy *model.ExternalContentSortBy, first *int, after *string, last *int, before *string) (*model.ExternalContentConnection, error)
+	AdminDashboardStats(ctx context.Context) (*model.AdminDashboardStats, error)
 	MyPushNotificationPreferences(ctx context.Context) ([]model.PushNotificationPreference, error)
 	PushNotificationsEnabled(ctx context.Context) (bool, error)
 	VapidPublicKey(ctx context.Context) (string, error)
@@ -1344,6 +1355,43 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AchievementEdge.Node(childComplexity), true
+
+	case "AdminDashboardStats.activeProjectsCount":
+		if e.complexity.AdminDashboardStats.ActiveProjectsCount == nil {
+			break
+		}
+
+		return e.complexity.AdminDashboardStats.ActiveProjectsCount(childComplexity), true
+	case "AdminDashboardStats.newUsersLast7Days":
+		if e.complexity.AdminDashboardStats.NewUsersLast7Days == nil {
+			break
+		}
+
+		return e.complexity.AdminDashboardStats.NewUsersLast7Days(childComplexity), true
+	case "AdminDashboardStats.totalChallenges":
+		if e.complexity.AdminDashboardStats.TotalChallenges == nil {
+			break
+		}
+
+		return e.complexity.AdminDashboardStats.TotalChallenges(childComplexity), true
+	case "AdminDashboardStats.totalPointsAwarded":
+		if e.complexity.AdminDashboardStats.TotalPointsAwarded == nil {
+			break
+		}
+
+		return e.complexity.AdminDashboardStats.TotalPointsAwarded(childComplexity), true
+	case "AdminDashboardStats.totalProjects":
+		if e.complexity.AdminDashboardStats.TotalProjects == nil {
+			break
+		}
+
+		return e.complexity.AdminDashboardStats.TotalProjects(childComplexity), true
+	case "AdminDashboardStats.totalUsers":
+		if e.complexity.AdminDashboardStats.TotalUsers == nil {
+			break
+		}
+
+		return e.complexity.AdminDashboardStats.TotalUsers(childComplexity), true
 
 	case "AgeRange.max":
 		if e.complexity.AgeRange.Max == nil {
@@ -3844,6 +3892,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Achievements(childComplexity, args["filter"].(model.AchievementFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
+	case "Query.adminDashboardStats":
+		if e.complexity.Query.AdminDashboardStats == nil {
+			break
+		}
+
+		return e.complexity.Query.AdminDashboardStats(childComplexity), true
 	case "Query.adminScoreJournal":
 		if e.complexity.Query.AdminScoreJournal == nil {
 			break
@@ -7668,8 +7722,22 @@ extend type Mutation {
     createContentAchievementFromExternalContent(input: CreateContentAchievementFromExternalContentInput!): ContentAchievement! @requireRole(roles: ["admin", "superadmin"])
 }
 `, BuiltIn: false},
-	{Name: "../../../../gql/admin.graphqls", Input: `extend type Mutation {
+	{Name: "../../../../gql/admin.graphqls", Input: `extend type Query {
+    adminDashboardStats: AdminDashboardStats!
+        @requireRole(roles: ["admin", "superadmin"])
+}
+
+extend type Mutation {
     clearAllCache: Boolean! @requireRole(roles: ["admin", "superadmin"])
+}
+
+type AdminDashboardStats {
+    totalUsers: Int!
+    totalProjects: Int!
+    totalChallenges: Int!
+    totalPointsAwarded: Int!
+    newUsersLast7Days: Int!
+    activeProjectsCount: Int!
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/push_notifications.graphqls", Input: `# ==================== Push Notification Types ====================
@@ -10276,6 +10344,180 @@ func (ec *executionContext) fieldContext_AchievementEdge_node(_ context.Context,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminDashboardStats_totalUsers(ctx context.Context, field graphql.CollectedField, obj *model.AdminDashboardStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminDashboardStats_totalUsers,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalUsers, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminDashboardStats_totalUsers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminDashboardStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminDashboardStats_totalProjects(ctx context.Context, field graphql.CollectedField, obj *model.AdminDashboardStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminDashboardStats_totalProjects,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalProjects, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminDashboardStats_totalProjects(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminDashboardStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminDashboardStats_totalChallenges(ctx context.Context, field graphql.CollectedField, obj *model.AdminDashboardStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminDashboardStats_totalChallenges,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalChallenges, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminDashboardStats_totalChallenges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminDashboardStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminDashboardStats_totalPointsAwarded(ctx context.Context, field graphql.CollectedField, obj *model.AdminDashboardStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminDashboardStats_totalPointsAwarded,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalPointsAwarded, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminDashboardStats_totalPointsAwarded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminDashboardStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminDashboardStats_newUsersLast7Days(ctx context.Context, field graphql.CollectedField, obj *model.AdminDashboardStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminDashboardStats_newUsersLast7Days,
+		func(ctx context.Context) (any, error) {
+			return obj.NewUsersLast7Days, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminDashboardStats_newUsersLast7Days(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminDashboardStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminDashboardStats_activeProjectsCount(ctx context.Context, field graphql.CollectedField, obj *model.AdminDashboardStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminDashboardStats_activeProjectsCount,
+		func(ctx context.Context) (any, error) {
+			return obj.ActiveProjectsCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminDashboardStats_activeProjectsCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminDashboardStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -26830,6 +27072,67 @@ func (ec *executionContext) fieldContext_Query_externalContents(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_adminDashboardStats(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_adminDashboardStats,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().AdminDashboardStats(ctx)
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.AdminDashboardStats
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.AdminDashboardStats
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNAdminDashboardStats2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminDashboardStats,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_adminDashboardStats(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "totalUsers":
+				return ec.fieldContext_AdminDashboardStats_totalUsers(ctx, field)
+			case "totalProjects":
+				return ec.fieldContext_AdminDashboardStats_totalProjects(ctx, field)
+			case "totalChallenges":
+				return ec.fieldContext_AdminDashboardStats_totalChallenges(ctx, field)
+			case "totalPointsAwarded":
+				return ec.fieldContext_AdminDashboardStats_totalPointsAwarded(ctx, field)
+			case "newUsersLast7Days":
+				return ec.fieldContext_AdminDashboardStats_newUsersLast7Days(ctx, field)
+			case "activeProjectsCount":
+				return ec.fieldContext_AdminDashboardStats_activeProjectsCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminDashboardStats", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_myPushNotificationPreferences(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -41019,6 +41322,70 @@ func (ec *executionContext) _AchievementEdge(ctx context.Context, sel ast.Select
 	return out
 }
 
+var adminDashboardStatsImplementors = []string{"AdminDashboardStats"}
+
+func (ec *executionContext) _AdminDashboardStats(ctx context.Context, sel ast.SelectionSet, obj *model.AdminDashboardStats) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminDashboardStatsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminDashboardStats")
+		case "totalUsers":
+			out.Values[i] = ec._AdminDashboardStats_totalUsers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalProjects":
+			out.Values[i] = ec._AdminDashboardStats_totalProjects(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalChallenges":
+			out.Values[i] = ec._AdminDashboardStats_totalChallenges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalPointsAwarded":
+			out.Values[i] = ec._AdminDashboardStats_totalPointsAwarded(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "newUsersLast7Days":
+			out.Values[i] = ec._AdminDashboardStats_newUsersLast7Days(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "activeProjectsCount":
+			out.Values[i] = ec._AdminDashboardStats_activeProjectsCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var ageRangeImplementors = []string{"AgeRange"}
 
 func (ec *executionContext) _AgeRange(ctx context.Context, sel ast.SelectionSet, obj *model.AgeRange) graphql.Marshaler {
@@ -46385,6 +46752,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "adminDashboardStats":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_adminDashboardStats(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "myPushNotificationPreferences":
 			field := field
 
@@ -51377,6 +51766,20 @@ func (ec *executionContext) marshalNAchievementEdge2ᚕgithubᚗcomᚋbccᚑmedi
 func (ec *executionContext) unmarshalNAchievementFilter2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievementFilter(ctx context.Context, v any) (model.AchievementFilter, error) {
 	res, err := ec.unmarshalInputAchievementFilter(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAdminDashboardStats2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminDashboardStats(ctx context.Context, sel ast.SelectionSet, v model.AdminDashboardStats) graphql.Marshaler {
+	return ec._AdminDashboardStats(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminDashboardStats2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminDashboardStats(ctx context.Context, sel ast.SelectionSet, v *model.AdminDashboardStats) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminDashboardStats(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNAssignRoleInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAssignRoleInput(ctx context.Context, v any) (model.AssignRoleInput, error) {

@@ -1,3 +1,17 @@
+extend type Query {
+    adminDashboardStats: AdminDashboardStats!
+        @requireRole(roles: ["admin", "superadmin"])
+}
+
 extend type Mutation {
     clearAllCache: Boolean! @requireRole(roles: ["admin", "superadmin"])
+}
+
+type AdminDashboardStats {
+    totalUsers: Int!
+    totalProjects: Int!
+    totalChallenges: Int!
+    totalPointsAwarded: Int!
+    newUsersLast7Days: Int!
+    activeProjectsCount: Int!
 }

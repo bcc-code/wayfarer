@@ -88,6 +88,15 @@ type AchievementFilter struct {
 	Ids       []string `json:"ids,omitempty"`
 }
 
+type AdminDashboardStats struct {
+	TotalUsers          int `json:"totalUsers"`
+	TotalProjects       int `json:"totalProjects"`
+	TotalChallenges     int `json:"totalChallenges"`
+	TotalPointsAwarded  int `json:"totalPointsAwarded"`
+	NewUsersLast7Days   int `json:"newUsersLast7Days"`
+	ActiveProjectsCount int `json:"activeProjectsCount"`
+}
+
 type AgeRange struct {
 	Min int `json:"min"`
 	Max int `json:"max"`

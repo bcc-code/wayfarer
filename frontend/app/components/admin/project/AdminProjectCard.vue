@@ -1,6 +1,21 @@
 <script setup lang="ts">
+interface ProjectCardProps {
+  id: string
+  name: string
+  description: string
+  startDate: string
+  endDate: string
+  branding: {
+    logo?: string | null
+    colors: {
+      light: { accent: string }
+      dark: { accent: string }
+    }
+  }
+}
+
 const props = defineProps<{
-  project: Project
+  project: ProjectCardProps
 }>()
 
 const colorMode = useColorMode()
