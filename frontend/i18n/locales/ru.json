@@ -1,1 +1,121 @@
-{}
+{
+  "error": {
+    "title": "Ой! Что-то пошло не так"
+  },
+  "emptyStates": {
+    "standings": "Пока нет топ-листа",
+    "unit": "Пока нет топ-листа для твоей команды",
+    "challenges": "Пока нет челленджей",
+    "pointHistory": "Пока нет баллов"
+  },
+  "auth": {
+    "loginButton": "Войти",
+    "logoutButton": "Выйти"
+  },
+  "quiz": {
+    "wrongAnswer": "Неверный ответ",
+    "correctAnswer": "Правильный ответ",
+    "yourAnswer": "Твой ответ",
+    "lockAnswer": "Заблокировать ответ",
+    "questionNumber": "{current} из {total}",
+    "continue": "Продолжить",
+    "nextQuestion": "Следующий вопрос",
+    "done": "Готово",
+    "result": {
+      "receivedNoPoints": "Ты не заработал ни одного балла.",
+      "receivedPoints": "Твои баллы:{points}.",
+      "betterLuckNextTime": "В следующий раз будет лучше!",
+      "wellDone": "Отличная работа!",
+      "perfect": "Превосходно!"
+    }
+  },
+  "pages": {
+    "standings": "Топ-листы",
+    "challenges": "Челленджи",
+    "settings": "Настройки",
+    "pointHistory": "История баллов",
+    "rules": "Правила",
+    "consents": "Мои согласия",
+    "addToHomeScreen": "Добавить приложение на главный экран"
+  },
+  "navigation": {
+    "standings": "Топ-листы",
+    "profile": "Моя страница",
+    "challenges": "Челленджи"
+  },
+  "emptyState": "Здесь не на что смотреть",
+  "settings": {
+    "language": "Язык приложения",
+    "colorMode": "Цветовая тема",
+    "colorModes": {
+      "system": "Система",
+      "light": "Светло",
+      "dark": "Темно"
+    },
+    "consents": "Мои согласия",
+    "notifications": "Уведомления",
+    "notificationsBlocked": "Уведомления заблокированы в настройках браузера",
+    "notificationsOnlyAvailableWhenInstalled": "Уведомления доступны, если  приложение добавлено на главный экран",
+    "addToHomeScreen": "Добавить приложение на главный экран",
+    "privacyPolicy": "Политика конфиденциальности"
+  },
+  "standings": {
+    "global": "Глобально",
+    "unit": "Моя команда",
+    "local": "Локально",
+    "you": "Ты",
+    "rules": "Правила",
+    "units": "Команды",
+    "top": "Топ {amount}",
+    "u18": "U18",
+    "o18": "O18"
+  },
+  "pointHistory": {
+    "pointHistoryButton": "История баллов",
+    "explanation": "Здесь вы можете увидеть, за что вы получили или потеряли баллы."
+  },
+  "unit": {
+    "editUnit": "Редактировать команду",
+    "unitLeader": "Капитан команды",
+    "saveChanges": "Сохранить изменения",
+    "unitName": "Название команды",
+    "noUnitLeader": "Нет капитана команды",
+    "selectUnitLeader": "Выберите капитана команды"
+  },
+  "place": "размещение",
+  "points": "баллы",
+  "givesYouXPoints": "Даст вам {points} очков",
+  "consent": {
+    "accepted": "Принято",
+    "rejected": "Отклонено",
+    "acceptButton": "Я соглашаюсь",
+    "rejectButton": "Отклонить условия",
+    "bannerTitle": "У вас есть согласия, по которым нужно принять решение.",
+    "bannerButton": "Перейти к настройкам согласия",
+    "readButton": "Читать условия",
+    "change": "Изменить",
+    "goToConsent": "Перейти к согласию",
+    "continue": "Перейти дальше",
+    "changeDescription": "Чтобы изменить свое согласие, свяжитесь с нами по адресу {email}",
+    "changeConsent": "Изменить согласие"
+  },
+  "achievement": {
+    "title": "Награда",
+    "unlocked": "Получено достижение!"
+  },
+  "feedback": {
+    "title": "Оставь отзыв",
+    "cta": "Оставь отзыв",
+    "description": "Мы будем признательны за вашу обратную связь, чтобы улучшить сервис.",
+    "send": "Отправить отзыв",
+    "label": "Было ли что-то, что вам особенно понравилось, или что-то, что можно улучшить?",
+    "placeholder": "Напишите отзыв здесь...",
+    "success": "Спасибо за отзыв",
+    "validationError": "Вы не можете отправить пустой отзыв",
+    "lengthError": "Отзыв не может быть более чем {max} символов",
+    "thankYou": "Спасибо за помощь!",
+    "thankYouDescription": "Ваш отзыв будет использован для дальнейшего развития сервиса.",
+    "close": "Пожалуйста",
+    "canContactMe": "Да, вы можете связаться со мной по поводу моего отзыва."
+  }
+}
