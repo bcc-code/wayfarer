@@ -18,6 +18,7 @@ import (
 type GraphQLClient struct {
 	server    *httptest.Server
 	authToken string
+	headers   map[string]string
 }
 
 // GraphQLRequest represents a GraphQL request body
@@ -50,10 +51,35 @@ func NewGraphQLClient(router *gin.Engine) *GraphQLClient {
 
 // WithAuth returns a new client with the authentication token set
 func (c *GraphQLClient) WithAuth(token string) *GraphQLClient {
+	// Copy existing headers
+	newHeaders := make(map[string]string)
+	for k, v := range c.headers {
+		newHeaders[k] = v
+	}
 	return &GraphQLClient{
 		server:    c.server,
 		authToken: token,
+		headers:   newHeaders,
 	}
+}
+
+// WithHeader returns a new client with an additional header set
+func (c *GraphQLClient) WithHeader(key, value string) *GraphQLClient {
+	newHeaders := make(map[string]string)
+	for k, v := range c.headers {
+		newHeaders[k] = v
+	}
+	newHeaders[key] = value
+	return &GraphQLClient{
+		server:    c.server,
+		authToken: c.authToken,
+		headers:   newHeaders,
+	}
+}
+
+// WithLanguage returns a new client with the Accept-Language header set
+func (c *GraphQLClient) WithLanguage(lang string) *GraphQLClient {
+	return c.WithHeader("Accept-Language", lang)
 }
 
 // Execute runs a GraphQL query and returns the response
@@ -76,6 +102,10 @@ func (c *GraphQLClient) Execute(ctx context.Context, query string, variables map
 	req.Header.Set("Content-Type", "application/json")
 	if c.authToken != "" {
 		req.Header.Set("Authorization", "Bearer "+c.authToken)
+	}
+	// Add custom headers
+	for key, value := range c.headers {
+		req.Header.Set(key, value)
 	}
 
 	resp, err := http.DefaultClient.Do(req)

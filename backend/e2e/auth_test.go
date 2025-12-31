@@ -172,6 +172,111 @@ func TestAuth(t *testing.T) {
 	})
 }
 
+func TestLanguageSync(t *testing.T) {
+	ctx := context.Background()
+	dbMgr, _ := GetTestEnv()
+
+	// Clean and seed with deterministic data
+	require.NoError(t, dbMgr.Clean(ctx))
+	data, err := dbMgr.Seed(ctx, 42, testutil.DefaultSeedConfig())
+	require.NoError(t, err)
+
+	// Setup test server
+	router, cleanup, err := testutil.SetupTestServer(ctx, dbMgr)
+	require.NoError(t, err)
+	defer cleanup()
+
+	client := testutil.NewGraphQLClient(router)
+	defer client.Close()
+
+	userID := data.UserIDs[0]
+	token, err := testutil.GenerateUserToken(userID)
+	require.NoError(t, err)
+
+	t.Run("language is updated when Accept-Language header differs from stored", func(t *testing.T) {
+		// Set initial language in database
+		require.NoError(t, dbMgr.SetUserLanguage(ctx, userID, "no"))
+
+		// Verify initial language
+		initialLang, err := dbMgr.GetUserLanguage(ctx, userID)
+		require.NoError(t, err)
+		assert.Equal(t, "no", initialLang)
+
+		// Make request with different language
+		resp := client.WithAuth(token).WithLanguage("en-US").MustExecute(t, `
+			query {
+				me { id language }
+			}
+		`, nil)
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		// Verify language was updated in database
+		updatedLang, err := dbMgr.GetUserLanguage(ctx, userID)
+		require.NoError(t, err)
+		assert.Equal(t, "en", updatedLang, "language should be updated to 'en' from 'en-US' header")
+	})
+
+	t.Run("language is not updated when Accept-Language header matches stored", func(t *testing.T) {
+		// Set language to match what we'll send
+		require.NoError(t, dbMgr.SetUserLanguage(ctx, userID, "de"))
+
+		// Make request with same language
+		resp := client.WithAuth(token).WithLanguage("de-DE").MustExecute(t, `
+			query {
+				me { id }
+			}
+		`, nil)
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		// Verify language is still the same
+		lang, err := dbMgr.GetUserLanguage(ctx, userID)
+		require.NoError(t, err)
+		assert.Equal(t, "de", lang, "language should remain 'de'")
+	})
+
+	t.Run("language defaults to Norwegian when no Accept-Language header", func(t *testing.T) {
+		// Set initial language to something else
+		require.NoError(t, dbMgr.SetUserLanguage(ctx, userID, "fr"))
+
+		// Make request without language header
+		resp := client.WithAuth(token).MustExecute(t, `
+			query {
+				me { id }
+			}
+		`, nil)
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		// Verify language was updated to default Norwegian
+		lang, err := dbMgr.GetUserLanguage(ctx, userID)
+		require.NoError(t, err)
+		assert.Equal(t, "no", lang, "language should be updated to default 'no'")
+	})
+
+	t.Run("language returned in me query reflects stored value", func(t *testing.T) {
+		// Set a specific language
+		require.NoError(t, dbMgr.SetUserLanguage(ctx, userID, "sv"))
+
+		// Make request with same language (so it doesn't get updated)
+		resp := client.WithAuth(token).WithLanguage("sv").MustExecute(t, `
+			query {
+				me { id language }
+			}
+		`, nil)
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result struct {
+			Me struct {
+				ID       string `json:"id"`
+				Language string `json:"language"`
+			} `json:"me"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		assert.Equal(t, userID, result.Me.ID)
+		assert.Equal(t, "sv", result.Me.Language)
+	})
+}
+
 func TestAuthWithMinimalSeed(t *testing.T) {
 	ctx := context.Background()
 	dbMgr, _ := GetTestEnv()

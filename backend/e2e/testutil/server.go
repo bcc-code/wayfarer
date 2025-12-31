@@ -25,6 +25,7 @@ type TestServerConfig struct {
 	RoleService        *services.RoleService
 	LeaderboardService *services.LeaderboardService
 	SettingsService    *services.SettingsService
+	LanguageService    *services.LanguageService
 	Loaders            *loaders.Loaders
 }
 
@@ -71,26 +72,44 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 		Issuer: TestJWTIssuer,
 	}
 
-	// GraphQL endpoint with JWT middleware
-	router.POST("/graphql", middleware.JWTAuth(jwtConfig), graphqlHandler(gqlHandler))
+	// GraphQL endpoint with language and JWT middleware
+	router.POST("/graphql",
+		middleware.LanguageExtractor(),
+		middleware.JWTAuth(jwtConfig),
+		graphqlHandlerWithLanguage(gqlHandler, cfg.LanguageService),
+	)
 
 	return router
 }
 
-// graphqlHandler wraps a GraphQL handler for use with Gin
-func graphqlHandler(h *handler.Server) gin.HandlerFunc {
+// graphqlHandlerWithLanguage wraps a GraphQL handler for use with Gin, including language sync
+func graphqlHandlerWithLanguage(h *handler.Server, languageService *services.LanguageService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Transfer Gin context values to request context for GraphQL resolvers
 		ctx := c.Request.Context()
 
 		// Transfer user_id if present
+		var userID string
 		if uid, exists := c.Get("user_id"); exists {
+			userID = uid.(string)
 			ctx = context.WithValue(ctx, middleware.UserIDKey, uid)
 		}
 
 		// Transfer user_roles if present
 		if userRoles, exists := c.Get("user_roles"); exists {
 			ctx = context.WithValue(ctx, middleware.UserRolesKey, userRoles)
+		}
+
+		// Transfer language if present
+		var requestedLang string
+		if language, exists := c.Get("language"); exists {
+			requestedLang = language.(string)
+			ctx = context.WithValue(ctx, middleware.LanguageKey, language)
+		}
+
+		// Sync language preference synchronously for testing (not fire-and-forget)
+		if userID != "" && requestedLang != "" && languageService != nil {
+			languageService.SyncUserLanguage(ctx, userID, requestedLang)
 		}
 
 		// Create new request with updated context
@@ -117,6 +136,7 @@ func SetupTestServer(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, fu
 	// Create services
 	roleService := services.NewRoleService(dbMgr.DB.Queries, testCache)
 	leaderboardService := services.NewLeaderboardService(dbMgr.DB.Queries, testCache.Cache, dataLoaders)
+	languageService := services.NewLanguageService(dbMgr.DB.Queries, testCache, dataLoaders.UserByIDLoader, logger)
 
 	// Create settings service
 	settingsService, err := services.NewSettingsService(ctx, dbMgr.DB.Queries, logger)
@@ -132,6 +152,7 @@ func SetupTestServer(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, fu
 		RoleService:        roleService,
 		LeaderboardService: leaderboardService,
 		SettingsService:    settingsService,
+		LanguageService:    languageService,
 		Loaders:            dataLoaders,
 	})
 

@@ -256,3 +256,22 @@ func generateULID() string {
 	}
 	return string(b)
 }
+
+// GetUserLanguage returns the language stored for a user in the database
+func (m *TestDBManager) GetUserLanguage(ctx context.Context, userID string) (string, error) {
+	var language string
+	err := m.DB.Pool.QueryRow(ctx, "SELECT language FROM users WHERE id = $1", userID).Scan(&language)
+	if err != nil {
+		return "", fmt.Errorf("failed to get user language: %w", err)
+	}
+	return language, nil
+}
+
+// SetUserLanguage sets the language for a user in the database
+func (m *TestDBManager) SetUserLanguage(ctx context.Context, userID, language string) error {
+	_, err := m.DB.Pool.Exec(ctx, "UPDATE users SET language = $1 WHERE id = $2", language, userID)
+	if err != nil {
+		return fmt.Errorf("failed to set user language: %w", err)
+	}
+	return nil
+}
