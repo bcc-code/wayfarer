@@ -1,1 +1,121 @@
-{}
+{
+  "error": {
+    "title": "Oops! Algo deu errado"
+  },
+  "emptyStates": {
+    "standings": "Ainda não há nenhuma top list",
+    "unit": "Ainda não há nenhuma top list para a sua unidade.",
+    "challenges": "Nenhum desafio ainda",
+    "pointHistory": "Ainda sem pontos"
+  },
+  "auth": {
+    "loginButton": "Login",
+    "logoutButton": "Sair"
+  },
+  "quiz": {
+    "wrongAnswer": "Resposta errada",
+    "correctAnswer": "Resposta correta",
+    "yourAnswer": "Sua resposta",
+    "lockAnswer": "Bloquear resposta",
+    "questionNumber": "{current} de {total}",
+    "continue": "Continue",
+    "nextQuestion": "Próxima pergunta",
+    "done": "Pronto",
+    "result": {
+      "receivedNoPoints": "Você não acumulou nenhum ponto.",
+      "receivedPoints": "Você acumulou {points} pontos.",
+      "betterLuckNextTime": "Boa sorte na próxima vez!",
+      "wellDone": "Bom trabalho!",
+      "perfect": "Perfeito!"
+    }
+  },
+  "pages": {
+    "standings": "Top lists",
+    "challenges": "Desafios",
+    "settings": "Configurações",
+    "pointHistory": "Histórico de pontos",
+    "rules": "Regras",
+    "consents": "Meus consentimentos",
+    "addToHomeScreen": "Adicionar aplicativo à tela inicial"
+  },
+  "navigation": {
+    "standings": "Top lists",
+    "profile": "Minha página",
+    "challenges": "Desafios"
+  },
+  "emptyState": "Nada para ver aqui",
+  "settings": {
+    "language": "Idioma do aplicativo",
+    "colorMode": "Modo de cor",
+    "colorModes": {
+      "system": "Sistema",
+      "light": "Claro",
+      "dark": "Escuro"
+    },
+    "consents": "Meus consentimentos",
+    "notifications": "Avisos",
+    "notificationsBlocked": "As notificações estão bloqueadas nas configurações do navegador",
+    "notificationsOnlyAvailableWhenInstalled": "As notificações só estão disponíveis se adicionar o aplicativo a tela inicial.",
+    "addToHomeScreen": "Adicionar aplicativo à tela inicial",
+    "privacyPolicy": "Declaração de Privacidade"
+  },
+  "standings": {
+    "global": "Globalmente",
+    "unit": "Minha unidade",
+    "local": "Local",
+    "you": "Você",
+    "rules": "Regras",
+    "units": "Unidades",
+    "top": "Topo {amount}",
+    "u18": "U18",
+    "o18": "O18"
+  },
+  "pointHistory": {
+    "pointHistoryButton": "Histórico de pontos",
+    "explanation": "Aqui você pode ver no que ganhou – ou perdeu – pontos."
+  },
+  "unit": {
+    "editUnit": "Editar unidade",
+    "unitLeader": "Líder da unidade",
+    "saveChanges": "Salvar alterações",
+    "unitName": "Nome da unidade",
+    "noUnitLeader": "Sem líder de unidade",
+    "selectUnitLeader": "Selecione o líder da unidade"
+  },
+  "place": "colocação",
+  "points": "pontos",
+  "givesYouXPoints": "Te dá {points} pontos",
+  "consent": {
+    "accepted": "Aceito",
+    "rejected": "Recusado",
+    "acceptButton": "Eu concordo",
+    "rejectButton": "Recusar os termos",
+    "bannerTitle": "Você tem consentimentos que precisa decidir",
+    "bannerButton": "Ir para as configurações de consentimento",
+    "readButton": "Leia os termos",
+    "change": "Alterar",
+    "goToConsent": "Ir para consentimento",
+    "continue": "Continuar",
+    "changeDescription": "Para alterar o seu consentimento, entre em contato conosco pelo e-mail {email}",
+    "changeConsent": "Alterar consentimento"
+  },
+  "achievement": {
+    "title": "Prêmio",
+    "unlocked": "Conquistado"
+  },
+  "feedback": {
+    "title": "Envie-nos comentários",
+    "cta": "Envie-nos comentários",
+    "description": "Gostaríamos de ouvir sua opinião para que possamos melhorar ainda mais nosso serviço.",
+    "send": "Enviar feedback",
+    "label": "Houve algo que você achou bom ou algo que poderia ser melhorado?",
+    "placeholder": "Escreva aqui o seu comentário...",
+    "success": "Obrigado pelo seu feedback.",
+    "validationError": "Você não pode enviar um feedback vazio",
+    "lengthError": "O feedback não pode ter mais de {max} caracteres",
+    "thankYou": "Obrigado pela ajuda!",
+    "thankYouDescription": "As suas sugestões serão utilizadas para o desenvolvimento futuro do serviço.",
+    "close": "Muito bom.",
+    "canContactMe": "Sim, concordo que vocês possam entrar em contato comigo em relação ao meu feedback."
+  }
+}
