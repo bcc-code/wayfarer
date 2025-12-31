@@ -187,6 +187,7 @@ func (r *mutationResolver) CreateTeam(ctx context.Context, projectID string, inp
 
 	return &model.Team{
 		ID:          team.ID,
+		ProjectID:   projectID,
 		Name:        team.Name,
 		Description: description,
 		JoinCode:    team.JoinCode,
