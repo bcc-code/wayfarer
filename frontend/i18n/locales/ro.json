@@ -1,1 +1,121 @@
-{}
+{
+  "error": {
+    "title": "Ups! Ceva nu a funcționat"
+  },
+  "emptyStates": {
+    "standings": "Niciun clasament nu este încă disponibil",
+    "unit": "Niciun clasament nu este încă disponibil pentru unitatea ta",
+    "challenges": "Nicio provocare nu este încă disponibilă",
+    "pointHistory": "Încă nu ai niciun punct"
+  },
+  "auth": {
+    "loginButton": "Conectează-te",
+    "logoutButton": "Deconectează-te"
+  },
+  "quiz": {
+    "wrongAnswer": "Răspuns greșit",
+    "correctAnswer": "Răspuns corect",
+    "yourAnswer": "Răspunsul tău",
+    "lockAnswer": "Blochează răspunsul",
+    "questionNumber": "{current} din {total}",
+    "continue": "Continuă",
+    "nextQuestion": "Următoarea întrebare",
+    "done": "Gata",
+    "result": {
+      "receivedNoPoints": "Nu ai obținut niciun punct.",
+      "receivedPoints": "Ai acumulat {points} punct(e).",
+      "betterLuckNextTime": "Mai mult succes data viitoare!",
+      "wellDone": "Bravo!",
+      "perfect": "Perfect!"
+    }
+  },
+  "pages": {
+    "standings": "Clasamente",
+    "challenges": "Provocări",
+    "settings": "Setări",
+    "pointHistory": "Istoric puncte",
+    "rules": "Reguli",
+    "consents": "Consimțămintele mele",
+    "addToHomeScreen": "Adăugă aplicația pe ecranul de start"
+  },
+  "navigation": {
+    "standings": "Clasamente",
+    "profile": "Pagina mea",
+    "challenges": "Provocări"
+  },
+  "emptyState": "Nimic de văzut aici",
+  "settings": {
+    "language": "Limba aplicației",
+    "colorMode": "Modul de culoare",
+    "colorModes": {
+      "system": "Sistem",
+      "light": "Lumină",
+      "dark": "Întunecat"
+    },
+    "consents": "Consimțămintele mele",
+    "notifications": "Notificări",
+    "notificationsBlocked": "Notificările sunt blocate în setările browserului tău",
+    "notificationsOnlyAvailableWhenInstalled": "Notificările sunt disponibile doar dacă adaugi aplicația pe ecranul de start.",
+    "addToHomeScreen": "Adăugă aplicația pe ecranul de start",
+    "privacyPolicy": "Politica de confidențialitate"
+  },
+  "standings": {
+    "global": "Global",
+    "unit": "Unitatea mea",
+    "local": "Local",
+    "you": "Tu",
+    "rules": "Reguli",
+    "units": "Unități",
+    "top": "Clasament {amount}",
+    "u18": "U18",
+    "o18": "O18"
+  },
+  "pointHistory": {
+    "pointHistoryButton": "Istoric puncte",
+    "explanation": "Aici poți vedea pentru ce ai câștigat - sau pierdut - puncte."
+  },
+  "unit": {
+    "editUnit": "Editează unitatea",
+    "unitLeader": "Lider de unitate",
+    "saveChanges": "Salvează modificările",
+    "unitName": "Numele unității",
+    "noUnitLeader": "Lipsește liderul de unitate",
+    "selectUnitLeader": "Alege lider de unitate"
+  },
+  "place": "plasare",
+  "points": "puncte",
+  "givesYouXPoints": "Îți oferă {points} punct(e)",
+  "consent": {
+    "accepted": "Acceptat",
+    "rejected": "Refuzat",
+    "acceptButton": "Sunt de acord",
+    "rejectButton": "Refuz termenii",
+    "bannerTitle": "Ai consimțăminte pentru care trebuie să te decizi",
+    "bannerButton": "Accesează setările de consimțământ",
+    "readButton": "Citește termenii și condițiile",
+    "change": "Modifică",
+    "goToConsent": "Mergi la consimțământ",
+    "continue": "Mai departe",
+    "changeDescription": "Pentru a modifica consimțământul tău, contactează-ne la {email}",
+    "changeConsent": "Modifică consimțământ"
+  },
+  "achievement": {
+    "title": "Premiu",
+    "unlocked": "Realizat!"
+  },
+  "feedback": {
+    "title": "Dă-ne feedback",
+    "cta": "Dă-ne feedback",
+    "description": "Ne-ar face plăcere să primim feedback-ul tău, pentru a ne putea îmbunătăți serviciile.",
+    "send": "Trimite feedback",
+    "label": "A fost ceva ce ți s-a părut bun, sau ceva ce ar putea fi îmbunătățit?",
+    "placeholder": "Scrie aici feedback-ul tău...",
+    "success": "Mulțumim pentru feedback",
+    "validationError": "Nu poți trimite un formular de feedback gol.",
+    "lengthError": "Feedback-ul nu poate depăși {max} caractere.",
+    "thankYou": "Mulțumesc pentru ajutor!",
+    "thankYouDescription": "Părerea ta va fi utilizată pentru dezvoltarea serviciului.",
+    "close": "Cu plăcere",
+    "canContactMe": "Da, sunt de acord să mă contactați în legătură cu feedback-ul meu."
+  }
+}
