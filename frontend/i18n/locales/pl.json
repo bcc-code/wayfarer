@@ -1,1 +1,121 @@
-{}
+{
+  "error": {
+    "title": "Ups! Coś poszło nie tak"
+  },
+  "emptyStates": {
+    "standings": "Nie ma jeszcze żadnej listy rankingowej",
+    "unit": "Nie ma jeszcze żadnej listy rankingowej dla twojego unitu",
+    "challenges": "Nie ma jeszcze żadnych wyzwań",
+    "pointHistory": "Nie ma jeszcze żadnych punktów"
+  },
+  "auth": {
+    "loginButton": "Zaloguj się",
+    "logoutButton": "Wyloguj się"
+  },
+  "quiz": {
+    "wrongAnswer": "Zła odpowiedź",
+    "correctAnswer": "Prawidłowa odpowiedź",
+    "yourAnswer": "Twoja odpowiedź",
+    "lockAnswer": "Zatwierdź odpowiedź",
+    "questionNumber": "{current} z {total}",
+    "continue": "Kontynuuj",
+    "nextQuestion": "Następne pytanie",
+    "done": "Gotowe",
+    "result": {
+      "receivedNoPoints": "Nie zdobyłeś żadnych punktów.",
+      "receivedPoints": "Zdobyłeś {points} pkt.",
+      "betterLuckNextTime": "Powodzenia następnym razem!",
+      "wellDone": "Dobra robota!",
+      "perfect": "Idealnie!"
+    }
+  },
+  "pages": {
+    "standings": "Listy rankingowe",
+    "challenges": "Wyzwania",
+    "settings": "Ustawienia",
+    "pointHistory": "Historia punktów",
+    "rules": "Zasady",
+    "consents": "Moje zgody",
+    "addToHomeScreen": "Dodaj aplikację do ekranu głównego"
+  },
+  "navigation": {
+    "standings": "Listy rankingowe",
+    "profile": "Moja strona",
+    "challenges": "Wyzwania"
+  },
+  "emptyState": "Nic tu nie ma",
+  "settings": {
+    "language": "Język aplikacji",
+    "colorMode": "Tryb kolorów",
+    "colorModes": {
+      "system": "System",
+      "light": "Jasny",
+      "dark": "Ciemny"
+    },
+    "consents": "Moje zgody",
+    "notifications": "Powiadomienia",
+    "notificationsBlocked": "Powiadomienia są zablokowane w ustawieniach przeglądarki",
+    "notificationsOnlyAvailableWhenInstalled": "Powiadomienia są dostępne tylko wtedy, gdy dodasz aplikację do ekranu głównego.",
+    "addToHomeScreen": "Dodaj aplikację do ekranu głównego",
+    "privacyPolicy": "Polityka prywatności"
+  },
+  "standings": {
+    "global": "Globalnie",
+    "unit": "Mój unit",
+    "local": "Lokalnie",
+    "you": "Ty",
+    "rules": "Zasady",
+    "units": "Unity",
+    "top": "Top {amount}",
+    "u18": "U18",
+    "o18": "O18"
+  },
+  "pointHistory": {
+    "pointHistoryButton": "Historia punktów",
+    "explanation": "Tutaj możesz sprawdzić, za co otrzymałeś - lub straciłeś - punkty."
+  },
+  "unit": {
+    "editUnit": "Edytuj unit",
+    "unitLeader": "Lider unitu",
+    "saveChanges": "Zapisz zmiany",
+    "unitName": "Nazwa unitu",
+    "noUnitLeader": "Brak lidera unitu",
+    "selectUnitLeader": "Wybierz lidera unitu"
+  },
+  "place": "miejsce",
+  "points": "pkt",
+  "givesYouXPoints": "Daje ci {points} pkt",
+  "consent": {
+    "accepted": "Zaakceptowane",
+    "rejected": "Odrzucone",
+    "acceptButton": "Wyrażam zgodę",
+    "rejectButton": "Odrzuć warunki",
+    "bannerTitle": "Masz zgody, które musisz rozważyć",
+    "bannerButton": "Przejdź do ustawień zgód",
+    "readButton": "Przeczytaj warunki",
+    "change": "Zmień",
+    "goToConsent": "Przejdź do zgody",
+    "continue": "Przejdź dalej",
+    "changeDescription": "Aby zmienić swoją zgodę, skontaktuj się z nami pod adresem {email}",
+    "changeConsent": "Zmiana zgody"
+  },
+  "achievement": {
+    "title": "Osiągnięcie",
+    "unlocked": "Osiągnięto!"
+  },
+  "feedback": {
+    "title": "Podziel się z nami swoją opinią",
+    "cta": "Podziel się z nami swoją opinią",
+    "description": "Chcielibyśmy poznać Twoją opinię, abyśmy mogli jeszcze bardziej ulepszyć nasze usługi.",
+    "send": "Wyślij swoją opinię",
+    "label": "Czy było coś, co Ci się podobało, lub coś, co można by poprawić?",
+    "placeholder": "Napisz opinię tutaj...",
+    "success": "Dziękujemy za opinię.",
+    "validationError": "Nie można wysłać pustej odpowiedzi.",
+    "lengthError": "Odpowiedź nie może przekraczać {max} znaków.",
+    "thankYou": "Dziękujemy za pomoc!",
+    "thankYouDescription": "Twoje uwagi zostaną wykorzystane do dalszego rozwoju serwisu.",
+    "close": "Nie ma za co.",
+    "canContactMe": "Tak, wyrażam zgodę na kontaktowanie się ze mną w związku z moją opinią."
+  }
+}
