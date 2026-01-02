@@ -128,3 +128,4 @@ Each project can contain multiple events, which usually is some form of in-perso
 - Do not EVER automatically run the seed script!
 - NEVER SEED WITHOUT EXPLICIT PERMISSION
 - Do not run migration without explicit aproval!
+- To run codegen in the backend, run `make generate`
