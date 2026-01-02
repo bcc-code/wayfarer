@@ -15,6 +15,7 @@ query ConsentsPage {
         managedBy
         managementType
         url
+        buttonText
       }
       acceptedConsents {
         __typename
@@ -29,6 +30,7 @@ query ConsentsPage {
           managedBy
           managementType
           url
+          buttonText
         }
         action
         actionDate
@@ -46,6 +48,7 @@ query ConsentsPage {
           managedBy
           managementType
           url
+          buttonText
         }
         action
         actionDate

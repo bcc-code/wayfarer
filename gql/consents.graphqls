@@ -8,6 +8,7 @@ type Consent {
     shortText: String!
     body: MarkdownText!
     url: String
+    buttonText: String
     publishedAt: DateTime
     managementType: ConsentManagementType!
     managedBy: String
@@ -66,6 +67,7 @@ extend type Mutation {
         shortText: String
         body: String!
         url: String
+        buttonText: String
         publishedAt: DateTime
         isRemote: Boolean
         managedBy: String
@@ -78,6 +80,7 @@ extend type Mutation {
         shortText: String
         body: String
         url: String
+        buttonText: String
         publishedAt: DateTime
         managedBy: String
     ): Consent! @requireRole(roles: ["admin", "superadmin"])

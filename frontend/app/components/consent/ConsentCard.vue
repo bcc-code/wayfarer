@@ -94,6 +94,13 @@ const url = computed(() => {
   return props.consent.url
 })
 
+const buttonText = computed(() => {
+  if (props.consent.__typename == 'UserConsent') {
+    return props.consent.consent.buttonText
+  }
+  return props.consent.buttonText
+})
+
 const changing = ref(false)
 </script>
 
@@ -127,7 +134,7 @@ const changing = ref(false)
       <template v-else>
         <NuxtLink :to="url" external target="_blank">
           <DesignButton size="large" class="w-full">
-            <span>{{ $t('consent.goToConsent') }}</span>
+            <span>{{ buttonText || $t('consent.goToConsent') }}</span>
             <IconExternalLink class="size-5" />
           </DesignButton>
         </NuxtLink>

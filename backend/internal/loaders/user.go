@@ -127,6 +127,7 @@ func fetchConsentDataForUsers(ctx context.Context, db *database.DB, c *cache.Cac
 					ShortText:      row.ShortText,
 					BodyMarkdown:   row.Body,
 					URL:            row.Url,
+					ButtonText:     row.ButtonText,
 					PublishedAt:    publishedAt,
 					ManagementType: managementType,
 					ManagedBy:      row.ManagedBy,

@@ -223,6 +223,7 @@ type Consent struct {
 	ShortText      string                    `json:"shortText"`
 	Body           *MarkdownText             `json:"body"`
 	URL            *string                   `json:"url,omitempty"`
+	ButtonText     *string                   `json:"buttonText,omitempty"`
 	PublishedAt    *scalars.DateTime         `json:"publishedAt,omitempty"`
 	ManagementType ConsentManagementType     `json:"managementType"`
 	ManagedBy      *string                   `json:"managedBy,omitempty"`

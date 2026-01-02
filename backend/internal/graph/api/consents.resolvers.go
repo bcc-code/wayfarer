@@ -211,7 +211,7 @@ func (r *mutationResolver) RejectConsent(ctx context.Context, consentID string) 
 }
 
 // CreateConsent is the resolver for the createConsent field.
-func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) (*model.Consent, error) {
+func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title string, shortText *string, body string, url *string, buttonText *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) (*model.Consent, error) {
 	// Get next version for this consent key
 	nextVersion, err := r.DB.Queries.GetNextVersionForConsentKey(ctx, key)
 	if err != nil {
@@ -243,6 +243,7 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 		ShortText:   shortTextStr,
 		Body:        string(body),
 		Url:         url,
+		ButtonText:  buttonText,
 		PublishedAt: publishedAtPG,
 		IsRemote:    isRemoteBool,
 		ManagedBy:   managedBy,
@@ -273,6 +274,7 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 		ShortText:      consent.ShortText,
 		BodyMarkdown:   consent.Body,
 		URL:            consent.Url,
+		ButtonText:     consent.ButtonText,
 		PublishedAt:    publishedAtOut,
 		ManagementType: managementType,
 		ManagedBy:      consent.ManagedBy,
@@ -280,8 +282,8 @@ func (r *mutationResolver) CreateConsent(ctx context.Context, key string, title 
 }
 
 // UpdateConsent is the resolver for the updateConsent field.
-func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime, managedBy *string) (*model.Consent, error) {
-	var titleStr, shortTextStr, bodyStr, urlStr, managedByStr string
+func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *string, shortText *string, body *string, url *string, buttonText *string, publishedAt *scalars.DateTime, managedBy *string) (*model.Consent, error) {
+	var titleStr, shortTextStr, bodyStr, urlStr, buttonTextStr, managedByStr string
 	if title != nil {
 		titleStr = *title
 	}
@@ -293,6 +295,9 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 	}
 	if url != nil {
 		urlStr = *url
+	}
+	if buttonText != nil {
+		buttonTextStr = *buttonText
 	}
 	if managedBy != nil {
 		managedByStr = *managedBy
@@ -309,6 +314,7 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 		ShortText:   shortTextStr,
 		Body:        bodyStr,
 		Url:         urlStr,
+		ButtonText:  buttonTextStr,
 		ManagedBy:   managedByStr,
 		PublishedAt: publishedAtPG,
 	})
@@ -339,6 +345,7 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 		ShortText:      consent.ShortText,
 		BodyMarkdown:   consent.Body,
 		URL:            consent.Url,
+		ButtonText:     consent.ButtonText,
 		PublishedAt:    publishedAtOut,
 		ManagementType: managementType,
 		ManagedBy:      consent.ManagedBy,
@@ -373,6 +380,7 @@ func (r *queryResolver) Consents(ctx context.Context) ([]model.Consent, error) {
 			ShortText:      row.ShortText,
 			BodyMarkdown:   row.Body,
 			URL:            row.Url,
+			ButtonText:     row.ButtonText,
 			PublishedAt:    publishedAt,
 			ManagementType: managementType,
 			ManagedBy:      row.ManagedBy,
@@ -423,6 +431,7 @@ func (r *queryResolver) PendingConsents(ctx context.Context) ([]model.Consent, e
 			ShortText:      row.ShortText,
 			BodyMarkdown:   row.Body,
 			URL:            row.Url,
+			ButtonText:     row.ButtonText,
 			PublishedAt:    publishedAt,
 			ManagementType: managementType,
 			ManagedBy:      row.ManagedBy,

@@ -20,6 +20,7 @@ mutation CreateConsent(
   $shortText: String
   $body: String!
   $url: String
+  $buttonText: String
   $publishedAt: DateTime
   $isRemote: Boolean
   $managedBy: String
@@ -30,6 +31,7 @@ mutation CreateConsent(
     shortText: $shortText
     body: $body
     url: $url
+    buttonText: $buttonText
     publishedAt: $publishedAt
     isRemote: $isRemote
     managedBy: $managedBy
@@ -47,6 +49,7 @@ mutation UpdateConsent(
   $shortText: String
   $body: String
   $url: String
+  $buttonText: String
   $publishedAt: DateTime
   $managedBy: String
 ) {
@@ -56,6 +59,7 @@ mutation UpdateConsent(
     shortText: $shortText
     body: $body
     url: $url
+    buttonText: $buttonText
     publishedAt: $publishedAt
     managedBy: $managedBy
   ) {

@@ -19,6 +19,7 @@ const schema = z.object({
   shortText: z.string().optional(),
   body: z.string().min(1, 'Body is required'),
   url: z.url('Must be a valid URL').optional().or(z.literal('')),
+  buttonText: z.string().optional(),
   publishNow: z.boolean().default(false),
   isRemote: z.boolean().default(false),
   managedBy: z.string().optional(),
@@ -32,6 +33,7 @@ const state = reactive<Schema>({
   shortText: '',
   body: '',
   url: '',
+  buttonText: '',
   publishNow: false,
   isRemote: false,
   managedBy: '',
@@ -49,6 +51,7 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
     shortText: event.data.shortText || undefined,
     body: event.data.body,
     url: event.data.url || undefined,
+    buttonText: event.data.buttonText || undefined,
     publishedAt: event.data.publishNow ? new Date().toISOString() : undefined,
     isRemote: event.data.isRemote || undefined,
     managedBy: event.data.managedBy || undefined,
@@ -162,6 +165,19 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
                   v-model="state.managedBy"
                   class="w-full"
                   placeholder="External system name"
+                />
+              </UFormField>
+
+              <UFormField
+                v-if="state.isRemote"
+                name="buttonText"
+                label="Button Text"
+              >
+                <UInput
+                  v-model="state.buttonText"
+                  class="w-full"
+                  placeholder="Gå til samtykke"
+                  description="Custom text for the consent button. Leave empty to use the default."
                 />
               </UFormField>
 

@@ -92,6 +92,7 @@ type Consent struct {
 	ManagedBy   *string            `json:"managed_by"`
 	IsRemote    bool               `json:"is_remote"`
 	ShortText   string             `json:"short_text"`
+	ButtonText  *string            `json:"button_text"`
 }
 
 type ConsentTranslation struct {
@@ -102,6 +103,7 @@ type ConsentTranslation struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 	ShortText    *string            `json:"short_text"`
+	ButtonText   *string            `json:"button_text"`
 }
 
 type ContentAchievement struct {

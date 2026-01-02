@@ -36,6 +36,15 @@ func applyMarkdownTranslation(translated *string, base scalars.Markdown) scalars
 	return base
 }
 
+// applyOptionalStringTranslation returns the translated value if non-nil and non-empty, otherwise the base value
+// Used for optional fields where both the base and translated values are pointers
+func applyOptionalStringTranslation(translated *string, base *string) *string {
+	if translated != nil && *translated != "" {
+		return translated
+	}
+	return base
+}
+
 // LoadProjectWithTranslation loads a project and applies translation for the requested language
 func (r *Resolver) LoadProjectWithTranslation(ctx context.Context, id string) (*model.Project, error) {
 	project, err := r.Loaders.ProjectByIDLoader.Load(ctx, id)()
@@ -528,6 +537,7 @@ func (r *Resolver) LoadConsentWithTranslation(ctx context.Context, id string) (*
 	translated.Title = applyStringTranslation(trans.Title, consent.Title)
 	translated.ShortText = applyStringTranslation(trans.ShortText, consent.ShortText)
 	translated.BodyMarkdown = applyStringTranslation(trans.Body, consent.BodyMarkdown)
+	translated.ButtonText = applyOptionalStringTranslation(trans.ButtonText, consent.ButtonText)
 	return &translated, nil
 }
 
@@ -556,6 +566,7 @@ func (r *Resolver) ApplyTranslationToConsent(ctx context.Context, consent *model
 	translated.Title = applyStringTranslation(trans.Title, consent.Title)
 	translated.ShortText = applyStringTranslation(trans.ShortText, consent.ShortText)
 	translated.BodyMarkdown = applyStringTranslation(trans.Body, consent.BodyMarkdown)
+	translated.ButtonText = applyOptionalStringTranslation(trans.ButtonText, consent.ButtonText)
 	return &translated
 }
 

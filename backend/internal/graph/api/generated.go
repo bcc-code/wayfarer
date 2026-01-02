@@ -165,6 +165,7 @@ type ComplexityRoot struct {
 
 	Consent struct {
 		Body           func(childComplexity int) int
+		ButtonText     func(childComplexity int) int
 		ID             func(childComplexity int) int
 		Key            func(childComplexity int) int
 		ManagedBy      func(childComplexity int) int
@@ -385,7 +386,7 @@ type ComplexityRoot struct {
 		ClearAllCache                               func(childComplexity int) int
 		CompleteChallenge                           func(childComplexity int, userID string, challengeID string, completedAt *scalars.DateTime) int
 		CreateChallenge                             func(childComplexity int, projectID string, eventID string, input model.CreateChallengeInput) int
-		CreateConsent                               func(childComplexity int, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) int
+		CreateConsent                               func(childComplexity int, key string, title string, shortText *string, body string, url *string, buttonText *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) int
 		CreateContentAchievement                    func(childComplexity int, input model.CreateContentAchievementInput) int
 		CreateContentAchievementFromExternalContent func(childComplexity int, input model.CreateContentAchievementFromExternalContentInput) int
 		CreateEvent                                 func(childComplexity int, projectID string, input model.CreateEventInput) int
@@ -451,7 +452,7 @@ type ComplexityRoot struct {
 		UpdateAvatar                                func(childComplexity int, file graphql.Upload) int
 		UpdateChallenge                             func(childComplexity int, id string, input model.UpdateChallengeInput) int
 		UpdateChurch                                func(childComplexity int, id string, input model.UpdateChurchInput) int
-		UpdateConsent                               func(childComplexity int, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime, managedBy *string) int
+		UpdateConsent                               func(childComplexity int, id string, title *string, shortText *string, body *string, url *string, buttonText *string, publishedAt *scalars.DateTime, managedBy *string) int
 		UpdateContentAchievement                    func(childComplexity int, id string, input model.UpdateContentAchievementInput) int
 		UpdateEvent                                 func(childComplexity int, id string, input model.UpdateEventInput) int
 		UpdateProject                               func(childComplexity int, id string, input model.UpdateProjectInput) int
@@ -1079,8 +1080,8 @@ type MutationResolver interface {
 	DeleteScoreJournalEntry(ctx context.Context, id string) (bool, error)
 	AcceptConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
 	RejectConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
-	CreateConsent(ctx context.Context, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) (*model.Consent, error)
-	UpdateConsent(ctx context.Context, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime, managedBy *string) (*model.Consent, error)
+	CreateConsent(ctx context.Context, key string, title string, shortText *string, body string, url *string, buttonText *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) (*model.Consent, error)
+	UpdateConsent(ctx context.Context, id string, title *string, shortText *string, body *string, url *string, buttonText *string, publishedAt *scalars.DateTime, managedBy *string) (*model.Consent, error)
 	CreateQuiz(ctx context.Context, input model.CreateQuizInput) (*model.Quiz, error)
 	UpdateQuiz(ctx context.Context, id string, input model.UpdateQuizInput) (*model.Quiz, error)
 	DeleteQuiz(ctx context.Context, id string) (bool, error)
@@ -1606,6 +1607,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Consent.Body(childComplexity), true
+	case "Consent.buttonText":
+		if e.complexity.Consent.ButtonText == nil {
+			break
+		}
+
+		return e.complexity.Consent.ButtonText(childComplexity), true
 	case "Consent.id":
 		if e.complexity.Consent.ID == nil {
 			break
@@ -2650,7 +2657,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateConsent(childComplexity, args["key"].(string), args["title"].(string), args["shortText"].(*string), args["body"].(string), args["url"].(*string), args["publishedAt"].(*scalars.DateTime), args["isRemote"].(*bool), args["managedBy"].(*string)), true
+		return e.complexity.Mutation.CreateConsent(childComplexity, args["key"].(string), args["title"].(string), args["shortText"].(*string), args["body"].(string), args["url"].(*string), args["buttonText"].(*string), args["publishedAt"].(*scalars.DateTime), args["isRemote"].(*bool), args["managedBy"].(*string)), true
 	case "Mutation.createContentAchievement":
 		if e.complexity.Mutation.CreateContentAchievement == nil {
 			break
@@ -3371,7 +3378,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateConsent(childComplexity, args["id"].(string), args["title"].(*string), args["shortText"].(*string), args["body"].(*string), args["url"].(*string), args["publishedAt"].(*scalars.DateTime), args["managedBy"].(*string)), true
+		return e.complexity.Mutation.UpdateConsent(childComplexity, args["id"].(string), args["title"].(*string), args["shortText"].(*string), args["body"].(*string), args["url"].(*string), args["buttonText"].(*string), args["publishedAt"].(*scalars.DateTime), args["managedBy"].(*string)), true
 	case "Mutation.updateContentAchievement":
 		if e.complexity.Mutation.UpdateContentAchievement == nil {
 			break
@@ -7486,6 +7493,7 @@ type Consent {
     shortText: String!
     body: MarkdownText!
     url: String
+    buttonText: String
     publishedAt: DateTime
     managementType: ConsentManagementType!
     managedBy: String
@@ -7544,6 +7552,7 @@ extend type Mutation {
         shortText: String
         body: String!
         url: String
+        buttonText: String
         publishedAt: DateTime
         isRemote: Boolean
         managedBy: String
@@ -7556,6 +7565,7 @@ extend type Mutation {
         shortText: String
         body: String
         url: String
+        buttonText: String
         publishedAt: DateTime
         managedBy: String
     ): Consent! @requireRole(roles: ["admin", "superadmin"])
@@ -8283,21 +8293,26 @@ func (ec *executionContext) field_Mutation_createConsent_args(ctx context.Contex
 		return nil, err
 	}
 	args["url"] = arg4
-	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "publishedAt", ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime)
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "buttonText", ec.unmarshalOString2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
-	args["publishedAt"] = arg5
-	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "isRemote", ec.unmarshalOBoolean2ᚖbool)
+	args["buttonText"] = arg5
+	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "publishedAt", ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime)
 	if err != nil {
 		return nil, err
 	}
-	args["isRemote"] = arg6
-	arg7, err := graphql.ProcessArgField(ctx, rawArgs, "managedBy", ec.unmarshalOString2ᚖstring)
+	args["publishedAt"] = arg6
+	arg7, err := graphql.ProcessArgField(ctx, rawArgs, "isRemote", ec.unmarshalOBoolean2ᚖbool)
 	if err != nil {
 		return nil, err
 	}
-	args["managedBy"] = arg7
+	args["isRemote"] = arg7
+	arg8, err := graphql.ProcessArgField(ctx, rawArgs, "managedBy", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["managedBy"] = arg8
 	return args, nil
 }
 
@@ -9193,16 +9208,21 @@ func (ec *executionContext) field_Mutation_updateConsent_args(ctx context.Contex
 		return nil, err
 	}
 	args["url"] = arg4
-	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "publishedAt", ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime)
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "buttonText", ec.unmarshalOString2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
-	args["publishedAt"] = arg5
-	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "managedBy", ec.unmarshalOString2ᚖstring)
+	args["buttonText"] = arg5
+	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "publishedAt", ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime)
 	if err != nil {
 		return nil, err
 	}
-	args["managedBy"] = arg6
+	args["publishedAt"] = arg6
+	arg7, err := graphql.ProcessArgField(ctx, rawArgs, "managedBy", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["managedBy"] = arg7
 	return args, nil
 }
 
@@ -11789,6 +11809,35 @@ func (ec *executionContext) fieldContext_Consent_url(_ context.Context, field gr
 	return fc, nil
 }
 
+func (ec *executionContext) _Consent_buttonText(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Consent_buttonText,
+		func(ctx context.Context) (any, error) {
+			return obj.ButtonText, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Consent_buttonText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Consent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Consent_publishedAt(ctx context.Context, field graphql.CollectedField, obj *model.Consent) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -11959,6 +12008,8 @@ func (ec *executionContext) fieldContext_ConsentStatus_pendingConsents(_ context
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
 				return ec.fieldContext_Consent_url(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_Consent_buttonText(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_Consent_publishedAt(ctx, field)
 			case "managementType":
@@ -21047,7 +21098,7 @@ func (ec *executionContext) _Mutation_createConsent(ctx context.Context, field g
 		ec.fieldContext_Mutation_createConsent,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().CreateConsent(ctx, fc.Args["key"].(string), fc.Args["title"].(string), fc.Args["shortText"].(*string), fc.Args["body"].(string), fc.Args["url"].(*string), fc.Args["publishedAt"].(*scalars.DateTime), fc.Args["isRemote"].(*bool), fc.Args["managedBy"].(*string))
+			return ec.resolvers.Mutation().CreateConsent(ctx, fc.Args["key"].(string), fc.Args["title"].(string), fc.Args["shortText"].(*string), fc.Args["body"].(string), fc.Args["url"].(*string), fc.Args["buttonText"].(*string), fc.Args["publishedAt"].(*scalars.DateTime), fc.Args["isRemote"].(*bool), fc.Args["managedBy"].(*string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -21096,6 +21147,8 @@ func (ec *executionContext) fieldContext_Mutation_createConsent(ctx context.Cont
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
 				return ec.fieldContext_Consent_url(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_Consent_buttonText(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_Consent_publishedAt(ctx, field)
 			case "managementType":
@@ -21130,7 +21183,7 @@ func (ec *executionContext) _Mutation_updateConsent(ctx context.Context, field g
 		ec.fieldContext_Mutation_updateConsent,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateConsent(ctx, fc.Args["id"].(string), fc.Args["title"].(*string), fc.Args["shortText"].(*string), fc.Args["body"].(*string), fc.Args["url"].(*string), fc.Args["publishedAt"].(*scalars.DateTime), fc.Args["managedBy"].(*string))
+			return ec.resolvers.Mutation().UpdateConsent(ctx, fc.Args["id"].(string), fc.Args["title"].(*string), fc.Args["shortText"].(*string), fc.Args["body"].(*string), fc.Args["url"].(*string), fc.Args["buttonText"].(*string), fc.Args["publishedAt"].(*scalars.DateTime), fc.Args["managedBy"].(*string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -21179,6 +21232,8 @@ func (ec *executionContext) fieldContext_Mutation_updateConsent(ctx context.Cont
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
 				return ec.fieldContext_Consent_url(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_Consent_buttonText(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_Consent_publishedAt(ctx, field)
 			case "managementType":
@@ -26469,6 +26524,8 @@ func (ec *executionContext) fieldContext_Query_consents(_ context.Context, field
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
 				return ec.fieldContext_Consent_url(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_Consent_buttonText(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_Consent_publishedAt(ctx, field)
 			case "managementType":
@@ -26523,6 +26580,8 @@ func (ec *executionContext) fieldContext_Query_consent(ctx context.Context, fiel
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
 				return ec.fieldContext_Consent_url(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_Consent_buttonText(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_Consent_publishedAt(ctx, field)
 			case "managementType":
@@ -26587,6 +26646,8 @@ func (ec *executionContext) fieldContext_Query_pendingConsents(_ context.Context
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
 				return ec.fieldContext_Consent_url(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_Consent_buttonText(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_Consent_publishedAt(ctx, field)
 			case "managementType":
@@ -34979,6 +35040,8 @@ func (ec *executionContext) fieldContext_UserConsent_consent(_ context.Context, 
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
 				return ec.fieldContext_Consent_url(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_Consent_buttonText(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_Consent_publishedAt(ctx, field)
 			case "managementType":
@@ -35119,6 +35182,8 @@ func (ec *executionContext) fieldContext_UserConsentHistoryEntry_consent(_ conte
 				return ec.fieldContext_Consent_body(ctx, field)
 			case "url":
 				return ec.fieldContext_Consent_url(ctx, field)
+			case "buttonText":
+				return ec.fieldContext_Consent_buttonText(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_Consent_publishedAt(ctx, field)
 			case "managementType":
@@ -41928,6 +41993,8 @@ func (ec *executionContext) _Consent(ctx context.Context, sel ast.SelectionSet, 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "url":
 			out.Values[i] = ec._Consent_url(ctx, field, obj)
+		case "buttonText":
+			out.Values[i] = ec._Consent_buttonText(ctx, field, obj)
 		case "publishedAt":
 			out.Values[i] = ec._Consent_publishedAt(ctx, field, obj)
 		case "managementType":

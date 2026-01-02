@@ -17,6 +17,7 @@ gql(`
         html
       }
       url
+      buttonText
       publishedAt
       managementType
       managedBy
@@ -49,6 +50,7 @@ const editState = reactive({
   shortText: '',
   body: '',
   url: '',
+  buttonText: '',
   publishedAt: null as string | null,
   managedBy: '',
 })
@@ -59,6 +61,7 @@ function startEditing() {
     editState.shortText = data.value.consent.shortText
     editState.body = data.value.consent.body.markdown
     editState.url = data.value.consent.url ?? ''
+    editState.buttonText = data.value.consent.buttonText ?? ''
     editState.publishedAt = data.value.consent.publishedAt ?? null
     editState.managedBy = data.value.consent.managedBy ?? ''
     isEditing.value = true
@@ -76,6 +79,7 @@ async function saveChanges() {
     shortText: editState.shortText,
     body: editState.body,
     url: editState.url || null,
+    buttonText: editState.buttonText || null,
     publishedAt: editState.publishedAt || null,
     managedBy: editState.managedBy || null,
   })
@@ -149,9 +153,7 @@ async function publishConsent() {
           <div>
             <div class="mb-2 flex items-center gap-3">
               <h1 class="text-3xl font-bold">{{ data.consent.title }}</h1>
-              <UBadge variant="soft">
-                v{{ data.consent.version }}
-              </UBadge>
+              <UBadge variant="soft"> v{{ data.consent.version }} </UBadge>
               <UBadge
                 v-if="!data.consent.publishedAt"
                 variant="soft"
@@ -217,6 +219,17 @@ async function publishConsent() {
                 placeholder="External system identifier"
               />
             </UFormField>
+            <UFormField
+              v-if="data.consent.managementType === 'REMOTE'"
+              label="Button Text (optional)"
+            >
+              <UInput
+                v-model="editState.buttonText"
+                class="w-full"
+                placeholder="Gå til samtykke"
+                description="Custom text for the consent button. Leave empty to use the default."
+              />
+            </UFormField>
           </div>
           <template #footer>
             <div class="flex justify-end gap-3">
@@ -255,18 +268,28 @@ async function publishConsent() {
             <dt class="text-muted w-24 shrink-0">Type</dt>
             <dd>
               <UBadge
-                :color="data.consent.managementType === 'LOCAL' ? 'primary' : 'neutral'"
+                :color="
+                  data.consent.managementType === 'LOCAL'
+                    ? 'primary'
+                    : 'neutral'
+                "
                 variant="soft"
               >
                 {{ data.consent.managementType }}
               </UBadge>
             </dd>
           </div>
-          <div v-if="data.consent.managedBy" class="border-default flex gap-6 border-b py-2">
+          <div
+            v-if="data.consent.managedBy"
+            class="border-default flex gap-6 border-b py-2"
+          >
             <dt class="text-muted w-24 shrink-0">Managed By</dt>
             <dd class="font-medium">{{ data.consent.managedBy }}</dd>
           </div>
-          <div v-if="data.consent.url" class="flex gap-6 py-2">
+          <div
+            v-if="data.consent.url"
+            class="border-default flex gap-6 border-b py-2"
+          >
             <dt class="text-muted w-24 shrink-0">URL</dt>
             <dd>
               <a
@@ -278,6 +301,10 @@ async function publishConsent() {
                 {{ data.consent.url }}
               </a>
             </dd>
+          </div>
+          <div v-if="data.consent.buttonText" class="flex gap-6 py-2">
+            <dt class="text-muted w-24 shrink-0">Button Text</dt>
+            <dd class="font-medium">{{ data.consent.buttonText }}</dd>
           </div>
         </dl>
 
@@ -291,7 +318,6 @@ async function publishConsent() {
             v-html="data.consent.body.html"
           />
         </UCard>
-
       </div>
     </UContainer>
   </div>

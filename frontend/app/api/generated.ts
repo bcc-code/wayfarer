@@ -228,6 +228,7 @@ export type ColorsInput = {
 export type Consent = {
   __typename?: 'Consent';
   body: MarkdownText;
+  buttonText?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
   managedBy?: Maybe<Scalars['String']['output']>;
@@ -975,6 +976,7 @@ export type MutationCreateChallengeArgs = {
 
 export type MutationCreateConsentArgs = {
   body: Scalars['String']['input'];
+  buttonText?: InputMaybe<Scalars['String']['input']>;
   isRemote?: InputMaybe<Scalars['Boolean']['input']>;
   key: Scalars['String']['input'];
   managedBy?: InputMaybe<Scalars['String']['input']>;
@@ -1339,6 +1341,7 @@ export type MutationUpdateChurchArgs = {
 
 export type MutationUpdateConsentArgs = {
   body?: InputMaybe<Scalars['String']['input']>;
+  buttonText?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
   managedBy?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
@@ -2651,6 +2654,7 @@ export type CreateConsentMutationVariables = Exact<{
   shortText?: InputMaybe<Scalars['String']['input']>;
   body: Scalars['String']['input'];
   url?: InputMaybe<Scalars['String']['input']>;
+  buttonText?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   isRemote?: InputMaybe<Scalars['Boolean']['input']>;
   managedBy?: InputMaybe<Scalars['String']['input']>;
@@ -2665,6 +2669,7 @@ export type UpdateConsentMutationVariables = Exact<{
   shortText?: InputMaybe<Scalars['String']['input']>;
   body?: InputMaybe<Scalars['String']['input']>;
   url?: InputMaybe<Scalars['String']['input']>;
+  buttonText?: InputMaybe<Scalars['String']['input']>;
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   managedBy?: InputMaybe<Scalars['String']['input']>;
 }>;
@@ -2999,7 +3004,7 @@ export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User'
 export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ConsentsPageQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
+export type ConsentsPageQuery = { __typename?: 'Query', me: { __typename?: 'User', consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, publishedAt?: any | null, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, buttonText?: string | null, body: { __typename?: 'MarkdownText', html: string } }>, acceptedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, buttonText?: string | null, body: { __typename?: 'MarkdownText', html: string } } }>, rejectedConsents: Array<{ __typename: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, title: string, shortText: string, managedBy?: string | null, managementType: ConsentManagementType, url?: string | null, buttonText?: string | null, body: { __typename?: 'MarkdownText', html: string } } }> } } };
 
 export type StandingsGlobalPageQueryVariables = Exact<{
   entityType: LeaderboardEntityType;
@@ -3057,7 +3062,7 @@ export type AdminConsentPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminConsentPageQuery = { __typename?: 'Query', consent: { __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', markdown: string, html: string } } };
+export type AdminConsentPageQuery = { __typename?: 'Query', consent: { __typename?: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, buttonText?: string | null, publishedAt?: any | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', markdown: string, html: string } } };
 
 export type AdminConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3588,13 +3593,14 @@ export function useRejectConsentMutation() {
   return Urql.useMutation<RejectConsentMutation, RejectConsentMutationVariables>(RejectConsentDocument);
 };
 export const CreateConsentDocument = gql`
-    mutation CreateConsent($key: String!, $title: String!, $shortText: String, $body: String!, $url: String, $publishedAt: DateTime, $isRemote: Boolean, $managedBy: String) {
+    mutation CreateConsent($key: String!, $title: String!, $shortText: String, $body: String!, $url: String, $buttonText: String, $publishedAt: DateTime, $isRemote: Boolean, $managedBy: String) {
   createConsent(
     key: $key
     title: $title
     shortText: $shortText
     body: $body
     url: $url
+    buttonText: $buttonText
     publishedAt: $publishedAt
     isRemote: $isRemote
     managedBy: $managedBy
@@ -3611,13 +3617,14 @@ export function useCreateConsentMutation() {
   return Urql.useMutation<CreateConsentMutation, CreateConsentMutationVariables>(CreateConsentDocument);
 };
 export const UpdateConsentDocument = gql`
-    mutation UpdateConsent($id: ID!, $title: String, $shortText: String, $body: String, $url: String, $publishedAt: DateTime, $managedBy: String) {
+    mutation UpdateConsent($id: ID!, $title: String, $shortText: String, $body: String, $url: String, $buttonText: String, $publishedAt: DateTime, $managedBy: String) {
   updateConsent(
     id: $id
     title: $title
     shortText: $shortText
     body: $body
     url: $url
+    buttonText: $buttonText
     publishedAt: $publishedAt
     managedBy: $managedBy
   ) {
@@ -4163,6 +4170,7 @@ export const ConsentsPageDocument = gql`
         managedBy
         managementType
         url
+        buttonText
       }
       acceptedConsents {
         __typename
@@ -4177,6 +4185,7 @@ export const ConsentsPageDocument = gql`
           managedBy
           managementType
           url
+          buttonText
         }
         action
         actionDate
@@ -4194,6 +4203,7 @@ export const ConsentsPageDocument = gql`
           managedBy
           managementType
           url
+          buttonText
         }
         action
         actionDate
@@ -4365,6 +4375,7 @@ export const AdminConsentPageDocument = gql`
       html
     }
     url
+    buttonText
     publishedAt
     managementType
     managedBy

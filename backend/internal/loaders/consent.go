@@ -62,6 +62,7 @@ func consentByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(cont
 					ShortText:      row.ShortText,
 					BodyMarkdown:   row.Body,
 					URL:            row.Url,
+					ButtonText:     row.ButtonText,
 					PublishedAt:    publishedAt,
 					ManagementType: managementType,
 					ManagedBy:      row.ManagedBy,

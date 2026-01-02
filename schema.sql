@@ -443,6 +443,7 @@ CREATE TABLE consents (
     short_text TEXT NOT NULL DEFAULT '',
     body TEXT NOT NULL,
     url VARCHAR(500),
+    button_text VARCHAR(100),
     published_at TIMESTAMPTZ,
     managed_by VARCHAR(100),
     is_remote BOOLEAN DEFAULT false NOT NULL,
@@ -460,6 +461,7 @@ CREATE TABLE consent_translations (
     title VARCHAR(255),
     short_text TEXT,
     body TEXT,
+    button_text VARCHAR(100),
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     PRIMARY KEY (consent_id, language_code)
