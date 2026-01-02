@@ -85,14 +85,15 @@ watch(
         :rank="data.myCurrentProject.leaderboard.me?.rank"
         :achievements="data.myCurrentProject.achievements"
       >
-        <div v-if="showBanner" class="p-small">
+        <!-- TODO: uncomment when consent is ready from SSF side -->
+        <!-- <div v-if="showBanner" class="p-small">
           <ConsentCard
             v-for="consent in pendingRemote"
             :key="consent.id"
             :consent
             class="bg-background-indent!"
           />
-        </div>
+        </div> -->
       </ProfileProjectCard>
       <UserFeedback />
     </div>
