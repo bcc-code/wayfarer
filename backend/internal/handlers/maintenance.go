@@ -204,10 +204,17 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 	// Always attempt to update church from member affiliation
 	church, err := h.AuthHandler.findChurchFromAffiliations(ctx, member.Affiliations)
 	if err != nil {
-		slog.Debug("maintenance: no valid church from affiliations",
+		slog.Info("maintenance: no valid church from affiliations, using default",
 			"user_id", userID,
 			"error", err,
 		)
+		// Use default church when no valid affiliation is found
+		defaultChurch, defaultErr := h.AuthHandler.GetOrCreateDefaultChurch(ctx)
+		if defaultErr != nil {
+			slog.Error("maintenance: failed to get default church", "error", defaultErr)
+		} else {
+			newChurchID = defaultChurch.ID
+		}
 	} else {
 		newChurchID = church.ID
 	}

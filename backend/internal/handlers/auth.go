@@ -155,7 +155,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 					"person_id", claims.PersonID,
 					"error", err,
 				)
-				church, err = h.getOrCreateDefaultChurch(ctx)
+				church, err = h.GetOrCreateDefaultChurch(ctx)
 				if err != nil {
 					slog.Error("callback: failed to get default church", "error", err)
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to find church"})
@@ -167,7 +167,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 			slog.Warn("callback: no member data available, using default church",
 				"person_id", claims.PersonID,
 			)
-			church, err = h.getOrCreateDefaultChurch(ctx)
+			church, err = h.GetOrCreateDefaultChurch(ctx)
 			if err != nil {
 				slog.Error("callback: failed to get default church", "error", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to find church"})
@@ -681,8 +681,8 @@ func (h *AuthHandler) findChurchByOrgUID(ctx context.Context, orgUID uuid.UUID) 
 // DefaultChurchName is the name used for the fallback church
 const DefaultChurchName = "Unknown Church"
 
-// getOrCreateDefaultChurch returns the default church, creating it if it doesn't exist
-func (h *AuthHandler) getOrCreateDefaultChurch(ctx context.Context) (*sqlc.GetChurchByExternalIDRow, error) {
+// GetOrCreateDefaultChurch returns the default church, creating it if it doesn't exist
+func (h *AuthHandler) GetOrCreateDefaultChurch(ctx context.Context) (*sqlc.GetChurchByExternalIDRow, error) {
 	// Try to find existing default church (external_id IS NULL)
 	church, err := h.DB.Queries.GetDefaultChurch(ctx)
 	if err == nil {
