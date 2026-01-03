@@ -279,6 +279,13 @@ func (item *Item) ExtractContentData(planID string) ContentData {
 	case "bible_verses":
 		// Bible verses have multiple versions, no single content ID
 		data.ContentID = ""
+		// Extract USFM as title from first available version
+		for _, version := range item.BibleVersionsText {
+			if version.USFM != "" {
+				data.Titles["en"] = version.USFM
+				break
+			}
+		}
 	}
 
 	return data

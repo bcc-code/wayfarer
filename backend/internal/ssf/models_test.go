@@ -135,7 +135,7 @@ func TestItem_ExtractContentData_BibleVerses(t *testing.T) {
 	assert.Equal(t, "item-555", data.TaskID)
 	assert.Equal(t, "", data.ContentID) // Bible verses have no single content ID
 	assert.Equal(t, "bible_verses", data.ContentType)
-	assert.Empty(t, data.Titles)
+	assert.Equal(t, "GEN.1.1", data.Titles["en"])
 }
 
 func TestItem_ExtractContentData_UnknownType(t *testing.T) {
