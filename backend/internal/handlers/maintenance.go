@@ -206,6 +206,7 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 	if err != nil {
 		slog.Info("maintenance: no valid church from affiliations, using default",
 			"user_id", userID,
+			"affiliations", member.Affiliations,
 			"error", err,
 		)
 		// Use default church when no valid affiliation is found
