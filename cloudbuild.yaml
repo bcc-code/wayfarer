@@ -1,8 +1,14 @@
 steps:
   - name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - docker pull $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:latest || exit 0
+    id: Pull-Cache
+  - name: gcr.io/cloud-builders/docker
     args:
       - build
-      - "--no-cache"
+      - "--cache-from=$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:latest"
       - "--build-arg=NUXT_PUBLIC_API_URL=${_NUXT_PUBLIC_API_URL}"
       - "--build-arg=NUXT_PUBLIC_TOKEN_URL=${_NUXT_PUBLIC_TOKEN_URL}"
       - "--build-arg=NUXT_PUBLIC_AUTH0_DOMAIN=${_NUXT_PUBLIC_AUTH0_DOMAIN}"
@@ -16,15 +22,21 @@ steps:
       - "-t"
       - >-
         $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+      - "-t"
+      - >-
+        $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:latest
       - .
       - "-f"
       - Dockerfile
     id: Build
+    waitFor:
+      - Pull-Cache
   - name: gcr.io/cloud-builders/docker
     args:
       - push
+      - --all-tags
       - >-
-        $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+        $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME
     id: Push
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
     args:
@@ -44,6 +56,8 @@ steps:
 images:
   - >-
     $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+  - >-
+    $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:latest
 options:
   substitutionOption: ALLOW_LOOSE
   logging: CLOUD_LOGGING_ONLY
