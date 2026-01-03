@@ -149,24 +149,11 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 	if isAuth0Token && claims.ChurchID == 0 {
 		// Auth0 token without churchId - get from member affiliations
 		if member != nil {
-			orgUID := getActiveAffiliationOrgUID(member.Affiliations)
-			if orgUID != nil {
-				church, err = h.findChurchByOrgUID(ctx, *orgUID)
-				if err != nil {
-					slog.Warn("callback: failed to find church by org UUID, using default",
-						"org_uid", orgUID.String(),
-						"error", err,
-					)
-					church, err = h.getOrCreateDefaultChurch(ctx)
-					if err != nil {
-						slog.Error("callback: failed to get default church", "error", err)
-						c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to find church"})
-						return
-					}
-				}
-			} else {
-				slog.Warn("callback: no active affiliation found, using default church",
+			church, err = h.findChurchFromAffiliations(ctx, member.Affiliations)
+			if err != nil {
+				slog.Warn("callback: failed to find church from affiliations, using default",
 					"person_id", claims.PersonID,
+					"error", err,
 				)
 				church, err = h.getOrCreateDefaultChurch(ctx)
 				if err != nil {
@@ -609,12 +596,13 @@ func normalizeGender(gender string) string {
 	return "UNKNOWN"
 }
 
-// getActiveAffiliationOrgUID returns the OrgUid of the first active Church affiliation.
+// getActiveChurchAffiliationOrgUIDs returns all OrgUids of active Church affiliations.
 // Only affiliations with Type "Church" are considered.
 // Active is determined by time: ValidFrom < now AND (ValidTo > now OR ValidTo == nil)
-// Returns nil if no active Church affiliation is found.
-func getActiveAffiliationOrgUID(affiliations []members.Affiliation) *uuid.UUID {
+// Returns empty slice if no active Church affiliation is found.
+func getActiveChurchAffiliationOrgUIDs(affiliations []members.Affiliation) []uuid.UUID {
 	now := time.Now()
+	var result []uuid.UUID
 	for _, aff := range affiliations {
 		// Only consider Church affiliations
 		if aff.Type != "Church" {
@@ -628,9 +616,45 @@ func getActiveAffiliationOrgUID(affiliations []members.Affiliation) *uuid.UUID {
 		if aff.ValidTo != nil && now.After(*aff.ValidTo) {
 			continue
 		}
-		return &aff.OrgUid
+		result = append(result, aff.OrgUid)
 	}
-	return nil
+	return result
+}
+
+// getActiveAffiliationOrgUID returns the OrgUid of the first active Church affiliation.
+// Deprecated: Use getActiveChurchAffiliationOrgUIDs for better exclusion handling.
+func getActiveAffiliationOrgUID(affiliations []members.Affiliation) *uuid.UUID {
+	orgUIDs := getActiveChurchAffiliationOrgUIDs(affiliations)
+	if len(orgUIDs) == 0 {
+		return nil
+	}
+	return &orgUIDs[0]
+}
+
+// ExcludedChurchNames contains organization names that should not be used for church assignment
+var ExcludedChurchNames = []string{"BCC Norge"}
+
+// findChurchFromAffiliations finds the first valid non-excluded church from member affiliations.
+// It iterates through all active Church affiliations and returns the first one that is not excluded.
+func (h *AuthHandler) findChurchFromAffiliations(ctx context.Context, affiliations []members.Affiliation) (*sqlc.GetChurchByExternalIDRow, error) {
+	orgUIDs := getActiveChurchAffiliationOrgUIDs(affiliations)
+	if len(orgUIDs) == 0 {
+		return nil, fmt.Errorf("no active church affiliations found")
+	}
+
+	for _, orgUID := range orgUIDs {
+		church, err := h.findChurchByOrgUID(ctx, orgUID)
+		if err != nil {
+			slog.Debug("findChurchFromAffiliations: skipping affiliation",
+				"org_uid", orgUID,
+				"error", err,
+			)
+			continue
+		}
+		return church, nil
+	}
+
+	return nil, fmt.Errorf("no valid church found from %d affiliations (all excluded or invalid)", len(orgUIDs))
 }
 
 // findChurchByOrgUID finds a church by looking up the org UUID in Members API first
@@ -642,6 +666,13 @@ func (h *AuthHandler) findChurchByOrgUID(ctx context.Context, orgUID uuid.UUID) 
 	org, err := h.MembersClient.GetOrganizationByUID(ctx, orgUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get organization from Members API: %w", err)
+	}
+
+	// Check if the organization name is excluded
+	for _, excluded := range ExcludedChurchNames {
+		if org.Name == excluded {
+			return nil, fmt.Errorf("organization %q is excluded from church assignment", org.Name)
+		}
 	}
 
 	return h.findChurchByExternalID(ctx, int32(org.OrgID))

@@ -576,3 +576,45 @@ func TestGetActiveAffiliationOrgUID(t *testing.T) {
 		})
 	}
 }
+
+func TestGetActiveChurchAffiliationOrgUIDs(t *testing.T) {
+	testOrgUID1 := uuid.New()
+	testOrgUID2 := uuid.New()
+	testOrgUID3 := uuid.New()
+
+	tests := []struct {
+		name         string
+		affiliations []members.Affiliation
+		wantOrgUIDs  []uuid.UUID
+	}{
+		{
+			name:         "empty affiliations returns empty slice",
+			affiliations: []members.Affiliation{},
+			wantOrgUIDs:  nil,
+		},
+		{
+			name: "returns all valid Church affiliations",
+			affiliations: []members.Affiliation{
+				{Active: true, OrgUid: testOrgUID1, Type: "Church"},
+				{Active: true, OrgUid: testOrgUID2, Type: "Church"},
+				{Active: true, OrgUid: testOrgUID3, Type: "Region"},
+			},
+			wantOrgUIDs: []uuid.UUID{testOrgUID1, testOrgUID2},
+		},
+		{
+			name: "filters out non-Church types",
+			affiliations: []members.Affiliation{
+				{Active: true, OrgUid: testOrgUID1, Type: "Region"},
+				{Active: true, OrgUid: testOrgUID2, Type: "Church"},
+			},
+			wantOrgUIDs: []uuid.UUID{testOrgUID2},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := getActiveChurchAffiliationOrgUIDs(tt.affiliations)
+			assert.Equal(t, tt.wantOrgUIDs, result)
+		})
+	}
+}

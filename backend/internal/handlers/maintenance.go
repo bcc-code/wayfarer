@@ -102,18 +102,14 @@ func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 
 		// Update church if using default church and member has affiliation
 		if h.isDefaultChurch(ctx, user.ChurchID) {
-			orgUID := getActiveAffiliationOrgUID(member.Affiliations)
-			if orgUID != nil {
-				church, err := h.AuthHandler.findChurchByOrgUID(ctx, *orgUID)
-				if err != nil {
-					slog.Warn("maintenance: failed to find church by org UUID",
-						"user_id", user.ID,
-						"org_uid", orgUID.String(),
-						"error", err,
-					)
-				} else {
-					newChurchID = church.ID
-				}
+			church, err := h.AuthHandler.findChurchFromAffiliations(ctx, member.Affiliations)
+			if err != nil {
+				slog.Debug("maintenance: no valid church from affiliations",
+					"user_id", user.ID,
+					"error", err,
+				)
+			} else {
+				newChurchID = church.ID
 			}
 		}
 
@@ -206,18 +202,14 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 	}
 
 	// Always attempt to update church from member affiliation
-	orgUID := getActiveAffiliationOrgUID(member.Affiliations)
-	if orgUID != nil {
-		church, err := h.AuthHandler.findChurchByOrgUID(ctx, *orgUID)
-		if err != nil {
-			slog.Warn("maintenance: failed to find church by org UUID",
-				"user_id", userID,
-				"org_uid", orgUID.String(),
-				"error", err,
-			)
-		} else {
-			newChurchID = church.ID
-		}
+	church, err := h.AuthHandler.findChurchFromAffiliations(ctx, member.Affiliations)
+	if err != nil {
+		slog.Debug("maintenance: no valid church from affiliations",
+			"user_id", userID,
+			"error", err,
+		)
+	} else {
+		newChurchID = church.ID
 	}
 
 	// Update user
