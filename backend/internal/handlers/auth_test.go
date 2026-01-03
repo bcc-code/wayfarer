@@ -461,86 +461,106 @@ func TestGetActiveAffiliationOrgUID(t *testing.T) {
 			wantOrgUID:   nil,
 		},
 		{
-			name: "single active affiliation",
+			name: "single active Church affiliation",
 			affiliations: []members.Affiliation{
 				{
 					Active: true,
 					OrgUid: testOrgUID1,
+					Type:   "Church",
 				},
 			},
 			wantOrgUID: &testOrgUID1,
 		},
 		{
-			name: "inactive affiliation is skipped",
-			affiliations: []members.Affiliation{
-				{
-					Active: false,
-					OrgUid: testOrgUID1,
-				},
-			},
-			wantOrgUID: nil,
-		},
-		{
-			name: "first active affiliation is returned",
+			name: "first active Church affiliation is returned",
 			affiliations: []members.Affiliation{
 				{
 					Active: true,
 					OrgUid: testOrgUID1,
+					Type:   "Church",
 				},
 				{
 					Active: true,
 					OrgUid: testOrgUID2,
+					Type:   "Church",
 				},
 			},
 			wantOrgUID: &testOrgUID1,
 		},
 		{
-			name: "skips inactive, returns first active",
-			affiliations: []members.Affiliation{
-				{
-					Active: false,
-					OrgUid: testOrgUID1,
-				},
-				{
-					Active: true,
-					OrgUid: testOrgUID2,
-				},
-			},
-			wantOrgUID: &testOrgUID2,
-		},
-		{
-			name: "affiliation with ValidFrom in future is skipped",
+			name: "Church affiliation with ValidFrom in future is skipped",
 			affiliations: []members.Affiliation{
 				{
 					Active:    true,
 					OrgUid:    testOrgUID1,
+					Type:      "Church",
 					ValidFrom: &futureTime,
 				},
 			},
 			wantOrgUID: nil,
 		},
 		{
-			name: "affiliation with ValidTo in past is skipped",
+			name: "Church affiliation with ValidTo in past is skipped",
 			affiliations: []members.Affiliation{
 				{
 					Active:  true,
 					OrgUid:  testOrgUID1,
+					Type:    "Church",
 					ValidTo: &pastTime,
 				},
 			},
 			wantOrgUID: nil,
 		},
 		{
-			name: "affiliation with valid time range is returned",
+			name: "Church affiliation with valid time range is returned",
 			affiliations: []members.Affiliation{
 				{
 					Active:    true,
 					OrgUid:    testOrgUID1,
+					Type:      "Church",
 					ValidFrom: &pastTime,
 					ValidTo:   &futureTime,
 				},
 			},
 			wantOrgUID: &testOrgUID1,
+		},
+		{
+			name: "non-Church affiliation is skipped",
+			affiliations: []members.Affiliation{
+				{
+					Active: true,
+					OrgUid: testOrgUID1,
+					Type:   "Region",
+				},
+			},
+			wantOrgUID: nil,
+		},
+		{
+			name: "mixed types returns first Church affiliation",
+			affiliations: []members.Affiliation{
+				{
+					Active: true,
+					OrgUid: testOrgUID1,
+					Type:   "Region",
+				},
+				{
+					Active: true,
+					OrgUid: testOrgUID2,
+					Type:   "Church",
+				},
+			},
+			wantOrgUID: &testOrgUID2,
+		},
+		{
+			name: "affiliation with empty type is skipped",
+			affiliations: []members.Affiliation{
+				{
+					Active: true,
+					OrgUid: testOrgUID1,
+					Type:   "",
+				},
+			},
+			wantOrgUID: nil,
 		},
 	}
 
