@@ -260,7 +260,7 @@ export default defineNuxtConfig({
     srcDir: '../service-worker',
     filename: 'service-worker.ts',
     strategies: 'injectManifest',
-    registerType: 'autoUpdate',
+    registerType: 'prompt',
     injectRegister: 'auto',
     injectManifest: {
       globPatterns: [
