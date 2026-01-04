@@ -29,6 +29,14 @@ watch(
   },
   { immediate: true },
 )
+
+function descriptionFor(achievement: typeof props.achievement) {
+  if (achievement.achievedAt) {
+    return achievement.descriptionCompleted
+  } else {
+    return achievement.descriptionPending
+  }
+}
 </script>
 
 <template>
@@ -89,16 +97,8 @@ watch(
           <div
             class="flex flex-col items-center gap-1 text-center text-balance"
           >
-            <h3 class="text-heading">
-              {{ achievement.name }}
-            </h3>
-            <p class="text-label">
-              {{
-                achievement.achievedAt
-                  ? achievement.descriptionCompleted
-                  : achievement.descriptionPending
-              }}
-            </p>
+            <h3 class="text-heading" v-html="achievement.name" />
+            <p class="text-label" v-html="descriptionFor(achievement)" />
           </div>
           <div
             v-if="achievement.achievedAt"
