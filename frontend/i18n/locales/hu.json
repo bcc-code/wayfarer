@@ -3,8 +3,8 @@
     "title": "Hoppá! Valami baj történt"
   },
   "emptyStates": {
-    "standings": "Még nincs toplista",
-    "unit": "Még nincs toplista az egységed számára",
+    "standings": "Még nincs top lista",
+    "unit": "Még nincs top lista az egységed számára",
     "challenges": "Még nincs kihívás",
     "pointHistory": "Még nincs pont"
   },
@@ -30,7 +30,7 @@
     }
   },
   "pages": {
-    "standings": "Legnépszerűbb listák",
+    "standings": "Top listák",
     "challenges": "Kihívások",
     "settings": "Beállítások",
     "pointHistory": "Pontok története",
@@ -39,7 +39,7 @@
     "addToHomeScreen": "Alkalmazás hozzáadása a kezdőképernyőhöz"
   },
   "navigation": {
-    "standings": "Legnépszerűbb listák",
+    "standings": "Top listák",
     "profile": "Az én oldalam",
     "challenges": "Kihívások"
   },
@@ -60,7 +60,7 @@
     "privacyPolicy": "Adatvédelmi irányelvek"
   },
   "standings": {
-    "global": "Globálisan",
+    "global": "Globális",
     "unit": "Az én egységem",
     "local": "Helyi",
     "you": "Te",
@@ -82,9 +82,9 @@
     "noUnitLeader": "Nincs egységvezető",
     "selectUnitLeader": "Egységvezető választása"
   },
-  "place": "elhelyezés",
+  "place": "helyezés",
   "points": "Pont",
-  "givesYouXPoints": "{points} -pontot ad",
+  "givesYouXPoints": "{points} pontot ad",
   "consent": {
     "accepted": "Elfogadva",
     "rejected": "Elutasítva",
