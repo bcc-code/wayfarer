@@ -1,7 +1,18 @@
 # Stage 1: Build frontend
 FROM node:22-slim AS frontend-builder
 
-# Build arguments for frontend environment
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+WORKDIR /build
+
+# Copy package files first for better caching
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+# Copy frontend source
+COPY frontend/ ./
+
+# Build arguments declared after dependency install for better layer caching
 ARG NUXT_PUBLIC_API_URL
 ARG NUXT_PUBLIC_TOKEN_URL
 ARG NUXT_PUBLIC_AUTH0_DOMAIN=login.bcc.no
@@ -13,16 +24,6 @@ ARG NUXT_PUBLIC_VAPID_PUBLIC_KEY
 ARG NUXT_PUBLIC_IS_STAGING
 ARG APP_VERSION
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-WORKDIR /build
-
-# Copy package files first for better caching
-COPY frontend/package.json frontend/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
-
-# Copy frontend source and build
-COPY frontend/ ./
 ENV APP_VERSION=${APP_VERSION}
 RUN pnpm run build
 

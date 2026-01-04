@@ -6,8 +6,11 @@ steps:
       - docker pull $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:latest || exit 0
     id: Pull-Cache
   - name: gcr.io/cloud-builders/docker
+    env:
+      - "DOCKER_BUILDKIT=1"
     args:
       - build
+      - "--build-arg=BUILDKIT_INLINE_CACHE=1"
       - "--cache-from=$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:latest"
       - "--build-arg=NUXT_PUBLIC_API_URL=${_NUXT_PUBLIC_API_URL}"
       - "--build-arg=NUXT_PUBLIC_TOKEN_URL=${_NUXT_PUBLIC_TOKEN_URL}"
