@@ -33,7 +33,7 @@
     "standings": "Top listák",
     "challenges": "Kihívások",
     "settings": "Beállítások",
-    "pointHistory": "Pontok története",
+    "pointHistory": "Ponttörténet",
     "rules": "Szabályok",
     "consents": "Hozzájárulásaim",
     "addToHomeScreen": "Alkalmazás hozzáadása a kezdőképernyőhöz"
@@ -71,7 +71,7 @@
     "o18": "O18"
   },
   "pointHistory": {
-    "pointHistoryButton": "Pontok története",
+    "pointHistoryButton": "Ponttörténet",
     "explanation": "Itt láthatod, miért kaptál – vagy vesztettél – pontokat."
   },
   "unit": {
