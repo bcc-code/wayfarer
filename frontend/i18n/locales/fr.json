@@ -117,5 +117,10 @@
     "thankYouDescription": "Tes commentaires seront utilisés pour améliorer le service.",
     "close": "Avec plaisir",
     "canContactMe": "Oui, j'accepte que vous me contactiez au sujet de mon commentaire."
+  },
+  "pwa": {
+    "updateAvailableTitle": "Une mise à jour est disponible",
+    "updateAvailableDescription": "Redémarrez l'application pour la mettre à jour.",
+    "updateAvailableButton": "Mettre à jour maintenant"
   }
 }
