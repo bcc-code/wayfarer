@@ -117,5 +117,10 @@
     "thankYouDescription": "A visszajelzéseid a szolgáltatás továbbfejlesztéséhez fogjuk felhasználni.",
     "close": "Szívesen.",
     "canContactMe": "Igen, egyetértek azzal, hogy visszajelzésemmel kapcsolatban felvehetitek velem a kapcsolatot."
+  },
+  "pwa": {
+    "updateAvailableTitle": "Frissítés elérhető",
+    "updateAvailableDescription": "Indítsa újra az alkalmazást a frissítéshez.",
+    "updateAvailableButton": "Frissítsd most"
   }
 }
