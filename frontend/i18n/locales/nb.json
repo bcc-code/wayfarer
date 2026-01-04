@@ -117,5 +117,10 @@
     "thankYouDescription": "Dine innspill vil bli brukt til videreutvikling av tjenesten.",
     "close": "Bare hyggelig",
     "canContactMe": "Ja, jeg samtykker til at dere kan kontakte meg i forbindelse med tilbakemeldingen min"
+  },
+  "pwa": {
+    "updateAvailableTitle": "En oppdatering er tilgjengelig",
+    "updateAvailableDescription": "Start appen på nytt for å oppdatere.",
+    "updateAvailableButton": "Oppdater nå"
   }
 }

@@ -142,6 +142,8 @@ const showNavigation = computed(() => {
   if (path.startsWith('/challenges/')) return false
   return true
 })
+
+const { $pwa } = useNuxtApp()
 </script>
 
 <template>
@@ -149,7 +151,13 @@ const showNavigation = computed(() => {
     <div class="h-full">
       <slot />
     </div>
-    <div v-if="showNavigation" class="fixed inset-x-0 bottom-0">
+    <div v-if="showNavigation" class="fixed inset-x-0 bottom-0 flex flex-col">
+      <Transition
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="opacity-0 translate-y-4"
+      >
+        <PwaUpdateBanner v-if="$pwa?.needRefresh" />
+      </Transition>
       <ProgressiveBlur
         class="p-navigation-outside pb-[max(var(--spacing-navigation-outside),env(safe-area-inset-bottom))] from-shadow-blank/0 to-shadow-default bg-linear-to-b"
       >
