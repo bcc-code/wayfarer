@@ -4,7 +4,7 @@
   },
   "emptyStates": {
     "standings": "Még nincs top lista",
-    "unit": "Még nincs top lista az egységed számára",
+    "unit": "Még nincs top lista a unitod számára",
     "challenges": "Még nincs kihívás",
     "pointHistory": "Még nincs pont"
   },
@@ -61,11 +61,11 @@
   },
   "standings": {
     "global": "Globális",
-    "unit": "Az én egységem",
+    "unit": "Az én unitom",
     "local": "Helyi",
     "you": "Te",
     "rules": "Szabályok",
-    "units": "Egységek",
+    "units": "Unitok",
     "top": "Top {amount}",
     "u18": "U18",
     "o18": "O18"
@@ -75,12 +75,12 @@
     "explanation": "Itt láthatod, miért kaptál – vagy vesztettél – pontokat."
   },
   "unit": {
-    "editUnit": "Egység szerkesztése",
-    "unitLeader": "Egységvezető",
+    "editUnit": "Unit szerkesztése",
+    "unitLeader": "Unitvezető",
     "saveChanges": "Módosítások mentése",
-    "unitName": "Egység neve",
-    "noUnitLeader": "Nincs egységvezető",
-    "selectUnitLeader": "Egységvezető választása"
+    "unitName": "Unit neve",
+    "noUnitLeader": "Nincs unitvezető",
+    "selectUnitLeader": "Unitvezető választása"
   },
   "place": "helyezés",
   "points": "Pont",
