@@ -4,7 +4,9 @@ const { $pwa } = useNuxtApp()
 
 <template>
   <div class="px-navigation-outside z-20">
-    <DesignPanel class="gradient-border relative shadow-large!">
+    <DesignPanel
+      class="gradient-border relative shadow-large! mx-auto w-full max-w-xl"
+    >
       <div class="p-medium flex flex-col">
         <p class="text-title text-text-default">
           {{ $t('pwa.updateAvailableTitle') }}
