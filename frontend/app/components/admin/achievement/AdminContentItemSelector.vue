@@ -44,7 +44,7 @@ const queryVariables = computed(() => ({
     ...(contentTypeFilter.value && { contentType: contentTypeFilter.value }),
     ...(sourceFilter.value && { source: sourceFilter.value }),
   },
-  first: 100,
+  first: 300,
 }))
 
 const { data, fetching } = useAdminExternalContentsQuery({
@@ -135,7 +135,7 @@ function formatDate(dateString?: string | null): string {
     </div>
 
     <!-- Search Results -->
-    <div class="border-default max-h-48 overflow-y-auto rounded-lg border">
+    <div class="border-default max-h-96 overflow-y-auto rounded-lg border">
       <div v-if="fetching" class="text-muted p-4 text-center text-sm">
         Loading...
       </div>
