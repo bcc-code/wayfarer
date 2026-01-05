@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { AchievementFormData } from '~/components/admin/achievement/AdminAchievementForm.vue'
+
 definePageMeta({
   layout: 'admin',
   middleware: 'admin',
@@ -29,33 +31,68 @@ const { data } = useAdminProjectAchievementsNewPageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
-const { executeMutation } = useCreateSimpleAchievementMutation()
+const { executeMutation: createSimple } = useCreateSimpleAchievementMutation()
+const { executeMutation: createContent } = useCreateContentAchievementMutation()
+const { executeMutation: createStreak } = useCreateStreakAchievementMutation()
+const { executeMutation: createQuiz } = useCreateQuizAchievementMutation()
 
-async function handleSubmit(formData: {
-  name: string
-  descriptionPending: string
-  descriptionCompleted: string
-  notificationText: string
-  imagePending?: string
-  imageCompleted?: string
-  points: number
-  hidden: boolean
-}) {
-  const response = await executeMutation({
-    input: {
-      name: formData.name,
-      descriptionPending: formData.descriptionPending,
-      descriptionCompleted: formData.descriptionCompleted,
-      notificationText: formData.notificationText,
-      imagePending: formData.imagePending ?? '',
-      imageCompleted: formData.imageCompleted ?? '',
-      points: formData.points,
-      hidden: formData.hidden,
-      projectId: route.params.projectId,
-    },
-  })
+async function handleSubmit(formData: AchievementFormData) {
+  let response
 
-  if (response.error) {
+  const baseInput = {
+    name: formData.name,
+    descriptionPending: formData.descriptionPending,
+    descriptionCompleted: formData.descriptionCompleted,
+    notificationText: formData.notificationText,
+    imagePending: formData.imagePending ?? '',
+    imageCompleted: formData.imageCompleted ?? '',
+    points: formData.points,
+    hidden: formData.hidden,
+    projectId: route.params.projectId,
+  }
+
+  switch (formData.achievementType) {
+    case 'SIMPLE':
+      response = await createSimple({
+        input: baseInput,
+      })
+      break
+
+    case 'CONTENT':
+      response = await createContent({
+        input: {
+          ...baseInput,
+          items:
+            formData.items?.map((item) => ({
+              externalContentId: item.externalContent.id,
+            })) ?? [],
+        },
+      })
+      break
+
+    case 'STREAK':
+      response = await createStreak({
+        input: {
+          ...baseInput,
+          streakId: formData.streakId!,
+          neededStreak: formData.neededStreak!,
+        },
+      })
+      break
+
+    case 'QUIZ':
+      response = await createQuiz({
+        input: {
+          ...baseInput,
+          quizId: formData.quizId!,
+          minScorePercentage: formData.minScorePercentage,
+          requireCompletion: formData.requireCompletion ?? true,
+        },
+      })
+      break
+  }
+
+  if (response?.error) {
     toast.add({
       title: response.error.name,
       description: response.error.message,
@@ -106,6 +143,7 @@ async function handleSubmit(formData: {
     <UContainer class="py-12">
       <h1 class="mb-6 text-2xl font-bold">Create Achievement</h1>
       <AdminAchievementForm
+        :project-id="route.params.projectId"
         :colors="data?.project.branding.colors"
         submit-label="Create Achievement"
         @submit="handleSubmit"

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { AchievementFormData } from '~/components/admin/achievement/AdminAchievementForm.vue'
+
 definePageMeta({
   layout: 'admin',
   middleware: 'admin',
@@ -7,6 +9,7 @@ definePageMeta({
 gql(`
   query AdminProjectAchievementPage($achievementId: ID!) {
     achievement(id: $achievementId) {
+      __typename
       id
       name
       descriptionPending
@@ -17,6 +20,45 @@ gql(`
       achievedAt
       points
       hidden
+      ... on ContentAchievement {
+        items {
+          id
+          sortOrder
+          externalContent {
+            id
+            planId
+            taskId
+            contentId
+            contentType
+            publishedAt
+            source
+            syncedAt
+            createdAt
+            updatedAt
+            title
+            translations {
+              languageCode
+              title
+            }
+          }
+        }
+      }
+      ... on StreakAchievement {
+        neededStreak
+        streak {
+          id
+          name
+          description
+        }
+      }
+      ... on QuizAchievement {
+        quiz {
+          id
+          name
+        }
+        minScorePercentage
+        requireCompletion
+      }
       project {
         id
         name
@@ -41,13 +83,32 @@ const { data, fetching, error } = useAdminProjectAchievementPageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
-const { executeMutation } = useUpdateAchievementMutation()
+const { executeMutation: updateSimple } = useUpdateAchievementMutation()
+const { executeMutation: updateContent } = useUpdateContentAchievementMutation()
+const { executeMutation: updateStreak } = useUpdateStreakAchievementMutation()
 const { executeMutation: executeDelete } = useDeleteAchievementMutation()
+
+type AchievementType = 'SIMPLE' | 'CONTENT' | 'STREAK' | 'QUIZ'
+
+const achievementType = computed<AchievementType>(() => {
+  const typename = data.value?.achievement.__typename
+  switch (typename) {
+    case 'ContentAchievement':
+      return 'CONTENT'
+    case 'StreakAchievement':
+      return 'STREAK'
+    case 'QuizAchievement':
+      return 'QUIZ'
+    default:
+      return 'SIMPLE'
+  }
+})
 
 const initialData = computed(() => {
   if (!data.value) return undefined
   const a = data.value.achievement
-  return {
+
+  const base = {
     name: a.name,
     descriptionPending: a.descriptionPending,
     descriptionCompleted: a.descriptionCompleted,
@@ -57,24 +118,99 @@ const initialData = computed(() => {
     points: a.points,
     hidden: a.hidden,
   }
+
+  // Add type-specific fields
+  if (a.__typename === 'ContentAchievement') {
+    return {
+      ...base,
+      items: a.items.map((item) => ({
+        id: item.id,
+        externalContent: {
+          id: item.externalContent.id,
+          title: item.externalContent.title,
+          contentType: item.externalContent.contentType,
+          source: item.externalContent.source,
+          publishedAt: item.externalContent.publishedAt,
+        },
+      })),
+    }
+  }
+
+  if (a.__typename === 'StreakAchievement') {
+    return {
+      ...base,
+      streakId: a.streak.id,
+      neededStreak: a.neededStreak,
+    }
+  }
+
+  if (a.__typename === 'QuizAchievement') {
+    return {
+      ...base,
+      quizId: a.quiz.id,
+      minScorePercentage: a.minScorePercentage ?? undefined,
+      requireCompletion: a.requireCompletion,
+    }
+  }
+
+  return base
 })
 
-async function handleSubmit(formData: {
-  name: string
-  descriptionPending: string
-  descriptionCompleted: string
-  notificationText: string
-  imagePending?: string
-  imageCompleted?: string
-  points: number
-  hidden: boolean
-}) {
-  const response = await executeMutation({
-    id: route.params.achievementId,
-    input: formData,
-  })
+async function handleSubmit(formData: AchievementFormData) {
+  let response
 
-  if (response.error) {
+  const baseInput = {
+    name: formData.name,
+    descriptionPending: formData.descriptionPending,
+    descriptionCompleted: formData.descriptionCompleted,
+    notificationText: formData.notificationText,
+    imagePending: formData.imagePending,
+    imageCompleted: formData.imageCompleted,
+    points: formData.points,
+    hidden: formData.hidden,
+  }
+
+  switch (formData.achievementType) {
+    case 'SIMPLE':
+      response = await updateSimple({
+        id: route.params.achievementId,
+        input: baseInput,
+      })
+      break
+
+    case 'CONTENT':
+      response = await updateContent({
+        id: route.params.achievementId,
+        input: {
+          ...baseInput,
+          items: formData.items?.map((item) => ({
+            externalContentId: item.externalContent.id,
+          })),
+        },
+      })
+      break
+
+    case 'STREAK':
+      response = await updateStreak({
+        id: route.params.achievementId,
+        input: {
+          ...baseInput,
+          streakId: formData.streakId,
+          neededStreak: formData.neededStreak,
+        },
+      })
+      break
+
+    case 'QUIZ':
+      // No updateQuizAchievement mutation exists, use generic update for common fields
+      response = await updateSimple({
+        id: route.params.achievementId,
+        input: baseInput,
+      })
+      break
+  }
+
+  if (response?.error) {
     toast.add({
       title: response.error.name,
       description: response.error.message,
@@ -160,14 +296,19 @@ async function handleDelete() {
     <UContainer class="py-12">
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
-      <AdminAchievementForm
-        v-else-if="initialData"
-        :initial-data="initialData"
-        :colors="data?.achievement.project.branding.colors"
-        submit-label="Save changes"
-        :on-delete="handleDelete"
-        @submit="handleSubmit"
-      />
+      <template v-else-if="initialData">
+        <h1 class="mb-6 text-2xl font-bold">Edit Achievement</h1>
+        <AdminAchievementForm
+          :project-id="route.params.projectId"
+          :initial-data="initialData"
+          :achievement-type="achievementType"
+          :is-edit-mode="true"
+          :colors="data?.achievement.project.branding.colors"
+          submit-label="Save changes"
+          :on-delete="handleDelete"
+          @submit="handleSubmit"
+        />
+      </template>
     </UContainer>
   </div>
 </template>
