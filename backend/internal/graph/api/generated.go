@@ -268,6 +268,7 @@ type ComplexityRoot struct {
 		TaskID       func(childComplexity int) int
 		Title        func(childComplexity int) int
 		Translations func(childComplexity int) int
+		URL          func(childComplexity int) int
 		UpdatedAt    func(childComplexity int) int
 	}
 
@@ -2076,6 +2077,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ExternalContent.Translations(childComplexity), true
+	case "ExternalContent.url":
+		if e.complexity.ExternalContent.URL == nil {
+			break
+		}
+
+		return e.complexity.ExternalContent.URL(childComplexity), true
 	case "ExternalContent.updatedAt":
 		if e.complexity.ExternalContent.UpdatedAt == nil {
 			break
@@ -7649,6 +7656,9 @@ type ExternalContent {
     createdAt: DateTime!
     updatedAt: DateTime!
 
+    # Direct link to external article (nullable)
+    url: String
+
     # Translations loaded via dataloader
     translations: [ExternalContentTranslation!]! @goField(forceResolver: true)
 
@@ -12723,6 +12733,8 @@ func (ec *executionContext) fieldContext_ContentItem_externalContent(_ context.C
 				return ec.fieldContext_ExternalContent_createdAt(ctx, field)
 			case "updatedAt":
 				return ec.fieldContext_ExternalContent_updatedAt(ctx, field)
+			case "url":
+				return ec.fieldContext_ExternalContent_url(ctx, field)
 			case "translations":
 				return ec.fieldContext_ExternalContent_translations(ctx, field)
 			case "title":
@@ -14094,6 +14106,35 @@ func (ec *executionContext) fieldContext_ExternalContent_updatedAt(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _ExternalContent_url(ctx context.Context, field graphql.CollectedField, obj *model.ExternalContent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalContent_url,
+		func(ctx context.Context) (any, error) {
+			return obj.URL, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalContent_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalContent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ExternalContent_translations(ctx context.Context, field graphql.CollectedField, obj *model.ExternalContent) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -14334,6 +14375,8 @@ func (ec *executionContext) fieldContext_ExternalContentEdge_node(_ context.Cont
 				return ec.fieldContext_ExternalContent_createdAt(ctx, field)
 			case "updatedAt":
 				return ec.fieldContext_ExternalContent_updatedAt(ctx, field)
+			case "url":
+				return ec.fieldContext_ExternalContent_url(ctx, field)
 			case "translations":
 				return ec.fieldContext_ExternalContent_translations(ctx, field)
 			case "title":
@@ -26983,6 +27026,8 @@ func (ec *executionContext) fieldContext_Query_externalContent(ctx context.Conte
 				return ec.fieldContext_ExternalContent_createdAt(ctx, field)
 			case "updatedAt":
 				return ec.fieldContext_ExternalContent_updatedAt(ctx, field)
+			case "url":
+				return ec.fieldContext_ExternalContent_url(ctx, field)
 			case "translations":
 				return ec.fieldContext_ExternalContent_translations(ctx, field)
 			case "title":
@@ -43058,6 +43103,8 @@ func (ec *executionContext) _ExternalContent(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "url":
+			out.Values[i] = ec._ExternalContent_url(ctx, field, obj)
 		case "translations":
 			field := field
 

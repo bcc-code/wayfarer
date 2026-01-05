@@ -582,6 +582,7 @@ type ExternalContent struct {
 	SyncedAt     scalars.DateTime             `json:"syncedAt"`
 	CreatedAt    scalars.DateTime             `json:"createdAt"`
 	UpdatedAt    scalars.DateTime             `json:"updatedAt"`
+	URL          *string                      `json:"url,omitempty"`
 	Translations []ExternalContentTranslation `json:"translations"`
 	Title        *string                      `json:"title,omitempty"`
 }

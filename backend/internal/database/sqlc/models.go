@@ -152,7 +152,8 @@ type ExternalContent struct {
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 	// Content source identifier (e.g., ssf)
-	Source string `json:"source"`
+	Source string  `json:"source"`
+	Url    *string `json:"url"`
 }
 
 // Stores content completion events from external systems

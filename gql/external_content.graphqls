@@ -32,6 +32,9 @@ type ExternalContent {
     createdAt: DateTime!
     updatedAt: DateTime!
 
+    # Direct link to external article (nullable)
+    url: String
+
     # Translations loaded via dataloader
     translations: [ExternalContentTranslation!]! @goField(forceResolver: true)
 

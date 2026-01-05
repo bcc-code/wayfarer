@@ -1,8 +1,8 @@
 -- name: UpsertExternalContent :one
 INSERT INTO external_content (
-    id, plan_id, task_id, content_id, content_type, published_at, synced_at, source
+    id, plan_id, task_id, content_id, content_type, published_at, synced_at, source, url
 ) VALUES (
-    @id, @planid::text, @taskid::text, @contentid::text, @contenttype::text, @publishedat::timestamptz, @syncedat::timestamptz, @source::text
+    @id, @planid::text, @taskid::text, @contentid::text, @contenttype::text, @publishedat::timestamptz, @syncedat::timestamptz, @source::text, @url::text
 )
 ON CONFLICT (plan_id, task_id) DO UPDATE SET
     content_id = EXCLUDED.content_id,
@@ -10,6 +10,7 @@ ON CONFLICT (plan_id, task_id) DO UPDATE SET
     published_at = EXCLUDED.published_at,
     synced_at = EXCLUDED.synced_at,
     source = EXCLUDED.source,
+    url = EXCLUDED.url,
     updated_at = now()
 RETURNING *;
 
