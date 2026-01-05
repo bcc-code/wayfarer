@@ -40,6 +40,8 @@ const (
 	PrefixPushSubscription    = "PS" // Push Subscriptions
 	PrefixPushNotification    = "PN" // Push Notification Log
 	PrefixUserFeedback        = "FB" // User Feedback
+	PrefixWebhook             = "WH" // Webhooks
+	PrefixWebhookLog          = "WL" // Webhook Logs
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -382,4 +384,24 @@ func IsPushNotificationID(id string) bool {
 // IsUserFeedbackID validates a user feedback ID
 func IsUserFeedbackID(id string) bool {
 	return IsValidID(id, PrefixUserFeedback)
+}
+
+// NewWebhookID generates a new ID for a webhook (WH prefix)
+func NewWebhookID() string {
+	return newID(PrefixWebhook)
+}
+
+// NewWebhookLogID generates a new ID for a webhook log entry (WL prefix)
+func NewWebhookLogID() string {
+	return newID(PrefixWebhookLog)
+}
+
+// IsWebhookID validates a webhook ID
+func IsWebhookID(id string) bool {
+	return IsValidID(id, PrefixWebhook)
+}
+
+// IsWebhookLogID validates a webhook log ID
+func IsWebhookLogID(id string) bool {
+	return IsValidID(id, PrefixWebhookLog)
 }

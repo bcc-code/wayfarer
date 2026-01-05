@@ -76,6 +76,7 @@ type ResolverRoot interface {
 	UserConsentHistoryEntry() UserConsentHistoryEntryResolver
 	UserFeedback() UserFeedbackResolver
 	UserRole() UserRoleResolver
+	Webhook() WebhookResolver
 }
 
 type DirectiveRoot struct {
@@ -400,6 +401,7 @@ type ComplexityRoot struct {
 		CreateStreakAchievement                     func(childComplexity int, input model.CreateStreakAchievementInput) int
 		CreateSuperTeam                             func(childComplexity int, projectID string, input model.CreateSuperTeamInput) int
 		CreateTeam                                  func(childComplexity int, projectID string, input model.CreateTeamInput) int
+		CreateWebhook                               func(childComplexity int, input model.CreateWebhookInput) int
 		DeleteAchievement                           func(childComplexity int, id string) int
 		DeleteChallenge                             func(childComplexity int, id string) int
 		DeleteEvent                                 func(childComplexity int, id string) int
@@ -411,6 +413,7 @@ type ComplexityRoot struct {
 		DeleteStreak                                func(childComplexity int, id string) int
 		DeleteSuperTeam                             func(childComplexity int, id string) int
 		DeleteTeam                                  func(childComplexity int, id string) int
+		DeleteWebhook                               func(childComplexity int, id string) int
 		Empty                                       func(childComplexity int) int
 		EnrollInChallenge                           func(childComplexity int, challengeID string) int
 		EnrollUserInChallenge                       func(childComplexity int, userID string, challengeID string) int
@@ -443,6 +446,7 @@ type ComplexityRoot struct {
 		StartQuiz                                   func(childComplexity int, quizID string) int
 		SubmitFeedback                              func(childComplexity int, input model.SubmitFeedbackInput) int
 		SubmitQuizAnswer                            func(childComplexity int, submissionID string, input model.SubmitQuizAnswerInput) int
+		TestWebhook                                 func(childComplexity int, id string) int
 		UncompleteChallenge                         func(childComplexity int, userID string, challengeID string) int
 		UnenrollFromChallenge                       func(childComplexity int, challengeID string) int
 		UnenrollUserFromChallenge                   func(childComplexity int, userID string, challengeID string) int
@@ -462,6 +466,7 @@ type ComplexityRoot struct {
 		UpdateStreakAchievement                     func(childComplexity int, id string, input model.UpdateStreakAchievementInput) int
 		UpdateSuperTeam                             func(childComplexity int, id string, input model.UpdateSuperTeamInput) int
 		UpdateTeam                                  func(childComplexity int, id string, input model.UpdateTeamInput) int
+		UpdateWebhook                               func(childComplexity int, id string, input model.UpdateWebhookInput) int
 	}
 
 	NumberQuestion struct {
@@ -602,6 +607,8 @@ type ComplexityRoot struct {
 		Users                         func(childComplexity int, filter *model.UserFilter, first *int, after *string, last *int, before *string) int
 		UsersWithRole                 func(childComplexity int, role model.RoleType, scopeType *model.ScopeType, scopeID *string) int
 		VapidPublicKey                func(childComplexity int) int
+		Webhook                       func(childComplexity int, id string) int
+		Webhooks                      func(childComplexity int, projectID string) int
 	}
 
 	Quiz struct {
@@ -949,6 +956,32 @@ type ComplexityRoot struct {
 		Scope func(childComplexity int) int
 		User  func(childComplexity int) int
 	}
+
+	Webhook struct {
+		Active           func(childComplexity int) int
+		CreatedAt        func(childComplexity int) int
+		EventType        func(childComplexity int) int
+		HasSecret        func(childComplexity int) int
+		ID               func(childComplexity int) int
+		IncludeEventData func(childComplexity int) int
+		IncludeUserData  func(childComplexity int) int
+		Name             func(childComplexity int) int
+		Project          func(childComplexity int) int
+		RecentLogs       func(childComplexity int, first *int) int
+		URL              func(childComplexity int) int
+		UpdatedAt        func(childComplexity int) int
+	}
+
+	WebhookLog struct {
+		CreatedAt          func(childComplexity int) int
+		DurationMs         func(childComplexity int) int
+		ErrorMessage       func(childComplexity int) int
+		EventType          func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		RequestPayload     func(childComplexity int) int
+		ResponseBody       func(childComplexity int) int
+		ResponseStatusCode func(childComplexity int) int
+	}
 }
 
 type ConsentResolver interface {
@@ -1103,6 +1136,10 @@ type MutationResolver interface {
 	SendPushNotification(ctx context.Context, input model.SendPushNotificationInput) (*model.SendPushNotificationResult, error)
 	SubmitFeedback(ctx context.Context, input model.SubmitFeedbackInput) (*model.UserFeedback, error)
 	DeleteFeedback(ctx context.Context, id string) (bool, error)
+	CreateWebhook(ctx context.Context, input model.CreateWebhookInput) (*model.Webhook, error)
+	UpdateWebhook(ctx context.Context, id string, input model.UpdateWebhookInput) (*model.Webhook, error)
+	DeleteWebhook(ctx context.Context, id string) (bool, error)
+	TestWebhook(ctx context.Context, id string) (*model.WebhookLog, error)
 }
 type NumberQuestionResolver interface {
 	Quiz(ctx context.Context, obj *model.NumberQuestion) (*model.Quiz, error)
@@ -1179,6 +1216,8 @@ type QueryResolver interface {
 	PushNotificationsEnabled(ctx context.Context) (bool, error)
 	VapidPublicKey(ctx context.Context) (string, error)
 	Feedback(ctx context.Context, filter *model.FeedbackFilter, first *int, after *string, last *int, before *string) (*model.FeedbackConnection, error)
+	Webhook(ctx context.Context, id string) (*model.Webhook, error)
+	Webhooks(ctx context.Context, projectID string) ([]model.Webhook, error)
 }
 type QuizResolver interface {
 	Project(ctx context.Context, obj *model.Quiz) (*model.Project, error)
@@ -1304,6 +1343,13 @@ type UserRoleResolver interface {
 	User(ctx context.Context, obj *model.UserRole) (*model.User, error)
 
 	Scope(ctx context.Context, obj *model.UserRole) (*model.RoleScope, error)
+}
+type WebhookResolver interface {
+	Project(ctx context.Context, obj *model.Webhook) (*model.Project, error)
+
+	HasSecret(ctx context.Context, obj *model.Webhook) (bool, error)
+
+	RecentLogs(ctx context.Context, obj *model.Webhook, first *int) ([]model.WebhookLog, error)
 }
 
 type executableSchema struct {
@@ -2801,6 +2847,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.CreateTeam(childComplexity, args["projectId"].(string), args["input"].(model.CreateTeamInput)), true
+	case "Mutation.createWebhook":
+		if e.complexity.Mutation.CreateWebhook == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createWebhook_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateWebhook(childComplexity, args["input"].(model.CreateWebhookInput)), true
 	case "Mutation.deleteAchievement":
 		if e.complexity.Mutation.DeleteAchievement == nil {
 			break
@@ -2922,6 +2979,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.DeleteTeam(childComplexity, args["id"].(string)), true
+	case "Mutation.deleteWebhook":
+		if e.complexity.Mutation.DeleteWebhook == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteWebhook_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteWebhook(childComplexity, args["id"].(string)), true
 	case "Mutation._empty":
 		if e.complexity.Mutation.Empty == nil {
 			break
@@ -3269,6 +3337,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.SubmitQuizAnswer(childComplexity, args["submissionId"].(string), args["input"].(model.SubmitQuizAnswerInput)), true
+	case "Mutation.testWebhook":
+		if e.complexity.Mutation.TestWebhook == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_testWebhook_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.TestWebhook(childComplexity, args["id"].(string)), true
 	case "Mutation.uncompleteChallenge":
 		if e.complexity.Mutation.UncompleteChallenge == nil {
 			break
@@ -3478,6 +3557,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateTeam(childComplexity, args["id"].(string), args["input"].(model.UpdateTeamInput)), true
+	case "Mutation.updateWebhook":
+		if e.complexity.Mutation.UpdateWebhook == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateWebhook_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateWebhook(childComplexity, args["id"].(string), args["input"].(model.UpdateWebhookInput)), true
 
 	case "NumberQuestion.id":
 		if e.complexity.NumberQuestion.ID == nil {
@@ -4296,6 +4386,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.VapidPublicKey(childComplexity), true
+	case "Query.webhook":
+		if e.complexity.Query.Webhook == nil {
+			break
+		}
+
+		args, err := ec.field_Query_webhook_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Webhook(childComplexity, args["id"].(string)), true
+	case "Query.webhooks":
+		if e.complexity.Query.Webhooks == nil {
+			break
+		}
+
+		args, err := ec.field_Query_webhooks_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Webhooks(childComplexity, args["projectId"].(string)), true
 
 	case "Quiz.allowRetakes":
 		if e.complexity.Quiz.AllowRetakes == nil {
@@ -5788,6 +5900,133 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UserRole.User(childComplexity), true
 
+	case "Webhook.active":
+		if e.complexity.Webhook.Active == nil {
+			break
+		}
+
+		return e.complexity.Webhook.Active(childComplexity), true
+	case "Webhook.createdAt":
+		if e.complexity.Webhook.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Webhook.CreatedAt(childComplexity), true
+	case "Webhook.eventType":
+		if e.complexity.Webhook.EventType == nil {
+			break
+		}
+
+		return e.complexity.Webhook.EventType(childComplexity), true
+	case "Webhook.hasSecret":
+		if e.complexity.Webhook.HasSecret == nil {
+			break
+		}
+
+		return e.complexity.Webhook.HasSecret(childComplexity), true
+	case "Webhook.id":
+		if e.complexity.Webhook.ID == nil {
+			break
+		}
+
+		return e.complexity.Webhook.ID(childComplexity), true
+	case "Webhook.includeEventData":
+		if e.complexity.Webhook.IncludeEventData == nil {
+			break
+		}
+
+		return e.complexity.Webhook.IncludeEventData(childComplexity), true
+	case "Webhook.includeUserData":
+		if e.complexity.Webhook.IncludeUserData == nil {
+			break
+		}
+
+		return e.complexity.Webhook.IncludeUserData(childComplexity), true
+	case "Webhook.name":
+		if e.complexity.Webhook.Name == nil {
+			break
+		}
+
+		return e.complexity.Webhook.Name(childComplexity), true
+	case "Webhook.project":
+		if e.complexity.Webhook.Project == nil {
+			break
+		}
+
+		return e.complexity.Webhook.Project(childComplexity), true
+	case "Webhook.recentLogs":
+		if e.complexity.Webhook.RecentLogs == nil {
+			break
+		}
+
+		args, err := ec.field_Webhook_recentLogs_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Webhook.RecentLogs(childComplexity, args["first"].(*int)), true
+	case "Webhook.url":
+		if e.complexity.Webhook.URL == nil {
+			break
+		}
+
+		return e.complexity.Webhook.URL(childComplexity), true
+	case "Webhook.updatedAt":
+		if e.complexity.Webhook.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.Webhook.UpdatedAt(childComplexity), true
+
+	case "WebhookLog.createdAt":
+		if e.complexity.WebhookLog.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.WebhookLog.CreatedAt(childComplexity), true
+	case "WebhookLog.durationMs":
+		if e.complexity.WebhookLog.DurationMs == nil {
+			break
+		}
+
+		return e.complexity.WebhookLog.DurationMs(childComplexity), true
+	case "WebhookLog.errorMessage":
+		if e.complexity.WebhookLog.ErrorMessage == nil {
+			break
+		}
+
+		return e.complexity.WebhookLog.ErrorMessage(childComplexity), true
+	case "WebhookLog.eventType":
+		if e.complexity.WebhookLog.EventType == nil {
+			break
+		}
+
+		return e.complexity.WebhookLog.EventType(childComplexity), true
+	case "WebhookLog.id":
+		if e.complexity.WebhookLog.ID == nil {
+			break
+		}
+
+		return e.complexity.WebhookLog.ID(childComplexity), true
+	case "WebhookLog.requestPayload":
+		if e.complexity.WebhookLog.RequestPayload == nil {
+			break
+		}
+
+		return e.complexity.WebhookLog.RequestPayload(childComplexity), true
+	case "WebhookLog.responseBody":
+		if e.complexity.WebhookLog.ResponseBody == nil {
+			break
+		}
+
+		return e.complexity.WebhookLog.ResponseBody(childComplexity), true
+	case "WebhookLog.responseStatusCode":
+		if e.complexity.WebhookLog.ResponseStatusCode == nil {
+			break
+		}
+
+		return e.complexity.WebhookLog.ResponseStatusCode(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -5823,6 +6062,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateSuperTeamInput,
 		ec.unmarshalInputCreateTeamInput,
 		ec.unmarshalInputCreateUserInput,
+		ec.unmarshalInputCreateWebhookInput,
 		ec.unmarshalInputDateRangeInput,
 		ec.unmarshalInputDeviceMetadata,
 		ec.unmarshalInputEnrollmentTargetInput,
@@ -5854,6 +6094,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateStreakInput,
 		ec.unmarshalInputUpdateSuperTeamInput,
 		ec.unmarshalInputUpdateTeamInput,
+		ec.unmarshalInputUpdateWebhookInput,
 		ec.unmarshalInputUserFilter,
 	)
 	first := true
@@ -7886,6 +8127,76 @@ extend type Mutation {
     deleteFeedback(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
 }
 `, BuiltIn: false},
+	{Name: "../../../../gql/webhooks.graphqls", Input: `# ==================== Webhook Types ====================
+
+enum WebhookEventType {
+    EXTERNAL_CONTENT_EVENT
+    POINTS_AWARDED
+}
+
+type Webhook {
+    id: ID!
+    project: Project! @goField(forceResolver: true)
+    name: String!
+    url: String!
+    eventType: WebhookEventType!
+    includeUserData: Boolean!
+    includeEventData: Boolean!
+    active: Boolean!
+    hasSecret: Boolean! @goField(forceResolver: true)
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    recentLogs(first: Int): [WebhookLog!]! @goField(forceResolver: true)
+}
+
+type WebhookLog {
+    id: ID!
+    eventType: WebhookEventType!
+    requestPayload: JSON!
+    responseStatusCode: Int
+    responseBody: String
+    durationMs: Int!
+    errorMessage: String
+    createdAt: DateTime!
+}
+
+# ==================== Webhook Inputs ====================
+
+input CreateWebhookInput {
+    projectId: ID!
+    name: String!
+    url: String!
+    eventType: WebhookEventType!
+    includeUserData: Boolean
+    includeEventData: Boolean
+    secret: String
+}
+
+input UpdateWebhookInput {
+    name: String
+    url: String
+    includeUserData: Boolean
+    includeEventData: Boolean
+    active: Boolean
+    secret: String
+}
+
+# ==================== Webhook Queries ====================
+
+extend type Query {
+    webhook(id: ID!): Webhook @requireRole(roles: ["superadmin"])
+    webhooks(projectId: ID!): [Webhook!]! @requireRole(roles: ["superadmin"])
+}
+
+# ==================== Webhook Mutations ====================
+
+extend type Mutation {
+    createWebhook(input: CreateWebhookInput!): Webhook! @requireRole(roles: ["superadmin"])
+    updateWebhook(id: ID!, input: UpdateWebhookInput!): Webhook! @requireRole(roles: ["superadmin"])
+    deleteWebhook(id: ID!): Boolean! @requireRole(roles: ["superadmin"])
+    testWebhook(id: ID!): WebhookLog! @requireRole(roles: ["superadmin"])
+}
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -8484,6 +8795,17 @@ func (ec *executionContext) field_Mutation_createTeam_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createWebhook_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateWebhookInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateWebhookInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteAchievement_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -8595,6 +8917,17 @@ func (ec *executionContext) field_Mutation_deleteSuperTeam_args(ctx context.Cont
 }
 
 func (ec *executionContext) field_Mutation_deleteTeam_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteWebhook_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
@@ -9046,6 +9379,17 @@ func (ec *executionContext) field_Mutation_submitQuizAnswer_args(ctx context.Con
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_testWebhook_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_uncompleteChallenge_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9353,6 +9697,22 @@ func (ec *executionContext) field_Mutation_updateTeam_args(ctx context.Context, 
 	}
 	args["id"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateTeamInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateTeamInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateWebhook_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateWebhookInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateWebhookInput)
 	if err != nil {
 		return nil, err
 	}
@@ -10109,6 +10469,28 @@ func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs 
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_webhook_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_webhooks_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "projectId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["projectId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Streak_listenedDays_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -10143,6 +10525,17 @@ func (ec *executionContext) field_SuperTeam_members_args(ctx context.Context, ra
 		return nil, err
 	}
 	args["before"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_Webhook_recentLogs_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg0
 	return args, nil
 }
 
@@ -22667,6 +23060,312 @@ func (ec *executionContext) fieldContext_Mutation_deleteFeedback(ctx context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createWebhook(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_createWebhook,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().CreateWebhook(ctx, fc.Args["input"].(model.CreateWebhookInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
+				if err != nil {
+					var zeroVal *model.Webhook
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.Webhook
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNWebhook2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhook,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createWebhook(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Webhook_id(ctx, field)
+			case "project":
+				return ec.fieldContext_Webhook_project(ctx, field)
+			case "name":
+				return ec.fieldContext_Webhook_name(ctx, field)
+			case "url":
+				return ec.fieldContext_Webhook_url(ctx, field)
+			case "eventType":
+				return ec.fieldContext_Webhook_eventType(ctx, field)
+			case "includeUserData":
+				return ec.fieldContext_Webhook_includeUserData(ctx, field)
+			case "includeEventData":
+				return ec.fieldContext_Webhook_includeEventData(ctx, field)
+			case "active":
+				return ec.fieldContext_Webhook_active(ctx, field)
+			case "hasSecret":
+				return ec.fieldContext_Webhook_hasSecret(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Webhook_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Webhook_updatedAt(ctx, field)
+			case "recentLogs":
+				return ec.fieldContext_Webhook_recentLogs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Webhook", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createWebhook_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateWebhook(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateWebhook,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateWebhook(ctx, fc.Args["id"].(string), fc.Args["input"].(model.UpdateWebhookInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
+				if err != nil {
+					var zeroVal *model.Webhook
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.Webhook
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNWebhook2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhook,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateWebhook(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Webhook_id(ctx, field)
+			case "project":
+				return ec.fieldContext_Webhook_project(ctx, field)
+			case "name":
+				return ec.fieldContext_Webhook_name(ctx, field)
+			case "url":
+				return ec.fieldContext_Webhook_url(ctx, field)
+			case "eventType":
+				return ec.fieldContext_Webhook_eventType(ctx, field)
+			case "includeUserData":
+				return ec.fieldContext_Webhook_includeUserData(ctx, field)
+			case "includeEventData":
+				return ec.fieldContext_Webhook_includeEventData(ctx, field)
+			case "active":
+				return ec.fieldContext_Webhook_active(ctx, field)
+			case "hasSecret":
+				return ec.fieldContext_Webhook_hasSecret(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Webhook_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Webhook_updatedAt(ctx, field)
+			case "recentLogs":
+				return ec.fieldContext_Webhook_recentLogs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Webhook", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateWebhook_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteWebhook(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteWebhook,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().DeleteWebhook(ctx, fc.Args["id"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
+				if err != nil {
+					var zeroVal bool
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal bool
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteWebhook(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteWebhook_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_testWebhook(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_testWebhook,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().TestWebhook(ctx, fc.Args["id"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
+				if err != nil {
+					var zeroVal *model.WebhookLog
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.WebhookLog
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNWebhookLog2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhookLog,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_testWebhook(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_WebhookLog_id(ctx, field)
+			case "eventType":
+				return ec.fieldContext_WebhookLog_eventType(ctx, field)
+			case "requestPayload":
+				return ec.fieldContext_WebhookLog_requestPayload(ctx, field)
+			case "responseStatusCode":
+				return ec.fieldContext_WebhookLog_responseStatusCode(ctx, field)
+			case "responseBody":
+				return ec.fieldContext_WebhookLog_responseBody(ctx, field)
+			case "durationMs":
+				return ec.fieldContext_WebhookLog_durationMs(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_WebhookLog_errorMessage(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_WebhookLog_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type WebhookLog", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_testWebhook_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NumberQuestion_id(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -27334,6 +28033,176 @@ func (ec *executionContext) fieldContext_Query_feedback(ctx context.Context, fie
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_feedback_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_webhook(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_webhook,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().Webhook(ctx, fc.Args["id"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
+				if err != nil {
+					var zeroVal *model.Webhook
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.Webhook
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalOWebhook2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhook,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_webhook(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Webhook_id(ctx, field)
+			case "project":
+				return ec.fieldContext_Webhook_project(ctx, field)
+			case "name":
+				return ec.fieldContext_Webhook_name(ctx, field)
+			case "url":
+				return ec.fieldContext_Webhook_url(ctx, field)
+			case "eventType":
+				return ec.fieldContext_Webhook_eventType(ctx, field)
+			case "includeUserData":
+				return ec.fieldContext_Webhook_includeUserData(ctx, field)
+			case "includeEventData":
+				return ec.fieldContext_Webhook_includeEventData(ctx, field)
+			case "active":
+				return ec.fieldContext_Webhook_active(ctx, field)
+			case "hasSecret":
+				return ec.fieldContext_Webhook_hasSecret(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Webhook_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Webhook_updatedAt(ctx, field)
+			case "recentLogs":
+				return ec.fieldContext_Webhook_recentLogs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Webhook", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_webhook_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_webhooks(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_webhooks,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().Webhooks(ctx, fc.Args["projectId"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
+				if err != nil {
+					var zeroVal []model.Webhook
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal []model.Webhook
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNWebhook2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhookᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_webhooks(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Webhook_id(ctx, field)
+			case "project":
+				return ec.fieldContext_Webhook_project(ctx, field)
+			case "name":
+				return ec.fieldContext_Webhook_name(ctx, field)
+			case "url":
+				return ec.fieldContext_Webhook_url(ctx, field)
+			case "eventType":
+				return ec.fieldContext_Webhook_eventType(ctx, field)
+			case "includeUserData":
+				return ec.fieldContext_Webhook_includeUserData(ctx, field)
+			case "includeEventData":
+				return ec.fieldContext_Webhook_includeEventData(ctx, field)
+			case "active":
+				return ec.fieldContext_Webhook_active(ctx, field)
+			case "hasSecret":
+				return ec.fieldContext_Webhook_hasSecret(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Webhook_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Webhook_updatedAt(ctx, field)
+			case "recentLogs":
+				return ec.fieldContext_Webhook_recentLogs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Webhook", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_webhooks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -35949,6 +36818,650 @@ func (ec *executionContext) fieldContext_UserRole_scope(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _Webhook_id(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Webhook_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Webhook_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Webhook",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Webhook_project(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Webhook_project,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Webhook().Project(ctx, obj)
+		},
+		nil,
+		ec.marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProject,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Webhook_project(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Webhook",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Project_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Project_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Project_description(ctx, field)
+			case "rules":
+				return ec.fieldContext_Project_rules(ctx, field)
+			case "challenges":
+				return ec.fieldContext_Project_challenges(ctx, field)
+			case "leaderboard":
+				return ec.fieldContext_Project_leaderboard(ctx, field)
+			case "events":
+				return ec.fieldContext_Project_events(ctx, field)
+			case "startDate":
+				return ec.fieldContext_Project_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_Project_endDate(ctx, field)
+			case "branding":
+				return ec.fieldContext_Project_branding(ctx, field)
+			case "teams":
+				return ec.fieldContext_Project_teams(ctx, field)
+			case "myTeam":
+				return ec.fieldContext_Project_myTeam(ctx, field)
+			case "achievements":
+				return ec.fieldContext_Project_achievements(ctx, field)
+			case "streaks":
+				return ec.fieldContext_Project_streaks(ctx, field)
+			case "journal":
+				return ec.fieldContext_Project_journal(ctx, field)
+			case "archivedAt":
+				return ec.fieldContext_Project_archivedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Webhook_name(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Webhook_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Webhook_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Webhook",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Webhook_url(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Webhook_url,
+		func(ctx context.Context) (any, error) {
+			return obj.URL, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Webhook_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Webhook",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Webhook_eventType(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Webhook_eventType,
+		func(ctx context.Context) (any, error) {
+			return obj.EventType, nil
+		},
+		nil,
+		ec.marshalNWebhookEventType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhookEventType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Webhook_eventType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Webhook",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type WebhookEventType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Webhook_includeUserData(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Webhook_includeUserData,
+		func(ctx context.Context) (any, error) {
+			return obj.IncludeUserData, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Webhook_includeUserData(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Webhook",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Webhook_includeEventData(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Webhook_includeEventData,
+		func(ctx context.Context) (any, error) {
+			return obj.IncludeEventData, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Webhook_includeEventData(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Webhook",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Webhook_active(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Webhook_active,
+		func(ctx context.Context) (any, error) {
+			return obj.Active, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Webhook_active(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Webhook",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Webhook_hasSecret(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Webhook_hasSecret,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Webhook().HasSecret(ctx, obj)
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Webhook_hasSecret(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Webhook",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Webhook_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Webhook_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Webhook_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Webhook",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Webhook_updatedAt(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Webhook_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Webhook_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Webhook",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Webhook_recentLogs(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Webhook_recentLogs,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Webhook().RecentLogs(ctx, obj, fc.Args["first"].(*int))
+		},
+		nil,
+		ec.marshalNWebhookLog2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhookLogᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Webhook_recentLogs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Webhook",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_WebhookLog_id(ctx, field)
+			case "eventType":
+				return ec.fieldContext_WebhookLog_eventType(ctx, field)
+			case "requestPayload":
+				return ec.fieldContext_WebhookLog_requestPayload(ctx, field)
+			case "responseStatusCode":
+				return ec.fieldContext_WebhookLog_responseStatusCode(ctx, field)
+			case "responseBody":
+				return ec.fieldContext_WebhookLog_responseBody(ctx, field)
+			case "durationMs":
+				return ec.fieldContext_WebhookLog_durationMs(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_WebhookLog_errorMessage(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_WebhookLog_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type WebhookLog", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Webhook_recentLogs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WebhookLog_id(ctx context.Context, field graphql.CollectedField, obj *model.WebhookLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WebhookLog_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WebhookLog_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WebhookLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WebhookLog_eventType(ctx context.Context, field graphql.CollectedField, obj *model.WebhookLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WebhookLog_eventType,
+		func(ctx context.Context) (any, error) {
+			return obj.EventType, nil
+		},
+		nil,
+		ec.marshalNWebhookEventType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhookEventType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WebhookLog_eventType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WebhookLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type WebhookEventType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WebhookLog_requestPayload(ctx context.Context, field graphql.CollectedField, obj *model.WebhookLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WebhookLog_requestPayload,
+		func(ctx context.Context) (any, error) {
+			return obj.RequestPayload, nil
+		},
+		nil,
+		ec.marshalNJSON2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WebhookLog_requestPayload(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WebhookLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type JSON does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WebhookLog_responseStatusCode(ctx context.Context, field graphql.CollectedField, obj *model.WebhookLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WebhookLog_responseStatusCode,
+		func(ctx context.Context) (any, error) {
+			return obj.ResponseStatusCode, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_WebhookLog_responseStatusCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WebhookLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WebhookLog_responseBody(ctx context.Context, field graphql.CollectedField, obj *model.WebhookLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WebhookLog_responseBody,
+		func(ctx context.Context) (any, error) {
+			return obj.ResponseBody, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_WebhookLog_responseBody(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WebhookLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WebhookLog_durationMs(ctx context.Context, field graphql.CollectedField, obj *model.WebhookLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WebhookLog_durationMs,
+		func(ctx context.Context) (any, error) {
+			return obj.DurationMs, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WebhookLog_durationMs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WebhookLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WebhookLog_errorMessage(ctx context.Context, field graphql.CollectedField, obj *model.WebhookLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WebhookLog_errorMessage,
+		func(ctx context.Context) (any, error) {
+			return obj.ErrorMessage, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_WebhookLog_errorMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WebhookLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WebhookLog_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.WebhookLog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WebhookLog_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WebhookLog_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WebhookLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -39111,6 +40624,75 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateWebhookInput(ctx context.Context, obj any) (model.CreateWebhookInput, error) {
+	var it model.CreateWebhookInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"projectId", "name", "url", "eventType", "includeUserData", "includeEventData", "secret"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "projectId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectID = data
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "url":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.URL = data
+		case "eventType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("eventType"))
+			data, err := ec.unmarshalNWebhookEventType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhookEventType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EventType = data
+		case "includeUserData":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeUserData"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IncludeUserData = data
+		case "includeEventData":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeEventData"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IncludeEventData = data
+		case "secret":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("secret"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Secret = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDateRangeInput(ctx context.Context, obj any) (model.DateRangeInput, error) {
 	var it model.DateRangeInput
 	asMap := map[string]any{}
@@ -40978,6 +42560,68 @@ func (ec *executionContext) unmarshalInputUpdateTeamInput(ctx context.Context, o
 				return it, err
 			}
 			it.Description = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateWebhookInput(ctx context.Context, obj any) (model.UpdateWebhookInput, error) {
+	var it model.UpdateWebhookInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "url", "includeUserData", "includeEventData", "active", "secret"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "url":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.URL = data
+		case "includeUserData":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeUserData"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IncludeUserData = data
+		case "includeEventData":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeEventData"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IncludeEventData = data
+		case "active":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("active"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Active = data
+		case "secret":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("secret"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Secret = data
 		}
 	}
 
@@ -44774,6 +46418,34 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "createWebhook":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createWebhook(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateWebhook":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateWebhook(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteWebhook":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteWebhook(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "testWebhook":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_testWebhook(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -46897,6 +48569,47 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_feedback(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "webhook":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_webhook(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "webhooks":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_webhooks(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -51359,6 +53072,258 @@ func (ec *executionContext) _UserRole(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var webhookImplementors = []string{"Webhook"}
+
+func (ec *executionContext) _Webhook(ctx context.Context, sel ast.SelectionSet, obj *model.Webhook) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, webhookImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Webhook")
+		case "id":
+			out.Values[i] = ec._Webhook_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "project":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Webhook_project(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "name":
+			out.Values[i] = ec._Webhook_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "url":
+			out.Values[i] = ec._Webhook_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "eventType":
+			out.Values[i] = ec._Webhook_eventType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "includeUserData":
+			out.Values[i] = ec._Webhook_includeUserData(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "includeEventData":
+			out.Values[i] = ec._Webhook_includeEventData(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "active":
+			out.Values[i] = ec._Webhook_active(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "hasSecret":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Webhook_hasSecret(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._Webhook_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._Webhook_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "recentLogs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Webhook_recentLogs(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var webhookLogImplementors = []string{"WebhookLog"}
+
+func (ec *executionContext) _WebhookLog(ctx context.Context, sel ast.SelectionSet, obj *model.WebhookLog) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, webhookLogImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("WebhookLog")
+		case "id":
+			out.Values[i] = ec._WebhookLog_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "eventType":
+			out.Values[i] = ec._WebhookLog_eventType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "requestPayload":
+			out.Values[i] = ec._WebhookLog_requestPayload(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "responseStatusCode":
+			out.Values[i] = ec._WebhookLog_responseStatusCode(ctx, field, obj)
+		case "responseBody":
+			out.Values[i] = ec._WebhookLog_responseBody(ctx, field, obj)
+		case "durationMs":
+			out.Values[i] = ec._WebhookLog_durationMs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errorMessage":
+			out.Values[i] = ec._WebhookLog_errorMessage(ctx, field, obj)
+		case "createdAt":
+			out.Values[i] = ec._WebhookLog_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var __DirectiveImplementors = []string{"__Directive"}
 
 func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionSet, obj *introspection.Directive) graphql.Marshaler {
@@ -51697,7 +53662,7 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 func (ec *executionContext) marshalNAchievement2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievement(ctx context.Context, sel ast.SelectionSet, v model.Achievement) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -51755,7 +53720,7 @@ func (ec *executionContext) marshalNAchievementConnection2githubᚗcomᚋbccᚑm
 func (ec *executionContext) marshalNAchievementConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievementConnection(ctx context.Context, sel ast.SelectionSet, v *model.AchievementConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -51822,7 +53787,7 @@ func (ec *executionContext) marshalNAdminDashboardStats2githubᚗcomᚋbccᚑmed
 func (ec *executionContext) marshalNAdminDashboardStats2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminDashboardStats(ctx context.Context, sel ast.SelectionSet, v *model.AdminDashboardStats) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -51844,7 +53809,7 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	res := graphql.MarshalBoolean(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -51853,7 +53818,7 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 func (ec *executionContext) marshalNBranding2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBranding(ctx context.Context, sel ast.SelectionSet, v *model.Branding) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -51868,7 +53833,7 @@ func (ec *executionContext) unmarshalNBrandingInput2ᚖgithubᚗcomᚋbccᚑmedi
 func (ec *executionContext) marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge(ctx context.Context, sel ast.SelectionSet, v model.Challenge) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -51926,7 +53891,7 @@ func (ec *executionContext) marshalNChallengeConnection2githubᚗcomᚋbccᚑmed
 func (ec *executionContext) marshalNChallengeConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeConnection(ctx context.Context, sel ast.SelectionSet, v *model.ChallengeConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -51998,7 +53963,7 @@ func (ec *executionContext) marshalNChurch2githubᚗcomᚋbccᚑmediaᚋwayfarer
 func (ec *executionContext) marshalNChurch2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurch(ctx context.Context, sel ast.SelectionSet, v *model.Church) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -52022,7 +53987,7 @@ func (ec *executionContext) marshalNChurchConnection2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNChurchConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchConnection(ctx context.Context, sel ast.SelectionSet, v *model.ChurchConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -52080,7 +54045,7 @@ func (ec *executionContext) marshalNChurchEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋw
 func (ec *executionContext) marshalNColorSet2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColorSet(ctx context.Context, sel ast.SelectionSet, v *model.ColorSet) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -52095,7 +54060,7 @@ func (ec *executionContext) unmarshalNColorSetInput2ᚖgithubᚗcomᚋbccᚑmedi
 func (ec *executionContext) marshalNColors2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColors(ctx context.Context, sel ast.SelectionSet, v *model.Colors) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -52158,7 +54123,7 @@ func (ec *executionContext) marshalNConsent2ᚕgithubᚗcomᚋbccᚑmediaᚋwayf
 func (ec *executionContext) marshalNConsent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsent(ctx context.Context, sel ast.SelectionSet, v *model.Consent) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -52188,7 +54153,7 @@ func (ec *executionContext) marshalNConsentManagementType2githubᚗcomᚋbccᚑm
 func (ec *executionContext) marshalNConsentStatus2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsentStatus(ctx context.Context, sel ast.SelectionSet, v *model.ConsentStatus) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -52246,7 +54211,7 @@ func (ec *executionContext) marshalNContentAchievement2ᚕgithubᚗcomᚋbccᚑm
 func (ec *executionContext) marshalNContentAchievement2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐContentAchievement(ctx context.Context, sel ast.SelectionSet, v *model.ContentAchievement) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -52393,6 +54358,11 @@ func (ec *executionContext) unmarshalNCreateSuperTeamInput2githubᚗcomᚋbccᚑ
 
 func (ec *executionContext) unmarshalNCreateTeamInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateTeamInput(ctx context.Context, v any) (model.CreateTeamInput, error) {
 	res, err := ec.unmarshalInputCreateTeamInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNCreateWebhookInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateWebhookInput(ctx context.Context, v any) (model.CreateWebhookInput, error) {
+	res, err := ec.unmarshalInputCreateWebhookInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -52545,7 +54515,7 @@ func (ec *executionContext) marshalNEvent2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfar
 func (ec *executionContext) marshalNEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEvent(ctx context.Context, sel ast.SelectionSet, v *model.Event) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -52559,7 +54529,7 @@ func (ec *executionContext) marshalNEventConnection2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNEventConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEventConnection(ctx context.Context, sel ast.SelectionSet, v *model.EventConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -52621,7 +54591,7 @@ func (ec *executionContext) marshalNExternalContent2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNExternalContent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐExternalContent(ctx context.Context, sel ast.SelectionSet, v *model.ExternalContent) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -52635,7 +54605,7 @@ func (ec *executionContext) marshalNExternalContentConnection2githubᚗcomᚋbcc
 func (ec *executionContext) marshalNExternalContentConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐExternalContentConnection(ctx context.Context, sel ast.SelectionSet, v *model.ExternalContentConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -52760,7 +54730,7 @@ func (ec *executionContext) marshalNFeedbackConnection2githubᚗcomᚋbccᚑmedi
 func (ec *executionContext) marshalNFeedbackConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFeedbackConnection(ctx context.Context, sel ast.SelectionSet, v *model.FeedbackConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -52825,7 +54795,7 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 	res := graphql.MarshalFloatContext(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return graphql.WrapContextMarshaler(ctx, res)
@@ -52861,7 +54831,7 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	res := graphql.MarshalID(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -52907,7 +54877,7 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -52923,7 +54893,7 @@ func (ec *executionContext) marshalNJSON2string(ctx context.Context, sel ast.Sel
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -52936,7 +54906,7 @@ func (ec *executionContext) marshalNLeaderboardConnection2githubᚗcomᚋbccᚑm
 func (ec *executionContext) marshalNLeaderboardConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardConnection(ctx context.Context, sel ast.SelectionSet, v *model.LeaderboardConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53052,7 +55022,7 @@ func (ec *executionContext) marshalNLeaderboardEntry2ᚕgithubᚗcomᚋbccᚑmed
 func (ec *executionContext) marshalNLeaderboardEntry2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntry(ctx context.Context, sel ast.SelectionSet, v *model.LeaderboardEntry) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53135,7 +55105,7 @@ func (ec *executionContext) marshalNMarkdownText2githubᚗcomᚋbccᚑmediaᚋwa
 func (ec *executionContext) marshalNMarkdownText2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMarkdownText(ctx context.Context, sel ast.SelectionSet, v *model.MarkdownText) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53155,7 +55125,7 @@ func (ec *executionContext) marshalNNotificationType2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNPageInfo2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v *model.PageInfo) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53213,7 +55183,7 @@ func (ec *executionContext) marshalNProject2ᚕgithubᚗcomᚋbccᚑmediaᚋwayf
 func (ec *executionContext) marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProject(ctx context.Context, sel ast.SelectionSet, v *model.Project) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53227,7 +55197,7 @@ func (ec *executionContext) marshalNProjectConnection2githubᚗcomᚋbccᚑmedia
 func (ec *executionContext) marshalNProjectConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProjectConnection(ctx context.Context, sel ast.SelectionSet, v *model.ProjectConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53333,7 +55303,7 @@ func (ec *executionContext) marshalNPushNotificationPreference2ᚕgithubᚗcom�
 func (ec *executionContext) marshalNPushNotificationPreference2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPushNotificationPreference(ctx context.Context, sel ast.SelectionSet, v *model.PushNotificationPreference) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53347,7 +55317,7 @@ func (ec *executionContext) marshalNPushSubscription2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNPushSubscription2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPushSubscription(ctx context.Context, sel ast.SelectionSet, v *model.PushSubscription) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53361,7 +55331,7 @@ func (ec *executionContext) marshalNQuiz2githubᚗcomᚋbccᚑmediaᚋwayfarer�
 func (ec *executionContext) marshalNQuiz2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuiz(ctx context.Context, sel ast.SelectionSet, v *model.Quiz) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53375,7 +55345,7 @@ func (ec *executionContext) marshalNQuizAchievement2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNQuizAchievement2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizAchievement(ctx context.Context, sel ast.SelectionSet, v *model.QuizAchievement) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53389,7 +55359,7 @@ func (ec *executionContext) marshalNQuizConnection2githubᚗcomᚋbccᚑmediaᚋ
 func (ec *executionContext) marshalNQuizConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizConnection(ctx context.Context, sel ast.SelectionSet, v *model.QuizConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53495,7 +55465,7 @@ func (ec *executionContext) marshalNQuizPredefinedAnswer2ᚕgithubᚗcomᚋbcc�
 func (ec *executionContext) marshalNQuizQuestion2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizQuestion(ctx context.Context, sel ast.SelectionSet, v model.QuizQuestion) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53559,7 +55529,7 @@ func (ec *executionContext) marshalNQuizQuestionType2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNQuizResponse2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizResponse(ctx context.Context, sel ast.SelectionSet, v model.QuizResponse) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53661,7 +55631,7 @@ func (ec *executionContext) marshalNQuizSubmission2ᚕgithubᚗcomᚋbccᚑmedia
 func (ec *executionContext) marshalNQuizSubmission2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSubmission(ctx context.Context, sel ast.SelectionSet, v *model.QuizSubmission) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53675,7 +55645,7 @@ func (ec *executionContext) marshalNQuizSubmissionConnection2githubᚗcomᚋbcc�
 func (ec *executionContext) marshalNQuizSubmissionConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSubmissionConnection(ctx context.Context, sel ast.SelectionSet, v *model.QuizSubmissionConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53767,7 +55737,7 @@ func (ec *executionContext) marshalNScoreJournal2githubᚗcomᚋbccᚑmediaᚋwa
 func (ec *executionContext) marshalNScoreJournal2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournal(ctx context.Context, sel ast.SelectionSet, v *model.ScoreJournal) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53781,7 +55751,7 @@ func (ec *executionContext) marshalNScoreJournalConnection2githubᚗcomᚋbccᚑ
 func (ec *executionContext) marshalNScoreJournalConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournalConnection(ctx context.Context, sel ast.SelectionSet, v *model.ScoreJournalConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53858,7 +55828,7 @@ func (ec *executionContext) marshalNSendPushNotificationResult2githubᚗcomᚋbc
 func (ec *executionContext) marshalNSendPushNotificationResult2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSendPushNotificationResult(ctx context.Context, sel ast.SelectionSet, v *model.SendPushNotificationResult) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53877,7 +55847,7 @@ func (ec *executionContext) marshalNSimpleAchievement2githubᚗcomᚋbccᚑmedia
 func (ec *executionContext) marshalNSimpleAchievement2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSimpleAchievement(ctx context.Context, sel ast.SelectionSet, v *model.SimpleAchievement) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53891,7 +55861,7 @@ func (ec *executionContext) marshalNSimpleChallenge2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNSimpleChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSimpleChallenge(ctx context.Context, sel ast.SelectionSet, v *model.SimpleChallenge) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53949,7 +55919,7 @@ func (ec *executionContext) marshalNStreak2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfa
 func (ec *executionContext) marshalNStreak2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreak(ctx context.Context, sel ast.SelectionSet, v *model.Streak) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53963,7 +55933,7 @@ func (ec *executionContext) marshalNStreakAchievement2githubᚗcomᚋbccᚑmedia
 func (ec *executionContext) marshalNStreakAchievement2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakAchievement(ctx context.Context, sel ast.SelectionSet, v *model.StreakAchievement) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53977,7 +55947,7 @@ func (ec *executionContext) marshalNStreakConnection2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNStreakConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakConnection(ctx context.Context, sel ast.SelectionSet, v *model.StreakConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54090,7 +56060,7 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -54202,7 +56172,7 @@ func (ec *executionContext) marshalNSuperTeam2ᚕgithubᚗcomᚋbccᚑmediaᚋwa
 func (ec *executionContext) marshalNSuperTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSuperTeam(ctx context.Context, sel ast.SelectionSet, v *model.SuperTeam) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54216,7 +56186,7 @@ func (ec *executionContext) marshalNSuperTeamConnection2githubᚗcomᚋbccᚑmed
 func (ec *executionContext) marshalNSuperTeamConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSuperTeamConnection(ctx context.Context, sel ast.SelectionSet, v *model.SuperTeamConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54322,7 +56292,7 @@ func (ec *executionContext) marshalNTeam2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfare
 func (ec *executionContext) marshalNTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeam(ctx context.Context, sel ast.SelectionSet, v *model.Team) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54336,7 +56306,7 @@ func (ec *executionContext) marshalNTeamConnection2githubᚗcomᚋbccᚑmediaᚋ
 func (ec *executionContext) marshalNTeamConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamConnection(ctx context.Context, sel ast.SelectionSet, v *model.TeamConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54499,6 +56469,11 @@ func (ec *executionContext) unmarshalNUpdateTeamInput2githubᚗcomᚋbccᚑmedia
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNUpdateWebhookInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateWebhookInput(ctx context.Context, v any) (model.UpdateWebhookInput, error) {
+	res, err := ec.unmarshalInputUpdateWebhookInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, v any) (graphql.Upload, error) {
 	res, err := graphql.UnmarshalUpload(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -54509,7 +56484,7 @@ func (ec *executionContext) marshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋg
 	res := graphql.MarshalUpload(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -54566,7 +56541,7 @@ func (ec *executionContext) marshalNUser2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfare
 func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54580,7 +56555,7 @@ func (ec *executionContext) marshalNUserConnection2githubᚗcomᚋbccᚑmediaᚋ
 func (ec *executionContext) marshalNUserConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConnection(ctx context.Context, sel ast.SelectionSet, v *model.UserConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54638,7 +56613,7 @@ func (ec *executionContext) marshalNUserConsent2ᚕgithubᚗcomᚋbccᚑmediaᚋ
 func (ec *executionContext) marshalNUserConsent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConsent(ctx context.Context, sel ast.SelectionSet, v *model.UserConsent) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54748,7 +56723,7 @@ func (ec *executionContext) marshalNUserFeedback2githubᚗcomᚋbccᚑmediaᚋwa
 func (ec *executionContext) marshalNUserFeedback2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserFeedback(ctx context.Context, sel ast.SelectionSet, v *model.UserFeedback) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54806,11 +56781,137 @@ func (ec *executionContext) marshalNUserRole2ᚕgithubᚗcomᚋbccᚑmediaᚋway
 func (ec *executionContext) marshalNUserRole2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserRole(ctx context.Context, sel ast.SelectionSet, v *model.UserRole) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
 	return ec._UserRole(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNWebhook2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhook(ctx context.Context, sel ast.SelectionSet, v model.Webhook) graphql.Marshaler {
+	return ec._Webhook(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNWebhook2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhookᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Webhook) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNWebhook2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhook(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNWebhook2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhook(ctx context.Context, sel ast.SelectionSet, v *model.Webhook) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Webhook(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNWebhookEventType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhookEventType(ctx context.Context, v any) (model.WebhookEventType, error) {
+	var res model.WebhookEventType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNWebhookEventType2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhookEventType(ctx context.Context, sel ast.SelectionSet, v model.WebhookEventType) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNWebhookLog2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhookLog(ctx context.Context, sel ast.SelectionSet, v model.WebhookLog) graphql.Marshaler {
+	return ec._WebhookLog(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNWebhookLog2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhookLogᚄ(ctx context.Context, sel ast.SelectionSet, v []model.WebhookLog) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNWebhookLog2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhookLog(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNWebhookLog2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhookLog(ctx context.Context, sel ast.SelectionSet, v *model.WebhookLog) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._WebhookLog(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -54871,7 +56972,7 @@ func (ec *executionContext) marshalN__DirectiveLocation2string(ctx context.Conte
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -55043,7 +57144,7 @@ func (ec *executionContext) marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgen�
 func (ec *executionContext) marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, sel ast.SelectionSet, v *introspection.Type) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55060,7 +57161,7 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -55628,6 +57729,13 @@ func (ec *executionContext) unmarshalOUserFilter2ᚖgithubᚗcomᚋbccᚑmedia�
 	}
 	res, err := ec.unmarshalInputUserFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOWebhook2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhook(ctx context.Context, sel ast.SelectionSet, v *model.Webhook) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Webhook(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

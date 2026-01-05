@@ -469,6 +469,16 @@ type CreateUserInput struct {
 	Age       int    `json:"age"`
 }
 
+type CreateWebhookInput struct {
+	ProjectID        string           `json:"projectId"`
+	Name             string           `json:"name"`
+	URL              string           `json:"url"`
+	EventType        WebhookEventType `json:"eventType"`
+	IncludeUserData  *bool            `json:"includeUserData,omitempty"`
+	IncludeEventData *bool            `json:"includeEventData,omitempty"`
+	Secret           *string          `json:"secret,omitempty"`
+}
+
 type DateRange struct {
 	Start scalars.Date `json:"start"`
 	End   scalars.Date `json:"end"`
@@ -1493,6 +1503,15 @@ type UpdateTeamInput struct {
 	Description *string `json:"description,omitempty"`
 }
 
+type UpdateWebhookInput struct {
+	Name             *string `json:"name,omitempty"`
+	URL              *string `json:"url,omitempty"`
+	IncludeUserData  *bool   `json:"includeUserData,omitempty"`
+	IncludeEventData *bool   `json:"includeEventData,omitempty"`
+	Active           *bool   `json:"active,omitempty"`
+	Secret           *string `json:"secret,omitempty"`
+}
+
 type User struct {
 	ID            string           `json:"id"`
 	MembersID     string           `json:"membersId"`
@@ -1574,6 +1593,35 @@ type UserRole struct {
 	User  *User      `json:"user"`
 	Role  RoleType   `json:"role"`
 	Scope *RoleScope `json:"scope,omitempty"`
+}
+
+type Webhook struct {
+	ID               string           `json:"id"`
+	Project          *Project         `json:"project"`
+	Name             string           `json:"name"`
+	URL              string           `json:"url"`
+	EventType        WebhookEventType `json:"eventType"`
+	IncludeUserData  bool             `json:"includeUserData"`
+	IncludeEventData bool             `json:"includeEventData"`
+	Active           bool             `json:"active"`
+	HasSecret        bool             `json:"hasSecret"`
+	CreatedAt        scalars.DateTime `json:"createdAt"`
+	UpdatedAt        scalars.DateTime `json:"updatedAt"`
+	RecentLogs       []WebhookLog     `json:"recentLogs"`
+	ProjectID        string           `json:"-"`
+	Secret           *string          `json:"-"`
+}
+
+type WebhookLog struct {
+	ID                 string           `json:"id"`
+	EventType          WebhookEventType `json:"eventType"`
+	RequestPayload     string           `json:"requestPayload"`
+	ResponseStatusCode *int             `json:"responseStatusCode,omitempty"`
+	ResponseBody       *string          `json:"responseBody,omitempty"`
+	DurationMs         int              `json:"durationMs"`
+	ErrorMessage       *string          `json:"errorMessage,omitempty"`
+	CreatedAt          scalars.DateTime `json:"createdAt"`
+	WebhookID          string           `json:"-"`
 }
 
 type ChallengeType string
@@ -2442,6 +2490,61 @@ func (e *ScoreSourceType) UnmarshalJSON(b []byte) error {
 }
 
 func (e ScoreSourceType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type WebhookEventType string
+
+const (
+	WebhookEventTypeExternalContentEvent WebhookEventType = "EXTERNAL_CONTENT_EVENT"
+	WebhookEventTypePointsAwarded        WebhookEventType = "POINTS_AWARDED"
+)
+
+var AllWebhookEventType = []WebhookEventType{
+	WebhookEventTypeExternalContentEvent,
+	WebhookEventTypePointsAwarded,
+}
+
+func (e WebhookEventType) IsValid() bool {
+	switch e {
+	case WebhookEventTypeExternalContentEvent, WebhookEventTypePointsAwarded:
+		return true
+	}
+	return false
+}
+
+func (e WebhookEventType) String() string {
+	return string(e)
+}
+
+func (e *WebhookEventType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = WebhookEventType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid WebhookEventType", str)
+	}
+	return nil
+}
+
+func (e WebhookEventType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *WebhookEventType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e WebhookEventType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

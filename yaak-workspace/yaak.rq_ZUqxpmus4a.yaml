@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_ZUqxpmus4a
 createdAt: 2026-01-03T21:42:31.170113
-updatedAt: 2026-01-03T21:52:09.570308
+updatedAt: 2026-01-05T11:31:24.228211
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Achievements
 authentication: {}
@@ -11,13 +11,15 @@ body:
   query: |2-
       mutation {
         updateContentAchievement(
-          id: "AC01KCCNMRWECKQG6W0WD11957RH"
+          id: "AC01KCCNMRWECKQG6W0WD1Y3Q7T1"
           input: {
             items: [
-              { externalContentId: "EC01KE2RXAX3VJ0Z0QYZQBK7NMY6" }
-              { externalContentId: "EC01KE2RXAXEMVVJZNM1W67RHFYD" }
-              { externalContentId: "EC01KE2RXB8NJC377G9BZ5HZ14XV" }
-              { externalContentId: "EC01KE2RXB90DR3Q4HRY8JFZB1PE" }
+              { externalContentId: "EC01KE2RXAPKA64PP7G3CHQ37R4B" }
+    { externalContentId: "EC01KE2RXAVQNYZX8GDEGFRYRQ83" }
+    { externalContentId: "EC01KE2RXAZ5WMMA7BKWKASRXK3A" }
+    { externalContentId: "EC01KE2RXB7A06CZ5YQHK47VVV9H" }
+    { externalContentId: "EC01KE2RXBAQ0RS0TW92SSNMTDD2" }
+    { externalContentId: "EC01KE2RXBDAQTGSDZ2RXG6CVWXX" }
             ]
           }
         ) {

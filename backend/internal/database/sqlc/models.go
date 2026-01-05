@@ -671,3 +671,29 @@ type UserStreakActivity struct {
 	ActivityDate pgtype.Date        `json:"activity_date"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
+
+type Webhook struct {
+	ID               string             `json:"id"`
+	ProjectID        string             `json:"project_id"`
+	Name             string             `json:"name"`
+	Url              string             `json:"url"`
+	EventType        string             `json:"event_type"`
+	IncludeUserData  bool               `json:"include_user_data"`
+	IncludeEventData bool               `json:"include_event_data"`
+	Active           bool               `json:"active"`
+	Secret           *string            `json:"secret"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+type WebhookLog struct {
+	ID                 string             `json:"id"`
+	WebhookID          string             `json:"webhook_id"`
+	EventType          string             `json:"event_type"`
+	RequestPayload     []byte             `json:"request_payload"`
+	ResponseStatusCode *int32             `json:"response_status_code"`
+	ResponseBody       *string            `json:"response_body"`
+	DurationMs         int32              `json:"duration_ms"`
+	ErrorMessage       *string            `json:"error_message"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+}

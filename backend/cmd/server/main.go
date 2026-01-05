@@ -34,6 +34,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/push"
+	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ssf"
 	"github.com/bcc-media/wayfarer/translations"
 	"github.com/bcc-media/wayfarer/translations/phrase"
@@ -258,6 +259,10 @@ func main() {
 	languageService := services.NewLanguageService(db.Queries, cacheInstance, dataLoaders.UserByIDLoader, lgr)
 	slog.Info("LanguageService initialized")
 
+	// Initialize WebhookService
+	webhookService := webhooks.NewService(db.Queries)
+	slog.Info("WebhookService initialized")
+
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{
 		DB:                 db,
@@ -267,6 +272,7 @@ func main() {
 		LeaderboardService: leaderboardService,
 		Settings:           settingsService,
 		PushService:        pushService,
+		WebhookService:     webhookService,
 		InstanceID:         cacheSync.InstanceID(),
 	}
 

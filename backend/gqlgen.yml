@@ -18,6 +18,7 @@ schema:
   - ../gql/admin.graphqls
   - ../gql/push_notifications.graphqls
   - ../gql/feedback.graphqls
+  - ../gql/webhooks.graphqls
 
 # Generated code locations
 exec:
@@ -459,6 +460,25 @@ models:
     fields:
       user:
         resolver: true
+
+  Webhook:
+    fields:
+      project:
+        resolver: true
+      hasSecret:
+        resolver: true
+      recentLogs:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      Secret:
+        type: "*string"
+
+  WebhookLog:
+    extraFields:
+      WebhookID:
+        type: string
 
 # Autobind - automatically bind Go types to GraphQL types if they match by name
 autobind:

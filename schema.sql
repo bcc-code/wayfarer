@@ -716,3 +716,35 @@ CREATE TABLE user_feedback (
     INDEX idx_user_feedback_user_id (user_id),
     INDEX idx_user_feedback_created_at (created_at DESC)
 );
+
+-- ==================== Webhooks ====================
+
+CREATE TABLE webhooks (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^WH[0-9A-Z]{26}$'),
+    project_id CHAR(28) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    url VARCHAR(2000) NOT NULL,
+    event_type VARCHAR(50) NOT NULL CHECK (event_type IN ('external_content_event', 'points_awarded')),
+    include_user_data BOOLEAN DEFAULT true NOT NULL,
+    include_event_data BOOLEAN DEFAULT true NOT NULL,
+    active BOOLEAN DEFAULT true NOT NULL,
+    secret VARCHAR(255),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    INDEX idx_webhooks_project (project_id),
+    INDEX idx_webhooks_event_active (project_id, event_type) WHERE active = true
+);
+
+CREATE TABLE webhook_logs (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^WL[0-9A-Z]{26}$'),
+    webhook_id CHAR(28) NOT NULL REFERENCES webhooks(id) ON DELETE CASCADE,
+    event_type VARCHAR(50) NOT NULL,
+    request_payload JSONB NOT NULL,
+    response_status_code INT,
+    response_body TEXT,
+    duration_ms INT NOT NULL,
+    error_message TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    INDEX idx_webhook_logs_webhook (webhook_id),
+    INDEX idx_webhook_logs_created (created_at DESC)
+);
