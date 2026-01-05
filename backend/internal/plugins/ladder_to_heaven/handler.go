@@ -50,9 +50,9 @@ type contentEventData struct {
 
 const (
 	// Points awarded when content is completed before or on the deadline
-	pointsOnTime = 100
+	pointsOnTime = 50
 	// Points awarded when content is completed after the deadline
-	pointsLate = 10
+	pointsLate = 25
 	// Source type for plugin entries in score_journal
 	sourceTypePlugin = "PLUGIN"
 )

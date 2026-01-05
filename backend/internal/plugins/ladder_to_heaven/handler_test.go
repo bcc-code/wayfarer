@@ -271,8 +271,8 @@ func TestContentEventRequest_ValidationErrors(t *testing.T) {
 }
 
 func TestPointConstants(t *testing.T) {
-	assert.Equal(t, 100, pointsOnTime, "Points for on-time completion should be 100")
-	assert.Equal(t, 10, pointsLate, "Points for late completion should be 10")
+	assert.Equal(t, 50, pointsOnTime, "Points for on-time completion should be 50")
+	assert.Equal(t, 25, pointsLate, "Points for late completion should be 25")
 }
 
 func TestPlugin_Disabled(t *testing.T) {
