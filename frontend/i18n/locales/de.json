@@ -116,11 +116,11 @@
     "thankYou": "Danke für deine Hilfe!",
     "thankYouDescription": "Dein Feedback wird für die Weiterentwicklung des Services genutzt.",
     "close": "Gern geschehen",
-    "canContactMe": "Ja, ich stimme zu, dass ihr mich im Zusammenhang mit meinem Feedback kontaktieren dürft."
+    "canContactMe": "Ja, ich stimme zu, dass ihr mich im Zusammenhang mit meinem Feedback kontaktieren dürft.",
+    "regards": "Grüße {name}"
   },
   "pwa": {
     "updateAvailableTitle": "Ein Update ist verfügbar",
-    "updateAvailableDescription": "Starte die App neu, um zu aktualisieren.",
     "updateAvailableButton": "Jetzt aktualisieren"
   }
 }
