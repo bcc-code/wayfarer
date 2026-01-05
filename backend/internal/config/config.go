@@ -25,6 +25,7 @@ type Config struct {
 	S3       S3Config
 	VAPID    VAPIDConfig
 	Phrase   PhraseConfig
+	Plugin   PluginConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -131,6 +132,12 @@ type PhraseConfig struct {
 	ExportKey   string   // Static key for export endpoint authentication (like SSF.SyncKey)
 }
 
+// PluginConfig holds configuration for plugins
+type PluginConfig struct {
+	LadderToHeavenAchievementID string // Achievement ID for Ladder to Heaven plugin (empty = disabled)
+	LadderToHeavenSecretKey     string // Secret key for webhook signature verification
+}
+
 // Load reads all environment variables and returns a Config struct
 // This should be called once at application startup
 func Load() (*Config, error) {
@@ -217,6 +224,10 @@ func Load() (*Config, error) {
 			Debug:       getEnvAsBool("PHRASE_DEBUG", false),
 			Languages:   parseLanguages(getEnv("PHRASE_TARGET_LANGUAGES", "da,de,en,fr,fi,hu,it,nl,pl,pt,ro,es,ru")),
 			ExportKey:   getEnv("TRANSLATIONS_EXPORT_KEY", ""),
+		},
+		Plugin: PluginConfig{
+			LadderToHeavenAchievementID: getEnv("PLUGIN_LADDER_TO_HEAVEN_ACHIEVEMENT_ID", ""),
+			LadderToHeavenSecretKey:     getEnv("PLUGIN_LADDER_TO_HEAVEN_SECRET_KEY", ""),
 		},
 	}
 

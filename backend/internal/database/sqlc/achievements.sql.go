@@ -94,6 +94,27 @@ func (q *Queries) AwardUserAchievementIdempotent(ctx context.Context, arg AwardU
 	return err
 }
 
+const CheckContentItemInAchievement = `-- name: CheckContentItemInAchievement :one
+SELECT EXISTS(
+    SELECT 1 FROM content_achievement_items
+    WHERE achievement_id = $1::text
+      AND external_content_id = $2::text
+) AS exists
+`
+
+type CheckContentItemInAchievementParams struct {
+	AchievementID     string `json:"achievement_id"`
+	ExternalContentID string `json:"external_content_id"`
+}
+
+// Check if a content item exists in a specific achievement
+func (q *Queries) CheckContentItemInAchievement(ctx context.Context, arg CheckContentItemInAchievementParams) (bool, error) {
+	row := q.db.QueryRow(ctx, CheckContentItemInAchievement, arg.AchievementID, arg.ExternalContentID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const CheckUserHasAchievement = `-- name: CheckUserHasAchievement :one
 SELECT EXISTS(
     SELECT 1 FROM user_achievements
@@ -315,6 +336,72 @@ WHERE achievement_id = $1::text
 func (q *Queries) DeleteContentAchievementItems(ctx context.Context, achievementID string) error {
 	_, err := q.db.Exec(ctx, DeleteContentAchievementItems, achievementID)
 	return err
+}
+
+const GetAchievementByID = `-- name: GetAchievementByID :one
+SELECT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description_pending,
+    a.description_completed,
+    a.notification_text,
+    a.image_pending,
+    a.image_completed,
+    a.points,
+    a.hidden,
+    a.sort_order,
+    a.created_at,
+    a.updated_at
+FROM achievements a
+WHERE a.id = $1::text
+`
+
+type GetAchievementByIDRow struct {
+	ID                   string             `json:"id"`
+	AchievementType      string             `json:"achievement_type"`
+	ProjectID            string             `json:"project_id"`
+	EventID              *string            `json:"event_id"`
+	ChallengeID          *string            `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	DescriptionPending   string             `json:"description_pending"`
+	DescriptionCompleted string             `json:"description_completed"`
+	NotificationText     string             `json:"notification_text"`
+	ImagePending         string             `json:"image_pending"`
+	ImageCompleted       string             `json:"image_completed"`
+	Points               int32              `json:"points"`
+	Hidden               *bool              `json:"hidden"`
+	SortOrder            int32              `json:"sort_order"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
+// Get a single achievement by ID with all details
+func (q *Queries) GetAchievementByID(ctx context.Context, id string) (*GetAchievementByIDRow, error) {
+	row := q.db.QueryRow(ctx, GetAchievementByID, id)
+	var i GetAchievementByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.AchievementType,
+		&i.ProjectID,
+		&i.EventID,
+		&i.ChallengeID,
+		&i.Name,
+		&i.DescriptionPending,
+		&i.DescriptionCompleted,
+		&i.NotificationText,
+		&i.ImagePending,
+		&i.ImageCompleted,
+		&i.Points,
+		&i.Hidden,
+		&i.SortOrder,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
 }
 
 const GetAchievementsByIDs = `-- name: GetAchievementsByIDs :many

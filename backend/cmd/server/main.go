@@ -28,6 +28,8 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/directives"
 	"github.com/bcc-media/wayfarer/internal/handlers"
 	"github.com/bcc-media/wayfarer/internal/loaders"
+	"github.com/bcc-media/wayfarer/internal/plugins"
+	"github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
 	"github.com/bcc-media/wayfarer/internal/logger"
 	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/middleware"
@@ -400,6 +402,20 @@ func main() {
 		Cache: cacheInstance,
 	}
 	router.POST("/api/v1/consent-events", middleware.APIKeyAuth(cfg.APIKey), consentWebhookHandler.HandleConsentEvent)
+
+	// Register plugins
+	pluginDeps := plugins.Dependencies{
+		DB:    db,
+		Cache: cacheInstance,
+	}
+	apiKeyAuth := middleware.APIKeyAuth(cfg.APIKey)
+
+	plugins.RegisterPlugin(router, pluginDeps, apiKeyAuth,
+		ladder_to_heaven.NewPlugin(ladder_to_heaven.Config{
+			AchievementID: cfg.Plugin.LadderToHeavenAchievementID,
+			SecretKey:     cfg.Plugin.LadderToHeavenSecretKey,
+		}),
+	)
 
 	// Maintenance handler for syncing user data from Members API
 	maintenanceHandler := &handlers.MaintenanceHandler{
