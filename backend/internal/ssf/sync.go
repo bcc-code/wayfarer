@@ -103,6 +103,14 @@ func (s *SyncService) SyncPlanBySlug(ctx context.Context, slug string) (*SyncRes
 func (s *SyncService) upsertItem(ctx context.Context, planID string, item *Item, chapterPublishedAt *time.Time, syncedAt pgtype.Timestamptz) error {
 	data := item.ExtractContentData(planID)
 
+	if item.ContentType == "bible_verse" {
+		s.logger.Debug("bible_verse title extraction",
+			"task_id", item.PlanChapterItemID,
+			"title_source", data.TitleSource,
+			"title", data.Titles["nb"],
+		)
+	}
+
 	// Upsert the main content record
 	params := sqlc.UpsertExternalContentParams{
 		ID:          ulid.NewExternalContentID(),

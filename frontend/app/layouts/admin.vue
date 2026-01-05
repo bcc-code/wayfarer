@@ -2,6 +2,10 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 import '~/assets/styles/admin.css'
 
+// Force Norwegian locale in admin
+const { setLocale } = useI18n()
+setLocale('nb')
+
 useHead({
   title: 'Interact Admin',
 })
