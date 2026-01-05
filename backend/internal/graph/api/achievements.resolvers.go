@@ -65,6 +65,9 @@ func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input mo
 
 	// Invalidate project cache
 	r.Cache.InvalidateProject(input.ProjectID)
+	// Invalidate achievements list caches so new achievement appears in queries
+	r.Cache.DeletePrefix(cache.PrefixAchievementsFilter)
+	r.Cache.DeletePrefix(cache.PrefixAchievementsCount)
 
 	// Convert to GraphQL model
 	hidden := false
@@ -170,6 +173,9 @@ func (r *mutationResolver) CreateContentAchievement(ctx context.Context, input m
 
 	// Invalidate project cache
 	r.Cache.InvalidateProject(input.ProjectID)
+	// Invalidate achievements list caches so new achievement appears in queries
+	r.Cache.DeletePrefix(cache.PrefixAchievementsFilter)
+	r.Cache.DeletePrefix(cache.PrefixAchievementsCount)
 
 	// Convert to GraphQL model
 	hidden := false
@@ -268,6 +274,9 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 
 	// Invalidate project cache
 	r.Cache.InvalidateProject(input.ProjectID)
+	// Invalidate achievements list caches so new achievement appears in queries
+	r.Cache.DeletePrefix(cache.PrefixAchievementsFilter)
+	r.Cache.DeletePrefix(cache.PrefixAchievementsCount)
 
 	// Convert to GraphQL model
 	hidden := false
