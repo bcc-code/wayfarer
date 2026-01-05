@@ -27,7 +27,7 @@ func TestItem_ExtractContentData_MediaEpisode(t *testing.T) {
 	assert.Equal(t, "episode-456", data.ContentID)
 	assert.Equal(t, "media_episode", data.ContentType)
 	assert.Equal(t, "English Title", data.Titles["en"])
-	assert.Equal(t, "Norwegian Title", data.Titles["no"])
+	assert.Equal(t, "Norwegian Title", data.Titles["nb"])
 	assert.Equal(t, "German Title", data.Titles["de"])
 }
 
@@ -37,11 +37,13 @@ func TestItem_ExtractContentData_Song(t *testing.T) {
 		ContentType:       "song",
 		Song: &Song{
 			SongID: "song-111",
+			Number: 45,
+			Languages: map[string]LocalizedText{
+				"en": {Name: "Amazing Grace", Slug: "amazing-grace"},
+				"no": {Name: "Underbar nad", Slug: "underbar-nad"},
+			},
 			Parent: &Songbook{
-				Languages: map[string]LocalizedText{
-					"en": {Name: "Songbook English", Slug: "songbook-english"},
-					"no": {Name: "Songbook Norwegian", Slug: "songbook-norwegian"},
-				},
+				Slug: "fmb",
 			},
 		},
 	}
@@ -52,8 +54,8 @@ func TestItem_ExtractContentData_Song(t *testing.T) {
 	assert.Equal(t, "item-789", data.TaskID)
 	assert.Equal(t, "song-111", data.ContentID)
 	assert.Equal(t, "song", data.ContentType)
-	assert.Equal(t, "Songbook English", data.Titles["en"])
-	assert.Equal(t, "Songbook Norwegian", data.Titles["no"])
+	assert.Equal(t, "FMB 45 - Amazing Grace", data.Titles["en"])
+	assert.Equal(t, "FMB 45 - Underbar nad", data.Titles["nb"])
 }
 
 func TestItem_ExtractContentData_BookChapter(t *testing.T) {
@@ -100,29 +102,11 @@ func TestItem_ExtractContentData_PeriodicalArticle(t *testing.T) {
 	assert.Equal(t, "German Article", data.Titles["de"])
 }
 
-func TestItem_ExtractContentData_BibleChapter(t *testing.T) {
-	item := &Item{
-		PlanChapterItemID: "item-444",
-		ContentType:       "bible_chapter",
-		BibleChapter: &BibleChapter{
-			USFM:  "GEN.1",
-			Human: "Genesis 1",
-		},
-	}
-
-	data := item.ExtractContentData("plan-005")
-
-	assert.Equal(t, "plan-005", data.PlanID)
-	assert.Equal(t, "item-444", data.TaskID)
-	assert.Equal(t, "GEN.1", data.ContentID)
-	assert.Equal(t, "bible_chapter", data.ContentType)
-	assert.Equal(t, "Genesis 1", data.Titles["en"])
-}
-
-func TestItem_ExtractContentData_BibleVerses(t *testing.T) {
+func TestItem_ExtractContentData_BibleVerse(t *testing.T) {
 	item := &Item{
 		PlanChapterItemID: "item-555",
-		ContentType:       "bible_verses",
+		ContentType:       "bible_verse",
+		Name:              "Genesis 1:1-5",
 		BibleVersionsText: map[string]BibleVersion{
 			"ESV": {BookName: "Genesis", USFM: "GEN.1.1", Text: "In the beginning..."},
 			"KJV": {BookName: "Genesis", USFM: "GEN.1.1", Text: "In the beginning..."},
@@ -134,8 +118,48 @@ func TestItem_ExtractContentData_BibleVerses(t *testing.T) {
 	assert.Equal(t, "plan-006", data.PlanID)
 	assert.Equal(t, "item-555", data.TaskID)
 	assert.Equal(t, "", data.ContentID) // Bible verses have no single content ID
-	assert.Equal(t, "bible_verses", data.ContentType)
-	assert.Equal(t, "GEN.1.1", data.Titles["en"])
+	assert.Equal(t, "bible_verse", data.ContentType)
+	assert.Equal(t, "GEN.1.1", data.Titles["nb"]) // Uses USFM from bible_versions_text
+	assert.Equal(t, "usfm", data.TitleSource)
+}
+
+func TestItem_ExtractContentData_BibleVerse_FallbackToName(t *testing.T) {
+	item := &Item{
+		PlanChapterItemID: "item-556",
+		ContentType:       "bible_verse",
+		Name:              "Genesis 1:1-5",
+		BibleVersionsText: map[string]BibleVersion{}, // Empty, should fall back to Name
+	}
+
+	data := item.ExtractContentData("plan-006")
+
+	assert.Equal(t, "Genesis 1:1-5", data.Titles["nb"]) // Falls back to Name
+	assert.Equal(t, "name_fallback", data.TitleSource)
+}
+
+func TestItem_ExtractContentData_Text(t *testing.T) {
+	item := &Item{
+		PlanChapterItemID: "item-600",
+		ContentType:       "text",
+		Name:              "Introduksjon til kapittelet",
+	}
+
+	data := item.ExtractContentData("plan-008")
+
+	assert.Equal(t, "text", data.ContentType)
+	assert.Equal(t, "Introduksjon til kapittelet", data.Titles["nb"])
+}
+
+func TestItem_ExtractContentData_Quiz(t *testing.T) {
+	item := &Item{
+		PlanChapterItemID: "item-601",
+		ContentType:       "quiz",
+	}
+
+	data := item.ExtractContentData("plan-009")
+
+	assert.Equal(t, "quiz", data.ContentType)
+	assert.Equal(t, "Quiz", data.Titles["nb"])
 }
 
 func TestItem_ExtractContentData_UnknownType(t *testing.T) {
@@ -164,7 +188,7 @@ func TestExtractTitlesFromLanguages(t *testing.T) {
 
 	assert.Equal(t, 2, len(titles))
 	assert.Equal(t, "English", titles["en"])
-	assert.Equal(t, "Norwegian", titles["no"])
+	assert.Equal(t, "Norwegian", titles["nb"])
 	_, hasGerman := titles["de"]
 	assert.False(t, hasGerman, "Empty names should be filtered out")
 }

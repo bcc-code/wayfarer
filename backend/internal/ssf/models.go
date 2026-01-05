@@ -1,7 +1,9 @@
 package ssf
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -220,6 +222,7 @@ type ContentData struct {
 	ContentType string
 	PublishedAt *time.Time
 	Titles      map[string]string // language code -> title
+	TitleSource string            // where the title came from (for debugging)
 }
 
 // ExtractContentData extracts the relevant data from an Item for storage
@@ -242,8 +245,25 @@ func (item *Item) ExtractContentData(planID string) ContentData {
 	case "song":
 		if item.Song != nil {
 			data.ContentID = item.Song.SongID
-			if item.Song.Parent != nil {
-				data.Titles = extractTitlesFromLanguages(item.Song.Parent.Languages)
+			// Use song's own Languages, fall back to Name
+			if len(item.Song.Languages) > 0 {
+				data.Titles = extractTitlesFromLanguages(item.Song.Languages)
+			} else if item.Song.Name != "" {
+				data.Titles["en"] = item.Song.Name
+			}
+			// Build prefix: "SLUG NUMBER - " (e.g., "FMB 123 - ")
+			var prefix string
+			if item.Song.Parent != nil && item.Song.Parent.Slug != "" {
+				prefix = strings.ToUpper(item.Song.Parent.Slug) + " "
+			}
+			if item.Song.Number > 0 {
+				prefix += fmt.Sprintf("%d - ", item.Song.Number)
+			}
+			// Prepend prefix to titles
+			if prefix != "" {
+				for lang, title := range data.Titles {
+					data.Titles[lang] = prefix + title
+				}
 			}
 			// Extract year-based publication date
 			if item.Song.YearPublished > 0 {
@@ -268,24 +288,28 @@ func (item *Item) ExtractContentData(planID string) ContentData {
 				data.PublishedAt = parseYearMonth(item.PeriodicalArticle.Parent.Year, item.PeriodicalArticle.Parent.Month)
 			}
 		}
-	case "bible_chapter":
-		if item.BibleChapter != nil {
-			data.ContentID = item.BibleChapter.USFM
-			// Use the human-readable reference as title for all languages
-			if item.BibleChapter.Human != "" {
-				data.Titles["en"] = item.BibleChapter.Human
-			}
-		}
-	case "bible_verses":
+	case "bible_verse":
 		// Bible verses have multiple versions, no single content ID
 		data.ContentID = ""
-		// Extract USFM as title from first available version
+		// Extract USFM from first available version, fall back to Item.Name
 		for _, version := range item.BibleVersionsText {
 			if version.USFM != "" {
-				data.Titles["en"] = version.USFM
+				data.Titles["nb"] = version.USFM
+				data.TitleSource = "usfm"
 				break
 			}
 		}
+		if data.TitleSource == "" && item.Name != "" {
+			data.Titles["nb"] = item.Name
+			data.TitleSource = "name_fallback"
+		}
+		if data.TitleSource == "" {
+			data.TitleSource = "none"
+		}
+	case "text":
+		data.Titles["nb"] = item.Name
+	case "quiz":
+		data.Titles["nb"] = "Quiz"
 	}
 
 	return data
@@ -295,6 +319,10 @@ func extractTitlesFromLanguages(languages map[string]LocalizedText) map[string]s
 	titles := make(map[string]string)
 	for lang, text := range languages {
 		if text.Name != "" {
+			// Map "no" to "nb" for Norwegian Bokmal
+			if lang == "no" {
+				lang = "nb"
+			}
 			titles[lang] = text.Name
 		}
 	}
