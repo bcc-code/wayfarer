@@ -43,11 +43,18 @@ type BrunstadTVClaims struct {
 	jwt.RegisteredClaims
 }
 
+// Auth0AppMetadata represents the app_metadata claim from Auth0 (login.bcc.no)
+type Auth0AppMetadata struct {
+	HasMembership bool `json:"hasMembership"`
+	PersonID      int  `json:"personId"`
+}
+
 // Auth0Claims represents the JWT claims from Auth0 (login.bcc.no)
 type Auth0Claims struct {
-	ChurchID   int    `json:"https://login.bcc.no/claims/churchId"`
-	PersonID   int    `json:"https://login.bcc.no/claims/personId"`
-	PersonUUID string `json:"https://login.bcc.no/claims/personUid"`
+	ChurchID    int              `json:"https://login.bcc.no/claims/churchId"`
+	PersonID    int              `json:"https://login.bcc.no/claims/personId"`
+	PersonUUID  string           `json:"https://login.bcc.no/claims/personUid"`
+	AppMetadata Auth0AppMetadata `json:"https://members.bcc.no/app_metadata"`
 	jwt.RegisteredClaims
 }
 
@@ -82,6 +89,15 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 
 	auth0Claims, auth0Err := h.validateAuth0Token(token)
 	if auth0Err == nil {
+		// Check membership requirement
+		if !auth0Claims.AppMetadata.HasMembership {
+			slog.Warn("callback: user does not have membership",
+				"person_id", auth0Claims.PersonID,
+			)
+			c.JSON(http.StatusForbidden, gin.H{"error": "membership required"})
+			return
+		}
+
 		// Auth0 token validated successfully, convert to BrunstadTVClaims format
 		slog.Info("callback: validated Auth0 token",
 			"person_id", auth0Claims.PersonID,
