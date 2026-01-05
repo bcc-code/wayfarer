@@ -12,11 +12,8 @@ gql(`
     }
     adminDashboardStats {
       totalUsers
-      totalProjects
-      totalChallenges
       totalPointsAwarded
       newUsersLast7Days
-      activeProjectsCount
     }
     feedback(first: 5) {
       edges {
