@@ -116,6 +116,11 @@
     "thankYou": "Mulțumesc pentru ajutor!",
     "thankYouDescription": "Părerea ta va fi utilizată pentru dezvoltarea serviciului.",
     "close": "Cu plăcere",
-    "canContactMe": "Da, sunt de acord să mă contactați în legătură cu feedback-ul meu."
+    "canContactMe": "Da, sunt de acord să mă contactați în legătură cu feedback-ul meu.",
+    "regards": "Salutări, {name}"
+  },
+  "pwa": {
+    "updateAvailableTitle": "Este disponibilă o actualizare",
+    "updateAvailableButton": "Actualizează acum"
   }
 }

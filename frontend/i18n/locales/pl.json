@@ -116,6 +116,11 @@
     "thankYou": "Dziękujemy za pomoc!",
     "thankYouDescription": "Twoje uwagi zostaną wykorzystane do dalszego rozwoju serwisu.",
     "close": "Nie ma za co.",
-    "canContactMe": "Tak, wyrażam zgodę na kontaktowanie się ze mną w związku z moją opinią."
+    "canContactMe": "Tak, wyrażam zgodę na kontaktowanie się ze mną w związku z moją opinią.",
+    "regards": "Pozdrawiam, {name}"
+  },
+  "pwa": {
+    "updateAvailableTitle": "Dostępna jest aktualizacja",
+    "updateAvailableButton": "Zaktualizuj teraz"
   }
 }
