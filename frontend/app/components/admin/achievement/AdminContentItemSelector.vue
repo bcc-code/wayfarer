@@ -98,12 +98,12 @@ function handleReorder() {
 
 function formatContentType(type: ExternalContentType): string {
   const labels: Record<ExternalContentType, string> = {
-    MEDIA_EPISODE: 'Episode',
-    SONG: 'Song',
-    BOOK_CHAPTER: 'Chapter',
-    PERIODICAL_ARTICLE: 'Article',
-    BIBLE_CHAPTER: 'Bible',
-    BIBLE_VERSES: 'Verses',
+    [ExternalContentType.MediaEpisode]: 'Media Episode',
+    [ExternalContentType.Song]: 'Song',
+    [ExternalContentType.BookChapter]: 'Book Chapter',
+    [ExternalContentType.PeriodicalArticle]: 'Periodical Article',
+    [ExternalContentType.BibleChapter]: 'Bible Chapter',
+    [ExternalContentType.BibleVerses]: 'Bible Verses',
   }
   return labels[type] || type
 }
