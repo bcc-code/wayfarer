@@ -1,27 +1,77 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
+import type { ExternalContentType } from '~/api/generated'
 import z from 'zod'
 
-const props = defineProps<{
-  initialData?: {
-    name: string
-    descriptionPending: string
-    descriptionCompleted: string
-    notificationText: string
-    imagePending?: string
-    imageCompleted?: string
-    points: number
-    hidden: boolean
+type AchievementType = 'SIMPLE' | 'CONTENT' | 'STREAK' | 'QUIZ'
+
+interface ContentItem {
+  id: string
+  externalContent: {
+    id: string
+    title?: string | null
+    contentType: ExternalContentType
+    source: string
+    publishedAt?: string | null
   }
+}
+
+interface InitialData {
+  name: string
+  descriptionPending: string
+  descriptionCompleted: string
+  notificationText: string
+  imagePending?: string
+  imageCompleted?: string
+  points: number
+  hidden: boolean
+  // Content achievement
+  items?: ContentItem[]
+  // Streak achievement
+  streakId?: string
+  neededStreak?: number
+  // Quiz achievement
+  quizId?: string
+  minScorePercentage?: number
+  requireCompletion?: boolean
+}
+
+export interface AchievementFormData {
+  name: string
+  descriptionPending: string
+  descriptionCompleted: string
+  notificationText: string
+  imagePending?: string
+  imageCompleted?: string
+  points: number
+  hidden: boolean
+  achievementType: AchievementType
+  // Content achievement
+  items?: ContentItem[]
+  // Streak achievement
+  streakId?: string
+  neededStreak?: number
+  // Quiz achievement
+  quizId?: string
+  minScorePercentage?: number
+  requireCompletion?: boolean
+}
+
+const props = defineProps<{
+  projectId: string
+  initialData?: InitialData
+  achievementType?: AchievementType
+  isEditMode?: boolean
   colors?: Colors
   submitLabel: string
   onDelete?: () => void
 }>()
 
 const emit = defineEmits<{
-  submit: [data: Schema]
+  submit: [data: AchievementFormData]
 }>()
 
+// Common fields schema
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   descriptionPending: z.string().min(1, 'Description is required'),
@@ -34,6 +84,10 @@ const schema = z.object({
 })
 type Schema = z.infer<typeof schema>
 
+// Achievement type (defaults to SIMPLE for new, or detected type for edit)
+const selectedType = ref<AchievementType>(props.achievementType ?? 'SIMPLE')
+
+// Common state
 const state = reactive<Schema>({
   name: props.initialData?.name ?? '',
   descriptionPending: props.initialData?.descriptionPending ?? '',
@@ -44,6 +98,18 @@ const state = reactive<Schema>({
   points: props.initialData?.points ?? 0,
   hidden: props.initialData?.hidden ?? false,
 })
+
+// Type-specific state
+const contentItems = ref<ContentItem[]>(props.initialData?.items ?? [])
+const streakId = ref<string | undefined>(props.initialData?.streakId)
+const neededStreak = ref<number>(props.initialData?.neededStreak ?? 7)
+const quizId = ref<string | undefined>(props.initialData?.quizId)
+const minScorePercentage = ref<number | undefined>(
+  props.initialData?.minScorePercentage,
+)
+const requireCompletion = ref<boolean>(
+  props.initialData?.requireCompletion ?? true,
+)
 
 // Update state when initialData changes (for edit mode after data loads)
 watch(
@@ -58,30 +124,124 @@ watch(
       state.imageCompleted = data.imageCompleted
       state.points = data.points
       state.hidden = data.hidden
+      // Type-specific
+      contentItems.value = data.items ?? []
+      streakId.value = data.streakId
+      neededStreak.value = data.neededStreak ?? 7
+      quizId.value = data.quizId
+      minScorePercentage.value = data.minScorePercentage
+      requireCompletion.value = data.requireCompletion ?? true
     }
   },
   { once: true },
 )
 
-function handleSubmit(event: FormSubmitEvent<Schema>) {
-  if (event.data) {
-    emit('submit', event.data)
+// Update type when prop changes (for edit mode)
+watch(
+  () => props.achievementType,
+  (type) => {
+    if (type) {
+      selectedType.value = type
+    }
+  },
+  { immediate: true },
+)
+
+// Validation for type-specific fields
+const typeSpecificError = computed(() => {
+  switch (selectedType.value) {
+    case 'CONTENT':
+      if (contentItems.value.length === 0) {
+        return 'At least one content item is required'
+      }
+      break
+    case 'STREAK':
+      if (!streakId.value) {
+        return 'A streak must be selected'
+      }
+      if (neededStreak.value < 1) {
+        return 'Required days must be at least 1'
+      }
+      break
+    case 'QUIZ':
+      if (!quizId.value) {
+        return 'A quiz must be selected'
+      }
+      break
   }
+  return null
+})
+
+function handleSubmit(event: FormSubmitEvent<Schema>) {
+  if (!event.data) return
+
+  // Check type-specific validation
+  if (typeSpecificError.value) {
+    return
+  }
+
+  const formData: AchievementFormData = {
+    ...event.data,
+    achievementType: selectedType.value,
+  }
+
+  // Add type-specific fields
+  switch (selectedType.value) {
+    case 'CONTENT':
+      formData.items = contentItems.value
+      break
+    case 'STREAK':
+      formData.streakId = streakId.value
+      formData.neededStreak = neededStreak.value
+      break
+    case 'QUIZ':
+      formData.quizId = quizId.value
+      formData.minScorePercentage = minScorePercentage.value
+      formData.requireCompletion = requireCompletion.value
+      break
+  }
+
+  emit('submit', formData)
 }
 </script>
 
 <template>
-  <div class="grid grid-cols-2">
+  <div class="grid grid-cols-2 gap-8">
     <UForm
       :state
       :schema="schema"
       loading-auto
-      class="flex max-w-md flex-col gap-6"
+      class="flex max-w-lg flex-col gap-6"
       @submit.prevent="handleSubmit"
     >
+      <!-- Type Selector (only in create mode) -->
+      <UFormField v-if="!isEditMode" name="type" label="Achievement Type">
+        <AdminAchievementTypeSelector
+          v-model="selectedType"
+          :disabled="isEditMode"
+        />
+      </UFormField>
+
+      <!-- Type indicator in edit mode -->
+      <div v-else class="text-muted text-sm">
+        <span class="font-medium">Type:</span>
+        {{
+          selectedType === 'SIMPLE'
+            ? 'Simple'
+            : selectedType === 'CONTENT'
+              ? 'Content'
+              : selectedType === 'STREAK'
+                ? 'Streak'
+                : 'Quiz'
+        }}
+        Achievement
+      </div>
+
+      <!-- Common Fields -->
       <UFormField name="name" label="Name">
         <UInput v-model="state.name" size="xl" required class="w-full" />
       </UFormField>
+
       <UFormField name="descriptionPending" label="Description (Pending)">
         <UTextarea
           v-model="state.descriptionPending"
@@ -90,6 +250,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           required
         />
       </UFormField>
+
       <UFormField name="descriptionCompleted" label="Description (Completed)">
         <UTextarea
           v-model="state.descriptionCompleted"
@@ -98,6 +259,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           required
         />
       </UFormField>
+
       <UFormField
         name="notificationText"
         label="Notification Text"
@@ -110,6 +272,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           class="w-full"
         />
       </UFormField>
+
       <UFormField
         name="imagePending"
         label="Image URL (Pending)"
@@ -118,6 +281,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
       >
         <UInput v-model="state.imagePending" size="xl" class="w-full" />
       </UFormField>
+
       <UFormField
         name="imageCompleted"
         label="Image URL (Completed)"
@@ -126,6 +290,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
       >
         <UInput v-model="state.imageCompleted" size="xl" class="w-full" />
       </UFormField>
+
       <UFormField name="points" label="Points">
         <UInput
           v-model.number="state.points"
@@ -135,12 +300,55 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           class="w-full"
         />
       </UFormField>
+
       <UFormField name="hidden" label="Hidden">
         <UCheckbox
           v-model="state.hidden"
           label="Hide this achievement from users until they earn it"
         />
       </UFormField>
+
+      <!-- Type-specific sections -->
+      <template v-if="selectedType === 'CONTENT'">
+        <div class="border-default border-t pt-6">
+          <h3 class="mb-4 font-medium">Content Items</h3>
+          <AdminContentItemSelector v-model="contentItems" />
+        </div>
+      </template>
+
+      <template v-else-if="selectedType === 'STREAK'">
+        <div class="border-default border-t pt-6">
+          <h3 class="mb-4 font-medium">Streak Configuration</h3>
+          <AdminStreakSelector
+            :project-id="projectId"
+            :streak-id="streakId"
+            :needed-streak="neededStreak"
+            @update:streak-id="(v) => (streakId = v)"
+            @update:needed-streak="(v) => (neededStreak = v)"
+          />
+        </div>
+      </template>
+
+      <template v-else-if="selectedType === 'QUIZ'">
+        <div class="border-default border-t pt-6">
+          <h3 class="mb-4 font-medium">Quiz Configuration</h3>
+          <AdminQuizSelector
+            :project-id="projectId"
+            :quiz-id="quizId"
+            :min-score-percentage="minScorePercentage"
+            :require-completion="requireCompletion"
+            @update:quiz-id="(v) => (quizId = v)"
+            @update:min-score-percentage="(v) => (minScorePercentage = v)"
+            @update:require-completion="(v) => (requireCompletion = v)"
+          />
+        </div>
+      </template>
+
+      <!-- Type-specific validation error -->
+      <div v-if="typeSpecificError" class="text-error text-sm">
+        {{ typeSpecificError }}
+      </div>
+
       <UButton type="submit" size="lg" block>{{ submitLabel }}</UButton>
       <UButton
         v-if="onDelete"
@@ -153,6 +361,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         Delete Achievement
       </UButton>
     </UForm>
+
     <AdminThemedPreview :colors="colors">
       <AdminAchievementPreview :achievement="state" />
     </AdminThemedPreview>

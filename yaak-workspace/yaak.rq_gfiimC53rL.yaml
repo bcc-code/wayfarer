@@ -2,28 +2,55 @@ type: http_request
 model: http_request
 id: rq_gfiimC53rL
 createdAt: 2025-12-08T21:20:37.260804
-updatedAt: 2025-12-10T10:49:00.352459
+updatedAt: 2026-01-05T11:03:52.973935
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
 authenticationType: null
 body:
-  query: |
-    query ChallengesPage {
-      myCurrentProject {
-        challenges {
+  query: |-
+    query AdminProjectAchievementPage($achievementId: ID!) {
+        achievement(id: $achievementId) {
+          __typename
           id
           name
-          description
-          image
-          buttonText
-          publishedAt
-          endTime
-          visibleAt
+          descriptionPending
+          descriptionCompleted
+          imagePending
+          imageCompleted
+          notificationText
+          achievedAt
+          points
+          hidden
+          ... on ContentAchievement {
+            items {
+              id
+              sortOrder
+              externalContent {
+                id
+                planId
+                taskId
+                contentId
+                contentType
+                publishedAt
+                source
+                syncedAt
+                createdAt
+                updatedAt
+                title
+                translations {
+                  languageCode
+                  title
+                }
+              }
+            }
+          }
         }
       }
+  variables: |-
+    {
+      "achievementId": "AC01KCCM6A8A1TZ2KKQQVTGTPZW1"
     }
-  variables: ''
 bodyType: graphql
 description: ''
 headers:

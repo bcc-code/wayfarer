@@ -600,6 +600,9 @@ func (r *mutationResolver) CreateQuizAchievement(ctx context.Context, input mode
 	} else {
 		r.Cache.InvalidateChallenge(quiz.ChallengeID, input.ProjectID, nil)
 	}
+	// Invalidate achievements list caches so new achievement appears in queries
+	r.Cache.DeletePrefix(cache.PrefixAchievementsFilter)
+	r.Cache.DeletePrefix(cache.PrefixAchievementsCount)
 
 	// Convert to GraphQL model
 	var minScorePercentage *int

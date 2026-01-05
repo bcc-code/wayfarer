@@ -582,6 +582,7 @@ export type ExternalContent = {
   title?: Maybe<Scalars['String']['output']>;
   translations: Array<ExternalContentTranslation>;
   updatedAt: Scalars['DateTime']['output'];
+  url?: Maybe<Scalars['String']['output']>;
 };
 
 export type ExternalContentConnection = {
@@ -622,12 +623,14 @@ export type ExternalContentTranslation = {
 };
 
 export enum ExternalContentType {
-  BibleChapter = 'BIBLE_CHAPTER',
-  BibleVerses = 'BIBLE_VERSES',
+  Article = 'ARTICLE',
+  BibleVerse = 'BIBLE_VERSE',
   BookChapter = 'BOOK_CHAPTER',
-  MediaEpisode = 'MEDIA_EPISODE',
-  PeriodicalArticle = 'PERIODICAL_ARTICLE',
-  Song = 'SONG'
+  ExternalLink = 'EXTERNAL_LINK',
+  Media = 'MEDIA',
+  Quiz = 'QUIZ',
+  Song = 'SONG',
+  Text = 'TEXT'
 }
 
 export type FeedbackConnection = {
@@ -2558,6 +2561,22 @@ export type UpdateAchievementMutation = { __typename?: 'Mutation', updateAchieve
     | { __typename?: 'StreakAchievement', id: string }
    };
 
+export type UpdateContentAchievementMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateContentAchievementInput;
+}>;
+
+
+export type UpdateContentAchievementMutation = { __typename?: 'Mutation', updateContentAchievement: { __typename?: 'ContentAchievement', id: string } };
+
+export type UpdateStreakAchievementMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateStreakAchievementInput;
+}>;
+
+
+export type UpdateStreakAchievementMutation = { __typename?: 'Mutation', updateStreakAchievement: { __typename?: 'StreakAchievement', id: string } };
+
 export type CreateContentAchievementMutationVariables = Exact<{
   input: CreateContentAchievementInput;
 }>;
@@ -2936,6 +2955,29 @@ export type AssignTeamLeadMutationVariables = Exact<{
 
 export type AssignTeamLeadMutation = { __typename?: 'Mutation', assignTeamLead: { __typename?: 'Team', id: string } };
 
+export type AdminExternalContentsQueryVariables = Exact<{
+  filter: ExternalContentFilter;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type AdminExternalContentsQuery = { __typename?: 'Query', externalContents: { __typename?: 'ExternalContentConnection', edges: Array<{ __typename?: 'ExternalContentEdge', node: { __typename?: 'ExternalContent', id: string, planId: string, taskId: string, contentId?: string | null, contentType: ExternalContentType, publishedAt?: any | null, source: string, title?: string | null, translations: Array<{ __typename?: 'ExternalContentTranslation', languageCode: string, title?: string | null }> } }>, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null } } };
+
+export type AdminProjectStreaksQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectStreaksQuery = { __typename?: 'Query', streaks: { __typename?: 'StreakConnection', edges: Array<{ __typename?: 'StreakEdge', node: { __typename?: 'Streak', id: string, name: string, description: string } }> } };
+
+export type AdminProjectQuizzesQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminProjectQuizzesQuery = { __typename?: 'Query', quizzes: { __typename?: 'QuizConnection', edges: Array<{ __typename?: 'QuizEdge', node: { __typename?: 'Quiz', id: string, name: string } }> } };
+
 export type ChallengePageQueryVariables = Exact<{
   challengeId: Scalars['ID']['input'];
 }>;
@@ -3088,10 +3130,10 @@ export type AdminProjectAchievementPageQueryVariables = Exact<{
 
 
 export type AdminProjectAchievementPageQuery = { __typename?: 'Query', achievement:
-    | { __typename?: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, items: Array<{ __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, planId: string, taskId: string, contentId?: string | null, contentType: ExternalContentType, publishedAt?: any | null, source: string, syncedAt: any, createdAt: any, updatedAt: any, title?: string | null, translations: Array<{ __typename?: 'ExternalContentTranslation', languageCode: string, title?: string | null }> } }>, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'QuizAchievement', minScorePercentage?: number | null, requireCompletion: boolean, id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, quiz: { __typename?: 'Quiz', id: string, name: string }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'StreakAchievement', neededStreak: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, streak: { __typename?: 'Streak', id: string, name: string, description: string }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
    };
 
 export type AdminProjectAchievementsNewPageQueryVariables = Exact<{
@@ -3474,6 +3516,28 @@ export const UpdateAchievementDocument = gql`
 
 export function useUpdateAchievementMutation() {
   return Urql.useMutation<UpdateAchievementMutation, UpdateAchievementMutationVariables>(UpdateAchievementDocument);
+};
+export const UpdateContentAchievementDocument = gql`
+    mutation UpdateContentAchievement($id: ID!, $input: UpdateContentAchievementInput!) {
+  updateContentAchievement(id: $id, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useUpdateContentAchievementMutation() {
+  return Urql.useMutation<UpdateContentAchievementMutation, UpdateContentAchievementMutationVariables>(UpdateContentAchievementDocument);
+};
+export const UpdateStreakAchievementDocument = gql`
+    mutation UpdateStreakAchievement($id: ID!, $input: UpdateStreakAchievementInput!) {
+  updateStreakAchievement(id: $id, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useUpdateStreakAchievementMutation() {
+  return Urql.useMutation<UpdateStreakAchievementMutation, UpdateStreakAchievementMutationVariables>(UpdateStreakAchievementDocument);
 };
 export const CreateContentAchievementDocument = gql`
     mutation CreateContentAchievement($input: CreateContentAchievementInput!) {
@@ -3981,6 +4045,69 @@ export const AssignTeamLeadDocument = gql`
 
 export function useAssignTeamLeadMutation() {
   return Urql.useMutation<AssignTeamLeadMutation, AssignTeamLeadMutationVariables>(AssignTeamLeadDocument);
+};
+export const AdminExternalContentsDocument = gql`
+    query AdminExternalContents($filter: ExternalContentFilter!, $first: Int, $after: String) {
+  externalContents(filter: $filter, first: $first, after: $after) {
+    edges {
+      node {
+        id
+        planId
+        taskId
+        contentId
+        contentType
+        publishedAt
+        source
+        title
+        translations {
+          languageCode
+          title
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+    `;
+
+export function useAdminExternalContentsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminExternalContentsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminExternalContentsQuery, AdminExternalContentsQueryVariables | undefined>({ query: AdminExternalContentsDocument, variables: undefined, ...options });
+};
+export const AdminProjectStreaksDocument = gql`
+    query AdminProjectStreaks($projectId: ID!) {
+  streaks(filter: {projectId: $projectId}, first: 100) {
+    edges {
+      node {
+        id
+        name
+        description
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminProjectStreaksQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectStreaksQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectStreaksQuery, AdminProjectStreaksQueryVariables | undefined>({ query: AdminProjectStreaksDocument, variables: undefined, ...options });
+};
+export const AdminProjectQuizzesDocument = gql`
+    query AdminProjectQuizzes($projectId: ID!) {
+  quizzes(filter: {projectId: $projectId}, first: 100) {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminProjectQuizzesQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectQuizzesQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminProjectQuizzesQuery, AdminProjectQuizzesQueryVariables | undefined>({ query: AdminProjectQuizzesDocument, variables: undefined, ...options });
 };
 export const ChallengePageDocument = gql`
     query ChallengePage($challengeId: ID!) {
@@ -4503,6 +4630,7 @@ export function useAdminHomePageQuery(options?: Omit<Urql.UseQueryArgs<never, Ad
 export const AdminProjectAchievementPageDocument = gql`
     query AdminProjectAchievementPage($achievementId: ID!) {
   achievement(id: $achievementId) {
+    __typename
     id
     name
     descriptionPending
@@ -4513,6 +4641,45 @@ export const AdminProjectAchievementPageDocument = gql`
     achievedAt
     points
     hidden
+    ... on ContentAchievement {
+      items {
+        id
+        sortOrder
+        externalContent {
+          id
+          planId
+          taskId
+          contentId
+          contentType
+          publishedAt
+          source
+          syncedAt
+          createdAt
+          updatedAt
+          title
+          translations {
+            languageCode
+            title
+          }
+        }
+      }
+    }
+    ... on StreakAchievement {
+      neededStreak
+      streak {
+        id
+        name
+        description
+      }
+    }
+    ... on QuizAchievement {
+      quiz {
+        id
+        name
+      }
+      minScorePercentage
+      requireCompletion
+    }
     project {
       id
       name

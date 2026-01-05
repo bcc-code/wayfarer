@@ -1967,26 +1967,30 @@ func (e ExternalContentSortBy) MarshalJSON() ([]byte, error) {
 type ExternalContentType string
 
 const (
-	ExternalContentTypeMediaEpisode      ExternalContentType = "MEDIA_EPISODE"
-	ExternalContentTypeSong              ExternalContentType = "SONG"
-	ExternalContentTypeBookChapter       ExternalContentType = "BOOK_CHAPTER"
-	ExternalContentTypePeriodicalArticle ExternalContentType = "PERIODICAL_ARTICLE"
-	ExternalContentTypeBibleChapter      ExternalContentType = "BIBLE_CHAPTER"
-	ExternalContentTypeBibleVerses       ExternalContentType = "BIBLE_VERSES"
+	ExternalContentTypeMedia        ExternalContentType = "MEDIA"
+	ExternalContentTypeArticle      ExternalContentType = "ARTICLE"
+	ExternalContentTypeBookChapter  ExternalContentType = "BOOK_CHAPTER"
+	ExternalContentTypeBibleVerse   ExternalContentType = "BIBLE_VERSE"
+	ExternalContentTypeExternalLink ExternalContentType = "EXTERNAL_LINK"
+	ExternalContentTypeQuiz         ExternalContentType = "QUIZ"
+	ExternalContentTypeSong         ExternalContentType = "SONG"
+	ExternalContentTypeText         ExternalContentType = "TEXT"
 )
 
 var AllExternalContentType = []ExternalContentType{
-	ExternalContentTypeMediaEpisode,
-	ExternalContentTypeSong,
+	ExternalContentTypeMedia,
+	ExternalContentTypeArticle,
 	ExternalContentTypeBookChapter,
-	ExternalContentTypePeriodicalArticle,
-	ExternalContentTypeBibleChapter,
-	ExternalContentTypeBibleVerses,
+	ExternalContentTypeBibleVerse,
+	ExternalContentTypeExternalLink,
+	ExternalContentTypeQuiz,
+	ExternalContentTypeSong,
+	ExternalContentTypeText,
 }
 
 func (e ExternalContentType) IsValid() bool {
 	switch e {
-	case ExternalContentTypeMediaEpisode, ExternalContentTypeSong, ExternalContentTypeBookChapter, ExternalContentTypePeriodicalArticle, ExternalContentTypeBibleChapter, ExternalContentTypeBibleVerses:
+	case ExternalContentTypeMedia, ExternalContentTypeArticle, ExternalContentTypeBookChapter, ExternalContentTypeBibleVerse, ExternalContentTypeExternalLink, ExternalContentTypeQuiz, ExternalContentTypeSong, ExternalContentTypeText:
 		return true
 	}
 	return false
