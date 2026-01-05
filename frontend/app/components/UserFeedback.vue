@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useSubmitFeedbackMutation } from '~/api/generated'
 
+const { me } = useAuth()
+
 const open = ref(false)
 const message = ref<string>()
 const canContactMe = ref(false)
@@ -182,6 +184,9 @@ watch(open, (isOpen) => {
               :label="$t('feedback.canContactMe')"
             />
           </div> -->
+          <p class="px-medium text-label text-text-muted pt-medium">
+            {{ $t('feedback.regards', { name: me?.name }) }}
+          </p>
           <div class="p-medium grow-0 mt-auto">
             <DesignButton
               size="large"
