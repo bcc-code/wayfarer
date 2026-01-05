@@ -3,8 +3,8 @@
     "title": "Hoppá! Valami baj történt"
   },
   "emptyStates": {
-    "standings": "Még nincs toplista",
-    "unit": "Még nincs toplista az egységed számára",
+    "standings": "Még nincs top lista",
+    "unit": "Még nincs top lista a unitod számára",
     "challenges": "Még nincs kihívás",
     "pointHistory": "Még nincs pont"
   },
@@ -30,16 +30,16 @@
     }
   },
   "pages": {
-    "standings": "Legnépszerűbb listák",
+    "standings": "Top listák",
     "challenges": "Kihívások",
     "settings": "Beállítások",
-    "pointHistory": "Pontok története",
+    "pointHistory": "Pontelőzmények",
     "rules": "Szabályok",
     "consents": "Hozzájárulásaim",
     "addToHomeScreen": "Alkalmazás hozzáadása a kezdőképernyőhöz"
   },
   "navigation": {
-    "standings": "Legnépszerűbb listák",
+    "standings": "Top listák",
     "profile": "Az én oldalam",
     "challenges": "Kihívások"
   },
@@ -60,31 +60,31 @@
     "privacyPolicy": "Adatvédelmi irányelvek"
   },
   "standings": {
-    "global": "Globálisan",
-    "unit": "Az én egységem",
+    "global": "Globális",
+    "unit": "Az én unitom",
     "local": "Helyi",
     "you": "Te",
     "rules": "Szabályok",
-    "units": "Egységek",
+    "units": "Unitok",
     "top": "Top {amount}",
     "u18": "U18",
     "o18": "O18"
   },
   "pointHistory": {
-    "pointHistoryButton": "Pontok története",
+    "pointHistoryButton": "Pontelőzmények",
     "explanation": "Itt láthatod, miért kaptál – vagy vesztettél – pontokat."
   },
   "unit": {
-    "editUnit": "Egység szerkesztése",
-    "unitLeader": "Egységvezető",
+    "editUnit": "Unit szerkesztése",
+    "unitLeader": "Unitvezető",
     "saveChanges": "Módosítások mentése",
-    "unitName": "Egység neve",
-    "noUnitLeader": "Nincs egységvezető",
-    "selectUnitLeader": "Egységvezető választása"
+    "unitName": "Unit neve",
+    "noUnitLeader": "Nincs unitvezető",
+    "selectUnitLeader": "Unitvezető választása"
   },
-  "place": "elhelyezés",
+  "place": "helyezés",
   "points": "Pont",
-  "givesYouXPoints": "{points} -pontot ad",
+  "givesYouXPoints": "{points} pontot ad",
   "consent": {
     "accepted": "Elfogadva",
     "rejected": "Elutasítva",
