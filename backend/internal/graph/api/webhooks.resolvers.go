@@ -10,6 +10,7 @@ import (
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 )
 
@@ -97,6 +98,15 @@ func (r *mutationResolver) TestWebhook(ctx context.Context, id string) (*model.W
 
 // Webhook is the resolver for the webhook field.
 func (r *queryResolver) Webhook(ctx context.Context, id string) (*model.Webhook, error) {
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	if !r.RoleService.IsSuperAdmin(ctx, currentUserID) {
+		return nil, fmt.Errorf("permission denied: superadmin role required")
+	}
+
 	webhook, err := r.DB.Queries.GetWebhookByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get webhook: %w", err)
@@ -107,6 +117,15 @@ func (r *queryResolver) Webhook(ctx context.Context, id string) (*model.Webhook,
 
 // Webhooks is the resolver for the webhooks field.
 func (r *queryResolver) Webhooks(ctx context.Context, projectID string) ([]model.Webhook, error) {
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	if !r.RoleService.IsSuperAdmin(ctx, currentUserID) {
+		return nil, fmt.Errorf("permission denied: superadmin role required")
+	}
+
 	webhooks, err := r.DB.Queries.GetWebhooksByProjectID(ctx, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get webhooks: %w", err)
