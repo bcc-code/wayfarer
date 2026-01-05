@@ -3,8 +3,8 @@
     "title": "Oops! Something went wrong"
   },
   "emptyStates": {
-    "standings": "No top list yet",
-    "unit": "No top list for your unit yet",
+    "standings": "No leaderboard yet",
+    "unit": "No leaderboard for your unit yet",
     "challenges": "No challenges yet",
     "pointHistory": "No points yet"
   },
@@ -30,7 +30,7 @@
     }
   },
   "pages": {
-    "standings": "Top lists",
+    "standings": "Leaderboards",
     "challenges": "Challenges",
     "settings": "Settings",
     "pointHistory": "Points history",
@@ -39,7 +39,7 @@
     "addToHomeScreen": "Add app to home screen"
   },
   "navigation": {
-    "standings": "Top lists",
+    "standings": "Leaderboards",
     "profile": "My page",
     "challenges": "Challenges"
   },
