@@ -1,6 +1,12 @@
 <script setup lang="ts">
 const { isAuthReady } = useAuthReady()
-const { data, error, fetching, stale } = useProfilePageQuery({
+const {
+  data,
+  error,
+  fetching,
+  stale,
+  executeQuery: refresh,
+} = useProfilePageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
@@ -63,6 +69,13 @@ watch(
   },
   { immediate: true },
 )
+
+const isWindowFocused = useWindowFocus()
+watch(isWindowFocused, (focused) => {
+  if (focused) {
+    refresh()
+  }
+})
 </script>
 
 <template>
