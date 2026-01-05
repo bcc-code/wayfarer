@@ -54,6 +54,11 @@ export enum AnalyticsEvent {
   // Consent
   ConsentAccepted = 'consent_accepted',
   ConsentRejected = 'consent_rejected',
+
+  // User feedback
+  FeedbackSubmitted = 'feedback_submitted',
+  FeedbackModalOpened = 'feedback_modal_opened',
+  FeedbackModalClosed = 'feedback_modal_closed',
 }
 
 export function getAgeGroup(age?: number | null) {

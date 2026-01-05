@@ -46,6 +46,8 @@ function getDeviceMetadata() {
   }
 }
 
+const { track } = useAnalytics()
+
 async function handleSubmit() {
   const trimmedMessage = message.value?.trim()
 
@@ -76,6 +78,8 @@ async function handleSubmit() {
       return
     }
 
+    track(AnalyticsEvent.FeedbackSubmitted)
+
     hasSent.value = true
   } finally {
     isSubmitting.value = false
@@ -86,6 +90,14 @@ function closeFeedback(cb: () => void) {
   cb()
   reset()
 }
+
+watch(open, (isOpen) => {
+  if (isOpen) {
+    track(AnalyticsEvent.FeedbackModalOpened)
+  } else {
+    track(AnalyticsEvent.FeedbackModalClosed)
+  }
+})
 </script>
 
 <template>
