@@ -1,1 +1,126 @@
-{}
+{
+  "error": {
+    "title": "Oops! Qualcosa è andato storto"
+  },
+  "emptyStates": {
+    "standings": "Nessuna classifica ancora",
+    "unit": "Ancora nessuna classifica per la tua unità",
+    "challenges": "Nessuna sfida ancora",
+    "pointHistory": "Nessun punto ancora"
+  },
+  "auth": {
+    "loginButton": "Accedi",
+    "logoutButton": "Esci"
+  },
+  "quiz": {
+    "wrongAnswer": "Risposta errata",
+    "correctAnswer": "Risposta corretta",
+    "yourAnswer": "La tua risposta",
+    "lockAnswer": "Blocca risposta",
+    "questionNumber": "{current} di {total}",
+    "continue": "Continua",
+    "nextQuestion": "Ok, prossima domanda.",
+    "done": "Fine",
+    "result": {
+      "receivedNoPoints": "Non hai ottenuto alcun punto.",
+      "receivedPoints": "Hai totalizzato {points} punti.",
+      "betterLuckNextTime": "Andrà meglio la prossima volta!",
+      "wellDone": "Ottimo lavoro!",
+      "perfect": "Perfetto!"
+    }
+  },
+  "pages": {
+    "standings": "Classifiche",
+    "challenges": "Sfide",
+    "settings": "Impostazioni",
+    "pointHistory": "Cronologia dei punti",
+    "rules": "Regole",
+    "consents": "Il mio consenso",
+    "addToHomeScreen": "Aggiungi la app alla schermata iniziale"
+  },
+  "navigation": {
+    "standings": "Classifiche",
+    "profile": "La mia pagina",
+    "challenges": "Sfide"
+  },
+  "emptyState": "Niente da vedere qui",
+  "settings": {
+    "language": "Lingua dell'app",
+    "colorMode": "Modalità colore",
+    "colorModes": {
+      "system": "Sistema",
+      "light": "Luce",
+      "dark": "Buio"
+    },
+    "consents": "Il mio consenso",
+    "notifications": "Avvisi",
+    "notificationsBlocked": "Le notifiche sono bloccate nelle impostazioni del browser",
+    "notificationsOnlyAvailableWhenInstalled": "Le notifiche sono disponibili solo se aggiungi l'app alla schermata Home.",
+    "addToHomeScreen": "Aggiungi la app alla schermata iniziale",
+    "privacyPolicy": "Informativa sulla privacy"
+  },
+  "standings": {
+    "global": "Globale",
+    "unit": "La mia unità",
+    "local": "Locale",
+    "you": "Tu",
+    "rules": "Regole",
+    "units": "Unità",
+    "top": "Topp {amount}",
+    "u18": "U18",
+    "o18": "O18"
+  },
+  "pointHistory": {
+    "pointHistoryButton": "Cronologia dei punti",
+    "explanation": "Qui puoi vedere dove hai guadagnato o perso punti."
+  },
+  "unit": {
+    "editUnit": "Modifica unità",
+    "unitLeader": "Responsabile dell’unità",
+    "saveChanges": "Salva modifiche",
+    "unitName": "Nome unità",
+    "noUnitLeader": "Nessun responsabile dell'unità",
+    "selectUnitLeader": "Seleziona responsabile di unità"
+  },
+  "place": "posizione",
+  "points": "punti",
+  "givesYouXPoints": "Ti dà {points} punti",
+  "consent": {
+    "accepted": "Accettato",
+    "rejected": "Rifiutato",
+    "acceptButton": "Accetto",
+    "rejectButton": "Rifiuta i termini",
+    "bannerTitle": "Hai dei consensi da valutare",
+    "bannerButton": "Vai alle impostazioni di consenso",
+    "readButton": "Leggi i termini",
+    "change": "Modifica",
+    "goToConsent": "Vai al consenso",
+    "continue": "Continua",
+    "changeDescription": "Per modificare il tuo consenso, contattaci all'indirizzo {email}",
+    "changeConsent": "Modifica il consenso"
+  },
+  "achievement": {
+    "title": "Premio",
+    "unlocked": "Obiettivo raggiunto!"
+  },
+  "feedback": {
+    "title": "Dacci un feedback",
+    "cta": "Dacci un feedback",
+    "description": "Ci piacerebbe ricevere un tuo feedback per poter migliorare ulteriormente il nostro servizio.",
+    "send": "Dacci un feedback",
+    "label": "C'era qualcosa che ti è piaciuto o qualcosa che potrebbe essere migliorato?",
+    "placeholder": "Scrivi qui il tuo commento...",
+    "success": "Grazie per il tuo feedback",
+    "validationError": "Non è possibile inviare un feedback vuoto",
+    "lengthError": "Il feedback non può superare i {max} caratteri.",
+    "thankYou": "Grazie per l'aiuto!",
+    "thankYouDescription": "I tuoi commenti saranno utilizzati per migliorare ulteriormente il servizio.",
+    "close": "È stato un piacere.",
+    "canContactMe": "Sì, acconsento a essere contattato in merito al mio feedback.",
+    "regards": "Saluti {name}"
+  },
+  "pwa": {
+    "updateAvailableTitle": "È disponibile un aggiornamento",
+    "updateAvailableButton": "Aggiorna ora"
+  }
+}
