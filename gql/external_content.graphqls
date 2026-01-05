@@ -3,107 +3,112 @@
 # ==================== Enums ====================
 
 enum ExternalContentType {
-    MEDIA_EPISODE
-    SONG
-    BOOK_CHAPTER
-    PERIODICAL_ARTICLE
-    BIBLE_CHAPTER
-    BIBLE_VERSES
+  MEDIA
+  ARTICLE
+  BOOK_CHAPTER
+  BIBLE_VERSE
+  EXTERNAL_LINK
+  QUIZ
+  SONG
+  TEXT
 }
 
 enum ExternalContentSortBy {
-    CREATED_AT_ASC
-    CREATED_AT_DESC
-    PUBLISHED_AT_ASC
-    PUBLISHED_AT_DESC
+  CREATED_AT_ASC
+  CREATED_AT_DESC
+  PUBLISHED_AT_ASC
+  PUBLISHED_AT_DESC
 }
 
 # ==================== Types ====================
 
 type ExternalContent {
-    id: ID!
-    planId: String!
-    taskId: String!
-    contentId: String
-    contentType: ExternalContentType!
-    publishedAt: DateTime
-    source: String!
-    syncedAt: DateTime!
-    createdAt: DateTime!
-    updatedAt: DateTime!
+  id: ID!
+  planId: String!
+  taskId: String!
+  contentId: String
+  contentType: ExternalContentType!
+  publishedAt: DateTime
+  source: String!
+  syncedAt: DateTime!
+  createdAt: DateTime!
+  updatedAt: DateTime!
 
-    # Direct link to external article (nullable)
-    url: String
+  # Direct link to external article (nullable)
+  url: String
 
-    # Translations loaded via dataloader
-    translations: [ExternalContentTranslation!]! @goField(forceResolver: true)
+  # Translations loaded via dataloader
+  translations: [ExternalContentTranslation!]! @goField(forceResolver: true)
 
-    # Title in user's preferred language (from Accept-Language header)
-    title: String @goField(forceResolver: true)
+  # Title in user's preferred language (from Accept-Language header)
+  title: String @goField(forceResolver: true)
 }
 
 type ExternalContentTranslation {
-    languageCode: String!
-    title: String
+  languageCode: String!
+  title: String
 }
 
 type ExternalContentEdge {
-    cursor: String!
-    node: ExternalContent!
+  cursor: String!
+  node: ExternalContent!
 }
 
 type ExternalContentConnection {
-    edges: [ExternalContentEdge!]!
-    pageInfo: PageInfo!
-    totalCount: Int!
+  edges: [ExternalContentEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 # ==================== Input Types ====================
 
 input ExternalContentFilter {
-    planId: String
-    taskId: String
-    contentId: String
-    contentType: ExternalContentType
-    source: String
-    publishedAfter: DateTime
-    publishedBefore: DateTime
-    ids: [ID!]
+  planId: String
+  taskId: String
+  contentId: String
+  contentType: ExternalContentType
+  source: String
+  publishedAfter: DateTime
+  publishedBefore: DateTime
+  ids: [ID!]
 }
 
 input CreateContentAchievementFromExternalContentInput {
-    name: String!
-    descriptionPending: String!
-    descriptionCompleted: String!
-    imagePending: String!
-    imageCompleted: String!
-    projectId: ID!
-    eventId: ID
-    challengeId: ID
-    points: Int!
-    hidden: Boolean!
-    externalContentIds: [ID!]!
+  name: String!
+  descriptionPending: String!
+  descriptionCompleted: String!
+  imagePending: String!
+  imageCompleted: String!
+  projectId: ID!
+  eventId: ID
+  challengeId: ID
+  points: Int!
+  hidden: Boolean!
+  externalContentIds: [ID!]!
 }
 
 # ==================== Queries ====================
 
 extend type Query {
-    # Admin-only queries for external content
-    externalContent(id: ID!): ExternalContent! @requireRole(roles: ["admin", "superadmin"])
+  # Admin-only queries for external content
+  externalContent(id: ID!): ExternalContent!
+    @requireRole(roles: ["admin", "superadmin"])
 
-    externalContents(
-        filter: ExternalContentFilter!
-        sortBy: ExternalContentSortBy
-        first: Int
-        after: String
-        last: Int
-        before: String
-    ): ExternalContentConnection! @requireRole(roles: ["admin", "superadmin"])
+  externalContents(
+    filter: ExternalContentFilter!
+    sortBy: ExternalContentSortBy
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): ExternalContentConnection! @requireRole(roles: ["admin", "superadmin"])
 }
 
 # ==================== Mutations ====================
 
 extend type Mutation {
-    # Create content achievement directly from external content
-    createContentAchievementFromExternalContent(input: CreateContentAchievementFromExternalContentInput!): ContentAchievement! @requireRole(roles: ["admin", "superadmin"])
+  # Create content achievement directly from external content
+  createContentAchievementFromExternalContent(
+    input: CreateContentAchievementFromExternalContentInput!
+  ): ContentAchievement! @requireRole(roles: ["admin", "superadmin"])
 }

@@ -27,12 +27,13 @@ const sourceFilter = ref('')
 
 const contentTypeOptions = [
   { value: null, label: 'All Types' },
-  { value: ExternalContentType.MediaEpisode, label: 'Media Episode' },
+  { value: ExternalContentType.Media, label: 'Media' },
   { value: ExternalContentType.Song, label: 'Song' },
   { value: ExternalContentType.BookChapter, label: 'Book Chapter' },
-  { value: ExternalContentType.PeriodicalArticle, label: 'Periodical Article' },
-  { value: ExternalContentType.BibleChapter, label: 'Bible Chapter' },
-  { value: ExternalContentType.BibleVerses, label: 'Bible Verses' },
+  { value: ExternalContentType.Article, label: 'Article' },
+  { value: ExternalContentType.BibleVerse, label: 'Bible Verse' },
+  { value: ExternalContentType.Quiz, label: 'Quiz' },
+  { value: ExternalContentType.Text, label: 'Text' },
 ]
 
 // Debounced search
@@ -43,7 +44,7 @@ const queryVariables = computed(() => ({
     ...(contentTypeFilter.value && { contentType: contentTypeFilter.value }),
     ...(sourceFilter.value && { source: sourceFilter.value }),
   },
-  first: 20,
+  first: 100,
 }))
 
 const { data, fetching } = useAdminExternalContentsQuery({
@@ -98,12 +99,14 @@ function handleReorder() {
 
 function formatContentType(type: ExternalContentType): string {
   const labels: Record<ExternalContentType, string> = {
-    [ExternalContentType.MediaEpisode]: 'Media Episode',
+    [ExternalContentType.Media]: 'Media',
     [ExternalContentType.Song]: 'Song',
     [ExternalContentType.BookChapter]: 'Book Chapter',
-    [ExternalContentType.PeriodicalArticle]: 'Periodical Article',
-    [ExternalContentType.BibleChapter]: 'Bible Chapter',
-    [ExternalContentType.BibleVerses]: 'Bible Verses',
+    [ExternalContentType.Article]: 'Article',
+    [ExternalContentType.BibleVerse]: 'Bible Verse',
+    [ExternalContentType.Quiz]: 'Quiz',
+    [ExternalContentType.Text]: 'Text',
+    [ExternalContentType.ExternalLink]: 'External Link',
   }
   return labels[type] || type
 }

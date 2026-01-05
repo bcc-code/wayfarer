@@ -623,12 +623,14 @@ export type ExternalContentTranslation = {
 };
 
 export enum ExternalContentType {
-  BibleChapter = 'BIBLE_CHAPTER',
-  BibleVerses = 'BIBLE_VERSES',
+  Article = 'ARTICLE',
+  BibleVerse = 'BIBLE_VERSE',
   BookChapter = 'BOOK_CHAPTER',
-  MediaEpisode = 'MEDIA_EPISODE',
-  PeriodicalArticle = 'PERIODICAL_ARTICLE',
-  Song = 'SONG'
+  ExternalLink = 'EXTERNAL_LINK',
+  Media = 'MEDIA',
+  Quiz = 'QUIZ',
+  Song = 'SONG',
+  Text = 'TEXT'
 }
 
 export type FeedbackConnection = {
