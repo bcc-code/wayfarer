@@ -55,8 +55,8 @@ input UpdateWebhookInput {
 # ==================== Webhook Queries ====================
 
 extend type Query {
-    webhook(id: ID!): Webhook @requireRole(roles: ["superadmin"])
-    webhooks(projectId: ID!): [Webhook!]! @requireRole(roles: ["superadmin"])
+    webhook(id: ID!): Webhook
+    webhooks(projectId: ID!): [Webhook!]!
 }
 
 # ==================== Webhook Mutations ====================

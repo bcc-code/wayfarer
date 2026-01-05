@@ -8184,8 +8184,8 @@ input UpdateWebhookInput {
 # ==================== Webhook Queries ====================
 
 extend type Query {
-    webhook(id: ID!): Webhook @requireRole(roles: ["superadmin"])
-    webhooks(projectId: ID!): [Webhook!]! @requireRole(roles: ["superadmin"])
+    webhook(id: ID!): Webhook
+    webhooks(projectId: ID!): [Webhook!]!
 }
 
 # ==================== Webhook Mutations ====================
@@ -28049,25 +28049,7 @@ func (ec *executionContext) _Query_webhook(ctx context.Context, field graphql.Co
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Query().Webhook(ctx, fc.Args["id"].(string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
-				if err != nil {
-					var zeroVal *model.Webhook
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Webhook
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalOWebhook2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhook,
 		true,
 		false,
@@ -28134,25 +28116,7 @@ func (ec *executionContext) _Query_webhooks(ctx context.Context, field graphql.C
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Query().Webhooks(ctx, fc.Args["projectId"].(string))
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"superadmin"})
-				if err != nil {
-					var zeroVal []model.Webhook
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal []model.Webhook
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNWebhook2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhookᚄ,
 		true,
 		true,
@@ -53662,7 +53626,7 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 func (ec *executionContext) marshalNAchievement2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievement(ctx context.Context, sel ast.SelectionSet, v model.Achievement) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53720,7 +53684,7 @@ func (ec *executionContext) marshalNAchievementConnection2githubᚗcomᚋbccᚑm
 func (ec *executionContext) marshalNAchievementConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAchievementConnection(ctx context.Context, sel ast.SelectionSet, v *model.AchievementConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53787,7 +53751,7 @@ func (ec *executionContext) marshalNAdminDashboardStats2githubᚗcomᚋbccᚑmed
 func (ec *executionContext) marshalNAdminDashboardStats2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAdminDashboardStats(ctx context.Context, sel ast.SelectionSet, v *model.AdminDashboardStats) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53809,7 +53773,7 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	res := graphql.MarshalBoolean(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -53818,7 +53782,7 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 func (ec *executionContext) marshalNBranding2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐBranding(ctx context.Context, sel ast.SelectionSet, v *model.Branding) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53833,7 +53797,7 @@ func (ec *executionContext) unmarshalNBrandingInput2ᚖgithubᚗcomᚋbccᚑmedi
 func (ec *executionContext) marshalNChallenge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallenge(ctx context.Context, sel ast.SelectionSet, v model.Challenge) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53891,7 +53855,7 @@ func (ec *executionContext) marshalNChallengeConnection2githubᚗcomᚋbccᚑmed
 func (ec *executionContext) marshalNChallengeConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChallengeConnection(ctx context.Context, sel ast.SelectionSet, v *model.ChallengeConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53963,7 +53927,7 @@ func (ec *executionContext) marshalNChurch2githubᚗcomᚋbccᚑmediaᚋwayfarer
 func (ec *executionContext) marshalNChurch2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurch(ctx context.Context, sel ast.SelectionSet, v *model.Church) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -53987,7 +53951,7 @@ func (ec *executionContext) marshalNChurchConnection2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNChurchConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchConnection(ctx context.Context, sel ast.SelectionSet, v *model.ChurchConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54045,7 +54009,7 @@ func (ec *executionContext) marshalNChurchEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋw
 func (ec *executionContext) marshalNColorSet2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColorSet(ctx context.Context, sel ast.SelectionSet, v *model.ColorSet) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54060,7 +54024,7 @@ func (ec *executionContext) unmarshalNColorSetInput2ᚖgithubᚗcomᚋbccᚑmedi
 func (ec *executionContext) marshalNColors2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColors(ctx context.Context, sel ast.SelectionSet, v *model.Colors) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54123,7 +54087,7 @@ func (ec *executionContext) marshalNConsent2ᚕgithubᚗcomᚋbccᚑmediaᚋwayf
 func (ec *executionContext) marshalNConsent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsent(ctx context.Context, sel ast.SelectionSet, v *model.Consent) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54153,7 +54117,7 @@ func (ec *executionContext) marshalNConsentManagementType2githubᚗcomᚋbccᚑm
 func (ec *executionContext) marshalNConsentStatus2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsentStatus(ctx context.Context, sel ast.SelectionSet, v *model.ConsentStatus) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54211,7 +54175,7 @@ func (ec *executionContext) marshalNContentAchievement2ᚕgithubᚗcomᚋbccᚑm
 func (ec *executionContext) marshalNContentAchievement2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐContentAchievement(ctx context.Context, sel ast.SelectionSet, v *model.ContentAchievement) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54515,7 +54479,7 @@ func (ec *executionContext) marshalNEvent2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfar
 func (ec *executionContext) marshalNEvent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEvent(ctx context.Context, sel ast.SelectionSet, v *model.Event) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54529,7 +54493,7 @@ func (ec *executionContext) marshalNEventConnection2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNEventConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐEventConnection(ctx context.Context, sel ast.SelectionSet, v *model.EventConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54591,7 +54555,7 @@ func (ec *executionContext) marshalNExternalContent2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNExternalContent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐExternalContent(ctx context.Context, sel ast.SelectionSet, v *model.ExternalContent) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54605,7 +54569,7 @@ func (ec *executionContext) marshalNExternalContentConnection2githubᚗcomᚋbcc
 func (ec *executionContext) marshalNExternalContentConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐExternalContentConnection(ctx context.Context, sel ast.SelectionSet, v *model.ExternalContentConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54730,7 +54694,7 @@ func (ec *executionContext) marshalNFeedbackConnection2githubᚗcomᚋbccᚑmedi
 func (ec *executionContext) marshalNFeedbackConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFeedbackConnection(ctx context.Context, sel ast.SelectionSet, v *model.FeedbackConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -54795,7 +54759,7 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 	res := graphql.MarshalFloatContext(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return graphql.WrapContextMarshaler(ctx, res)
@@ -54831,7 +54795,7 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	res := graphql.MarshalID(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -54877,7 +54841,7 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -54893,7 +54857,7 @@ func (ec *executionContext) marshalNJSON2string(ctx context.Context, sel ast.Sel
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -54906,7 +54870,7 @@ func (ec *executionContext) marshalNLeaderboardConnection2githubᚗcomᚋbccᚑm
 func (ec *executionContext) marshalNLeaderboardConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardConnection(ctx context.Context, sel ast.SelectionSet, v *model.LeaderboardConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55022,7 +54986,7 @@ func (ec *executionContext) marshalNLeaderboardEntry2ᚕgithubᚗcomᚋbccᚑmed
 func (ec *executionContext) marshalNLeaderboardEntry2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐLeaderboardEntry(ctx context.Context, sel ast.SelectionSet, v *model.LeaderboardEntry) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55105,7 +55069,7 @@ func (ec *executionContext) marshalNMarkdownText2githubᚗcomᚋbccᚑmediaᚋwa
 func (ec *executionContext) marshalNMarkdownText2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMarkdownText(ctx context.Context, sel ast.SelectionSet, v *model.MarkdownText) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55125,7 +55089,7 @@ func (ec *executionContext) marshalNNotificationType2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNPageInfo2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v *model.PageInfo) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55183,7 +55147,7 @@ func (ec *executionContext) marshalNProject2ᚕgithubᚗcomᚋbccᚑmediaᚋwayf
 func (ec *executionContext) marshalNProject2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProject(ctx context.Context, sel ast.SelectionSet, v *model.Project) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55197,7 +55161,7 @@ func (ec *executionContext) marshalNProjectConnection2githubᚗcomᚋbccᚑmedia
 func (ec *executionContext) marshalNProjectConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐProjectConnection(ctx context.Context, sel ast.SelectionSet, v *model.ProjectConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55303,7 +55267,7 @@ func (ec *executionContext) marshalNPushNotificationPreference2ᚕgithubᚗcom�
 func (ec *executionContext) marshalNPushNotificationPreference2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPushNotificationPreference(ctx context.Context, sel ast.SelectionSet, v *model.PushNotificationPreference) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55317,7 +55281,7 @@ func (ec *executionContext) marshalNPushSubscription2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNPushSubscription2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐPushSubscription(ctx context.Context, sel ast.SelectionSet, v *model.PushSubscription) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55331,7 +55295,7 @@ func (ec *executionContext) marshalNQuiz2githubᚗcomᚋbccᚑmediaᚋwayfarer�
 func (ec *executionContext) marshalNQuiz2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuiz(ctx context.Context, sel ast.SelectionSet, v *model.Quiz) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55345,7 +55309,7 @@ func (ec *executionContext) marshalNQuizAchievement2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNQuizAchievement2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizAchievement(ctx context.Context, sel ast.SelectionSet, v *model.QuizAchievement) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55359,7 +55323,7 @@ func (ec *executionContext) marshalNQuizConnection2githubᚗcomᚋbccᚑmediaᚋ
 func (ec *executionContext) marshalNQuizConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizConnection(ctx context.Context, sel ast.SelectionSet, v *model.QuizConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55465,7 +55429,7 @@ func (ec *executionContext) marshalNQuizPredefinedAnswer2ᚕgithubᚗcomᚋbcc�
 func (ec *executionContext) marshalNQuizQuestion2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizQuestion(ctx context.Context, sel ast.SelectionSet, v model.QuizQuestion) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55529,7 +55493,7 @@ func (ec *executionContext) marshalNQuizQuestionType2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNQuizResponse2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizResponse(ctx context.Context, sel ast.SelectionSet, v model.QuizResponse) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55631,7 +55595,7 @@ func (ec *executionContext) marshalNQuizSubmission2ᚕgithubᚗcomᚋbccᚑmedia
 func (ec *executionContext) marshalNQuizSubmission2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSubmission(ctx context.Context, sel ast.SelectionSet, v *model.QuizSubmission) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55645,7 +55609,7 @@ func (ec *executionContext) marshalNQuizSubmissionConnection2githubᚗcomᚋbcc�
 func (ec *executionContext) marshalNQuizSubmissionConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSubmissionConnection(ctx context.Context, sel ast.SelectionSet, v *model.QuizSubmissionConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55737,7 +55701,7 @@ func (ec *executionContext) marshalNScoreJournal2githubᚗcomᚋbccᚑmediaᚋwa
 func (ec *executionContext) marshalNScoreJournal2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournal(ctx context.Context, sel ast.SelectionSet, v *model.ScoreJournal) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55751,7 +55715,7 @@ func (ec *executionContext) marshalNScoreJournalConnection2githubᚗcomᚋbccᚑ
 func (ec *executionContext) marshalNScoreJournalConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournalConnection(ctx context.Context, sel ast.SelectionSet, v *model.ScoreJournalConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55828,7 +55792,7 @@ func (ec *executionContext) marshalNSendPushNotificationResult2githubᚗcomᚋbc
 func (ec *executionContext) marshalNSendPushNotificationResult2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSendPushNotificationResult(ctx context.Context, sel ast.SelectionSet, v *model.SendPushNotificationResult) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55847,7 +55811,7 @@ func (ec *executionContext) marshalNSimpleAchievement2githubᚗcomᚋbccᚑmedia
 func (ec *executionContext) marshalNSimpleAchievement2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSimpleAchievement(ctx context.Context, sel ast.SelectionSet, v *model.SimpleAchievement) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55861,7 +55825,7 @@ func (ec *executionContext) marshalNSimpleChallenge2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNSimpleChallenge2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSimpleChallenge(ctx context.Context, sel ast.SelectionSet, v *model.SimpleChallenge) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55919,7 +55883,7 @@ func (ec *executionContext) marshalNStreak2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfa
 func (ec *executionContext) marshalNStreak2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreak(ctx context.Context, sel ast.SelectionSet, v *model.Streak) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55933,7 +55897,7 @@ func (ec *executionContext) marshalNStreakAchievement2githubᚗcomᚋbccᚑmedia
 func (ec *executionContext) marshalNStreakAchievement2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakAchievement(ctx context.Context, sel ast.SelectionSet, v *model.StreakAchievement) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -55947,7 +55911,7 @@ func (ec *executionContext) marshalNStreakConnection2githubᚗcomᚋbccᚑmedia�
 func (ec *executionContext) marshalNStreakConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐStreakConnection(ctx context.Context, sel ast.SelectionSet, v *model.StreakConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -56060,7 +56024,7 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -56172,7 +56136,7 @@ func (ec *executionContext) marshalNSuperTeam2ᚕgithubᚗcomᚋbccᚑmediaᚋwa
 func (ec *executionContext) marshalNSuperTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSuperTeam(ctx context.Context, sel ast.SelectionSet, v *model.SuperTeam) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -56186,7 +56150,7 @@ func (ec *executionContext) marshalNSuperTeamConnection2githubᚗcomᚋbccᚑmed
 func (ec *executionContext) marshalNSuperTeamConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSuperTeamConnection(ctx context.Context, sel ast.SelectionSet, v *model.SuperTeamConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -56292,7 +56256,7 @@ func (ec *executionContext) marshalNTeam2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfare
 func (ec *executionContext) marshalNTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeam(ctx context.Context, sel ast.SelectionSet, v *model.Team) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -56306,7 +56270,7 @@ func (ec *executionContext) marshalNTeamConnection2githubᚗcomᚋbccᚑmediaᚋ
 func (ec *executionContext) marshalNTeamConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamConnection(ctx context.Context, sel ast.SelectionSet, v *model.TeamConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -56484,7 +56448,7 @@ func (ec *executionContext) marshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋg
 	res := graphql.MarshalUpload(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -56541,7 +56505,7 @@ func (ec *executionContext) marshalNUser2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfare
 func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -56555,7 +56519,7 @@ func (ec *executionContext) marshalNUserConnection2githubᚗcomᚋbccᚑmediaᚋ
 func (ec *executionContext) marshalNUserConnection2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConnection(ctx context.Context, sel ast.SelectionSet, v *model.UserConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -56613,7 +56577,7 @@ func (ec *executionContext) marshalNUserConsent2ᚕgithubᚗcomᚋbccᚑmediaᚋ
 func (ec *executionContext) marshalNUserConsent2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConsent(ctx context.Context, sel ast.SelectionSet, v *model.UserConsent) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -56723,7 +56687,7 @@ func (ec *executionContext) marshalNUserFeedback2githubᚗcomᚋbccᚑmediaᚋwa
 func (ec *executionContext) marshalNUserFeedback2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserFeedback(ctx context.Context, sel ast.SelectionSet, v *model.UserFeedback) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -56781,7 +56745,7 @@ func (ec *executionContext) marshalNUserRole2ᚕgithubᚗcomᚋbccᚑmediaᚋway
 func (ec *executionContext) marshalNUserRole2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserRole(ctx context.Context, sel ast.SelectionSet, v *model.UserRole) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -56839,7 +56803,7 @@ func (ec *executionContext) marshalNWebhook2ᚕgithubᚗcomᚋbccᚑmediaᚋwayf
 func (ec *executionContext) marshalNWebhook2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhook(ctx context.Context, sel ast.SelectionSet, v *model.Webhook) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -56907,7 +56871,7 @@ func (ec *executionContext) marshalNWebhookLog2ᚕgithubᚗcomᚋbccᚑmediaᚋw
 func (ec *executionContext) marshalNWebhookLog2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhookLog(ctx context.Context, sel ast.SelectionSet, v *model.WebhookLog) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -56972,7 +56936,7 @@ func (ec *executionContext) marshalN__DirectiveLocation2string(ctx context.Conte
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
@@ -57144,7 +57108,7 @@ func (ec *executionContext) marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgen�
 func (ec *executionContext) marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, sel ast.SelectionSet, v *introspection.Type) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
@@ -57161,7 +57125,7 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 	}
 	return res
