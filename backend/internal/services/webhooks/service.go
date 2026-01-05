@@ -33,16 +33,60 @@ func NewService(queries *sqlc.Queries) *Service {
 	}
 }
 
-// DispatchExternalContentEvent sends webhooks for external content events
+// DispatchExternalContentEvent sends webhooks for external content events to a specific project
 // This should be called asynchronously (in a goroutine)
 func (s *Service) DispatchExternalContentEvent(ctx context.Context, projectID string, user *UserData, data ExternalContentEventData) {
 	s.dispatch(ctx, projectID, EventTypeExternalContent, user, data)
+}
+
+// DispatchGlobalExternalContentEvent sends webhooks for external content events to ALL active projects
+// This is used when an external content event is received and should notify all interested projects
+// This should be called asynchronously (in a goroutine)
+func (s *Service) DispatchGlobalExternalContentEvent(ctx context.Context, user *UserData, data ExternalContentEventData) {
+	s.dispatchGlobal(ctx, EventTypeExternalContent, user, data)
 }
 
 // DispatchPointsAwarded sends webhooks for points awarded events
 // This should be called asynchronously (in a goroutine)
 func (s *Service) DispatchPointsAwarded(ctx context.Context, projectID string, user *UserData, data PointsAwardedData) {
 	s.dispatch(ctx, projectID, EventTypePointsAwarded, user, data)
+}
+
+// dispatchGlobal sends the payload to all active webhooks for the given event type across all active projects
+func (s *Service) dispatchGlobal(ctx context.Context, eventType EventType, user *UserData, data interface{}) {
+	webhooks, err := s.queries.GetActiveWebhooksByEventType(ctx, string(eventType))
+	if err != nil {
+		slog.Error("webhooks: failed to get active webhooks for global dispatch",
+			"event_type", eventType,
+			"error", err,
+		)
+		return
+	}
+
+	if len(webhooks) == 0 {
+		return
+	}
+
+	for _, webhook := range webhooks {
+		payload := WebhookPayload{
+			EventType: string(eventType),
+			Timestamp: time.Now().UTC(),
+			ProjectID: webhook.ProjectID,
+			Data:      data,
+		}
+
+		// Include user data if configured
+		if webhook.IncludeUserData && user != nil {
+			payload.User = user
+		}
+
+		// Only include data if configured
+		if !webhook.IncludeEventData {
+			payload.Data = nil
+		}
+
+		s.dispatchToWebhook(ctx, webhook, payload)
+	}
 }
 
 // dispatch sends the payload to all active webhooks for the given project and event type

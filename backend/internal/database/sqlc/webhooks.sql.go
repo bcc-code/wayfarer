@@ -159,6 +159,49 @@ func (q *Queries) DeleteWebhook(ctx context.Context, id string) error {
 	return err
 }
 
+const GetActiveWebhooksByEventType = `-- name: GetActiveWebhooksByEventType :many
+SELECT w.id, w.project_id, w.name, w.url, w.event_type, w.include_user_data, w.include_event_data, w.active, w.secret, w.created_at, w.updated_at FROM webhooks w
+JOIN projects p ON w.project_id = p.id
+WHERE w.event_type = $1::text
+  AND w.active = true
+  AND (p.archived IS NULL OR p.archived = false)
+  AND p.start_date <= now()
+  AND p.end_date >= now()
+ORDER BY w.created_at DESC
+`
+
+func (q *Queries) GetActiveWebhooksByEventType(ctx context.Context, eventtype string) ([]*Webhook, error) {
+	rows, err := q.db.Query(ctx, GetActiveWebhooksByEventType, eventtype)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Webhook{}
+	for rows.Next() {
+		var i Webhook
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Name,
+			&i.Url,
+			&i.EventType,
+			&i.IncludeUserData,
+			&i.IncludeEventData,
+			&i.Active,
+			&i.Secret,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetActiveWebhooksByProjectAndEvent = `-- name: GetActiveWebhooksByProjectAndEvent :many
 SELECT id, project_id, name, url, event_type, include_user_data, include_event_data, active, secret, created_at, updated_at FROM webhooks
 WHERE project_id = $1::text

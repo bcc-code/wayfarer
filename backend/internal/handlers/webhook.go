@@ -11,6 +11,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/services/push"
+	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -18,10 +19,11 @@ import (
 )
 
 type WebhookHandler struct {
-	DB          *database.DB
-	Cache       *cache.CacheWithRegistry
-	PushService *push.Service
-	Loaders     *loaders.Loaders
+	DB             *database.DB
+	Cache          *cache.CacheWithRegistry
+	PushService    *push.Service
+	Loaders        *loaders.Loaders
+	WebhookService *webhooks.Service
 }
 
 // ContentEventRequest represents the incoming webhook payload for content events
@@ -141,8 +143,43 @@ func (h *WebhookHandler) HandleContentEvent(c *gin.Context) {
 		"source", sourceStr,
 	)
 
+	// Dispatch external content event webhooks to all active projects (only if user is identified)
+	if h.WebhookService != nil {
+		if user, err := h.DB.Queries.GetUserByPersonUUID(ctx, personPgUUID); err == nil {
+			name := ""
+			if user.DisplayName != nil {
+				name = *user.DisplayName
+			}
+			userData := &webhooks.UserData{
+				ID:        user.ID,
+				MembersID: user.MembersID,
+				Email:     user.Email,
+				Name:      name,
+			}
+
+			// Get content progress as float64
+			var progress float64
+			if contentProgress != nil {
+				progress = float64(*contentProgress)
+			}
+
+			// Get plan ID
+			planID := ""
+			if req.PlanID != nil {
+				planID = *req.PlanID
+			}
+
+			go h.WebhookService.DispatchGlobalExternalContentEvent(context.Background(), userData, webhooks.ExternalContentEventData{
+				TaskID:          req.TaskID,
+				PlanID:          planID,
+				ContentProgress: progress,
+				ConsumedAt:      req.Timestamp.Format(time.RFC3339),
+			})
+		}
+	}
+
 	// Process achievements for this content event
-	h.processAchievements(ctx, req.PersonID, req.TaskID)
+	h.processAchievements(ctx, personPgUUID, req.TaskID)
 
 	// Return success response with no body
 	c.Status(http.StatusCreated)
@@ -150,12 +187,12 @@ func (h *WebhookHandler) HandleContentEvent(c *gin.Context) {
 
 // processAchievements handles achievement progress and auto-award logic for content events.
 // It silently skips processing if user or content is not found in the database.
-func (h *WebhookHandler) processAchievements(ctx context.Context, personID string, taskID string) {
-	// 1. Get user by members_id (personID is a UUID string)
-	user, err := h.DB.Queries.GetUserByMembersID(ctx, personID)
+func (h *WebhookHandler) processAchievements(ctx context.Context, personUUID pgtype.UUID, taskID string) {
+	// 1. Get user by person_uuid
+	user, err := h.DB.Queries.GetUserByPersonUUID(ctx, personUUID)
 	if err != nil {
 		slog.Warn("webhook: user not found for achievement processing",
-			"person_id", personID, "error", err)
+			"person_uuid", personUUID, "error", err)
 		return
 	}
 

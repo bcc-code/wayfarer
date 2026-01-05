@@ -39,6 +39,16 @@ WHERE project_id = @projectid::text
   AND active = true
 ORDER BY created_at DESC;
 
+-- name: GetActiveWebhooksByEventType :many
+SELECT w.* FROM webhooks w
+JOIN projects p ON w.project_id = p.id
+WHERE w.event_type = @eventtype::text
+  AND w.active = true
+  AND (p.archived IS NULL OR p.archived = false)
+  AND p.start_date <= now()
+  AND p.end_date >= now()
+ORDER BY w.created_at DESC;
+
 -- name: UpdateWebhook :one
 UPDATE webhooks
 SET
