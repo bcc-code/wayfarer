@@ -55,10 +55,12 @@ func (s *SyncService) SyncPlanBySlug(ctx context.Context, slug string) (*SyncRes
 	for i := range plan.Chapters {
 		chapter := &plan.Chapters[i]
 		chapterPublishedAt := parsePublishedDate(chapter.DatetimePublished)
+		chapterCompleteBy := calculateChapterCompleteBy(chapter)
 
 		// Process main chapter item if present
 		if chapter.MainChapterItem != nil {
-			if err := s.upsertItem(ctx, plan.PlanID, chapter.MainChapterItem, chapterPublishedAt, syncedAt); err != nil {
+			itemCompleteBy := chapterCompleteBy
+			if err := s.upsertItem(ctx, plan.PlanID, chapter.MainChapterItem, chapterPublishedAt, itemCompleteBy, syncedAt); err != nil {
 				s.logger.Error("Failed to upsert main chapter item",
 					"chapter_id", chapter.PlanChapterID,
 					"error", err,
@@ -71,7 +73,8 @@ func (s *SyncService) SyncPlanBySlug(ctx context.Context, slug string) (*SyncRes
 		// Process all items in the chapter
 		for j := range chapter.Items {
 			item := &chapter.Items[j]
-			if err := s.upsertItem(ctx, plan.PlanID, item, chapterPublishedAt, syncedAt); err != nil {
+			itemCompleteBy := chapterCompleteBy
+			if err := s.upsertItem(ctx, plan.PlanID, item, chapterPublishedAt, itemCompleteBy, syncedAt); err != nil {
 				s.logger.Error("Failed to upsert SSF content",
 					"task_id", item.PlanChapterItemID,
 					"error", err,
@@ -100,7 +103,7 @@ func (s *SyncService) SyncPlanBySlug(ctx context.Context, slug string) (*SyncRes
 	}, nil
 }
 
-func (s *SyncService) upsertItem(ctx context.Context, planID string, item *Item, chapterPublishedAt *time.Time, syncedAt pgtype.Timestamptz) error {
+func (s *SyncService) upsertItem(ctx context.Context, planID string, item *Item, chapterPublishedAt *time.Time, completeBy *time.Time, syncedAt pgtype.Timestamptz) error {
 	data := item.ExtractContentData(planID)
 
 	if item.ContentType == "bible_verse" {
@@ -134,6 +137,11 @@ func (s *SyncService) upsertItem(ctx context.Context, planID string, item *Item,
 
 	// At this point publishedAt is guaranteed to be non-nil
 	params.Publishedat = pgtype.Timestamptz{Time: *publishedAt, Valid: true}
+
+	// Set complete_by if provided (based on completion_mode logic)
+	if completeBy != nil {
+		params.Completeby = pgtype.Timestamptz{Time: *completeBy, Valid: true}
+	}
 
 	content, err := s.queries.UpsertExternalContent(ctx, params)
 	if err != nil {
@@ -181,9 +189,35 @@ func parsePublishedDate(datetimePublished string) *time.Time {
 	if datetimePublished == "" {
 		return nil
 	}
+	// Try RFC3339 format first (e.g., "2025-12-04T10:30:00Z")
 	t, err := time.Parse(time.RFC3339, datetimePublished)
-	if err != nil {
+	if err == nil {
+		return &t
+	}
+	// Try datetime without timezone (e.g., "2026-01-13T02:00:00")
+	t, err = time.Parse("2006-01-02T15:04:05", datetimePublished)
+	if err == nil {
+		return &t
+	}
+	return nil
+}
+
+// calculateChapterCompleteBy calculates the complete_by timestamp for a chapter
+// based on the main chapter item's completion mode.
+// Returns nil if main item is nil, doesn't have "required_24h" mode, or chapter has no published date.
+func calculateChapterCompleteBy(chapter *PlanChapter) *time.Time {
+	if chapter == nil || chapter.MainChapterItem == nil {
 		return nil
 	}
-	return &t
+	if chapter.MainChapterItem.CompletionMode != "required_24h" {
+		return nil
+	}
+
+	publishedAt := parsePublishedDate(chapter.DatetimePublished)
+	if publishedAt == nil {
+		return nil
+	}
+
+	completeBy := publishedAt.Add(24 * time.Hour)
+	return &completeBy
 }

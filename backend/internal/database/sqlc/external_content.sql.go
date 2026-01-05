@@ -81,7 +81,7 @@ func (q *Queries) DeleteExternalContentByPlanID(ctx context.Context, planid stri
 }
 
 const GetExternalContentByContentID = `-- name: GetExternalContentByContentID :many
-SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url FROM external_content
+SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url, complete_by FROM external_content
 WHERE content_id = $1::text
 `
 
@@ -106,6 +106,7 @@ func (q *Queries) GetExternalContentByContentID(ctx context.Context, contentid s
 			&i.UpdatedAt,
 			&i.Source,
 			&i.Url,
+			&i.CompleteBy,
 		); err != nil {
 			return nil, err
 		}
@@ -118,7 +119,7 @@ func (q *Queries) GetExternalContentByContentID(ctx context.Context, contentid s
 }
 
 const GetExternalContentByContentType = `-- name: GetExternalContentByContentType :many
-SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url FROM external_content
+SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url, complete_by FROM external_content
 WHERE content_type = $1::text
 ORDER BY published_at ASC NULLS LAST
 LIMIT CASE WHEN $3::int IS NULL THEN NULL ELSE $3::int END
@@ -152,6 +153,7 @@ func (q *Queries) GetExternalContentByContentType(ctx context.Context, arg GetEx
 			&i.UpdatedAt,
 			&i.Source,
 			&i.Url,
+			&i.CompleteBy,
 		); err != nil {
 			return nil, err
 		}
@@ -164,7 +166,7 @@ func (q *Queries) GetExternalContentByContentType(ctx context.Context, arg GetEx
 }
 
 const GetExternalContentByID = `-- name: GetExternalContentByID :one
-SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url FROM external_content WHERE id = $1
+SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url, complete_by FROM external_content WHERE id = $1
 `
 
 func (q *Queries) GetExternalContentByID(ctx context.Context, id string) (*ExternalContent, error) {
@@ -182,12 +184,13 @@ func (q *Queries) GetExternalContentByID(ctx context.Context, id string) (*Exter
 		&i.UpdatedAt,
 		&i.Source,
 		&i.Url,
+		&i.CompleteBy,
 	)
 	return &i, err
 }
 
 const GetExternalContentByIDs = `-- name: GetExternalContentByIDs :many
-SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url FROM external_content WHERE id = ANY($1::text[])
+SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url, complete_by FROM external_content WHERE id = ANY($1::text[])
 `
 
 func (q *Queries) GetExternalContentByIDs(ctx context.Context, ids []string) ([]*ExternalContent, error) {
@@ -211,6 +214,7 @@ func (q *Queries) GetExternalContentByIDs(ctx context.Context, ids []string) ([]
 			&i.UpdatedAt,
 			&i.Source,
 			&i.Url,
+			&i.CompleteBy,
 		); err != nil {
 			return nil, err
 		}
@@ -223,7 +227,7 @@ func (q *Queries) GetExternalContentByIDs(ctx context.Context, ids []string) ([]
 }
 
 const GetExternalContentByPlanID = `-- name: GetExternalContentByPlanID :many
-SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url FROM external_content
+SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url, complete_by FROM external_content
 WHERE plan_id = $1::text
 ORDER BY published_at ASC NULLS LAST
 `
@@ -249,6 +253,7 @@ func (q *Queries) GetExternalContentByPlanID(ctx context.Context, planid string)
 			&i.UpdatedAt,
 			&i.Source,
 			&i.Url,
+			&i.CompleteBy,
 		); err != nil {
 			return nil, err
 		}
@@ -261,7 +266,7 @@ func (q *Queries) GetExternalContentByPlanID(ctx context.Context, planid string)
 }
 
 const GetExternalContentBySource = `-- name: GetExternalContentBySource :many
-SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url FROM external_content
+SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url, complete_by FROM external_content
 WHERE source = $1::text
 ORDER BY published_at ASC NULLS LAST
 LIMIT CASE WHEN $3::int IS NULL THEN NULL ELSE $3::int END
@@ -295,6 +300,7 @@ func (q *Queries) GetExternalContentBySource(ctx context.Context, arg GetExterna
 			&i.UpdatedAt,
 			&i.Source,
 			&i.Url,
+			&i.CompleteBy,
 		); err != nil {
 			return nil, err
 		}
@@ -307,7 +313,7 @@ func (q *Queries) GetExternalContentBySource(ctx context.Context, arg GetExterna
 }
 
 const GetExternalContentByTaskID = `-- name: GetExternalContentByTaskID :one
-SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url FROM external_content WHERE task_id = $1::text
+SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url, complete_by FROM external_content WHERE task_id = $1::text
 `
 
 func (q *Queries) GetExternalContentByTaskID(ctx context.Context, taskid string) (*ExternalContent, error) {
@@ -325,6 +331,7 @@ func (q *Queries) GetExternalContentByTaskID(ctx context.Context, taskid string)
 		&i.UpdatedAt,
 		&i.Source,
 		&i.Url,
+		&i.CompleteBy,
 	)
 	return &i, err
 }
@@ -416,7 +423,7 @@ func (q *Queries) GetExternalContentTranslationsByContentIDs(ctx context.Context
 
 const SearchExternalContentAdmin = `-- name: SearchExternalContentAdmin :many
 
-SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url FROM external_content
+SELECT id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url, complete_by FROM external_content
 WHERE
     ($1::text = '' OR plan_id = $1::text)
     AND ($2::text = '' OR task_id = $2::text)
@@ -481,6 +488,7 @@ func (q *Queries) SearchExternalContentAdmin(ctx context.Context, arg SearchExte
 			&i.UpdatedAt,
 			&i.Source,
 			&i.Url,
+			&i.CompleteBy,
 		); err != nil {
 			return nil, err
 		}
@@ -494,9 +502,9 @@ func (q *Queries) SearchExternalContentAdmin(ctx context.Context, arg SearchExte
 
 const UpsertExternalContent = `-- name: UpsertExternalContent :one
 INSERT INTO external_content (
-    id, plan_id, task_id, content_id, content_type, published_at, synced_at, source, url
+    id, plan_id, task_id, content_id, content_type, published_at, synced_at, source, url, complete_by
 ) VALUES (
-    $1, $2::text, $3::text, $4::text, $5::text, $6::timestamptz, $7::timestamptz, $8::text, $9::text
+    $1, $2::text, $3::text, $4::text, $5::text, $6::timestamptz, $7::timestamptz, $8::text, $9::text, $10::timestamptz
 )
 ON CONFLICT (plan_id, task_id) DO UPDATE SET
     content_id = EXCLUDED.content_id,
@@ -505,8 +513,9 @@ ON CONFLICT (plan_id, task_id) DO UPDATE SET
     synced_at = EXCLUDED.synced_at,
     source = EXCLUDED.source,
     url = EXCLUDED.url,
+    complete_by = EXCLUDED.complete_by,
     updated_at = now()
-RETURNING id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url
+RETURNING id, plan_id, task_id, content_id, content_type, published_at, synced_at, created_at, updated_at, source, url, complete_by
 `
 
 type UpsertExternalContentParams struct {
@@ -519,6 +528,7 @@ type UpsertExternalContentParams struct {
 	Syncedat    pgtype.Timestamptz `json:"syncedat"`
 	Source      string             `json:"source"`
 	Url         string             `json:"url"`
+	Completeby  pgtype.Timestamptz `json:"completeby"`
 }
 
 func (q *Queries) UpsertExternalContent(ctx context.Context, arg UpsertExternalContentParams) (*ExternalContent, error) {
@@ -532,6 +542,7 @@ func (q *Queries) UpsertExternalContent(ctx context.Context, arg UpsertExternalC
 		arg.Syncedat,
 		arg.Source,
 		arg.Url,
+		arg.Completeby,
 	)
 	var i ExternalContent
 	err := row.Scan(
@@ -546,6 +557,7 @@ func (q *Queries) UpsertExternalContent(ctx context.Context, arg UpsertExternalC
 		&i.UpdatedAt,
 		&i.Source,
 		&i.Url,
+		&i.CompleteBy,
 	)
 	return &i, err
 }

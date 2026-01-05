@@ -154,6 +154,8 @@ type ExternalContent struct {
 	// Content source identifier (e.g., ssf)
 	Source string  `json:"source"`
 	Url    *string `json:"url"`
+	// Deadline for completing the content (calculated from completion_mode during SSF sync)
+	CompleteBy pgtype.Timestamptz `json:"complete_by"`
 }
 
 // Stores content completion events from external systems
