@@ -7,15 +7,12 @@ const { $pwa } = useNuxtApp()
     <DesignPanel
       class="gradient-border relative shadow-large! mx-auto w-full max-w-xl"
     >
-      <div class="p-medium flex flex-col">
-        <p class="text-title text-text-default">
+      <div class="p-medium flex flex-col gap-medium">
+        <p class="text-title text-text-default text-center">
           {{ $t('pwa.updateAvailableTitle') }}
         </p>
-        <p class="text-label text-text-muted mb-medium mt-small">
-          {{ $t('pwa.updateAvailableDescription') }}
-        </p>
         <DesignButton
-          variant="secondary"
+          variant="primary"
           size="large"
           @click="$pwa?.updateServiceWorker(true)"
         >
