@@ -49,16 +49,34 @@ export default defineNuxtPlugin((nuxtApp) => {
               )
             },
             async refreshAuth() {
-              // Prevent multiple redirects
+              // Prevent multiple concurrent refresh attempts
               if (isRedirecting) return
-              isRedirecting = true
 
-              // Clear Wayfarer token
+              // Clear expired Wayfarer token
               wayfarerToken.value = null
 
-              // Redirect to Auth0 login via the middleware
-              // The middleware will handle the Auth0 login flow
               const auth0 = useAuth0()
+
+              // Try silent refresh first - get fresh Auth0 token and exchange it
+              try {
+                const auth0Token = await auth0.getAccessTokenSilently()
+                if (auth0Token) {
+                  const config = useRuntimeConfig()
+                  const response = await $fetch<{ token: string }>(
+                    `${config.public.tokenUrl}?token=${auth0Token}`,
+                    { method: 'GET' },
+                  )
+                  if (response?.token) {
+                    wayfarerToken.value = response.token
+                    return // Success - urql will retry the operation
+                  }
+                }
+              } catch {
+                // Silent refresh failed, fall through to login redirect
+              }
+
+              // Silent refresh failed - do full login redirect
+              isRedirecting = true
               await auth0.loginWithRedirect({
                 appState: {
                   targetUrl: window.location.pathname,
