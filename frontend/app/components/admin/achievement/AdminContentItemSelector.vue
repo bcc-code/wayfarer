@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { VueDraggable } from 'vue-draggable-plus'
 import { ExternalContentType } from '~/api/generated'
+import { fuzzyMatch } from '~/utils/fuzzySearch'
 
 interface ContentItem {
   id: string
@@ -44,7 +45,7 @@ const queryVariables = computed(() => ({
     ...(contentTypeFilter.value && { contentType: contentTypeFilter.value }),
     ...(sourceFilter.value && { source: sourceFilter.value }),
   },
-  first: 300,
+  first: 500,
 }))
 
 const { data, fetching } = useAdminExternalContentsQuery({
@@ -57,19 +58,37 @@ const searchResults = computed(() => {
   const selectedIds = new Set(
     props.modelValue.map((item) => item.externalContent.id),
   )
-  const query = debouncedSearch.value.toLowerCase()
+  const query = debouncedSearch.value.trim()
 
-  return data.value.externalContents.edges
+  // Filter and score items
+  const scoredItems = data.value.externalContents.edges
     .map((edge) => edge.node)
-    .filter((node) => {
-      // Exclude already selected items
-      if (selectedIds.has(node.id)) return false
-      // Filter by search query if present
-      if (query && node.title && !node.title.toLowerCase().includes(query)) {
-        return false
+    .filter((node) => !selectedIds.has(node.id))
+    .map((node) => {
+      if (!query) {
+        return { node, score: 0 }
       }
-      return true
+
+      // Try matching against title and id
+      const titleScore = node.title ? fuzzyMatch(query, node.title) : null
+      const idScore = fuzzyMatch(query, node.id)
+
+      // Use the best score
+      const bestScore = Math.max(titleScore ?? -1, idScore ?? -1)
+
+      return { node, score: bestScore }
     })
+    .filter((item) => !query || (item.score !== null && item.score >= 0))
+
+  // Sort by score (highest first), then by title
+  return scoredItems
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      const aTitle = a.node.title || a.node.id
+      const bTitle = b.node.title || b.node.id
+      return aTitle.localeCompare(bTitle)
+    })
+    .map((item) => item.node)
 })
 
 function addItem(externalContent: (typeof searchResults.value)[0]) {
@@ -157,7 +176,10 @@ function formatDate(dateString?: string | null): string {
         >
           <UIcon name="lucide:plus" class="text-primary size-4 shrink-0" />
           <div class="min-w-0 flex-1">
-            <div class="truncate text-sm font-medium">
+            <div
+              class="truncate text-sm font-medium"
+              :title="item.title || item.id"
+            >
               {{ item.title || item.id }}
             </div>
           </div>
