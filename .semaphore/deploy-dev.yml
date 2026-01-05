@@ -1,0 +1,68 @@
+version: v1.0
+name: Deploy to DEV
+agent:
+  machine:
+    type: e2-standard-2
+    os_image: ubuntu2204
+
+global_job_config:
+  secrets:
+    - name: gcp-credentials-dev
+    - name: aws-credentials
+  env_vars:
+    # TODO: Replace with actual DEV project ID
+    - name: GCP_PROJECT_ID
+      value: "YOUR_DEV_PROJECT_ID"
+    # TODO: Replace with actual DEV service name
+    - name: CLOUD_RUN_SERVICE
+      value: "YOUR_DEV_SERVICE_NAME"
+    - name: CLOUD_RUN_REGION
+      value: "europe-west3"
+    # TODO: Replace with actual DEV CloudFront distribution ID
+    - name: CLOUDFRONT_DISTRIBUTION_ID
+      value: "YOUR_DEV_CLOUDFRONT_ID"
+
+blocks:
+  - name: Deploy Backend to Cloud Run
+    task:
+      prologue:
+        commands:
+          - artifact pull workflow changes.env
+          - source changes.env
+      jobs:
+        - name: Deploy
+          commands:
+            - |
+              if [ "$BACKEND_CHANGED" != "true" ]; then
+                echo "Backend not changed, skipping deployment"
+                exit 0
+              fi
+            - |
+              echo "$GCP_SERVICE_ACCOUNT_KEY" > /tmp/gcp-key.json
+              gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+              gcloud config set project $GCP_PROJECT_ID
+            - |
+              gcloud run services update $CLOUD_RUN_SERVICE \
+                --platform=managed \
+                --image=ghcr.io/bcc-code/wayfarer:$COMMIT_SHA \
+                --region=$CLOUD_RUN_REGION \
+                --quiet
+
+  - name: Invalidate CloudFront DEV
+    task:
+      prologue:
+        commands:
+          - artifact pull workflow changes.env
+          - source changes.env
+      jobs:
+        - name: Invalidate Cache
+          commands:
+            - |
+              if [ "$FRONTEND_CHANGED" != "true" ]; then
+                echo "Frontend not changed, skipping invalidation"
+                exit 0
+              fi
+            - |
+              aws cloudfront create-invalidation \
+                --distribution-id $CLOUDFRONT_DISTRIBUTION_ID \
+                --paths "/*"

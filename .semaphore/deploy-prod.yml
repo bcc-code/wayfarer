@@ -1,0 +1,81 @@
+version: v1.0
+name: Deploy to PROD
+agent:
+  machine:
+    type: e2-standard-2
+    os_image: ubuntu2204
+
+global_job_config:
+  secrets:
+    - name: gcp-credentials-prod
+    - name: aws-credentials
+  env_vars:
+    # TODO: Replace with actual PROD project ID
+    - name: GCP_PROJECT_ID
+      value: "YOUR_PROD_PROJECT_ID"
+    # TODO: Replace with actual PROD service name
+    - name: CLOUD_RUN_SERVICE
+      value: "YOUR_PROD_SERVICE_NAME"
+    - name: CLOUD_RUN_REGION
+      value: "europe-west3"
+    # TODO: Replace with actual PROD CloudFront distribution ID
+    - name: CLOUDFRONT_DISTRIBUTION_ID
+      value: "YOUR_PROD_CLOUDFRONT_ID"
+    - name: S3_BUCKET
+      value: "wayfarer-frontend-prod"
+
+blocks:
+  - name: Deploy Frontend to S3
+    task:
+      prologue:
+        commands:
+          - artifact pull workflow frontend-build
+      jobs:
+        - name: Sync to S3
+          commands:
+            # Upload immutable assets with long cache
+            - |
+              aws s3 sync frontend-build/ s3://$S3_BUCKET/ \
+                --delete \
+                --cache-control "public, max-age=31536000, immutable" \
+                --exclude "*.html" \
+                --exclude "sw.js" \
+                --exclude "manifest.webmanifest"
+            # Upload HTML and service worker with no-cache
+            - |
+              aws s3 sync frontend-build/ s3://$S3_BUCKET/ \
+                --cache-control "public, max-age=0, must-revalidate" \
+                --include "*.html" \
+                --include "sw.js" \
+                --include "manifest.webmanifest"
+
+  - name: Deploy Backend to Cloud Run
+    task:
+      prologue:
+        commands:
+          - artifact pull workflow changes.env
+          - source changes.env
+      jobs:
+        - name: Deploy
+          commands:
+            - |
+              echo "$GCP_SERVICE_ACCOUNT_KEY" > /tmp/gcp-key.json
+              gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+              gcloud config set project $GCP_PROJECT_ID
+            - |
+              gcloud run services update $CLOUD_RUN_SERVICE \
+                --platform=managed \
+                --image=ghcr.io/bcc-code/wayfarer:$COMMIT_SHA \
+                --region=$CLOUD_RUN_REGION \
+                --quiet
+
+  - name: Invalidate CloudFront PROD
+    dependencies: ["Deploy Frontend to S3"]
+    task:
+      jobs:
+        - name: Invalidate Cache
+          commands:
+            - |
+              aws cloudfront create-invalidation \
+                --distribution-id $CLOUDFRONT_DISTRIBUTION_ID \
+                --paths "/*"
