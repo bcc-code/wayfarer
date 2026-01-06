@@ -240,29 +240,6 @@ func buildLeaderboardConnection(
 			Tags:        meTags,
 			Image:       meEntry.Image,
 		}
-	} else if entityType == model.LeaderboardEntityTypePersons {
-		// For person leaderboards, always return a "me" entry even if not ranked
-		// Fetch user info for the default entry
-		userThunk := ldrs.UserByIDLoader.Load(ctx, currentUserID)
-		user, err := userThunk()
-		if err != nil {
-			return nil, fmt.Errorf("failed to load user for me entry: %w", err)
-		}
-		if user != nil {
-			var description string
-			if user.Church != nil {
-				description = user.Church.Name
-			}
-			me = &model.LeaderboardEntry{
-				ID:          currentUserID,
-				Name:        user.Name,
-				Description: description,
-				Score:       0,
-				Rank:        nil,
-				Tags:        []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe},
-				Image:       user.Image,
-			}
-		}
 	}
 
 	return &model.LeaderboardConnection{
