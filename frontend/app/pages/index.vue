@@ -76,6 +76,13 @@ watch(isWindowFocused, (focused) => {
     refresh()
   }
 })
+
+// Hidden Treasures link based on locale
+const { locale } = useI18n()
+const hiddenTreasuresLink = computed(() => {
+  const langCode = getHiddenTreasureLocale(locale.value)
+  return `https://app.hiddentreasures.org/${langCode}/podcasts/hidden-treasures-podcast`
+})
 </script>
 
 <template>
@@ -105,6 +112,14 @@ watch(isWindowFocused, (focused) => {
             :consent
             class="bg-background-indent!"
           />
+        </div>
+        <div v-else class="px-default pb-default">
+          <NuxtLink :to="hiddenTreasuresLink" target="_blank">
+            <DesignButton size="large" class="w-full">
+              {{ $t('goToHiddenTreasures') }}
+              <IconArrowRight class="size-5" />
+            </DesignButton>
+          </NuxtLink>
         </div>
       </ProfileProjectCard>
       <UserFeedback />

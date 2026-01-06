@@ -122,5 +122,6 @@
   "pwa": {
     "updateAvailableTitle": "En oppdatering er tilgjengelig",
     "updateAvailableButton": "Oppdater nå"
-  }
+  },
+  "goToHiddenTreasures": "Gå til bibelstudie"
 }
