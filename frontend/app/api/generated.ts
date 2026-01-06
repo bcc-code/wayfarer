@@ -471,6 +471,16 @@ export type CreateUserInput = {
   name: Scalars['String']['input'];
 };
 
+export type CreateWebhookInput = {
+  eventType: WebhookEventType;
+  includeEventData?: InputMaybe<Scalars['Boolean']['input']>;
+  includeUserData?: InputMaybe<Scalars['Boolean']['input']>;
+  name: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
+  secret?: InputMaybe<Scalars['String']['input']>;
+  url: Scalars['String']['input'];
+};
+
 export type DateRange = {
   __typename?: 'DateRange';
   end: Scalars['Date']['output'];
@@ -791,6 +801,7 @@ export type Mutation = {
   createStreakAchievement: StreakAchievement;
   createSuperTeam: SuperTeam;
   createTeam: Team;
+  createWebhook: Webhook;
   deleteAchievement: Scalars['Boolean']['output'];
   deleteChallenge: Scalars['Boolean']['output'];
   deleteEvent: Scalars['Boolean']['output'];
@@ -802,6 +813,7 @@ export type Mutation = {
   deleteStreak: Scalars['Boolean']['output'];
   deleteSuperTeam: Scalars['Boolean']['output'];
   deleteTeam: Scalars['Boolean']['output'];
+  deleteWebhook: Scalars['Boolean']['output'];
   enrollInChallenge: Challenge;
   enrollUserInChallenge: Challenge;
   finalizeQuiz: QuizSubmission;
@@ -833,6 +845,7 @@ export type Mutation = {
   startQuiz: QuizSubmission;
   submitFeedback: UserFeedback;
   submitQuizAnswer: QuizResponse;
+  testWebhook: WebhookLog;
   uncompleteChallenge: Scalars['Boolean']['output'];
   unenrollFromChallenge: Scalars['Boolean']['output'];
   unenrollUserFromChallenge: Scalars['Boolean']['output'];
@@ -852,6 +865,7 @@ export type Mutation = {
   updateStreakAchievement: StreakAchievement;
   updateSuperTeam: SuperTeam;
   updateTeam: Team;
+  updateWebhook: Webhook;
 };
 
 
@@ -1059,6 +1073,11 @@ export type MutationCreateTeamArgs = {
 };
 
 
+export type MutationCreateWebhookArgs = {
+  input: CreateWebhookInput;
+};
+
+
 export type MutationDeleteAchievementArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1110,6 +1129,11 @@ export type MutationDeleteSuperTeamArgs = {
 
 
 export type MutationDeleteTeamArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteWebhookArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -1289,6 +1313,11 @@ export type MutationSubmitQuizAnswerArgs = {
 };
 
 
+export type MutationTestWebhookArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationUncompleteChallengeArgs = {
   challengeId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
@@ -1402,6 +1431,12 @@ export type MutationUpdateSuperTeamArgs = {
 export type MutationUpdateTeamArgs = {
   id: Scalars['ID']['input'];
   input: UpdateTeamInput;
+};
+
+
+export type MutationUpdateWebhookArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateWebhookInput;
 };
 
 export enum NotificationType {
@@ -1587,6 +1622,8 @@ export type Query = {
   users: UserConnection;
   usersWithRole: Array<User>;
   vapidPublicKey: Scalars['String']['output'];
+  webhook?: Maybe<Webhook>;
+  webhooks: Array<Webhook>;
 };
 
 
@@ -1808,6 +1845,16 @@ export type QueryUsersWithRoleArgs = {
   role: RoleType;
   scopeId?: InputMaybe<Scalars['ID']['input']>;
   scopeType?: InputMaybe<ScopeType>;
+};
+
+
+export type QueryWebhookArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryWebhooksArgs = {
+  projectId: Scalars['ID']['input'];
 };
 
 export type Quiz = {
@@ -2382,6 +2429,15 @@ export type UpdateTeamInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateWebhookInput = {
+  active?: InputMaybe<Scalars['Boolean']['input']>;
+  includeEventData?: InputMaybe<Scalars['Boolean']['input']>;
+  includeUserData?: InputMaybe<Scalars['Boolean']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  secret?: InputMaybe<Scalars['String']['input']>;
+  url?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type User = {
   __typename?: 'User';
   age?: Maybe<Scalars['Int']['output']>;
@@ -2469,6 +2525,44 @@ export type UserRole = {
   role: RoleType;
   scope?: Maybe<RoleScope>;
   user: User;
+};
+
+export type Webhook = {
+  __typename?: 'Webhook';
+  active: Scalars['Boolean']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  eventType: WebhookEventType;
+  hasSecret: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  includeEventData: Scalars['Boolean']['output'];
+  includeUserData: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  project: Project;
+  recentLogs: Array<WebhookLog>;
+  updatedAt: Scalars['DateTime']['output'];
+  url: Scalars['String']['output'];
+};
+
+
+export type WebhookRecentLogsArgs = {
+  first?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export enum WebhookEventType {
+  ExternalContentEvent = 'EXTERNAL_CONTENT_EVENT',
+  PointsAwarded = 'POINTS_AWARDED'
+}
+
+export type WebhookLog = {
+  __typename?: 'WebhookLog';
+  createdAt: Scalars['DateTime']['output'];
+  durationMs: Scalars['Int']['output'];
+  errorMessage?: Maybe<Scalars['String']['output']>;
+  eventType: WebhookEventType;
+  id: Scalars['ID']['output'];
+  requestPayload: Scalars['JSON']['output'];
+  responseBody?: Maybe<Scalars['String']['output']>;
+  responseStatusCode?: Maybe<Scalars['Int']['output']>;
 };
 
 export type ProjectRulesQueryVariables = Exact<{ [key: string]: never; }>;

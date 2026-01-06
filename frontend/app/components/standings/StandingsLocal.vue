@@ -99,14 +99,12 @@ const totalPersons = computed(() => {
           entityType === LeaderboardEntityType.Persons
         "
         :leaderboard="personLeaderboard"
-        hide-medals
       />
       <LeaderboardList
         v-if="
           unitLeaderboard?.length && entityType === LeaderboardEntityType.Teams
         "
         :leaderboard="unitLeaderboard"
-        hide-medals
       />
     </template>
     <EmptyState v-else :title="$t('emptyStates.standings')" />
