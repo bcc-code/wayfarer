@@ -117,7 +117,7 @@
     "thankYouDescription": "Palautteesi käytetään palvelun kehittämiseen.",
     "close": "Eipä kestä",
     "canContactMe": "Kyllä, hyväksyn, että voitte ottaa minuun yhteyttä palautteeseeni liittyen",
-    "regards": "Terveisin<b> </b>{name}"
+    "regards": "Terveisin {name}"
   },
   "pwa": {
     "updateAvailableTitle": "Päivitys on saatavilla",
