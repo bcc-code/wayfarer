@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { UAvatar } from '#components'
 import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({
@@ -82,16 +81,9 @@ const columns: TableColumn<
       </div>
       <UTable :data="users" :loading="fetching" :columns>
         <template #name-cell="{ row }">
-          <div class="flex items-center gap-3">
-            <UAvatar
-              :src="row.original.image ?? ''"
-              :text="getInitials(row.original.name)"
-              size="sm"
-            />
-            <div class="flex flex-col">
-              <span>{{ row.original.name }}</span>
-              <span class="text-dimmed text-xs">{{ row.original.email }}</span>
-            </div>
+          <div class="flex flex-col">
+            <span>{{ row.original.name }}</span>
+            <span class="text-dimmed text-xs">{{ row.original.email }}</span>
           </div>
         </template>
         <template #roles-cell="{ row }">

@@ -277,16 +277,9 @@ function formatFeedbackDate(date: string) {
       <ErrorState v-else-if="error" :error />
       <div v-else-if="data" class="space-y-6">
         <!-- User Header -->
-        <div class="flex items-center gap-6">
-          <UAvatar
-            :src="data.user.image ?? ''"
-            :text="getInitials(data.user.name)"
-            size="2xl"
-          />
-          <div>
-            <h1 class="text-3xl font-bold">{{ data.user.name }}</h1>
-            <p class="text-dimmed text-lg">{{ data.user.email }}</p>
-          </div>
+        <div>
+          <h1 class="text-3xl font-bold">{{ data.user.name }}</h1>
+          <p class="text-dimmed text-lg">{{ data.user.email }}</p>
         </div>
 
         <!-- User Info -->

@@ -28,7 +28,6 @@ const items = computed<DropdownMenuItem[][]>(() => [
     {
       type: 'label',
       label: me.value?.name,
-      avatar: { src: me.value?.image ?? '', alt: me.value?.name },
     },
   ],
   [
@@ -70,7 +69,6 @@ const items = computed<DropdownMenuItem[][]>(() => [
   >
     <UButton
       v-bind="{
-        avatar: { src: me?.image ?? '', alt: me?.name },
         label: collapsed ? undefined : me?.name,
         trailingIcon: collapsed ? undefined : 'lucide:chevrons-up-down',
       }"
