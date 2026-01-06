@@ -1,1 +1,127 @@
-{}
+{
+  "error": {
+    "title": "Hups! Jotain meni pieleen"
+  },
+  "emptyStates": {
+    "standings": "Ei vielä top-listaa",
+    "unit": "Yksiköllesi ei ole vielä top-listaa",
+    "challenges": "Ei vielä haasteita",
+    "pointHistory": "Ei vielä pisteitä"
+  },
+  "auth": {
+    "loginButton": "Kirjaudu sisään",
+    "logoutButton": "Kirjaudu ulos"
+  },
+  "quiz": {
+    "wrongAnswer": "Väärä vastaus",
+    "correctAnswer": "Oikea vastaus",
+    "yourAnswer": "Vastauksesi",
+    "lockAnswer": "Lukitse vastaus",
+    "questionNumber": "{current} / {total}",
+    "continue": "Jatka",
+    "nextQuestion": "Seuraava kysymys",
+    "done": "Valmis",
+    "result": {
+      "receivedNoPoints": "Et saanut yhtään pistettä.",
+      "receivedPoints": "Sait {points} pistettä.",
+      "betterLuckNextTime": "Parempaa onnea ensi kerralla!",
+      "wellDone": "Hyvin tehty!",
+      "perfect": "Täydellistä!"
+    }
+  },
+  "pages": {
+    "standings": "Top-listat",
+    "challenges": "Haasteet",
+    "settings": "Asetukset",
+    "pointHistory": "Pistehistoria",
+    "rules": "Säännöt",
+    "consents": "Suostumukseni",
+    "addToHomeScreen": "Lisää sovellus aloitusnäytölle"
+  },
+  "navigation": {
+    "standings": "Top-listat",
+    "profile": "Oma sivu",
+    "challenges": "Haasteet"
+  },
+  "emptyState": "Täällä ei ole mitään nähtävää",
+  "settings": {
+    "language": "Sovelluksen kieli",
+    "colorMode": "Väritila",
+    "colorModes": {
+      "system": "Järjestelmä",
+      "light": "Vaalea",
+      "dark": "Tumma"
+    },
+    "consents": "Suostumukseni",
+    "notifications": "Ilmoitukset",
+    "notificationsBlocked": "Ilmoitukset on estetty selaimesi asetuksissa",
+    "notificationsOnlyAvailableWhenInstalled": "Ilmoitukset ovat käytettävissä vain, jos lisäät sovelluksen aloitusnäytölle",
+    "addToHomeScreen": "Lisää sovellus aloitusnäytölle",
+    "privacyPolicy": "Tietosuojakäytäntö"
+  },
+  "standings": {
+    "global": "Maailmanlaajuisesti",
+    "unit": "Oma yksikköni",
+    "local": "Paikallisesti",
+    "you": "Sinä",
+    "rules": "Säännöt",
+    "units": "Yksiköt",
+    "top": "Top {amount}",
+    "u18": "U18",
+    "o18": "O18"
+  },
+  "pointHistory": {
+    "pointHistoryButton": "Pistehistoria",
+    "explanation": "Täällä voit nähdä, mistä olet saanut – tai menettänyt – pisteitä."
+  },
+  "unit": {
+    "editUnit": "Muokkaa yksikköä",
+    "unitLeader": "Yksikön johtaja",
+    "saveChanges": "Tallenna muutokset",
+    "unitName": "Yksikön nimi",
+    "noUnitLeader": "Ei yksikön johtajaa",
+    "selectUnitLeader": "Valitse yksikön johtaja"
+  },
+  "place": "sijoitus",
+  "points": "pisteet",
+  "givesYouXPoints": "Antaa sinulle {points} pistettä",
+  "consent": {
+    "accepted": "Hyväksytty",
+    "rejected": "Hylätty",
+    "acceptButton": "Hyväksyn",
+    "rejectButton": "Hylkää ehdot",
+    "bannerTitle": "Sinulla on suostumuksia, joista sinun on päätettävä",
+    "bannerButton": "Siirry suostumusasetuksiin",
+    "readButton": "Lue käyttöehdot",
+    "change": "Muuta",
+    "goToConsent": "Siirry suostumukseen",
+    "continue": "Jatka",
+    "changeDescription": "Jos haluat muuttaa suostumustasi, ota meihin yhteyttä osoitteessa {email}",
+    "changeConsent": "Muuta suostumusta"
+  },
+  "achievement": {
+    "title": "Saavutus",
+    "unlocked": "Saavutettu!"
+  },
+  "feedback": {
+    "title": "Anna meille palautetta",
+    "cta": "Anna meille palautetta",
+    "description": "Otamme mielellämme vastaan palautetta, jotta voimme parantaa palveluitamme entisestään.",
+    "send": "Lähetä palautetta",
+    "label": "Oliko jotain, mikä oli mielestäsi hyvää, tai jotain, mitä voisi parantaa?",
+    "placeholder": "Kirjoita palautteesi tähän...",
+    "success": "Kiitos palautteestasi",
+    "validationError": "Et voi lähettää tyhjää palautelomaketta",
+    "lengthError": "Palaute ei saa olla pidempi kuin {max} merkkiä",
+    "thankYou": "Kiitos avustasi!",
+    "thankYouDescription": "Palautteesi käytetään palvelun kehittämiseen.",
+    "close": "Eipä kestä",
+    "canContactMe": "Kyllä, hyväksyn, että voitte ottaa minuun yhteyttä palautteeseeni liittyen",
+    "regards": "Terveisin {name}"
+  },
+  "pwa": {
+    "updateAvailableTitle": "Päivitys on saatavilla",
+    "updateAvailableButton": "Päivitä nyt"
+  },
+  "goToHiddenTreasures": "Mene raamattutunnille"
+}
