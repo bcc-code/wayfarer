@@ -16,40 +16,40 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // Check if we already have user data
   const me = useState<any>('me', () => null)
 
-  // If we have user data, check roles
-  if (me.value) {
-    const hasAdminRole = me.value?.roles.some((role: any) =>
-      [
-        RoleType.Admin,
-        RoleType.Superadmin,
-        RoleType.ProjectAdmin,
-        RoleType.ChurchAdmin,
-      ].includes(role.role),
-    )
-
-    if (!hasAdminRole) {
-      return createError({
-        statusCode: 403,
-        statusMessage: 'Forbidden',
-        message: 'You do not have permission to access this page',
-      })
-    }
-
-    // Check if user has full admin access or is church-admin-only
-    const hasFullAdminRole = me.value?.roles.some((role: any) =>
-      [RoleType.Admin, RoleType.Superadmin].includes(role.role),
-    )
-
-    const isChurchAdminOnly =
-      !hasFullAdminRole &&
-      me.value?.roles.some((role: any) => role.role === RoleType.ChurchAdmin)
-
-    // Restrict church-admin-only users to /admin/my-church routes
-    if (isChurchAdminOnly && !to.path.startsWith('/admin/my-church')) {
-      return navigateTo('/admin/my-church')
-    }
+  // If user data not loaded yet, let page render - layout will handle auth check after loading
+  if (!me.value) {
+    return
   }
 
-  // If we don't have user data yet, let it through and the page will handle loading
-  // The useAuth() composable will be called in the layout/page and will populate the data
+  // Check roles
+  const hasAdminRole = me.value?.roles.some((role: any) =>
+    [
+      RoleType.Admin,
+      RoleType.Superadmin,
+      RoleType.ProjectAdmin,
+      RoleType.ChurchAdmin,
+    ].includes(role.role),
+  )
+
+  if (!hasAdminRole) {
+    return createError({
+      statusCode: 403,
+      statusMessage: 'Forbidden',
+      message: 'You do not have permission to access this page',
+    })
+  }
+
+  // Check if user has full admin access or is church-admin-only
+  const hasFullAdminRole = me.value?.roles.some((role: any) =>
+    [RoleType.Admin, RoleType.Superadmin].includes(role.role),
+  )
+
+  const isChurchAdminOnly =
+    !hasFullAdminRole &&
+    me.value?.roles.some((role: any) => role.role === RoleType.ChurchAdmin)
+
+  // Restrict church-admin-only users to /admin/my-church routes
+  if (isChurchAdminOnly && !to.path.startsWith('/admin/my-church')) {
+    return navigateTo('/admin/my-church')
+  }
 })

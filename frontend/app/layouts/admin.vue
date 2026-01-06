@@ -10,7 +10,9 @@ useHead({
   title: 'Interact Admin',
 })
 
+const { me, isLoading } = useAuth()
 const {
+  canAccessAdmin,
   canAccessProjects,
   canAccessUsers,
   canAccessTeams,
@@ -21,7 +23,44 @@ const {
 
 const route = useRoute()
 
+// Check if user is church-admin-only
+const isChurchAdminOnly = computed(() => {
+  if (!me.value) return false
+  const hasFullAdminRole = me.value.roles.some((role: { role: RoleType }) =>
+    [RoleType.Admin, RoleType.Superadmin].includes(role.role),
+  )
+  return (
+    !hasFullAdminRole &&
+    me.value.roles.some(
+      (role: { role: RoleType }) => role.role === RoleType.ChurchAdmin,
+    )
+  )
+})
+
+// Redirect unauthorized users after auth loads
+watch(
+  [isLoading, me, () => route.path],
+  ([loading, user, path]) => {
+    if (loading) return
+    if (!user || !canAccessAdmin.value) {
+      navigateTo('/')
+      return
+    }
+
+    // Restrict church-admin-only users to /admin/my-church
+    if (isChurchAdminOnly.value && !path.startsWith('/admin/my-church')) {
+      navigateTo('/admin/my-church')
+    }
+  },
+  { immediate: true },
+)
+
 const links = computed<NavigationMenuItem[]>(() => {
+  // Church-admin-only users use a different layout, don't show main admin nav
+  if (isChurchAdminOnly.value) {
+    return []
+  }
+
   const items: NavigationMenuItem[] = [
     {
       label: 'Home',
