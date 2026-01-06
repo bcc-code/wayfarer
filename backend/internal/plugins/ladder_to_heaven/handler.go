@@ -186,7 +186,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	// Create score journal entry
 	journalID := ulid.NewScoreJournalID()
 
-	// Look up the content title in the user's language
+	// Look up the content title in the user's language, fallback to nb
 	var reason *string
 	user, err := h.db.Queries.GetUserByID(ctx, req.User.ID)
 	if err != nil {
@@ -197,10 +197,18 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 			Externalcontentid: content.ID,
 			Languagecode:      user.Language,
 		})
-		if err != nil {
-			slog.Debug("ladder_to_heaven: no translation found for user language",
-				"content_id", content.ID, "language", user.Language, "error", err)
-		} else if translation.Title != nil {
+		if err == nil && translation.Title != nil {
+			reason = translation.Title
+		}
+	}
+
+	// Fallback to Norwegian Bokmal (nb) if no translation found
+	if reason == nil {
+		translation, err := h.db.Queries.GetExternalContentTranslation(ctx, sqlc.GetExternalContentTranslationParams{
+			Externalcontentid: content.ID,
+			Languagecode:      "nb",
+		})
+		if err == nil && translation.Title != nil {
 			reason = translation.Title
 		}
 	}
