@@ -169,17 +169,9 @@ func fetchConsentDataForUsers(ctx context.Context, db *database.DB, c *cache.Cac
 	return latestConsents, userConsentsMap
 }
 
-// calculateAge returns the age in years based on a birthdate
+// calculateAge returns the age in years based on a birthdate (year difference)
 func calculateAge(birthdate time.Time) int {
-	now := time.Now()
-	age := now.Year() - birthdate.Year()
-	// Adjust if birthday hasn't occurred yet this year
-	// Compare month and day directly to handle leap years correctly
-	if now.Month() < birthdate.Month() ||
-		(now.Month() == birthdate.Month() && now.Day() < birthdate.Day()) {
-		age--
-	}
-	return age
+	return time.Now().Year() - birthdate.Year()
 }
 
 // buildConsentStatus builds the ConsentStatus for a user
