@@ -34,6 +34,20 @@ export default defineNuxtRouteMiddleware(async (to) => {
         message: 'You do not have permission to access this page',
       })
     }
+
+    // Check if user has full admin access or is church-admin-only
+    const hasFullAdminRole = me.value?.roles.some((role: any) =>
+      [RoleType.Admin, RoleType.Superadmin].includes(role.role),
+    )
+
+    const isChurchAdminOnly =
+      !hasFullAdminRole &&
+      me.value?.roles.some((role: any) => role.role === RoleType.ChurchAdmin)
+
+    // Restrict church-admin-only users to /admin/my-church routes
+    if (isChurchAdminOnly && !to.path.startsWith('/admin/my-church')) {
+      return navigateTo('/admin/my-church')
+    }
   }
 
   // If we don't have user data yet, let it through and the page will handle loading
