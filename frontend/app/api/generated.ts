@@ -3164,11 +3164,6 @@ export type VapidPublicKeyQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type VapidPublicKeyQuery = { __typename?: 'Query', vapidPublicKey: string };
 
-export type AdminSidebarQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type AdminSidebarQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, endDate: any, startDate: any } }> } };
-
 export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -4518,24 +4513,6 @@ export const VapidPublicKeyDocument = gql`
 
 export function useVapidPublicKeyQuery(options?: Omit<Urql.UseQueryArgs<never, VapidPublicKeyQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<VapidPublicKeyQuery, VapidPublicKeyQueryVariables | undefined>({ query: VapidPublicKeyDocument, variables: undefined, ...options });
-};
-export const AdminSidebarDocument = gql`
-    query AdminSidebar {
-  projects {
-    edges {
-      node {
-        id
-        name
-        endDate
-        startDate
-      }
-    }
-  }
-}
-    `;
-
-export function useAdminSidebarQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSidebarQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AdminSidebarQuery, AdminSidebarQueryVariables | undefined>({ query: AdminSidebarDocument, variables: undefined, ...options });
 };
 export const CurrentProjectDocument = gql`
     query CurrentProject {

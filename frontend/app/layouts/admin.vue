@@ -10,26 +10,6 @@ useHead({
   title: 'Interact Admin',
 })
 
-gql(`
-  query AdminSidebar {
-    projects {
-      edges {
-        node {
-          id
-          name
-          endDate
-          startDate
-        }
-      }
-    }
-  }
-`)
-
-const { isAuthReady } = useAuthReady()
-const { data } = useAdminSidebarQuery({
-  pause: computed(() => !isAuthReady.value),
-})
-
 const {
   canAccessProjects,
   canAccessUsers,
@@ -38,16 +18,6 @@ const {
   canAccessScores,
   canAccessFeedback,
 } = usePermissions()
-
-const projectsLinks = computed(() => {
-  return data.value?.projects.edges.map(({ node: project }) => ({
-    label: project.name,
-    badge: isWithinRange(new Date(), project.startDate, project.endDate)
-      ? 'Current'
-      : undefined,
-    to: `/admin/projects/${project.id}`,
-  }))
-})
 
 const route = useRoute()
 
@@ -122,11 +92,6 @@ const groups = computed(() => [
     id: 'links',
     label: 'Go to',
     items: links.value.flat(),
-  },
-  {
-    id: 'projects',
-    label: 'Projects',
-    items: projectsLinks.value,
   },
 ])
 </script>
