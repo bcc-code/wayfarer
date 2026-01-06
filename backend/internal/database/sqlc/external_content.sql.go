@@ -11,6 +11,83 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const BulkUpsertExternalContent = `-- name: BulkUpsertExternalContent :exec
+
+INSERT INTO external_content (id, plan_id, task_id, content_id, content_type, published_at, synced_at, source, url, complete_by)
+SELECT
+    UNNEST($1::text[]),
+    UNNEST($2::text[]),
+    UNNEST($3::text[]),
+    UNNEST($4::text[]),
+    UNNEST($5::text[]),
+    UNNEST($6::timestamptz[]),
+    UNNEST($7::timestamptz[]),
+    UNNEST($8::text[]),
+    UNNEST($9::text[]),
+    UNNEST($10::timestamptz[])
+ON CONFLICT (plan_id, task_id) DO UPDATE SET
+    content_id = EXCLUDED.content_id,
+    content_type = EXCLUDED.content_type,
+    published_at = EXCLUDED.published_at,
+    synced_at = EXCLUDED.synced_at,
+    source = EXCLUDED.source,
+    url = EXCLUDED.url,
+    complete_by = EXCLUDED.complete_by,
+    updated_at = now()
+`
+
+type BulkUpsertExternalContentParams struct {
+	Ids          []string             `json:"ids"`
+	Planids      []string             `json:"planids"`
+	Taskids      []string             `json:"taskids"`
+	Contentids   []string             `json:"contentids"`
+	Contenttypes []string             `json:"contenttypes"`
+	Publishedats []pgtype.Timestamptz `json:"publishedats"`
+	Syncedats    []pgtype.Timestamptz `json:"syncedats"`
+	Sources      []string             `json:"sources"`
+	Urls         []string             `json:"urls"`
+	Completebys  []pgtype.Timestamptz `json:"completebys"`
+}
+
+// ==================== Bulk Upsert Queries ====================
+func (q *Queries) BulkUpsertExternalContent(ctx context.Context, arg BulkUpsertExternalContentParams) error {
+	_, err := q.db.Exec(ctx, BulkUpsertExternalContent,
+		arg.Ids,
+		arg.Planids,
+		arg.Taskids,
+		arg.Contentids,
+		arg.Contenttypes,
+		arg.Publishedats,
+		arg.Syncedats,
+		arg.Sources,
+		arg.Urls,
+		arg.Completebys,
+	)
+	return err
+}
+
+const BulkUpsertExternalContentTranslations = `-- name: BulkUpsertExternalContentTranslations :exec
+INSERT INTO external_content_translations (external_content_id, language_code, title)
+SELECT
+    UNNEST($1::text[]),
+    UNNEST($2::text[]),
+    UNNEST($3::text[])
+ON CONFLICT (external_content_id, language_code) DO UPDATE SET
+    title = EXCLUDED.title,
+    updated_at = now()
+`
+
+type BulkUpsertExternalContentTranslationsParams struct {
+	Externalcontentids []string `json:"externalcontentids"`
+	Languagecodes      []string `json:"languagecodes"`
+	Titles             []string `json:"titles"`
+}
+
+func (q *Queries) BulkUpsertExternalContentTranslations(ctx context.Context, arg BulkUpsertExternalContentTranslationsParams) error {
+	_, err := q.db.Exec(ctx, BulkUpsertExternalContentTranslations, arg.Externalcontentids, arg.Languagecodes, arg.Titles)
+	return err
+}
+
 const CountExternalContentAdmin = `-- name: CountExternalContentAdmin :one
 SELECT COUNT(*) FROM external_content
 WHERE

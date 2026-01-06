@@ -88,7 +88,7 @@ func (h *TranslationsHandler) HandleExport(c *gin.Context) {
 	}
 
 	// Validate collection
-	collection := translations.TranslatableCollection{collectionName}
+	collection := translations.TranslatableCollection{Value: collectionName}
 	if !translations.TranslatableCollections.Contains(collection) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid collection"})
 		return

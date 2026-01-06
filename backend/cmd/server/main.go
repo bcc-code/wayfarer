@@ -166,7 +166,7 @@ func main() {
 			"debug_mode", cfg.SSF.DebugMode,
 		)
 
-		ssfSyncService = ssf.NewSyncService(ssfClient, db.Queries, lgr)
+		ssfSyncService = ssf.NewSyncService(ssfClient, db.Queries, db.Pool, lgr)
 	} else {
 		slog.Warn("SSF API client not initialized - missing API key")
 	}
