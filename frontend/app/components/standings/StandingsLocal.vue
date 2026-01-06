@@ -5,6 +5,7 @@ const { me } = useAuth()
 const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useStandingsLocalPageQuery({
   variables: computed(() => ({
+    first: 20,
     filter: {
       churchId: me.value?.church.id,
       ageRange: { min: 13, max: 37 },

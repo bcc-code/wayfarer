@@ -3148,6 +3148,7 @@ export type StandingsGlobalPageQuery = { __typename?: 'Query', myCurrentProject:
 
 export type StandingsLocalPageQueryVariables = Exact<{
   filter?: InputMaybe<LeaderboardFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
@@ -4449,7 +4450,7 @@ export function useStandingsGlobalPageQuery(options?: Omit<Urql.UseQueryArgs<nev
   return Urql.useQuery<StandingsGlobalPageQuery, StandingsGlobalPageQueryVariables | undefined>({ query: StandingsGlobalPageDocument, variables: undefined, ...options });
 };
 export const StandingsLocalPageDocument = gql`
-    query StandingsLocalPage($filter: LeaderboardFilter) {
+    query StandingsLocalPage($filter: LeaderboardFilter, $first: Int) {
   me {
     church {
       id
@@ -4458,7 +4459,11 @@ export const StandingsLocalPageDocument = gql`
   }
   myCurrentProject {
     id
-    personLeaderboard: leaderboard(entityType: PERSONS, filter: $filter) {
+    personLeaderboard: leaderboard(
+      entityType: PERSONS
+      filter: $filter
+      first: $first
+    ) {
       totalCount
       edges {
         node {
@@ -4469,7 +4474,7 @@ export const StandingsLocalPageDocument = gql`
         ...LeaderboardEntryFields
       }
     }
-    unitLeaderboard: leaderboard(entityType: TEAMS, filter: $filter) {
+    unitLeaderboard: leaderboard(entityType: TEAMS, filter: $filter, first: $first) {
       totalCount
       edges {
         node {
