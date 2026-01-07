@@ -1,0 +1,30 @@
+type: http_request
+model: http_request
+id: rq_FirebaseToken
+createdAt: 2026-01-07T12:00:00
+updatedAt: 2026-01-07T14:44:48.543131
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_qhH6J7tuNv
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query {
+      firebaseToken {
+        token
+        expiresIn
+      }
+    }
+  variables: ''
+bodyType: graphql
+description: Get Firebase custom token for authenticated user
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: fbt_header_1
+method: POST
+name: Firebase Token
+sortPriority: 1000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

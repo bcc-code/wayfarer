@@ -26,6 +26,7 @@ type Config struct {
 	VAPID    VAPIDConfig
 	Phrase   PhraseConfig
 	Plugin   PluginConfig
+	Firebase FirebaseConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -137,6 +138,12 @@ type PluginConfig struct {
 	LadderToHeavenSecretKey     string // Secret key for webhook signature verification
 }
 
+// FirebaseConfig holds Firebase Admin SDK configuration
+type FirebaseConfig struct {
+	ServiceAccountJSON string // Path to service account JSON file or base64-encoded JSON content
+	DatabaseName       string // Firestore database name (default: "(default)")
+}
+
 // Load reads all environment variables and returns a Config struct
 // This should be called once at application startup
 func Load() (*Config, error) {
@@ -226,6 +233,10 @@ func Load() (*Config, error) {
 		Plugin: PluginConfig{
 			LadderToHeavenAchievementID: getEnv("PLUGIN_LADDER_TO_HEAVEN_ACHIEVEMENT_ID", ""),
 			LadderToHeavenSecretKey:     getEnv("PLUGIN_LADDER_TO_HEAVEN_SECRET_KEY", ""),
+		},
+		Firebase: FirebaseConfig{
+			ServiceAccountJSON: getEnv("FIREBASE_SERVICE_ACCOUNT", ""),
+			DatabaseName:       getEnv("FIREBASE_DATABASE_NAME", "(default)"),
 		},
 	}
 
