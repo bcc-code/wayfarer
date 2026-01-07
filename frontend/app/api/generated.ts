@@ -3219,7 +3219,7 @@ export type MyChurchUnitsPageQueryVariables = Exact<{
 }>;
 
 
-export type MyChurchUnitsPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, name: string, email: string, teams: Array<{ __typename?: 'Team', id: string, name: string }> } }> } };
+export type MyChurchUnitsPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, name: string, age?: number | null, teams: Array<{ __typename?: 'Team', id: string, name: string }> } }> }, myCurrentProject: { __typename?: 'Project', id: string, name: string, teams: Array<{ __typename?: 'Team', id: string, name: string, members: Array<{ __typename?: 'TeamMember', id: string, name: string, user: { __typename?: 'User', id: string, age?: number | null } }> }> } };
 
 export type AdminProjectAchievementPageQueryVariables = Exact<{
   achievementId: Scalars['ID']['input'];
@@ -4712,15 +4712,31 @@ export function useAdminHomePageQuery(options?: Omit<Urql.UseQueryArgs<never, Ad
 };
 export const MyChurchUnitsPageDocument = gql`
     query MyChurchUnitsPage($churchId: ID!) {
-  users(filter: {churchId: $churchId}, first: 100) {
+  users(filter: {churchId: $churchId}, first: 500) {
     edges {
       node {
         id
         name
-        email
+        age
         teams {
           id
           name
+        }
+      }
+    }
+  }
+  myCurrentProject {
+    id
+    name
+    teams {
+      id
+      name
+      members {
+        id
+        name
+        user {
+          id
+          age
         }
       }
     }

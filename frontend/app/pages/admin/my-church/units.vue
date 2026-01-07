@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { TableColumn } from '@nuxt/ui'
+
 definePageMeta({
   layout: 'church-admin',
   middleware: ['admin'],
@@ -6,15 +8,31 @@ definePageMeta({
 
 gql(`
   query MyChurchUnitsPage($churchId: ID!) {
-    users(filter: { churchId: $churchId }, first: 100) {
+    users(filter: {churchId: $churchId}, first: 500) {
       edges {
         node {
           id
           name
-          email
+          age
           teams {
             id
             name
+          }
+        }
+      }
+    }
+    myCurrentProject {
+      id
+      name
+      teams {
+        id
+        name
+        members {
+          id
+          name
+          user {
+            id
+            age
           }
         }
       }
@@ -34,6 +52,7 @@ const {
 } = useMyChurchUnitsPageQuery({
   variables: computed(() => ({
     churchId: me.value?.church.id ?? '',
+    now: new Date().toISOString(),
   })),
   pause: computed(() => !isAuthReady.value || !me.value?.church.id),
 })
@@ -46,8 +65,30 @@ watch(data, (newData) => {
 
 const { executeMutation: addTeamMembers } = useAddTeamMembersMutation()
 const { executeMutation: removeTeamMembers } = useRemoveTeamMembersMutation()
+const { executeMutation: createTeam } = useCreateTeamMutation()
 
-// Track optimistic assignments: Map<visibleKey, { userId, teamId, isAdding }>
+// Get all users from church
+const allUsers = computed(
+  () => data.value?.users.edges.map((edge) => edge.node) ?? [],
+)
+
+// Get teams from active project
+const projectTeams = computed(() => data.value?.myCurrentProject?.teams ?? [])
+
+// Search and filter state
+const unitSearch = ref('')
+const personSearch = ref('')
+const activeFilter = ref<'all' | 'not-in-unit' | 'in-unit'>('all')
+
+// Expand all state
+const expandAll = ref(false)
+
+// Create unit state
+const isCreatingUnit = ref(false)
+const newUnitName = ref('')
+const creatingUnitLoading = ref(false)
+
+// Track optimistic updates
 const optimisticUpdates = ref<
   Map<string, { userId: string; teamId: string; isAdding: boolean }>
 >(new Map())
@@ -62,6 +103,93 @@ const pendingMove = ref<{
   toTeamName: string
 } | null>(null)
 
+// Filter tabs for people table
+const filterTabs = [
+  { label: 'Alle', value: 'all' },
+  { label: 'ikke i unit', value: 'not-in-unit' },
+  { label: 'i en unit', value: 'in-unit' },
+]
+
+// People table columns
+const peopleColumns: TableColumn<(typeof allUsers.value)[number]>[] = [
+  { accessorKey: 'name', header: 'Navn' },
+  { accessorKey: 'age', header: 'Alder' },
+]
+
+// Filtered units based on search
+const filteredUnits = computed(() => {
+  if (!unitSearch.value) return projectTeams.value
+  const search = unitSearch.value.toLowerCase()
+  return projectTeams.value.filter((t) => t.name.toLowerCase().includes(search))
+})
+
+// Filtered people based on search and filter tab
+const filteredPeople = computed(() => {
+  let people = allUsers.value
+
+  // Apply search
+  if (personSearch.value) {
+    const search = personSearch.value.toLowerCase()
+    people = people.filter((p) => p.name.toLowerCase().includes(search))
+  }
+
+  // Apply filter tab
+  if (activeFilter.value === 'not-in-unit') {
+    people = people.filter((p) => p.teams.length === 0)
+  } else if (activeFilter.value === 'in-unit') {
+    people = people.filter((p) => p.teams.length > 0)
+  }
+
+  return people
+})
+
+// Start creating a new unit
+function startCreateUnit() {
+  isCreatingUnit.value = true
+  newUnitName.value = ''
+}
+
+// Cancel creating unit
+function cancelCreateUnit() {
+  isCreatingUnit.value = false
+  newUnitName.value = ''
+}
+
+// Save new unit
+async function saveNewUnit() {
+  if (!newUnitName.value.trim() || !data.value?.myCurrentProject) return
+
+  creatingUnitLoading.value = true
+  const result = await createTeam({
+    projectId: data.value?.myCurrentProject.id,
+    input: {
+      name: newUnitName.value.trim(),
+      description: '',
+    },
+  })
+
+  creatingUnitLoading.value = false
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke opprette unit',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({
+    title: 'Unit opprettet',
+    color: 'success',
+  })
+
+  isCreatingUnit.value = false
+  newUnitName.value = ''
+  await refetch({ requestPolicy: 'network-only' })
+}
+
+// Add user to team
 async function handleAddToTeam(userId: string, teamId: string) {
   const key = `${userId}-${teamId}`
   optimisticUpdates.value.set(key, { userId, teamId, isAdding: true })
@@ -86,6 +214,7 @@ async function handleAddToTeam(userId: string, teamId: string) {
   optimisticUpdates.value.delete(key)
 }
 
+// Remove user from team
 async function handleRemoveFromTeam(userId: string, teamId: string) {
   const key = `${userId}-${teamId}`
   optimisticUpdates.value.set(key, { userId, teamId, isAdding: false })
@@ -150,75 +279,7 @@ function cancelMove() {
   pendingMove.value = null
 }
 
-const allUsers = computed(
-  () => data.value?.users.edges.map((edge) => edge.node) ?? [],
-)
-
-// Build unique teams with their members
-const teams = computed(() => {
-  const teamMap = new Map<
-    string,
-    {
-      id: string
-      name: string
-      members: {
-        id: string
-        name: string
-        isOptimistic?: boolean
-        isRemoving?: boolean
-      }[]
-    }
-  >()
-
-  for (const user of allUsers.value) {
-    for (const team of user.teams) {
-      if (!teamMap.has(team.id)) {
-        teamMap.set(team.id, { id: team.id, name: team.name, members: [] })
-      }
-      const key = `${user.id}-${team.id}`
-      const update = optimisticUpdates.value.get(key)
-      const isRemoving = update && !update.isAdding
-
-      teamMap.get(team.id)!.members.push({
-        id: user.id,
-        name: user.name,
-        isRemoving,
-      })
-    }
-
-    // Add optimistically assigned users
-    for (const [key, update] of optimisticUpdates.value) {
-      if (update.userId === user.id && update.isAdding) {
-        if (!teamMap.has(update.teamId)) {
-          const teamName =
-            allUsers.value
-              .flatMap((u) => u.teams)
-              .find((t) => t.id === update.teamId)?.name ?? 'Team'
-          teamMap.set(update.teamId, {
-            id: update.teamId,
-            name: teamName,
-            members: [],
-          })
-        }
-        // Only add if not already in the team
-        const teamData = teamMap.get(update.teamId)!
-        if (!teamData.members.some((m) => m.id === user.id)) {
-          teamData.members.push({
-            id: user.id,
-            name: user.name,
-            isOptimistic: true,
-          })
-        }
-      }
-    }
-  }
-
-  return Array.from(teamMap.values()).sort((a, b) =>
-    a.name.localeCompare(b.name),
-  )
-})
-
-// Autocomplete items for each team (all users from church)
+// Autocomplete items for adding users
 const userItems = computed(() =>
   allUsers.value.map((user) => ({
     id: user.id,
@@ -226,6 +287,20 @@ const userItems = computed(() =>
     user,
   })),
 )
+
+// Get member data with optimistic updates
+function getTeamMembers(team: (typeof projectTeams.value)[number]) {
+  return team.members.map((member) => {
+    const key = `${member.user.id}-${team.id}`
+    const update = optimisticUpdates.value.get(key)
+    return {
+      id: member.user.id,
+      name: member.name,
+      age: member.user.age,
+      isRemoving: update && !update.isAdding,
+    }
+  })
+}
 </script>
 
 <template>
@@ -253,78 +328,142 @@ const userItems = computed(() =>
         :to="{ name: 'admin-my-church' }"
       >
         <Icon name="lucide:arrow-left" />
-        Tilbake til forsiden
+        Tilbake
       </UButton>
-
-      <h1 class="mt-12 mb-6 text-4xl">Units</h1>
 
       <LoadingState v-if="fetching && !hasLoadedOnce" />
       <ErrorState v-else-if="error" :error />
-      <div v-else-if="data">
-        <div v-if="teams.length > 0" class="space-y-3">
-          <div
-            v-for="team in teams"
-            :key="team.id"
-            class="flex items-center gap-4 rounded-lg border border-default bg-elevated/50 p-3"
-          >
-            <!-- Team name -->
-            <div class="w-40 shrink-0 font-medium">
-              {{ team.name }}
+      <div v-else-if="data" class="mt-8">
+        <!-- No active project message -->
+        <div
+          v-if="!data.myCurrentProject"
+          class="text-dimmed text-center py-12"
+        >
+          <Icon name="lucide:calendar-x" class="size-12 mb-4 mx-auto" />
+          <p class="text-lg">Ingen aktiv konkurranse</p>
+        </div>
+
+        <!-- Two-column layout -->
+        <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- Left column: Units -->
+          <div>
+            <h2 class="text-2xl font-semibold mb-4">Units</h2>
+
+            <!-- Search -->
+            <UInput
+              v-model="unitSearch"
+              placeholder="Sok..."
+              icon="lucide:search"
+              class="mb-4"
+            />
+
+            <!-- Expand all checkbox -->
+            <UCheckbox
+              v-model="expandAll"
+              label="Ekspander alle units"
+              class="mb-4"
+            />
+
+            <!-- Create unit button -->
+            <UButton
+              v-if="!isCreatingUnit"
+              variant="soft"
+              class="mb-4 w-full"
+              @click="startCreateUnit"
+            >
+              <Icon name="lucide:plus" />
+              Ny unit
+            </UButton>
+
+            <!-- Create unit form -->
+            <div
+              v-if="isCreatingUnit"
+              class="mb-4 rounded-lg border border-default bg-elevated/50 p-4"
+            >
+              <UInput
+                v-model="newUnitName"
+                placeholder="Navn på unit..."
+                class="mb-3"
+                autofocus
+              />
+              <div class="flex gap-2 justify-end">
+                <UButton variant="ghost" size="sm" @click="cancelCreateUnit">
+                  Avbryt
+                </UButton>
+                <UButton
+                  size="sm"
+                  :loading="creatingUnitLoading"
+                  :disabled="!newUnitName.trim()"
+                  @click="saveNewUnit"
+                >
+                  Lagre
+                </UButton>
+              </div>
             </div>
 
-            <!-- Members -->
-            <div class="flex flex-1 flex-wrap items-center gap-2">
-              <UBadge
-                v-for="member in team.members"
-                :key="member.id"
-                variant="subtle"
-                size="lg"
-                :class="{
-                  'opacity-50': member.isOptimistic || member.isRemoving,
-                }"
-              >
-                <Icon
-                  v-if="member.isOptimistic || member.isRemoving"
-                  name="lucide:loader-2"
-                  class="mr-1 size-3 animate-spin"
-                />
-                {{ member.name }}
-                <UButton
-                  v-if="!member.isOptimistic && !member.isRemoving"
-                  icon="lucide:x"
-                  size="xs"
-                  variant="link"
-                  color="neutral"
-                  class="-mr-1 ml-1"
-                  @click="handleRemoveFromTeam(member.id, team.id)"
-                />
-              </UBadge>
-
-              <!-- Add user autocomplete -->
-              <UInputMenu
-                :items="userItems"
-                placeholder="Legg til..."
-                class="w-40"
-                virtualize
-                :ui="{ base: 'cursor-pointer' }"
-                @update:model-value="
+            <!-- Units list -->
+            <div class="space-y-2">
+              <AdminUnitCard
+                v-for="unit in filteredUnits"
+                :key="unit.id"
+                :unit="unit"
+                :members="getTeamMembers(unit)"
+                :user-items="userItems"
+                :expand-all="expandAll"
+                @add-member="
                   (
-                    item:
-                      | {
-                          user: {
-                            id: string
-                            name: string
-                            teams: { id: string; name: string }[]
-                          }
-                        }
-                      | undefined,
-                  ) => item && handleUserSelect(item.user, team.id, team.name)
+                    _userId: string,
+                    _teamId: string,
+                    _teamName: string,
+                    user: {
+                      id: string
+                      name: string
+                      teams: { id: string; name: string }[]
+                    },
+                  ) => handleUserSelect(user, unit.id, unit.name)
                 "
+                @remove-member="handleRemoveFromTeam"
               />
+
+              <p v-if="filteredUnits.length === 0" class="text-dimmed text-sm">
+                Ingen units funnet
+              </p>
             </div>
           </div>
+
+          <!-- Right column: Personer -->
+          <div>
+            <h2 class="text-2xl font-semibold mb-4">Personer</h2>
+
+            <!-- Search -->
+            <UInput
+              v-model="personSearch"
+              placeholder="Sok..."
+              icon="lucide:search"
+              class="mb-4"
+            />
+
+            <!-- Filter tabs -->
+            <UTabs v-model="activeFilter" :items="filterTabs" />
+
+            <!-- People table -->
+            <UTable :data="filteredPeople" :columns="peopleColumns">
+              <template #name-cell="{ row }">
+                <span>{{ row.original.name }}</span>
+              </template>
+              <template #age-cell="{ row }">
+                <span class="text-dimmed">{{ row.original.age ?? '-' }}</span>
+              </template>
+            </UTable>
+
+            <p
+              v-if="filteredPeople.length === 0"
+              class="text-dimmed text-sm text-center py-4"
+            >
+              Ingen personer funnet
+            </p>
+          </div>
         </div>
-        <p v-else class="text-dimmed">Ingen teams funnet</p>
       </div>
     </UContainer>
 
