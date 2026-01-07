@@ -40,3 +40,5 @@ logs
 logs/
 
 temp
+
+coverage-e2e.*
