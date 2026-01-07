@@ -41,7 +41,6 @@ defineProps<{
         >
           {{ entry.rank ?? index + 1 }}
         </span>
-        <UAvatar :src="entry.image ?? undefined" :alt="entry.name" size="xs" />
         <span class="min-w-0 flex-1 truncate text-sm">{{ entry.name }}</span>
         <span class="text-muted text-sm font-medium">
           {{ formatNumber(entry.score) }} pts
