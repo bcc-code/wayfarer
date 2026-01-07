@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	appconfig "github.com/bcc-media/wayfarer/internal/config"
 )
 
@@ -51,7 +50,6 @@ func (s *S3Service) UploadFile(ctx context.Context, file io.Reader, filename str
 		Body:          file,
 		ContentType:   aws.String(contentType),
 		ContentLength: aws.Int64(fileSize),
-		ACL:           types.ObjectCannedACLPublicRead,
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to upload file to S3: %w", err)
