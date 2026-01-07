@@ -67,17 +67,17 @@ const teams = computed(() => data.value?.teams.edges.map((edge) => edge.node))
 const columns: TableColumn<
   AdminTeamsPageQuery['teams']['edges'][number]['node']
 >[] = [
-  { accessorKey: 'name', header: 'Name' },
-  { accessorKey: 'parentProject.name', id: 'project', header: 'Project' },
-  { accessorKey: 'superTeam.name', id: 'superTeam', header: 'Super Team' },
-  { accessorKey: 'members', header: 'Members' },
+  { accessorKey: 'name', header: 'Navn' },
+  { accessorKey: 'parentProject.name', id: 'project', header: 'Prosjekt' },
+  { accessorKey: 'superTeam.name', id: 'superTeam', header: 'Superlag' },
+  { accessorKey: 'members', header: 'Medlemmer' },
   { id: 'actions' },
 ]
 </script>
 
 <template>
   <UContainer class="py-12">
-    <h1 class="mb-6 text-3xl">Teams</h1>
+    <h1 class="mb-6 text-3xl">Lag</h1>
     <ErrorState v-if="error" :error />
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between gap-2">
@@ -112,7 +112,7 @@ const columns: TableColumn<
                 params: { teamId: row.original.id },
               }"
             >
-              Edit
+              Rediger
             </UButton>
           </div>
         </template>

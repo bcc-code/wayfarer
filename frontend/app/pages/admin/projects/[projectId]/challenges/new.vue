@@ -107,8 +107,8 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
 async function handleSubmit(formData: ChallengeFormData) {
   if (!eventId.value) {
     toast.add({
-      title: 'Error',
-      description: 'Please select an event',
+      title: 'Feil',
+      description: 'Vennligst velg et arrangement',
       color: 'error',
     })
     return
@@ -146,8 +146,8 @@ async function handleSubmit(formData: ChallengeFormData) {
       await saveQuiz(quiz, challengeId)
     } catch (err) {
       toast.add({
-        title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to save quiz',
+        title: 'Feil',
+        description: err instanceof Error ? err.message : 'Kunne ikke lagre quiz',
         color: 'error',
       })
       return
@@ -155,8 +155,8 @@ async function handleSubmit(formData: ChallengeFormData) {
   }
 
   toast.add({
-    title: 'Success',
-    description: 'Challenge created successfully',
+    title: 'Suksess',
+    description: 'Utfordring opprettet',
     color: 'success',
   })
   navigateTo({
@@ -173,7 +173,7 @@ async function handleSubmit(formData: ChallengeFormData) {
         <UBreadcrumb
           :items="[
             {
-              label: 'Projects',
+              label: 'Prosjekter',
               to: { name: 'admin-projects' },
             },
             {
@@ -184,25 +184,25 @@ async function handleSubmit(formData: ChallengeFormData) {
               },
             },
             {
-              label: 'Challenges',
+              label: 'Utfordringer',
             },
             {
-              label: 'New',
+              label: 'Ny',
             },
           ]"
         />
       </UContainer>
     </div>
     <UContainer class="py-12">
-      <h1 class="mb-6 text-2xl font-bold">Create Challenge</h1>
+      <h1 class="mb-6 text-2xl font-bold">Opprett utfordring</h1>
       <AdminChallengeForm
         :project-id="route.params.projectId"
         :colors="data?.project.branding.colors"
-        submit-label="Create Challenge"
+        submit-label="Opprett utfordring"
         @submit="handleSubmit"
       >
         <template #before-type>
-          <UFormField name="eventId" label="Event">
+          <UFormField name="eventId" label="Arrangement">
             <USelect
               v-model="eventId"
               :items="eventOptions"

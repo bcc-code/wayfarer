@@ -9,13 +9,13 @@ const props = defineProps<{
 
 const cards = computed(() => [
   {
-    label: 'Total Users',
+    label: 'Totalt antall brukere',
     value: formatNumber(props.stats.totalUsers),
     icon: 'i-lucide-users',
-    subtitle: `+${props.stats.newUsersLast7Days} this week`,
+    subtitle: `+${props.stats.newUsersLast7Days} denne uken`,
   },
   {
-    label: 'Total Points Awarded',
+    label: 'Totalt tildelte poeng',
     value: formatNumber(props.stats.totalPointsAwarded),
     icon: 'i-lucide-star',
   },

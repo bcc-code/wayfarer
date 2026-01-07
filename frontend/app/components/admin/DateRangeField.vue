@@ -109,12 +109,10 @@ const displayValue = computed(() => {
 </script>
 
 <template>
-  <UFormField label="Project duration">
-    <UPopover v-model:open="isOpen" :ui="{ content: 'p-1' }">
-      <UInput :model-value="displayValue" readonly icon="lucide:calendar" />
-      <template #content>
-        <UCalendar v-model="range" range variant="soft" />
-      </template>
-    </UPopover>
-  </UFormField>
+  <UPopover v-model:open="isOpen" :ui="{ content: 'p-1' }">
+    <UInput :model-value="displayValue" readonly icon="lucide:calendar" />
+    <template #content>
+      <UCalendar v-model="range" range variant="soft" />
+    </template>
+  </UPopover>
 </template>

@@ -78,12 +78,12 @@ const entries = computed(() =>
 const columns: TableColumn<
   AdminScoresPageQuery['adminScoreJournal']['edges'][number]['node']
 >[] = [
-  { accessorKey: 'user.name', id: 'user', header: 'User' },
-  { accessorKey: 'project.name', id: 'project', header: 'Project' },
-  { accessorKey: 'points', header: 'Points' },
-  { accessorKey: 'sourceType', header: 'Source' },
-  { accessorKey: 'reason', header: 'Reason' },
-  { accessorKey: 'createdAt', header: 'Created' },
+  { accessorKey: 'user.name', id: 'user', header: 'Bruker' },
+  { accessorKey: 'project.name', id: 'project', header: 'Prosjekt' },
+  { accessorKey: 'points', header: 'Poeng' },
+  { accessorKey: 'sourceType', header: 'Kilde' },
+  { accessorKey: 'reason', header: 'Grunn' },
+  { accessorKey: 'createdAt', header: 'Opprettet' },
   { id: 'actions' },
 ]
 
@@ -105,13 +105,13 @@ async function handleDelete() {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to delete entry',
+      title: 'Kunne ikke slette oppføring',
       description: result.error.message,
       color: 'error',
     })
   } else {
     toast.add({
-      title: 'Entry deleted',
+      title: 'Oppføring slettet',
       color: 'success',
     })
     executeQuery({ requestPolicy: 'network-only' })
@@ -141,9 +141,9 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
 <template>
   <UContainer class="py-12">
     <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-3xl">Score Adjustments</h1>
+      <h1 class="text-3xl">Poengjusteringer</h1>
       <UButton v-if="canManageScores" :to="{ name: 'admin-scores-new' }">
-        New adjustment
+        Ny justering
       </UButton>
     </div>
     <ErrorState v-if="error" :error />
@@ -204,16 +204,16 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
     <UModal v-model:open="deleteModal">
       <template #content>
         <div class="p-6">
-          <h3 class="mb-4 text-lg font-semibold">Delete Score Entry</h3>
+          <h3 class="mb-4 text-lg font-semibold">Slett poengoppføring</h3>
           <p class="text-dimmed mb-6">
-            Are you sure you want to delete this score entry? This action cannot
-            be undone.
+            Er du sikker på at du vil slette denne poengoppføringen? Denne
+            handlingen kan ikke angres.
           </p>
           <div class="flex justify-end gap-3">
             <UButton variant="ghost" @click="deleteModal = false">
-              Cancel
+              Avbryt
             </UButton>
-            <UButton color="error" @click="handleDelete">Delete</UButton>
+            <UButton color="error" @click="handleDelete">Slett</UButton>
           </div>
         </div>
       </template>

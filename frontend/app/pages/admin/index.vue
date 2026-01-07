@@ -87,9 +87,9 @@ const leaderboardEntries = computed(
 
 const greeting = computed(() => {
   const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
+  if (hour < 12) return 'God morgen'
+  if (hour < 18) return 'God ettermiddag'
+  return 'God kveld'
 })
 </script>
 
@@ -122,14 +122,14 @@ const greeting = computed(() => {
 
       <section>
         <div class="mb-3 flex items-baseline gap-4">
-          <h2>Current Projects</h2>
+          <h2>Aktive prosjekter</h2>
           <UButton
             v-if="currentProjects.length"
             variant="soft"
             size="xs"
             to="/admin/projects"
           >
-            See all
+            Se alle
           </UButton>
         </div>
         <div
@@ -150,9 +150,9 @@ const greeting = computed(() => {
         <UEmpty
           v-else
           icon="lucide:square-dashed-mouse-pointer"
-          title="A whole lotta nothin'"
-          description="There are no projects currently running"
-          :actions="[{ label: 'See all projects', to: '/admin/projects' }]"
+          title="Her er det tomt"
+          description="Det er ingen aktive prosjekter for øyeblikket"
+          :actions="[{ label: 'Se alle prosjekter', to: '/admin/projects' }]"
         />
       </section>
     </div>

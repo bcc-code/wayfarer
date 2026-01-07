@@ -64,16 +64,16 @@ const users = computed(() => data.value?.users.edges.map((edge) => edge.node))
 const columns: TableColumn<
   AdminUsersPageQuery['users']['edges'][number]['node']
 >[] = [
-  { accessorKey: 'name', header: 'Name' },
-  { accessorKey: 'church.name', header: 'Church' },
-  { accessorKey: 'roles', header: 'Roles' },
+  { accessorKey: 'name', header: 'Navn' },
+  { accessorKey: 'church.name', header: 'Menighet' },
+  { accessorKey: 'roles', header: 'Roller' },
   { id: 'actions' },
 ]
 </script>
 
 <template>
   <UContainer class="py-12">
-    <h1 class="mb-6 text-3xl">Users</h1>
+    <h1 class="mb-6 text-3xl">Brukere</h1>
     <ErrorState v-if="error" :error />
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between gap-2">
@@ -106,7 +106,7 @@ const columns: TableColumn<
                 params: { userId: row.original.id },
               }"
             >
-              Edit
+              Rediger
             </UButton>
           </div>
         </template>
