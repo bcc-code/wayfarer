@@ -122,5 +122,6 @@
   "pwa": {
     "updateAvailableTitle": "È disponibile un aggiornamento",
     "updateAvailableButton": "Aggiorna ora"
-  }
+  },
+  "goToHiddenTreasures": "Vai allo studio biblico"
 }
