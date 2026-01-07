@@ -125,16 +125,6 @@ function formatSourceType(type: string) {
   return type.charAt(0) + type.slice(1).toLowerCase()
 }
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
 const { canDeleteScoreEntry, canManageScores } = usePermissions()
 </script>
 

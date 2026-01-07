@@ -129,11 +129,6 @@ function formatContentType(type: ExternalContentType): string {
   }
   return labels[type] || type
 }
-
-function formatDate(dateString?: string | null): string {
-  if (!dateString) return ''
-  return new Date(dateString).toLocaleDateString()
-}
 </script>
 
 <template>
