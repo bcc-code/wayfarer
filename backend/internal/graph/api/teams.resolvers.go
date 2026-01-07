@@ -411,6 +411,8 @@ func (r *mutationResolver) AddTeamMembers(ctx context.Context, teamID string, us
 
 		// Invalidate user cache
 		r.Cache.InvalidateUser(uid)
+		// Invalidate user's teams cache (used by TeamsByUserLoader)
+		r.Cache.Delete(cache.TeamsByUserKey(uid))
 	}
 
 	// Invalidate team cache
@@ -428,6 +430,10 @@ func (r *mutationResolver) AddTeamMembers(ctx context.Context, teamID string, us
 	// Invalidate superteams filter queries (member counts may have changed)
 	r.Cache.DeletePrefix(cache.PrefixSuperTeamsFilter)
 	r.Cache.DeletePrefix(cache.PrefixSuperTeamsCount)
+
+	// Invalidate users filter queries (user.teams changes)
+	r.Cache.DeletePrefix(cache.PrefixUsersFilter)
+	r.Cache.DeletePrefix(cache.PrefixUsersCount)
 
 	// Return the team (loaders already returns model.Team)
 	return &model.Team{
@@ -470,6 +476,8 @@ func (r *mutationResolver) RemoveTeamMembers(ctx context.Context, teamID string,
 
 		// Invalidate user cache
 		r.Cache.InvalidateUser(uid)
+		// Invalidate user's teams cache (used by TeamsByUserLoader)
+		r.Cache.Delete(cache.TeamsByUserKey(uid))
 	}
 
 	// Invalidate team cache
@@ -487,6 +495,10 @@ func (r *mutationResolver) RemoveTeamMembers(ctx context.Context, teamID string,
 	// Invalidate superteams filter queries (member counts may have changed)
 	r.Cache.DeletePrefix(cache.PrefixSuperTeamsFilter)
 	r.Cache.DeletePrefix(cache.PrefixSuperTeamsCount)
+
+	// Invalidate users filter queries (user.teams changes)
+	r.Cache.DeletePrefix(cache.PrefixUsersFilter)
+	r.Cache.DeletePrefix(cache.PrefixUsersCount)
 
 	// Return the team (loaders already returns model.Team)
 	return &model.Team{
