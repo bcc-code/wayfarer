@@ -335,27 +335,20 @@ function copyJoinCode() {
               :key="member.id"
               class="border-default flex items-center justify-between rounded-md border p-3"
             >
-              <div class="flex items-center gap-3">
-                <UAvatar
-                  :src="member.user.image ?? ''"
-                  :text="getInitials(member.name)"
-                  size="sm"
-                />
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="font-medium">{{ member.name }}</span>
-                    <UBadge
-                      v-if="member.isTeamLead"
-                      variant="soft"
-                      size="xs"
-                      color="primary"
-                    >
-                      Lead
-                    </UBadge>
-                  </div>
-                  <div class="text-muted text-xs">
-                    {{ member.church.name }}
-                  </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">{{ member.name }}</span>
+                  <UBadge
+                    v-if="member.isTeamLead"
+                    variant="soft"
+                    size="xs"
+                    color="primary"
+                  >
+                    Lead
+                  </UBadge>
+                </div>
+                <div class="text-muted text-xs">
+                  {{ member.church.name }}
                 </div>
               </div>
               <div v-if="canEdit" class="flex items-center gap-2">
