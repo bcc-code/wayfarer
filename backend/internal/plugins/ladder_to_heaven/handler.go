@@ -64,7 +64,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	// Check if feature is enabled
 	if h.achievementID == "" {
 		slog.Warn("ladder_to_heaven: feature disabled, PLUGIN_LADDER_TO_HEAVEN_ACHIEVEMENT_ID not set")
-		c.Status(http.StatusOK)
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "feature disabled"})
 		return
 	}
 
@@ -108,7 +108,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	if err != nil {
 		slog.Warn("ladder_to_heaven: external content not found",
 			"task_id", req.Data.TaskID, "error", err)
-		c.Status(http.StatusOK)
+		c.JSON(http.StatusNotFound, gin.H{"error": "external content not found", "task_id": req.Data.TaskID})
 		return
 	}
 
@@ -127,7 +127,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	if !inAchievement {
 		slog.Info("ladder_to_heaven: content not in configured achievement",
 			"content_id", content.ID, "achievement_id", h.achievementID)
-		c.Status(http.StatusOK)
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "content not in configured achievement"})
 		return
 	}
 
@@ -179,7 +179,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	if journalExists {
 		slog.Info("ladder_to_heaven: score journal entry already exists",
 			"user_id", req.User.ID, "content_id", content.ID)
-		c.Status(http.StatusOK)
+		c.JSON(http.StatusConflict, gin.H{"error": "score already awarded for this content"})
 		return
 	}
 

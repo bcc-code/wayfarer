@@ -107,8 +107,11 @@ func TestContentEventHandler_FeatureDisabled(t *testing.T) {
 
 	handler.handle(c)
 
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Empty(t, w.Body.String())
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Equal(t, "feature disabled", response["error"])
 }
 
 func TestContentEventRequest_ValidationErrors(t *testing.T) {
