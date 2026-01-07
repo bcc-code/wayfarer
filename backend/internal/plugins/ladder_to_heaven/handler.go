@@ -63,7 +63,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 
 	// Check if feature is enabled
 	if h.achievementID == "" {
-		slog.Debug("ladder_to_heaven: feature disabled, PLUGIN_LADDER_TO_HEAVEN_ACHIEVEMENT_ID not set")
+		slog.Warn("ladder_to_heaven: feature disabled, PLUGIN_LADDER_TO_HEAVEN_ACHIEVEMENT_ID not set")
 		c.Status(http.StatusOK)
 		return
 	}
@@ -125,7 +125,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	}
 
 	if !inAchievement {
-		slog.Debug("ladder_to_heaven: content not in configured achievement",
+		slog.Info("ladder_to_heaven: content not in configured achievement",
 			"content_id", content.ID, "achievement_id", h.achievementID)
 		c.Status(http.StatusOK)
 		return
@@ -177,7 +177,7 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	}
 
 	if journalExists {
-		slog.Debug("ladder_to_heaven: score journal entry already exists",
+		slog.Info("ladder_to_heaven: score journal entry already exists",
 			"user_id", req.User.ID, "content_id", content.ID)
 		c.Status(http.StatusOK)
 		return
