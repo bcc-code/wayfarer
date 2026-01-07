@@ -158,4 +158,3 @@ func TestCalculateChapterCompleteBy(t *testing.T) {
 		})
 	}
 }
-

@@ -417,18 +417,18 @@ func TestAuth0Claims_ParseAppMetadata(t *testing.T) {
 	now := time.Now()
 
 	tests := []struct {
-		name              string
-		hasMembership     bool
+		name               string
+		hasMembership      bool
 		expectedMembership bool
 	}{
 		{
-			name:              "user with membership",
-			hasMembership:     true,
+			name:               "user with membership",
+			hasMembership:      true,
 			expectedMembership: true,
 		},
 		{
-			name:              "user without membership",
-			hasMembership:     false,
+			name:               "user without membership",
+			hasMembership:      false,
 			expectedMembership: false,
 		},
 	}

@@ -322,9 +322,9 @@ func TestAuthWithMinimalSeed(t *testing.T) {
 		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
 
 		var result struct {
-			Users     struct{ TotalCount int } `json:"users"`
-			Projects  struct{ TotalCount int } `json:"projects"`
-			Churches  struct{ TotalCount int } `json:"churches"`
+			Users    struct{ TotalCount int } `json:"users"`
+			Projects struct{ TotalCount int } `json:"projects"`
+			Churches struct{ TotalCount int } `json:"churches"`
 		}
 		require.NoError(t, resp.UnmarshalData(&result))
 

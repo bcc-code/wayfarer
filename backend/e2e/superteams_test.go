@@ -96,11 +96,11 @@ func TestSuperTeams(t *testing.T) {
 
 		var result struct {
 			Superteam struct {
-				ID            string `json:"id"`
-				Name          string `json:"name"`
-				Description   string `json:"description"`
+				ID            string                      `json:"id"`
+				Name          string                      `json:"name"`
+				Description   string                      `json:"description"`
 				Teams         []struct{ ID, Name string } `json:"teams"`
-				ParentProject struct{ ID string } `json:"parentProject"`
+				ParentProject struct{ ID string }         `json:"parentProject"`
 			} `json:"superteam"`
 		}
 		require.NoError(t, resp.UnmarshalData(&result))

@@ -58,51 +58,51 @@ func (s *Seeder) SeedProjects(stats *Stats) error {
 
 	// Default branding colors (from migration 24)
 	defaultBranding := struct {
-		lightAccentContrast     string
-		lightOnAccent           string
-		lightBackgroundDefault  string
-		lightBackgroundRaised   string
-		lightBackgroundIndent   string
-		lightTextDefault        string
-		lightTextMuted          string
-		lightTextHint           string
-		lightShadowDefault      string
-		lightShadowBlank        string
-		lightBorderDefault      string
-		darkAccentContrast      string
-		darkOnAccent            string
-		darkBackgroundDefault   string
-		darkBackgroundRaised    string
-		darkBackgroundIndent    string
-		darkTextDefault         string
-		darkTextMuted           string
-		darkTextHint            string
-		darkShadowDefault       string
-		darkShadowBlank         string
-		darkBorderDefault       string
+		lightAccentContrast    string
+		lightOnAccent          string
+		lightBackgroundDefault string
+		lightBackgroundRaised  string
+		lightBackgroundIndent  string
+		lightTextDefault       string
+		lightTextMuted         string
+		lightTextHint          string
+		lightShadowDefault     string
+		lightShadowBlank       string
+		lightBorderDefault     string
+		darkAccentContrast     string
+		darkOnAccent           string
+		darkBackgroundDefault  string
+		darkBackgroundRaised   string
+		darkBackgroundIndent   string
+		darkTextDefault        string
+		darkTextMuted          string
+		darkTextHint           string
+		darkShadowDefault      string
+		darkShadowBlank        string
+		darkBorderDefault      string
 	}{
-		lightAccentContrast:     "#938636",
-		lightOnAccent:           "#01121a",
-		lightBackgroundDefault:  "#f3ede5",
-		lightBackgroundRaised:   "#ffffff",
-		lightBackgroundIndent:   "rgb(99 56 1 / 0.05)",
-		lightTextDefault:        "#282521",
-		lightTextMuted:          "rgb(40 37 33 / 0.65)",
-		lightTextHint:           "rgb(40 37 33 / 0.4)",
-		lightShadowDefault:      "rgb(40 37 33 / 0.1)",
-		lightShadowBlank:        "rgb(40 37 33 / 0)",
-		lightBorderDefault:      "rgb(40 37 33 / 0.15)",
-		darkAccentContrast:      "#e8dfa7",
-		darkOnAccent:            "#1a1401",
-		darkBackgroundDefault:   "#122026",
-		darkBackgroundRaised:    "#0a3644",
-		darkBackgroundIndent:    "rgb(0 9 13 / 0.25)",
-		darkTextDefault:         "#f3ede5",
-		darkTextMuted:           "rgb(243 237 229 / 0.7)",
-		darkTextHint:            "rgb(243 237 229 / 0.4)",
-		darkShadowDefault:       "rgb(18 32 38 / 0.3)",
-		darkShadowBlank:         "rgb(18 32 38 / 0)",
-		darkBorderDefault:       "rgb(156 214 243 / 0.09)",
+		lightAccentContrast:    "#938636",
+		lightOnAccent:          "#01121a",
+		lightBackgroundDefault: "#f3ede5",
+		lightBackgroundRaised:  "#ffffff",
+		lightBackgroundIndent:  "rgb(99 56 1 / 0.05)",
+		lightTextDefault:       "#282521",
+		lightTextMuted:         "rgb(40 37 33 / 0.65)",
+		lightTextHint:          "rgb(40 37 33 / 0.4)",
+		lightShadowDefault:     "rgb(40 37 33 / 0.1)",
+		lightShadowBlank:       "rgb(40 37 33 / 0)",
+		lightBorderDefault:     "rgb(40 37 33 / 0.15)",
+		darkAccentContrast:     "#e8dfa7",
+		darkOnAccent:           "#1a1401",
+		darkBackgroundDefault:  "#122026",
+		darkBackgroundRaised:   "#0a3644",
+		darkBackgroundIndent:   "rgb(0 9 13 / 0.25)",
+		darkTextDefault:        "#f3ede5",
+		darkTextMuted:          "rgb(243 237 229 / 0.7)",
+		darkTextHint:           "rgb(243 237 229 / 0.4)",
+		darkShadowDefault:      "rgb(18 32 38 / 0.3)",
+		darkShadowBlank:        "rgb(18 32 38 / 0)",
+		darkBorderDefault:      "rgb(156 214 243 / 0.09)",
 	}
 
 	for i := 0; i < s.Config.NumProjects; i++ {

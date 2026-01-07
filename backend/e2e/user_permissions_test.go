@@ -160,7 +160,7 @@ func TestUserPermissions(t *testing.T) {
 			Users struct {
 				Edges []struct {
 					Node struct {
-						ID     string `json:"id"`
+						ID     string              `json:"id"`
 						Church struct{ ID string } `json:"church"`
 					} `json:"node"`
 				} `json:"edges"`
@@ -386,7 +386,7 @@ func TestUserPermissionsCombinedRoles(t *testing.T) {
 			Users struct {
 				Edges []struct {
 					Node struct {
-						ID     string `json:"id"`
+						ID     string              `json:"id"`
 						Church struct{ ID string } `json:"church"`
 					} `json:"node"`
 				} `json:"edges"`

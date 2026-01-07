@@ -10,18 +10,18 @@ import (
 	"github.com/bcc-media/wayfarer/cmd/seed/seeders"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
-	"github.com/jaswdr/faker"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jaswdr/faker"
 	"github.com/pressly/goose/v3"
 )
 
 // TestDBManager manages database lifecycle for E2E tests
 type TestDBManager struct {
-	DSN     string
-	DB      *database.DB
-	sqlDB   *sql.DB
-	seeder  *seeders.Seeder
-	data    *seeders.SeededData
+	DSN    string
+	DB     *database.DB
+	sqlDB  *sql.DB
+	seeder *seeders.Seeder
+	data   *seeders.SeededData
 }
 
 // NewTestDBManager creates a new database manager and runs migrations
