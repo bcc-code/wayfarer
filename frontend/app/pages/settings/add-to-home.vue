@@ -34,15 +34,16 @@ const images = computed(() => {
     <div class="space-y-medium p-default">
       <DesignTabs v-model="selectedPlatform" :tabs="tabs" />
 
-      <div class="space-y-medium">
-        <img
-          v-for="(src, index) in images"
-          :key="src"
-          :src="src"
-          :alt="`Step ${index + 1}`"
-          class="w-full rounded-lg"
-        />
-      </div>
+      <ol class="space-y-default">
+        <li v-for="(src, index) in images" :key="src">
+          <p class="text-text-default text-title mb-small">{{ index + 1 }}.</p>
+          <img
+            :src="src"
+            :alt="`Step ${index + 1}`"
+            class="w-full rounded-lg"
+          />
+        </li>
+      </ol>
     </div>
   </PageLayout>
 </template>
