@@ -47,8 +47,8 @@ const emit = defineEmits<{
 const toast = useToast()
 
 const schema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
+  name: z.string().min(1, 'Navn er påkrevd'),
+  description: z.string().min(1, 'Beskrivelse er påkrevd'),
   image: z.string().optional(),
   timeoutSeconds: z.number().optional(),
   randomizeQuestions: z.boolean(),
@@ -146,8 +146,8 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
 
   if (questions.value.length === 0) {
     toast.add({
-      title: 'Error',
-      description: 'Please add at least one question',
+      title: 'Feil',
+      description: 'Legg til minst ett spørsmål',
       color: 'error',
     })
     return
@@ -161,9 +161,9 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
 }
 
 const questionTypeOptions = [
-  { value: QuizQuestionType.Predefined, label: 'Multiple Choice' },
-  { value: QuizQuestionType.FreeText, label: 'Free Text' },
-  { value: QuizQuestionType.Number, label: 'Number' },
+  { value: QuizQuestionType.Predefined, label: 'Flervalg' },
+  { value: QuizQuestionType.FreeText, label: 'Fritekst' },
+  { value: QuizQuestionType.Number, label: 'Tall' },
 ]
 </script>
 
@@ -175,13 +175,13 @@ const questionTypeOptions = [
       class="flex max-w-md flex-col gap-6"
       @submit.prevent="handleSubmit"
     >
-      <h3 class="text-lg font-semibold">Quiz Settings</h3>
+      <h3 class="text-lg font-semibold">Quiz-innstillinger</h3>
 
-      <UFormField name="name" label="Quiz Name">
+      <UFormField name="name" label="Quiz-navn">
         <UInput v-model="state.name" size="xl" required class="w-full" />
       </UFormField>
 
-      <UFormField name="description" label="Description">
+      <UFormField name="description" label="Beskrivelse">
         <UTextarea
           v-model="state.description"
           class="w-full"
@@ -190,15 +190,15 @@ const questionTypeOptions = [
         />
       </UFormField>
 
-      <UFormField name="image" label="Image URL" hint="(optional)">
+      <UFormField name="image" label="Bilde-URL" hint="(valgfritt)">
         <UInput v-model="state.image" size="xl" class="w-full" />
       </UFormField>
 
       <UFormField
         name="timeoutSeconds"
-        label="Quiz Timeout (seconds)"
-        hint="(optional)"
-        help="Total time limit for the entire quiz"
+        label="Tidsbegrensning (sekunder)"
+        hint="(valgfritt)"
+        help="Total tidsbegrensning for hele quizen"
       >
         <UInput
           v-model.number="state.timeoutSeconds"
@@ -208,7 +208,7 @@ const questionTypeOptions = [
         />
       </UFormField>
 
-      <UFormField name="completionPoints" label="Completion Points">
+      <UFormField name="completionPoints" label="Fullføringspoeng">
         <UInput
           v-model.number="state.completionPoints"
           type="number"
@@ -222,21 +222,21 @@ const questionTypeOptions = [
         <UFormField name="randomizeQuestions">
           <UCheckbox
             v-model="state.randomizeQuestions"
-            label="Randomize question order"
+            label="Tilfeldig spørsmålsrekkefølge"
           />
         </UFormField>
 
         <UFormField name="revealCorrectAnswers">
           <UCheckbox
             v-model="state.revealCorrectAnswers"
-            label="Reveal correct answers after completion"
+            label="Vis riktige svar etter fullføring"
           />
         </UFormField>
 
         <UFormField name="allowRetakes">
           <UCheckbox
             v-model="state.allowRetakes"
-            label="Allow users to retake the quiz"
+            label="Tillat brukere å ta quizen på nytt"
           />
         </UFormField>
       </div>
@@ -245,10 +245,10 @@ const questionTypeOptions = [
       <div class="border-t pt-6">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold">
-            Questions ({{ questions.length }})
+            Spørsmål ({{ questions.length }})
           </h3>
           <UButton v-if="!editingQuestion" size="sm" @click="addQuestion">
-            Add Question
+            Legg til spørsmål
           </UButton>
         </div>
 
@@ -262,25 +262,23 @@ const questionTypeOptions = [
             <div class="flex items-start justify-between gap-4">
               <div class="flex-1">
                 <div class="text-sm text-text-muted mb-1">
-                  Question {{ index + 1 }} -
+                  Spørsmål {{ index + 1 }} -
                   {{
                     question.questionType === QuizQuestionType.Predefined
-                      ? 'Multiple Choice'
+                      ? 'Flervalg'
                       : question.questionType === QuizQuestionType.Number
-                        ? 'Number'
-                        : 'Free Text'
+                        ? 'Tall'
+                        : 'Fritekst'
                   }}
                 </div>
                 <div class="font-medium">
-                  {{ question.questionText || '(No question text)' }}
+                  {{ question.questionText || '(Ingen spørsmålstekst)' }}
                 </div>
                 <div
                   v-if="question.points"
                   class="text-sm text-text-muted mt-1"
                 >
-                  {{ formatNumber(question.points) }} point{{
-                    question.points !== 1 ? 's' : ''
-                  }}
+                  {{ formatNumber(question.points) }} poeng
                 </div>
               </div>
               <div class="flex gap-2">
@@ -289,7 +287,7 @@ const questionTypeOptions = [
                   variant="ghost"
                   @click="editQuestion(question)"
                 >
-                  Edit
+                  Rediger
                 </UButton>
                 <UButton
                   size="xs"
@@ -297,7 +295,7 @@ const questionTypeOptions = [
                   color="error"
                   @click="deleteQuestion(index)"
                 >
-                  Delete
+                  Slett
                 </UButton>
               </div>
             </div>
@@ -307,7 +305,7 @@ const questionTypeOptions = [
             v-if="questions.length === 0"
             class="text-center py-8 text-text-muted border border-dashed border-default rounded-lg"
           >
-            No questions yet. Click "Add Question" to create one.
+            Ingen spørsmål ennå. Klikk «Legg til spørsmål» for å opprette ett.
           </div>
         </div>
 
@@ -322,7 +320,7 @@ const questionTypeOptions = [
       </div>
 
       <UButton v-if="!editingQuestion" type="submit" size="lg" block>
-        Save Quiz
+        Lagre quiz
       </UButton>
     </UForm>
   </div>

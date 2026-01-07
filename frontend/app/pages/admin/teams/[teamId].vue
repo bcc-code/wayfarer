@@ -93,7 +93,7 @@ async function saveChanges() {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to update team',
+      title: 'Kunne ikke oppdatere lag',
       description: result.error.message,
       color: 'error',
     })
@@ -101,7 +101,7 @@ async function saveChanges() {
   }
 
   toast.add({
-    title: 'Team updated',
+    title: 'Lag oppdatert',
     color: 'success',
   })
 
@@ -117,7 +117,7 @@ async function handleRemoveMember(userId: string, userName: string) {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to remove member',
+      title: 'Kunne ikke fjerne medlem',
       description: result.error.message,
       color: 'error',
     })
@@ -125,8 +125,8 @@ async function handleRemoveMember(userId: string, userName: string) {
   }
 
   toast.add({
-    title: 'Member removed',
-    description: `${userName} has been removed from the team`,
+    title: 'Medlem fjernet',
+    description: `${userName} har blitt fjernet fra laget`,
     color: 'success',
   })
 
@@ -140,7 +140,7 @@ async function handleRegenerateJoinCode() {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to regenerate join code',
+      title: 'Kunne ikke generere ny invitasjonskode',
       description: result.error.message,
       color: 'error',
     })
@@ -148,7 +148,7 @@ async function handleRegenerateJoinCode() {
   }
 
   toast.add({
-    title: 'Join code regenerated',
+    title: 'Invitasjonskode generert',
     color: 'success',
   })
 
@@ -163,7 +163,7 @@ async function handleAssignTeamLead(userId: string, userName: string) {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to assign team lead',
+      title: 'Kunne ikke tildele lagleder',
       description: result.error.message,
       color: 'error',
     })
@@ -171,8 +171,8 @@ async function handleAssignTeamLead(userId: string, userName: string) {
   }
 
   toast.add({
-    title: 'Team lead assigned',
-    description: `${userName} is now the team lead`,
+    title: 'Lagleder tildelt',
+    description: `${userName} er nå lagleder`,
     color: 'success',
   })
 
@@ -186,7 +186,7 @@ async function handleDeleteTeam() {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to delete team',
+      title: 'Kunne ikke slette lag',
       description: result.error.message,
       color: 'error',
     })
@@ -194,7 +194,7 @@ async function handleDeleteTeam() {
   }
 
   toast.add({
-    title: 'Team deleted',
+    title: 'Lag slettet',
     color: 'success',
   })
 
@@ -205,7 +205,7 @@ function copyJoinCode() {
   if (data.value) {
     navigator.clipboard.writeText(data.value.team.joinCode)
     toast.add({
-      title: 'Join code copied',
+      title: 'Invitasjonskode kopiert',
       color: 'success',
     })
   }
@@ -218,7 +218,7 @@ function copyJoinCode() {
       <UContainer>
         <UBreadcrumb
           :items="[
-            { label: 'Teams', to: { name: 'admin-teams' } },
+            { label: 'Lag', to: { name: 'admin-teams' } },
             {
               label: data?.team.name ?? route.params.teamId,
               to: {
@@ -242,10 +242,10 @@ function copyJoinCode() {
           </div>
           <div v-if="canEdit" class="flex gap-2">
             <UButton v-if="!isEditing" variant="soft" @click="startEditing">
-              Edit
+              Rediger
             </UButton>
             <UButton variant="soft" color="error" @click="handleDeleteTeam">
-              Delete
+              Slett
             </UButton>
           </div>
         </div>
@@ -253,13 +253,13 @@ function copyJoinCode() {
         <!-- Edit Form -->
         <UCard v-if="isEditing">
           <template #header>
-            <h2 class="text-xl font-semibold">Edit Team</h2>
+            <h2 class="text-xl font-semibold">Rediger lag</h2>
           </template>
           <div class="space-y-4">
-            <UFormField label="Name">
+            <UFormField label="Navn">
               <UInput v-model="editState.name" class="w-full" />
             </UFormField>
-            <UFormField label="Description">
+            <UFormField label="Beskrivelse">
               <UTextarea
                 v-model="editState.description"
                 class="w-full"
@@ -269,8 +269,8 @@ function copyJoinCode() {
           </div>
           <template #footer>
             <div class="flex justify-end gap-3">
-              <UButton variant="ghost" @click="cancelEditing">Cancel</UButton>
-              <UButton @click="saveChanges">Save Changes</UButton>
+              <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
+              <UButton @click="saveChanges">Lagre endringer</UButton>
             </div>
           </template>
         </UCard>
@@ -278,26 +278,26 @@ function copyJoinCode() {
         <!-- Team Info -->
         <dl class="text-sm">
           <div class="border-default flex gap-6 border-b py-2">
-            <dt class="text-muted w-24 shrink-0">Team ID</dt>
+            <dt class="text-muted w-24 shrink-0">Lag-ID</dt>
             <dd class="font-mono">{{ data.team.id }}</dd>
           </div>
           <div class="border-default flex gap-6 border-b py-2">
-            <dt class="text-muted w-24 shrink-0">Project</dt>
+            <dt class="text-muted w-24 shrink-0">Prosjekt</dt>
             <dd class="font-medium">{{ data.team.parentProject.name }}</dd>
           </div>
           <div class="border-default flex gap-6 border-b py-2">
-            <dt class="text-muted w-24 shrink-0">Super Team</dt>
+            <dt class="text-muted w-24 shrink-0">Superlag</dt>
             <dd v-if="data.team.superTeam" class="font-medium">
               {{ data.team.superTeam.name }}
             </dd>
-            <dd v-else class="text-muted">None</dd>
+            <dd v-else class="text-muted">Ingen</dd>
           </div>
           <div class="border-default flex gap-6 border-b py-2">
-            <dt class="text-muted w-24 shrink-0">Members</dt>
+            <dt class="text-muted w-24 shrink-0">Medlemmer</dt>
             <dd class="font-medium">{{ data.team.members.length }}</dd>
           </div>
           <div class="flex items-center gap-6 py-2">
-            <dt class="text-muted w-24 shrink-0">Join Code</dt>
+            <dt class="text-muted w-24 shrink-0">Invitasjonskode</dt>
             <dd class="flex items-center gap-2">
               <code class="bg-background-indent rounded px-2 py-1">{{
                 data.team.joinCode
@@ -324,7 +324,7 @@ function copyJoinCode() {
           <template #header>
             <div class="flex items-center justify-between">
               <h2 class="text-xl font-semibold">
-                Members ({{ data.team.members.length }})
+                Medlemmer ({{ data.team.members.length }})
               </h2>
             </div>
           </template>
@@ -344,7 +344,7 @@ function copyJoinCode() {
                     size="xs"
                     color="primary"
                   >
-                    Lead
+                    Leder
                   </UBadge>
                 </div>
                 <div class="text-muted text-xs">
@@ -358,7 +358,7 @@ function copyJoinCode() {
                   size="xs"
                   @click="handleAssignTeamLead(member.user.id, member.name)"
                 >
-                  Make Lead
+                  Gjør til leder
                 </UButton>
                 <UButton
                   icon="i-lucide-trash-2"
@@ -370,7 +370,7 @@ function copyJoinCode() {
               </div>
             </div>
           </div>
-          <div v-else class="text-dimmed">No members</div>
+          <div v-else class="text-dimmed">Ingen medlemmer</div>
         </UCard>
       </div>
     </UContainer>

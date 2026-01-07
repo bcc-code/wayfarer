@@ -22,7 +22,7 @@ defineProps<{
         v-else
         class="bg-accent aspect-[1.25] w-full flex items-center justify-center text-on-accent/50"
       >
-        No image
+        Ingen bilde
       </div>
       <div class="bg-background-raised p-default gap-default space-y-default">
         <div class="space-y-small">
@@ -34,7 +34,7 @@ defineProps<{
             class="text-label"
             v-html="challenge.description"
           />
-          <div v-else class="text-label text-text-muted">No description</div>
+          <div v-else class="text-label text-text-muted">Ingen beskrivelse</div>
         </div>
         <div class="mt-auto grid">
           <DesignButton size="large">
