@@ -241,7 +241,7 @@ func main() {
 	slog.Info("SettingsService initialized with background refresh")
 
 	// Initialize S3 upload service
-	s3Service, err := services.NewS3Service(ctx, cfg.S3)
+	s3Service, err := services.NewS3Service(cfg.S3)
 	if err != nil {
 		slog.Error("Failed to initialize S3 service", "error", err)
 		os.Exit(1)

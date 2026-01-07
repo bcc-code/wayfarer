@@ -105,10 +105,9 @@ type SSFConfig struct {
 type S3Config struct {
 	Bucket          string // S3 bucket name
 	Region          string // AWS region
-	AccessKeyID     string // AWS access key ID (used locally, optional on Cloud Run)
-	SecretAccessKey string // AWS secret access key (used locally, optional on Cloud Run)
+	AccessKeyID     string // AWS access key ID
+	SecretAccessKey string // AWS secret access key
 	PublicBaseURL   string // Public base URL for uploaded files
-	RoleARN         string // AWS role ARN for OIDC auth on Cloud Run
 }
 
 // VAPIDConfig holds VAPID keys for web push notifications
@@ -206,7 +205,6 @@ func Load() (*Config, error) {
 			AccessKeyID:     getEnv("AWS_S3_ACCESS_KEY_ID", ""),
 			SecretAccessKey: getEnv("AWS_S3_SECRET_ACCESS_KEY", ""),
 			PublicBaseURL:   getEnv("AWS_S3_PUBLIC_BASE_URL", ""),
-			RoleARN:         getEnv("AWS_S3_ROLE_ARN", ""),
 		},
 		VAPID: VAPIDConfig{
 			PublicKey:  getEnv("VAPID_PUBLIC_KEY", ""),
