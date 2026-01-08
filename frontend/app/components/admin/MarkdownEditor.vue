@@ -32,19 +32,19 @@ const toolbarItems = [
     icon: 'i-lucide-bold',
     action: () => editor.value?.chain().focus().toggleBold().run(),
     isActive: () => editor.value?.isActive('bold'),
-    title: 'Bold',
+    title: 'Fet',
   },
   {
     icon: 'i-lucide-italic',
     action: () => editor.value?.chain().focus().toggleItalic().run(),
     isActive: () => editor.value?.isActive('italic'),
-    title: 'Italic',
+    title: 'Kursiv',
   },
   {
     icon: 'i-lucide-strikethrough',
     action: () => editor.value?.chain().focus().toggleStrike().run(),
     isActive: () => editor.value?.isActive('strike'),
-    title: 'Strikethrough',
+    title: 'Gjennomstreking',
   },
   { type: 'divider' },
   {
@@ -52,27 +52,27 @@ const toolbarItems = [
     action: () =>
       editor.value?.chain().focus().toggleHeading({ level: 2 }).run(),
     isActive: () => editor.value?.isActive('heading', { level: 2 }),
-    title: 'Heading 2',
+    title: 'Overskrift 2',
   },
   {
     icon: 'i-lucide-heading-3',
     action: () =>
       editor.value?.chain().focus().toggleHeading({ level: 3 }).run(),
     isActive: () => editor.value?.isActive('heading', { level: 3 }),
-    title: 'Heading 3',
+    title: 'Overskrift 3',
   },
   { type: 'divider' },
   {
     icon: 'i-lucide-list',
     action: () => editor.value?.chain().focus().toggleBulletList().run(),
     isActive: () => editor.value?.isActive('bulletList'),
-    title: 'Bullet List',
+    title: 'Punktliste',
   },
   {
     icon: 'i-lucide-list-ordered',
     action: () => editor.value?.chain().focus().toggleOrderedList().run(),
     isActive: () => editor.value?.isActive('orderedList'),
-    title: 'Ordered List',
+    title: 'Nummerert liste',
   },
 ]
 </script>

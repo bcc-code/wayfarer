@@ -27,14 +27,14 @@ const contentTypeFilter = ref<ExternalContentType | null>(null)
 const sourceFilter = ref('')
 
 const contentTypeOptions = [
-  { value: null, label: 'All Types' },
+  { value: null, label: 'Alle typer' },
   { value: ExternalContentType.Media, label: 'Media' },
-  { value: ExternalContentType.Song, label: 'Song' },
-  { value: ExternalContentType.BookChapter, label: 'Book Chapter' },
-  { value: ExternalContentType.Article, label: 'Article' },
-  { value: ExternalContentType.BibleVerse, label: 'Bible Verse' },
+  { value: ExternalContentType.Song, label: 'Sang' },
+  { value: ExternalContentType.BookChapter, label: 'Bokkapittel' },
+  { value: ExternalContentType.Article, label: 'Artikkel' },
+  { value: ExternalContentType.BibleVerse, label: 'Bibelvers' },
   { value: ExternalContentType.Quiz, label: 'Quiz' },
-  { value: ExternalContentType.Text, label: 'Text' },
+  { value: ExternalContentType.Text, label: 'Tekst' },
 ]
 
 // Debounced search
@@ -119,20 +119,15 @@ function handleReorder() {
 function formatContentType(type: ExternalContentType): string {
   const labels: Record<ExternalContentType, string> = {
     [ExternalContentType.Media]: 'Media',
-    [ExternalContentType.Song]: 'Song',
-    [ExternalContentType.BookChapter]: 'Book Chapter',
-    [ExternalContentType.Article]: 'Article',
-    [ExternalContentType.BibleVerse]: 'Bible Verse',
+    [ExternalContentType.Song]: 'Sang',
+    [ExternalContentType.BookChapter]: 'Bokkapittel',
+    [ExternalContentType.Article]: 'Artikkel',
+    [ExternalContentType.BibleVerse]: 'Bibelvers',
     [ExternalContentType.Quiz]: 'Quiz',
-    [ExternalContentType.Text]: 'Text',
-    [ExternalContentType.ExternalLink]: 'External Link',
+    [ExternalContentType.Text]: 'Tekst',
+    [ExternalContentType.ExternalLink]: 'Ekstern lenke',
   }
   return labels[type] || type
-}
-
-function formatDate(dateString?: string | null): string {
-  if (!dateString) return ''
-  return new Date(dateString).toLocaleDateString()
 }
 </script>
 
@@ -142,7 +137,7 @@ function formatDate(dateString?: string | null): string {
     <div class="flex gap-3">
       <UInput
         v-model="searchQuery"
-        placeholder="Search content..."
+        placeholder="Søk etter innhold..."
         icon="lucide:search"
         class="flex-1"
       />
@@ -156,14 +151,14 @@ function formatDate(dateString?: string | null): string {
     <!-- Search Results -->
     <div class="border-default max-h-96 overflow-y-auto rounded-lg border">
       <div v-if="fetching" class="text-muted p-4 text-center text-sm">
-        Loading...
+        Laster...
       </div>
       <div
         v-else-if="searchResults.length === 0"
         class="text-muted p-4 text-center text-sm"
       >
         {{
-          debouncedSearch ? 'No matching content found' : 'No content available'
+          debouncedSearch ? 'Ingen treff' : 'Ingen innhold tilgjengelig'
         }}
       </div>
       <div v-else>
@@ -196,9 +191,9 @@ function formatDate(dateString?: string | null): string {
     <!-- Selected Items -->
     <div>
       <div class="text-muted mb-2 text-sm font-medium">
-        Selected Items ({{ modelValue.length }})
+        Valgte elementer ({{ modelValue.length }})
         <span v-if="modelValue.length > 1" class="font-normal">
-          - drag to reorder
+          - dra for å sortere
         </span>
       </div>
       <div class="border-default rounded-lg border">
@@ -244,7 +239,7 @@ function formatDate(dateString?: string | null): string {
           v-if="modelValue.length === 0"
           class="text-muted py-6 text-center text-sm"
         >
-          No content items selected. Search and add items above.
+          Ingen innhold valgt. Søk og legg til elementer ovenfor.
         </div>
       </div>
     </div>

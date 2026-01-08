@@ -122,20 +122,20 @@ const toast = useToast()
 const { canAssignRoles } = usePermissions()
 
 const roleOptions = [
-  { label: 'User', value: RoleType.User },
+  { label: 'Bruker', value: RoleType.User },
   { label: 'Admin', value: RoleType.Admin },
   { label: 'Superadmin', value: RoleType.Superadmin },
-  { label: 'Church Admin', value: RoleType.ChurchAdmin },
-  { label: 'Project Admin', value: RoleType.ProjectAdmin },
-  { label: 'Team Lead', value: RoleType.TeamLead },
+  { label: 'Menighetsadmin', value: RoleType.ChurchAdmin },
+  { label: 'Prosjektadmin', value: RoleType.ProjectAdmin },
+  { label: 'Lagleder', value: RoleType.TeamLead },
   { label: 'M2M', value: RoleType.M2M },
 ]
 
 const scopeTypeOptions = [
-  { label: 'None (Global)', value: null },
-  { label: 'Church', value: ScopeType.Church },
-  { label: 'Project', value: ScopeType.Project },
-  { label: 'Team', value: ScopeType.Team },
+  { label: 'Ingen (Global)', value: null },
+  { label: 'Menighet', value: ScopeType.Church },
+  { label: 'Prosjekt', value: ScopeType.Project },
+  { label: 'Lag', value: ScopeType.Team },
 ]
 
 const showAddRoleModal = ref(false)
@@ -164,7 +164,7 @@ async function handleAssignRole() {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to assign role',
+      title: 'Kunne ikke tildele rolle',
       description: result.error.message,
       color: 'error',
     })
@@ -172,8 +172,8 @@ async function handleAssignRole() {
   }
 
   toast.add({
-    title: 'Role assigned',
-    description: `Successfully assigned ${newRole.role} role`,
+    title: 'Rolle tildelt',
+    description: `Tildelte rollen ${newRole.role}`,
     color: 'success',
   })
 
@@ -199,7 +199,7 @@ async function handleRevokeRole(
 
   if (result.error) {
     toast.add({
-      title: 'Failed to revoke role',
+      title: 'Kunne ikke fjerne rolle',
       description: result.error.message,
       color: 'error',
     })
@@ -207,8 +207,8 @@ async function handleRevokeRole(
   }
 
   toast.add({
-    title: 'Role revoked',
-    description: `Successfully revoked ${role} role`,
+    title: 'Rolle fjernet',
+    description: `Fjernet rollen ${role}`,
     color: 'success',
   })
 
@@ -260,7 +260,7 @@ function formatFeedbackDate(date: string) {
       <UContainer>
         <UBreadcrumb
           :items="[
-            { label: 'Users', to: { name: 'admin-users' } },
+            { label: 'Brukere', to: { name: 'admin-users' } },
             {
               label: data?.user.name ?? route.params.userId,
               to: {
@@ -285,31 +285,31 @@ function formatFeedbackDate(date: string) {
         <!-- User Info -->
         <dl class="text-sm">
           <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Members ID</dt>
+            <dt class="text-muted w-24 shrink-0">Members-ID</dt>
             <dd class="font-medium">{{ data.user.membersId }}</dd>
           </div>
           <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">User ID</dt>
+            <dt class="text-muted w-24 shrink-0">Bruker-ID</dt>
             <dd class="font-mono">{{ data.user.id }}</dd>
           </div>
           <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Gender</dt>
+            <dt class="text-muted w-24 shrink-0">Kjønn</dt>
             <dd class="font-medium">{{ capitalizeFirst(data.user.gender) }}</dd>
           </div>
           <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Age</dt>
-            <dd class="font-medium">{{ data.user.age }} years</dd>
+            <dt class="text-muted w-24 shrink-0">Alder</dt>
+            <dd class="font-medium">{{ data.user.age }} år</dd>
           </div>
           <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Birthdate</dt>
+            <dt class="text-muted w-24 shrink-0">Fødselsdato</dt>
             <dd class="font-medium">{{ formatDate(data.user.birthdate) }}</dd>
           </div>
           <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Church</dt>
+            <dt class="text-muted w-24 shrink-0">Menighet</dt>
             <dd class="font-medium">{{ data.user.church.name }}</dd>
           </div>
           <div class="flex gap-6 py-2">
-            <dt class="text-muted w-24 shrink-0">Church ID</dt>
+            <dt class="text-muted w-24 shrink-0">Menighet-ID</dt>
             <dd class="font-mono">{{ data.user.church.id }}</dd>
           </div>
         </dl>
@@ -318,14 +318,14 @@ function formatFeedbackDate(date: string) {
         <UCard>
           <template #header>
             <div class="flex items-center justify-between">
-              <h2 class="text-xl font-semibold">Roles & Permissions</h2>
+              <h2 class="text-xl font-semibold">Roller og tillatelser</h2>
               <UButton
                 v-if="canAssignRoles"
                 icon="i-lucide-plus"
                 size="sm"
                 @click="showAddRoleModal = true"
               >
-                Add Role
+                Legg til rolle
               </UButton>
             </div>
           </template>
@@ -341,7 +341,7 @@ function formatFeedbackDate(date: string) {
                   {{ role.role }}
                 </UBadge>
                 <div v-if="role.scope">
-                  <span class="text-dimmed text-sm">Scope: </span>
+                  <span class="text-dimmed text-sm">Omfang: </span>
                   <span class="text-sm font-medium">
                     {{ capitalizeFirst(role.scope.type) }}
                   </span>
@@ -367,19 +367,19 @@ function formatFeedbackDate(date: string) {
               />
             </div>
           </div>
-          <div v-else class="text-dimmed">No roles assigned</div>
+          <div v-else class="text-dimmed">Ingen roller tildelt</div>
         </UCard>
 
         <!-- Consents Card -->
         <UCard>
           <template #header>
-            <h2 class="text-xl font-semibold">Consents</h2>
+            <h2 class="text-xl font-semibold">Samtykker</h2>
           </template>
 
           <div class="space-y-4">
             <!-- Pending Consents -->
             <div v-if="data.user.consentStatus.pendingConsents.length > 0">
-              <h3 class="text-muted mb-2 text-sm font-medium">Pending</h3>
+              <h3 class="text-muted mb-2 text-sm font-medium">Ventende</h3>
               <div class="space-y-2">
                 <div
                   v-for="consent in data.user.consentStatus.pendingConsents"
@@ -387,7 +387,7 @@ function formatFeedbackDate(date: string) {
                   class="border-default flex items-center justify-between rounded-md border p-3"
                 >
                   <div class="flex items-center gap-3">
-                    <UBadge variant="soft" color="warning">Pending</UBadge>
+                    <UBadge variant="soft" color="warning">Ventende</UBadge>
                     <div>
                       <span class="font-medium">{{ consent.title }}</span>
                       <span class="text-dimmed ml-2 text-xs"
@@ -402,7 +402,7 @@ function formatFeedbackDate(date: string) {
 
             <!-- Accepted Consents -->
             <div v-if="data.user.consentStatus.acceptedConsents.length > 0">
-              <h3 class="text-muted mb-2 text-sm font-medium">Accepted</h3>
+              <h3 class="text-muted mb-2 text-sm font-medium">Akseptert</h3>
               <div class="space-y-2">
                 <div
                   v-for="item in data.user.consentStatus.acceptedConsents"
@@ -410,7 +410,7 @@ function formatFeedbackDate(date: string) {
                   class="border-default flex items-center justify-between rounded-md border p-3"
                 >
                   <div class="flex items-center gap-3">
-                    <UBadge variant="soft" color="success">Accepted</UBadge>
+                    <UBadge variant="soft" color="success">Akseptert</UBadge>
                     <div>
                       <span class="font-medium">{{ item.consent.title }}</span>
                       <span class="text-dimmed ml-2 text-xs"
@@ -432,7 +432,7 @@ function formatFeedbackDate(date: string) {
 
             <!-- Rejected Consents -->
             <div v-if="data.user.consentStatus.rejectedConsents.length > 0">
-              <h3 class="text-muted mb-2 text-sm font-medium">Rejected</h3>
+              <h3 class="text-muted mb-2 text-sm font-medium">Avvist</h3>
               <div class="space-y-2">
                 <div
                   v-for="item in data.user.consentStatus.rejectedConsents"
@@ -440,7 +440,7 @@ function formatFeedbackDate(date: string) {
                   class="border-default flex items-center justify-between rounded-md border p-3"
                 >
                   <div class="flex items-center gap-3">
-                    <UBadge variant="soft" color="error">Rejected</UBadge>
+                    <UBadge variant="soft" color="error">Avvist</UBadge>
                     <div>
                       <span class="font-medium">{{ item.consent.title }}</span>
                       <span class="text-dimmed ml-2 text-xs"
@@ -469,7 +469,7 @@ function formatFeedbackDate(date: string) {
               "
               class="text-dimmed"
             >
-              No consent activity
+              Ingen samtykkeaktivitet
             </div>
           </div>
         </UCard>
@@ -479,16 +479,16 @@ function formatFeedbackDate(date: string) {
           <template #header>
             <div class="flex items-center justify-between">
               <h2 class="text-xl font-semibold">
-                Score Journal
+                Poenglogg
                 <span
                   v-if="scoreTotalCount > 0"
                   class="text-dimmed text-sm font-normal"
                 >
-                  ({{ scoreTotalCount }} entries)
+                  ({{ scoreTotalCount }} oppføringer)
                 </span>
               </h2>
               <UButton variant="ghost" size="sm" :to="{ name: 'admin-scores' }">
-                View All
+                Vis alle
               </UButton>
             </div>
           </template>
@@ -530,10 +530,10 @@ function formatFeedbackDate(date: string) {
               v-if="scoreTotalCount > 20"
               class="text-dimmed pt-2 text-center text-sm"
             >
-              Showing 20 of {{ scoreTotalCount }} entries
+              Viser 20 av {{ scoreTotalCount }} oppføringer
             </div>
           </div>
-          <div v-else class="text-dimmed">No score entries</div>
+          <div v-else class="text-dimmed">Ingen poengoppføringer</div>
         </UCard>
 
         <!-- Feedback Card -->
@@ -541,13 +541,13 @@ function formatFeedbackDate(date: string) {
           <template #header>
             <div class="flex items-center justify-between">
               <h2 class="text-xl font-semibold">
-                Feedback
+                Tilbakemeldinger
                 <span
                   v-if="feedbackTotalCount > 0"
                   class="text-dimmed text-sm font-normal"
                 >
                   ({{ feedbackTotalCount }}
-                  {{ feedbackTotalCount === 1 ? 'entry' : 'entries' }})
+                  {{ feedbackTotalCount === 1 ? 'oppføring' : 'oppføringer' }})
                 </span>
               </h2>
               <UButton
@@ -555,7 +555,7 @@ function formatFeedbackDate(date: string) {
                 size="sm"
                 :to="{ name: 'admin-feedback' }"
               >
-                View All
+                Vis alle
               </UButton>
             </div>
           </template>
@@ -573,7 +573,7 @@ function formatFeedbackDate(date: string) {
                   variant="soft"
                   class="shrink-0"
                 >
-                  {{ entry.canContactMe ? 'Can contact' : 'No contact' }}
+                  {{ entry.canContactMe ? 'Kan kontaktes' : 'Ikke kontakt' }}
                 </UBadge>
               </div>
               <div
@@ -591,10 +591,10 @@ function formatFeedbackDate(date: string) {
               v-if="feedbackTotalCount > 10"
               class="text-dimmed pt-2 text-center text-sm"
             >
-              Showing 10 of {{ feedbackTotalCount }} entries
+              Viser 10 av {{ feedbackTotalCount }} oppføringer
             </div>
           </div>
-          <div v-else class="text-dimmed">No feedback submitted</div>
+          <div v-else class="text-dimmed">Ingen tilbakemeldinger</div>
         </UCard>
       </div>
     </UContainer>
@@ -602,12 +602,12 @@ function formatFeedbackDate(date: string) {
     <!-- Add Role Modal -->
     <UModal v-model:open="showAddRoleModal">
       <template #header>
-        <h3 class="text-lg font-semibold">Add Role</h3>
+        <h3 class="text-lg font-semibold">Legg til rolle</h3>
       </template>
 
       <template #body>
         <div class="space-y-4">
-          <UFormField label="Role">
+          <UFormField label="Rolle">
             <USelect
               v-model="newRole.role"
               :items="roleOptions"
@@ -616,7 +616,7 @@ function formatFeedbackDate(date: string) {
             />
           </UFormField>
 
-          <UFormField label="Scope Type">
+          <UFormField label="Omfangstype">
             <USelect
               v-model="newRole.scopeType"
               :items="scopeTypeOptions"
@@ -625,10 +625,10 @@ function formatFeedbackDate(date: string) {
             />
           </UFormField>
 
-          <UFormField v-if="newRole.scopeType" label="Scope ID">
+          <UFormField v-if="newRole.scopeType" label="Omfangs-ID">
             <UInput
               v-model="newRole.scopeId"
-              :placeholder="`Enter ${newRole.scopeType.toLowerCase()} ID`"
+              :placeholder="`Skriv inn ${newRole.scopeType.toLowerCase()}-ID`"
               class="w-full"
             />
           </UFormField>
@@ -646,9 +646,9 @@ function formatFeedbackDate(date: string) {
               }
             "
           >
-            Cancel
+            Avbryt
           </UButton>
-          <UButton @click="handleAssignRole"> Assign Role </UButton>
+          <UButton @click="handleAssignRole"> Tildel rolle </UButton>
         </div>
       </template>
     </UModal>

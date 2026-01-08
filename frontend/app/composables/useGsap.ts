@@ -85,10 +85,18 @@ export function useCountUp() {
   return { countUp }
 }
 
+interface StaggeredEntranceOptions {
+  /** Total animation duration in seconds (default: 0.8) */
+  totalDuration?: number
+}
+
 /**
- * Staggered entrance animation for lists of elements
+ * Staggered entrance animation for lists of elements.
+ * Duration and stagger are calculated automatically based on totalDuration and element count.
  */
-export function useStaggeredEntrance() {
+export function useStaggeredEntrance(options?: StaggeredEntranceOptions) {
+  const totalDuration = options?.totalDuration ?? 0.8
+
   let ctx: gsap.Context | null = null
 
   function animate(elements: HTMLElement[] | NodeListOf<Element>) {
@@ -97,6 +105,12 @@ export function useStaggeredEntrance() {
 
     // Clean up previous context
     ctx?.revert()
+
+    // Derive duration and stagger from totalDuration and element count
+    // Per-element duration is 50% of total, stagger fills the rest
+    const count = elements.length
+    const duration = totalDuration * 0.5
+    const stagger = count > 1 ? (totalDuration - duration) / (count - 1) : 0
 
     ctx = gsap.context(() => {
       gsap.fromTo(
@@ -108,8 +122,8 @@ export function useStaggeredEntrance() {
         {
           opacity: 1,
           y: 0,
-          duration: 0.4,
-          stagger: 0.08,
+          duration,
+          stagger: Math.max(0, stagger),
           ease: 'power2.out',
         },
       )

@@ -220,8 +220,8 @@ async function handleSubmit(formData: AchievementFormData) {
   }
 
   toast.add({
-    title: 'Success',
-    description: 'Achievement updated successfully',
+    title: 'Suksess',
+    description: 'Utmerkelse oppdatert',
     color: 'success',
   })
   navigateTo({
@@ -232,7 +232,7 @@ async function handleSubmit(formData: AchievementFormData) {
 
 async function handleDelete() {
   const confirmed = confirm(
-    `Are you sure you want to delete "${data.value?.achievement.name}"? This action cannot be undone.`,
+    `Er du sikker på at du vil slette "${data.value?.achievement.name}"? Denne handlingen kan ikke angres.`,
   )
 
   if (!confirmed) return
@@ -248,8 +248,8 @@ async function handleDelete() {
   }
 
   toast.add({
-    title: 'Success',
-    description: 'Achievement deleted successfully',
+    title: 'Suksess',
+    description: 'Utmerkelse slettet',
     color: 'success',
   })
   navigateTo({
@@ -266,7 +266,7 @@ async function handleDelete() {
         <UBreadcrumb
           :items="[
             {
-              label: 'Projects',
+              label: 'Prosjekter',
               to: { name: 'admin-projects' },
             },
             {
@@ -277,7 +277,7 @@ async function handleDelete() {
               },
             },
             {
-              label: 'Achievements',
+              label: 'Utmerkelser',
             },
             {
               label: data?.achievement.name ?? route.params.achievementId,
@@ -297,14 +297,14 @@ async function handleDelete() {
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
       <template v-else-if="initialData">
-        <h1 class="mb-6 text-2xl font-bold">Edit Achievement</h1>
+        <h1 class="mb-6 text-2xl font-bold">Rediger utmerkelse</h1>
         <AdminAchievementForm
           :project-id="route.params.projectId"
           :initial-data="initialData"
           :achievement-type="achievementType"
           :is-edit-mode="true"
           :colors="data?.achievement.project.branding.colors"
-          submit-label="Save changes"
+          submit-label="Lagre endringer"
           :on-delete="handleDelete"
           @submit="handleSubmit"
         />

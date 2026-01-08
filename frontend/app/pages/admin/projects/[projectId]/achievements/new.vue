@@ -102,8 +102,8 @@ async function handleSubmit(formData: AchievementFormData) {
   }
 
   toast.add({
-    title: 'Success',
-    description: 'Achievement created successfully',
+    title: 'Suksess',
+    description: 'Utmerkelse opprettet',
     color: 'success',
   })
   navigateTo({
@@ -120,7 +120,7 @@ async function handleSubmit(formData: AchievementFormData) {
         <UBreadcrumb
           :items="[
             {
-              label: 'Projects',
+              label: 'Prosjekter',
               to: { name: 'admin-projects' },
             },
             {
@@ -131,21 +131,21 @@ async function handleSubmit(formData: AchievementFormData) {
               },
             },
             {
-              label: 'Achievements',
+              label: 'Utmerkelser',
             },
             {
-              label: 'New',
+              label: 'Ny',
             },
           ]"
         />
       </UContainer>
     </div>
     <UContainer class="py-12">
-      <h1 class="mb-6 text-2xl font-bold">Create Achievement</h1>
+      <h1 class="mb-6 text-2xl font-bold">Opprett utmerkelse</h1>
       <AdminAchievementForm
         :project-id="route.params.projectId"
         :colors="data?.project.branding.colors"
-        submit-label="Create Achievement"
+        submit-label="Opprett utmerkelse"
         @submit="handleSubmit"
       />
     </UContainer>

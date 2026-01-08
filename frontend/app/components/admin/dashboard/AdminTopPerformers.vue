@@ -17,7 +17,7 @@ defineProps<{
   <UCard>
     <template #header>
       <div class="flex items-center justify-between">
-        <h3 class="font-semibold">Top Performers</h3>
+        <h3 class="font-semibold">Toppliste</h3>
         <UBadge variant="subtle">{{ projectName }}</UBadge>
       </div>
     </template>
@@ -43,22 +43,22 @@ defineProps<{
         </span>
         <span class="min-w-0 flex-1 truncate text-sm">{{ entry.name }}</span>
         <span class="text-muted text-sm font-medium">
-          {{ formatNumber(entry.score) }} pts
+          {{ formatNumber(entry.score) }} p
         </span>
       </div>
       <p v-if="!entries.length" class="text-muted text-center text-sm">
-        No participants yet
+        Ingen deltakere ennå
       </p>
     </div>
 
     <template #footer>
       <div class="flex items-center justify-between text-sm">
-        <span class="text-muted">{{ totalCount }} participants</span>
+        <span class="text-muted">{{ totalCount }} deltakere</span>
         <NuxtLink
           :to="{ name: 'admin-projects-projectId', params: { projectId } }"
           class="text-primary hover:underline"
         >
-          View project
+          Se prosjekt
         </NuxtLink>
       </div>
     </template>

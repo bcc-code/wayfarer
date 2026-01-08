@@ -7,7 +7,7 @@ const props = defineProps<{
 }>()
 
 const containerRef = ref<HTMLElement | null>(null)
-const { animate } = useStaggeredEntrance()
+const { animate } = useStaggeredEntrance({ totalDuration: 1 })
 const hasAnimated = ref(false)
 
 function runAnimation() {

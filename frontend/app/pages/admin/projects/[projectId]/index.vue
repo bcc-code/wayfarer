@@ -153,7 +153,7 @@ async function handleReorder() {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to reorder',
+      title: 'Kunne ikke endre rekkefølge',
       description: result.error.message,
       color: 'error',
     })
@@ -163,7 +163,7 @@ async function handleReorder() {
   }
 
   toast.add({
-    title: 'Order saved',
+    title: 'Rekkefølge lagret',
     color: 'success',
   })
 }
@@ -176,7 +176,7 @@ async function handleReorder() {
         <UBreadcrumb
           :items="[
             {
-              label: 'Projects',
+              label: 'Prosjekter',
               to: { name: 'admin-projects' },
             },
             {
@@ -192,7 +192,7 @@ async function handleReorder() {
     </div>
     <UContainer class="py-12">
       <LoadingState v-if="fetching" />
-      <ErrorState v-else-if="error" :error class="h-[600px]" />
+      <ErrorState v-else-if="error" :error class="h-150" />
       <template v-else-if="data">
         <header class="my-12">
           <div class="space-y-2">
@@ -217,7 +217,7 @@ async function handleReorder() {
                   params: { projectId: route.params.projectId },
                 }"
               >
-                Edit project
+                Rediger prosjekt
               </UButton>
             </div>
           </div>
@@ -227,10 +227,10 @@ async function handleReorder() {
           :items="[
             {
               value: 'achievements',
-              label: 'Achievements',
+              label: 'Utmerkelser',
               slot: 'achievements',
             },
-            { value: 'challenges', label: 'Challenges', slot: 'challenges' },
+            { value: 'challenges', label: 'Utfordringer', slot: 'challenges' },
           ]"
           variant="link"
         >
@@ -243,7 +243,7 @@ async function handleReorder() {
                   params: { projectId: route.params.projectId },
                 }"
               >
-                Create Challenge
+                Opprett utfordring
               </UButton>
             </div>
             <UTable
@@ -268,10 +268,10 @@ async function handleReorder() {
               <template #type-cell="{ row }">
                 {{
                   row.original.__typename === 'ExternalChallenge'
-                    ? 'External'
+                    ? 'Ekstern'
                     : row.original.__typename === 'QuizChallenge'
                       ? 'Quiz'
-                      : 'Simple'
+                      : 'Enkel'
                 }}
               </template>
               <template #actions-cell="{ row }">
@@ -287,7 +287,7 @@ async function handleReorder() {
                       },
                     }"
                   >
-                    Edit
+                    Rediger
                   </UButton>
                 </div>
               </template>
@@ -302,7 +302,7 @@ async function handleReorder() {
                   params: { projectId: route.params.projectId },
                 }"
               >
-                Create Achievement
+                Opprett utmerkelse
               </UButton>
             </div>
             <div class="border-default rounded-lg border">
@@ -351,7 +351,7 @@ async function handleReorder() {
                     variant="soft"
                     color="warning"
                   >
-                    Hidden
+                    Skjult
                   </UBadge>
                   <UButton
                     variant="ghost"
@@ -364,7 +364,7 @@ async function handleReorder() {
                       },
                     }"
                   >
-                    Edit
+                    Rediger
                   </UButton>
                 </div>
               </VueDraggable>
@@ -372,7 +372,7 @@ async function handleReorder() {
                 v-if="achievements.length === 0"
                 class="text-dimmed py-8 text-center"
               >
-                No achievements yet
+                Ingen utmerkelser ennå
               </div>
             </div>
           </template>

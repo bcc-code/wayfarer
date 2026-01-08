@@ -315,8 +315,8 @@ async function handleSubmit(formData: ChallengeFormData) {
       await saveQuiz(quiz, route.params.challengeId)
     } catch (err) {
       toast.add({
-        title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to save quiz',
+        title: 'Feil',
+        description: err instanceof Error ? err.message : 'Kunne ikke lagre quiz',
         color: 'error',
       })
       return
@@ -324,8 +324,8 @@ async function handleSubmit(formData: ChallengeFormData) {
   }
 
   toast.add({
-    title: 'Success',
-    description: 'Challenge updated successfully',
+    title: 'Suksess',
+    description: 'Utfordring oppdatert',
     color: 'success',
   })
   navigateTo({
@@ -336,7 +336,7 @@ async function handleSubmit(formData: ChallengeFormData) {
 
 async function handleDelete() {
   const confirmed = confirm(
-    `Are you sure you want to delete "${data.value?.challenge.name}"? This action cannot be undone.`,
+    `Er du sikker på at du vil slette "${data.value?.challenge.name}"? Denne handlingen kan ikke angres.`,
   )
 
   if (!confirmed) return
@@ -352,8 +352,8 @@ async function handleDelete() {
   }
 
   toast.add({
-    title: 'Success',
-    description: 'Challenge deleted successfully',
+    title: 'Suksess',
+    description: 'Utfordring slettet',
     color: 'success',
   })
   navigateTo({
@@ -370,7 +370,7 @@ async function handleDelete() {
         <UBreadcrumb
           :items="[
             {
-              label: 'Projects',
+              label: 'Prosjekter',
               to: { name: 'admin-projects' },
             },
             {
@@ -381,7 +381,7 @@ async function handleDelete() {
               },
             },
             {
-              label: 'Challenges',
+              label: 'Utfordringer',
             },
             {
               label: data?.challenge.name ?? route.params.challengeId,
@@ -406,7 +406,7 @@ async function handleDelete() {
         :quiz-data="quizData"
         :project-id="route.params.projectId"
         :colors="data?.challenge.project.branding.colors"
-        submit-label="Save changes"
+        submit-label="Lagre endringer"
         is-edit-mode
         :on-delete="handleDelete"
         @submit="handleSubmit"

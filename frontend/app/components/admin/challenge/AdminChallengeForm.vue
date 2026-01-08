@@ -103,8 +103,8 @@ watch(
 )
 
 const challengeTypeOptions = [
-  { value: ChallengeType.Simple, label: 'Simple' },
-  { value: ChallengeType.External, label: 'External' },
+  { value: ChallengeType.Simple, label: 'Enkel' },
+  { value: ChallengeType.External, label: 'Ekstern' },
   { value: ChallengeType.Quiz, label: 'Quiz' },
 ]
 
@@ -133,7 +133,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         @submit.prevent="handleSubmit"
       >
         <slot name="before-type" />
-        <UFormField name="type" label="Challenge Type">
+        <UFormField name="type" label="Utfordringstype">
           <USelect
             v-model="state.type"
             :items="challengeTypeOptions"
@@ -141,44 +141,44 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             class="w-full"
           />
         </UFormField>
-        <UFormField name="name" label="Name">
+        <UFormField name="name" label="Navn">
           <UInput v-model="state.name" size="xl" required class="w-full" />
         </UFormField>
         <UFormField
           name="description"
-          label="Description"
-          hint="(optional)"
-          help="Supports HTML formatting"
+          label="Beskrivelse"
+          hint="(valgfritt)"
+          help="Støtter HTML-formatering"
         >
           <UTextarea v-model="state.description" class="w-full" autoresize />
         </UFormField>
         <UFormField
           name="image"
-          label="Image URL"
-          hint="(optional)"
-          help="URL to an image for this challenge"
+          label="Bilde-URL"
+          hint="(valgfritt)"
+          help="URL til et bilde for denne utfordringen"
         >
           <UInput v-model="state.image" size="xl" class="w-full" />
         </UFormField>
         <UFormField
           v-if="state.type === ChallengeType.External"
           name="url"
-          label="External URL"
-          help="The URL users will be redirected to"
+          label="Ekstern URL"
+          help="URL-en brukere vil bli sendt til"
         >
           <UInput v-model="state.url" size="xl" required class="w-full" />
         </UFormField>
         <UFormField
           v-if="state.type === ChallengeType.Simple"
           name="allowSelfCompletion"
-          label="Self Completion"
+          label="Selvfullføring"
         >
           <UCheckbox
             v-model="state.allowSelfCompletion"
-            label="Allow users to mark this challenge as completed"
+            label="Tillat brukere å markere denne utfordringen som fullført"
           />
         </UFormField>
-        <UFormField name="buttonText" label="Button Text">
+        <UFormField name="buttonText" label="Knappetekst">
           <UInput
             v-model="state.buttonText"
             size="xl"
@@ -189,9 +189,9 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         <UFormField
           v-if="isEditMode"
           name="visibleAt"
-          label="Visible At"
-          hint="(optional)"
-          help="When this challenge becomes visible to users"
+          label="Synlig fra"
+          hint="(valgfritt)"
+          help="Når denne utfordringen blir synlig for brukere"
         >
           <UInput
             v-model="state.visibleAt"
@@ -203,9 +203,9 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         <UFormField
           v-if="isEditMode"
           name="startedAt"
-          label="Started At"
-          hint="(optional)"
-          help="When this challenge started"
+          label="Startet"
+          hint="(valgfritt)"
+          help="Når denne utfordringen startet"
         >
           <UInput
             v-model="state.startedAt"
@@ -216,9 +216,9 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         </UFormField>
         <UFormField
           name="endTime"
-          label="End Time"
-          hint="(optional)"
-          help="When this challenge expires"
+          label="Sluttid"
+          hint="(valgfritt)"
+          help="Når denne utfordringen utløper"
         >
           <UInput
             v-model="state.endTime"
@@ -236,7 +236,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           block
           @click="onDelete"
         >
-          Delete Challenge
+          Slett utfordring
         </UButton>
       </UForm>
 

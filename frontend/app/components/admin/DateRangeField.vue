@@ -79,21 +79,14 @@ const range = computed<{ start: DateValue; end: DateValue } | undefined>({
   },
 })
 
-function formatDate(dateStr: string | undefined) {
+function _formatDate(dateStr: string | undefined) {
   if (!dateStr || dateStr.trim() === '') return undefined
-  const dateOnly = toDateString(dateStr)
-  if (!dateOnly) return undefined
-  const date = new Date(dateOnly + 'T00:00:00')
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+  return formatDate(dateStr)
 }
 
 const displayValue = computed(() => {
-  const startFormatted = formatDate(start.value)
-  const endFormatted = formatDate(end.value)
+  const startFormatted = _formatDate(start.value)
+  const endFormatted = _formatDate(end.value)
 
   if (startFormatted && endFormatted) {
     return `${startFormatted} - ${endFormatted}`
@@ -109,12 +102,10 @@ const displayValue = computed(() => {
 </script>
 
 <template>
-  <UFormField label="Project duration">
-    <UPopover v-model:open="isOpen" :ui="{ content: 'p-1' }">
-      <UInput :model-value="displayValue" readonly icon="lucide:calendar" />
-      <template #content>
-        <UCalendar v-model="range" range variant="soft" />
-      </template>
-    </UPopover>
-  </UFormField>
+  <UPopover v-model:open="isOpen" :ui="{ content: 'p-1' }">
+    <UInput :model-value="displayValue" readonly icon="lucide:calendar" />
+    <template #content>
+      <UCalendar v-model="range" range variant="soft" />
+    </template>
+  </UPopover>
 </template>

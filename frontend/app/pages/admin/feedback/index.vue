@@ -63,24 +63,14 @@ const feedbacks = computed(() =>
 type FeedbackNode = NonNullable<typeof feedbacks.value>[number]
 
 const columns: TableColumn<FeedbackNode>[] = [
-  { accessorKey: 'user.name', id: 'user', header: 'User' },
-  { accessorKey: 'message', header: 'Message' },
-  { accessorKey: 'canContactMe', header: 'Can Contact' },
-  { accessorKey: 'platform', id: 'device', header: 'Device' },
-  { accessorKey: 'appVersion', header: 'Version' },
-  { accessorKey: 'createdAt', header: 'Submitted' },
+  { accessorKey: 'user.name', id: 'user', header: 'Bruker' },
+  { accessorKey: 'message', header: 'Melding' },
+  { accessorKey: 'canContactMe', header: 'Kan kontaktes' },
+  { accessorKey: 'platform', id: 'device', header: 'Enhet' },
+  { accessorKey: 'appVersion', header: 'Versjon' },
+  { accessorKey: 'createdAt', header: 'Innsendingsdato' },
   { id: 'actions' },
 ]
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 
 // Expanded row state
 const expandedRows = ref<Set<string>>(new Set())
@@ -111,13 +101,13 @@ async function handleDelete() {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to delete feedback',
+      title: 'Kunne ikke slette tilbakemelding',
       description: result.error.message,
       color: 'error',
     })
   } else {
     toast.add({
-      title: 'Feedback deleted',
+      title: 'Tilbakemelding slettet',
       color: 'success',
     })
     executeQuery({ requestPolicy: 'network-only' })
@@ -133,7 +123,7 @@ const { canDeleteFeedback } = usePermissions()
 <template>
   <UContainer class="py-12">
     <div class="mb-6 flex items-center gap-6">
-      <h1 class="text-3xl">User Feedback</h1>
+      <h1 class="text-3xl">Tilbakemeldinger</h1>
     </div>
     <ErrorState v-if="error" :error />
     <div v-else class="space-y-4">
@@ -172,9 +162,7 @@ const { canDeleteFeedback } = usePermissions()
               class="text-primary text-xs hover:underline"
               @click="toggleRow(row.original.id)"
             >
-              {{
-                expandedRows.has(row.original.id) ? 'Show less' : 'Show more'
-              }}
+              {{ expandedRows.has(row.original.id) ? 'Vis mindre' : 'Vis mer' }}
             </button>
           </div>
         </template>
@@ -183,7 +171,7 @@ const { canDeleteFeedback } = usePermissions()
             :color="row.original.canContactMe ? 'success' : 'neutral'"
             variant="soft"
           >
-            {{ row.original.canContactMe ? 'Yes' : 'No' }}
+            {{ row.original.canContactMe ? 'Ja' : 'Nei' }}
           </UBadge>
         </template>
         <template #device-cell="{ row }">
@@ -237,24 +225,30 @@ const { canDeleteFeedback } = usePermissions()
       </UTable>
       <UEmpty
         v-if="!fetching && feedbacks?.length === 0"
-        title="No feedback yet"
-        description="User feedback will appear here once submitted."
+        title="Ingen tilbakemeldinger ennå"
+        description="Tilbakemeldinger fra brukere vises her når de blir sendt inn."
       />
     </div>
 
     <UModal v-model:open="deleteModal">
       <template #content>
         <div class="p-6">
-          <h3 class="mb-4 text-lg font-semibold">Delete Feedback</h3>
+          <h3 class="mb-4 text-lg font-semibold">Slett tilbakemelding</h3>
           <p class="text-dimmed mb-6">
-            Are you sure you want to delete this feedback? This action cannot
-            be undone.
+            Er du sikker på at du vil slette denne tilbakemeldingen? Denne
+            handlingen kan ikke angres.
           </p>
           <div class="flex justify-end gap-3">
-            <UButton variant="ghost" @click="deleteModal = false">
-              Cancel
+            <UButton
+              color="neutral"
+              variant="ghost"
+              @click="deleteModal = false"
+            >
+              Avbryt
             </UButton>
-            <UButton color="error" @click="handleDelete">Delete</UButton>
+            <UButton color="error" @click="handleDelete">
+              Ja, jeg vil slette
+            </UButton>
           </div>
         </div>
       </template>
