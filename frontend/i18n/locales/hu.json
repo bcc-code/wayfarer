@@ -117,10 +117,11 @@
     "thankYouDescription": "A visszajelzéseid a szolgáltatás továbbfejlesztéséhez fogjuk felhasználni.",
     "close": "Szívesen.",
     "canContactMe": "Igen, egyetértek azzal, hogy visszajelzésemmel kapcsolatban felvehetitek velem a kapcsolatot.",
-    "regards": "Üdvözlettel, {name}"
+    "disclosure": "A visszajelzés a felhasználói fiókodhoz lesz kapcsolva."
   },
   "pwa": {
     "updateAvailableTitle": "Frissítés elérhető",
     "updateAvailableButton": "Frissítsd most"
-  }
+  },
+  "goToHiddenTreasures": "Menj a Biblia tanulmányozására"
 }

@@ -122,5 +122,6 @@
   "pwa": {
     "updateAvailableTitle": "Доступно обновление",
     "updateAvailableButton": "Обновить сейчас"
-  }
+  },
+  "goToHiddenTreasures": "Перейти к изучению"
 }
