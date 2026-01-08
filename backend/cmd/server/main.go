@@ -85,6 +85,12 @@ func main() {
 		}()
 	}
 
+	// Run database migrations
+	if err := database.Migrate(ctx, cfg.Database.URL); err != nil {
+		slog.Error("Failed to run migrations", "error", err)
+		os.Exit(1)
+	}
+
 	// Connect to database
 	db, err := database.Connect(ctx, cfg.Database)
 	if err != nil {
