@@ -15,16 +15,15 @@ const { data, error, fetching } = useStandingsGlobalPageQuery({
 
 const leaderboard = computed<LeaderboardEntry[]>(() => {
   if (!data.value) return []
+  return data.value.myCurrentProject.leaderboard.edges.map((edge) => edge.node)
+})
 
-  const result = []
-  result.push(
-    ...data.value.myCurrentProject.leaderboard.edges.map((edge) => edge.node),
-  )
+const extraItems = computed<LeaderboardEntry[]>(() => {
   const me = data.value?.myCurrentProject.leaderboard.me
-  if (me && !result.find((entry) => entry.id === me.id)) {
-    result.push(me)
+  if (me && !leaderboard.value.find((entry) => entry.id === me.id)) {
+    return [me]
   }
-  return result
+  return []
 })
 
 // Only show loading state on initial load, not on refetch
@@ -68,7 +67,7 @@ const isInitialLoading = computed(() => fetching.value && !data.value)
           </div>
         </template>
       </DesignTabs>
-      <LeaderboardList :leaderboard="leaderboard" />
+      <LeaderboardList :leaderboard="leaderboard" :extra-items="extraItems" />
     </template>
     <EmptyState v-else :title="$t('emptyStates.standings')" />
   </div>

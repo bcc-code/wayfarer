@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="Entry extends Partial<LeaderboardEntry>">
 const props = defineProps<{
   leaderboard: Entry[]
-  hideImages?: boolean
+  extraItems?: Entry[]
   badge?: (item: Entry, index: number) => string | undefined
   hideMedals?: boolean
 }>()
@@ -39,7 +39,22 @@ onMounted(runAnimation)
     >
       <LeaderboardItem
         :item
-        :hide-image="hideImages"
+        :badge="badge ? badge(item, index) : undefined"
+        :hide-medal="hideMedals"
+        :is-me="item.tags?.includes(LeaderboardEntryTag.Me)"
+      />
+    </DesignPanel>
+    <hr
+      v-if="extraItems?.length"
+      class="mx-default my-medium border-border-default"
+    />
+    <DesignPanel
+      v-for="(item, index) in extraItems"
+      :key="index"
+      class="leaderboard-item"
+    >
+      <LeaderboardItem
+        :item
         :badge="badge ? badge(item, index) : undefined"
         :hide-medal="hideMedals"
         :is-me="item.tags?.includes(LeaderboardEntryTag.Me)"

@@ -16,32 +16,32 @@ const { data, error, fetching } = useStandingsLocalPageQuery({
 
 const personLeaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
   if (!data.value) return []
-  const result = []
-  result.push(
-    ...data.value.myCurrentProject.personLeaderboard.edges.map(
-      (edge) => edge.node,
-    ),
+  return data.value.myCurrentProject.personLeaderboard.edges.map(
+    (edge) => edge.node,
   )
+})
+
+const personExtraItems = computed<Partial<LeaderboardEntry>[]>(() => {
   const me = data.value?.myCurrentProject.personLeaderboard.me
-  if (me && !result.find((entry) => entry.id === me.id)) {
-    result.push(me)
+  if (me && !personLeaderboard.value.find((entry) => entry.id === me.id)) {
+    return [me]
   }
-  return result
+  return []
 })
 
 const unitLeaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
   if (!data.value) return []
-  const result = []
-  result.push(
-    ...data.value.myCurrentProject.unitLeaderboard.edges.map(
-      (edge) => edge.node,
-    ),
+  return data.value.myCurrentProject.unitLeaderboard.edges.map(
+    (edge) => edge.node,
   )
+})
+
+const unitExtraItems = computed<Partial<LeaderboardEntry>[]>(() => {
   const me = data.value?.myCurrentProject.unitLeaderboard.me
-  if (me && !result.find((entry) => entry.id === me.id)) {
-    result.push(me)
+  if (me && !unitLeaderboard.value.find((entry) => entry.id === me.id)) {
+    return [me]
   }
-  return result
+  return []
 })
 
 const debouncedFetching = useDebounce(fetching, 200)
@@ -101,12 +101,14 @@ const totalPersons = computed(() => {
           entityType === LeaderboardEntityType.Persons
         "
         :leaderboard="personLeaderboard"
+        :extra-items="personExtraItems"
       />
       <LeaderboardList
         v-if="
           unitLeaderboard?.length && entityType === LeaderboardEntityType.Teams
         "
         :leaderboard="unitLeaderboard"
+        :extra-items="unitExtraItems"
       />
     </template>
     <EmptyState v-else :title="$t('emptyStates.standings')" />
