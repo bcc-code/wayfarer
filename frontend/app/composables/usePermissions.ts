@@ -1,4 +1,9 @@
-import { RoleType } from '~/api/generated'
+import {
+  getProjectAdminIds,
+  getChurchAdminIds,
+  hasProjectAdminFor as hasProjectAdminForPure,
+  hasChurchAdminFor as hasChurchAdminForPure,
+} from '~/utils/permissions'
 
 /**
  * Centralized permissions composable for the admin panel.
@@ -25,50 +30,28 @@ export function usePermissions() {
    * Check if user is a project admin for a specific project
    */
   const hasProjectAdminFor = (projectId: string) => {
-    return me.value?.roles.some(
-      (role) =>
-        role.role === RoleType.ProjectAdmin &&
-        role.scope?.project?.id === projectId,
-    )
+    return hasProjectAdminForPure(me.value?.roles ?? [], projectId)
   }
 
   /**
    * Check if user is a church admin for a specific church
    */
   const hasChurchAdminFor = (churchId: string) => {
-    return me.value?.roles.some(
-      (role) =>
-        role.role === RoleType.ChurchAdmin &&
-        role.scope?.church?.id === churchId,
-    )
+    return hasChurchAdminForPure(me.value?.roles ?? [], churchId)
   }
 
   /**
    * Get the project IDs the user is a project admin for
    */
   const projectAdminProjectIds = computed(() => {
-    return (
-      me.value?.roles
-        .filter(
-          (role) =>
-            role.role === RoleType.ProjectAdmin && role.scope?.project?.id,
-        )
-        .map((role) => role.scope!.project!.id) ?? []
-    )
+    return getProjectAdminIds(me.value?.roles ?? [])
   })
 
   /**
    * Get the church IDs the user is a church admin for
    */
   const churchAdminChurchIds = computed(() => {
-    return (
-      me.value?.roles
-        .filter(
-          (role) =>
-            role.role === RoleType.ChurchAdmin && role.scope?.church?.id,
-        )
-        .map((role) => role.scope!.church!.id) ?? []
-    )
+    return getChurchAdminIds(me.value?.roles ?? [])
   })
 
   // ============================================

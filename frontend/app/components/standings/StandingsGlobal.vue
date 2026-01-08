@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getExtraItems } from '~/utils/leaderboard'
+
 const ageRange = ref({ min: 13, max: 19 })
 
 const { isAuthReady } = useAuthReady()
@@ -19,11 +21,10 @@ const leaderboard = computed<LeaderboardEntry[]>(() => {
 })
 
 const extraItems = computed<LeaderboardEntry[]>(() => {
-  const me = data.value?.myCurrentProject.leaderboard.me
-  if (me && !leaderboard.value.find((entry) => entry.id === me.id)) {
-    return [me]
-  }
-  return []
+  return getExtraItems(
+    leaderboard.value,
+    data.value?.myCurrentProject.leaderboard.me,
+  )
 })
 
 // Only show loading state on initial load, not on refetch
