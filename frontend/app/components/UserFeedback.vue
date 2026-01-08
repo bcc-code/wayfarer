@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { useSubmitFeedbackMutation } from '~/api/generated'
 
+const props = defineProps<{
+  projectId?: string
+}>()
+
 const { me } = useAuth()
+const { locale } = useI18n()
 
 const open = ref(false)
 const message = ref<string>()
@@ -45,6 +50,8 @@ function getDeviceMetadata() {
     screenWidth: window.screen.width,
     screenHeight: window.screen.height,
     appVersion: useRuntimeConfig().public.appVersion,
+    locale: locale.value,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   }
 }
 
@@ -72,6 +79,7 @@ async function handleSubmit() {
         message: trimmedMessage,
         canContactMe: canContactMe.value,
         device: getDeviceMetadata(),
+        projectId: props.projectId,
       },
     })
 

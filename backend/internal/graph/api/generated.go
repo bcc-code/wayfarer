@@ -941,10 +941,13 @@ type ComplexityRoot struct {
 		CanContactMe func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
 		ID           func(childComplexity int) int
+		Locale       func(childComplexity int) int
 		Message      func(childComplexity int) int
 		Platform     func(childComplexity int) int
+		ProjectID    func(childComplexity int) int
 		ScreenHeight func(childComplexity int) int
 		ScreenWidth  func(childComplexity int) int
+		Timezone     func(childComplexity int) int
 		User         func(childComplexity int) int
 		UserAgent    func(childComplexity int) int
 		UserID       func(childComplexity int) int
@@ -5832,6 +5835,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UserFeedback.ID(childComplexity), true
+	case "UserFeedback.locale":
+		if e.complexity.UserFeedback.Locale == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.Locale(childComplexity), true
 	case "UserFeedback.message":
 		if e.complexity.UserFeedback.Message == nil {
 			break
@@ -5844,6 +5853,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UserFeedback.Platform(childComplexity), true
+	case "UserFeedback.projectId":
+		if e.complexity.UserFeedback.ProjectID == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.ProjectID(childComplexity), true
 	case "UserFeedback.screenHeight":
 		if e.complexity.UserFeedback.ScreenHeight == nil {
 			break
@@ -5856,6 +5871,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UserFeedback.ScreenWidth(childComplexity), true
+	case "UserFeedback.timezone":
+		if e.complexity.UserFeedback.Timezone == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.Timezone(childComplexity), true
 	case "UserFeedback.user":
 		if e.complexity.UserFeedback.User == nil {
 			break
@@ -8091,6 +8112,9 @@ type UserFeedback {
     screenWidth: Int
     screenHeight: Int
     appVersion: String
+    locale: String
+    projectId: ID
+    timezone: String
     createdAt: DateTime!
 }
 
@@ -8100,12 +8124,15 @@ input DeviceMetadata {
     screenWidth: Int!
     screenHeight: Int!
     appVersion: String
+    locale: String
+    timezone: String
 }
 
 input SubmitFeedbackInput {
     message: String!
     canContactMe: Boolean!
     device: DeviceMetadata!
+    projectId: ID
 }
 
 type FeedbackConnection {
@@ -15020,6 +15047,12 @@ func (ec *executionContext) fieldContext_FeedbackEdge_node(_ context.Context, fi
 				return ec.fieldContext_UserFeedback_screenHeight(ctx, field)
 			case "appVersion":
 				return ec.fieldContext_UserFeedback_appVersion(ctx, field)
+			case "locale":
+				return ec.fieldContext_UserFeedback_locale(ctx, field)
+			case "projectId":
+				return ec.fieldContext_UserFeedback_projectId(ctx, field)
+			case "timezone":
+				return ec.fieldContext_UserFeedback_timezone(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
 			}
@@ -22986,6 +23019,12 @@ func (ec *executionContext) fieldContext_Mutation_submitFeedback(ctx context.Con
 				return ec.fieldContext_UserFeedback_screenHeight(ctx, field)
 			case "appVersion":
 				return ec.fieldContext_UserFeedback_appVersion(ctx, field)
+			case "locale":
+				return ec.fieldContext_UserFeedback_locale(ctx, field)
+			case "projectId":
+				return ec.fieldContext_UserFeedback_projectId(ctx, field)
+			case "timezone":
+				return ec.fieldContext_UserFeedback_timezone(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
 			}
@@ -36590,6 +36629,93 @@ func (ec *executionContext) fieldContext_UserFeedback_appVersion(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _UserFeedback_locale(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_locale,
+		func(ctx context.Context) (any, error) {
+			return obj.Locale, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_locale(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_projectId(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_projectId,
+		func(ctx context.Context) (any, error) {
+			return obj.ProjectID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_projectId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_timezone(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_timezone,
+		func(ctx context.Context) (any, error) {
+			return obj.Timezone, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_timezone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UserFeedback_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -40703,7 +40829,7 @@ func (ec *executionContext) unmarshalInputDeviceMetadata(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"userAgent", "platform", "screenWidth", "screenHeight", "appVersion"}
+	fieldsInOrder := [...]string{"userAgent", "platform", "screenWidth", "screenHeight", "appVersion", "locale", "timezone"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -40745,6 +40871,20 @@ func (ec *executionContext) unmarshalInputDeviceMetadata(ctx context.Context, ob
 				return it, err
 			}
 			it.AppVersion = data
+		case "locale":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("locale"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Locale = data
+		case "timezone":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timezone"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Timezone = data
 		}
 	}
 
@@ -41487,7 +41627,7 @@ func (ec *executionContext) unmarshalInputSubmitFeedbackInput(ctx context.Contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"message", "canContactMe", "device"}
+	fieldsInOrder := [...]string{"message", "canContactMe", "device", "projectId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -41515,6 +41655,13 @@ func (ec *executionContext) unmarshalInputSubmitFeedbackInput(ctx context.Contex
 				return it, err
 			}
 			it.Device = data
+		case "projectId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectID = data
 		}
 	}
 
@@ -52900,6 +53047,12 @@ func (ec *executionContext) _UserFeedback(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._UserFeedback_screenHeight(ctx, field, obj)
 		case "appVersion":
 			out.Values[i] = ec._UserFeedback_appVersion(ctx, field, obj)
+		case "locale":
+			out.Values[i] = ec._UserFeedback_locale(ctx, field, obj)
+		case "projectId":
+			out.Values[i] = ec._UserFeedback_projectId(ctx, field, obj)
+		case "timezone":
+			out.Values[i] = ec._UserFeedback_timezone(ctx, field, obj)
 		case "createdAt":
 			out.Values[i] = ec._UserFeedback_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

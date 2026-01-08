@@ -11,6 +11,9 @@ type UserFeedback {
     screenWidth: Int
     screenHeight: Int
     appVersion: String
+    locale: String
+    projectId: ID
+    timezone: String
     createdAt: DateTime!
 }
 
@@ -20,12 +23,15 @@ input DeviceMetadata {
     screenWidth: Int!
     screenHeight: Int!
     appVersion: String
+    locale: String
+    timezone: String
 }
 
 input SubmitFeedbackInput {
     message: String!
     canContactMe: Boolean!
     device: DeviceMetadata!
+    projectId: ID
 }
 
 type FeedbackConnection {

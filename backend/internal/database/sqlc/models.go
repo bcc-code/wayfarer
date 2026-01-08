@@ -648,6 +648,9 @@ type UserFeedback struct {
 	ScreenHeight *int32             `json:"screen_height"`
 	AppVersion   *string            `json:"app_version"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	Locale       *string            `json:"locale"`
+	ProjectID    *string            `json:"project_id"`
+	Timezone     *string            `json:"timezone"`
 }
 
 type UserProject struct {

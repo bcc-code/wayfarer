@@ -122,7 +122,7 @@ const hiddenTreasuresLink = computed(() => {
           </NuxtLink>
         </div>
       </ProfileProjectCard>
-      <UserFeedback />
+      <UserFeedback :project-id="data.myCurrentProject?.id" />
     </div>
   </PageLayout>
 </template>

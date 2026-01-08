@@ -27,6 +27,9 @@ gql(`
           screenWidth
           screenHeight
           appVersion
+          locale
+          projectId
+          timezone
           createdAt
           user {
             id
@@ -62,10 +65,48 @@ const feedbacks = computed(() =>
 
 type FeedbackNode = NonNullable<typeof feedbacks.value>[number]
 
+function parseUserAgent(ua: string): string {
+  // Detect browser
+  let browser = ''
+  if (ua.includes('Firefox/')) {
+    const match = ua.match(/Firefox\/(\d+)/)
+    browser = `Firefox ${match?.[1] ?? ''}`
+  } else if (ua.includes('Edg/')) {
+    const match = ua.match(/Edg\/(\d+)/)
+    browser = `Edge ${match?.[1] ?? ''}`
+  } else if (ua.includes('Chrome/')) {
+    const match = ua.match(/Chrome\/(\d+)/)
+    browser = `Chrome ${match?.[1] ?? ''}`
+  } else if (ua.includes('Safari/') && !ua.includes('Chrome')) {
+    const match = ua.match(/Version\/(\d+)/)
+    browser = `Safari ${match?.[1] ?? ''}`
+  }
+
+  // Detect OS
+  let os = ''
+  if (ua.includes('iPhone') || ua.includes('iPad')) {
+    os = 'iOS'
+  } else if (ua.includes('Android')) {
+    os = 'Android'
+  } else if (ua.includes('Mac OS X')) {
+    os = 'macOS'
+  } else if (ua.includes('Windows')) {
+    os = 'Windows'
+  } else if (ua.includes('Linux')) {
+    os = 'Linux'
+  }
+
+  if (browser && os) {
+    return `${browser} / ${os}`
+  }
+  return browser || os || ua.slice(0, 30) + '...'
+}
+
 const columns: TableColumn<FeedbackNode>[] = [
   { accessorKey: 'user.name', id: 'user', header: 'Bruker' },
   { accessorKey: 'message', header: 'Melding' },
   { accessorKey: 'canContactMe', header: 'Kan kontaktes' },
+  { accessorKey: 'locale', id: 'context', header: 'Kontekst' },
   { accessorKey: 'platform', id: 'device', header: 'Enhet' },
   { accessorKey: 'appVersion', header: 'Versjon' },
   { accessorKey: 'createdAt', header: 'Innsendingsdato' },
@@ -174,6 +215,33 @@ const { canDeleteFeedback } = usePermissions()
             {{ row.original.canContactMe ? 'Ja' : 'Nei' }}
           </UBadge>
         </template>
+        <template #context-cell="{ row }">
+          <div class="text-dimmed space-y-1 text-xs">
+            <div v-if="row.original.locale" class="flex gap-1">
+              <span class="text-default">Språk:</span>
+              <span>{{ row.original.locale }}</span>
+            </div>
+            <div v-if="row.original.timezone" class="flex gap-1">
+              <span class="text-default">Tidssone:</span>
+              <span>{{ row.original.timezone }}</span>
+            </div>
+            <div v-if="row.original.projectId" class="flex gap-1">
+              <span class="text-default">Prosjekt:</span>
+              <span class="truncate max-w-24" :title="row.original.projectId">
+                {{ row.original.projectId }}
+              </span>
+            </div>
+            <span
+              v-if="
+                !row.original.locale &&
+                !row.original.timezone &&
+                !row.original.projectId
+              "
+            >
+              —
+            </span>
+          </div>
+        </template>
         <template #device-cell="{ row }">
           <div class="text-dimmed space-y-1 text-xs">
             <div v-if="row.original.platform">
@@ -184,10 +252,10 @@ const { canDeleteFeedback } = usePermissions()
             </div>
             <div
               v-if="row.original.userAgent"
-              class="max-w-xs truncate"
+              class="max-w-xs"
               :title="row.original.userAgent"
             >
-              {{ row.original.userAgent }}
+              {{ parseUserAgent(row.original.userAgent) }}
             </div>
             <span
               v-if="
