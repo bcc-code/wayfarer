@@ -21,6 +21,7 @@
     "continue": "Doorgaan",
     "nextQuestion": "Volgende vraag.",
     "done": "Klaar",
+    "unavailable": "Deze quiz is momenteel niet beschikbaar.",
     "result": {
       "receivedNoPoints": "Je hebt geen punten verzameld.",
       "receivedPoints": "Je hebt {points} punten verzameld.",
@@ -117,7 +118,7 @@
     "thankYouDescription": "Je input zal worden gebruikt voor de verdere ontwikkeling van de dienst.",
     "close": "Graag gedaan",
     "canContactMe": "Ja, ik geef toestemming dat jullie contact met mij opnemen in verband met mijn feedback.",
-    "regards": "Groeten {name}"
+    "disclosure": "De feedback wordt aan uw gebruikersaccount gekoppeld."
   },
   "pwa": {
     "updateAvailableTitle": "Er een update beschikbaar",
