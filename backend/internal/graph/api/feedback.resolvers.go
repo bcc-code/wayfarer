@@ -70,6 +70,9 @@ func (r *mutationResolver) SubmitFeedback(ctx context.Context, input model.Submi
 		return nil, fmt.Errorf("failed to create feedback: %w", err)
 	}
 
+	// Notify Firestore listeners about new feedback
+	go r.FirebaseService.NotifyAdminFeedback(context.Background())
+
 	// Convert to GraphQL model
 	return &model.UserFeedback{
 		ID:           feedback.ID,

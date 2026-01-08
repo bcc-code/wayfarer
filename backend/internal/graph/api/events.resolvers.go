@@ -104,6 +104,9 @@ func (r *mutationResolver) CreateEvent(ctx context.Context, projectID string, in
 	// Invalidate project cache to reflect new event in lists
 	r.Cache.InvalidateProject(projectID)
 
+	// Notify Firestore listeners about project events
+	go r.FirebaseService.NotifyProjectEvents(context.Background(), projectID)
+
 	return event, nil
 }
 
@@ -176,6 +179,9 @@ func (r *mutationResolver) UpdateEvent(ctx context.Context, id string, input mod
 		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
 		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
 	}
+
+	// Notify Firestore listeners about project events
+	go r.FirebaseService.NotifyProjectEvents(context.Background(), existingEvent.ProjectID)
 
 	return event, nil
 }

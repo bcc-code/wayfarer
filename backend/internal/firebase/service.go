@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/auth"
 	"github.com/bcc-media/wayfarer/internal/config"
@@ -14,7 +15,8 @@ import (
 
 // Service handles Firebase Admin SDK operations
 type Service struct {
-	authClient *auth.Client
+	authClient      *auth.Client
+	firestoreClient *firestore.Client
 }
 
 // New creates a new Firebase service from configuration.
@@ -52,9 +54,23 @@ func New(ctx context.Context, cfg config.FirebaseConfig) (*Service, error) {
 		return nil, fmt.Errorf("failed to get Firebase Auth client: %w", err)
 	}
 
+	firestoreClient, err := app.Firestore(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Firestore client: %w", err)
+	}
+
 	return &Service{
-		authClient: authClient,
+		authClient:      authClient,
+		firestoreClient: firestoreClient,
 	}, nil
+}
+
+// Close closes the Firestore client connection.
+func (s *Service) Close() error {
+	if s.firestoreClient != nil {
+		return s.firestoreClient.Close()
+	}
+	return nil
 }
 
 // CreateCustomToken generates a Firebase custom token for the given user.

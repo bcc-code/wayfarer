@@ -815,6 +815,9 @@ func (r *mutationResolver) AwardAchievement(ctx context.Context, userID string, 
 		})
 	}
 
+	// Notify Firestore listeners
+	go r.FirebaseService.NotifyUserAchievements(context.Background(), userID)
+
 	// Load and return the achievement with translation
 	return r.LoadAchievementWithTranslation(ctx, achievementID)
 }
@@ -862,6 +865,9 @@ func (r *mutationResolver) RevokeAchievement(ctx context.Context, userID string,
 	if eventID != nil {
 		r.Cache.InvalidateEvent(*eventID)
 	}
+
+	// Notify Firestore listeners
+	go r.FirebaseService.NotifyUserAchievements(context.Background(), userID)
 
 	return true, nil
 }
@@ -935,6 +941,9 @@ func (r *mutationResolver) MarkContentItemCompleted(ctx context.Context, userID 
 		}
 	}
 
+	// Notify Firestore listeners about content progress
+	go r.FirebaseService.NotifyUserContent(context.Background(), userID)
+
 	return result, nil
 }
 
@@ -974,6 +983,9 @@ func (r *mutationResolver) UnmarkContentItemCompleted(ctx context.Context, userI
 		// Invalidate user-specific caches
 		r.Cache.Delete(cache.UserContentProgressKey(userID, row.ID))
 	}
+
+	// Notify Firestore listeners about content progress
+	go r.FirebaseService.NotifyUserContent(context.Background(), userID)
 
 	return result, nil
 }
