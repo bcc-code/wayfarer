@@ -223,7 +223,8 @@ export function usePermissions() {
   /**
    * Can manage a specific team
    */
-  const canManageTeam = () => {
+  const canManageTeam = (_teamId?: string) => {
+    // TODO: Add project-based permission check when team's project is available
     return isSuperAdmin.value || isAdmin.value
   }
 
