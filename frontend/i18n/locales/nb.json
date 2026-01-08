@@ -117,7 +117,7 @@
     "thankYouDescription": "Dine innspill vil bli brukt til videreutvikling av tjenesten.",
     "close": "Bare hyggelig",
     "canContactMe": "Ja, jeg samtykker til at dere kan kontakte meg i forbindelse med tilbakemeldingen min",
-    "regards": "Hilsen {name}"
+    "disclosure": "Tilbakemeldingen blir knyttet til din brukerkonto."
   },
   "pwa": {
     "updateAvailableTitle": "En oppdatering er tilgjengelig",
