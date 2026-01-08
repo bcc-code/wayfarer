@@ -191,7 +191,7 @@ watch(open, (isOpen) => {
               :label="$t('feedback.canContactMe')"
             />
           </div> -->
-          <p class="px-medium text-label text-text-muted pt-medium">
+          <p class="px-medium text-caption text-text-muted pt-medium">
             {{ $t('feedback.disclosure') }}
           </p>
           <div class="p-medium grow-0 mt-auto">
