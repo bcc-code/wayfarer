@@ -5,7 +5,6 @@ const props = defineProps<{
   projectId?: string
 }>()
 
-const { me } = useAuth()
 const { locale } = useI18n()
 
 const open = ref(false)
@@ -193,7 +192,7 @@ watch(open, (isOpen) => {
             />
           </div> -->
           <p class="px-medium text-label text-text-muted pt-medium">
-            {{ $t('feedback.regards', { name: me?.name }) }}
+            {{ $t('feedback.disclosure') }}
           </p>
           <div class="p-medium grow-0 mt-auto">
             <DesignButton
