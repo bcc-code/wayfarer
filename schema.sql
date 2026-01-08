@@ -712,6 +712,9 @@ CREATE TABLE user_feedback (
     screen_width INT,
     screen_height INT,
     app_version TEXT,
+    locale TEXT,
+    project_id CHAR(28) REFERENCES projects(id) ON DELETE SET NULL,
+    timezone TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     INDEX idx_user_feedback_user_id (user_id),
     INDEX idx_user_feedback_created_at (created_at DESC)

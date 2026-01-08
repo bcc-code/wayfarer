@@ -27,6 +27,9 @@ gql(`
           screenWidth
           screenHeight
           appVersion
+          locale
+          projectId
+          timezone
           createdAt
           user {
             id
@@ -65,21 +68,18 @@ type FeedbackNode = NonNullable<typeof feedbacks.value>[number]
 const columns: TableColumn<FeedbackNode>[] = [
   { accessorKey: 'user.name', id: 'user', header: 'Bruker' },
   { accessorKey: 'message', header: 'Melding' },
-  { accessorKey: 'canContactMe', header: 'Kan kontaktes' },
-  { accessorKey: 'platform', id: 'device', header: 'Enhet' },
-  { accessorKey: 'appVersion', header: 'Versjon' },
-  { accessorKey: 'createdAt', header: 'Innsendingsdato' },
-  { id: 'actions' },
+  { accessorKey: 'createdAt', header: 'Dato' },
+  { id: 'actions', header: '' },
 ]
 
-// Expanded row state
-const expandedRows = ref<Set<string>>(new Set())
+// Expanded message state
+const expandedMessages = ref<Set<string>>(new Set())
 
-function toggleRow(id: string) {
-  if (expandedRows.value.has(id)) {
-    expandedRows.value.delete(id)
+function toggleMessage(id: string) {
+  if (expandedMessages.value.has(id)) {
+    expandedMessages.value.delete(id)
   } else {
-    expandedRows.value.add(id)
+    expandedMessages.value.add(id)
   }
 }
 
@@ -148,63 +148,25 @@ const { canDeleteFeedback } = usePermissions()
           </div>
         </template>
         <template #message-cell="{ row }">
-          <div class="max-w-md">
+          <div class="max-w-lg">
             <p
               :class="[
                 'text-sm whitespace-pre-wrap',
-                expandedRows.has(row.original.id) ? '' : 'line-clamp-4',
+                expandedMessages.has(row.original.id) ? '' : 'line-clamp-3',
               ]"
             >
               {{ row.original.message }}
             </p>
             <button
               v-if="row.original.message.length > 100"
-              class="text-primary text-xs hover:underline"
-              @click="toggleRow(row.original.id)"
+              class="text-primary text-xs hover:underline mt-1"
+              @click="toggleMessage(row.original.id)"
             >
-              {{ expandedRows.has(row.original.id) ? 'Vis mindre' : 'Vis mer' }}
+              {{
+                expandedMessages.has(row.original.id) ? 'Vis mindre' : 'Les mer'
+              }}
             </button>
           </div>
-        </template>
-        <template #canContactMe-cell="{ row }">
-          <UBadge
-            :color="row.original.canContactMe ? 'success' : 'neutral'"
-            variant="soft"
-          >
-            {{ row.original.canContactMe ? 'Ja' : 'Nei' }}
-          </UBadge>
-        </template>
-        <template #device-cell="{ row }">
-          <div class="text-dimmed space-y-1 text-xs">
-            <div v-if="row.original.platform">
-              {{ row.original.platform }}
-            </div>
-            <div v-if="row.original.screenWidth && row.original.screenHeight">
-              {{ row.original.screenWidth }}x{{ row.original.screenHeight }}
-            </div>
-            <div
-              v-if="row.original.userAgent"
-              class="max-w-xs truncate"
-              :title="row.original.userAgent"
-            >
-              {{ row.original.userAgent }}
-            </div>
-            <span
-              v-if="
-                !row.original.platform &&
-                !row.original.userAgent &&
-                !row.original.screenWidth
-              "
-            >
-              —
-            </span>
-          </div>
-        </template>
-        <template #appVersion-cell="{ row }">
-          <code v-if="row.original.appVersion" class="text-xs">
-            {{ row.original.appVersion }}
-          </code>
-          <span v-else class="text-dimmed">—</span>
         </template>
         <template #createdAt-cell="{ row }">
           <span class="text-dimmed text-sm">
@@ -212,10 +174,61 @@ const { canDeleteFeedback } = usePermissions()
           </span>
         </template>
         <template #actions-cell="{ row }">
-          <div class="flex justify-end">
+          <div class="flex justify-end gap-1">
+            <UPopover>
+              <UButton
+                variant="ghost"
+                color="neutral"
+                size="sm"
+                icon="i-lucide-info"
+              />
+              <template #content>
+                <div
+                  class="p-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs min-w-56"
+                >
+                  <span class="text-dimmed">Kan kontaktes:</span>
+                  <span>{{ row.original.canContactMe ? 'Ja' : 'Nei' }}</span>
+                  <template v-if="row.original.locale">
+                    <span class="text-dimmed">Språk:</span>
+                    <span>{{ row.original.locale }}</span>
+                  </template>
+                  <template v-if="row.original.timezone">
+                    <span class="text-dimmed">Tidssone:</span>
+                    <span>{{ row.original.timezone }}</span>
+                  </template>
+                  <template v-if="row.original.projectId">
+                    <span class="text-dimmed">Prosjekt:</span>
+                    <span>{{ row.original.projectId }}</span>
+                  </template>
+                  <template v-if="row.original.platform">
+                    <span class="text-dimmed">Plattform:</span>
+                    <span>{{ row.original.platform }}</span>
+                  </template>
+                  <template
+                    v-if="row.original.screenWidth && row.original.screenHeight"
+                  >
+                    <span class="text-dimmed">Skjerm:</span>
+                    <span
+                      >{{ row.original.screenWidth }}x{{
+                        row.original.screenHeight
+                      }}</span
+                    >
+                  </template>
+                  <template v-if="row.original.userAgent">
+                    <span class="text-dimmed">Nettleser:</span>
+                    <span>{{ parseUserAgent(row.original.userAgent) }}</span>
+                  </template>
+                  <template v-if="row.original.appVersion">
+                    <span class="text-dimmed">Versjon:</span>
+                    <code>{{ row.original.appVersion }}</code>
+                  </template>
+                </div>
+              </template>
+            </UPopover>
             <UButton
               v-if="canDeleteFeedback"
               variant="ghost"
+              size="sm"
               color="error"
               icon="i-lucide-trash-2"
               @click="confirmDelete(row.original.id)"

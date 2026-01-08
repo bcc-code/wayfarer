@@ -34,7 +34,10 @@ INSERT INTO user_feedback (
     platform,
     screen_width,
     screen_height,
-    app_version
+    app_version,
+    locale,
+    project_id,
+    timezone
 ) VALUES (
     $1::text,
     $2::text,
@@ -44,8 +47,11 @@ INSERT INTO user_feedback (
     $6::text,
     $7::int,
     $8::int,
-    $9::text
-) RETURNING id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at
+    $9::text,
+    $10::text,
+    NULLIF($11::text, ''),
+    $12::text
+) RETURNING id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone
 `
 
 type CreateUserFeedbackParams struct {
@@ -58,6 +64,9 @@ type CreateUserFeedbackParams struct {
 	Screenwidth  int32  `json:"screenwidth"`
 	Screenheight int32  `json:"screenheight"`
 	Appversion   string `json:"appversion"`
+	Locale       string `json:"locale"`
+	Projectid    string `json:"projectid"`
+	Timezone     string `json:"timezone"`
 }
 
 // User Feedback
@@ -72,6 +81,9 @@ func (q *Queries) CreateUserFeedback(ctx context.Context, arg CreateUserFeedback
 		arg.Screenwidth,
 		arg.Screenheight,
 		arg.Appversion,
+		arg.Locale,
+		arg.Projectid,
+		arg.Timezone,
 	)
 	var i UserFeedback
 	err := row.Scan(
@@ -85,6 +97,9 @@ func (q *Queries) CreateUserFeedback(ctx context.Context, arg CreateUserFeedback
 		&i.ScreenHeight,
 		&i.AppVersion,
 		&i.CreatedAt,
+		&i.Locale,
+		&i.ProjectID,
+		&i.Timezone,
 	)
 	return &i, err
 }
@@ -99,7 +114,7 @@ func (q *Queries) DeleteFeedback(ctx context.Context, id string) error {
 }
 
 const GetAllFeedback = `-- name: GetAllFeedback :many
-SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at FROM user_feedback
+SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone FROM user_feedback
 ORDER BY created_at DESC
 LIMIT $2::int
 OFFSET $1::int
@@ -130,6 +145,9 @@ func (q *Queries) GetAllFeedback(ctx context.Context, arg GetAllFeedbackParams) 
 			&i.ScreenHeight,
 			&i.AppVersion,
 			&i.CreatedAt,
+			&i.Locale,
+			&i.ProjectID,
+			&i.Timezone,
 		); err != nil {
 			return nil, err
 		}
@@ -142,7 +160,7 @@ func (q *Queries) GetAllFeedback(ctx context.Context, arg GetAllFeedbackParams) 
 }
 
 const GetFeedbackCursor = `-- name: GetFeedbackCursor :many
-SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at FROM user_feedback
+SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone FROM user_feedback
 WHERE
     ($1::text = '' OR id < $1::text)
     AND ($2::text = '' OR id > $2::text)
@@ -187,6 +205,9 @@ func (q *Queries) GetFeedbackCursor(ctx context.Context, arg GetFeedbackCursorPa
 			&i.ScreenHeight,
 			&i.AppVersion,
 			&i.CreatedAt,
+			&i.Locale,
+			&i.ProjectID,
+			&i.Timezone,
 		); err != nil {
 			return nil, err
 		}
@@ -217,7 +238,7 @@ func (q *Queries) GetRecentFeedbackCount(ctx context.Context, arg GetRecentFeedb
 }
 
 const GetUserFeedback = `-- name: GetUserFeedback :many
-SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at FROM user_feedback
+SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone FROM user_feedback
 WHERE user_id = $1::text
 ORDER BY created_at DESC
 `
@@ -242,6 +263,9 @@ func (q *Queries) GetUserFeedback(ctx context.Context, userid string) ([]*UserFe
 			&i.ScreenHeight,
 			&i.AppVersion,
 			&i.CreatedAt,
+			&i.Locale,
+			&i.ProjectID,
+			&i.Timezone,
 		); err != nil {
 			return nil, err
 		}

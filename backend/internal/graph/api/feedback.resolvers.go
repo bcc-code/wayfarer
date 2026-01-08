@@ -48,10 +48,22 @@ func (r *mutationResolver) SubmitFeedback(ctx context.Context, input model.Submi
 	// Generate new feedback ID
 	feedbackID := ulid.NewUserFeedbackID()
 
-	// Handle optional app version
+	// Handle optional fields
 	appVersion := ""
 	if input.Device.AppVersion != nil {
 		appVersion = *input.Device.AppVersion
+	}
+	locale := ""
+	if input.Device.Locale != nil {
+		locale = *input.Device.Locale
+	}
+	timezone := ""
+	if input.Device.Timezone != nil {
+		timezone = *input.Device.Timezone
+	}
+	projectID := ""
+	if input.ProjectID != nil {
+		projectID = *input.ProjectID
 	}
 
 	// Create feedback entry
@@ -65,6 +77,9 @@ func (r *mutationResolver) SubmitFeedback(ctx context.Context, input model.Submi
 		Screenwidth:  int32(input.Device.ScreenWidth),
 		Screenheight: int32(input.Device.ScreenHeight),
 		Appversion:   appVersion,
+		Locale:       locale,
+		Projectid:    projectID,
+		Timezone:     timezone,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create feedback: %w", err)
@@ -84,6 +99,9 @@ func (r *mutationResolver) SubmitFeedback(ctx context.Context, input model.Submi
 		ScreenWidth:  utils.Int32PtrToIntPtr(feedback.ScreenWidth),
 		ScreenHeight: utils.Int32PtrToIntPtr(feedback.ScreenHeight),
 		AppVersion:   feedback.AppVersion,
+		Locale:       feedback.Locale,
+		ProjectID:    feedback.ProjectID,
+		Timezone:     feedback.Timezone,
 		CreatedAt:    scalars.DateTime{Time: feedback.CreatedAt.Time},
 	}, nil
 }
@@ -180,6 +198,9 @@ func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilt
 			ScreenWidth:  utils.Int32PtrToIntPtr(row.ScreenWidth),
 			ScreenHeight: utils.Int32PtrToIntPtr(row.ScreenHeight),
 			AppVersion:   row.AppVersion,
+			Locale:       row.Locale,
+			ProjectID:    row.ProjectID,
+			Timezone:     row.Timezone,
 			CreatedAt:    scalars.DateTime{Time: row.CreatedAt.Time},
 		}
 	}

@@ -494,9 +494,11 @@ export type DateRangeInput = {
 
 export type DeviceMetadata = {
   appVersion?: InputMaybe<Scalars['String']['input']>;
+  locale?: InputMaybe<Scalars['String']['input']>;
   platform: Scalars['String']['input'];
   screenHeight: Scalars['Int']['input'];
   screenWidth: Scalars['Int']['input'];
+  timezone?: InputMaybe<Scalars['String']['input']>;
   userAgent: Scalars['String']['input'];
 };
 
@@ -2214,6 +2216,7 @@ export type SubmitFeedbackInput = {
   canContactMe: Scalars['Boolean']['input'];
   device: DeviceMetadata;
   message: Scalars['String']['input'];
+  projectId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type SubmitQuizAnswerInput = {
@@ -2499,10 +2502,13 @@ export type UserFeedback = {
   canContactMe: Scalars['Boolean']['output'];
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
+  locale?: Maybe<Scalars['String']['output']>;
   message: Scalars['String']['output'];
   platform?: Maybe<Scalars['String']['output']>;
+  projectId?: Maybe<Scalars['ID']['output']>;
   screenHeight?: Maybe<Scalars['Int']['output']>;
   screenWidth?: Maybe<Scalars['Int']['output']>;
+  timezone?: Maybe<Scalars['String']['output']>;
   user: User;
   userAgent?: Maybe<Scalars['String']['output']>;
   userId: Scalars['ID']['output'];
@@ -3210,7 +3216,7 @@ export type AdminFeedbackPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminFeedbackPageQuery = { __typename?: 'Query', feedback: { __typename?: 'FeedbackConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'FeedbackEdge', cursor: string, node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, createdAt: any, user: { __typename?: 'User', id: string, name: string, email: string } } }> } };
+export type AdminFeedbackPageQuery = { __typename?: 'Query', feedback: { __typename?: 'FeedbackConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'FeedbackEdge', cursor: string, node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, locale?: string | null, projectId?: string | null, timezone?: string | null, createdAt: any, user: { __typename?: 'User', id: string, name: string, email: string } } }> } };
 
 export type AdminHomePageQueryVariables = Exact<{
   now: Scalars['DateTime']['input'];
@@ -4646,6 +4652,9 @@ export const AdminFeedbackPageDocument = gql`
         screenWidth
         screenHeight
         appVersion
+        locale
+        projectId
+        timezone
         createdAt
         user {
           id
