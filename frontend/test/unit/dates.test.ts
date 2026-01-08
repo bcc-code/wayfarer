@@ -4,6 +4,8 @@ import {
   calculateDuration,
   getProjectStatus,
   isWithinRange,
+  extractDateOnly,
+  formatDateWithTimezone,
 } from '../../app/utils/dates'
 
 describe('dates utilities', () => {
@@ -163,6 +165,80 @@ describe('dates utilities', () => {
         new Date('2024-06-30').getTime(),
       )
       expect(result).toBe(true)
+    })
+  })
+
+  describe('extractDateOnly', () => {
+    it('should extract date from ISO timestamp', () => {
+      expect(extractDateOnly('2024-01-15T10:30:00Z')).toBe('2024-01-15')
+    })
+
+    it('should return date-only string as is', () => {
+      expect(extractDateOnly('2024-01-15')).toBe('2024-01-15')
+    })
+
+    it('should handle timestamp with timezone offset', () => {
+      expect(extractDateOnly('2024-01-15T10:30:00+02:00')).toBe('2024-01-15')
+    })
+
+    it('should return undefined for undefined input', () => {
+      expect(extractDateOnly(undefined)).toBeUndefined()
+    })
+
+    it('should return undefined for empty string', () => {
+      expect(extractDateOnly('')).toBeUndefined()
+    })
+
+    it('should return undefined for whitespace-only string', () => {
+      expect(extractDateOnly('   ')).toBeUndefined()
+    })
+  })
+
+  describe('formatDateWithTimezone', () => {
+    it('should format date with timezone offset', () => {
+      const result = formatDateWithTimezone(2024, 1, 15)
+
+      // Should be in format: YYYY-MM-DDTHH:MM:SS+HH:MM
+      expect(result).toMatch(/^2024-01-15T01:00:00[+-]\d{2}:\d{2}$/)
+    })
+
+    it('should set time to 01:00:00', () => {
+      const result = formatDateWithTimezone(2024, 6, 20)
+
+      expect(result).toContain('T01:00:00')
+    })
+
+    it('should handle single digit months correctly', () => {
+      const result = formatDateWithTimezone(2024, 3, 15)
+
+      expect(result).toContain('2024-03-15')
+    })
+
+    it('should handle single digit days correctly', () => {
+      const result = formatDateWithTimezone(2024, 10, 5)
+
+      expect(result).toContain('2024-10-05')
+    })
+
+    it('should handle end of year', () => {
+      const result = formatDateWithTimezone(2024, 12, 31)
+
+      expect(result).toContain('2024-12-31')
+    })
+
+    it('should handle start of year', () => {
+      const result = formatDateWithTimezone(2024, 1, 1)
+
+      expect(result).toContain('2024-01-01')
+    })
+
+    it('should produce a parseable ISO string', () => {
+      const result = formatDateWithTimezone(2024, 6, 15)
+      const parsed = new Date(result)
+
+      expect(parsed.getFullYear()).toBe(2024)
+      expect(parsed.getMonth()).toBe(5) // 0-indexed
+      expect(parsed.getDate()).toBe(15)
     })
   })
 })
