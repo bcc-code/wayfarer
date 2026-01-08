@@ -662,6 +662,12 @@ export type FeedbackFilter = {
   userId?: InputMaybe<Scalars['ID']['input']>;
 };
 
+export type FirebaseTokenResponse = {
+  __typename?: 'FirebaseTokenResponse';
+  expiresIn: Scalars['Int']['output'];
+  token: Scalars['String']['output'];
+};
+
 export type FreeTextQuestion = QuizQuestion & {
   __typename?: 'FreeTextQuestion';
   id: Scalars['ID']['output'];
@@ -1597,6 +1603,7 @@ export type Query = {
   externalContent: ExternalContent;
   externalContents: ExternalContentConnection;
   feedback: FeedbackConnection;
+  firebaseToken: FirebaseTokenResponse;
   instanceID: Scalars['String']['output'];
   me: User;
   myCurrentEvent: Event;
@@ -3057,6 +3064,7 @@ export type AssignTeamLeadMutation = { __typename?: 'Mutation', assignTeamLead: 
 
 export type AdminExternalContentsQueryVariables = Exact<{
   filter: ExternalContentFilter;
+  sortBy?: InputMaybe<ExternalContentSortBy>;
   first?: InputMaybe<Scalars['Int']['input']>;
   after?: InputMaybe<Scalars['String']['input']>;
 }>;
@@ -4148,8 +4156,8 @@ export function useAssignTeamLeadMutation() {
   return Urql.useMutation<AssignTeamLeadMutation, AssignTeamLeadMutationVariables>(AssignTeamLeadDocument);
 };
 export const AdminExternalContentsDocument = gql`
-    query AdminExternalContents($filter: ExternalContentFilter!, $first: Int, $after: String) {
-  externalContents(filter: $filter, first: $first, after: $after) {
+    query AdminExternalContents($filter: ExternalContentFilter!, $sortBy: ExternalContentSortBy, $first: Int, $after: String) {
+  externalContents(filter: $filter, sortBy: $sortBy, first: $first, after: $after) {
     edges {
       node {
         id

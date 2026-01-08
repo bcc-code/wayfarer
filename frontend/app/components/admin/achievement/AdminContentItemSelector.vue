@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { VueDraggable } from 'vue-draggable-plus'
-import { ExternalContentType } from '~/api/generated'
+import { ExternalContentType, ExternalContentSortBy } from '~/api/generated'
 import { fuzzyMatch } from '~/utils/fuzzySearch'
 
 interface ContentItem {
@@ -45,6 +45,7 @@ const queryVariables = computed(() => ({
     ...(contentTypeFilter.value && { contentType: contentTypeFilter.value }),
     ...(sourceFilter.value && { source: sourceFilter.value }),
   },
+  sortBy: ExternalContentSortBy.PublishedAtDesc,
   first: 500,
 }))
 
