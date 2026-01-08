@@ -70,6 +70,7 @@ const totalPersons = computed(() => {
         </h2>
       </div>
       <DesignTabs
+        v-if="unitLeaderboard.length"
         v-model="entityType"
         :tabs="[
           {
