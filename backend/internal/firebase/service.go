@@ -3,7 +3,9 @@ package firebase
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"cloud.google.com/go/firestore"
@@ -30,10 +32,16 @@ func New(ctx context.Context, cfg config.FirebaseConfig) (*Service, error) {
 	}
 
 	var opt option.ClientOption
+	var projectID string
 
 	// Check if it's a file path
 	if _, err := os.Stat(cfg.ServiceAccountJSON); err == nil {
 		opt = option.WithCredentialsFile(cfg.ServiceAccountJSON)
+		// Extract project ID from file
+		projectID, err = extractProjectIDFromFile(cfg.ServiceAccountJSON)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract project ID from credentials file: %w", err)
+		}
 	} else {
 		// Try to decode as base64 JSON
 		jsonBytes, err := base64.StdEncoding.DecodeString(cfg.ServiceAccountJSON)
@@ -42,9 +50,21 @@ func New(ctx context.Context, cfg config.FirebaseConfig) (*Service, error) {
 			jsonBytes = []byte(cfg.ServiceAccountJSON)
 		}
 		opt = option.WithCredentialsJSON(jsonBytes)
+		// Extract project ID from JSON
+		projectID, err = extractProjectIDFromJSON(jsonBytes)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract project ID from credentials: %w", err)
+		}
 	}
 
-	app, err := firebase.NewApp(ctx, nil, opt)
+	// Create Firebase config with project ID
+	firebaseConfig := &firebase.Config{
+		ProjectID: projectID,
+	}
+
+	slog.Debug("Initializing Firebase app", "projectID", projectID)
+
+	app, err := firebase.NewApp(ctx, firebaseConfig, opt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize Firebase app: %w", err)
 	}
@@ -54,10 +74,25 @@ func New(ctx context.Context, cfg config.FirebaseConfig) (*Service, error) {
 		return nil, fmt.Errorf("failed to get Firebase Auth client: %w", err)
 	}
 
-	firestoreClient, err := app.Firestore(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get Firestore client: %w", err)
+	// Create Firestore client directly instead of through Firebase app
+	// This ensures we have a properly initialized client with working Doc() method
+	// Use the configured database name (defaults to "(default)")
+	databaseName := cfg.DatabaseName
+	if databaseName == "" {
+		databaseName = "(default)"
 	}
+
+	slog.Debug("Creating Firestore client", "projectID", projectID, "database", databaseName)
+	firestoreClient, err := firestore.NewClientWithDatabase(ctx, projectID, databaseName, opt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Firestore client: %w", err)
+	}
+
+	if firestoreClient == nil {
+		return nil, fmt.Errorf("firestore client is nil after initialization")
+	}
+
+	slog.Debug("Firestore client initialized", "projectID", projectID, "database", databaseName)
 
 	return &Service{
 		authClient:      authClient,
@@ -127,4 +162,27 @@ func (s *Service) ensureUserExists(ctx context.Context, userID string) error {
 	}
 
 	return nil
+}
+
+// extractProjectIDFromFile reads a service account JSON file and extracts the project_id.
+func extractProjectIDFromFile(filePath string) (string, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read credentials file: %w", err)
+	}
+	return extractProjectIDFromJSON(data)
+}
+
+// extractProjectIDFromJSON parses service account JSON and extracts the project_id.
+func extractProjectIDFromJSON(jsonData []byte) (string, error) {
+	var creds struct {
+		ProjectID string `json:"project_id"`
+	}
+	if err := json.Unmarshal(jsonData, &creds); err != nil {
+		return "", fmt.Errorf("failed to parse credentials JSON: %w", err)
+	}
+	if creds.ProjectID == "" {
+		return "", fmt.Errorf("project_id not found in credentials")
+	}
+	return creds.ProjectID, nil
 }

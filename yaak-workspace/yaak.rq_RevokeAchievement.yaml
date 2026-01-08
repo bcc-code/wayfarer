@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_RevokeAchievement
 createdAt: 2025-12-11T12:00:00
-updatedAt: 2026-01-07T13:57:02.939378
+updatedAt: 2026-01-08T10:32:53.715690
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Achievements
 authentication: {}
@@ -14,8 +14,8 @@ body:
     }
   variables: |
     {
-      "userId": "US01KCNVKF7FEPZN4W0C4WQCHZ57",
-      "achievementId": "AC01KCCNMRWECKQG6W0WD11957RH"
+      "userId": "US01K9W1Y4M1R19YCDX4YSACT0BK",
+      "achievementId": "AC01KCCMXEZZMHYBF17VV1GNA7PF"
     }
 bodyType: graphql
 description: Revoke an achievement from a user (M2M/admin only)
