@@ -71,6 +71,36 @@ export function formatNumber(value: number): string {
 }
 
 /**
+ * Format a date as a relative time string (e.g., "2 hours ago", "yesterday")
+ * @param dateString - The date string to format
+ * @returns A localized relative time string
+ */
+export function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+  const rtf = new Intl.RelativeTimeFormat(getLocale(), { numeric: 'auto' })
+
+  if (diffInSeconds < 60) {
+    return rtf.format(-diffInSeconds, 'second')
+  }
+  if (diffInSeconds < 3600) {
+    return rtf.format(-Math.floor(diffInSeconds / 60), 'minute')
+  }
+  if (diffInSeconds < 86400) {
+    return rtf.format(-Math.floor(diffInSeconds / 3600), 'hour')
+  }
+  if (diffInSeconds < 2592000) {
+    return rtf.format(-Math.floor(diffInSeconds / 86400), 'day')
+  }
+  if (diffInSeconds < 31536000) {
+    return rtf.format(-Math.floor(diffInSeconds / 2592000), 'month')
+  }
+  return rtf.format(-Math.floor(diffInSeconds / 31536000), 'year')
+}
+
+/**
  * Parse a user agent string into a readable summary
  * @param ua - The user agent string
  * @returns A human-readable summary (e.g., "Chrome 120 / macOS")

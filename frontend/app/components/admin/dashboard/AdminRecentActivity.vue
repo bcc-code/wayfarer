@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useTimeAgo } from '@vueuse/core'
-
 defineProps<{
   feedbackEntries: Array<{
     id: string
@@ -9,10 +7,6 @@ defineProps<{
     user: { id: string; name: string }
   }>
 }>()
-
-function formatRelativeTime(dateString: string) {
-  return useTimeAgo(new Date(dateString)).value
-}
 </script>
 
 <template>

@@ -228,30 +228,12 @@ function formatSourceType(type: string) {
   return type.charAt(0) + type.slice(1).toLowerCase()
 }
 
-function formatScoreDate(date: string) {
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
-
 // Feedback helpers
 const feedbackEntries = computed(
   () => data.value?.feedback.edges.map((edge) => edge.node) ?? [],
 )
 
 const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
-
-function formatFeedbackDate(date: string) {
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 </script>
 
 <template>
@@ -522,7 +504,7 @@ function formatFeedbackDate(date: string) {
                   {{ entry.reason }}
                 </div>
                 <div class="text-dimmed text-xs">
-                  {{ formatScoreDate(entry.createdAt) }}
+                  {{ formatDateTime(entry.createdAt) }}
                 </div>
               </div>
             </div>
@@ -579,7 +561,7 @@ function formatFeedbackDate(date: string) {
               <div
                 class="text-dimmed mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs"
               >
-                <span>{{ formatFeedbackDate(entry.createdAt) }}</span>
+                <span>{{ formatDateTime(entry.createdAt) }}</span>
                 <span v-if="entry.platform">{{ entry.platform }}</span>
                 <span v-if="entry.screenWidth && entry.screenHeight">
                   {{ entry.screenWidth }}x{{ entry.screenHeight }}
