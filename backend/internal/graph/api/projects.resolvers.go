@@ -47,6 +47,9 @@ func (r *mutationResolver) JoinProject(ctx context.Context, projectID string) (*
 		return nil, fmt.Errorf("failed to join project: %w", err)
 	}
 
+	// Notify Firestore listeners about user projects
+	go r.FirebaseService.NotifyUserProjects(context.Background(), userID)
+
 	// Apply translations to the returned project
 	return r.ApplyTranslationToProject(ctx, project), nil
 }

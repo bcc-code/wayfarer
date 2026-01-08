@@ -639,6 +639,11 @@ type FeedbackFilter struct {
 	UserID *string `json:"userId,omitempty"`
 }
 
+type FirebaseTokenResponse struct {
+	Token     string `json:"token"`
+	ExpiresIn int    `json:"expiresIn"`
+}
+
 type FreeTextQuestion struct {
 	ID             string `json:"id"`
 	Quiz           *Quiz  `json:"quiz"`

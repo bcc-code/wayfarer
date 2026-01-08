@@ -261,6 +261,9 @@ func (r *mutationResolver) PublishChallenge(ctx context.Context, id string, publ
 	eventID := getChallengeEventID(existingChallenge)
 	r.Cache.InvalidateChallenge(id, projectID, eventID)
 
+	// Notify Firestore listeners about project challenges
+	go r.FirebaseService.NotifyProjectChallenges(context.Background(), projectID)
+
 	// Convert to GraphQL model
 	return convertPublishChallengeRowToChallenge(row), nil
 }
@@ -355,11 +358,18 @@ func (r *mutationResolver) BulkPublishChallenges(ctx context.Context, ids []stri
 		return nil, fmt.Errorf("failed to bulk publish challenges: %w", err)
 	}
 
-	// Invalidate cache for all challenges
+	// Invalidate cache for all challenges and collect unique project IDs
+	notifiedProjects := make(map[string]bool)
 	for i, id := range ids {
 		projectID := getChallengeProjectID(challenges[i])
 		eventID := getChallengeEventID(challenges[i])
 		r.Cache.InvalidateChallenge(id, projectID, eventID)
+		notifiedProjects[projectID] = true
+	}
+
+	// Notify Firestore listeners for each unique project
+	for projectID := range notifiedProjects {
+		go r.FirebaseService.NotifyProjectChallenges(context.Background(), projectID)
 	}
 
 	// Convert to GraphQL models
@@ -783,6 +793,9 @@ func (r *mutationResolver) CompleteChallenge(ctx context.Context, userID string,
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
+	// Notify Firestore listeners
+	go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
+
 	// Return challenge with translations
 	return r.ApplyTranslationToChallenge(ctx, challenge), nil
 }
@@ -816,6 +829,9 @@ func (r *mutationResolver) UncompleteChallenge(ctx context.Context, userID strin
 	projectID := getChallengeProjectID(challenge)
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
+
+	// Notify Firestore listeners
+	go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
 
 	return true, nil
 }

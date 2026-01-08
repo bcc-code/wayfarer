@@ -24,6 +24,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
+	"github.com/bcc-media/wayfarer/internal/firebase"
 	"github.com/bcc-media/wayfarer/internal/graph/api"
 	"github.com/bcc-media/wayfarer/internal/graph/directives"
 	"github.com/bcc-media/wayfarer/internal/handlers"
@@ -265,6 +266,20 @@ func main() {
 	webhookService := webhooks.NewService(db.Queries)
 	slog.Info("WebhookService initialized")
 
+	// Initialize Firebase service (optional)
+	var firebaseService *firebase.Service
+	if cfg.Firebase.ServiceAccountJSON != "" {
+		var err error
+		firebaseService, err = firebase.New(ctx, cfg.Firebase)
+		if err != nil {
+			slog.Error("Failed to initialize Firebase service", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("Firebase service initialized")
+	} else {
+		slog.Warn("Firebase service not initialized - missing configuration")
+	}
+
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{
 		DB:                 db,
@@ -275,6 +290,7 @@ func main() {
 		Settings:           settingsService,
 		PushService:        pushService,
 		WebhookService:     webhookService,
+		FirebaseService:    firebaseService,
 		InstanceID:         cacheSync.InstanceID(),
 	}
 

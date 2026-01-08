@@ -1175,6 +1175,13 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	r.Cache.InvalidateUser(userID)
 	cacheSpan.End()
 
+	// Notify Firestore listeners
+	go r.FirebaseService.NotifyUserQuizzes(context.Background(), userID)
+	// Also notify about achievements if any were awarded
+	if len(awardedAchievementIDs) > 0 {
+		go r.FirebaseService.NotifyUserAchievements(context.Background(), userID)
+	}
+
 	return convertSubmissionRowToModel(updatedSubmission), nil
 }
 

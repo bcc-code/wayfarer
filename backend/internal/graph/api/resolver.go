@@ -7,6 +7,7 @@ import (
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
+	"github.com/bcc-media/wayfarer/internal/firebase"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/loaders"
@@ -29,6 +30,7 @@ type Resolver struct {
 	Settings           *services.SettingsService
 	PushService        *push.Service
 	WebhookService     *webhooks.Service
+	FirebaseService    *firebase.Service
 	InstanceID         string
 }
 
