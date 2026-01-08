@@ -81,15 +81,11 @@ const searchResults = computed(() => {
     })
     .filter((item) => !query || (item.score !== null && item.score >= 0))
 
-  // Sort by score (highest first), then by title
-  return scoredItems
-    .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score
-      const aTitle = a.node.title || a.node.id
-      const bTitle = b.node.title || b.node.id
-      return aTitle.localeCompare(bTitle)
-    })
-    .map((item) => item.node)
+  // Only sort by score when searching, otherwise keep backend order (PublishedAtDesc)
+  if (query) {
+    scoredItems.sort((a, b) => b.score - a.score)
+  }
+  return scoredItems.map((item) => item.node)
 })
 
 function addItem(externalContent: (typeof searchResults.value)[0]) {
