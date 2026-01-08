@@ -7513,7 +7513,7 @@ schema {
 type Query {
     me: User!
     instanceID: String!
-    firebaseToken: FirebaseTokenResponse! @requireRole(roles: ["user"])
+    firebaseToken: FirebaseTokenResponse!
 }
 
 type Mutation {
@@ -25729,25 +25729,7 @@ func (ec *executionContext) _Query_firebaseToken(ctx context.Context, field grap
 		func(ctx context.Context) (any, error) {
 			return ec.resolvers.Query().FirebaseToken(ctx)
 		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user"})
-				if err != nil {
-					var zeroVal *model.FirebaseTokenResponse
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.FirebaseTokenResponse
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
+		nil,
 		ec.marshalNFirebaseTokenResponse2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFirebaseTokenResponse,
 		true,
 		true,
