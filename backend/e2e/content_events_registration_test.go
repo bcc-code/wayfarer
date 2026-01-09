@@ -348,7 +348,7 @@ func TestContentEventsProcessedOnRegistration(t *testing.T) {
 		assert.Equal(t, 0, scoreCount, "no score journal entries should exist")
 	})
 
-	t.Run("hidden_achievement_not_awarded", func(t *testing.T) {
+	t.Run("hidden_achievement_is_awarded", func(t *testing.T) {
 		// Clean database for isolated test
 		require.NoError(t, dbMgr.Clean(ctx))
 
@@ -388,14 +388,14 @@ func TestContentEventsProcessedOnRegistration(t *testing.T) {
 		pgUUID := pgtype.UUID{Bytes: personUUID, Valid: true}
 		service.ProcessPendingContentEvents(ctx, userID, pgUUID)
 
-		// Verify: Hidden achievement should NOT be awarded
+		// Verify: Hidden achievement SHOULD be awarded
 		achievements, err := dbMgr.GetUserAchievements(ctx, userID)
 		require.NoError(t, err)
-		assert.NotContains(t, achievements, achievementID, "hidden achievement should NOT be awarded")
+		assert.Contains(t, achievements, achievementID, "hidden achievement should be awarded")
 
-		// Verify: No score journal entries
+		// Verify: Score journal entry should exist
 		scoreCount, err := dbMgr.GetScoreJournalEntriesCount(ctx, userID, projectID)
 		require.NoError(t, err)
-		assert.Equal(t, 0, scoreCount, "no score journal entries should exist for hidden achievement")
+		assert.Equal(t, 1, scoreCount, "score journal entry should exist for hidden achievement")
 	})
 }
