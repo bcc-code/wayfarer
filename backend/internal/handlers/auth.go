@@ -25,12 +25,13 @@ import (
 )
 
 type AuthHandler struct {
-	DB            *database.DB
-	Cfg           *config.Config
-	JWKS          keyfunc.Keyfunc
-	Auth0JWKS     keyfunc.Keyfunc
-	MembersClient *members.Client
-	RoleService   *services.RoleService
+	DB                        *database.DB
+	Cfg                       *config.Config
+	JWKS                      keyfunc.Keyfunc
+	Auth0JWKS                 keyfunc.Keyfunc
+	MembersClient             *members.Client
+	RoleService               *services.RoleService
+	ContentAchievementService *services.ContentAchievementService
 }
 
 // BrunstadTVClaims represents the JWT claims from Brunstad TV
@@ -539,6 +540,9 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 	// Process any pending consent events for this user (using person_uuid if available)
 	if personUUID.Valid {
 		h.processPendingConsentEvents(ctx, newUser.ID, uuid.UUID(personUUID.Bytes).String())
+		if h.ContentAchievementService != nil {
+			h.ContentAchievementService.ProcessPendingContentEvents(ctx, newUser.ID, personUUID)
+		}
 	}
 
 	// Convert CreateUserRow to GetUserByMembersIDRow
@@ -823,3 +827,4 @@ func (h *AuthHandler) processPendingConsentEvents(ctx context.Context, userID, p
 		)
 	}
 }
+

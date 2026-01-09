@@ -391,24 +391,32 @@ func main() {
 	}
 	slog.Info("Profiling endpoints enabled at /debug/pprof")
 
-	// Authentication token endpoint (no JWT middleware)
-	authHandler := &handlers.AuthHandler{
-		DB:            db,
-		Cfg:           cfg,
-		JWKS:          jwks,
-		Auth0JWKS:     auth0JWKS,
-		MembersClient: membersClient,
-		RoleService:   roleService,
-	}
-	router.GET("/token", authHandler.Callback)
-
-	// Webhook handler for external content events
-	webhookHandler := &handlers.WebhookHandler{
+	// Content achievement service (shared between auth and webhook handlers)
+	contentAchievementService := &services.ContentAchievementService{
 		DB:             db,
 		Cache:          cacheInstance,
 		PushService:    pushService,
 		Loaders:        dataLoaders,
 		WebhookService: webhookService,
+	}
+
+	// Authentication token endpoint (no JWT middleware)
+	authHandler := &handlers.AuthHandler{
+		DB:                        db,
+		Cfg:                       cfg,
+		JWKS:                      jwks,
+		Auth0JWKS:                 auth0JWKS,
+		MembersClient:             membersClient,
+		RoleService:               roleService,
+		ContentAchievementService: contentAchievementService,
+	}
+	router.GET("/token", authHandler.Callback)
+
+	// Webhook handler for external content events
+	webhookHandler := &handlers.WebhookHandler{
+		DB:                        db,
+		WebhookService:            webhookService,
+		ContentAchievementService: contentAchievementService,
 	}
 	router.POST("/api/v1/content-events", middleware.APIKeyAuth(cfg.APIKey), webhookHandler.HandleContentEvent)
 

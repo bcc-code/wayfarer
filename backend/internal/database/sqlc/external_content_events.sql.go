@@ -162,3 +162,48 @@ func (q *Queries) GetExternalContentEventsBySource(ctx context.Context, arg GetE
 	}
 	return items, nil
 }
+
+const GetExternalContentEventsForProcessing = `-- name: GetExternalContentEventsForProcessing :many
+SELECT DISTINCT ON (task_id) id, person_id, task_id, plan_id, content_progress, consumed_at
+FROM external_content_events
+WHERE person_id = $1::uuid
+ORDER BY task_id, consumed_at DESC
+`
+
+type GetExternalContentEventsForProcessingRow struct {
+	ID              string             `json:"id"`
+	PersonID        pgtype.UUID        `json:"person_id"`
+	TaskID          string             `json:"task_id"`
+	PlanID          *string            `json:"plan_id"`
+	ContentProgress *float32           `json:"content_progress"`
+	ConsumedAt      pgtype.Timestamptz `json:"consumed_at"`
+}
+
+// Returns one event per task_id (most recent) for a person_id, used when processing
+// pending events for newly registered users.
+func (q *Queries) GetExternalContentEventsForProcessing(ctx context.Context, personid pgtype.UUID) ([]*GetExternalContentEventsForProcessingRow, error) {
+	rows, err := q.db.Query(ctx, GetExternalContentEventsForProcessing, personid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetExternalContentEventsForProcessingRow{}
+	for rows.Next() {
+		var i GetExternalContentEventsForProcessingRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PersonID,
+			&i.TaskID,
+			&i.PlanID,
+			&i.ContentProgress,
+			&i.ConsumedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
