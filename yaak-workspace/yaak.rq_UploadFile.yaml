@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_UploadFile
 createdAt: 2025-01-07T12:00:00
-updatedAt: 2026-01-07T12:26:14.899764
+updatedAt: 2026-01-09T14:39:58.765844
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -30,6 +30,6 @@ headers:
   id: JHmf3GcSIW
 method: POST
 name: Upload File
-sortPriority: 6333.333333333333
+sortPriority: 23000.0
 url: ${[ HOST ]}/api/upload
 urlParameters: []

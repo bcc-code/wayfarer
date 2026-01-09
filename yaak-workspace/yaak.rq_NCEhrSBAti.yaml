@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_NCEhrSBAti
 createdAt: 2025-11-27T13:48:40.376201
-updatedAt: 2025-12-09T10:59:38.451786
+updatedAt: 2026-01-09T14:39:58.761878
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -67,6 +67,6 @@ headers:
   id: 0s4xJY0Rq9
 method: POST
 name: ProjectColors
-sortPriority: 12000.0
+sortPriority: 17000.0
 url: ${[ HOST ]}/graphql
 urlParameters: []
