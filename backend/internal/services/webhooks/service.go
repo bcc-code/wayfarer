@@ -52,6 +52,12 @@ func (s *Service) DispatchPointsAwarded(ctx context.Context, projectID string, u
 	s.dispatch(ctx, projectID, EventTypePointsAwarded, user, data)
 }
 
+// DispatchQuizSessionFinished sends webhooks for quiz session finished events
+// This should be called asynchronously (in a goroutine)
+func (s *Service) DispatchQuizSessionFinished(ctx context.Context, projectID string, data QuizSessionFinishedData) {
+	s.dispatch(ctx, projectID, EventTypeQuizSessionFinished, nil, data)
+}
+
 // dispatchGlobal sends the payload to all active webhooks for the given event type across all active projects
 func (s *Service) dispatchGlobal(ctx context.Context, eventType EventType, user *UserData, data interface{}) {
 	webhooks, err := s.queries.GetActiveWebhooksByEventType(ctx, string(eventType))

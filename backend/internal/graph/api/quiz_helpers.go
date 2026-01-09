@@ -407,7 +407,23 @@ func convertGetQuizQuestionsByQuizIDsRowToInterface(row *sqlc.GetQuizQuestionsBy
 	return convertQuizQuestionRowToInterface(getQuizQuestionsByQuizIDsRowAdapter{row})
 }
 
-func convertSubmissionRowToModel(row *sqlc.QuizSubmission) *model.QuizSubmission {
+// quizSubmissionRow defines the common fields for quiz submission row types
+type quizSubmissionRow struct {
+	ID            string
+	QuizID        string
+	UserID        string
+	SessionID     *string
+	StartedAt     pgtype.Timestamptz
+	CompletedAt   pgtype.Timestamptz
+	ExpiresAt     pgtype.Timestamptz
+	QuestionOrder []byte
+	Score         *int32
+	MaxScore      *int32
+	PointsAwarded *int32
+	AutoSubmitted bool
+}
+
+func convertSubmissionRowToModel(row quizSubmissionRow) *model.QuizSubmission {
 	var completedAt *scalars.DateTime
 	if row.CompletedAt.Valid {
 		completedAt = &scalars.DateTime{Time: row.CompletedAt.Time}
@@ -443,6 +459,7 @@ func convertSubmissionRowToModel(row *sqlc.QuizSubmission) *model.QuizSubmission
 		ID:            row.ID,
 		QuizID:        row.QuizID,
 		UserID:        row.UserID,
+		SessionID:     row.SessionID,
 		StartedAt:     scalars.DateTime{Time: row.StartedAt.Time},
 		CompletedAt:   completedAt,
 		ExpiresAt:     expiresAt,
@@ -450,7 +467,118 @@ func convertSubmissionRowToModel(row *sqlc.QuizSubmission) *model.QuizSubmission
 		Score:         score,
 		MaxScore:      maxScore,
 		PointsAwarded: pointsAwarded,
+		AutoSubmitted: row.AutoSubmitted,
 	}
+}
+
+// Wrapper functions for each submission row type
+
+func convertCreateQuizSubmissionRow(row *sqlc.CreateQuizSubmissionRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertUpdateQuizSubmissionRow(row *sqlc.UpdateQuizSubmissionRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertGetQuizSubmissionByIDRow(row *sqlc.GetQuizSubmissionByIDRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertGetQuizSubmissionByIDForUpdateRow(row *sqlc.GetQuizSubmissionByIDForUpdateRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertGetActiveSubmissionByUserAndQuizRow(row *sqlc.GetActiveSubmissionByUserAndQuizRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertGetQuizSubmissionsByIDsRow(row *sqlc.GetQuizSubmissionsByIDsRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertGetQuizSubmissionsByQuizIDRow(row *sqlc.GetQuizSubmissionsByQuizIDRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertGetQuizSubmissionsByUserAndQuizRow(row *sqlc.GetQuizSubmissionsByUserAndQuizRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertGetQuizSubmissionsByUserIDRow(row *sqlc.GetQuizSubmissionsByUserIDRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertGetQuizSubmissionsByUserIDsRow(row *sqlc.GetQuizSubmissionsByUserIDsRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertGetQuizSubmissionsFilteredCursorRow(row *sqlc.GetQuizSubmissionsFilteredCursorRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertGetCompletedSubmissionsByUserAndQuizRow(row *sqlc.GetCompletedSubmissionsByUserAndQuizRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
 }
 
 // convertResponseRowToInterface converts a database row to the appropriate QuizResponse implementation
@@ -551,5 +679,58 @@ func convertToJsonResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime,
 		AnsweredAt:       answeredAt,
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,
+	}
+}
+
+func convertGetSubmissionByUserAndSessionRow(row *sqlc.GetSubmissionByUserAndSessionRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertGetActiveSubmissionsBySessionIDRow(row *sqlc.GetActiveSubmissionsBySessionIDRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertGetSubmissionsBySessionIDRow(row *sqlc.GetSubmissionsBySessionIDRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+// convertQuizSessionToModel converts a sqlc.QuizSession to model.QuizSession
+func convertQuizSessionToModel(row *sqlc.QuizSession) *model.QuizSession {
+	var openAt, lockAt, finishAt *scalars.DateTime
+	if row.OpenAt.Valid {
+		openAt = &scalars.DateTime{Time: row.OpenAt.Time}
+	}
+	if row.LockAt.Valid {
+		lockAt = &scalars.DateTime{Time: row.LockAt.Time}
+	}
+	if row.FinishAt.Valid {
+		finishAt = &scalars.DateTime{Time: row.FinishAt.Time}
+	}
+
+	return &model.QuizSession{
+		ID:          row.ID,
+		QuizID:      row.QuizID,
+		Name:        row.Name,
+		State:       model.QuizSessionState(row.State),
+		OpenAt:      openAt,
+		LockAt:      lockAt,
+		FinishAt:    finishAt,
+		CreatedByID: row.CreatedBy,
+		CreatedAt:   scalars.DateTime{Time: row.CreatedAt.Time},
 	}
 }

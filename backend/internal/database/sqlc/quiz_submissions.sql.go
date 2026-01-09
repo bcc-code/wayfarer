@@ -36,6 +36,7 @@ INSERT INTO quiz_submissions (
     id,
     quiz_id,
     user_id,
+    session_id,
     expires_at,
     question_order,
     max_score
@@ -44,36 +45,56 @@ VALUES (
     $1::text,
     $2::text,
     $3::text,
-    $4::timestamptz,
-    $5::jsonb,
-    $6::int
+    $4::text,
+    $5::timestamptz,
+    $6::jsonb,
+    $7::int
 )
-RETURNING id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+RETURNING id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 `
 
 type CreateQuizSubmissionParams struct {
 	ID            string             `json:"id"`
 	Quizid        string             `json:"quizid"`
 	Userid        string             `json:"userid"`
+	Sessionid     *string            `json:"sessionid"`
 	Expiresat     pgtype.Timestamptz `json:"expiresat"`
 	Questionorder []byte             `json:"questionorder"`
 	Maxscore      int32              `json:"maxscore"`
 }
 
-func (q *Queries) CreateQuizSubmission(ctx context.Context, arg CreateQuizSubmissionParams) (*QuizSubmission, error) {
+type CreateQuizSubmissionRow struct {
+	ID            string             `json:"id"`
+	QuizID        string             `json:"quiz_id"`
+	UserID        string             `json:"user_id"`
+	SessionID     *string            `json:"session_id"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
+	QuestionOrder []byte             `json:"question_order"`
+	Score         *int32             `json:"score"`
+	MaxScore      *int32             `json:"max_score"`
+	PointsAwarded *int32             `json:"points_awarded"`
+	AutoSubmitted bool               `json:"auto_submitted"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) CreateQuizSubmission(ctx context.Context, arg CreateQuizSubmissionParams) (*CreateQuizSubmissionRow, error) {
 	row := q.db.QueryRow(ctx, CreateQuizSubmission,
 		arg.ID,
 		arg.Quizid,
 		arg.Userid,
+		arg.Sessionid,
 		arg.Expiresat,
 		arg.Questionorder,
 		arg.Maxscore,
 	)
-	var i QuizSubmission
+	var i CreateQuizSubmissionRow
 	err := row.Scan(
 		&i.ID,
 		&i.QuizID,
 		&i.UserID,
+		&i.SessionID,
 		&i.StartedAt,
 		&i.CompletedAt,
 		&i.ExpiresAt,
@@ -81,13 +102,14 @@ func (q *Queries) CreateQuizSubmission(ctx context.Context, arg CreateQuizSubmis
 		&i.Score,
 		&i.MaxScore,
 		&i.PointsAwarded,
+		&i.AutoSubmitted,
 		&i.CreatedAt,
 	)
 	return &i, err
 }
 
 const GetActiveSubmissionByUserAndQuiz = `-- name: GetActiveSubmissionByUserAndQuiz :one
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE user_id = $1::text
     AND quiz_id = $2::text
@@ -102,13 +124,30 @@ type GetActiveSubmissionByUserAndQuizParams struct {
 	Quizid string `json:"quizid"`
 }
 
-func (q *Queries) GetActiveSubmissionByUserAndQuiz(ctx context.Context, arg GetActiveSubmissionByUserAndQuizParams) (*QuizSubmission, error) {
+type GetActiveSubmissionByUserAndQuizRow struct {
+	ID            string             `json:"id"`
+	QuizID        string             `json:"quiz_id"`
+	UserID        string             `json:"user_id"`
+	SessionID     *string            `json:"session_id"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
+	QuestionOrder []byte             `json:"question_order"`
+	Score         *int32             `json:"score"`
+	MaxScore      *int32             `json:"max_score"`
+	PointsAwarded *int32             `json:"points_awarded"`
+	AutoSubmitted bool               `json:"auto_submitted"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetActiveSubmissionByUserAndQuiz(ctx context.Context, arg GetActiveSubmissionByUserAndQuizParams) (*GetActiveSubmissionByUserAndQuizRow, error) {
 	row := q.db.QueryRow(ctx, GetActiveSubmissionByUserAndQuiz, arg.Userid, arg.Quizid)
-	var i QuizSubmission
+	var i GetActiveSubmissionByUserAndQuizRow
 	err := row.Scan(
 		&i.ID,
 		&i.QuizID,
 		&i.UserID,
+		&i.SessionID,
 		&i.StartedAt,
 		&i.CompletedAt,
 		&i.ExpiresAt,
@@ -116,13 +155,14 @@ func (q *Queries) GetActiveSubmissionByUserAndQuiz(ctx context.Context, arg GetA
 		&i.Score,
 		&i.MaxScore,
 		&i.PointsAwarded,
+		&i.AutoSubmitted,
 		&i.CreatedAt,
 	)
 	return &i, err
 }
 
 const GetCompletedSubmissionsByUserAndQuiz = `-- name: GetCompletedSubmissionsByUserAndQuiz :many
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE user_id = $1::text
     AND quiz_id = $2::text
@@ -135,19 +175,36 @@ type GetCompletedSubmissionsByUserAndQuizParams struct {
 	Quizid string `json:"quizid"`
 }
 
-func (q *Queries) GetCompletedSubmissionsByUserAndQuiz(ctx context.Context, arg GetCompletedSubmissionsByUserAndQuizParams) ([]*QuizSubmission, error) {
+type GetCompletedSubmissionsByUserAndQuizRow struct {
+	ID            string             `json:"id"`
+	QuizID        string             `json:"quiz_id"`
+	UserID        string             `json:"user_id"`
+	SessionID     *string            `json:"session_id"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
+	QuestionOrder []byte             `json:"question_order"`
+	Score         *int32             `json:"score"`
+	MaxScore      *int32             `json:"max_score"`
+	PointsAwarded *int32             `json:"points_awarded"`
+	AutoSubmitted bool               `json:"auto_submitted"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetCompletedSubmissionsByUserAndQuiz(ctx context.Context, arg GetCompletedSubmissionsByUserAndQuizParams) ([]*GetCompletedSubmissionsByUserAndQuizRow, error) {
 	rows, err := q.db.Query(ctx, GetCompletedSubmissionsByUserAndQuiz, arg.Userid, arg.Quizid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*QuizSubmission{}
+	items := []*GetCompletedSubmissionsByUserAndQuizRow{}
 	for rows.Next() {
-		var i QuizSubmission
+		var i GetCompletedSubmissionsByUserAndQuizRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuizID,
 			&i.UserID,
+			&i.SessionID,
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.ExpiresAt,
@@ -155,6 +212,7 @@ func (q *Queries) GetCompletedSubmissionsByUserAndQuiz(ctx context.Context, arg 
 			&i.Score,
 			&i.MaxScore,
 			&i.PointsAwarded,
+			&i.AutoSubmitted,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -168,18 +226,35 @@ func (q *Queries) GetCompletedSubmissionsByUserAndQuiz(ctx context.Context, arg 
 }
 
 const GetQuizSubmissionByID = `-- name: GetQuizSubmissionByID :one
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE id = $1::text
 `
 
-func (q *Queries) GetQuizSubmissionByID(ctx context.Context, id string) (*QuizSubmission, error) {
+type GetQuizSubmissionByIDRow struct {
+	ID            string             `json:"id"`
+	QuizID        string             `json:"quiz_id"`
+	UserID        string             `json:"user_id"`
+	SessionID     *string            `json:"session_id"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
+	QuestionOrder []byte             `json:"question_order"`
+	Score         *int32             `json:"score"`
+	MaxScore      *int32             `json:"max_score"`
+	PointsAwarded *int32             `json:"points_awarded"`
+	AutoSubmitted bool               `json:"auto_submitted"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetQuizSubmissionByID(ctx context.Context, id string) (*GetQuizSubmissionByIDRow, error) {
 	row := q.db.QueryRow(ctx, GetQuizSubmissionByID, id)
-	var i QuizSubmission
+	var i GetQuizSubmissionByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.QuizID,
 		&i.UserID,
+		&i.SessionID,
 		&i.StartedAt,
 		&i.CompletedAt,
 		&i.ExpiresAt,
@@ -187,26 +262,44 @@ func (q *Queries) GetQuizSubmissionByID(ctx context.Context, id string) (*QuizSu
 		&i.Score,
 		&i.MaxScore,
 		&i.PointsAwarded,
+		&i.AutoSubmitted,
 		&i.CreatedAt,
 	)
 	return &i, err
 }
 
 const GetQuizSubmissionByIDForUpdate = `-- name: GetQuizSubmissionByIDForUpdate :one
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE id = $1::text
 FOR UPDATE
 `
 
+type GetQuizSubmissionByIDForUpdateRow struct {
+	ID            string             `json:"id"`
+	QuizID        string             `json:"quiz_id"`
+	UserID        string             `json:"user_id"`
+	SessionID     *string            `json:"session_id"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
+	QuestionOrder []byte             `json:"question_order"`
+	Score         *int32             `json:"score"`
+	MaxScore      *int32             `json:"max_score"`
+	PointsAwarded *int32             `json:"points_awarded"`
+	AutoSubmitted bool               `json:"auto_submitted"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
 // Acquires a row-level lock to prevent concurrent finalization
-func (q *Queries) GetQuizSubmissionByIDForUpdate(ctx context.Context, id string) (*QuizSubmission, error) {
+func (q *Queries) GetQuizSubmissionByIDForUpdate(ctx context.Context, id string) (*GetQuizSubmissionByIDForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, GetQuizSubmissionByIDForUpdate, id)
-	var i QuizSubmission
+	var i GetQuizSubmissionByIDForUpdateRow
 	err := row.Scan(
 		&i.ID,
 		&i.QuizID,
 		&i.UserID,
+		&i.SessionID,
 		&i.StartedAt,
 		&i.CompletedAt,
 		&i.ExpiresAt,
@@ -214,30 +307,48 @@ func (q *Queries) GetQuizSubmissionByIDForUpdate(ctx context.Context, id string)
 		&i.Score,
 		&i.MaxScore,
 		&i.PointsAwarded,
+		&i.AutoSubmitted,
 		&i.CreatedAt,
 	)
 	return &i, err
 }
 
 const GetQuizSubmissionsByIDs = `-- name: GetQuizSubmissionsByIDs :many
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE id = ANY($1::text[])
 `
 
-func (q *Queries) GetQuizSubmissionsByIDs(ctx context.Context, ids []string) ([]*QuizSubmission, error) {
+type GetQuizSubmissionsByIDsRow struct {
+	ID            string             `json:"id"`
+	QuizID        string             `json:"quiz_id"`
+	UserID        string             `json:"user_id"`
+	SessionID     *string            `json:"session_id"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
+	QuestionOrder []byte             `json:"question_order"`
+	Score         *int32             `json:"score"`
+	MaxScore      *int32             `json:"max_score"`
+	PointsAwarded *int32             `json:"points_awarded"`
+	AutoSubmitted bool               `json:"auto_submitted"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetQuizSubmissionsByIDs(ctx context.Context, ids []string) ([]*GetQuizSubmissionsByIDsRow, error) {
 	rows, err := q.db.Query(ctx, GetQuizSubmissionsByIDs, ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*QuizSubmission{}
+	items := []*GetQuizSubmissionsByIDsRow{}
 	for rows.Next() {
-		var i QuizSubmission
+		var i GetQuizSubmissionsByIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuizID,
 			&i.UserID,
+			&i.SessionID,
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.ExpiresAt,
@@ -245,6 +356,7 @@ func (q *Queries) GetQuizSubmissionsByIDs(ctx context.Context, ids []string) ([]
 			&i.Score,
 			&i.MaxScore,
 			&i.PointsAwarded,
+			&i.AutoSubmitted,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -258,25 +370,42 @@ func (q *Queries) GetQuizSubmissionsByIDs(ctx context.Context, ids []string) ([]
 }
 
 const GetQuizSubmissionsByQuizID = `-- name: GetQuizSubmissionsByQuizID :many
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE quiz_id = $1::text
 ORDER BY started_at DESC
 `
 
-func (q *Queries) GetQuizSubmissionsByQuizID(ctx context.Context, quizid string) ([]*QuizSubmission, error) {
+type GetQuizSubmissionsByQuizIDRow struct {
+	ID            string             `json:"id"`
+	QuizID        string             `json:"quiz_id"`
+	UserID        string             `json:"user_id"`
+	SessionID     *string            `json:"session_id"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
+	QuestionOrder []byte             `json:"question_order"`
+	Score         *int32             `json:"score"`
+	MaxScore      *int32             `json:"max_score"`
+	PointsAwarded *int32             `json:"points_awarded"`
+	AutoSubmitted bool               `json:"auto_submitted"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetQuizSubmissionsByQuizID(ctx context.Context, quizid string) ([]*GetQuizSubmissionsByQuizIDRow, error) {
 	rows, err := q.db.Query(ctx, GetQuizSubmissionsByQuizID, quizid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*QuizSubmission{}
+	items := []*GetQuizSubmissionsByQuizIDRow{}
 	for rows.Next() {
-		var i QuizSubmission
+		var i GetQuizSubmissionsByQuizIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuizID,
 			&i.UserID,
+			&i.SessionID,
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.ExpiresAt,
@@ -284,6 +413,7 @@ func (q *Queries) GetQuizSubmissionsByQuizID(ctx context.Context, quizid string)
 			&i.Score,
 			&i.MaxScore,
 			&i.PointsAwarded,
+			&i.AutoSubmitted,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -297,7 +427,7 @@ func (q *Queries) GetQuizSubmissionsByQuizID(ctx context.Context, quizid string)
 }
 
 const GetQuizSubmissionsByUserAndQuiz = `-- name: GetQuizSubmissionsByUserAndQuiz :many
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE user_id = $1::text
     AND quiz_id = $2::text
@@ -309,19 +439,36 @@ type GetQuizSubmissionsByUserAndQuizParams struct {
 	Quizid string `json:"quizid"`
 }
 
-func (q *Queries) GetQuizSubmissionsByUserAndQuiz(ctx context.Context, arg GetQuizSubmissionsByUserAndQuizParams) ([]*QuizSubmission, error) {
+type GetQuizSubmissionsByUserAndQuizRow struct {
+	ID            string             `json:"id"`
+	QuizID        string             `json:"quiz_id"`
+	UserID        string             `json:"user_id"`
+	SessionID     *string            `json:"session_id"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
+	QuestionOrder []byte             `json:"question_order"`
+	Score         *int32             `json:"score"`
+	MaxScore      *int32             `json:"max_score"`
+	PointsAwarded *int32             `json:"points_awarded"`
+	AutoSubmitted bool               `json:"auto_submitted"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetQuizSubmissionsByUserAndQuiz(ctx context.Context, arg GetQuizSubmissionsByUserAndQuizParams) ([]*GetQuizSubmissionsByUserAndQuizRow, error) {
 	rows, err := q.db.Query(ctx, GetQuizSubmissionsByUserAndQuiz, arg.Userid, arg.Quizid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*QuizSubmission{}
+	items := []*GetQuizSubmissionsByUserAndQuizRow{}
 	for rows.Next() {
-		var i QuizSubmission
+		var i GetQuizSubmissionsByUserAndQuizRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuizID,
 			&i.UserID,
+			&i.SessionID,
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.ExpiresAt,
@@ -329,6 +476,7 @@ func (q *Queries) GetQuizSubmissionsByUserAndQuiz(ctx context.Context, arg GetQu
 			&i.Score,
 			&i.MaxScore,
 			&i.PointsAwarded,
+			&i.AutoSubmitted,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -342,25 +490,42 @@ func (q *Queries) GetQuizSubmissionsByUserAndQuiz(ctx context.Context, arg GetQu
 }
 
 const GetQuizSubmissionsByUserID = `-- name: GetQuizSubmissionsByUserID :many
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE user_id = $1::text
 ORDER BY started_at DESC
 `
 
-func (q *Queries) GetQuizSubmissionsByUserID(ctx context.Context, userid string) ([]*QuizSubmission, error) {
+type GetQuizSubmissionsByUserIDRow struct {
+	ID            string             `json:"id"`
+	QuizID        string             `json:"quiz_id"`
+	UserID        string             `json:"user_id"`
+	SessionID     *string            `json:"session_id"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
+	QuestionOrder []byte             `json:"question_order"`
+	Score         *int32             `json:"score"`
+	MaxScore      *int32             `json:"max_score"`
+	PointsAwarded *int32             `json:"points_awarded"`
+	AutoSubmitted bool               `json:"auto_submitted"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetQuizSubmissionsByUserID(ctx context.Context, userid string) ([]*GetQuizSubmissionsByUserIDRow, error) {
 	rows, err := q.db.Query(ctx, GetQuizSubmissionsByUserID, userid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*QuizSubmission{}
+	items := []*GetQuizSubmissionsByUserIDRow{}
 	for rows.Next() {
-		var i QuizSubmission
+		var i GetQuizSubmissionsByUserIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuizID,
 			&i.UserID,
+			&i.SessionID,
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.ExpiresAt,
@@ -368,6 +533,7 @@ func (q *Queries) GetQuizSubmissionsByUserID(ctx context.Context, userid string)
 			&i.Score,
 			&i.MaxScore,
 			&i.PointsAwarded,
+			&i.AutoSubmitted,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -381,25 +547,42 @@ func (q *Queries) GetQuizSubmissionsByUserID(ctx context.Context, userid string)
 }
 
 const GetQuizSubmissionsByUserIDs = `-- name: GetQuizSubmissionsByUserIDs :many
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE user_id = ANY($1::text[])
 ORDER BY user_id, started_at DESC
 `
 
-func (q *Queries) GetQuizSubmissionsByUserIDs(ctx context.Context, userIds []string) ([]*QuizSubmission, error) {
+type GetQuizSubmissionsByUserIDsRow struct {
+	ID            string             `json:"id"`
+	QuizID        string             `json:"quiz_id"`
+	UserID        string             `json:"user_id"`
+	SessionID     *string            `json:"session_id"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
+	QuestionOrder []byte             `json:"question_order"`
+	Score         *int32             `json:"score"`
+	MaxScore      *int32             `json:"max_score"`
+	PointsAwarded *int32             `json:"points_awarded"`
+	AutoSubmitted bool               `json:"auto_submitted"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetQuizSubmissionsByUserIDs(ctx context.Context, userIds []string) ([]*GetQuizSubmissionsByUserIDsRow, error) {
 	rows, err := q.db.Query(ctx, GetQuizSubmissionsByUserIDs, userIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*QuizSubmission{}
+	items := []*GetQuizSubmissionsByUserIDsRow{}
 	for rows.Next() {
-		var i QuizSubmission
+		var i GetQuizSubmissionsByUserIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuizID,
 			&i.UserID,
+			&i.SessionID,
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.ExpiresAt,
@@ -407,6 +590,7 @@ func (q *Queries) GetQuizSubmissionsByUserIDs(ctx context.Context, userIds []str
 			&i.Score,
 			&i.MaxScore,
 			&i.PointsAwarded,
+			&i.AutoSubmitted,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -420,7 +604,7 @@ func (q *Queries) GetQuizSubmissionsByUserIDs(ctx context.Context, userIds []str
 }
 
 const GetQuizSubmissionsFilteredCursor = `-- name: GetQuizSubmissionsFilteredCursor :many
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE
     ($1::text = '' OR quiz_id = $1::text)
@@ -442,7 +626,23 @@ type GetQuizSubmissionsFilteredCursorParams struct {
 	Querylimit   int32  `json:"querylimit"`
 }
 
-func (q *Queries) GetQuizSubmissionsFilteredCursor(ctx context.Context, arg GetQuizSubmissionsFilteredCursorParams) ([]*QuizSubmission, error) {
+type GetQuizSubmissionsFilteredCursorRow struct {
+	ID            string             `json:"id"`
+	QuizID        string             `json:"quiz_id"`
+	UserID        string             `json:"user_id"`
+	SessionID     *string            `json:"session_id"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
+	QuestionOrder []byte             `json:"question_order"`
+	Score         *int32             `json:"score"`
+	MaxScore      *int32             `json:"max_score"`
+	PointsAwarded *int32             `json:"points_awarded"`
+	AutoSubmitted bool               `json:"auto_submitted"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetQuizSubmissionsFilteredCursor(ctx context.Context, arg GetQuizSubmissionsFilteredCursorParams) ([]*GetQuizSubmissionsFilteredCursorRow, error) {
 	rows, err := q.db.Query(ctx, GetQuizSubmissionsFilteredCursor,
 		arg.Quizid,
 		arg.Userid,
@@ -455,13 +655,14 @@ func (q *Queries) GetQuizSubmissionsFilteredCursor(ctx context.Context, arg GetQ
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*QuizSubmission{}
+	items := []*GetQuizSubmissionsFilteredCursorRow{}
 	for rows.Next() {
-		var i QuizSubmission
+		var i GetQuizSubmissionsFilteredCursorRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.QuizID,
 			&i.UserID,
+			&i.SessionID,
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.ExpiresAt,
@@ -469,6 +670,7 @@ func (q *Queries) GetQuizSubmissionsFilteredCursor(ctx context.Context, arg GetQ
 			&i.Score,
 			&i.MaxScore,
 			&i.PointsAwarded,
+			&i.AutoSubmitted,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -488,7 +690,7 @@ SET
     score = COALESCE($2::int, score),
     points_awarded = COALESCE($3::int, points_awarded)
 WHERE id = $4::text
-RETURNING id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+RETURNING id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 `
 
 type UpdateQuizSubmissionParams struct {
@@ -498,18 +700,35 @@ type UpdateQuizSubmissionParams struct {
 	ID            string             `json:"id"`
 }
 
-func (q *Queries) UpdateQuizSubmission(ctx context.Context, arg UpdateQuizSubmissionParams) (*QuizSubmission, error) {
+type UpdateQuizSubmissionRow struct {
+	ID            string             `json:"id"`
+	QuizID        string             `json:"quiz_id"`
+	UserID        string             `json:"user_id"`
+	SessionID     *string            `json:"session_id"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
+	QuestionOrder []byte             `json:"question_order"`
+	Score         *int32             `json:"score"`
+	MaxScore      *int32             `json:"max_score"`
+	PointsAwarded *int32             `json:"points_awarded"`
+	AutoSubmitted bool               `json:"auto_submitted"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) UpdateQuizSubmission(ctx context.Context, arg UpdateQuizSubmissionParams) (*UpdateQuizSubmissionRow, error) {
 	row := q.db.QueryRow(ctx, UpdateQuizSubmission,
 		arg.Completedat,
 		arg.Score,
 		arg.Pointsawarded,
 		arg.ID,
 	)
-	var i QuizSubmission
+	var i UpdateQuizSubmissionRow
 	err := row.Scan(
 		&i.ID,
 		&i.QuizID,
 		&i.UserID,
+		&i.SessionID,
 		&i.StartedAt,
 		&i.CompletedAt,
 		&i.ExpiresAt,
@@ -517,6 +736,7 @@ func (q *Queries) UpdateQuizSubmission(ctx context.Context, arg UpdateQuizSubmis
 		&i.Score,
 		&i.MaxScore,
 		&i.PointsAwarded,
+		&i.AutoSubmitted,
 		&i.CreatedAt,
 	)
 	return &i, err

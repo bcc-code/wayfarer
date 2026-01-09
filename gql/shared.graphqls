@@ -495,10 +495,14 @@ type Quiz {
     publishedAt: DateTime
     endTime: DateTime
 
-    # User-specific fields
+    # User-specific fields (legacy - prefer session-based access)
     userSubmissions: [QuizSubmission!]! @goField(forceResolver: true)
     userCanStart: Boolean! @goField(forceResolver: true)
     userActiveSubmission: QuizSubmission @goField(forceResolver: true)
+
+    # Session-based access (new)
+    sessions(state: QuizSessionState): [QuizSession!]! @goField(forceResolver: true)
+    userSessions: [QuizSession!]! @goField(forceResolver: true)
 }
 
 # ==================== Quiz Question Interface ====================
@@ -564,12 +568,14 @@ type QuizPredefinedAnswer {
 type QuizSubmission {
     id: ID!
     quiz: Quiz! @goField(forceResolver: true)
+    session: QuizSession @goField(forceResolver: true)
     user: User! @goField(forceResolver: true)
 
     startedAt: DateTime!
     completedAt: DateTime
     expiresAt: DateTime
     isExpired: Boolean! @goField(forceResolver: true)
+    autoSubmitted: Boolean!
 
     questionOrder: [ID!]!
     orderedQuestions: [QuizQuestion!]! @goField(forceResolver: true)

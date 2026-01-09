@@ -497,3 +497,158 @@ func (m *mockQuestionRow) GetPoints() *int32                { return m.points }
 func int32Ptr(v int32) *int32 {
 	return &v
 }
+
+// TestConvertQuizSessionToModel tests the convertQuizSessionToModel function
+func TestConvertQuizSessionToModel(t *testing.T) {
+	now := time.Now().UTC()
+	openAt := now.Add(time.Hour)
+	lockAt := now.Add(2 * time.Hour)
+	finishAt := now.Add(3 * time.Hour)
+	sessionName := "Test Session"
+
+	tests := []struct {
+		name  string
+		row   *sqlc.QuizSession
+		check func(*testing.T, *model.QuizSession)
+	}{
+		{
+			name: "all fields populated",
+			row: &sqlc.QuizSession{
+				ID:        "QN01234567890123456789012345",
+				QuizID:    "QZ01234567890123456789012345",
+				Name:      &sessionName,
+				State:     "OPEN",
+				OpenAt:    pgtype.Timestamptz{Time: openAt, Valid: true},
+				LockAt:    pgtype.Timestamptz{Time: lockAt, Valid: true},
+				FinishAt:  pgtype.Timestamptz{Time: finishAt, Valid: true},
+				CreatedBy: "US01234567890123456789012345",
+				CreatedAt: pgtype.Timestamptz{Time: now, Valid: true},
+			},
+			check: func(t *testing.T, result *model.QuizSession) {
+				assert.Equal(t, "QN01234567890123456789012345", result.ID)
+				assert.Equal(t, "QZ01234567890123456789012345", result.QuizID)
+				assert.NotNil(t, result.Name)
+				assert.Equal(t, "Test Session", *result.Name)
+				assert.Equal(t, model.QuizSessionStateOpen, result.State)
+				assert.NotNil(t, result.OpenAt)
+				assert.NotNil(t, result.LockAt)
+				assert.NotNil(t, result.FinishAt)
+				assert.Equal(t, "US01234567890123456789012345", result.CreatedByID)
+			},
+		},
+		{
+			name: "no optional timestamps",
+			row: &sqlc.QuizSession{
+				ID:        "QN01234567890123456789012345",
+				QuizID:    "QZ01234567890123456789012345",
+				Name:      nil,
+				State:     "DRAFT",
+				OpenAt:    pgtype.Timestamptz{Valid: false},
+				LockAt:    pgtype.Timestamptz{Valid: false},
+				FinishAt:  pgtype.Timestamptz{Valid: false},
+				CreatedBy: "US01234567890123456789012345",
+				CreatedAt: pgtype.Timestamptz{Time: now, Valid: true},
+			},
+			check: func(t *testing.T, result *model.QuizSession) {
+				assert.Equal(t, "QN01234567890123456789012345", result.ID)
+				assert.Nil(t, result.Name)
+				assert.Equal(t, model.QuizSessionStateDraft, result.State)
+				assert.Nil(t, result.OpenAt)
+				assert.Nil(t, result.LockAt)
+				assert.Nil(t, result.FinishAt)
+			},
+		},
+		{
+			name: "all session states",
+			row: &sqlc.QuizSession{
+				ID:        "QN01234567890123456789012345",
+				QuizID:    "QZ01234567890123456789012345",
+				State:     "LOCKED",
+				CreatedBy: "US01234567890123456789012345",
+				CreatedAt: pgtype.Timestamptz{Time: now, Valid: true},
+			},
+			check: func(t *testing.T, result *model.QuizSession) {
+				assert.Equal(t, model.QuizSessionStateLocked, result.State)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := convertQuizSessionToModel(tt.row)
+			require.NotNil(t, result)
+			if tt.check != nil {
+				tt.check(t, result)
+			}
+		})
+	}
+}
+
+// TestQuizSessionStateTransitions tests the valid state transitions
+func TestQuizSessionStateTransitions(t *testing.T) {
+	tests := []struct {
+		name        string
+		fromState   string
+		toState     string
+		validOpen   bool
+		validLock   bool
+		validFinish bool
+		validReopen bool
+	}{
+		{
+			name:        "DRAFT can be opened",
+			fromState:   "DRAFT",
+			validOpen:   true,
+			validLock:   false,
+			validFinish: false,
+			validReopen: false,
+		},
+		{
+			name:        "OPEN can be locked",
+			fromState:   "OPEN",
+			validOpen:   false,
+			validLock:   true,
+			validFinish: false,
+			validReopen: false,
+		},
+		{
+			name:        "LOCKED can be finished or reopened",
+			fromState:   "LOCKED",
+			validOpen:   false,
+			validLock:   false,
+			validFinish: true,
+			validReopen: true,
+		},
+		{
+			name:        "FINISHED is terminal",
+			fromState:   "FINISHED",
+			validOpen:   false,
+			validLock:   false,
+			validFinish: false,
+			validReopen: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// These tests document the expected state machine behavior
+			// Actual enforcement happens in the resolver
+			switch tt.fromState {
+			case "DRAFT":
+				assert.True(t, tt.validOpen, "DRAFT should allow opening")
+				assert.False(t, tt.validLock, "DRAFT should not allow locking directly")
+			case "OPEN":
+				assert.True(t, tt.validLock, "OPEN should allow locking")
+				assert.False(t, tt.validOpen, "OPEN should not allow opening again")
+			case "LOCKED":
+				assert.True(t, tt.validFinish, "LOCKED should allow finishing")
+				assert.True(t, tt.validReopen, "LOCKED should allow reopening")
+			case "FINISHED":
+				assert.False(t, tt.validOpen, "FINISHED should not allow any transitions")
+				assert.False(t, tt.validLock, "FINISHED should not allow any transitions")
+				assert.False(t, tt.validFinish, "FINISHED should not allow any transitions")
+				assert.False(t, tt.validReopen, "FINISHED should not allow any transitions")
+			}
+		})
+	}
+}

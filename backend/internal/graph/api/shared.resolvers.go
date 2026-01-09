@@ -278,7 +278,7 @@ func (r *freeTextResponseResolver) Submission(ctx context.Context, obj *model.Fr
 	if err != nil {
 		return nil, fmt.Errorf("failed to load submission: %w", err)
 	}
-	return convertSubmissionRowToModel(row), nil
+	return convertGetQuizSubmissionByIDRow(row), nil
 }
 
 // Question is the resolver for the question field.
@@ -306,7 +306,7 @@ func (r *jsonResponseResolver) Submission(ctx context.Context, obj *model.JSONRe
 	if err != nil {
 		return nil, fmt.Errorf("failed to load submission: %w", err)
 	}
-	return convertSubmissionRowToModel(row), nil
+	return convertGetQuizSubmissionByIDRow(row), nil
 }
 
 // Question is the resolver for the question field.
@@ -339,7 +339,7 @@ func (r *numberResponseResolver) Submission(ctx context.Context, obj *model.Numb
 	if err != nil {
 		return nil, fmt.Errorf("failed to load submission: %w", err)
 	}
-	return convertSubmissionRowToModel(row), nil
+	return convertGetQuizSubmissionByIDRow(row), nil
 }
 
 // Question is the resolver for the question field.
@@ -383,7 +383,7 @@ func (r *predefinedResponseResolver) Submission(ctx context.Context, obj *model.
 	if err != nil {
 		return nil, fmt.Errorf("failed to load submission: %w", err)
 	}
-	return convertSubmissionRowToModel(row), nil
+	return convertGetQuizSubmissionByIDRow(row), nil
 }
 
 // Question is the resolver for the question field.
@@ -777,6 +777,50 @@ func (r *quizResolver) UserActiveSubmission(ctx context.Context, obj *model.Quiz
 	return nil, nil
 }
 
+// Sessions is the resolver for the sessions field.
+func (r *quizResolver) Sessions(ctx context.Context, obj *model.Quiz, state *model.QuizSessionState) ([]model.QuizSession, error) {
+	stateFilter := ""
+	if state != nil {
+		stateFilter = string(*state)
+	}
+
+	rows, err := r.DB.Queries.GetQuizSessionsByQuiz(ctx, sqlc.GetQuizSessionsByQuizParams{
+		Quizid: obj.ID,
+		State:  stateFilter,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get quiz sessions: %w", err)
+	}
+
+	sessions := make([]model.QuizSession, len(rows))
+	for i, row := range rows {
+		sessions[i] = *convertQuizSessionToModel(row)
+	}
+	return sessions, nil
+}
+
+// UserSessions is the resolver for the userSessions field.
+func (r *quizResolver) UserSessions(ctx context.Context, obj *model.Quiz) ([]model.QuizSession, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return []model.QuizSession{}, nil
+	}
+
+	rows, err := r.DB.Queries.GetUserAccessibleSessions(ctx, sqlc.GetUserAccessibleSessionsParams{
+		Userid: userID,
+		Quizid: obj.ID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user sessions: %w", err)
+	}
+
+	sessions := make([]model.QuizSession, len(rows))
+	for i, row := range rows {
+		sessions[i] = *convertQuizSessionToModel(row)
+	}
+	return sessions, nil
+}
+
 // Project is the resolver for the project field.
 func (r *quizAchievementResolver) Project(ctx context.Context, obj *model.QuizAchievement) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
@@ -864,6 +908,20 @@ func (r *quizPredefinedAnswerResolver) IsCorrect(ctx context.Context, obj *model
 func (r *quizSubmissionResolver) Quiz(ctx context.Context, obj *model.QuizSubmission) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
 	return thunk()
+}
+
+// Session is the resolver for the session field.
+func (r *quizSubmissionResolver) Session(ctx context.Context, obj *model.QuizSubmission) (*model.QuizSession, error) {
+	if obj.SessionID == nil || *obj.SessionID == "" {
+		return nil, nil
+	}
+
+	row, err := r.DB.Queries.GetQuizSession(ctx, *obj.SessionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get quiz session: %w", err)
+	}
+
+	return convertQuizSessionToModel(row), nil
 }
 
 // User is the resolver for the user field on QuizSubmission.

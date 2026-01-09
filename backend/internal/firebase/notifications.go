@@ -50,6 +50,13 @@ func (s *Service) NotifyProjectEvents(ctx context.Context, projectID string) err
 	return s.updateTimestamp(ctx, fmt.Sprintf("projects/%s/notifications/events", projectID))
 }
 
+// NotifyProjectQuizSessions updates the timestamp for project quiz sessions.
+// Path: projects/{projectId}/notifications/quiz_sessions
+// Clients subscribe to this and filter locally for their accessible sessions.
+func (s *Service) NotifyProjectQuizSessions(ctx context.Context, projectID string) error {
+	return s.updateTimestamp(ctx, fmt.Sprintf("projects/%s/notifications/quiz_sessions", projectID))
+}
+
 // NotifyAdminFeedback updates the timestamp for admin feedback notifications.
 // Path: admin/notifications/feedback
 func (s *Service) NotifyAdminFeedback(ctx context.Context) error {

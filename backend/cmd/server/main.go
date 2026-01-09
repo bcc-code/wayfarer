@@ -446,6 +446,17 @@ func main() {
 		"single_sync", "POST /api/maintenance/sync-user/:user_id",
 	)
 
+	// Quiz scheduler handler for timed session state transitions
+	quizSchedulerHandler := &handlers.QuizSchedulerHandler{
+		DB:              db,
+		FirebaseService: firebaseService,
+		WebhookService:  webhookService,
+	}
+	router.POST("/api/scheduler/quiz-session-transitions", middleware.APIKeyAuth(cfg.APIKey), quizSchedulerHandler.ProcessScheduledTransitions)
+	slog.Info("Quiz scheduler endpoint registered",
+		"endpoint", "POST /api/scheduler/quiz-session-transitions",
+	)
+
 	// File upload handler
 	uploadHandler := &handlers.UploadHandler{
 		DB:        db,

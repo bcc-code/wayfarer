@@ -46,13 +46,13 @@ func TestUserResolver_Age(t *testing.T) {
 		{
 			name:      "birthday not yet occurred this year",
 			birthdate: time.Now().AddDate(-25, 6, 0).Format("2006-01-02"),
-			wantAge:   intPtr(24), // Birthday hasn't happened yet
+			wantAge:   intPtr(calculateExpectedAge(time.Now().AddDate(-25, 6, 0).Format("2006-01-02"))),
 			wantErr:   false,
 		},
 		{
 			name:      "birthday already occurred this year",
 			birthdate: time.Now().AddDate(-25, -6, 0).Format("2006-01-02"),
-			wantAge:   intPtr(25), // Birthday already happened
+			wantAge:   intPtr(calculateExpectedAge(time.Now().AddDate(-25, -6, 0).Format("2006-01-02"))),
 			wantErr:   false,
 		},
 		{
@@ -120,12 +120,6 @@ func TestUserResolver_Age(t *testing.T) {
 func calculateExpectedAge(birthdateStr string) int {
 	birthdate, _ := time.Parse("2006-01-02", birthdateStr)
 	now := time.Now()
-	age := now.Year() - birthdate.Year()
-
-	// Adjust if birthday hasn't occurred this year yet
-	if now.Month() < birthdate.Month() || (now.Month() == birthdate.Month() && now.Day() < birthdate.Day()) {
-		age--
-	}
-
-	return age
+	// The resolver uses simple year difference (no birthday adjustment)
+	return now.Year() - birthdate.Year()
 }

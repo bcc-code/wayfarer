@@ -20,6 +20,10 @@ extend type Query {
         last: Int
         before: String
     ): QuizSubmissionConnection! @requireRole(roles: ["admin", "superadmin"])
+
+    # Quiz Sessions
+    quizSession(id: ID!): QuizSession @requireRole(roles: ["user", "admin", "superadmin"])
+    quizSessions(quizId: ID!, state: QuizSessionState): [QuizSession!]! @requireRole(roles: ["admin", "superadmin"])
 }
 
 extend type Mutation {
@@ -50,4 +54,88 @@ extend type Mutation {
         responses: [SubmitQuizAnswerInput!]!
         completedAt: DateTime
     ): QuizSubmission! @requireRole(roles: ["m2m", "admin", "superadmin"])
+
+    # Session CRUD
+    createQuizSession(input: CreateQuizSessionInput!): QuizSession!
+    updateQuizSession(id: ID!, input: UpdateQuizSessionInput!): QuizSession!
+    deleteQuizSession(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+
+    # Session state transitions
+    openQuizSession(id: ID!): QuizSession!
+    lockQuizSession(id: ID!): QuizSession!
+    finishQuizSession(id: ID!): QuizSession!
+    reopenQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin"])
+
+    # Session access management
+    grantQuizSessionAccess(input: GrantQuizSessionAccessInput!): Int!
+    revokeQuizSessionAccess(sessionId: ID!, userIds: [ID!]!): Boolean!
+    revokeAllQuizSessionAccess(sessionId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+
+    # User actions on sessions
+    startQuizSession(sessionId: ID!): QuizSubmission!
+    resetQuizSessionSubmission(sessionId: ID!): Boolean!
+}
+
+# ==================== Quiz Session Types ====================
+
+enum QuizSessionState {
+    DRAFT
+    OPEN
+    LOCKED
+    FINISHED
+}
+
+enum QuizAccessSourceType {
+    DIRECT
+    TEAM
+    SUPER_TEAM
+    CHURCH
+    ALL
+}
+
+type QuizSession {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    name: String
+
+    state: QuizSessionState!
+    openAt: DateTime
+    lockAt: DateTime
+    finishAt: DateTime
+
+    createdBy: User! @goField(forceResolver: true)
+    createdAt: DateTime!
+
+    # Access info (admin only)
+    accessCount: Int! @goField(forceResolver: true)
+
+    # User-specific fields
+    userHasAccess: Boolean! @goField(forceResolver: true)
+    userSubmission: QuizSubmission @goField(forceResolver: true)
+}
+
+# ==================== Quiz Session Input Types ====================
+
+input CreateQuizSessionInput {
+    quizId: ID!
+    name: String
+    openAt: DateTime
+    lockAt: DateTime
+    finishAt: DateTime
+}
+
+input UpdateQuizSessionInput {
+    name: String
+    openAt: DateTime
+    lockAt: DateTime
+    finishAt: DateTime
+}
+
+input GrantQuizSessionAccessInput {
+    sessionId: ID!
+    userIds: [ID!]
+    teamIds: [ID!]
+    superTeamIds: [ID!]
+    churchIds: [ID!]
+    allProjectUsers: Boolean
 }

@@ -403,6 +403,14 @@ type CreateQuizQuestionInput struct {
 	StepValue              *float64                      `json:"stepValue,omitempty"`
 }
 
+type CreateQuizSessionInput struct {
+	QuizID   string            `json:"quizId"`
+	Name     *string           `json:"name,omitempty"`
+	OpenAt   *scalars.DateTime `json:"openAt,omitempty"`
+	LockAt   *scalars.DateTime `json:"lockAt,omitempty"`
+	FinishAt *scalars.DateTime `json:"finishAt,omitempty"`
+}
+
 type CreateScoreAdjustmentInput struct {
 	ProjectID   string  `json:"projectId"`
 	UserID      string  `json:"userId"`
@@ -684,6 +692,15 @@ func (this FreeTextResponse) GetAnsweredAt() *scalars.DateTime { return this.Ans
 func (this FreeTextResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
 func (this FreeTextResponse) GetPointsEarned() *int            { return this.PointsEarned }
 
+type GrantQuizSessionAccessInput struct {
+	SessionID       string   `json:"sessionId"`
+	UserIds         []string `json:"userIds,omitempty"`
+	TeamIds         []string `json:"teamIds,omitempty"`
+	SuperTeamIds    []string `json:"superTeamIds,omitempty"`
+	ChurchIds       []string `json:"churchIds,omitempty"`
+	AllProjectUsers *bool    `json:"allProjectUsers,omitempty"`
+}
+
 type JSONQuestion struct {
 	ID             string `json:"id"`
 	Quiz           *Quiz  `json:"quiz"`
@@ -921,6 +938,8 @@ type Quiz struct {
 	UserSubmissions      []QuizSubmission  `json:"userSubmissions"`
 	UserCanStart         bool              `json:"userCanStart"`
 	UserActiveSubmission *QuizSubmission   `json:"userActiveSubmission,omitempty"`
+	Sessions             []QuizSession     `json:"sessions"`
+	UserSessions         []QuizSession     `json:"userSessions"`
 	ChallengeID          string            `json:"-"`
 	ProjectID            string            `json:"-"`
 }
@@ -1036,14 +1055,33 @@ type QuizPredefinedAnswer struct {
 	QuestionID     string       `json:"-"`
 }
 
+type QuizSession struct {
+	ID             string            `json:"id"`
+	Quiz           *Quiz             `json:"quiz"`
+	Name           *string           `json:"name,omitempty"`
+	State          QuizSessionState  `json:"state"`
+	OpenAt         *scalars.DateTime `json:"openAt,omitempty"`
+	LockAt         *scalars.DateTime `json:"lockAt,omitempty"`
+	FinishAt       *scalars.DateTime `json:"finishAt,omitempty"`
+	CreatedBy      *User             `json:"createdBy"`
+	CreatedAt      scalars.DateTime  `json:"createdAt"`
+	AccessCount    int               `json:"accessCount"`
+	UserHasAccess  bool              `json:"userHasAccess"`
+	UserSubmission *QuizSubmission   `json:"userSubmission,omitempty"`
+	CreatedByID    string            `json:"-"`
+	QuizID         string            `json:"-"`
+}
+
 type QuizSubmission struct {
 	ID               string            `json:"id"`
 	Quiz             *Quiz             `json:"quiz"`
+	Session          *QuizSession      `json:"session,omitempty"`
 	User             *User             `json:"user"`
 	StartedAt        scalars.DateTime  `json:"startedAt"`
 	CompletedAt      *scalars.DateTime `json:"completedAt,omitempty"`
 	ExpiresAt        *scalars.DateTime `json:"expiresAt,omitempty"`
 	IsExpired        bool              `json:"isExpired"`
+	AutoSubmitted    bool              `json:"autoSubmitted"`
 	QuestionOrder    []string          `json:"questionOrder"`
 	OrderedQuestions []QuizQuestion    `json:"orderedQuestions"`
 	Responses        []QuizResponse    `json:"responses"`
@@ -1052,6 +1090,7 @@ type QuizSubmission struct {
 	ScorePercentage  *float64          `json:"scorePercentage,omitempty"`
 	PointsAwarded    *int              `json:"pointsAwarded,omitempty"`
 	QuizID           string            `json:"-"`
+	SessionID        *string           `json:"-"`
 	UserID           string            `json:"-"`
 }
 
@@ -1478,6 +1517,13 @@ type UpdateQuizQuestionInput struct {
 	MinValue               *float64                      `json:"minValue,omitempty"`
 	MaxValue               *float64                      `json:"maxValue,omitempty"`
 	StepValue              *float64                      `json:"stepValue,omitempty"`
+}
+
+type UpdateQuizSessionInput struct {
+	Name     *string           `json:"name,omitempty"`
+	OpenAt   *scalars.DateTime `json:"openAt,omitempty"`
+	LockAt   *scalars.DateTime `json:"lockAt,omitempty"`
+	FinishAt *scalars.DateTime `json:"finishAt,omitempty"`
 }
 
 type UpdateStreakAchievementInput struct {
@@ -2270,6 +2316,67 @@ func (e NotificationType) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+type QuizAccessSourceType string
+
+const (
+	QuizAccessSourceTypeDirect    QuizAccessSourceType = "DIRECT"
+	QuizAccessSourceTypeTeam      QuizAccessSourceType = "TEAM"
+	QuizAccessSourceTypeSuperTeam QuizAccessSourceType = "SUPER_TEAM"
+	QuizAccessSourceTypeChurch    QuizAccessSourceType = "CHURCH"
+	QuizAccessSourceTypeAll       QuizAccessSourceType = "ALL"
+)
+
+var AllQuizAccessSourceType = []QuizAccessSourceType{
+	QuizAccessSourceTypeDirect,
+	QuizAccessSourceTypeTeam,
+	QuizAccessSourceTypeSuperTeam,
+	QuizAccessSourceTypeChurch,
+	QuizAccessSourceTypeAll,
+}
+
+func (e QuizAccessSourceType) IsValid() bool {
+	switch e {
+	case QuizAccessSourceTypeDirect, QuizAccessSourceTypeTeam, QuizAccessSourceTypeSuperTeam, QuizAccessSourceTypeChurch, QuizAccessSourceTypeAll:
+		return true
+	}
+	return false
+}
+
+func (e QuizAccessSourceType) String() string {
+	return string(e)
+}
+
+func (e *QuizAccessSourceType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = QuizAccessSourceType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid QuizAccessSourceType", str)
+	}
+	return nil
+}
+
+func (e QuizAccessSourceType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *QuizAccessSourceType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e QuizAccessSourceType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 type QuizQuestionType string
 
 const (
@@ -2324,6 +2431,65 @@ func (e *QuizQuestionType) UnmarshalJSON(b []byte) error {
 }
 
 func (e QuizQuestionType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type QuizSessionState string
+
+const (
+	QuizSessionStateDraft    QuizSessionState = "DRAFT"
+	QuizSessionStateOpen     QuizSessionState = "OPEN"
+	QuizSessionStateLocked   QuizSessionState = "LOCKED"
+	QuizSessionStateFinished QuizSessionState = "FINISHED"
+)
+
+var AllQuizSessionState = []QuizSessionState{
+	QuizSessionStateDraft,
+	QuizSessionStateOpen,
+	QuizSessionStateLocked,
+	QuizSessionStateFinished,
+}
+
+func (e QuizSessionState) IsValid() bool {
+	switch e {
+	case QuizSessionStateDraft, QuizSessionStateOpen, QuizSessionStateLocked, QuizSessionStateFinished:
+		return true
+	}
+	return false
+}
+
+func (e QuizSessionState) String() string {
+	return string(e)
+}
+
+func (e *QuizSessionState) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = QuizSessionState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid QuizSessionState", str)
+	}
+	return nil
+}
+
+func (e QuizSessionState) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *QuizSessionState) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e QuizSessionState) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

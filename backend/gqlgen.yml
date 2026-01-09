@@ -356,9 +356,29 @@ models:
       IsCorrectValue:
         type: bool
 
+  QuizSession:
+    fields:
+      quiz:
+        resolver: true
+      createdBy:
+        resolver: true
+      accessCount:
+        resolver: true
+      userHasAccess:
+        resolver: true
+      userSubmission:
+        resolver: true
+    extraFields:
+      QuizID:
+        type: string
+      CreatedByID:
+        type: string
+
   QuizSubmission:
     fields:
       quiz:
+        resolver: true
+      session:
         resolver: true
       user:
         resolver: true
@@ -375,6 +395,8 @@ models:
         type: string
       UserID:
         type: string
+      SessionID:
+        type: "*string"
 
   # QuizResponse implementations
   PredefinedResponse:
