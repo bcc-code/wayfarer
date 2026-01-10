@@ -21,6 +21,7 @@
     "continue": "Jätka",
     "nextQuestion": "Järgmine küsimus",
     "done": "Valmis",
+    "unavailable": "See küsimustik pole hetkel saadaval.",
     "result": {
       "receivedNoPoints": "Sa ei saanud ühtegi punkti.",
       "receivedPoints": "Sa kogusid {points} punkti.",
@@ -117,7 +118,7 @@
     "thankYouDescription": "Sinu ettepanekuid kasutatakse teenuse edasiarendamiseks.",
     "close": "Palun",
     "canContactMe": "Jah, ma nõustun, et võite minuga seoses minu tagasisidega ühendust võtta",
-    "regards": "Tervitades {name}"
+    "disclosure": "Tagasiside seotakse sinu kasutajakontoga."
   },
   "pwa": {
     "updateAvailableTitle": "Uuendus on saadaval",
