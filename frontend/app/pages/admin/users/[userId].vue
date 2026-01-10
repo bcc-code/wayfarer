@@ -291,7 +291,7 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
               <div class="py-2 grid grid-cols-subgrid col-span-full">
                 <dt class="text-muted w-36 shrink-0">Bruker opprettet</dt>
                 <dd class="font-medium">
-                  {{ formatDate(data.user.createdAt) }}
+                  {{ formatDateTime(data.user.createdAt) }}
                 </dd>
               </div>
             </dl>
