@@ -10,6 +10,8 @@ gql(`
 	query AdminUserPage($id: ID!) {
 		user(id: $id) {
 			id
+      personUuid
+      createdAt
 			name
 			email
 			membersId
@@ -265,34 +267,44 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
         </div>
 
         <!-- User Info -->
-        <dl class="text-sm">
-          <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Members-ID</dt>
-            <dd class="font-medium">{{ data.user.membersId }}</dd>
-          </div>
-          <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Bruker-ID</dt>
+        <dl
+          class="text-sm grid grid-cols-[auto_1fr] gap-x-6 divide-y divide-default"
+        >
+          <div class="py-2 grid grid-cols-subgrid col-span-full">
+            <dt class="text-muted shrink-0">ID</dt>
             <dd class="font-mono">{{ data.user.id }}</dd>
           </div>
-          <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Kjønn</dt>
+          <div class="py-2 grid grid-cols-subgrid col-span-full">
+            <dt class="text-muted shrink-0">Members-ID</dt>
+            <dd class="font-medium">{{ data.user.membersId }}</dd>
+          </div>
+          <div class="py-2 grid grid-cols-subgrid col-span-full">
+            <dt class="text-muted shrink-0">Members-UUID</dt>
+            <dd class="font-medium">{{ data.user.personUuid }}</dd>
+          </div>
+          <div class="py-2 grid grid-cols-subgrid col-span-full">
+            <dt class="text-muted shrink-0">Kjønn</dt>
             <dd class="font-medium">{{ capitalizeFirst(data.user.gender) }}</dd>
           </div>
-          <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Alder</dt>
+          <div class="py-2 grid grid-cols-subgrid col-span-full">
+            <dt class="text-muted shrink-0">Alder</dt>
             <dd class="font-medium">{{ data.user.age }} år</dd>
           </div>
-          <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Fødselsdato</dt>
+          <div class="py-2 grid grid-cols-subgrid col-span-full">
+            <dt class="text-muted shrink-0">Fødselsdato</dt>
             <dd class="font-medium">{{ formatDate(data.user.birthdate) }}</dd>
           </div>
-          <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Menighet</dt>
+          <div class="py-2 grid grid-cols-subgrid col-span-full">
+            <dt class="text-muted shrink-0">Menighet</dt>
             <dd class="font-medium">{{ data.user.church.name }}</dd>
           </div>
-          <div class="flex gap-6 py-2">
-            <dt class="text-muted w-24 shrink-0">Menighet-ID</dt>
+          <div class="py-2 grid grid-cols-subgrid col-span-full">
+            <dt class="text-muted shrink-0">Menighet-ID</dt>
             <dd class="font-mono">{{ data.user.church.id }}</dd>
+          </div>
+          <div class="py-2 grid grid-cols-subgrid col-span-full">
+            <dt class="text-muted shrink-0">Bruker opprettet</dt>
+            <dd class="font-medium">{{ formatDate(data.user.createdAt) }}</dd>
           </div>
         </dl>
 
