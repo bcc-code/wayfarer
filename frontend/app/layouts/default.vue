@@ -5,6 +5,12 @@ import '~/assets/styles/user.css'
 
 const { t } = useI18n()
 
+// Initialize Firestore sync for realtime updates
+const { initialize: initFirestoreSync } = useFirestoreSync()
+onMounted(() => {
+  initFirestoreSync()
+})
+
 const links = computed<NavigationMenuItem[]>(() => [
   {
     label: t('navigation.profile'),

@@ -1,8 +1,13 @@
 <script setup lang="ts">
 const { isAuthReady } = useAuthReady()
 
-const { data, fetching, error } = useChallengesPageQuery({
+const { data, fetching, error, executeQuery: refresh } = useChallengesPageQuery({
   pause: computed(() => !isAuthReady.value),
+})
+
+// Listen for Firestore realtime updates
+useFirestoreRefresh(['ChallengesPageDocument'], () => {
+  refresh({ requestPolicy: 'network-only' })
 })
 
 const isInitialLoading = computed(() => fetching.value && !data.value)

@@ -3086,6 +3086,11 @@ export type AdminProjectQuizzesQueryVariables = Exact<{
 
 export type AdminProjectQuizzesQuery = { __typename?: 'Query', quizzes: { __typename?: 'QuizConnection', edges: Array<{ __typename?: 'QuizEdge', node: { __typename?: 'Quiz', id: string, name: string } }> } };
 
+export type GetFirebaseTokenQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetFirebaseTokenQuery = { __typename?: 'Query', firebaseToken: { __typename?: 'FirebaseTokenResponse', token: string, expiresIn: number } };
+
 export type ChallengePageQueryVariables = Exact<{
   challengeId: Scalars['ID']['input'];
 }>;
@@ -4217,6 +4222,18 @@ export const AdminProjectQuizzesDocument = gql`
 
 export function useAdminProjectQuizzesQuery(options?: Omit<Urql.UseQueryArgs<never, AdminProjectQuizzesQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminProjectQuizzesQuery, AdminProjectQuizzesQueryVariables | undefined>({ query: AdminProjectQuizzesDocument, variables: undefined, ...options });
+};
+export const GetFirebaseTokenDocument = gql`
+    query GetFirebaseToken {
+  firebaseToken {
+    token
+    expiresIn
+  }
+}
+    `;
+
+export function useGetFirebaseTokenQuery(options?: Omit<Urql.UseQueryArgs<never, GetFirebaseTokenQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<GetFirebaseTokenQuery, GetFirebaseTokenQueryVariables | undefined>({ query: GetFirebaseTokenDocument, variables: undefined, ...options });
 };
 export const ChallengePageDocument = gql`
     query ChallengePage($challengeId: ID!) {

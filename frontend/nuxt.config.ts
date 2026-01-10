@@ -94,6 +94,9 @@ export default defineNuxtConfig({
       vapidPublicKey: '',
       appVersion: gitCommitHash,
       isStaging: false,
+      firebaseApiKey: '',
+      firebaseAuthDomain: '',
+      firebaseProjectId: '',
     },
   },
 
