@@ -21,6 +21,7 @@
     "continue": "Folytatás",
     "nextQuestion": "Következő kérdés",
     "done": "Kész",
+    "unavailable": "Ez a kvíz jelenleg nem elérhető.",
     "result": {
       "receivedNoPoints": "Nem szereztél pontot.",
       "receivedPoints": "{points} pontot gyűjtöttél.",
