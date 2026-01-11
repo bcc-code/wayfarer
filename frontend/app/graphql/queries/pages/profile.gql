@@ -1,7 +1,8 @@
-query ProfilePage {
+query ProfilePage($ageFilter: LeaderboardFilter) {
   me {
     id
     name
+    age
     consentStatus {
       pendingConsents {
         __typename
@@ -33,7 +34,7 @@ query ProfilePage {
       achievedAt
       points
     }
-    leaderboard(entityType: PERSONS) {
+    leaderboard(entityType: PERSONS, filter: $ageFilter) {
       me {
         score
         rank

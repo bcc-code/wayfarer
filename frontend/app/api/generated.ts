@@ -3136,10 +3136,12 @@ export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __
       | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null }
     > } };
 
-export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
+export type ProfilePageQueryVariables = Exact<{
+  ageFilter?: InputMaybe<LeaderboardFilter>;
+}>;
 
 
-export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
+export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, age?: number | null, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
       | { __typename?: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
@@ -4333,10 +4335,11 @@ export function useChallengesPageQuery(options?: Omit<Urql.UseQueryArgs<never, C
   return Urql.useQuery<ChallengesPageQuery, ChallengesPageQueryVariables | undefined>({ query: ChallengesPageDocument, variables: undefined, ...options });
 };
 export const ProfilePageDocument = gql`
-    query ProfilePage {
+    query ProfilePage($ageFilter: LeaderboardFilter) {
   me {
     id
     name
+    age
     consentStatus {
       pendingConsents {
         __typename
@@ -4368,7 +4371,7 @@ export const ProfilePageDocument = gql`
       achievedAt
       points
     }
-    leaderboard(entityType: PERSONS) {
+    leaderboard(entityType: PERSONS, filter: $ageFilter) {
       me {
         score
         rank

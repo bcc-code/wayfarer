@@ -1,4 +1,15 @@
 <script setup lang="ts">
+// Age group filter for leaderboard rank
+function getAgeRangeFilter(age: number | null | undefined) {
+  if (age == null) return undefined
+  if (age >= 13 && age <= 19) return { min: 13, max: 19 } // U18
+  if (age >= 20 && age <= 37) return { min: 20, max: 37 } // O18
+  return undefined // Outside defined age groups
+}
+
+// Track user's age for filtering (set after first query)
+const userAgeRange = ref<{ min: number; max: number } | undefined>(undefined)
+
 const { isAuthReady } = useAuthReady()
 const {
   data,
@@ -7,8 +18,25 @@ const {
   stale,
   executeQuery: refresh,
 } = useProfilePageQuery({
+  variables: computed(() => {
+    if (!userAgeRange.value) return {}
+    return { ageFilter: { ageRange: userAgeRange.value } }
+  }),
   pause: computed(() => !isAuthReady.value),
 })
+
+// Set age filter once we receive user's age from the initial query
+watch(
+  () => data.value?.me.age,
+  (age) => {
+    if (userAgeRange.value) return // Already set
+    const ageRange = getAgeRangeFilter(age)
+    if (ageRange) {
+      userAgeRange.value = ageRange
+    }
+  },
+  { immediate: true },
+)
 
 const isInitialLoading = computed(() => fetching.value && !data.value)
 
