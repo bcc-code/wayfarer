@@ -21,6 +21,7 @@
     "continue": "Kontynuuj",
     "nextQuestion": "Następne pytanie",
     "done": "Gotowe",
+    "unavailable": "Ten quiz jest obecnie niedostępny.",
     "result": {
       "receivedNoPoints": "Nie zdobyłeś żadnych punktów.",
       "receivedPoints": "Zdobyłeś {points} pkt.",
@@ -117,7 +118,7 @@
     "thankYouDescription": "Twoje uwagi zostaną wykorzystane do dalszego rozwoju serwisu.",
     "close": "Nie ma za co.",
     "canContactMe": "Tak, wyrażam zgodę na kontaktowanie się ze mną w związku z moją opinią.",
-    "regards": "Pozdrawiam, {name}"
+    "disclosure": "Opinia zostanie powiązana z Twoim kontem użytkownika."
   },
   "pwa": {
     "updateAvailableTitle": "Dostępna jest aktualizacja",
