@@ -21,6 +21,7 @@
     "continue": "Continúa.",
     "nextQuestion": "Siguiente pregunta",
     "done": "Listo",
+    "unavailable": "",
     "result": {
       "receivedNoPoints": "No has sumado ningún punto.",
       "receivedPoints": "Has acumulado {points} puntos.",
@@ -116,6 +117,12 @@
     "thankYou": "¡Gracias por tu ayuda!",
     "thankYouDescription": "Tus comentarios se utilizarán para seguir mejorando el servicio.",
     "close": "De nada.",
-    "canContactMe": "Sí, acepto que se pongan en contacto conmigo en relación con mi comentario."
-  }
+    "canContactMe": "Sí, acepto que se pongan en contacto conmigo en relación con mi comentario.",
+    "disclosure": "La respuesta se vinculará a tu cuenta de usuario."
+  },
+  "pwa": {
+    "updateAvailableTitle": "Hay una actualización disponible.",
+    "updateAvailableButton": "Actualizar ahora"
+  },
+  "goToHiddenTreasures": "Ir al estudio bíblico"
 }
