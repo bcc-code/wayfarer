@@ -7,10 +7,9 @@ function getAgeRangeFilter(age: number | null | undefined) {
   return undefined // Outside defined age groups
 }
 
-// Track user's age for filtering (set after first query)
-const userAgeRange = ref<{ min: number; max: number } | undefined>(undefined)
-
 const { isAuthReady } = useAuthReady()
+const { me } = useAuth()
+
 const {
   data,
   error,
@@ -19,24 +18,12 @@ const {
   executeQuery: refresh,
 } = useProfilePageQuery({
   variables: computed(() => {
-    if (!userAgeRange.value) return {}
-    return { ageFilter: { ageRange: userAgeRange.value } }
+    const ageRange = getAgeRangeFilter(me.value?.age)
+    if (!ageRange) return {}
+    return { ageFilter: { ageRange } }
   }),
   pause: computed(() => !isAuthReady.value),
 })
-
-// Set age filter once we receive user's age from the initial query
-watch(
-  () => data.value?.me.age,
-  (age) => {
-    if (userAgeRange.value) return // Already set
-    const ageRange = getAgeRangeFilter(age)
-    if (ageRange) {
-      userAgeRange.value = ageRange
-    }
-  },
-  { immediate: true },
-)
 
 const isInitialLoading = computed(() => fetching.value && !data.value)
 

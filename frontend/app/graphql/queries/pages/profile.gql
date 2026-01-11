@@ -2,7 +2,6 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
   me {
     id
     name
-    age
     consentStatus {
       pendingConsents {
         __typename
