@@ -138,6 +138,9 @@ async function createProject(event: FormSubmitEvent<Schema>) {
         class="flex max-w-md flex-col gap-6"
         @submit.prevent="createProject"
       >
+        <UFormField name="branding.logo" label="Logo" hint="(valgfritt)">
+          <AdminFileUpload v-model="state.branding.logo" />
+        </UFormField>
         <UFormField name="name" label="Navn">
           <UInput v-model="state.name" size="xl" required class="w-full" />
         </UFormField>
