@@ -96,20 +96,25 @@ const isBulkCreating = ref(false)
 const bulkCount = ref(5)
 const bulkCreatingLoading = ref(false)
 
-// Track optimistic updates
+// Track optimistic updates for add/remove operations
 const optimisticUpdates = ref<
   Map<string, { userId: string; teamId: string; isAdding: boolean }>
 >(new Map())
 
-// Move confirmation modal state
-const moveConfirmOpen = ref(false)
-const pendingMove = ref<{
-  userId: string
-  userName: string
-  fromTeamName: string
-  toTeamId: string
-  toTeamName: string
-} | null>(null)
+// Track optimistic moves with full user data for immediate UI updates
+const optimisticMoves = ref<
+  Map<
+    string,
+    {
+      userId: string
+      userName: string
+      userAge: number | null
+      userTeams: { id: string; name: string }[]
+      fromTeamId: string | null
+      toTeamId: string
+    }
+  >
+>(new Map())
 
 // Delete confirmation modal state
 const deleteConfirmOpen = ref(false)
@@ -190,8 +195,14 @@ const projectTeamIds = computed(
   () => new Set(projectTeams.value.map((t) => t.id)),
 )
 
-// Check if user is in a team from the current project
-function isInProjectTeam(user: { teams: { id: string }[] }) {
+// Check if user is in a team from the current project (accounting for optimistic moves)
+function isInProjectTeam(user: { id: string; teams: { id: string }[] }) {
+  // Check if user has an optimistic move
+  const move = optimisticMoves.value.get(user.id)
+  if (move) {
+    // User is optimistically in a project team
+    return projectTeamIds.value.has(move.toTeamId)
+  }
   return user.teams.some((t) => projectTeamIds.value.has(t.id))
 }
 
@@ -300,19 +311,41 @@ async function saveBulkUnits() {
   }
 }
 
-// Add user to team
-async function handleAddToTeam(userId: string, teamId: string) {
-  const key = `${userId}-${teamId}`
-  optimisticUpdates.value.set(key, { userId, teamId, isAdding: true })
+// Add user to team with optimistic UI update
+async function handleAddToTeam(
+  user: {
+    id: string
+    name: string
+    age?: number | null
+    teams: { id: string; name: string }[]
+  },
+  teamId: string,
+) {
+  // Find if user is currently in a project team (for move operations)
+  const currentProjectTeam = user.teams.find((t) =>
+    projectTeamIds.value.has(t.id),
+  )
+  const fromTeamId = currentProjectTeam?.id ?? null
+
+  // Set up optimistic move - this immediately updates the UI
+  optimisticMoves.value.set(user.id, {
+    userId: user.id,
+    userName: user.name,
+    userAge: user.age ?? null,
+    userTeams: user.teams,
+    fromTeamId,
+    toTeamId: teamId,
+  })
 
   const result = await addTeamMembers({
     teamId,
-    userIds: [userId],
+    userIds: [user.id],
     force: true,
   })
 
   if (result.error) {
-    optimisticUpdates.value.delete(key)
+    // Rollback optimistic update
+    optimisticMoves.value.delete(user.id)
     toast.add({
       title: 'Kunne ikke legge til medlem',
       description: result.error.message,
@@ -321,8 +354,9 @@ async function handleAddToTeam(userId: string, teamId: string) {
     return
   }
 
+  // Sync with server - keep optimistic state until refetch completes
   await refetch({ requestPolicy: 'network-only' })
-  optimisticUpdates.value.delete(key)
+  optimisticMoves.value.delete(user.id)
 }
 
 // Remove user from team
@@ -349,47 +383,27 @@ async function handleRemoveFromTeam(userId: string, teamId: string) {
   optimisticUpdates.value.delete(key)
 }
 
-// Handle user selection from autocomplete
+// Handle user selection from autocomplete or drag-drop
 function handleUserSelect(
-  user: { id: string; name: string; teams: { id: string; name: string }[] },
+  user: {
+    id: string
+    name: string
+    age?: number | null
+    teams: { id: string; name: string }[]
+  },
   targetTeamId: string,
-  targetTeamName: string,
 ) {
-  // Check if user is already in a team from this project
+  // Check if user is already in this team
   const currentProjectTeam = user.teams.find((t) =>
     projectTeamIds.value.has(t.id),
   )
-  if (currentProjectTeam) {
-    if (currentProjectTeam.id === targetTeamId) {
-      // Already in this team, do nothing
-      return
-    }
-    // Show confirmation modal
-    pendingMove.value = {
-      userId: user.id,
-      userName: user.name,
-      fromTeamName: currentProjectTeam.name,
-      toTeamId: targetTeamId,
-      toTeamName: targetTeamName,
-    }
-    moveConfirmOpen.value = true
-  } else {
-    // Not in any team in this project, add directly
-    handleAddToTeam(user.id, targetTeamId)
+  if (currentProjectTeam?.id === targetTeamId) {
+    // Already in this team, do nothing
+    return
   }
-}
 
-function confirmMove() {
-  if (pendingMove.value) {
-    handleAddToTeam(pendingMove.value.userId, pendingMove.value.toTeamId)
-  }
-  moveConfirmOpen.value = false
-  pendingMove.value = null
-}
-
-function cancelMove() {
-  moveConfirmOpen.value = false
-  pendingMove.value = null
+  // Move directly without confirmation (optimistic UI handles the visual feedback)
+  handleAddToTeam(user, targetTeamId)
 }
 
 // Delete unit handlers
@@ -480,35 +494,67 @@ const userItems = computed(() =>
 
 // Get member data with optimistic updates
 function getTeamMembers(team: (typeof projectTeams.value)[number]) {
-  return team.members.map((member) => {
+  const members: {
+    id: string
+    name: string
+    age: number | null
+    teams: { id: string; name: string }[]
+    isRemoving: boolean
+    isAdding: boolean
+  }[] = []
+
+  // Add existing members (excluding those optimistically moved away)
+  for (const member of team.members) {
+    const move = optimisticMoves.value.get(member.user.id)
+    // Skip if user is being moved away from this team
+    if (move && move.fromTeamId === team.id) {
+      continue
+    }
+
     const key = `${member.user.id}-${team.id}`
     const update = optimisticUpdates.value.get(key)
-    // Look up user's teams from allUsers for drag and drop
     const fullUser = allUsers.value.find((u) => u.id === member.user.id)
-    return {
+    members.push({
       id: member.user.id,
       name: member.name,
-      age: member.user.age,
+      age: member.user.age ?? null,
       teams: fullUser?.teams ?? [],
-      isRemoving: update && !update.isAdding,
+      isRemoving: update ? !update.isAdding : false,
+      isAdding: false,
+    })
+  }
+
+  // Add users optimistically moved to this team
+  for (const move of optimisticMoves.value.values()) {
+    if (move.toTeamId === team.id) {
+      // Check if not already in members (could happen if server responded before we cleared)
+      if (!members.some((m) => m.id === move.userId)) {
+        members.push({
+          id: move.userId,
+          name: move.userName,
+          age: move.userAge,
+          teams: move.userTeams,
+          isRemoving: false,
+          isAdding: true,
+        })
+      }
     }
-  })
+  }
+
+  return members
 }
 
 // Handle drop from draggable
 function handleDropMember(
-  user: { id: string; name: string; teams: { id: string; name: string }[] },
+  user: {
+    id: string
+    name: string
+    age?: number | null
+    teams: { id: string; name: string }[]
+  },
   teamId: string,
-  teamName: string,
 ) {
-  // Wait for drop animation to complete before showing modal
-  nextTick(() => {
-    handleUserSelect(
-      { id: user.id, name: user.name, teams: user.teams },
-      teamId,
-      teamName,
-    )
-  })
+  handleUserSelect(user, teamId)
 }
 </script>
 
@@ -683,9 +729,10 @@ function handleDropMember(
                       user: {
                         id: string
                         name: string
+                        age?: number | null
                         teams: { id: string; name: string }[]
                       },
-                    ) => handleUserSelect(user, unit.id, unit.name)
+                    ) => handleUserSelect(user, unit.id)
                   "
                   @remove-member="handleRemoveFromTeam"
                   @delete-unit="handleDeleteUnit"
@@ -790,26 +837,6 @@ function handleDropMember(
         </div>
       </div>
     </Transition>
-
-    <!-- Move confirmation modal -->
-    <UModal v-model:open="moveConfirmOpen">
-      <template #content>
-        <div class="p-6">
-          <h3 class="mb-4 text-lg font-semibold">Flytt bruker?</h3>
-          <p class="text-dimmed mb-6">
-            {{ pendingMove?.userName }} er allerede medlem av
-            <strong>{{ pendingMove?.fromTeamName }}</strong
-            >. Vil du flytte brukeren til
-            <strong>{{ pendingMove?.toTeamName }}</strong
-            >?
-          </p>
-          <div class="flex justify-end gap-3">
-            <UButton variant="ghost" @click="cancelMove"> Avbryt </UButton>
-            <UButton color="primary" @click="confirmMove"> Flytt </UButton>
-          </div>
-        </div>
-      </template>
-    </UModal>
 
     <!-- Delete confirmation modal -->
     <UModal v-model:open="deleteConfirmOpen">

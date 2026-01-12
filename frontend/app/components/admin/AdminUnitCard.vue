@@ -10,6 +10,7 @@ interface Member {
   name: string
   age?: number | null
   isRemoving?: boolean
+  isAdding?: boolean
 }
 
 interface UserItem {
@@ -139,12 +140,14 @@ function handleDrop(event: SortableEvent) {
           v-for="member in localMembers"
           :key="member.id"
           class="flex items-center justify-between py-2 border-b border-default last:border-0 cursor-grab active:cursor-grabbing"
-          :class="{ 'opacity-50': member.isRemoving }"
+          :class="{
+            'opacity-50': member.isRemoving || member.isAdding,
+          }"
         >
           <div class="flex items-center gap-2">
             <Icon name="lucide:grip-vertical" class="size-4 text-dimmed" />
             <Icon
-              v-if="member.isRemoving"
+              v-if="member.isRemoving || member.isAdding"
               name="lucide:loader-2"
               class="size-4 animate-spin"
             />
@@ -156,7 +159,7 @@ function handleDrop(event: SortableEvent) {
               {{ member.age ?? '-' }}
             </span>
             <UButton
-              v-if="!member.isRemoving"
+              v-if="!member.isRemoving && !member.isAdding"
               icon="lucide:x"
               size="xs"
               variant="ghost"
