@@ -39,6 +39,7 @@ const emit = defineEmits<{
     user: UserItem['user'],
   ]
   removeMember: [userId: string, teamId: string]
+  deleteUnit: [unitId: string, unitName: string]
 }>()
 
 const isOpen = ref(false)
@@ -69,8 +70,8 @@ function handleUserSelect(item: UserItem | undefined) {
 <template>
   <div class="rounded-lg border border-default bg-elevated/50 overflow-hidden">
     <!-- Header -->
-    <button
-      class="w-full p-3 flex items-center justify-between hover:bg-elevated transition-colors"
+    <div
+      class="w-full p-3 flex items-center justify-between hover:bg-elevated transition-colors cursor-pointer"
       @click="toggle"
     >
       <span class="font-medium">{{ unit.name }}</span>
@@ -78,12 +79,19 @@ function handleUserSelect(item: UserItem | undefined) {
         <UBadge variant="soft" size="sm">
           {{ unit.members.length }} pers
         </UBadge>
+        <UButton
+          icon="lucide:trash-2"
+          size="xs"
+          variant="ghost"
+          color="error"
+          @click.stop="emit('deleteUnit', unit.id, unit.name)"
+        />
         <Icon
           :name="isExpanded ? 'lucide:chevron-up' : 'lucide:chevron-down'"
           class="size-4"
         />
       </div>
-    </button>
+    </div>
 
     <!-- Expanded content -->
     <div v-if="isExpanded" class="border-t border-default p-4">

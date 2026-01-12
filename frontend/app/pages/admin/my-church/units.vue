@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
+import { generateUniqueNames } from '~/utils/unitNameGenerator'
 
 definePageMeta({
   layout: 'church-admin',
@@ -66,6 +67,7 @@ watch(data, (newData) => {
 const { executeMutation: addTeamMembers } = useAddTeamMembersMutation()
 const { executeMutation: removeTeamMembers } = useRemoveTeamMembersMutation()
 const { executeMutation: createTeam } = useCreateTeamMutation()
+const { executeMutation: deleteTeam } = useDeleteTeamMutation()
 
 // Get all users from church
 const allUsers = computed(
@@ -88,6 +90,11 @@ const isCreatingUnit = ref(false)
 const newUnitName = ref('')
 const creatingUnitLoading = ref(false)
 
+// Bulk create state
+const isBulkCreating = ref(false)
+const bulkCount = ref(5)
+const bulkCreatingLoading = ref(false)
+
 // Track optimistic updates
 const optimisticUpdates = ref<
   Map<string, { userId: string; teamId: string; isAdding: boolean }>
@@ -103,11 +110,19 @@ const pendingMove = ref<{
   toTeamName: string
 } | null>(null)
 
+// Delete confirmation modal state
+const deleteConfirmOpen = ref(false)
+const pendingDelete = ref<{
+  unitId: string
+  unitName: string
+} | null>(null)
+const deletingLoading = ref(false)
+
 // Filter tabs for people table
 const filterTabs = [
   { label: 'Alle', value: 'all' },
-  { label: 'ikke i unit', value: 'not-in-unit' },
-  { label: 'i en unit', value: 'in-unit' },
+  { label: 'Ikke i en unit', value: 'not-in-unit' },
+  { label: 'I en unit', value: 'in-unit' },
 ]
 
 // People table columns
@@ -123,6 +138,16 @@ const filteredUnits = computed(() => {
   return projectTeams.value.filter((t) => t.name.toLowerCase().includes(search))
 })
 
+// Get project team IDs for filtering
+const projectTeamIds = computed(
+  () => new Set(projectTeams.value.map((t) => t.id)),
+)
+
+// Check if user is in a team from the current project
+function isInProjectTeam(user: { teams: { id: string }[] }) {
+  return user.teams.some((t) => projectTeamIds.value.has(t.id))
+}
+
 // Filtered people based on search and filter tab
 const filteredPeople = computed(() => {
   let people = allUsers.value
@@ -133,11 +158,11 @@ const filteredPeople = computed(() => {
     people = people.filter((p) => p.name.toLowerCase().includes(search))
   }
 
-  // Apply filter tab
+  // Apply filter tab - only consider teams from this project
   if (activeFilter.value === 'not-in-unit') {
-    people = people.filter((p) => p.teams.length === 0)
+    people = people.filter((p) => !isInProjectTeam(p))
   } else if (activeFilter.value === 'in-unit') {
-    people = people.filter((p) => p.teams.length > 0)
+    people = people.filter((p) => isInProjectTeam(p))
   }
 
   return people
@@ -187,6 +212,45 @@ async function saveNewUnit() {
   isCreatingUnit.value = false
   newUnitName.value = ''
   await refetch({ requestPolicy: 'network-only' })
+}
+
+// Save bulk units
+async function saveBulkUnits() {
+  if (!data.value?.myCurrentProject || bulkCount.value < 1) return
+
+  bulkCreatingLoading.value = true
+  const names = generateUniqueNames(bulkCount.value)
+
+  let successCount = 0
+  for (const name of names) {
+    const result = await createTeam({
+      projectId: data.value.myCurrentProject.id,
+      input: {
+        name,
+        description: '',
+      },
+    })
+
+    if (!result.error) {
+      successCount++
+    }
+  }
+
+  bulkCreatingLoading.value = false
+  isBulkCreating.value = false
+
+  if (successCount > 0) {
+    toast.add({
+      title: `${successCount} units opprettet`,
+      color: 'success',
+    })
+    await refetch({ requestPolicy: 'network-only' })
+  } else {
+    toast.add({
+      title: 'Kunne ikke opprette units',
+      color: 'error',
+    })
+  }
 }
 
 // Add user to team
@@ -279,6 +343,42 @@ function cancelMove() {
   pendingMove.value = null
 }
 
+// Delete unit handlers
+function handleDeleteUnit(unitId: string, unitName: string) {
+  pendingDelete.value = { unitId, unitName }
+  deleteConfirmOpen.value = true
+}
+
+async function confirmDelete() {
+  if (!pendingDelete.value) return
+
+  deletingLoading.value = true
+  const result = await deleteTeam({ id: pendingDelete.value.unitId })
+  deletingLoading.value = false
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke slette unit',
+      description: result.error.message,
+      color: 'error',
+    })
+  } else {
+    toast.add({
+      title: 'Unit slettet',
+      color: 'success',
+    })
+    await refetch({ requestPolicy: 'network-only' })
+  }
+
+  deleteConfirmOpen.value = false
+  pendingDelete.value = null
+}
+
+function cancelDelete() {
+  deleteConfirmOpen.value = false
+  pendingDelete.value = null
+}
+
 // Autocomplete items for adding users
 const userItems = computed(() =>
   allUsers.value.map((user) => ({
@@ -352,7 +452,7 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
             <!-- Search -->
             <UInput
               v-model="unitSearch"
-              placeholder="Sok..."
+              placeholder="Søk..."
               icon="lucide:search"
               class="mb-4"
             />
@@ -364,16 +464,51 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
               class="mb-4"
             />
 
-            <!-- Create unit button -->
-            <UButton
-              v-if="!isCreatingUnit"
-              variant="soft"
-              class="mb-4 w-full"
-              @click="startCreateUnit"
-            >
-              <Icon name="lucide:plus" />
-              Ny unit
-            </UButton>
+            <!-- Create unit buttons -->
+            <div v-if="!isCreatingUnit" class="flex gap-2 mb-4">
+              <UButton variant="soft" class="flex-1" @click="startCreateUnit">
+                <Icon name="lucide:plus" />
+                Ny unit
+              </UButton>
+              <UPopover v-model:open="isBulkCreating">
+                <UButton variant="soft">
+                  <Icon name="lucide:copy-plus" />
+                  Opprett flere
+                </UButton>
+                <template #content>
+                  <div class="p-4 w-64">
+                    <p class="text-sm font-medium mb-3">Antall units</p>
+                    <UInput
+                      v-model.number="bulkCount"
+                      type="number"
+                      :min="1"
+                      :max="50"
+                      class="mb-3"
+                    />
+                    <p class="text-xs text-dimmed mb-3">
+                      Navnene genereres automatisk
+                    </p>
+                    <div class="flex gap-2 justify-end">
+                      <UButton
+                        variant="ghost"
+                        size="sm"
+                        @click="isBulkCreating = false"
+                      >
+                        Avbryt
+                      </UButton>
+                      <UButton
+                        size="sm"
+                        :loading="bulkCreatingLoading"
+                        :disabled="bulkCount < 1 || bulkCount > 50"
+                        @click="saveBulkUnits"
+                      >
+                        Opprett
+                      </UButton>
+                    </div>
+                  </div>
+                </template>
+              </UPopover>
+            </div>
 
             <!-- Create unit form -->
             <div
@@ -423,6 +558,7 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
                   ) => handleUserSelect(user, unit.id, unit.name)
                 "
                 @remove-member="handleRemoveFromTeam"
+                @delete-unit="handleDeleteUnit"
               />
 
               <p v-if="filteredUnits.length === 0" class="text-dimmed text-sm">
@@ -438,13 +574,18 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
             <!-- Search -->
             <UInput
               v-model="personSearch"
-              placeholder="Sok..."
+              placeholder="Søk..."
               icon="lucide:search"
               class="mb-4"
             />
 
             <!-- Filter tabs -->
-            <UTabs v-model="activeFilter" :items="filterTabs" />
+            <UTabs
+              v-model="activeFilter"
+              :items="filterTabs"
+              variant="pill"
+              color="neutral"
+            />
 
             <!-- People table -->
             <UTable :data="filteredPeople" :columns="peopleColumns">
@@ -454,14 +595,10 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
               <template #age-cell="{ row }">
                 <span class="text-dimmed">{{ row.original.age ?? '-' }}</span>
               </template>
+              <template #empty>
+                <p class="text-sm text-dimmed">Ingen personer funnet</p>
+              </template>
             </UTable>
-
-            <p
-              v-if="filteredPeople.length === 0"
-              class="text-dimmed text-sm text-center py-4"
-            >
-              Ingen personer funnet
-            </p>
           </div>
         </div>
       </div>
@@ -482,6 +619,30 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
           <div class="flex justify-end gap-3">
             <UButton variant="ghost" @click="cancelMove"> Avbryt </UButton>
             <UButton color="primary" @click="confirmMove"> Flytt </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Delete confirmation modal -->
+    <UModal v-model:open="deleteConfirmOpen">
+      <template #content>
+        <div class="p-6">
+          <h3 class="mb-4 text-lg font-semibold">Slett unit?</h3>
+          <p class="text-dimmed mb-6">
+            Er du sikker på at du vil slette
+            <strong>{{ pendingDelete?.unitName }}</strong
+            >? Alle medlemmer vil bli fjernet fra uniten.
+          </p>
+          <div class="flex justify-end gap-3">
+            <UButton variant="ghost" @click="cancelDelete"> Avbryt </UButton>
+            <UButton
+              color="error"
+              :loading="deletingLoading"
+              @click="confirmDelete"
+            >
+              Slett
+            </UButton>
           </div>
         </div>
       </template>
