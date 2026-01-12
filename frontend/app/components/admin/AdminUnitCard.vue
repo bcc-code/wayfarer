@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { VueDraggable, type SortableEvent } from 'vue-draggable-plus'
+
 interface Member {
   id: string
   name: string
@@ -14,6 +16,13 @@ interface UserItem {
     name: string
     teams: { id: string; name: string }[]
   }
+}
+
+interface DraggableUser {
+  id: string
+  name: string
+  age?: number | null
+  teams: { id: string; name: string }[]
 }
 
 const props = defineProps<{
@@ -40,6 +49,7 @@ const emit = defineEmits<{
   ]
   removeMember: [userId: string, teamId: string]
   deleteUnit: [unitId: string, unitName: string]
+  dropMember: [user: DraggableUser, teamId: string, teamName: string]
 }>()
 
 const isOpen = ref(false)
@@ -68,6 +78,19 @@ function handleUserSelect(item: UserItem | undefined) {
     nextTick(() => {
       searchValue.value = undefined
     })
+  }
+}
+
+// Local copy of members for draggable (doesn't mutate, just for display)
+const localMembers = computed(() => [...props.members])
+
+// Handle when a user is dropped into this unit
+function handleDrop(event: SortableEvent) {
+  // Access the Vue data from the dragged element
+  const item = event.item as HTMLElement & { __draggable_context?: { element: DraggableUser } }
+  const user = item.__draggable_context?.element
+  if (user) {
+    emit('dropMember', user, props.unit.id, props.unit.name)
   }
 }
 </script>
@@ -100,15 +123,23 @@ function handleUserSelect(item: UserItem | undefined) {
 
     <!-- Expanded content -->
     <div v-if="isExpanded" class="border-t border-default p-4">
-      <!-- Members list -->
-      <div class="mb-4">
+      <!-- Members list (droppable) -->
+      <VueDraggable
+        :model-value="localMembers"
+        :group="{ name: 'users', pull: 'clone' }"
+        ghost-class="opacity-50"
+        :animation="200"
+        class="mb-4 min-h-10"
+        @add="handleDrop"
+      >
         <div
-          v-for="member in members"
+          v-for="member in localMembers"
           :key="member.id"
-          class="flex items-center justify-between py-2 border-b border-default last:border-0"
+          class="flex items-center justify-between py-2 border-b border-default last:border-0 cursor-grab active:cursor-grabbing"
           :class="{ 'opacity-50': member.isRemoving }"
         >
           <div class="flex items-center gap-2">
+            <Icon name="lucide:grip-vertical" class="size-4 text-dimmed" />
             <Icon
               v-if="member.isRemoving"
               name="lucide:loader-2"
@@ -131,10 +162,10 @@ function handleUserSelect(item: UserItem | undefined) {
             />
           </div>
         </div>
-        <p v-if="unit.members.length === 0" class="text-dimmed text-sm py-2">
-          Ingen medlemmer
-        </p>
-      </div>
+      </VueDraggable>
+      <p v-if="unit.members.length === 0" class="text-dimmed text-sm py-2">
+        Ingen medlemmer - dra en person hit
+      </p>
 
       <!-- Add person search -->
       <UInputMenu

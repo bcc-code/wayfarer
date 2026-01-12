@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { TableColumn, TabsItem } from '@nuxt/ui'
+import type { TabsItem } from '@nuxt/ui'
+import { VueDraggable } from 'vue-draggable-plus'
 import { generateUniqueNames } from '~/utils/unitNameGenerator'
 
 definePageMeta({
@@ -80,7 +81,7 @@ const projectTeams = computed(() => data.value?.myCurrentProject?.teams ?? [])
 // Search and filter state
 const unitSearch = ref('')
 const personSearch = ref('')
-const activeFilter = ref<'all' | 'not-in-unit' | 'in-unit'>('all')
+const activeFilter = ref<'all' | 'not-in-unit' | 'in-unit'>('not-in-unit')
 
 // Expand all state
 const expandAll = ref(true)
@@ -172,12 +173,6 @@ const filterTabs = computed<TabsItem[]>(() => {
     },
   ]
 })
-
-// People table columns
-const peopleColumns: TableColumn<(typeof allUsers.value)[number]>[] = [
-  { accessorKey: 'name', header: 'Navn' },
-  { accessorKey: 'age', header: 'Alder' },
-]
 
 // Filtered units based on search
 const filteredUnits = computed(() => {
@@ -488,12 +483,31 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
   return team.members.map((member) => {
     const key = `${member.user.id}-${team.id}`
     const update = optimisticUpdates.value.get(key)
+    // Look up user's teams from allUsers for drag and drop
+    const fullUser = allUsers.value.find((u) => u.id === member.user.id)
     return {
       id: member.user.id,
       name: member.name,
       age: member.user.age,
+      teams: fullUser?.teams ?? [],
       isRemoving: update && !update.isAdding,
     }
+  })
+}
+
+// Handle drop from draggable
+function handleDropMember(
+  user: { id: string; name: string; teams: { id: string; name: string }[] },
+  teamId: string,
+  teamName: string,
+) {
+  // Wait for drop animation to complete before showing modal
+  nextTick(() => {
+    handleUserSelect(
+      { id: user.id, name: user.name, teams: user.teams },
+      teamId,
+      teamName,
+    )
   })
 }
 </script>
@@ -675,6 +689,7 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
                   "
                   @remove-member="handleRemoveFromTeam"
                   @delete-unit="handleDeleteUnit"
+                  @drop-member="handleDropMember"
                 />
               </div>
 
@@ -704,18 +719,37 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
               color="neutral"
             />
 
-            <!-- People table -->
-            <UTable :data="filteredPeople" :columns="peopleColumns">
-              <template #name-cell="{ row }">
-                <span>{{ row.original.name }}</span>
-              </template>
-              <template #age-cell="{ row }">
-                <span class="text-dimmed">{{ row.original.age ?? '-' }}</span>
-              </template>
-              <template #empty>
-                <p class="text-sm text-dimmed">Ingen personer funnet</p>
-              </template>
-            </UTable>
+            <!-- People list (draggable) -->
+            <VueDraggable
+              :model-value="filteredPeople"
+              :group="{ name: 'users', pull: 'clone', put: false }"
+              ghost-class="opacity-50"
+              :animation="200"
+              :sort="false"
+              class="mt-4 space-y-1"
+            >
+              <div
+                v-for="person in filteredPeople"
+                :key="person.id"
+                class="flex items-center justify-between p-2 rounded border border-transparent hover:border-default hover:bg-elevated/50 cursor-grab active:cursor-grabbing"
+              >
+                <div class="flex items-center gap-2">
+                  <Icon
+                    name="lucide:grip-vertical"
+                    class="size-4 text-dimmed"
+                  />
+                  <Icon name="lucide:user" class="size-4" />
+                  <span>{{ person.name }}</span>
+                </div>
+                <span class="text-dimmed text-sm">{{ person.age ?? '-' }}</span>
+              </div>
+            </VueDraggable>
+            <p
+              v-if="filteredPeople.length === 0"
+              class="text-sm text-dimmed text-center py-4"
+            >
+              Ingen personer funnet
+            </p>
           </div>
         </div>
       </div>
