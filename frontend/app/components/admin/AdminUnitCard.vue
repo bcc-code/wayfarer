@@ -43,6 +43,7 @@ const props = defineProps<{
   members: Member[]
   userItems: UserItem[]
   expandAll: boolean
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -106,7 +107,14 @@ function handleDrop(event: SortableEvent) {
       class="w-full p-3 flex items-center justify-between hover:bg-elevated transition-colors cursor-pointer"
       @click="toggle"
     >
-      <span class="font-medium">{{ unit.name }}</span>
+      <div class="flex items-center gap-2">
+        <span class="font-medium">{{ unit.name }}</span>
+        <Icon
+          v-if="loading"
+          name="lucide:loader-2"
+          class="size-4 animate-spin text-dimmed"
+        />
+      </div>
       <div class="flex items-center gap-2">
         <UBadge variant="soft" size="sm">
           {{ unit.members.length }} pers
@@ -146,13 +154,12 @@ function handleDrop(event: SortableEvent) {
         >
           <div class="flex items-center gap-2">
             <Icon name="lucide:grip-vertical" class="size-4 text-dimmed" />
+            <span>{{ member.name }}</span>
             <Icon
-              v-if="member.isRemoving || member.isAdding"
+              v-if="member.isRemoving"
               name="lucide:loader-2"
               class="size-4 animate-spin"
             />
-            <Icon v-else name="lucide:user" class="size-4" />
-            <span>{{ member.name }}</span>
           </div>
           <div class="flex items-center gap-3">
             <span class="text-dimmed text-sm">

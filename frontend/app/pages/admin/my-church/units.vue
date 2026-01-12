@@ -544,6 +544,16 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
   return members
 }
 
+// Check if a team has any pending optimistic operations
+function isTeamLoading(teamId: string) {
+  for (const move of optimisticMoves.value.values()) {
+    if (move.toTeamId === teamId || move.fromTeamId === teamId) {
+      return true
+    }
+  }
+  return false
+}
+
 // Handle drop from draggable
 function handleDropMember(
   user: {
@@ -721,6 +731,7 @@ function handleDropMember(
                   :members="getTeamMembers(unit)"
                   :user-items="userItems"
                   :expand-all="expandAll"
+                  :loading="isTeamLoading(unit.id)"
                   @add-member="
                     (
                       _userId: string,
@@ -778,14 +789,13 @@ function handleDropMember(
               <div
                 v-for="person in filteredPeople"
                 :key="person.id"
-                class="flex items-center justify-between p-2 rounded border border-transparent hover:border-default hover:bg-elevated/50 cursor-grab active:cursor-grabbing"
+                class="flex items-center justify-between p-2 rounded-lg border border-transparent hover:border-default hover:bg-elevated/50 cursor-grab active:cursor-grabbing"
               >
                 <div class="flex items-center gap-2">
                   <Icon
                     name="lucide:grip-vertical"
                     class="size-4 text-dimmed"
                   />
-                  <Icon name="lucide:user" class="size-4" />
                   <span>{{ person.name }}</span>
                 </div>
                 <span class="text-dimmed text-sm">{{ person.age ?? '-' }}</span>
