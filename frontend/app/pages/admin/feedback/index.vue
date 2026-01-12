@@ -170,7 +170,7 @@ const { canDeleteFeedback } = usePermissions()
         </template>
         <template #createdAt-cell="{ row }">
           <span class="text-dimmed text-sm">
-            {{ formatDate(row.original.createdAt) }}
+            {{ formatDateTime(row.original.createdAt) }}
           </span>
         </template>
         <template #actions-cell="{ row }">

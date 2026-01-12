@@ -48,13 +48,13 @@ const isInitialLoading = computed(() => fetching.value && !data.value)
         :tabs="[
           {
             key: 'u18',
-            label: $t('standings.u18'),
-            value: { min: 13, max: 19 },
+            label: '13 - 18',
+            value: { min: 13, max: 18 },
           },
           {
             key: 'o18',
-            label: $t('standings.o18'),
-            value: { min: 20, max: 37 },
+            label: '19 - 36',
+            value: { min: 19, max: 37 },
           },
         ]"
         class="mb-list-section-gap"

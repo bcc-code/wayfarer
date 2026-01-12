@@ -106,7 +106,7 @@ function getScoreJournalName(
                 {{ getScoreJournalName(journal.node) }}
               </p>
               <span class="text-caption text-text-muted">
-                {{ formatDate(journal.node.createdAt) }}
+                {{ formatDateTime(journal.node.createdAt) }}
               </span>
             </div>
             <span
