@@ -9,6 +9,7 @@ interface Member {
   id: string
   name: string
   age?: number | null
+  gender?: string
   isRemoving?: boolean
   isAdding?: boolean
 }
@@ -19,6 +20,8 @@ interface UserItem {
   user: {
     id: string
     name: string
+    age?: number | null
+    gender: string
     teams: { id: string; name: string }[]
   }
 }
@@ -27,6 +30,7 @@ interface DraggableUser {
   id: string
   name: string
   age?: number | null
+  gender: string
   teams: { id: string; name: string }[]
 }
 
@@ -111,13 +115,13 @@ function handleDrop(event: SortableEvent) {
         <span class="font-medium">{{ unit.name }}</span>
         <Icon
           v-if="loading"
-          name="lucide:loader-2"
-          class="size-4 animate-spin text-dimmed"
+          name="svg-spinners:bars-rotate-fade"
+          class="size-4 text-dimmed"
         />
       </div>
       <div class="flex items-center gap-2">
         <UBadge variant="soft" size="sm">
-          {{ unit.members.length }} pers
+          {{ unit.members.length }} personer
         </UBadge>
         <UButton
           icon="lucide:trash-2"
@@ -155,18 +159,26 @@ function handleDrop(event: SortableEvent) {
           <div class="flex items-center gap-2">
             <Icon name="lucide:grip-vertical" class="size-4 text-dimmed" />
             <span>{{ member.name }}</span>
-            <Icon
-              v-if="member.isRemoving"
-              name="lucide:loader-2"
-              class="size-4 animate-spin"
-            />
           </div>
           <div class="flex items-center gap-3">
-            <span class="text-dimmed text-sm">
-              {{ member.age ?? '-' }}
-            </span>
+            <div class="flex items-center gap-2 text-dimmed text-sm">
+              <span
+                v-if="member.gender === 'MALE'"
+                class="size-1.5 bg-blue-500 rounded-full"
+              />
+              <span
+                v-else-if="member.gender === 'FEMALE'"
+                class="size-1.5 bg-pink-500 rounded-full"
+              />
+              <span>{{ member.age ?? '-' }} år</span>
+            </div>
+            <Icon
+              v-if="member.isRemoving || member.isAdding"
+              name="svg-spinners:bars-rotate-fade"
+              class="size-4 m-1"
+            />
             <UButton
-              v-if="!member.isRemoving && !member.isAdding"
+              v-else
               icon="lucide:x"
               size="xs"
               variant="ghost"

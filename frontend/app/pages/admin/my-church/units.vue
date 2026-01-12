@@ -16,6 +16,7 @@ gql(`
           id
           name
           age
+          gender
           teams {
             id
             name
@@ -35,6 +36,7 @@ gql(`
           user {
             id
             age
+            gender
           }
         }
       }
@@ -109,6 +111,7 @@ const optimisticMoves = ref<
       userId: string
       userName: string
       userAge: number | null
+      userGender: string
       userTeams: { id: string; name: string }[]
       fromTeamId: string | null
       toTeamId: string
@@ -317,6 +320,7 @@ async function handleAddToTeam(
     id: string
     name: string
     age?: number | null
+    gender: string
     teams: { id: string; name: string }[]
   },
   teamId: string,
@@ -332,6 +336,7 @@ async function handleAddToTeam(
     userId: user.id,
     userName: user.name,
     userAge: user.age ?? null,
+    userGender: user.gender,
     userTeams: user.teams,
     fromTeamId,
     toTeamId: teamId,
@@ -389,6 +394,7 @@ function handleUserSelect(
     id: string
     name: string
     age?: number | null
+    gender: string
     teams: { id: string; name: string }[]
   },
   targetTeamId: string,
@@ -498,6 +504,7 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
     id: string
     name: string
     age: number | null
+    gender: string
     teams: { id: string; name: string }[]
     isRemoving: boolean
     isAdding: boolean
@@ -518,6 +525,7 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
       id: member.user.id,
       name: member.name,
       age: member.user.age ?? null,
+      gender: member.user.gender,
       teams: fullUser?.teams ?? [],
       isRemoving: update ? !update.isAdding : false,
       isAdding: false,
@@ -533,6 +541,7 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
           id: move.userId,
           name: move.userName,
           age: move.userAge,
+          gender: move.userGender,
           teams: move.userTeams,
           isRemoving: false,
           isAdding: true,
@@ -560,6 +569,7 @@ function handleDropMember(
     id: string
     name: string
     age?: number | null
+    gender: string
     teams: { id: string; name: string }[]
   },
   teamId: string,
@@ -598,7 +608,7 @@ function handleDropMember(
 
       <LoadingState v-if="fetching && !hasLoadedOnce" />
       <ErrorState v-else-if="error" :error />
-      <div v-else-if="data" class="mt-8">
+      <div v-else-if="data" class="mt-12">
         <!-- No active project message -->
         <div
           v-if="!data.myCurrentProject"
@@ -630,15 +640,15 @@ function handleDropMember(
             />
 
             <!-- Create unit buttons -->
-            <div v-if="!isCreatingUnit" class="flex gap-2 mb-4">
-              <UButton variant="soft" class="flex-1" @click="startCreateUnit">
+            <div v-if="!isCreatingUnit" class="grid grid-cols-2 gap-2 mb-4">
+              <UButton size="lg" block class="flex-1" @click="startCreateUnit">
                 <Icon name="lucide:plus" />
-                Ny unit
+                Opprett én unit
               </UButton>
               <UPopover v-model:open="isBulkCreating">
-                <UButton variant="soft">
-                  <Icon name="lucide:copy-plus" />
-                  Opprett flere
+                <UButton size="lg" block>
+                  <Icon name="lucide:plus" />
+                  Opprett flere units
                 </UButton>
                 <template #content>
                   <div class="p-4 w-64">
@@ -741,6 +751,7 @@ function handleDropMember(
                         id: string
                         name: string
                         age?: number | null
+                        gender: string
                         teams: { id: string; name: string }[]
                       },
                     ) => handleUserSelect(user, unit.id)
@@ -798,7 +809,17 @@ function handleDropMember(
                   />
                   <span>{{ person.name }}</span>
                 </div>
-                <span class="text-dimmed text-sm">{{ person.age ?? '-' }}</span>
+                <div class="flex items-center gap-1.5 text-dimmed text-sm">
+                  <span
+                    v-if="person.gender === 'MALE'"
+                    class="size-1.5 bg-blue-500 rounded-full"
+                  />
+                  <span
+                    v-else-if="person.gender === 'FEMALE'"
+                    class="size-1.5 bg-pink-500 rounded-full"
+                  />
+                  <span>{{ person.age ?? '-' }} år</span>
+                </div>
               </div>
             </VueDraggable>
             <p
