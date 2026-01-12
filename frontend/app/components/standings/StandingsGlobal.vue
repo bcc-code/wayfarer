@@ -1,7 +1,33 @@
 <script setup lang="ts">
 import { getExtraItems } from '~/utils/leaderboard'
 
-const ageRange = ref({ min: 13, max: 19 })
+const AGE_RANGE_YOUNG = { min: 13, max: 18 } as const
+const AGE_RANGE_ADULT = { min: 19, max: 37 } as const
+
+const { me } = useAuth()
+
+function getAgeRangeForAge(age: number | null | undefined) {
+  if (age && age >= AGE_RANGE_ADULT.min && age <= AGE_RANGE_ADULT.max) {
+    return AGE_RANGE_ADULT
+  }
+  return AGE_RANGE_YOUNG
+}
+
+const ageRange = ref(getAgeRangeForAge(me.value?.age))
+
+// Update age range when user data loads (only once)
+let stopAgeWatch: (() => void) | undefined
+// eslint-disable-next-line prefer-const
+stopAgeWatch = watch(
+  () => me.value?.age,
+  (age) => {
+    if (age !== undefined) {
+      ageRange.value = getAgeRangeForAge(age)
+      stopAgeWatch?.()
+    }
+  },
+  { immediate: true },
+)
 
 const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useStandingsGlobalPageQuery({
@@ -49,12 +75,12 @@ const isInitialLoading = computed(() => fetching.value && !data.value)
           {
             key: 'u18',
             label: '13 - 18',
-            value: { min: 13, max: 18 },
+            value: AGE_RANGE_YOUNG,
           },
           {
             key: 'o18',
             label: '19 - 36',
-            value: { min: 19, max: 37 },
+            value: AGE_RANGE_ADULT,
           },
         ]"
         class="mb-list-section-gap"
