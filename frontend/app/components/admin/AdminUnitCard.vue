@@ -87,7 +87,9 @@ const localMembers = computed(() => [...props.members])
 // Handle when a user is dropped into this unit
 function handleDrop(event: SortableEvent) {
   // Access the Vue data from the dragged element
-  const item = event.item as HTMLElement & { __draggable_context?: { element: DraggableUser } }
+  const item = event.item as HTMLElement & {
+    __draggable_context?: { element: DraggableUser }
+  }
   const user = item.__draggable_context?.element
   if (user) {
     emit('dropMember', user, props.unit.id, props.unit.name)
@@ -163,7 +165,10 @@ function handleDrop(event: SortableEvent) {
           </div>
         </div>
       </VueDraggable>
-      <p v-if="unit.members.length === 0" class="text-dimmed text-sm py-2">
+      <p
+        v-if="unit.members.length === 0"
+        class="text-dimmed text-sm text-center py-2 -mt-8 mb-8"
+      >
         Ingen medlemmer - dra en person hit
       </p>
 
