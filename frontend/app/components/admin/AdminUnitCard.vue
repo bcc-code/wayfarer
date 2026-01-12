@@ -163,7 +163,7 @@ function handleDrop(event: SortableEvent) {
         <div
           v-for="member in localMembers"
           :key="member.id"
-          class="flex items-center justify-between py-2 border-b border-default last:border-0 cursor-grab active:cursor-grabbing"
+          class="group flex items-center justify-between py-2 border-b border-default last:border-0 cursor-grab active:cursor-grabbing"
           :class="{
             'opacity-50': member.isRemoving || member.isAdding,
           }"
@@ -176,7 +176,12 @@ function handleDrop(event: SortableEvent) {
               name="lucide:crown"
               class="size-4 m-1 text-yellow-500"
             />
-            <UTooltip v-else text="Gjør til leder" :delay-duration="200">
+            <UTooltip
+              v-else
+              text="Gjør til leder"
+              :delay-duration="200"
+              class="invisible group-hover:visible"
+            >
               <UButton
                 icon="lucide:crown"
                 size="xs"
