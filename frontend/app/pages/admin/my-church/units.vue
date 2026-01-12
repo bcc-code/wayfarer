@@ -33,6 +33,7 @@ gql(`
         members {
           id
           name
+          isTeamLead
           user {
             id
             age
@@ -71,6 +72,7 @@ const { executeMutation: addTeamMembers } = useAddTeamMembersMutation()
 const { executeMutation: removeTeamMembers } = useRemoveTeamMembersMutation()
 const { executeMutation: createTeam } = useCreateTeamMutation()
 const { executeMutation: deleteTeam } = useDeleteTeamMutation()
+const { executeMutation: assignTeamLead } = useAssignTeamLeadMutation()
 
 // Get all users from church
 const allUsers = computed(
@@ -410,6 +412,22 @@ async function handleRemoveFromTeam(userId: string, teamId: string) {
   optimisticUpdates.value.delete(key)
 }
 
+// Assign team lead
+async function handleAssignLeader(userId: string, teamId: string) {
+  const result = await assignTeamLead({ teamId, userId })
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke sette leder',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  await refetch({ requestPolicy: 'network-only' })
+}
+
 // Handle user selection from autocomplete or drag-drop
 function handleUserSelect(
   user: {
@@ -527,6 +545,7 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
     name: string
     age: number | null
     gender: string
+    isTeamLead: boolean
     teams: { id: string; name: string }[]
     isRemoving: boolean
     isAdding: boolean
@@ -548,6 +567,7 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
       name: member.name,
       age: member.user.age ?? null,
       gender: member.user.gender,
+      isTeamLead: member.isTeamLead,
       teams: fullUser?.teams ?? [],
       isRemoving: update ? !update.isAdding : false,
       isAdding: false,
@@ -564,6 +584,7 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
           name: move.userName,
           age: move.userAge,
           gender: move.userGender,
+          isTeamLead: false,
           teams: move.userTeams,
           isRemoving: false,
           isAdding: true,
@@ -780,6 +801,7 @@ function handleDropMember(
                   @remove-member="handleRemoveFromTeam"
                   @delete-unit="handleDeleteUnit"
                   @drop-member="handleDropMember"
+                  @assign-leader="handleAssignLeader"
                 />
               </div>
 

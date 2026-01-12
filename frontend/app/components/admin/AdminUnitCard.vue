@@ -10,6 +10,7 @@ interface Member {
   name: string
   age?: number | null
   gender?: string
+  isTeamLead?: boolean
   isRemoving?: boolean
   isAdding?: boolean
 }
@@ -60,6 +61,7 @@ const emit = defineEmits<{
   removeMember: [userId: string, teamId: string]
   deleteUnit: [unitId: string, unitName: string]
   dropMember: [user: DraggableUser, teamId: string, teamName: string]
+  assignLeader: [userId: string, teamId: string]
 }>()
 
 const isOpen = ref(false)
@@ -159,6 +161,11 @@ function handleDrop(event: SortableEvent) {
           <div class="flex items-center gap-2">
             <Icon name="lucide:grip-vertical" class="size-4 text-dimmed" />
             <span>{{ member.name }}</span>
+            <Icon
+              v-if="member.isTeamLead"
+              name="lucide:crown"
+              class="size-3.5 text-yellow-500"
+            />
           </div>
           <div class="flex items-center gap-3">
             <div class="flex items-center gap-2 text-dimmed text-sm">
@@ -177,14 +184,25 @@ function handleDrop(event: SortableEvent) {
               name="svg-spinners:bars-rotate-fade"
               class="size-4 m-1"
             />
-            <UButton
-              v-else
-              icon="lucide:x"
-              size="xs"
-              variant="ghost"
-              color="neutral"
-              @click.stop="emit('removeMember', member.id, unit.id)"
-            />
+            <template v-else>
+              <UTooltip text="Gjør til leder">
+                <UButton
+                  v-if="!member.isTeamLead"
+                  icon="lucide:crown"
+                  size="xs"
+                  variant="ghost"
+                  color="neutral"
+                  @click.stop="emit('assignLeader', member.id, unit.id)"
+                />
+              </UTooltip>
+              <UButton
+                icon="lucide:x"
+                size="xs"
+                variant="ghost"
+                color="neutral"
+                @click.stop="emit('removeMember', member.id, unit.id)"
+              />
+            </template>
           </div>
         </div>
       </VueDraggable>
