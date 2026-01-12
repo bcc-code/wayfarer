@@ -96,6 +96,9 @@ function handleUserSelect(item: UserItem | undefined) {
 // Local copy of members for draggable (doesn't mutate, just for display)
 const localMembers = computed(() => [...props.members])
 
+// Check if any member is a team lead
+const hasLeader = computed(() => props.members.some((m) => m.isTeamLead))
+
 // Handle when a user is dropped into this unit
 function handleDrop(event: SortableEvent) {
   const draggableEvent = event as DraggableEvent<DraggableUser>
@@ -115,6 +118,13 @@ function handleDrop(event: SortableEvent) {
     >
       <div class="flex items-center gap-2">
         <span class="font-medium">{{ unit.name }}</span>
+        <UTooltip
+          v-if="!hasLeader && !loading"
+          text="Ingen leder valgt"
+          :delay-duration="200"
+        >
+          <Icon name="lucide:alert-triangle" class="size-4 text-warning" />
+        </UTooltip>
         <Icon
           v-if="loading"
           name="svg-spinners:bars-rotate-fade"
@@ -164,8 +174,18 @@ function handleDrop(event: SortableEvent) {
             <Icon
               v-if="member.isTeamLead"
               name="lucide:crown"
-              class="size-3.5 text-yellow-500"
+              class="size-4 m-1 text-yellow-500"
             />
+            <UTooltip v-else text="Gjør til leder" :delay-duration="200">
+              <UButton
+                icon="lucide:crown"
+                size="xs"
+                variant="ghost"
+                color="neutral"
+                class="opacity-30"
+                @click.stop="emit('assignLeader', member.id, unit.id)"
+              />
+            </UTooltip>
           </div>
           <div class="flex items-center gap-3">
             <div class="flex items-center gap-2 text-dimmed text-sm">
@@ -185,16 +205,6 @@ function handleDrop(event: SortableEvent) {
               class="size-4 m-1"
             />
             <template v-else>
-              <UTooltip text="Gjør til leder">
-                <UButton
-                  v-if="!member.isTeamLead"
-                  icon="lucide:crown"
-                  size="xs"
-                  variant="ghost"
-                  color="neutral"
-                  @click.stop="emit('assignLeader', member.id, unit.id)"
-                />
-              </UTooltip>
               <UButton
                 icon="lucide:x"
                 size="xs"
