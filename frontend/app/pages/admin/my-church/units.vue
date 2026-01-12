@@ -853,13 +853,15 @@ function handleDropMember(
                   <span>{{ person.name }}</span>
                 </div>
                 <div class="flex items-center gap-1.5 text-dimmed text-sm">
-                  <span
+                  <Icon
                     v-if="person.gender === 'MALE'"
-                    class="size-1.5 bg-blue-500 rounded-full"
+                    name="tabler:gender-male"
+                    class="size-4 bg-blue-500 rounded-full"
                   />
-                  <span
+                  <Icon
                     v-else-if="person.gender === 'FEMALE'"
-                    class="size-1.5 bg-pink-500 rounded-full"
+                    name="tabler:gender-female"
+                    class="size-4 bg-pink-500 rounded-full"
                   />
                   <span>{{ person.age ?? '-' }} år</span>
                 </div>
