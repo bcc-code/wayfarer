@@ -23,6 +23,7 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
     id
     name
     achievements {
+      __typename
       id
       name
       descriptionPending
@@ -32,6 +33,17 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
       hidden
       achievedAt
       points
+      ... on ContentAchievement {
+        nextItem {
+          id
+          sortOrder
+          externalContent {
+            id
+            title
+            url
+          }
+        }
+      }
     }
     leaderboard(entityType: PERSONS, filter: $ageFilter) {
       me {
