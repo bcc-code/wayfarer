@@ -154,9 +154,7 @@ function formatContentType(type: ExternalContentType): string {
         v-else-if="searchResults.length === 0"
         class="text-muted p-4 text-center text-sm"
       >
-        {{
-          debouncedSearch ? 'Ingen treff' : 'Ingen innhold tilgjengelig'
-        }}
+        {{ debouncedSearch ? 'Ingen treff' : 'Ingen innhold tilgjengelig' }}
       </div>
       <div v-else>
         <button
@@ -223,6 +221,12 @@ function formatContentType(type: ExternalContentType): string {
             <UBadge variant="subtle" size="sm">
               {{ formatContentType(item.externalContent.contentType) }}
             </UBadge>
+            <span
+              v-if="item.externalContent.publishedAt"
+              class="text-muted text-xs"
+            >
+              {{ formatDate(item.externalContent.publishedAt) }}
+            </span>
             <UButton
               variant="ghost"
               color="error"
