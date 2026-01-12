@@ -391,12 +391,27 @@ func (r *mutationResolver) AddTeamMembers(ctx context.Context, teamID string, us
 
 		// If forcing, remove user from all teams in this project first
 		if shouldForce {
+			// Get the user's current team before removing (for cache invalidation)
+			oldTeam, err := r.DB.Queries.GetUserTeamByProjectID(ctx, sqlc.GetUserTeamByProjectIDParams{
+				Userid:    uid,
+				Projectid: projectID,
+			})
+			var oldTeamID string
+			if err == nil {
+				oldTeamID = oldTeam.ID
+			}
+
 			err = r.DB.Queries.RemoveUserFromTeamsInProject(ctx, sqlc.RemoveUserFromTeamsInProjectParams{
 				Userid:    uid,
 				Projectid: projectID,
 			})
 			if err != nil {
 				return nil, fmt.Errorf("failed to remove user %s from existing teams: %w", uid, err)
+			}
+
+			// Invalidate old team cache so UI reflects the removal
+			if oldTeamID != "" {
+				r.Cache.InvalidateTeam(oldTeamID)
 			}
 		}
 

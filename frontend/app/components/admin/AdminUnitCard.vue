@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { VueDraggable, type SortableEvent } from 'vue-draggable-plus'
+import {
+  VueDraggable,
+  type DraggableEvent,
+  type SortableEvent,
+} from 'vue-draggable-plus'
 
 interface Member {
   id: string
@@ -86,11 +90,8 @@ const localMembers = computed(() => [...props.members])
 
 // Handle when a user is dropped into this unit
 function handleDrop(event: SortableEvent) {
-  // Access the Vue data from the dragged element
-  const item = event.item as HTMLElement & {
-    __draggable_context?: { element: DraggableUser }
-  }
-  const user = item.__draggable_context?.element
+  const draggableEvent = event as DraggableEvent<DraggableUser>
+  const user = draggableEvent.data
   if (user) {
     emit('dropMember', user, props.unit.id, props.unit.name)
   }
