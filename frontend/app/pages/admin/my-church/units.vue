@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TableColumn } from '@nuxt/ui'
+import type { TableColumn, TabsItem } from '@nuxt/ui'
 import { generateUniqueNames } from '~/utils/unitNameGenerator'
 
 definePageMeta({
@@ -118,12 +118,60 @@ const pendingDelete = ref<{
 } | null>(null)
 const deletingLoading = ref(false)
 
-// Filter tabs for people table
-const filterTabs = [
-  { label: 'Alle', value: 'all' },
-  { label: 'Ikke i en unit', value: 'not-in-unit' },
-  { label: 'I en unit', value: 'in-unit' },
-]
+// Bulk selection state
+const selectedUnitIds = ref<Set<string>>(new Set())
+const bulkDeleteConfirmOpen = ref(false)
+const bulkDeletingLoading = ref(false)
+
+const hasSelection = computed(() => selectedUnitIds.value.size > 0)
+const allSelected = computed(
+  () =>
+    filteredUnits.value.length > 0 &&
+    filteredUnits.value.every((u) => selectedUnitIds.value.has(u.id)),
+)
+
+function toggleUnitSelection(unitId: string) {
+  const newSet = new Set(selectedUnitIds.value)
+  if (newSet.has(unitId)) {
+    newSet.delete(unitId)
+  } else {
+    newSet.add(unitId)
+  }
+  selectedUnitIds.value = newSet
+}
+
+function toggleSelectAll() {
+  if (allSelected.value) {
+    selectedUnitIds.value = new Set()
+  } else {
+    selectedUnitIds.value = new Set(filteredUnits.value.map((u) => u.id))
+  }
+}
+
+function clearSelection() {
+  selectedUnitIds.value = new Set()
+}
+
+// Filter tabs for people table with counts
+const filterTabs = computed<TabsItem[]>(() => {
+  const total = allUsers.value.length
+  const inUnit = allUsers.value.filter((u) => isInProjectTeam(u)).length
+  const notInUnit = total - inUnit
+
+  return [
+    { label: `Alle`, value: 'all', badge: { label: total, variant: 'subtle' } },
+    {
+      label: `Ikke i en unit`,
+      value: 'not-in-unit',
+      badge: { label: notInUnit, variant: 'subtle' },
+    },
+    {
+      label: `I en unit`,
+      value: 'in-unit',
+      badge: { label: inUnit, variant: 'subtle' },
+    },
+  ]
+})
 
 // People table columns
 const peopleColumns: TableColumn<(typeof allUsers.value)[number]>[] = [
@@ -308,10 +356,12 @@ function handleUserSelect(
   targetTeamId: string,
   targetTeamName: string,
 ) {
-  // Check if user is already in a team
-  const currentTeam = user.teams[0]
-  if (currentTeam) {
-    if (currentTeam.id === targetTeamId) {
+  // Check if user is already in a team from this project
+  const currentProjectTeam = user.teams.find((t) =>
+    projectTeamIds.value.has(t.id),
+  )
+  if (currentProjectTeam) {
+    if (currentProjectTeam.id === targetTeamId) {
       // Already in this team, do nothing
       return
     }
@@ -319,13 +369,13 @@ function handleUserSelect(
     pendingMove.value = {
       userId: user.id,
       userName: user.name,
-      fromTeamName: currentTeam.name,
+      fromTeamName: currentProjectTeam.name,
       toTeamId: targetTeamId,
       toTeamName: targetTeamName,
     }
     moveConfirmOpen.value = true
   } else {
-    // Not in any team, add directly
+    // Not in any team in this project, add directly
     handleAddToTeam(user.id, targetTeamId)
   }
 }
@@ -377,6 +427,47 @@ async function confirmDelete() {
 function cancelDelete() {
   deleteConfirmOpen.value = false
   pendingDelete.value = null
+}
+
+// Bulk delete handlers
+function handleBulkDelete() {
+  if (selectedUnitIds.value.size === 0) return
+  bulkDeleteConfirmOpen.value = true
+}
+
+async function confirmBulkDelete() {
+  if (selectedUnitIds.value.size === 0) return
+
+  bulkDeletingLoading.value = true
+  let successCount = 0
+
+  for (const unitId of selectedUnitIds.value) {
+    const result = await deleteTeam({ id: unitId })
+    if (!result.error) {
+      successCount++
+    }
+  }
+
+  bulkDeletingLoading.value = false
+  bulkDeleteConfirmOpen.value = false
+
+  if (successCount > 0) {
+    toast.add({
+      title: `${successCount} units slettet`,
+      color: 'success',
+    })
+    clearSelection()
+    await refetch({ requestPolicy: 'network-only' })
+  } else {
+    toast.add({
+      title: 'Kunne ikke slette units',
+      color: 'error',
+    })
+  }
+}
+
+function cancelBulkDelete() {
+  bulkDeleteConfirmOpen.value = false
 }
 
 // Autocomplete items for adding users
@@ -536,30 +627,52 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
               </div>
             </div>
 
+            <!-- Select all checkbox -->
+            <div
+              v-if="filteredUnits.length > 0"
+              class="mb-2 flex items-center gap-2"
+            >
+              <UCheckbox
+                :model-value="allSelected"
+                @update:model-value="toggleSelectAll"
+              />
+              <span class="text-sm text-dimmed">Velg alle</span>
+            </div>
+
             <!-- Units list -->
             <div class="space-y-2">
-              <AdminUnitCard
+              <div
                 v-for="unit in filteredUnits"
                 :key="unit.id"
-                :unit="unit"
-                :members="getTeamMembers(unit)"
-                :user-items="userItems"
-                :expand-all="expandAll"
-                @add-member="
-                  (
-                    _userId: string,
-                    _teamId: string,
-                    _teamName: string,
-                    user: {
-                      id: string
-                      name: string
-                      teams: { id: string; name: string }[]
-                    },
-                  ) => handleUserSelect(user, unit.id, unit.name)
-                "
-                @remove-member="handleRemoveFromTeam"
-                @delete-unit="handleDeleteUnit"
-              />
+                class="flex items-start gap-2"
+              >
+                <UCheckbox
+                  :model-value="selectedUnitIds.has(unit.id)"
+                  class="mt-3.5"
+                  @update:model-value="toggleUnitSelection(unit.id)"
+                />
+                <AdminUnitCard
+                  class="flex-1"
+                  :unit="unit"
+                  :members="getTeamMembers(unit)"
+                  :user-items="userItems"
+                  :expand-all="expandAll"
+                  @add-member="
+                    (
+                      _userId: string,
+                      _teamId: string,
+                      _teamName: string,
+                      user: {
+                        id: string
+                        name: string
+                        teams: { id: string; name: string }[]
+                      },
+                    ) => handleUserSelect(user, unit.id, unit.name)
+                  "
+                  @remove-member="handleRemoveFromTeam"
+                  @delete-unit="handleDeleteUnit"
+                />
+              </div>
 
               <p v-if="filteredUnits.length === 0" class="text-dimmed text-sm">
                 Ingen units funnet
@@ -604,6 +717,42 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
       </div>
     </UContainer>
 
+    <!-- Floating bulk action bar -->
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="translate-y-full opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-full opacity-0"
+    >
+      <div
+        v-if="hasSelection"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-lg border border-default bg-elevated shadow-lg flex items-center gap-4"
+      >
+        <span class="text-sm">
+          {{ selectedUnitIds.size }} unit{{
+            selectedUnitIds.size === 1 ? '' : 's'
+          }}
+          valgt
+        </span>
+        <div class="flex gap-2">
+          <UButton variant="ghost" size="sm" @click="clearSelection">
+            Avbryt
+          </UButton>
+          <UButton
+            color="error"
+            variant="soft"
+            size="sm"
+            @click="handleBulkDelete"
+          >
+            <Icon name="lucide:trash-2" />
+            Slett valgte
+          </UButton>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Move confirmation modal -->
     <UModal v-model:open="moveConfirmOpen">
       <template #content>
@@ -642,6 +791,32 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
               @click="confirmDelete"
             >
               Slett
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Bulk delete confirmation modal -->
+    <UModal v-model:open="bulkDeleteConfirmOpen">
+      <template #content>
+        <div class="p-6">
+          <h3 class="mb-4 text-lg font-semibold">Slett flere units?</h3>
+          <p class="text-dimmed mb-6">
+            Er du sikker på at du vil slette
+            <strong>{{ selectedUnitIds.size }}</strong> units? Alle medlemmer
+            vil bli fjernet fra disse unitene.
+          </p>
+          <div class="flex justify-end gap-3">
+            <UButton variant="ghost" @click="cancelBulkDelete">
+              Avbryt
+            </UButton>
+            <UButton
+              color="error"
+              :loading="bulkDeletingLoading"
+              @click="confirmBulkDelete"
+            >
+              Slett alle
             </UButton>
           </div>
         </div>

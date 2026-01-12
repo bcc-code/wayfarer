@@ -56,6 +56,8 @@ watch(
 
 const isExpanded = computed(() => props.expandAll || isOpen.value)
 
+const searchValue = ref<UserItem | undefined>()
+
 function toggle() {
   isOpen.value = !isOpen.value
 }
@@ -63,6 +65,9 @@ function toggle() {
 function handleUserSelect(item: UserItem | undefined) {
   if (item) {
     emit('addMember', item.user.id, props.unit.id, props.unit.name, item.user)
+    nextTick(() => {
+      searchValue.value = undefined
+    })
   }
 }
 </script>
@@ -133,6 +138,7 @@ function handleUserSelect(item: UserItem | undefined) {
 
       <!-- Add person search -->
       <UInputMenu
+        v-model="searchValue"
         :items="userItems"
         placeholder="Legg til person..."
         icon="lucide:search"
