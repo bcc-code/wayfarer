@@ -182,14 +182,23 @@ const filterTabs = computed<TabsItem[]>(() => {
   ]
 })
 
-// Filtered units based on search
+// Filtered and sorted units based on search
 const filteredUnits = computed(() => {
-  if (!unitSearch.value) return projectTeams.value
-  const search = unitSearch.value.toLowerCase()
-  return projectTeams.value.filter(
-    (t) =>
-      t.name.toLowerCase().includes(search) ||
-      t.members.some((m) => m.name.toLowerCase().includes(search)),
+  let units = projectTeams.value
+
+  // Filter by search
+  if (unitSearch.value) {
+    const search = unitSearch.value.toLowerCase()
+    units = units.filter(
+      (t) =>
+        t.name.toLowerCase().includes(search) ||
+        t.members.some((m) => m.name.toLowerCase().includes(search)),
+    )
+  }
+
+  // Sort naturally (so "Unit 2" comes before "Unit 10")
+  return [...units].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { numeric: true }),
   )
 })
 
@@ -243,13 +252,20 @@ function cancelCreateUnit() {
 
 // Save new unit
 async function saveNewUnit() {
-  if (!newUnitName.value.trim() || !data.value?.myCurrentProject) return
+  if (!data.value?.myCurrentProject || !me.value?.church) return
+
+  // Auto-generate name if empty
+  const existingNames = projectTeams.value.map((t) => t.name)
+  const name =
+    newUnitName.value.trim() ||
+    generateUniqueNames(1, me.value.church.name, existingNames)[0] ||
+    `${me.value.church.name} 1`
 
   creatingUnitLoading.value = true
   const result = await createTeam({
     projectId: data.value?.myCurrentProject.id,
     input: {
-      name: newUnitName.value.trim(),
+      name,
       description: '',
     },
   })
@@ -277,10 +293,16 @@ async function saveNewUnit() {
 
 // Save bulk units
 async function saveBulkUnits() {
-  if (!data.value?.myCurrentProject || bulkCount.value < 1) return
+  if (!data.value?.myCurrentProject || !me.value?.church || bulkCount.value < 1)
+    return
 
   bulkCreatingLoading.value = true
-  const names = generateUniqueNames(bulkCount.value)
+  const existingNames = projectTeams.value.map((t) => t.name)
+  const names = generateUniqueNames(
+    bulkCount.value,
+    me.value.church.name,
+    existingNames,
+  )
 
   let successCount = 0
   for (const name of names) {
@@ -692,7 +714,7 @@ function handleDropMember(
             >
               <UInput
                 v-model="newUnitName"
-                placeholder="Navn på unit..."
+                placeholder="Navn på unit (valgfritt)"
                 class="mb-3"
                 autofocus
               />
@@ -703,7 +725,6 @@ function handleDropMember(
                 <UButton
                   size="sm"
                   :loading="creatingUnitLoading"
-                  :disabled="!newUnitName.trim()"
                   @click="saveNewUnit"
                 >
                   Lagre

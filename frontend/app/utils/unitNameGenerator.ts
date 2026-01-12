@@ -1,65 +1,29 @@
-const adjectives = [
-  'Swift',
-  'Brave',
-  'Mighty',
-  'Wise',
-  'Bold',
-  'Noble',
-  'Fierce',
-  'Clever',
-  'Golden',
-  'Proud',
-  'Wild',
-  'Tough',
-  'Silent',
-  'Sharp',
-  'Cool',
-  'Blazing',
-  'Royal',
-  'Iron',
-  'Cunning',
-  'Valiant',
-]
-
-const nouns = [
-  'Vikings',
-  'Lions',
-  'Eagles',
-  'Bears',
-  'Wolves',
-  'Stags',
-  'Falcons',
-  'Sharks',
-  'Tigers',
-  'Moose',
-  'Ravens',
-  'Hawks',
-  'Swans',
-  'Kings',
-  'Knights',
-  'Hunters',
-  'Heroes',
-  'Dragons',
-  'Pirates',
-  'Panthers',
-]
-
-export function generateUniqueNames(count: number): string[] {
+/**
+ * Generate unique unit names using the church name as prefix with sequential numbers.
+ * E.g., "Østfold 1", "Østfold 2", etc.
+ *
+ * @param count - Number of names to generate
+ * @param churchName - The church name to use as prefix
+ * @param existingNames - Names that are already taken (to avoid duplicates)
+ */
+export function generateUniqueNames(
+  count: number,
+  churchName: string,
+  existingNames: string[] = [],
+): string[] {
   const names: string[] = []
-  const usedCombinations = new Set<string>()
+  const existingSet = new Set(existingNames.map((n) => n.toLowerCase()))
 
-  const maxPossible = adjectives.length * nouns.length
-  const actualCount = Math.min(count, maxPossible)
+  let number = 1
+  while (names.length < count) {
+    const name = `${churchName} ${number}`
 
-  while (names.length < actualCount) {
-    const adjective = adjectives[Math.floor(Math.random() * adjectives.length)]
-    const noun = nouns[Math.floor(Math.random() * nouns.length)]
-    const name = `${adjective} ${noun}`
-
-    if (!usedCombinations.has(name)) {
-      usedCombinations.add(name)
+    if (!existingSet.has(name.toLowerCase())) {
+      existingSet.add(name.toLowerCase())
       names.push(name)
     }
+
+    number++
   }
 
   return names
