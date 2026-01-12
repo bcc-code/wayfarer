@@ -83,7 +83,7 @@ const personSearch = ref('')
 const activeFilter = ref<'all' | 'not-in-unit' | 'in-unit'>('all')
 
 // Expand all state
-const expandAll = ref(false)
+const expandAll = ref(true)
 
 // Create unit state
 const isCreatingUnit = ref(false)
@@ -183,7 +183,11 @@ const peopleColumns: TableColumn<(typeof allUsers.value)[number]>[] = [
 const filteredUnits = computed(() => {
   if (!unitSearch.value) return projectTeams.value
   const search = unitSearch.value.toLowerCase()
-  return projectTeams.value.filter((t) => t.name.toLowerCase().includes(search))
+  return projectTeams.value.filter(
+    (t) =>
+      t.name.toLowerCase().includes(search) ||
+      t.members.some((m) => m.name.toLowerCase().includes(search)),
+  )
 })
 
 // Get project team IDs for filtering
@@ -543,7 +547,7 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
             <!-- Search -->
             <UInput
               v-model="unitSearch"
-              placeholder="Søk..."
+              placeholder="Søk på units eller personer..."
               icon="lucide:search"
               class="mb-4"
             />
@@ -687,7 +691,7 @@ function getTeamMembers(team: (typeof projectTeams.value)[number]) {
             <!-- Search -->
             <UInput
               v-model="personSearch"
-              placeholder="Søk..."
+              placeholder="Søk på personer..."
               icon="lucide:search"
               class="mb-4"
             />
