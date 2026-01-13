@@ -1586,20 +1586,21 @@ type UserEdge struct {
 }
 
 type UserFeedback struct {
-	ID           string           `json:"id"`
-	UserID       string           `json:"userId"`
-	User         *User            `json:"user"`
-	Message      string           `json:"message"`
-	CanContactMe bool             `json:"canContactMe"`
-	UserAgent    *string          `json:"userAgent,omitempty"`
-	Platform     *string          `json:"platform,omitempty"`
-	ScreenWidth  *int             `json:"screenWidth,omitempty"`
-	ScreenHeight *int             `json:"screenHeight,omitempty"`
-	AppVersion   *string          `json:"appVersion,omitempty"`
-	Locale       *string          `json:"locale,omitempty"`
-	ProjectID    *string          `json:"projectId,omitempty"`
-	Timezone     *string          `json:"timezone,omitempty"`
-	CreatedAt    scalars.DateTime `json:"createdAt"`
+	ID           string            `json:"id"`
+	UserID       string            `json:"userId"`
+	User         *User             `json:"user"`
+	Message      string            `json:"message"`
+	CanContactMe bool              `json:"canContactMe"`
+	UserAgent    *string           `json:"userAgent,omitempty"`
+	Platform     *string           `json:"platform,omitempty"`
+	ScreenWidth  *int              `json:"screenWidth,omitempty"`
+	ScreenHeight *int              `json:"screenHeight,omitempty"`
+	AppVersion   *string           `json:"appVersion,omitempty"`
+	Locale       *string           `json:"locale,omitempty"`
+	ProjectID    *string           `json:"projectId,omitempty"`
+	Timezone     *string           `json:"timezone,omitempty"`
+	CreatedAt    scalars.DateTime  `json:"createdAt"`
+	HandledAt    *scalars.DateTime `json:"handledAt,omitempty"`
 }
 
 type UserFilter struct {

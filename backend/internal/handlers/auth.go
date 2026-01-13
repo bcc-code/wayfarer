@@ -871,4 +871,3 @@ func (h *AuthHandler) processPendingConsentEvents(ctx context.Context, userID, p
 		)
 	}
 }
-

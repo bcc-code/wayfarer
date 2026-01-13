@@ -599,4 +599,3 @@ func TestGetActiveAffiliationOrgUID(t *testing.T) {
 		})
 	}
 }
-

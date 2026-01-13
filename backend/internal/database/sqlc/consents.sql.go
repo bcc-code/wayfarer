@@ -756,6 +756,54 @@ func (q *Queries) GetUserConsentHistoryByUsers(ctx context.Context, userIds []st
 	return items, nil
 }
 
+const GetUserConsentHistoryWithTitles = `-- name: GetUserConsentHistoryWithTitles :many
+SELECT uch.id, uch.user_id, uch.consent_id, uch.consent_key, uch.action, uch.occurred_at,
+       c.title as consent_title
+FROM user_consent_history uch
+LEFT JOIN consents c ON c.id = uch.consent_id
+WHERE uch.user_id = $1::text
+ORDER BY uch.occurred_at DESC
+`
+
+type GetUserConsentHistoryWithTitlesRow struct {
+	ID           string             `json:"id"`
+	UserID       string             `json:"user_id"`
+	ConsentID    string             `json:"consent_id"`
+	ConsentKey   string             `json:"consent_key"`
+	Action       string             `json:"action"`
+	OccurredAt   pgtype.Timestamptz `json:"occurred_at"`
+	ConsentTitle *string            `json:"consent_title"`
+}
+
+// Gets consent history for a user with consent titles (for email reports)
+func (q *Queries) GetUserConsentHistoryWithTitles(ctx context.Context, userID string) ([]*GetUserConsentHistoryWithTitlesRow, error) {
+	rows, err := q.db.Query(ctx, GetUserConsentHistoryWithTitles, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUserConsentHistoryWithTitlesRow{}
+	for rows.Next() {
+		var i GetUserConsentHistoryWithTitlesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.ConsentID,
+			&i.ConsentKey,
+			&i.Action,
+			&i.OccurredAt,
+			&i.ConsentTitle,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const UpdateConsent = `-- name: UpdateConsent :one
 UPDATE consents SET
     title = CASE WHEN $1::text = '' THEN title ELSE $1::text END,

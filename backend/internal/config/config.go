@@ -27,6 +27,7 @@ type Config struct {
 	Phrase   PhraseConfig
 	Plugin   PluginConfig
 	Firebase FirebaseConfig
+	Resend   ResendConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -144,6 +145,12 @@ type FirebaseConfig struct {
 	DatabaseName       string // Firestore database name (default: "(default)")
 }
 
+// ResendConfig holds Resend email service configuration
+type ResendConfig struct {
+	APIKey       string // Resend API key for sending emails
+	AdminBaseURL string // Base URL for admin panel links (e.g., "https://admin.example.com")
+}
+
 // Load reads all environment variables and returns a Config struct
 // This should be called once at application startup
 func Load() (*Config, error) {
@@ -237,6 +244,10 @@ func Load() (*Config, error) {
 		Firebase: FirebaseConfig{
 			ServiceAccountJSON: getEnv("FIREBASE_SERVICE_ACCOUNT", ""),
 			DatabaseName:       getEnv("FIREBASE_DATABASE_NAME", "(default)"),
+		},
+		Resend: ResendConfig{
+			APIKey:       getEnv("RESEND_API_KEY", ""),
+			AdminBaseURL: getEnv("ADMIN_BASE_URL", ""),
 		},
 	}
 

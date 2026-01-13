@@ -17,9 +17,9 @@ import (
 )
 
 type WebhookHandler struct {
-	DB                          *database.DB
-	WebhookService              *webhooks.Service
-	ContentAchievementService   *services.ContentAchievementService
+	DB                        *database.DB
+	WebhookService            *webhooks.Service
+	ContentAchievementService *services.ContentAchievementService
 }
 
 // ContentEventRequest represents the incoming webhook payload for content events
