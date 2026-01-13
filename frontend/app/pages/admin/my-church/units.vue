@@ -9,8 +9,8 @@ definePageMeta({
 })
 
 gql(`
-  query MyChurchUnitsPage($churchId: ID!) {
-    users(filter: {churchId: $churchId}, first: 500) {
+  query MyChurchUnitsPage($filter: UserFilter) {
+    users(filter: $filter, first: 500) {
       edges {
         node {
           id
@@ -50,6 +50,11 @@ const { isAuthReady } = useAuthReady()
 const toast = useToast()
 const { t } = useI18n()
 
+// Filters
+const filters = reactive({
+  showO36: false,
+})
+
 const {
   data,
   fetching,
@@ -57,16 +62,27 @@ const {
   executeQuery: refetch,
 } = useMyChurchUnitsPageQuery({
   variables: computed(() => ({
-    churchId: me.value?.church.id ?? '',
-    now: new Date().toISOString(),
+    filter: {
+      churchId: me.value?.church.id,
+      minAge: 13,
+      maxAge: filters.showO36 ? undefined : 36,
+    },
   })),
   pause: computed(() => !isAuthReady.value || !me.value?.church.id),
 })
 
+// Expand all state
+const expandAll = ref(true)
+
 // Track initial load to avoid showing loading state during refetches
 const hasLoadedOnce = ref(false)
 watch(data, (newData) => {
-  if (newData) hasLoadedOnce.value = true
+  if (!newData) return
+  hasLoadedOnce.value = true
+
+  if (newData.myCurrentProject.teams.length > 10) {
+    expandAll.value = false
+  }
 })
 
 const { executeMutation: addTeamMembers } = useAddTeamMembersMutation()
@@ -87,9 +103,6 @@ const projectTeams = computed(() => data.value?.myCurrentProject?.teams ?? [])
 const unitSearch = ref('')
 const personSearch = ref('')
 const activeFilter = ref<'all' | 'not-in-unit' | 'in-unit'>('not-in-unit')
-
-// Expand all state
-const expandAll = ref(true)
 
 // Create unit state
 const isCreatingUnit = ref(false)
@@ -303,6 +316,8 @@ async function saveBulkUnits() {
   if (!data.value?.myCurrentProject || !me.value?.church || bulkCount.value < 1)
     return
 
+  const projectId = data.value.myCurrentProject.id
+
   bulkCreatingLoading.value = true
   const existingNames = projectTeams.value.map((t) => t.name)
   const names = generateUniqueNames(
@@ -311,20 +326,20 @@ async function saveBulkUnits() {
     existingNames,
   )
 
-  let successCount = 0
-  for (const name of names) {
-    const result = await createTeam({
-      projectId: data.value.myCurrentProject.id,
-      input: {
-        name,
-        description: '',
-      },
-    })
-
-    if (!result.error) {
-      successCount++
-    }
-  }
+  const results = await Promise.allSettled(
+    names.map((name) =>
+      createTeam({
+        projectId,
+        input: {
+          name,
+          description: '',
+        },
+      }),
+    ),
+  )
+  const successCount = results.filter(
+    (r) => r.status === 'fulfilled' && !r.value.error,
+  ).length
 
   bulkCreatingLoading.value = false
   isBulkCreating.value = false
@@ -503,14 +518,13 @@ async function confirmBulkDelete() {
   if (selectedUnitIds.value.size === 0) return
 
   bulkDeletingLoading.value = true
-  let successCount = 0
 
-  for (const unitId of selectedUnitIds.value) {
-    const result = await deleteTeam({ id: unitId })
-    if (!result.error) {
-      successCount++
-    }
-  }
+  const results = await Promise.allSettled(
+    [...selectedUnitIds.value].map((unitId) => deleteTeam({ id: unitId })),
+  )
+  const successCount = results.filter(
+    (r) => r.status === 'fulfilled' && !r.value.error,
+  ).length
 
   bulkDeletingLoading.value = false
   bulkDeleteConfirmOpen.value = false
@@ -669,7 +683,7 @@ function handleDropMember(
         <!-- Two-column layout -->
         <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <!-- Left column: Units -->
-          <div>
+          <div class="relative">
             <h2 class="text-2xl font-semibold mb-4">
               {{ $t('admin.units.title') }}
             </h2>
@@ -777,7 +791,17 @@ function handleDropMember(
             </div>
 
             <!-- Units list -->
-            <div class="space-y-2">
+            <TransitionGroup
+              tag="div"
+              class="space-y-2"
+              enter-active-class="transition duration-300 ease-out"
+              enter-from-class="scale-95 opacity-0"
+              enter-to-class="scale-100 opacity-100"
+              leave-active-class="transition duration-300 ease-out absolute left-0 right-0"
+              leave-from-class="scale-100 opacity-100"
+              leave-to-class="scale-95 opacity-0"
+              move-class="transition duration-300 ease-out"
+            >
               <div
                 v-for="unit in filteredUnits"
                 :key="unit.id"
@@ -819,13 +843,14 @@ function handleDropMember(
               <p v-if="filteredUnits.length === 0" class="text-dimmed text-sm">
                 {{ $t('admin.units.noUnitsFound') }}
               </p>
-            </div>
+            </TransitionGroup>
           </div>
 
           <!-- Right column: Personer -->
           <div>
-            <h2 class="text-2xl font-semibold mb-4">
+            <h2 class="text-2xl font-semibold mb-4 flex gap-3 items-center">
               {{ $t('admin.units.people') }}
+              <Icon v-if="fetching" name="svg-spinners:bars-rotate-fade" />
             </h2>
 
             <!-- Search -->
@@ -835,13 +860,20 @@ function handleDropMember(
                 :placeholder="$t('admin.units.searchPeoplePlaceholder')"
                 icon="lucide:search"
               />
-              <UPopover>
-                <UButton variant="ghost" color="neutral" square>
-                  <Icon name="lucide:filter" />
-                  Filtrer
-                </UButton>
+              <UPopover :content="{ align: 'end' }">
+                <UChip color="neutral" :show="filters.showO36">
+                  <UButton variant="outline" color="neutral">
+                    <Icon name="lucide:filter" />
+                    {{ $t('admin.units.filter.title') }}
+                  </UButton>
+                </UChip>
                 <template #content>
-                  <div class="p-4"></div>
+                  <div class="p-4">
+                    <UCheckbox
+                      v-model="filters.showO36"
+                      :label="$t('admin.units.filter.showO36')"
+                    />
+                  </div>
                 </template>
               </UPopover>
             </div>

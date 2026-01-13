@@ -145,9 +145,11 @@
       "title": "Units",
       "people": "Personer",
       "filter": {
+        "title": "Filtrer",
         "all": "Alle",
         "notInUnit": "Ikke i en unit",
-        "inUnit": "I en unit"
+        "inUnit": "I en unit",
+        "showO36": "Vis personer over 36 år"
       },
       "searchPlaceholder": "Søk på units eller personer...",
       "searchPeoplePlaceholder": "Søk på personer...",

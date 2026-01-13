@@ -116,15 +116,15 @@ function handleDrop(event: SortableEvent) {
       class="w-full p-3 flex items-center justify-between hover:bg-elevated transition-colors cursor-pointer"
       @click="toggle"
     >
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-3">
         <span class="font-medium">{{ unit.name }}</span>
-        <UTooltip
-          v-if="!hasLeader && !loading"
-          :text="$t('admin.unit.noLeaderSelected')"
-          :delay-duration="200"
-        >
-          <Icon name="lucide:alert-triangle" class="size-4 text-warning" />
-        </UTooltip>
+        <UBadge
+          v-if="unit.members.length && !hasLeader"
+          color="warning"
+          variant="subtle"
+          icon="lucide:triangle-alert"
+          :label="$t('admin.unit.noLeaderSelected')"
+        />
         <Icon
           v-if="loading"
           name="svg-spinners:bars-rotate-fade"
@@ -132,7 +132,7 @@ function handleDrop(event: SortableEvent) {
         />
       </div>
       <div class="flex items-center gap-2">
-        <UBadge variant="soft" size="sm">
+        <UBadge variant="soft" color="neutral">
           {{
             $t(
               'admin.unit.members',
