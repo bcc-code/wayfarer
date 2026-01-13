@@ -31,6 +31,7 @@ require (
 	github.com/orsinium-labs/enum v1.5.0
 	github.com/pressly/goose/v3 v3.24.3
 	github.com/ravilushqa/otelgqlgen v0.19.0
+	github.com/resend/resend-go/v2 v2.28.0
 	github.com/rs/zerolog v1.34.0
 	github.com/samber/lo v1.52.0
 	github.com/sony/gobreaker/v2 v2.2.1

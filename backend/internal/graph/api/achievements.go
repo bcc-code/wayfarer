@@ -6,6 +6,7 @@ import (
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 )
 
 // buildAchievementFilterParamsCursor converts GraphQL filter and cursor pagination params to database query parameters
@@ -137,6 +138,11 @@ func convertRowToAchievement(row *sqlc.GetAchievementsFilteredCursorRow) (model.
 }
 
 func convertRowToSimpleAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hidden bool) model.Achievement {
+	var awardableFrom *scalars.DateTime
+	if row.AwardableFrom.Valid {
+		awardableFrom = &scalars.DateTime{Time: row.AwardableFrom.Time}
+	}
+
 	return &model.SimpleAchievement{
 		ID:                   row.ID,
 		Name:                 row.Name,
@@ -147,6 +153,7 @@ func convertRowToSimpleAchievement(row *sqlc.GetAchievementsFilteredCursorRow, h
 		ImageCompleted:       row.ImageCompleted,
 		Points:               int(row.Points),
 		Hidden:               hidden,
+		AwardableFrom:        awardableFrom,
 		ProjectID:            row.ProjectID,
 		EventID:              row.EventID,
 		ChallengeID:          row.ChallengeID,
@@ -168,6 +175,11 @@ func convertRowToContentAchievement(row *sqlc.GetAchievementsFilteredCursorRow, 
 		totalItems = len(itemsData)
 	}
 
+	var awardableFrom *scalars.DateTime
+	if row.AwardableFrom.Valid {
+		awardableFrom = &scalars.DateTime{Time: row.AwardableFrom.Time}
+	}
+
 	return &model.ContentAchievement{
 		ID:                   row.ID,
 		Name:                 row.Name,
@@ -178,6 +190,7 @@ func convertRowToContentAchievement(row *sqlc.GetAchievementsFilteredCursorRow, 
 		ImageCompleted:       row.ImageCompleted,
 		Points:               int(row.Points),
 		Hidden:               hidden,
+		AwardableFrom:        awardableFrom,
 		ProjectID:            row.ProjectID,
 		EventID:              row.EventID,
 		ChallengeID:          row.ChallengeID,
@@ -191,6 +204,11 @@ func convertRowToStreakAchievement(row *sqlc.GetAchievementsFilteredCursorRow, h
 		return nil, fmt.Errorf("streak achievement missing streak data")
 	}
 
+	var awardableFrom *scalars.DateTime
+	if row.AwardableFrom.Valid {
+		awardableFrom = &scalars.DateTime{Time: row.AwardableFrom.Time}
+	}
+
 	return &model.StreakAchievement{
 		ID:                   row.ID,
 		Name:                 row.Name,
@@ -201,6 +219,7 @@ func convertRowToStreakAchievement(row *sqlc.GetAchievementsFilteredCursorRow, h
 		ImageCompleted:       row.ImageCompleted,
 		Points:               int(row.Points),
 		Hidden:               hidden,
+		AwardableFrom:        awardableFrom,
 		ProjectID:            row.ProjectID,
 		EventID:              row.EventID,
 		ChallengeID:          row.ChallengeID,
@@ -228,6 +247,11 @@ func convertPublishedContentAchievementRow(row *sqlc.GetPublishedContentAchievem
 		hidden = *row.Hidden
 	}
 
+	var awardableFrom *scalars.DateTime
+	if row.AwardableFrom.Valid {
+		awardableFrom = &scalars.DateTime{Time: row.AwardableFrom.Time}
+	}
+
 	return &model.ContentAchievement{
 		ID:                   row.ID,
 		Name:                 row.Name,
@@ -238,6 +262,7 @@ func convertPublishedContentAchievementRow(row *sqlc.GetPublishedContentAchievem
 		ImageCompleted:       row.ImageCompleted,
 		Points:               int(row.Points),
 		Hidden:               hidden,
+		AwardableFrom:        awardableFrom,
 		ProjectID:            row.ProjectID,
 		EventID:              row.EventID,
 		ChallengeID:          row.ChallengeID,

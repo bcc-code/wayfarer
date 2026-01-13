@@ -31,6 +31,7 @@ gql(`
           projectId
           timezone
           createdAt
+          handledAt
           user {
             id
             name
@@ -117,7 +118,49 @@ async function handleDelete() {
   feedbackToDelete.value = null
 }
 
-const { canDeleteFeedback } = usePermissions()
+// Forward to support functionality
+const { executeMutation: forwardFeedback } = useForwardFeedbackToDeskMutation()
+
+async function handleForward(id: string) {
+  const result = await forwardFeedback({ feedbackId: id })
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke videresende',
+      description: result.error.message,
+      color: 'error',
+    })
+  } else {
+    toast.add({
+      title: 'Videresendt til support',
+      color: 'success',
+    })
+    executeQuery({ requestPolicy: 'network-only' })
+  }
+}
+
+// Mark as handled functionality
+const { executeMutation: markHandled } = useMarkFeedbackHandledMutation()
+
+async function handleMarkHandled(id: string) {
+  const result = await markHandled({ feedbackId: id })
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke markere som behandlet',
+      description: result.error.message,
+      color: 'error',
+    })
+  } else {
+    toast.add({
+      title: 'Markert som behandlet',
+      color: 'success',
+    })
+    executeQuery({ requestPolicy: 'network-only' })
+  }
+}
+
+const { canDeleteFeedback, canForwardFeedback } = usePermissions()
 </script>
 
 <template>
@@ -174,7 +217,31 @@ const { canDeleteFeedback } = usePermissions()
           </span>
         </template>
         <template #actions-cell="{ row }">
-          <div class="flex justify-end gap-1">
+          <div class="flex justify-end items-center gap-1">
+            <UButton
+              v-if="canForwardFeedback && !row.original.handledAt"
+              variant="soft"
+              color="neutral"
+              size="sm"
+              icon="lucide:send-horizontal"
+              label="Videresend til support"
+              @click="handleForward(row.original.id)"
+            />
+            <UButton
+              v-if="canForwardFeedback && !row.original.handledAt"
+              variant="soft"
+              color="neutral"
+              size="sm"
+              label="Behandle"
+              icon="lucide:check"
+              @click="handleMarkHandled(row.original.id)"
+            />
+            <UBadge
+              v-else-if="canForwardFeedback && row.original.handledAt"
+              variant="soft"
+              color="success"
+              label="Behandlet"
+            />
             <UPopover>
               <UButton
                 variant="ghost"

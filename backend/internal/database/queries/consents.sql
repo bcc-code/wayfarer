@@ -91,6 +91,15 @@ FROM user_consent_history
 WHERE user_id = @user_id::text
 ORDER BY occurred_at DESC;
 
+-- name: GetUserConsentHistoryWithTitles :many
+-- Gets consent history for a user with consent titles (for email reports)
+SELECT uch.id, uch.user_id, uch.consent_id, uch.consent_key, uch.action, uch.occurred_at,
+       c.title as consent_title
+FROM user_consent_history uch
+LEFT JOIN consents c ON c.id = uch.consent_id
+WHERE uch.user_id = @user_id::text
+ORDER BY uch.occurred_at DESC;
+
 -- name: GetUserConsentHistoryByUsers :many
 SELECT id, user_id, consent_id, consent_key, action, occurred_at,
        source, external_consent_id, external_timestamp

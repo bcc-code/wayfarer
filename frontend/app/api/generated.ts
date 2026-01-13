@@ -840,11 +840,13 @@ export type Mutation = {
   enrollInChallenge: Challenge;
   enrollUserInChallenge: Challenge;
   finalizeQuiz: QuizSubmission;
+  forwardFeedbackToDesk: Scalars['Boolean']['output'];
   joinEvent: Event;
   joinProject: Project;
   joinTeam: Team;
   linkAchievementToChallenge: Achievement;
   markContentItemCompleted: Array<ContentAchievement>;
+  markFeedbackHandled: UserFeedback;
   moveEvent: Event;
   publishChallenge: Challenge;
   publishQuiz: Quiz;
@@ -1177,6 +1179,11 @@ export type MutationFinalizeQuizArgs = {
 };
 
 
+export type MutationForwardFeedbackToDeskArgs = {
+  feedbackId: Scalars['ID']['input'];
+};
+
+
 export type MutationJoinEventArgs = {
   eventId: Scalars['ID']['input'];
 };
@@ -1201,6 +1208,11 @@ export type MutationLinkAchievementToChallengeArgs = {
 export type MutationMarkContentItemCompletedArgs = {
   externalContentId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationMarkFeedbackHandledArgs = {
+  feedbackId: Scalars['ID']['input'];
 };
 
 
@@ -2532,6 +2544,7 @@ export type UserFeedback = {
   appVersion?: Maybe<Scalars['String']['output']>;
   canContactMe: Scalars['Boolean']['output'];
   createdAt: Scalars['DateTime']['output'];
+  handledAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
   locale?: Maybe<Scalars['String']['output']>;
   message: Scalars['String']['output'];
@@ -2858,6 +2871,20 @@ export type DeleteFeedbackMutationVariables = Exact<{
 
 
 export type DeleteFeedbackMutation = { __typename?: 'Mutation', deleteFeedback: boolean };
+
+export type ForwardFeedbackToDeskMutationVariables = Exact<{
+  feedbackId: Scalars['ID']['input'];
+}>;
+
+
+export type ForwardFeedbackToDeskMutation = { __typename?: 'Mutation', forwardFeedbackToDesk: boolean };
+
+export type MarkFeedbackHandledMutationVariables = Exact<{
+  feedbackId: Scalars['ID']['input'];
+}>;
+
+
+export type MarkFeedbackHandledMutation = { __typename?: 'Mutation', markFeedbackHandled: { __typename?: 'UserFeedback', id: string, handledAt?: any | null } };
 
 export type CreateProjectMutationVariables = Exact<{
   input: CreateProjectInput;
@@ -3245,7 +3272,7 @@ export type AdminFeedbackPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminFeedbackPageQuery = { __typename?: 'Query', feedback: { __typename?: 'FeedbackConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'FeedbackEdge', cursor: string, node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, locale?: string | null, projectId?: string | null, timezone?: string | null, createdAt: any, user: { __typename?: 'User', id: string, name: string, email: string } } }> } };
+export type AdminFeedbackPageQuery = { __typename?: 'Query', feedback: { __typename?: 'FeedbackConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'FeedbackEdge', cursor: string, node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, locale?: string | null, projectId?: string | null, timezone?: string | null, createdAt: any, handledAt?: any | null, user: { __typename?: 'User', id: string, name: string, email: string } } }> } };
 
 export type AdminHomePageQueryVariables = Exact<{
   now: Scalars['DateTime']['input'];
@@ -3890,6 +3917,27 @@ export const DeleteFeedbackDocument = gql`
 
 export function useDeleteFeedbackMutation() {
   return Urql.useMutation<DeleteFeedbackMutation, DeleteFeedbackMutationVariables>(DeleteFeedbackDocument);
+};
+export const ForwardFeedbackToDeskDocument = gql`
+    mutation ForwardFeedbackToDesk($feedbackId: ID!) {
+  forwardFeedbackToDesk(feedbackId: $feedbackId)
+}
+    `;
+
+export function useForwardFeedbackToDeskMutation() {
+  return Urql.useMutation<ForwardFeedbackToDeskMutation, ForwardFeedbackToDeskMutationVariables>(ForwardFeedbackToDeskDocument);
+};
+export const MarkFeedbackHandledDocument = gql`
+    mutation MarkFeedbackHandled($feedbackId: ID!) {
+  markFeedbackHandled(feedbackId: $feedbackId) {
+    id
+    handledAt
+  }
+}
+    `;
+
+export function useMarkFeedbackHandledMutation() {
+  return Urql.useMutation<MarkFeedbackHandledMutation, MarkFeedbackHandledMutationVariables>(MarkFeedbackHandledDocument);
 };
 export const CreateProjectDocument = gql`
     mutation CreateProject($input: CreateProjectInput!) {
@@ -4693,6 +4741,7 @@ export const AdminFeedbackPageDocument = gql`
         projectId
         timezone
         createdAt
+        handledAt
         user {
           id
           name

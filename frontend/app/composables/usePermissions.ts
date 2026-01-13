@@ -128,6 +128,13 @@ export function usePermissions() {
     return isSuperAdmin.value || isAdmin.value
   })
 
+  /**
+   * Can forward feedback to support desk
+   */
+  const canForwardFeedback = computed(() => {
+    return isSuperAdmin.value || isAdmin.value
+  })
+
   // ============================================
   // Action Permissions
   // ============================================
@@ -262,6 +269,7 @@ export function usePermissions() {
     canAccessConsents,
     canAccessFeedback,
     canDeleteFeedback,
+    canForwardFeedback,
 
     // Actions
     canManageScores,

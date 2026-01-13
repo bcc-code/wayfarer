@@ -62,7 +62,7 @@ ranked_scores AS (
         church_name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM person_scores
 )
 SELECT entity_id, name, church_name, image, score, rank
@@ -72,7 +72,7 @@ WHERE
     AND (@maxscore::int IS NULL OR score <= @maxscore::int)
     AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
     AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, name ASC
 LIMIT @querylimit::int;
 
 -- name: FindMyProjectPersonPosition :one
@@ -83,7 +83,7 @@ WITH ranked_scores AS (
         c.name AS church_name,
         u.avatar_url AS image,
         lpp.score,
-        RANK() OVER (ORDER BY lpp.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY lpp.score DESC) AS rank
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON lpp.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -104,7 +104,7 @@ WITH ranked_scores AS (
         c.name AS church_name,
         u.avatar_url AS image,
         lpp.score,
-        RANK() OVER (ORDER BY lpp.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY lpp.score DESC) AS rank
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON lpp.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -143,7 +143,7 @@ WITH ranked_scores AS (
 )
 SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
-ORDER BY rank ASC;
+ORDER BY rank ASC, name ASC;
 
 -- name: CountProjectPersonLeaderboard :one
 WITH project_users AS MATERIALIZED (
@@ -202,7 +202,7 @@ ranked_scores AS (
         name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM team_scores
 )
 SELECT entity_id, name, image, score, rank
@@ -213,7 +213,7 @@ WHERE
     AND (@maxscore::int IS NULL OR score <= @maxscore::int)
     AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
     AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, name ASC
 LIMIT @querylimit::int;
 
 -- name: FindMyProjectTeamPosition :one
@@ -223,7 +223,7 @@ WITH ranked_scores AS (
         t.name,
         NULL::text AS image,
         lpt.score,
-        RANK() OVER (ORDER BY lpt.score DESC, t.name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY lpt.score DESC) AS rank
     FROM leaderboard_project_teams lpt
     INNER JOIN teams t ON lpt.team_id = t.id
     WHERE lpt.project_id = @projectid::text
@@ -249,7 +249,7 @@ WITH ranked_scores AS (
         t.name,
         NULL::text AS image,
         lpt.score,
-        RANK() OVER (ORDER BY lpt.score DESC, t.name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY lpt.score DESC) AS rank
     FROM leaderboard_project_teams lpt
     INNER JOIN teams t ON lpt.team_id = t.id
     WHERE lpt.project_id = @projectid::text
@@ -259,7 +259,7 @@ WITH ranked_scores AS (
 )
 SELECT entity_id, name, image, score, rank
 FROM ranked_scores
-ORDER BY rank ASC;
+ORDER BY rank ASC, name ASC;
 
 -- name: CountProjectTeamLeaderboard :one
 SELECT COUNT(DISTINCT t.id)::bigint AS total
@@ -293,7 +293,7 @@ ranked_scores AS (
         name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM superteam_scores
 )
 SELECT entity_id, name, image, score, rank
@@ -304,7 +304,7 @@ WHERE
     AND (@maxscore::int IS NULL OR score <= @maxscore::int)
     AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
     AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, name ASC
 LIMIT @querylimit::int;
 
 -- name: FindMyProjectSuperTeamPosition :one
@@ -314,7 +314,7 @@ WITH ranked_scores AS (
         st.name,
         NULL::text AS image,
         lps.score,
-        RANK() OVER (ORDER BY lps.score DESC, st.name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY lps.score DESC) AS rank
     FROM leaderboard_project_superteams lps
     INNER JOIN super_teams st ON lps.super_team_id = st.id
     WHERE lps.project_id = @projectid::text
@@ -341,7 +341,7 @@ WITH ranked_scores AS (
         st.name,
         NULL::text AS image,
         lpst.score,
-        RANK() OVER (ORDER BY lpst.score DESC, st.name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY lpst.score DESC) AS rank
     FROM leaderboard_project_superteams lpst
     INNER JOIN super_teams st ON lpst.super_team_id = st.id
     WHERE lpst.project_id = @projectid::text
@@ -350,7 +350,7 @@ WITH ranked_scores AS (
 )
 SELECT entity_id, name, image, score, rank
 FROM ranked_scores
-ORDER BY rank ASC;
+ORDER BY rank ASC, name ASC;
 
 -- name: CountProjectSuperTeamLeaderboard :one
 SELECT COUNT(DISTINCT st.id)::bigint AS total
@@ -382,7 +382,7 @@ ranked_scores AS (
         name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM church_scores
 )
 SELECT entity_id, name, image, score, rank
@@ -393,7 +393,7 @@ WHERE
     AND (@maxscore::int IS NULL OR score <= @maxscore::int)
     AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
     AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, name ASC
 LIMIT @querylimit::int;
 
 -- name: FindMyProjectChurchPosition :one
@@ -403,7 +403,7 @@ WITH ranked_scores AS (
         c.name,
         NULL::text AS image,
         lpc.score,
-        RANK() OVER (ORDER BY lpc.score DESC, c.name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY lpc.score DESC) AS rank
     FROM leaderboard_project_churches lpc
     INNER JOIN churches c ON lpc.church_id = c.id
     WHERE lpc.project_id = @projectid::text
@@ -426,7 +426,7 @@ WITH ranked_scores AS (
         c.name,
         NULL::text AS image,
         lpc.score,
-        RANK() OVER (ORDER BY lpc.score DESC, c.name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY lpc.score DESC) AS rank
     FROM leaderboard_project_churches lpc
     INNER JOIN churches c ON lpc.church_id = c.id
     WHERE lpc.project_id = @projectid::text
@@ -435,7 +435,7 @@ WITH ranked_scores AS (
 )
 SELECT entity_id, name, image, score, rank
 FROM ranked_scores
-ORDER BY rank ASC;
+ORDER BY rank ASC, name ASC;
 
 -- name: CountProjectChurchLeaderboard :one
 SELECT COUNT(DISTINCT c.id)::bigint AS total
@@ -482,7 +482,7 @@ ranked_scores AS (
         church_name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM person_scores
 )
 SELECT entity_id, name, church_name, image, score, rank
@@ -493,7 +493,7 @@ WHERE
     AND (@maxscore::int IS NULL OR score <= @maxscore::int)
     AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
     AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, name ASC
 LIMIT @querylimit::int;
 
 -- name: FindMyEventPersonPosition :one
@@ -504,7 +504,7 @@ WITH ranked_scores AS (
         c.name AS church_name,
         u.avatar_url AS image,
         lep.score,
-        RANK() OVER (ORDER BY lep.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY lep.score DESC) AS rank
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON lep.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -525,7 +525,7 @@ WITH ranked_scores AS (
         c.name AS church_name,
         u.avatar_url AS image,
         lep.score,
-        RANK() OVER (ORDER BY lep.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY lep.score DESC) AS rank
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON lep.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -564,7 +564,7 @@ WITH ranked_scores AS (
 )
 SELECT entity_id, name, church_name, image, score, rank
 FROM ranked_scores
-ORDER BY rank ASC;
+ORDER BY rank ASC, name ASC;
 
 -- name: CountEventPersonLeaderboard :one
 SELECT COUNT(DISTINCT u.id)::bigint AS total
@@ -612,7 +612,7 @@ ranked_scores AS (
         name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM team_scores
 )
 SELECT entity_id, name, image, score, rank
@@ -623,7 +623,7 @@ WHERE
     AND (@maxscore::int IS NULL OR score <= @maxscore::int)
     AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
     AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, name ASC
 LIMIT @querylimit::int;
 
 -- name: FindMyEventTeamPosition :one
@@ -633,7 +633,7 @@ WITH ranked_scores AS (
         t.name,
         NULL::text AS image,
         let.score,
-        RANK() OVER (ORDER BY let.score DESC, t.name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY let.score DESC) AS rank
     FROM leaderboard_event_teams let
     INNER JOIN teams t ON let.team_id = t.id
     WHERE let.event_id = @eventid::text
@@ -660,7 +660,7 @@ WITH ranked_scores AS (
         t.name,
         NULL::text AS image,
         let.score,
-        RANK() OVER (ORDER BY let.score DESC, t.name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY let.score DESC) AS rank
     FROM leaderboard_event_teams let
     INNER JOIN teams t ON let.team_id = t.id
     WHERE let.event_id = @eventid::text
@@ -670,7 +670,7 @@ WITH ranked_scores AS (
 )
 SELECT entity_id, name, image, score, rank
 FROM ranked_scores
-ORDER BY rank ASC;
+ORDER BY rank ASC, name ASC;
 
 -- name: CountEventTeamLeaderboard :one
 WITH event_project AS (
@@ -711,7 +711,7 @@ ranked_scores AS (
         name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM superteam_scores
 )
 SELECT entity_id, name, image, score, rank
@@ -722,7 +722,7 @@ WHERE
     AND (@maxscore::int IS NULL OR score <= @maxscore::int)
     AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
     AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, name ASC
 LIMIT @querylimit::int;
 
 -- name: FindMyEventSuperTeamPosition :one
@@ -732,7 +732,7 @@ WITH ranked_scores AS (
         st.name,
         NULL::text AS image,
         les.score,
-        RANK() OVER (ORDER BY les.score DESC, st.name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY les.score DESC) AS rank
     FROM leaderboard_event_superteams les
     INNER JOIN super_teams st ON les.super_team_id = st.id
     WHERE les.event_id = @eventid::text
@@ -759,7 +759,7 @@ WITH ranked_scores AS (
         st.name,
         NULL::text AS image,
         lest.score,
-        RANK() OVER (ORDER BY lest.score DESC, st.name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY lest.score DESC) AS rank
     FROM leaderboard_event_superteams lest
     INNER JOIN super_teams st ON lest.super_team_id = st.id
     WHERE lest.event_id = @eventid::text
@@ -768,7 +768,7 @@ WITH ranked_scores AS (
 )
 SELECT entity_id, name, image, score, rank
 FROM ranked_scores
-ORDER BY rank ASC;
+ORDER BY rank ASC, name ASC;
 
 -- name: CountEventSuperTeamLeaderboard :one
 WITH event_project AS (
@@ -804,7 +804,7 @@ ranked_scores AS (
         name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM church_scores
 )
 SELECT entity_id, name, image, score, rank
@@ -815,7 +815,7 @@ WHERE
     AND (@maxscore::int IS NULL OR score <= @maxscore::int)
     AND (sqlc.narg('afterrank')::bigint IS NULL OR rank > sqlc.narg('afterrank')::bigint)
     AND (sqlc.narg('beforerank')::bigint IS NULL OR rank < sqlc.narg('beforerank')::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, name ASC
 LIMIT @querylimit::int;
 
 -- name: FindMyEventChurchPosition :one
@@ -825,7 +825,7 @@ WITH ranked_scores AS (
         c.name,
         NULL::text AS image,
         lec.score,
-        RANK() OVER (ORDER BY lec.score DESC, c.name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY lec.score DESC) AS rank
     FROM leaderboard_event_churches lec
     INNER JOIN churches c ON lec.church_id = c.id
     WHERE lec.event_id = @eventid::text
@@ -848,7 +848,7 @@ WITH ranked_scores AS (
         c.name,
         NULL::text AS image,
         lec.score,
-        RANK() OVER (ORDER BY lec.score DESC, c.name ASC) AS rank
+        DENSE_RANK() OVER (ORDER BY lec.score DESC) AS rank
     FROM leaderboard_event_churches lec
     INNER JOIN churches c ON lec.church_id = c.id
     WHERE lec.event_id = @eventid::text
@@ -857,7 +857,7 @@ WITH ranked_scores AS (
 )
 SELECT entity_id, name, image, score, rank
 FROM ranked_scores
-ORDER BY rank ASC;
+ORDER BY rank ASC, name ASC;
 
 -- name: CountEventChurchLeaderboard :one
 SELECT COUNT(DISTINCT c.id)::bigint AS total

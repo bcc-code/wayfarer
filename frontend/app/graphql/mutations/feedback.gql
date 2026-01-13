@@ -7,3 +7,14 @@ mutation SubmitFeedback($input: SubmitFeedbackInput!) {
 mutation DeleteFeedback($id: ID!) {
   deleteFeedback(id: $id)
 }
+
+mutation ForwardFeedbackToDesk($feedbackId: ID!) {
+  forwardFeedbackToDesk(feedbackId: $feedbackId)
+}
+
+mutation MarkFeedbackHandled($feedbackId: ID!) {
+  markFeedbackHandled(feedbackId: $feedbackId) {
+    id
+    handledAt
+  }
+}
