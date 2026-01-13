@@ -190,7 +190,8 @@
         "removeMemberFailed": "Kunne ikke fjerne medlem",
         "assignLeaderFailed": "Kunne ikke sette leder",
         "deleteFailed": "Kunne ikke slette unit",
-        "bulkDeleteFailed": "Kunne ikke slette units"
+        "bulkDeleteFailed": "Kunne ikke slette units",
+        "renameFailed": "Kunne ikke endre navn på unit"
       },
       "ageWarning": "Gjennomsnittsalderen på denne uniten er over 36 år, og den vil da ikke vises på topplister eller være med i konkurransen for ungdommer. Dersom dette er feil, og den skal delta i konkurransen for ungdom, gi oss beskjed på {email}"
     },

@@ -62,6 +62,7 @@ const emit = defineEmits<{
   deleteUnit: [unitId: string, unitName: string]
   dropMember: [user: DraggableUser, teamId: string, teamName: string]
   assignLeader: [userId: string, teamId: string]
+  renameUnit: [unitId: string, newName: string]
 }>()
 
 const isOpen = ref(false)
@@ -80,8 +81,45 @@ const isExpanded = computed(() => props.expandAll || isOpen.value)
 
 const searchValue = ref<UserItem | undefined>()
 
+// Inline editing state
+const isEditing = ref(false)
+const editName = ref('')
+const nameInputRef = ref<HTMLInputElement | null>(null)
+
 function toggle() {
+  if (isEditing.value) return
   isOpen.value = !isOpen.value
+}
+
+function startEditing() {
+  editName.value = props.unit.name
+  isEditing.value = true
+  nextTick(() => {
+    nameInputRef.value?.focus()
+    nameInputRef.value?.select()
+  })
+}
+
+function cancelEditing() {
+  isEditing.value = false
+  editName.value = ''
+}
+
+function saveEditing() {
+  const trimmedName = editName.value.trim()
+  if (trimmedName && trimmedName !== props.unit.name) {
+    emit('renameUnit', props.unit.id, trimmedName)
+  }
+  isEditing.value = false
+  editName.value = ''
+}
+
+function handleEditKeydown(event: KeyboardEvent) {
+  if (event.key === 'Enter') {
+    saveEditing()
+  } else if (event.key === 'Escape') {
+    cancelEditing()
+  }
 }
 
 function handleUserSelect(item: UserItem | undefined) {
@@ -119,14 +157,33 @@ function handleDrop(event: SortableEvent) {
 </script>
 
 <template>
-  <div class="rounded-xl border border-default bg-elevated/50 overflow-hidden">
+  <div
+    class="rounded-xl group border border-default bg-elevated/50 overflow-hidden"
+  >
     <!-- Header -->
     <div
       class="w-full p-3 flex items-center justify-between hover:bg-elevated transition-colors cursor-pointer"
       @click="toggle"
     >
       <div class="flex items-center gap-3">
-        <p class="font-medium">{{ unit.name }}</p>
+        <input
+          v-if="isEditing"
+          ref="nameInputRef"
+          v-model="editName"
+          type="text"
+          class="font-medium bg-transparent border border-default rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-primary"
+          @click.stop
+          @keydown="handleEditKeydown"
+          @blur="saveEditing"
+        />
+        <button
+          v-else
+          type="button"
+          class="font-medium px-2 py-0.5 rounded border border-transparent group-hover:border-accented hover:bg-elevated/50 transition-colors text-left"
+          @click.stop="startEditing"
+        >
+          {{ unit.name }}
+        </button>
         <UBadge
           v-if="unit.members.length && !hasLeader"
           color="warning"

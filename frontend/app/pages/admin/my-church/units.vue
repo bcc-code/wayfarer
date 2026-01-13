@@ -88,6 +88,7 @@ watch(data, (newData) => {
 const { executeMutation: addTeamMembers } = useAddTeamMembersMutation()
 const { executeMutation: removeTeamMembers } = useRemoveTeamMembersMutation()
 const { executeMutation: createTeam } = useCreateTeamMutation()
+const { executeMutation: updateTeam } = useUpdateTeamMutation()
 const { executeMutation: deleteTeam } = useDeleteTeamMutation()
 const { executeMutation: assignTeamLead } = useAssignTeamLeadMutation()
 
@@ -446,6 +447,23 @@ async function handleAssignLeader(userId: string, teamId: string) {
   }
 
   await refetch({ requestPolicy: 'network-only' })
+}
+
+// Rename unit
+async function handleRenameUnit(unitId: string, newName: string) {
+  const result = await updateTeam({ id: unitId, input: { name: newName } })
+
+  if (result.error) {
+    toast.add({
+      title: t('admin.units.errors.renameFailed'),
+      description: result.error.message,
+      color: 'error',
+    })
+    return false
+  }
+
+  await refetch({ requestPolicy: 'network-only' })
+  return true
 }
 
 // Handle user selection from autocomplete or drag-drop
@@ -837,6 +855,7 @@ function handleDropMember(
                   @delete-unit="handleDeleteUnit"
                   @drop-member="handleDropMember"
                   @assign-leader="handleAssignLeader"
+                  @rename-unit="handleRenameUnit"
                 />
               </div>
 
