@@ -120,7 +120,7 @@ function handleDrop(event: SortableEvent) {
         <span class="font-medium">{{ unit.name }}</span>
         <UTooltip
           v-if="!hasLeader && !loading"
-          text="Ingen leder valgt"
+          :text="$t('admin.unit.noLeaderSelected')"
           :delay-duration="200"
         >
           <Icon name="lucide:alert-triangle" class="size-4 text-warning" />
@@ -133,7 +133,13 @@ function handleDrop(event: SortableEvent) {
       </div>
       <div class="flex items-center gap-2">
         <UBadge variant="soft" size="sm">
-          {{ unit.members.length }} personer
+          {{
+            $t(
+              'admin.unit.members',
+              { count: unit.members.length },
+              unit.members.length,
+            )
+          }}
         </UBadge>
         <UButton
           icon="lucide:trash-2"
@@ -178,7 +184,7 @@ function handleDrop(event: SortableEvent) {
             />
             <UTooltip
               v-else
-              text="Gjør til leder"
+              :text="$t('admin.unit.makeLead')"
               :delay-duration="200"
               class="invisible group-hover:visible"
             >
@@ -204,7 +210,9 @@ function handleDrop(event: SortableEvent) {
                 name="tabler:gender-female"
                 class="size-4 bg-pink-500 rounded-full"
               />
-              <span>{{ member.age ?? '-' }} år</span>
+              <span>
+                {{ $t('admin.units.years', { years: member.age ?? '-' }) }}
+              </span>
             </div>
             <Icon
               v-if="member.isRemoving || member.isAdding"
@@ -227,14 +235,14 @@ function handleDrop(event: SortableEvent) {
         v-if="unit.members.length === 0"
         class="text-dimmed text-sm text-center py-2 -mt-8 mb-8"
       >
-        Ingen medlemmer - dra en person hit
+        {{ $t('admin.unit.dragPeopleHere') }}
       </p>
 
       <!-- Add person search -->
       <UInputMenu
         v-model="searchValue"
         :items="userItems"
-        placeholder="Legg til person..."
+        :placeholder="$t('admin.unit.addPersonPlaceholder')"
         icon="lucide:search"
         class="w-full"
         virtualize

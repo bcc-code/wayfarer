@@ -123,5 +123,79 @@
     "updateAvailableTitle": "En oppdatering er tilgjengelig",
     "updateAvailableButton": "Oppdater nå"
   },
-  "goToHiddenTreasures": "Gå til bibelstudie"
+  "goToHiddenTreasures": "Gå til bibelstudie",
+  "admin": {
+    "common": {
+      "back": "Tilbake",
+      "cancel": "Avbryt",
+      "save": "Lagre",
+      "create": "Opprett",
+      "delete": "Slett",
+      "deleteAll": "Slett alle"
+    },
+    "breadcrumb": {
+      "home": "Forside"
+    },
+    "churchHome": {
+      "unitsAndPeople": "Units og personer",
+      "gameNights": "Game Nights",
+      "comingSoon": "Kommer snart"
+    },
+    "units": {
+      "title": "Units",
+      "people": "Personer",
+      "filter": {
+        "all": "Alle",
+        "notInUnit": "Ikke i en unit",
+        "inUnit": "I en unit"
+      },
+      "searchPlaceholder": "Søk på units eller personer...",
+      "searchPeoplePlaceholder": "Søk på personer...",
+      "expandAll": "Ekspander alle units",
+      "createOneUnit": "Opprett én unit",
+      "createMultipleUnits": "Opprett flere units",
+      "namePlaceholder": "Navn på unit (valgfritt)",
+      "selectAll": "Velg alle",
+      "noActiveProject": "Ingen aktiv konkurranse",
+      "noUnitsFound": "Ingen units funnet",
+      "noPeopleFound": "Ingen personer funnet",
+      "years": "{years} år",
+      "selectedCount": "{count} unit valgt | {count} units valgt",
+      "deleteSelected": "Slett valgte",
+      "bulkCreate": {
+        "countLabel": "Antall units",
+        "autoGenerateInfo": "Navnene genereres automatisk"
+      },
+      "confirmDelete": {
+        "title": "Slett unit?",
+        "message": "Er du sikker på at du vil slette {name}? Alle medlemmer vil bli fjernet fra uniten."
+      },
+      "confirmBulkDelete": {
+        "title": "Slett flere units?",
+        "message": "Er du sikker på at du vil slette {count} units? Alle medlemmer vil bli fjernet fra disse unitene."
+      },
+      "success": {
+        "created": "Unit opprettet",
+        "bulkCreated": "{count} units opprettet",
+        "deleted": "Unit slettet",
+        "bulkDeleted": "{count} units slettet"
+      },
+      "errors": {
+        "createFailed": "Kunne ikke opprette unit",
+        "bulkCreateFailed": "Kunne ikke opprette units",
+        "addMemberFailed": "Kunne ikke legge til medlem",
+        "removeMemberFailed": "Kunne ikke fjerne medlem",
+        "assignLeaderFailed": "Kunne ikke sette leder",
+        "deleteFailed": "Kunne ikke slette unit",
+        "bulkDeleteFailed": "Kunne ikke slette units"
+      }
+    },
+    "unit": {
+      "noLeaderSelected": "Ingen leder valgt",
+      "members": "{count} person | {count} personer",
+      "makeLead": "Gjør til leder",
+      "dragPeopleHere": "Ingen medlemmer - dra en person hit",
+      "addPersonPlaceholder": "Legg til person..."
+    }
+  }
 }

@@ -13,14 +13,16 @@ definePageMeta({
         class="rounded-2xl bg-muted p-12 gap-2 flex flex-col items-center justify-center text-center hover:bg-accented"
       >
         <Icon name="lucide:users" class="size-8 text-dimmed shrink-0" />
-        Units og personer
+        {{ $t('admin.churchHome.unitsAndPeople') }}
       </NuxtLink>
       <NuxtLink
         class="rounded-2xl border-2 border-dashed gap-2 border-muted p-12 flex flex-col items-center justify-center text-center"
       >
         <Icon name="lucide:gamepad-2" class="size-8 text-dimmed shrink-0" />
-        Game Nights
-        <p class="text-lg text-muted">Kommer snart</p>
+        {{ $t('admin.churchHome.gameNights') }}
+        <p class="text-lg text-muted">
+          {{ $t('admin.churchHome.comingSoon') }}
+        </p>
       </NuxtLink>
     </div>
   </UContainer>

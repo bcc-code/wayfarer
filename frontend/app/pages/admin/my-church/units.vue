@@ -48,6 +48,7 @@ gql(`
 const { me } = useAuth()
 const { isAuthReady } = useAuthReady()
 const toast = useToast()
+const { t } = useI18n()
 
 const {
   data,
@@ -170,14 +171,18 @@ const filterTabs = computed<TabsItem[]>(() => {
   const notInUnit = total - inUnit
 
   return [
-    { label: `Alle`, value: 'all', badge: { label: total, variant: 'subtle' } },
     {
-      label: `Ikke i en unit`,
+      label: t('admin.units.filter.all'),
+      value: 'all',
+      badge: { label: total, variant: 'subtle' },
+    },
+    {
+      label: t('admin.units.filter.notInUnit'),
       value: 'not-in-unit',
       badge: { label: notInUnit, variant: 'subtle' },
     },
     {
-      label: `I en unit`,
+      label: t('admin.units.filter.inUnit'),
       value: 'in-unit',
       badge: { label: inUnit, variant: 'subtle' },
     },
@@ -276,7 +281,7 @@ async function saveNewUnit() {
 
   if (result.error) {
     toast.add({
-      title: 'Kunne ikke opprette unit',
+      title: t('admin.units.errors.createFailed'),
       description: result.error.message,
       color: 'error',
     })
@@ -284,7 +289,7 @@ async function saveNewUnit() {
   }
 
   toast.add({
-    title: 'Unit opprettet',
+    title: t('admin.units.success.created'),
     color: 'success',
   })
 
@@ -326,13 +331,13 @@ async function saveBulkUnits() {
 
   if (successCount > 0) {
     toast.add({
-      title: `${successCount} units opprettet`,
+      title: t('admin.units.success.bulkCreated', { count: successCount }),
       color: 'success',
     })
     await refetch({ requestPolicy: 'network-only' })
   } else {
     toast.add({
-      title: 'Kunne ikke opprette units',
+      title: t('admin.units.errors.bulkCreateFailed'),
       color: 'error',
     })
   }
@@ -376,7 +381,7 @@ async function handleAddToTeam(
     // Rollback optimistic update
     optimisticMoves.value.delete(user.id)
     toast.add({
-      title: 'Kunne ikke legge til medlem',
+      title: t('admin.units.errors.addMemberFailed'),
       description: result.error.message,
       color: 'error',
     })
@@ -401,7 +406,7 @@ async function handleRemoveFromTeam(userId: string, teamId: string) {
   if (result.error) {
     optimisticUpdates.value.delete(key)
     toast.add({
-      title: 'Kunne ikke fjerne medlem',
+      title: t('admin.units.errors.removeMemberFailed'),
       description: result.error.message,
       color: 'error',
     })
@@ -418,7 +423,7 @@ async function handleAssignLeader(userId: string, teamId: string) {
 
   if (result.error) {
     toast.add({
-      title: 'Kunne ikke sette leder',
+      title: t('admin.units.errors.assignLeaderFailed'),
       description: result.error.message,
       color: 'error',
     })
@@ -467,13 +472,13 @@ async function confirmDelete() {
 
   if (result.error) {
     toast.add({
-      title: 'Kunne ikke slette unit',
+      title: t('admin.units.errors.deleteFailed'),
       description: result.error.message,
       color: 'error',
     })
   } else {
     toast.add({
-      title: 'Unit slettet',
+      title: t('admin.units.success.deleted'),
       color: 'success',
     })
     await refetch({ requestPolicy: 'network-only' })
@@ -512,14 +517,14 @@ async function confirmBulkDelete() {
 
   if (successCount > 0) {
     toast.add({
-      title: `${successCount} units slettet`,
+      title: t('admin.units.success.bulkDeleted', { count: successCount }),
       color: 'success',
     })
     clearSelection()
     await refetch({ requestPolicy: 'network-only' })
   } else {
     toast.add({
-      title: 'Kunne ikke slette units',
+      title: t('admin.units.errors.bulkDeleteFailed'),
       color: 'error',
     })
   }
@@ -628,11 +633,11 @@ function handleDropMember(
         <UBreadcrumb
           :items="[
             {
-              label: 'Forside',
+              label: $t('admin.breadcrumb.home'),
               to: { name: 'admin-my-church' },
             },
             {
-              label: 'Units',
+              label: $t('admin.units.title'),
             },
           ]"
         />
@@ -646,7 +651,7 @@ function handleDropMember(
         :to="{ name: 'admin-my-church' }"
       >
         <Icon name="lucide:arrow-left" />
-        Tilbake
+        {{ $t('admin.common.back') }}
       </UButton>
 
       <LoadingState v-if="fetching && !hasLoadedOnce" />
@@ -658,19 +663,21 @@ function handleDropMember(
           class="text-dimmed text-center py-12"
         >
           <Icon name="lucide:calendar-x" class="size-12 mb-4 mx-auto" />
-          <p class="text-lg">Ingen aktiv konkurranse</p>
+          <p class="text-lg">{{ $t('admin.units.noActiveProject') }}</p>
         </div>
 
         <!-- Two-column layout -->
         <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <!-- Left column: Units -->
           <div>
-            <h2 class="text-2xl font-semibold mb-4">Units</h2>
+            <h2 class="text-2xl font-semibold mb-4">
+              {{ $t('admin.units.title') }}
+            </h2>
 
             <!-- Search -->
             <UInput
               v-model="unitSearch"
-              placeholder="Søk på units eller personer..."
+              :placeholder="$t('admin.units.searchPlaceholder')"
               icon="lucide:search"
               class="mb-4"
             />
@@ -678,7 +685,7 @@ function handleDropMember(
             <!-- Expand all checkbox -->
             <UCheckbox
               v-model="expandAll"
-              label="Ekspander alle units"
+              :label="$t('admin.units.expandAll')"
               class="mb-4"
             />
 
@@ -686,16 +693,18 @@ function handleDropMember(
             <div v-if="!isCreatingUnit" class="grid grid-cols-2 gap-2 mb-4">
               <UButton size="lg" block class="flex-1" @click="startCreateUnit">
                 <Icon name="lucide:plus" />
-                Opprett én unit
+                {{ $t('admin.units.createOneUnit') }}
               </UButton>
               <UPopover v-model:open="isBulkCreating">
                 <UButton size="lg" block>
                   <Icon name="lucide:plus" />
-                  Opprett flere units
+                  {{ $t('admin.units.createMultipleUnits') }}
                 </UButton>
                 <template #content>
                   <div class="p-4 w-64">
-                    <p class="text-sm font-medium mb-3">Antall units</p>
+                    <p class="text-sm font-medium mb-3">
+                      {{ $t('admin.units.bulkCreate.countLabel') }}
+                    </p>
                     <UInput
                       v-model.number="bulkCount"
                       type="number"
@@ -704,7 +713,7 @@ function handleDropMember(
                       class="mb-3"
                     />
                     <p class="text-xs text-dimmed mb-3">
-                      Navnene genereres automatisk
+                      {{ $t('admin.units.bulkCreate.autoGenerateInfo') }}
                     </p>
                     <div class="flex gap-2 justify-end">
                       <UButton
@@ -712,7 +721,7 @@ function handleDropMember(
                         size="sm"
                         @click="isBulkCreating = false"
                       >
-                        Avbryt
+                        {{ $t('admin.common.cancel') }}
                       </UButton>
                       <UButton
                         size="sm"
@@ -720,7 +729,7 @@ function handleDropMember(
                         :disabled="bulkCount < 1 || bulkCount > 50"
                         @click="saveBulkUnits"
                       >
-                        Opprett
+                        {{ $t('admin.common.create') }}
                       </UButton>
                     </div>
                   </div>
@@ -735,20 +744,20 @@ function handleDropMember(
             >
               <UInput
                 v-model="newUnitName"
-                placeholder="Navn på unit (valgfritt)"
+                :placeholder="$t('admin.units.namePlaceholder')"
                 class="mb-3"
                 autofocus
               />
               <div class="flex gap-2 justify-end">
                 <UButton variant="ghost" size="sm" @click="cancelCreateUnit">
-                  Avbryt
+                  {{ $t('admin.common.cancel') }}
                 </UButton>
                 <UButton
                   size="sm"
                   :loading="creatingUnitLoading"
                   @click="saveNewUnit"
                 >
-                  Lagre
+                  {{ $t('admin.common.save') }}
                 </UButton>
               </div>
             </div>
@@ -762,7 +771,9 @@ function handleDropMember(
                 :model-value="allSelected"
                 @update:model-value="toggleSelectAll"
               />
-              <span class="text-sm text-dimmed">Velg alle</span>
+              <span class="text-sm text-dimmed">
+                {{ $t('admin.units.selectAll') }}
+              </span>
             </div>
 
             <!-- Units list -->
@@ -806,22 +817,34 @@ function handleDropMember(
               </div>
 
               <p v-if="filteredUnits.length === 0" class="text-dimmed text-sm">
-                Ingen units funnet
+                {{ $t('admin.units.noUnitsFound') }}
               </p>
             </div>
           </div>
 
           <!-- Right column: Personer -->
           <div>
-            <h2 class="text-2xl font-semibold mb-4">Personer</h2>
+            <h2 class="text-2xl font-semibold mb-4">
+              {{ $t('admin.units.people') }}
+            </h2>
 
             <!-- Search -->
-            <UInput
-              v-model="personSearch"
-              placeholder="Søk på personer..."
-              icon="lucide:search"
-              class="mb-4"
-            />
+            <div class="flex gap-4 justify-between items-center mb-4">
+              <UInput
+                v-model="personSearch"
+                :placeholder="$t('admin.units.searchPeoplePlaceholder')"
+                icon="lucide:search"
+              />
+              <UPopover>
+                <UButton variant="ghost" color="neutral" square>
+                  <Icon name="lucide:filter" />
+                  Filtrer
+                </UButton>
+                <template #content>
+                  <div class="p-4"></div>
+                </template>
+              </UPopover>
+            </div>
 
             <!-- Filter tabs -->
             <UTabs
@@ -863,7 +886,9 @@ function handleDropMember(
                     name="tabler:gender-female"
                     class="size-4 bg-pink-500 rounded-full"
                   />
-                  <span>{{ person.age ?? '-' }} år</span>
+                  <span>
+                    {{ $t('admin.units.years', { years: person.age ?? '-' }) }}
+                  </span>
                 </div>
               </div>
             </VueDraggable>
@@ -871,7 +896,7 @@ function handleDropMember(
               v-if="filteredPeople.length === 0"
               class="text-sm text-dimmed text-center py-4"
             >
-              Ingen personer funnet
+              {{ $t('admin.units.noPeopleFound') }}
             </p>
           </div>
         </div>
@@ -892,14 +917,17 @@ function handleDropMember(
         class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-lg border border-default bg-elevated shadow-lg flex items-center gap-4"
       >
         <span class="text-sm">
-          {{ selectedUnitIds.size }} unit{{
-            selectedUnitIds.size === 1 ? '' : 's'
+          {{
+            $t(
+              'admin.units.selectedCount',
+              { count: selectedUnitIds.size },
+              selectedUnitIds.size,
+            )
           }}
-          valgt
         </span>
         <div class="flex gap-2">
           <UButton variant="ghost" size="sm" @click="clearSelection">
-            Avbryt
+            {{ $t('admin.common.cancel') }}
           </UButton>
           <UButton
             color="error"
@@ -908,7 +936,7 @@ function handleDropMember(
             @click="handleBulkDelete"
           >
             <Icon name="lucide:trash-2" />
-            Slett valgte
+            {{ $t('admin.units.deleteSelected') }}
           </UButton>
         </div>
       </div>
@@ -918,20 +946,26 @@ function handleDropMember(
     <UModal v-model:open="deleteConfirmOpen">
       <template #content>
         <div class="p-6">
-          <h3 class="mb-4 text-lg font-semibold">Slett unit?</h3>
+          <h3 class="mb-4 text-lg font-semibold">
+            {{ $t('admin.units.confirmDelete.title') }}
+          </h3>
           <p class="text-dimmed mb-6">
-            Er du sikker på at du vil slette
-            <strong>{{ pendingDelete?.unitName }}</strong
-            >? Alle medlemmer vil bli fjernet fra uniten.
+            {{
+              $t('admin.units.confirmDelete.message', {
+                name: pendingDelete?.unitName,
+              })
+            }}
           </p>
           <div class="flex justify-end gap-3">
-            <UButton variant="ghost" @click="cancelDelete"> Avbryt </UButton>
+            <UButton variant="ghost" @click="cancelDelete">{{
+              $t('admin.common.cancel')
+            }}</UButton>
             <UButton
               color="error"
               :loading="deletingLoading"
               @click="confirmDelete"
             >
-              Slett
+              {{ $t('admin.common.delete') }}
             </UButton>
           </div>
         </div>
@@ -942,22 +976,26 @@ function handleDropMember(
     <UModal v-model:open="bulkDeleteConfirmOpen">
       <template #content>
         <div class="p-6">
-          <h3 class="mb-4 text-lg font-semibold">Slett flere units?</h3>
+          <h3 class="mb-4 text-lg font-semibold">
+            {{ $t('admin.units.confirmBulkDelete.title') }}
+          </h3>
           <p class="text-dimmed mb-6">
-            Er du sikker på at du vil slette
-            <strong>{{ selectedUnitIds.size }}</strong> units? Alle medlemmer
-            vil bli fjernet fra disse unitene.
+            {{
+              $t('admin.units.confirmBulkDelete.message', {
+                count: selectedUnitIds.size,
+              })
+            }}
           </p>
           <div class="flex justify-end gap-3">
             <UButton variant="ghost" @click="cancelBulkDelete">
-              Avbryt
+              {{ $t('admin.common.cancel') }}
             </UButton>
             <UButton
               color="error"
               :loading="bulkDeletingLoading"
               @click="confirmBulkDelete"
             >
-              Slett alle
+              {{ $t('admin.common.deleteAll') }}
             </UButton>
           </div>
         </div>
