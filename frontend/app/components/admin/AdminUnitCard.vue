@@ -39,6 +39,8 @@ const props = defineProps<{
   unit: {
     id: string
     name: string
+    leaderboardExcluded?: boolean
+    averageAge?: number | null
     members: {
       id: string
       name: string
@@ -140,7 +142,11 @@ const averageAge = computed(() => {
     return 0
   }
   const sum = mem.reduce((acc, m) => acc + m.age!, 0)
-  return sum / mem.length
+
+  if (sum / mem.length != props.unit.averageAge) {
+    return sum / mem.length
+  }
+  return props.unit.averageAge
 })
 
 // Check if any member is a team lead
@@ -165,7 +171,7 @@ function handleDrop(event: SortableEvent) {
       class="w-full p-3 flex items-center justify-between hover:bg-elevated transition-colors cursor-pointer"
       @click="toggle"
     >
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
         <input
           v-if="isEditing"
           ref="nameInputRef"
@@ -192,15 +198,11 @@ function handleDrop(event: SortableEvent) {
           :label="$t('admin.unit.noLeaderSelected')"
         />
         <UBadge
-          v-if="averageAge >= 36"
+          v-if="unit.leaderboardExcluded"
           color="warning"
-          variant="soft"
-          :label="$t('admin.unit.over36')"
-        />
-        <Icon
-          v-if="loading"
-          name="svg-spinners:bars-rotate-fade"
-          class="size-4 text-dimmed"
+          variant="subtle"
+          icon="lucide:eye-off"
+          :label="$t('admin.unit.excludedFromLeaderboard')"
         />
       </div>
       <div class="flex items-center gap-2">

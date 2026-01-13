@@ -877,14 +877,16 @@ type ComplexityRoot struct {
 	}
 
 	Team struct {
-		Description       func(childComplexity int) int
-		ID                func(childComplexity int) int
-		JoinCode          func(childComplexity int) int
-		MemberLeaderboard func(childComplexity int) int
-		Members           func(childComplexity int) int
-		Name              func(childComplexity int) int
-		ParentProject     func(childComplexity int) int
-		SuperTeam         func(childComplexity int) int
+		AverageAge          func(childComplexity int) int
+		Description         func(childComplexity int) int
+		ID                  func(childComplexity int) int
+		JoinCode            func(childComplexity int) int
+		LeaderboardExcluded func(childComplexity int) int
+		MemberLeaderboard   func(childComplexity int) int
+		Members             func(childComplexity int) int
+		Name                func(childComplexity int) int
+		ParentProject       func(childComplexity int) int
+		SuperTeam           func(childComplexity int) int
 	}
 
 	TeamConnection struct {
@@ -1335,6 +1337,7 @@ type SuperTeamResolver interface {
 	Teams(ctx context.Context, obj *model.SuperTeam) ([]model.Team, error)
 }
 type TeamResolver interface {
+	AverageAge(ctx context.Context, obj *model.Team) (*float64, error)
 	Members(ctx context.Context, obj *model.Team) ([]model.TeamMember, error)
 	MemberLeaderboard(ctx context.Context, obj *model.Team) ([]model.LeaderboardEntry, error)
 	ParentProject(ctx context.Context, obj *model.Team) (*model.Project, error)
@@ -5598,6 +5601,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SuperTeamEdge.Node(childComplexity), true
 
+	case "Team.averageAge":
+		if e.complexity.Team.AverageAge == nil {
+			break
+		}
+
+		return e.complexity.Team.AverageAge(childComplexity), true
 	case "Team.description":
 		if e.complexity.Team.Description == nil {
 			break
@@ -5616,6 +5625,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Team.JoinCode(childComplexity), true
+	case "Team.leaderboardExcluded":
+		if e.complexity.Team.LeaderboardExcluded == nil {
+			break
+		}
+
+		return e.complexity.Team.LeaderboardExcluded(childComplexity), true
 	case "Team.memberLeaderboard":
 		if e.complexity.Team.MemberLeaderboard == nil {
 			break
@@ -6598,6 +6613,8 @@ type Team {
     name: String!
     description: String!
     joinCode: String!
+    leaderboardExcluded: Boolean!
+    averageAge: Float @goField(forceResolver: true)
     members: [TeamMember!]! @goField(forceResolver: true)
     memberLeaderboard: [LeaderboardEntry!]! @goField(forceResolver: true)
     parentProject: Project! @goField(forceResolver: true)
@@ -7274,6 +7291,7 @@ input CreateTeamInput {
 input UpdateTeamInput {
     name: String
     description: String
+    leaderboardExcluded: Boolean
 }
 
 input CreateSuperTeamInput {
@@ -17755,6 +17773,10 @@ func (ec *executionContext) fieldContext_Mutation_joinTeam(ctx context.Context, 
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -17832,6 +17854,10 @@ func (ec *executionContext) fieldContext_Mutation_createTeam(ctx context.Context
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -17909,6 +17935,10 @@ func (ec *executionContext) fieldContext_Mutation_updateTeam(ctx context.Context
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -18045,6 +18075,10 @@ func (ec *executionContext) fieldContext_Mutation_addTeamMembers(ctx context.Con
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -18122,6 +18156,10 @@ func (ec *executionContext) fieldContext_Mutation_removeTeamMembers(ctx context.
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -18199,6 +18237,10 @@ func (ec *executionContext) fieldContext_Mutation_regenerateJoinCode(ctx context
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -18276,6 +18318,10 @@ func (ec *executionContext) fieldContext_Mutation_assignTeamLead(ctx context.Con
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -25549,6 +25595,10 @@ func (ec *executionContext) fieldContext_Project_teams(_ context.Context, field 
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -25596,6 +25646,10 @@ func (ec *executionContext) fieldContext_Project_myTeam(_ context.Context, field
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -26843,6 +26897,10 @@ func (ec *executionContext) fieldContext_Query_team(ctx context.Context, field g
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -31857,6 +31915,10 @@ func (ec *executionContext) fieldContext_RoleScope_team(_ context.Context, field
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -34799,6 +34861,10 @@ func (ec *executionContext) fieldContext_SuperTeam_teams(_ context.Context, fiel
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -35100,6 +35166,64 @@ func (ec *executionContext) fieldContext_Team_joinCode(_ context.Context, field 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Team_leaderboardExcluded(ctx context.Context, field graphql.CollectedField, obj *model.Team) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Team_leaderboardExcluded,
+		func(ctx context.Context) (any, error) {
+			return obj.LeaderboardExcluded, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Team_leaderboardExcluded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Team_averageAge(ctx context.Context, field graphql.CollectedField, obj *model.Team) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Team_averageAge,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Team().AverageAge(ctx, obj)
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Team_averageAge(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -35463,6 +35587,10 @@ func (ec *executionContext) fieldContext_TeamEdge_node(_ context.Context, field 
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -36173,6 +36301,10 @@ func (ec *executionContext) fieldContext_User_teams(_ context.Context, field gra
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -43289,7 +43421,7 @@ func (ec *executionContext) unmarshalInputUpdateTeamInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description"}
+	fieldsInOrder := [...]string{"name", "description", "leaderboardExcluded"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -43310,6 +43442,13 @@ func (ec *executionContext) unmarshalInputUpdateTeamInput(ctx context.Context, o
 				return it, err
 			}
 			it.Description = data
+		case "leaderboardExcluded":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaderboardExcluded"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaderboardExcluded = data
 		}
 	}
 
@@ -52780,6 +52919,44 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "leaderboardExcluded":
+			out.Values[i] = ec._Team_leaderboardExcluded(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "averageAge":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Team_averageAge(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "members":
 			field := field
 

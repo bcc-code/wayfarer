@@ -230,6 +230,13 @@ export function usePermissions() {
     return isSuperAdmin.value || isAdmin.value
   })
 
+  /**
+   * Can toggle team leaderboard exclusion (admins and superadmins only, not church admins)
+   */
+  const canToggleLeaderboardExclusion = computed(() => {
+    return isSuperAdmin.value || isAdmin.value
+  })
+
   return {
     // Scoped helpers
     hasProjectAdminFor,
@@ -263,5 +270,6 @@ export function usePermissions() {
     canManageTeam,
     canViewUser,
     canManageConsents,
+    canToggleLeaderboardExclusion,
   }
 }

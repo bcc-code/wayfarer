@@ -11,6 +11,8 @@ gql(`
       name
       description
       joinCode
+      leaderboardExcluded
+      averageAge
       members {
         id
         name
@@ -210,6 +212,29 @@ function copyJoinCode() {
     })
   }
 }
+
+async function handleToggleLeaderboardExclusion(excluded: boolean) {
+  const result = await updateTeam({
+    id: route.params.teamId,
+    input: { leaderboardExcluded: excluded },
+  })
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke oppdatere toppliste-innstilling',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({
+    title: excluded ? 'Laget er nå skjult fra topplisten' : 'Laget vises nå på topplisten',
+    color: 'success',
+  })
+
+  refetch({ requestPolicy: 'network-only' })
+}
 </script>
 
 <template>
@@ -296,7 +321,7 @@ function copyJoinCode() {
             <dt class="text-muted w-24 shrink-0">Medlemmer</dt>
             <dd class="font-medium">{{ data.team.members.length }}</dd>
           </div>
-          <div class="flex items-center gap-6 py-2">
+          <div class="border-default flex items-center gap-6 border-b py-2">
             <dt class="text-muted w-24 shrink-0">Invitasjonskode</dt>
             <dd class="flex items-center gap-2">
               <code class="bg-background-indent rounded px-2 py-1">{{
@@ -315,6 +340,28 @@ function copyJoinCode() {
                 icon="i-lucide-refresh-cw"
                 @click="handleRegenerateJoinCode"
               />
+            </dd>
+          </div>
+          <div class="border-default flex items-center gap-6 border-b py-2">
+            <dt class="text-muted w-24 shrink-0">Gj.snitt alder</dt>
+            <dd class="font-medium">
+              {{ data.team.averageAge?.toFixed(1) ?? '-' }} år
+            </dd>
+          </div>
+          <div class="flex items-center gap-6 py-2">
+            <dt class="text-muted w-24 shrink-0">Skjul fra toppliste</dt>
+            <dd class="flex items-center gap-2">
+              <USwitch
+                :model-value="data.team.leaderboardExcluded"
+                :disabled="!canEdit"
+                @update:model-value="handleToggleLeaderboardExclusion"
+              />
+              <UTooltip
+                text="Når aktivert vil dette laget ikke vises på topplisten"
+                :delay-duration="200"
+              >
+                <Icon name="lucide:info" class="size-4 text-dimmed" />
+              </UTooltip>
             </dd>
           </div>
         </dl>

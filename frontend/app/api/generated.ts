@@ -662,6 +662,21 @@ export type FeedbackFilter = {
   userId?: InputMaybe<Scalars['ID']['input']>;
 };
 
+export type FileUpload = {
+  __typename?: 'FileUpload';
+  blurhash?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTime']['output'];
+  fileSize: Scalars['Int']['output'];
+  filename: Scalars['String']['output'];
+  height?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  mimeType: Scalars['String']['output'];
+  publicUrl: Scalars['String']['output'];
+  storedFilename: Scalars['String']['output'];
+  uploadedBy: Scalars['ID']['output'];
+  width?: Maybe<Scalars['Int']['output']>;
+};
+
 export type FirebaseTokenResponse = {
   __typename?: 'FirebaseTokenResponse';
   expiresIn: Scalars['Int']['output'];
@@ -1603,6 +1618,7 @@ export type Query = {
   externalContent: ExternalContent;
   externalContents: ExternalContentConnection;
   feedback: FeedbackConnection;
+  fileUpload?: Maybe<FileUpload>;
   firebaseToken: FirebaseTokenResponse;
   instanceID: Scalars['String']['output'];
   me: User;
@@ -1727,6 +1743,11 @@ export type QueryFeedbackArgs = {
   filter?: InputMaybe<FeedbackFilter>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryFileUploadArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -2277,9 +2298,11 @@ export type SuperTeamFilter = {
 
 export type Team = {
   __typename?: 'Team';
+  averageAge?: Maybe<Scalars['Float']['output']>;
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   joinCode: Scalars['String']['output'];
+  leaderboardExcluded: Scalars['Boolean']['output'];
   memberLeaderboard: Array<LeaderboardEntry>;
   members: Array<TeamMember>;
   name: Scalars['String']['output'];
@@ -2436,6 +2459,7 @@ export type UpdateSuperTeamInput = {
 
 export type UpdateTeamInput = {
   description?: InputMaybe<Scalars['String']['input']>;
+  leaderboardExcluded?: InputMaybe<Scalars['Boolean']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -3235,7 +3259,7 @@ export type MyChurchUnitsPageQueryVariables = Exact<{
 }>;
 
 
-export type MyChurchUnitsPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, name: string, age?: number | null, gender: Gender, teams: Array<{ __typename?: 'Team', id: string, name: string }> } }> }, myCurrentProject: { __typename?: 'Project', id: string, name: string, teams: Array<{ __typename?: 'Team', id: string, name: string, members: Array<{ __typename?: 'TeamMember', id: string, name: string, isTeamLead: boolean, user: { __typename?: 'User', id: string, age?: number | null, gender: Gender } }> }> } };
+export type MyChurchUnitsPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, name: string, age?: number | null, gender: Gender, teams: Array<{ __typename?: 'Team', id: string, name: string }> } }> }, myCurrentProject: { __typename?: 'Project', id: string, name: string, teams: Array<{ __typename?: 'Team', id: string, name: string, leaderboardExcluded: boolean, averageAge?: number | null, members: Array<{ __typename?: 'TeamMember', id: string, name: string, isTeamLead: boolean, user: { __typename?: 'User', id: string, age?: number | null, gender: Gender } }> }> } };
 
 export type AdminProjectAchievementPageQueryVariables = Exact<{
   achievementId: Scalars['ID']['input'];
@@ -3356,7 +3380,7 @@ export type AdminTeamPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminTeamPageQuery = { __typename?: 'Query', team: { __typename?: 'Team', id: string, name: string, description: string, joinCode: string, members: Array<{ __typename?: 'TeamMember', id: string, name: string, isTeamLead: boolean, joinedAt: string, user: { __typename?: 'User', id: string, email: string, image?: string | null }, church: { __typename?: 'Church', id: string, name: string } }>, parentProject: { __typename?: 'Project', id: string, name: string }, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null } };
+export type AdminTeamPageQuery = { __typename?: 'Query', team: { __typename?: 'Team', id: string, name: string, description: string, joinCode: string, leaderboardExcluded: boolean, averageAge?: number | null, members: Array<{ __typename?: 'TeamMember', id: string, name: string, isTeamLead: boolean, joinedAt: string, user: { __typename?: 'User', id: string, email: string, image?: string | null }, church: { __typename?: 'Church', id: string, name: string } }>, parentProject: { __typename?: 'Project', id: string, name: string }, superTeam?: { __typename?: 'SuperTeam', id: string, name: string } | null } };
 
 export type AdminTeamsPageQueryVariables = Exact<{
   filter?: InputMaybe<TeamFilter>;
@@ -4763,6 +4787,8 @@ export const MyChurchUnitsPageDocument = gql`
     teams {
       id
       name
+      leaderboardExcluded
+      averageAge
       members {
         id
         name
@@ -5188,6 +5214,8 @@ export const AdminTeamPageDocument = gql`
     name
     description
     joinCode
+    leaderboardExcluded
+    averageAge
     members {
       id
       name

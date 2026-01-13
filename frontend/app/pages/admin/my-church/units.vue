@@ -30,6 +30,8 @@ gql(`
       teams {
         id
         name
+        leaderboardExcluded
+        averageAge
         members {
           id
           name
@@ -387,26 +389,28 @@ async function handleAddToTeam(
     toTeamId: teamId,
   })
 
-  const result = await addTeamMembers({
-    teamId,
-    userIds: [user.id],
-    force: true,
-  })
-
-  if (result.error) {
-    // Rollback optimistic update
-    optimisticMoves.value.delete(user.id)
-    toast.add({
-      title: t('admin.units.errors.addMemberFailed'),
-      description: result.error.message,
-      color: 'error',
+  try {
+    const result = await addTeamMembers({
+      teamId,
+      userIds: [user.id],
+      force: true,
     })
-    return
-  }
 
-  // Sync with server - keep optimistic state until refetch completes
-  await refetch({ requestPolicy: 'network-only' })
-  optimisticMoves.value.delete(user.id)
+    if (result.error) {
+      toast.add({
+        title: t('admin.units.errors.addMemberFailed'),
+        description: result.error.message,
+        color: 'error',
+      })
+      return
+    }
+
+    // Sync with server - keep optimistic state until refetch completes
+    await refetch({ requestPolicy: 'network-only' })
+  } finally {
+    // Always clear ALL optimistic state after refetch
+    optimisticMoves.value.clear()
+  }
 }
 
 // Remove user from team
@@ -414,23 +418,26 @@ async function handleRemoveFromTeam(userId: string, teamId: string) {
   const key = `${userId}-${teamId}`
   optimisticUpdates.value.set(key, { userId, teamId, isAdding: false })
 
-  const result = await removeTeamMembers({
-    teamId,
-    userIds: [userId],
-  })
-
-  if (result.error) {
-    optimisticUpdates.value.delete(key)
-    toast.add({
-      title: t('admin.units.errors.removeMemberFailed'),
-      description: result.error.message,
-      color: 'error',
+  try {
+    const result = await removeTeamMembers({
+      teamId,
+      userIds: [userId],
     })
-    return
-  }
 
-  await refetch({ requestPolicy: 'network-only' })
-  optimisticUpdates.value.delete(key)
+    if (result.error) {
+      toast.add({
+        title: t('admin.units.errors.removeMemberFailed'),
+        description: result.error.message,
+        color: 'error',
+      })
+      return
+    }
+
+    await refetch({ requestPolicy: 'network-only' })
+  } finally {
+    // Always clear ALL optimistic state after refetch
+    optimisticUpdates.value.clear()
+  }
 }
 
 // Assign team lead

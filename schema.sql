@@ -143,11 +143,13 @@ CREATE TABLE teams (
     description TEXT,
     join_code VARCHAR(50) UNIQUE NOT NULL,
     super_team_id CHAR(28) REFERENCES super_teams(id) ON DELETE SET NULL,
+    leaderboard_excluded BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     INDEX idx_teams_project (project_id),
     INDEX idx_teams_super_team (super_team_id),
-    INDEX idx_teams_join_code (join_code)
+    INDEX idx_teams_join_code (join_code),
+    INDEX idx_teams_leaderboard_excluded (leaderboard_excluded) WHERE leaderboard_excluded = true
 );
 
 CREATE TABLE streaks (

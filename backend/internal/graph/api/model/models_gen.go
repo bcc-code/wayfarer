@@ -1362,16 +1362,18 @@ type SuperTeamFilter struct {
 }
 
 type Team struct {
-	ID                string             `json:"id"`
-	Name              string             `json:"name"`
-	Description       string             `json:"description"`
-	JoinCode          string             `json:"joinCode"`
-	Members           []TeamMember       `json:"members"`
-	MemberLeaderboard []LeaderboardEntry `json:"memberLeaderboard"`
-	ParentProject     *Project           `json:"parentProject"`
-	SuperTeam         *SuperTeam         `json:"superTeam,omitempty"`
-	ProjectID         string             `json:"-"`
-	SuperTeamID       *string            `json:"-"`
+	ID                  string             `json:"id"`
+	Name                string             `json:"name"`
+	Description         string             `json:"description"`
+	JoinCode            string             `json:"joinCode"`
+	LeaderboardExcluded bool               `json:"leaderboardExcluded"`
+	AverageAge          *float64           `json:"averageAge,omitempty"`
+	Members             []TeamMember       `json:"members"`
+	MemberLeaderboard   []LeaderboardEntry `json:"memberLeaderboard"`
+	ParentProject       *Project           `json:"parentProject"`
+	SuperTeam           *SuperTeam         `json:"superTeam,omitempty"`
+	ProjectID           string             `json:"-"`
+	SuperTeamID         *string            `json:"-"`
 }
 
 type TeamConnection struct {
@@ -1521,8 +1523,9 @@ type UpdateSuperTeamInput struct {
 }
 
 type UpdateTeamInput struct {
-	Name        *string `json:"name,omitempty"`
-	Description *string `json:"description,omitempty"`
+	Name                *string `json:"name,omitempty"`
+	Description         *string `json:"description,omitempty"`
+	LeaderboardExcluded *bool   `json:"leaderboardExcluded,omitempty"`
 }
 
 type UpdateWebhookInput struct {

@@ -262,6 +262,8 @@ type Team {
     name: String!
     description: String!
     joinCode: String!
+    leaderboardExcluded: Boolean!
+    averageAge: Float @goField(forceResolver: true)
     members: [TeamMember!]! @goField(forceResolver: true)
     memberLeaderboard: [LeaderboardEntry!]! @goField(forceResolver: true)
     parentProject: Project! @goField(forceResolver: true)
@@ -938,6 +940,7 @@ input CreateTeamInput {
 input UpdateTeamInput {
     name: String
     description: String
+    leaderboardExcluded: Boolean
 }
 
 input CreateSuperTeamInput {

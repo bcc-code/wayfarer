@@ -192,7 +192,8 @@
         "assignLeaderFailed": "Kunne ikke sette leder",
         "deleteFailed": "Kunne ikke slette unit",
         "bulkDeleteFailed": "Kunne ikke slette units",
-        "renameFailed": "Kunne ikke endre navn på unit"
+        "renameFailed": "Kunne ikke endre navn på unit",
+        "exclusionToggleFailed": "Kunne ikke endre synlighet på toppliste"
       },
       "ageWarning": "Gjennomsnittsalderen på denne uniten er over 36 år, og den vil da ikke vises på topplister eller være med i konkurransen for ungdommer. Dersom dette er feil, og den skal delta i konkurransen for ungdom, gi oss beskjed på {email}"
     },
@@ -202,7 +203,9 @@
       "makeLead": "Gjør til leder",
       "dragPeopleHere": "Ingen medlemmer - dra en person hit",
       "addPersonPlaceholder": "Legg til person...",
-      "over36": "O36"
+      "excludeFromLeaderboard": "Ekskluder fra toppliste",
+      "excludeFromLeaderboardTooltip": "Når aktivert vil denne uniten ikke vises på topplisten",
+      "excludedFromLeaderboard": "Skjult fra topplister"
     }
   }
 }

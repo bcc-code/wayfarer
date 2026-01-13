@@ -235,6 +235,23 @@ func (r *mutationResolver) UpdateTeam(ctx context.Context, id string, input mode
 		return nil, fmt.Errorf("failed to update team: %w", err)
 	}
 
+	// Handle leaderboardExcluded field update
+	if input.LeaderboardExcluded != nil {
+		excludedTeam, err := r.DB.Queries.UpdateTeamLeaderboardExcluded(ctx, sqlc.UpdateTeamLeaderboardExcludedParams{
+			ID:                  id,
+			Leaderboardexcluded: *input.LeaderboardExcluded,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to update team leaderboard exclusion: %w", err)
+		}
+		// Update team reference with new exclusion status
+		team.LeaderboardExcluded = excludedTeam.LeaderboardExcluded
+		// Invalidate leaderboard cache when exclusion status changes
+		r.Cache.DeletePrefix(cache.PrefixLeaderboard)
+		// Also invalidate the team cache
+		r.Cache.InvalidateTeam(id)
+	}
+
 	// Invalidate caches
 	r.Cache.InvalidateTeam(id)
 	r.Cache.Delete(cache.TeamsByProjectKey(existingTeam.ProjectID))
@@ -254,10 +271,11 @@ func (r *mutationResolver) UpdateTeam(ctx context.Context, id string, input mode
 	}
 
 	return &model.Team{
-		ID:          team.ID,
-		Name:        team.Name,
-		Description: teamDescription,
-		JoinCode:    team.JoinCode,
+		ID:                  team.ID,
+		Name:                team.Name,
+		Description:         teamDescription,
+		JoinCode:            team.JoinCode,
+		LeaderboardExcluded: team.LeaderboardExcluded,
 	}, nil
 }
 
@@ -451,12 +469,34 @@ func (r *mutationResolver) AddTeamMembers(ctx context.Context, teamID string, us
 	r.Cache.DeletePrefix(cache.PrefixUsersFilter)
 	r.Cache.DeletePrefix(cache.PrefixUsersCount)
 
+	// Recalculate leaderboard exclusion based on average age
+	avgAge, err := r.DB.Queries.GetTeamAverageAge(ctx, teamID)
+	if err == nil {
+		shouldExclude := avgAge >= 36.0
+		_, _ = r.DB.Queries.UpdateTeamLeaderboardExcluded(ctx, sqlc.UpdateTeamLeaderboardExcludedParams{
+			ID:                  teamID,
+			Leaderboardexcluded: shouldExclude,
+		})
+		// Invalidate caches after updating exclusion status
+		r.Cache.InvalidateTeam(teamID)
+		r.Cache.Delete(cache.TeamsByProjectKey(team.ProjectID))
+		r.Cache.DeletePrefix(cache.PrefixLeaderboard)
+	}
+
+	// Reload team to get updated leaderboard_excluded status
+	updatedTeam, err := r.DB.Queries.GetTeamsByIDs(ctx, []string{teamID})
+	leaderboardExcluded := false
+	if err == nil && len(updatedTeam) > 0 {
+		leaderboardExcluded = updatedTeam[0].LeaderboardExcluded
+	}
+
 	// Return the team (loaders already returns model.Team)
 	return &model.Team{
-		ID:          team.ID,
-		Name:        team.Name,
-		Description: team.Description,
-		JoinCode:    team.JoinCode,
+		ID:                  team.ID,
+		Name:                team.Name,
+		Description:         team.Description,
+		JoinCode:            team.JoinCode,
+		LeaderboardExcluded: leaderboardExcluded,
 	}, nil
 }
 
@@ -516,12 +556,34 @@ func (r *mutationResolver) RemoveTeamMembers(ctx context.Context, teamID string,
 	r.Cache.DeletePrefix(cache.PrefixUsersFilter)
 	r.Cache.DeletePrefix(cache.PrefixUsersCount)
 
+	// Recalculate leaderboard exclusion based on average age
+	avgAge, err := r.DB.Queries.GetTeamAverageAge(ctx, teamID)
+	if err == nil {
+		shouldExclude := avgAge >= 36.0
+		_, _ = r.DB.Queries.UpdateTeamLeaderboardExcluded(ctx, sqlc.UpdateTeamLeaderboardExcludedParams{
+			ID:                  teamID,
+			Leaderboardexcluded: shouldExclude,
+		})
+		// Invalidate caches after updating exclusion status
+		r.Cache.InvalidateTeam(teamID)
+		r.Cache.Delete(cache.TeamsByProjectKey(team.ProjectID))
+		r.Cache.DeletePrefix(cache.PrefixLeaderboard)
+	}
+
+	// Reload team to get updated leaderboard_excluded status
+	updatedTeam, err := r.DB.Queries.GetTeamsByIDs(ctx, []string{teamID})
+	leaderboardExcluded := false
+	if err == nil && len(updatedTeam) > 0 {
+		leaderboardExcluded = updatedTeam[0].LeaderboardExcluded
+	}
+
 	// Return the team (loaders already returns model.Team)
 	return &model.Team{
-		ID:          team.ID,
-		Name:        team.Name,
-		Description: team.Description,
-		JoinCode:    team.JoinCode,
+		ID:                  team.ID,
+		Name:                team.Name,
+		Description:         team.Description,
+		JoinCode:            team.JoinCode,
+		LeaderboardExcluded: leaderboardExcluded,
 	}, nil
 }
 

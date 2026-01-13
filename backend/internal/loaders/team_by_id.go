@@ -48,10 +48,12 @@ func teamByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 				}
 
 				team := &model.Team{
-					ID:          row.ID,
-					Name:        row.Name,
-					Description: description,
-					ProjectID:   row.ProjectID,
+					ID:                  row.ID,
+					Name:                row.Name,
+					Description:         description,
+					ProjectID:           row.ProjectID,
+					JoinCode:            row.JoinCode,
+					LeaderboardExcluded: row.LeaderboardExcluded,
 				}
 
 				teamMap[row.ID] = team
