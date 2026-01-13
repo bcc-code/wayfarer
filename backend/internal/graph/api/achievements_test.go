@@ -2,12 +2,14 @@ package api
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 )
 
 // TestBuildAchievementFilterParamsCursor tests the buildAchievementFilterParamsCursor function
@@ -470,5 +472,52 @@ func TestBuildAchievementCacheKeyParams_Deterministic(t *testing.T) {
 	// All results should be equal
 	for i := 1; i < len(results); i++ {
 		assert.Equal(t, results[0], results[i], "buildAchievementCacheKeyParams should be deterministic")
+	}
+}
+
+// TestIsAchievementAwardable tests the isAchievementAwardable function
+func TestIsAchievementAwardable(t *testing.T) {
+	tests := []struct {
+		name          string
+		awardableFrom *scalars.DateTime
+		expectError   bool
+	}{
+		{
+			name:          "nil awardable_from allows awarding",
+			awardableFrom: nil,
+			expectError:   false,
+		},
+		{
+			name:          "past awardable_from allows awarding",
+			awardableFrom: &scalars.DateTime{Time: time.Now().Add(-24 * time.Hour)},
+			expectError:   false,
+		},
+		{
+			name:          "current time awardable_from allows awarding",
+			awardableFrom: &scalars.DateTime{Time: time.Now().Add(-1 * time.Second)},
+			expectError:   false,
+		},
+		{
+			name:          "future awardable_from blocks awarding",
+			awardableFrom: &scalars.DateTime{Time: time.Now().Add(24 * time.Hour)},
+			expectError:   true,
+		},
+		{
+			name:          "far future awardable_from blocks awarding",
+			awardableFrom: &scalars.DateTime{Time: time.Now().Add(365 * 24 * time.Hour)},
+			expectError:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := isAchievementAwardable(tt.awardableFrom)
+			if tt.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "achievement is not yet available for awarding")
+			} else {
+				require.NoError(t, err)
+			}
+		})
 	}
 }

@@ -669,6 +669,18 @@ func (r *mutationResolver) AssignTeamsToSuperTeam(ctx context.Context, superTeam
 
 // AwardTeamAchievement is the resolver for the awardTeamAchievement field.
 func (r *mutationResolver) AwardTeamAchievement(ctx context.Context, teamID string, achievementID string) (model.Achievement, error) {
+	// Load achievement via caching loader to check awardable_from
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
+	achievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	// Check if achievement is awardable based on awardable_from timestamp
+	if err := isAchievementAwardable(getAchievementAwardableFrom(achievement)); err != nil {
+		return nil, err
+	}
+
 	// Award achievement to all team members in a single query
 	if err := r.DB.Queries.AwardTeamAchievementBatch(ctx, sqlc.AwardTeamAchievementBatchParams{
 		TeamID:        teamID,
@@ -726,6 +738,18 @@ func (r *mutationResolver) RevokeTeamAchievement(ctx context.Context, teamID str
 
 // AwardSuperTeamAchievement is the resolver for the awardSuperTeamAchievement field.
 func (r *mutationResolver) AwardSuperTeamAchievement(ctx context.Context, superTeamID string, achievementID string) (model.Achievement, error) {
+	// Load achievement via caching loader to check awardable_from
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
+	achievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	// Check if achievement is awardable based on awardable_from timestamp
+	if err := isAchievementAwardable(getAchievementAwardableFrom(achievement)); err != nil {
+		return nil, err
+	}
+
 	// Award achievement to all superteam members in a single query
 	if err := r.DB.Queries.AwardSuperTeamAchievementBatch(ctx, sqlc.AwardSuperTeamAchievementBatchParams{
 		SuperTeamID:   superTeamID,

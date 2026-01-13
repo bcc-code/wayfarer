@@ -25,6 +25,8 @@ type Achievement struct {
 	ImageCompleted       string             `json:"image_completed"`
 	NotificationText     string             `json:"notification_text"`
 	SortOrder            int32              `json:"sort_order"`
+	// Earliest time the achievement can be awarded. NULL means always awardable.
+	AwardableFrom pgtype.Timestamptz `json:"awardable_from"`
 }
 
 type AchievementTranslation struct {
