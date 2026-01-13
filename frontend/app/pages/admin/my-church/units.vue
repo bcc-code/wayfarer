@@ -861,7 +861,7 @@ function handleDropMember(
                 icon="lucide:search"
               />
               <UPopover :content="{ align: 'end' }">
-                <UChip color="neutral" :show="filters.showO36">
+                <UChip color="neutral" size="lg" :show="filters.showO36">
                   <UButton variant="outline" color="neutral">
                     <Icon name="lucide:filter" />
                     {{ $t('admin.units.filter.title') }}
@@ -872,6 +872,8 @@ function handleDropMember(
                     <UCheckbox
                       v-model="filters.showO36"
                       :label="$t('admin.units.filter.showO36')"
+                      :description="$t('admin.units.filter.showO36Description')"
+                      :ui="{ description: 'max-w-[200px]' }"
                     />
                   </div>
                 </template>

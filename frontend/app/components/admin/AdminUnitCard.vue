@@ -96,6 +96,15 @@ function handleUserSelect(item: UserItem | undefined) {
 // Local copy of members for draggable (doesn't mutate, just for display)
 const localMembers = computed(() => [...props.members])
 
+const averageAge = computed(() => {
+  const mem = localMembers.value.filter((m) => typeof m.age === 'number')
+  if (mem.length === 0) {
+    return 0
+  }
+  const sum = mem.reduce((acc, m) => acc + m.age!, 0)
+  return sum / mem.length
+})
+
 // Check if any member is a team lead
 const hasLeader = computed(() => props.members.some((m) => m.isTeamLead))
 
@@ -110,20 +119,26 @@ function handleDrop(event: SortableEvent) {
 </script>
 
 <template>
-  <div class="rounded-lg border border-default bg-elevated/50 overflow-hidden">
+  <div class="rounded-xl border border-default bg-elevated/50 overflow-hidden">
     <!-- Header -->
     <div
       class="w-full p-3 flex items-center justify-between hover:bg-elevated transition-colors cursor-pointer"
       @click="toggle"
     >
       <div class="flex items-center gap-3">
-        <span class="font-medium">{{ unit.name }}</span>
+        <p class="font-medium">{{ unit.name }}</p>
         <UBadge
           v-if="unit.members.length && !hasLeader"
           color="warning"
-          variant="subtle"
+          variant="soft"
           icon="lucide:triangle-alert"
           :label="$t('admin.unit.noLeaderSelected')"
+        />
+        <UBadge
+          v-if="averageAge >= 36"
+          color="warning"
+          variant="soft"
+          :label="$t('admin.unit.over36')"
         />
         <Icon
           v-if="loading"
@@ -157,6 +172,16 @@ function handleDrop(event: SortableEvent) {
 
     <!-- Expanded content -->
     <div v-if="isExpanded" class="border-t border-default p-4">
+      <UAlert
+        v-if="averageAge >= 36"
+        color="warning"
+        variant="soft"
+        icon="lucide:triangle-alert"
+        :description="
+          $t('admin.units.ageWarning', { email: 'support@bcc.media' })
+        "
+        class="mb-2"
+      />
       <!-- Members list (droppable) -->
       <VueDraggable
         :model-value="localMembers"
