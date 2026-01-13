@@ -237,6 +237,7 @@ func (r *mutationResolver) UpdateTeam(ctx context.Context, id string, input mode
 
 	// Invalidate caches
 	r.Cache.InvalidateTeam(id)
+	r.Cache.Delete(cache.TeamsByProjectKey(existingTeam.ProjectID))
 	r.Cache.DeletePrefix(cache.PrefixTeamsFilter)
 	r.Cache.DeletePrefix(cache.PrefixTeamsCount)
 

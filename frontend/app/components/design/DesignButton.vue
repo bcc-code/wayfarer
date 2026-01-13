@@ -6,10 +6,12 @@ withDefaults(
     variant?: 'primary' | 'secondary' | 'tertiary'
     size?: 'small' | 'medium' | 'large'
     disabled?: boolean
+    loading?: boolean
   }>(),
   {
     variant: 'primary',
     size: 'medium',
+    loading: false,
   },
 )
 
@@ -51,6 +53,13 @@ const classes = cva(
     @pointerup="onPressEnd(buttonRef)"
     @pointerleave="onPressEnd(buttonRef)"
   >
-    <slot />
+    <Icon
+      v-if="loading"
+      name="svg-spinners:bars-rotate-fade"
+      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+    />
+    <span :class="{ 'opacity-0': loading }">
+      <slot />
+    </span>
   </button>
 </template>

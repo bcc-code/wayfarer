@@ -46,7 +46,19 @@ const selectedTeamLeader = computed(() => {
 const { executeMutation } = useUpdateTeamMutation()
 const { executeMutation: assignTeamLead } = useAssignTeamLeadMutation()
 
+// Drawer state
+const showEditDrawer = ref(false)
+const showLeadSelector = ref(false)
+
+function selectTeamLead(userId: string) {
+  form.teamLeadId = userId
+  showLeadSelector.value = false
+}
+
+// Saving changes
+const saving = ref(false)
 async function saveChanges() {
+  saving.value = true
   const id = data.value?.myCurrentProject.myTeam?.id
   if (!id) return
 
@@ -62,14 +74,8 @@ async function saveChanges() {
   }
 
   refetch()
-}
-
-// Team lead selector
-const showLeadSelector = ref(false)
-
-function selectTeamLead(userId: string) {
-  form.teamLeadId = userId
-  showLeadSelector.value = false
+  showEditDrawer.value = false
+  saving.value = false
 }
 </script>
 
@@ -85,7 +91,11 @@ function selectTeamLead(userId: string) {
         <h2 class="text-heading text-balance">
           {{ data.myCurrentProject.myTeam.name }}
         </h2>
-        <DesignDrawer v-if="isTeamLead" :title="$t('unit.editUnit')">
+        <DesignDrawer
+          v-if="isTeamLead"
+          v-model:open="showEditDrawer"
+          :title="$t('unit.editUnit')"
+        >
           <DesignButton variant="secondary" size="medium">
             {{ $t('unit.editUnit') }}
           </DesignButton>
@@ -138,7 +148,12 @@ function selectTeamLead(userId: string) {
                 </template>
               </DesignDrawer>
               <div class="p-default flex grow flex-col justify-end">
-                <DesignButton size="large" class="grow-0" @click="saveChanges">
+                <DesignButton
+                  size="large"
+                  class="grow-0"
+                  :loading="saving"
+                  @click="saveChanges"
+                >
                   {{ $t('unit.saveChanges') }}
                 </DesignButton>
               </div>
