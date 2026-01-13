@@ -1273,3 +1273,10 @@ type QuizSubmissionConnection {
     pageInfo: PageInfo!
     totalCount: Int!
 }
+
+# ==================== Firebase Types ====================
+
+type FirebaseTokenResponse {
+    token: String!
+    expiresIn: Int!
+}

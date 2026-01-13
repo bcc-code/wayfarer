@@ -1,5 +1,33 @@
 <script setup lang="ts">
-const ageRange = ref({ min: 13, max: 19 })
+import { getExtraItems } from '~/utils/leaderboard'
+
+const AGE_RANGE_YOUNG = { min: 13, max: 18 } as const
+const AGE_RANGE_ADULT = { min: 19, max: 37 } as const
+
+const { me } = useAuth()
+
+function getAgeRangeForAge(age: number | null | undefined) {
+  if (age && age >= AGE_RANGE_ADULT.min && age <= AGE_RANGE_ADULT.max) {
+    return AGE_RANGE_ADULT
+  }
+  return AGE_RANGE_YOUNG
+}
+
+const ageRange = ref(getAgeRangeForAge(me.value?.age))
+
+// Update age range when user data loads (only once)
+let stopAgeWatch: (() => void) | undefined
+// eslint-disable-next-line prefer-const
+stopAgeWatch = watch(
+  () => me.value?.age,
+  (age) => {
+    if (age !== undefined) {
+      ageRange.value = getAgeRangeForAge(age)
+      stopAgeWatch?.()
+    }
+  },
+  { immediate: true },
+)
 
 const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useStandingsGlobalPageQuery({
@@ -15,16 +43,14 @@ const { data, error, fetching } = useStandingsGlobalPageQuery({
 
 const leaderboard = computed<LeaderboardEntry[]>(() => {
   if (!data.value) return []
+  return data.value.myCurrentProject.leaderboard.edges.map((edge) => edge.node)
+})
 
-  const result = []
-  result.push(
-    ...data.value.myCurrentProject.leaderboard.edges.map((edge) => edge.node),
+const extraItems = computed<LeaderboardEntry[]>(() => {
+  return getExtraItems(
+    leaderboard.value,
+    data.value?.myCurrentProject.leaderboard.me,
   )
-  const me = data.value?.myCurrentProject.leaderboard.me
-  if (me && !result.find((entry) => entry.id === me.id)) {
-    result.push(me)
-  }
-  return result
 })
 
 // Only show loading state on initial load, not on refetch
@@ -48,13 +74,13 @@ const isInitialLoading = computed(() => fetching.value && !data.value)
         :tabs="[
           {
             key: 'u18',
-            label: $t('standings.u18'),
-            value: { min: 13, max: 19 },
+            label: '13 - 18',
+            value: AGE_RANGE_YOUNG,
           },
           {
             key: 'o18',
-            label: $t('standings.o18'),
-            value: { min: 20, max: 37 },
+            label: '19 - 36',
+            value: AGE_RANGE_ADULT,
           },
         ]"
         class="mb-list-section-gap"
@@ -68,7 +94,7 @@ const isInitialLoading = computed(() => fetching.value && !data.value)
           </div>
         </template>
       </DesignTabs>
-      <LeaderboardList :leaderboard="leaderboard" />
+      <LeaderboardList :leaderboard="leaderboard" :extra-items="extraItems" />
     </template>
     <EmptyState v-else :title="$t('emptyStates.standings')" />
   </div>

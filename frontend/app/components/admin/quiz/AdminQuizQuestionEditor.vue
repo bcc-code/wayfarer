@@ -61,10 +61,10 @@ function handleSave() {
 <template>
   <div class="border border-default rounded-lg p-4 space-y-4">
     <h4 class="font-medium">
-      {{ question.id ? 'Edit Question' : 'New Question' }}
+      {{ question.id ? 'Rediger spørsmål' : 'Nytt spørsmål' }}
     </h4>
 
-    <UFormField name="questionType" label="Question Type">
+    <UFormField name="questionType" label="Spørsmålstype">
       <USelect
         v-model="localQuestion.questionType"
         :items="questionTypeOptions"
@@ -73,7 +73,7 @@ function handleSave() {
       />
     </UFormField>
 
-    <UFormField name="questionText" label="Question Text">
+    <UFormField name="questionText" label="Spørsmålstekst">
       <UTextarea
         v-model="localQuestion.questionText"
         class="w-full"
@@ -83,7 +83,7 @@ function handleSave() {
     </UFormField>
 
     <div class="grid grid-cols-2 gap-4">
-      <UFormField name="points" label="Points">
+      <UFormField name="points" label="Poeng">
         <UInput
           v-model.number="localQuestion.points"
           type="number"
@@ -94,8 +94,8 @@ function handleSave() {
 
       <UFormField
         name="timeoutSeconds"
-        label="Timeout (seconds)"
-        hint="(optional)"
+        label="Tidsbegrensning (sekunder)"
+        hint="(valgfritt)"
       >
         <UInput
           v-model.number="localQuestion.timeoutSeconds"
@@ -111,15 +111,15 @@ function handleSave() {
       <UFormField name="allowMultipleSelection">
         <UCheckbox
           v-model="localQuestion.allowMultipleSelection"
-          label="Allow multiple answers"
+          label="Tillat flere svar"
         />
       </UFormField>
 
       <div class="space-y-3">
         <div class="flex items-center justify-between">
-          <label class="text-sm font-medium">Answers</label>
+          <label class="text-sm font-medium">Svaralternativer</label>
           <UButton size="xs" variant="ghost" @click="addAnswer">
-            Add Answer
+            Legg til svar
           </UButton>
         </div>
 
@@ -131,7 +131,7 @@ function handleSave() {
           <UCheckbox v-model="answer.isCorrect" />
           <UInput
             v-model="answer.answerText"
-            placeholder="Answer text"
+            placeholder="Svartekst"
             size="xl"
             class="flex-1"
           />
@@ -142,12 +142,12 @@ function handleSave() {
             :disabled="(localQuestion.predefinedAnswers?.length ?? 0) <= 2"
             @click="removeAnswer(index)"
           >
-            Remove
+            Fjern
           </UButton>
         </div>
 
         <p class="text-xs text-text-muted">
-          Check the box next to correct answer(s)
+          Kryss av for riktig(e) svar
         </p>
       </div>
     </template>
@@ -155,7 +155,7 @@ function handleSave() {
     <!-- Number Question Options -->
     <template v-if="localQuestion.questionType === QuizQuestionType.Number">
       <div class="grid grid-cols-3 gap-4">
-        <UFormField name="minValue" label="Min Value">
+        <UFormField name="minValue" label="Minimumsverdi">
           <UInput
             v-model.number="localQuestion.minValue"
             type="number"
@@ -164,7 +164,7 @@ function handleSave() {
           />
         </UFormField>
 
-        <UFormField name="maxValue" label="Max Value">
+        <UFormField name="maxValue" label="Maksimumsverdi">
           <UInput
             v-model.number="localQuestion.maxValue"
             type="number"
@@ -173,7 +173,7 @@ function handleSave() {
           />
         </UFormField>
 
-        <UFormField name="stepValue" label="Step">
+        <UFormField name="stepValue" label="Steg">
           <UInput
             v-model.number="localQuestion.stepValue"
             type="number"
@@ -186,9 +186,9 @@ function handleSave() {
 
     <div class="flex gap-3 pt-2">
       <UButton @click="handleSave">
-        {{ question.id ? 'Update' : 'Add' }} Question
+        {{ question.id ? 'Oppdater' : 'Legg til' }} spørsmål
       </UButton>
-      <UButton variant="ghost" @click="emit('cancel')">Cancel</UButton>
+      <UButton variant="ghost" @click="emit('cancel')">Avbryt</UButton>
     </div>
   </div>
 </template>

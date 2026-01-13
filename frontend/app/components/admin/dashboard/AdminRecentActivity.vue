@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useTimeAgo } from '@vueuse/core'
-
 defineProps<{
   feedbackEntries: Array<{
     id: string
@@ -9,16 +7,12 @@ defineProps<{
     user: { id: string; name: string }
   }>
 }>()
-
-function formatRelativeTime(dateString: string) {
-  return useTimeAgo(new Date(dateString)).value
-}
 </script>
 
 <template>
   <UCard>
     <template #header>
-      <h3 class="font-semibold">Recent Feedback</h3>
+      <h3 class="font-semibold">Siste tilbakemeldinger</h3>
     </template>
 
     <div class="space-y-3">
@@ -34,10 +28,10 @@ function formatRelativeTime(dateString: string) {
         </p>
       </div>
       <p v-if="!feedbackEntries.length" class="text-muted text-center text-sm">
-        No recent feedback
+        Ingen nye tilbakemeldinger
       </p>
       <UButton variant="ghost" size="sm" to="/admin/feedback" class="w-full">
-        View all feedback
+        Se alle tilbakemeldinger
       </UButton>
     </div>
   </UCard>

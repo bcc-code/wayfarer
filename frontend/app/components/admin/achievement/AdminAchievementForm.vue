@@ -152,20 +152,20 @@ const typeSpecificError = computed(() => {
   switch (selectedType.value) {
     case 'CONTENT':
       if (contentItems.value.length === 0) {
-        return 'At least one content item is required'
+        return 'Minst ett innholdselement er påkrevd'
       }
       break
     case 'STREAK':
       if (!streakId.value) {
-        return 'A streak must be selected'
+        return 'En streak må velges'
       }
       if (neededStreak.value < 1) {
-        return 'Required days must be at least 1'
+        return 'Antall påkrevde dager må være minst 1'
       }
       break
     case 'QUIZ':
       if (!quizId.value) {
-        return 'A quiz must be selected'
+        return 'En quiz må velges'
       }
       break
   }
@@ -206,16 +206,16 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-8">
+  <div class="flex gap-8">
     <UForm
       :state
       :schema="schema"
       loading-auto
-      class="flex max-w-lg flex-col gap-6"
+      class="flex flex-col gap-6 grow"
       @submit.prevent="handleSubmit"
     >
       <!-- Type Selector (only in create mode) -->
-      <UFormField v-if="!isEditMode" name="type" label="Achievement Type">
+      <UFormField v-if="!isEditMode" name="type" label="Utmerkelsestype">
         <AdminAchievementTypeSelector
           v-model="selectedType"
           :disabled="isEditMode"
@@ -227,22 +227,22 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         <span class="font-medium">Type:</span>
         {{
           selectedType === 'SIMPLE'
-            ? 'Simple'
+            ? 'Enkel'
             : selectedType === 'CONTENT'
-              ? 'Content'
+              ? 'Innhold'
               : selectedType === 'STREAK'
                 ? 'Streak'
                 : 'Quiz'
         }}
-        Achievement
+        utmerkelse
       </div>
 
       <!-- Common Fields -->
-      <UFormField name="name" label="Name">
+      <UFormField name="name" label="Navn">
         <UInput v-model="state.name" size="xl" required class="w-full" />
       </UFormField>
 
-      <UFormField name="descriptionPending" label="Description (Pending)">
+      <UFormField name="descriptionPending" label="Beskrivelse (ikke oppnådd)">
         <UTextarea
           v-model="state.descriptionPending"
           class="w-full"
@@ -251,7 +251,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         />
       </UFormField>
 
-      <UFormField name="descriptionCompleted" label="Description (Completed)">
+      <UFormField name="descriptionCompleted" label="Beskrivelse (oppnådd)">
         <UTextarea
           v-model="state.descriptionCompleted"
           class="w-full"
@@ -262,8 +262,8 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
 
       <UFormField
         name="notificationText"
-        label="Notification Text"
-        help="Text shown in push notifications when user earns this achievement"
+        label="Varslingstekst"
+        help="Tekst som vises i push-varsler når brukere oppnår denne utmerkelsen"
       >
         <UInput
           v-model="state.notificationText"
@@ -275,23 +275,21 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
 
       <UFormField
         name="imagePending"
-        label="Image URL (Pending)"
-        hint="(optional)"
-        help="URL to an image for this achievement"
+        label="Bilde (ikke oppnådd)"
+        hint="(valgfritt)"
       >
-        <UInput v-model="state.imagePending" size="xl" class="w-full" />
+        <AdminFileUpload v-model="state.imagePending" />
       </UFormField>
 
       <UFormField
         name="imageCompleted"
-        label="Image URL (Completed)"
-        hint="(optional)"
-        help="URL to an image for this achievement"
+        label="Bilde (oppnådd)"
+        hint="(valgfritt)"
       >
-        <UInput v-model="state.imageCompleted" size="xl" class="w-full" />
+        <AdminFileUpload v-model="state.imageCompleted" />
       </UFormField>
 
-      <UFormField name="points" label="Points">
+      <UFormField name="points" label="Poeng for utmerkelsen">
         <UInput
           v-model.number="state.points"
           type="number"
@@ -301,24 +299,24 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         />
       </UFormField>
 
-      <UFormField name="hidden" label="Hidden">
+      <UFormField name="hidden" label="Skjult">
         <UCheckbox
           v-model="state.hidden"
-          label="Hide this achievement from users until they earn it"
+          label="Skjul denne utmerkelsen fra brukere frem til de oppnår den"
         />
       </UFormField>
 
       <!-- Type-specific sections -->
       <template v-if="selectedType === 'CONTENT'">
         <div class="border-default border-t pt-6">
-          <h3 class="mb-4 font-medium">Content Items</h3>
+          <h3 class="mb-4 font-medium">Innholdselementer</h3>
           <AdminContentItemSelector v-model="contentItems" />
         </div>
       </template>
 
       <template v-else-if="selectedType === 'STREAK'">
         <div class="border-default border-t pt-6">
-          <h3 class="mb-4 font-medium">Streak Configuration</h3>
+          <h3 class="mb-4 font-medium">Streak-konfigurasjon</h3>
           <AdminStreakSelector
             :project-id="projectId"
             :streak-id="streakId"
@@ -331,7 +329,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
 
       <template v-else-if="selectedType === 'QUIZ'">
         <div class="border-default border-t pt-6">
-          <h3 class="mb-4 font-medium">Quiz Configuration</h3>
+          <h3 class="mb-4 font-medium">Quiz-konfigurasjon</h3>
           <AdminQuizSelector
             :project-id="projectId"
             :quiz-id="quizId"
@@ -358,7 +356,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         block
         @click="onDelete"
       >
-        Delete Achievement
+        Slett utmerkelse
       </UButton>
     </UForm>
 

@@ -55,9 +55,9 @@ const editState = reactive({
 })
 
 const categoryOptions = [
-  { label: 'Small (S)', value: ChurchCategory.S },
-  { label: 'Large (L)', value: ChurchCategory.L },
-  { label: 'Extra Large (XL)', value: ChurchCategory.Xl },
+  { label: 'Liten (S)', value: ChurchCategory.S },
+  { label: 'Stor (L)', value: ChurchCategory.L },
+  { label: 'Ekstra stor (XL)', value: ChurchCategory.Xl },
 ]
 
 function startEditing() {
@@ -85,7 +85,7 @@ async function saveChanges() {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to update church',
+      title: 'Kunne ikke oppdatere menighet',
       description: result.error.message,
       color: 'error',
     })
@@ -93,7 +93,7 @@ async function saveChanges() {
   }
 
   toast.add({
-    title: 'Church updated',
+    title: 'Menighet oppdatert',
     color: 'success',
   })
 
@@ -105,14 +105,14 @@ async function saveChanges() {
 <template>
   <UContainer class="space-y-6 my-12">
     <div class="flex items-center justify-between">
-      <h1>Church Details</h1>
+      <h1>Menighetdetaljer</h1>
       <UButton
         v-if="!isEditing && data"
         variant="soft"
         icon="i-heroicons-pencil"
         @click="startEditing"
       >
-        Edit
+        Rediger
       </UButton>
     </div>
 
@@ -127,15 +127,15 @@ async function saveChanges() {
             <dd class="font-mono text-sm">{{ data.church.id }}</dd>
           </div>
           <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Name</dt>
+            <dt class="text-muted w-24 shrink-0">Navn</dt>
             <dd class="font-medium">{{ data.church.name }}</dd>
           </div>
           <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Country</dt>
+            <dt class="text-muted w-24 shrink-0">Land</dt>
             <dd>{{ data.church.country }}</dd>
           </div>
           <div class="flex gap-6 py-2">
-            <dt class="text-muted w-24 shrink-0">Category</dt>
+            <dt class="text-muted w-24 shrink-0">Kategori</dt>
             <dd>{{ data.church.category }}</dd>
           </div>
         </dl>
@@ -144,15 +144,15 @@ async function saveChanges() {
       <!-- Edit Mode -->
       <UCard v-else>
         <div class="space-y-4">
-          <UFormField label="Name">
+          <UFormField label="Navn">
             <UInput v-model="editState.name" class="w-full" />
           </UFormField>
 
-          <UFormField label="Country">
+          <UFormField label="Land">
             <UInput v-model="editState.country" class="w-full" />
           </UFormField>
 
-          <UFormField label="Category">
+          <UFormField label="Kategori">
             <USelect
               v-model="editState.category"
               :items="categoryOptions"
@@ -161,8 +161,8 @@ async function saveChanges() {
           </UFormField>
 
           <div class="flex justify-end gap-2 pt-4">
-            <UButton variant="ghost" @click="cancelEditing">Cancel</UButton>
-            <UButton @click="saveChanges">Save Changes</UButton>
+            <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
+            <UButton @click="saveChanges">Lagre endringer</UButton>
           </div>
         </div>
       </UCard>

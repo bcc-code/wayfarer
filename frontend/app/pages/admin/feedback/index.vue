@@ -27,6 +27,9 @@ gql(`
           screenWidth
           screenHeight
           appVersion
+          locale
+          projectId
+          timezone
           createdAt
           user {
             id
@@ -63,33 +66,20 @@ const feedbacks = computed(() =>
 type FeedbackNode = NonNullable<typeof feedbacks.value>[number]
 
 const columns: TableColumn<FeedbackNode>[] = [
-  { accessorKey: 'user.name', id: 'user', header: 'User' },
-  { accessorKey: 'message', header: 'Message' },
-  { accessorKey: 'canContactMe', header: 'Can Contact' },
-  { accessorKey: 'platform', id: 'device', header: 'Device' },
-  { accessorKey: 'appVersion', header: 'Version' },
-  { accessorKey: 'createdAt', header: 'Submitted' },
-  { id: 'actions' },
+  { accessorKey: 'user.name', id: 'user', header: 'Bruker' },
+  { accessorKey: 'message', header: 'Melding' },
+  { accessorKey: 'createdAt', header: 'Dato' },
+  { id: 'actions', header: '' },
 ]
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+// Expanded message state
+const expandedMessages = ref<Set<string>>(new Set())
 
-// Expanded row state
-const expandedRows = ref<Set<string>>(new Set())
-
-function toggleRow(id: string) {
-  if (expandedRows.value.has(id)) {
-    expandedRows.value.delete(id)
+function toggleMessage(id: string) {
+  if (expandedMessages.value.has(id)) {
+    expandedMessages.value.delete(id)
   } else {
-    expandedRows.value.add(id)
+    expandedMessages.value.add(id)
   }
 }
 
@@ -111,13 +101,13 @@ async function handleDelete() {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to delete feedback',
+      title: 'Kunne ikke slette tilbakemelding',
       description: result.error.message,
       color: 'error',
     })
   } else {
     toast.add({
-      title: 'Feedback deleted',
+      title: 'Tilbakemelding slettet',
       color: 'success',
     })
     executeQuery({ requestPolicy: 'network-only' })
@@ -133,7 +123,7 @@ const { canDeleteFeedback } = usePermissions()
 <template>
   <UContainer class="py-12">
     <div class="mb-6 flex items-center gap-6">
-      <h1 class="text-3xl">User Feedback</h1>
+      <h1 class="text-3xl">Tilbakemeldinger</h1>
     </div>
     <ErrorState v-if="error" :error />
     <div v-else class="space-y-4">
@@ -158,76 +148,87 @@ const { canDeleteFeedback } = usePermissions()
           </div>
         </template>
         <template #message-cell="{ row }">
-          <div class="max-w-md">
+          <div class="max-w-lg">
             <p
               :class="[
                 'text-sm whitespace-pre-wrap',
-                expandedRows.has(row.original.id) ? '' : 'line-clamp-4',
+                expandedMessages.has(row.original.id) ? '' : 'line-clamp-3',
               ]"
             >
               {{ row.original.message }}
             </p>
             <button
               v-if="row.original.message.length > 100"
-              class="text-primary text-xs hover:underline"
-              @click="toggleRow(row.original.id)"
+              class="text-primary text-xs hover:underline mt-1"
+              @click="toggleMessage(row.original.id)"
             >
               {{
-                expandedRows.has(row.original.id) ? 'Show less' : 'Show more'
+                expandedMessages.has(row.original.id) ? 'Vis mindre' : 'Les mer'
               }}
             </button>
           </div>
         </template>
-        <template #canContactMe-cell="{ row }">
-          <UBadge
-            :color="row.original.canContactMe ? 'success' : 'neutral'"
-            variant="soft"
-          >
-            {{ row.original.canContactMe ? 'Yes' : 'No' }}
-          </UBadge>
-        </template>
-        <template #device-cell="{ row }">
-          <div class="text-dimmed space-y-1 text-xs">
-            <div v-if="row.original.platform">
-              {{ row.original.platform }}
-            </div>
-            <div v-if="row.original.screenWidth && row.original.screenHeight">
-              {{ row.original.screenWidth }}x{{ row.original.screenHeight }}
-            </div>
-            <div
-              v-if="row.original.userAgent"
-              class="max-w-xs truncate"
-              :title="row.original.userAgent"
-            >
-              {{ row.original.userAgent }}
-            </div>
-            <span
-              v-if="
-                !row.original.platform &&
-                !row.original.userAgent &&
-                !row.original.screenWidth
-              "
-            >
-              —
-            </span>
-          </div>
-        </template>
-        <template #appVersion-cell="{ row }">
-          <code v-if="row.original.appVersion" class="text-xs">
-            {{ row.original.appVersion }}
-          </code>
-          <span v-else class="text-dimmed">—</span>
-        </template>
         <template #createdAt-cell="{ row }">
           <span class="text-dimmed text-sm">
-            {{ formatDate(row.original.createdAt) }}
+            {{ formatDateTime(row.original.createdAt) }}
           </span>
         </template>
         <template #actions-cell="{ row }">
-          <div class="flex justify-end">
+          <div class="flex justify-end gap-1">
+            <UPopover>
+              <UButton
+                variant="ghost"
+                color="neutral"
+                size="sm"
+                icon="i-lucide-info"
+              />
+              <template #content>
+                <div
+                  class="p-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs min-w-56"
+                >
+                  <span class="text-dimmed">Kan kontaktes:</span>
+                  <span>{{ row.original.canContactMe ? 'Ja' : 'Nei' }}</span>
+                  <template v-if="row.original.locale">
+                    <span class="text-dimmed">Språk:</span>
+                    <span>{{ row.original.locale }}</span>
+                  </template>
+                  <template v-if="row.original.timezone">
+                    <span class="text-dimmed">Tidssone:</span>
+                    <span>{{ row.original.timezone }}</span>
+                  </template>
+                  <template v-if="row.original.projectId">
+                    <span class="text-dimmed">Prosjekt:</span>
+                    <span>{{ row.original.projectId }}</span>
+                  </template>
+                  <template v-if="row.original.platform">
+                    <span class="text-dimmed">Plattform:</span>
+                    <span>{{ row.original.platform }}</span>
+                  </template>
+                  <template
+                    v-if="row.original.screenWidth && row.original.screenHeight"
+                  >
+                    <span class="text-dimmed">Skjerm:</span>
+                    <span
+                      >{{ row.original.screenWidth }}x{{
+                        row.original.screenHeight
+                      }}</span
+                    >
+                  </template>
+                  <template v-if="row.original.userAgent">
+                    <span class="text-dimmed">Nettleser:</span>
+                    <span>{{ parseUserAgent(row.original.userAgent) }}</span>
+                  </template>
+                  <template v-if="row.original.appVersion">
+                    <span class="text-dimmed">Versjon:</span>
+                    <code>{{ row.original.appVersion }}</code>
+                  </template>
+                </div>
+              </template>
+            </UPopover>
             <UButton
               v-if="canDeleteFeedback"
               variant="ghost"
+              size="sm"
               color="error"
               icon="i-lucide-trash-2"
               @click="confirmDelete(row.original.id)"
@@ -237,24 +238,31 @@ const { canDeleteFeedback } = usePermissions()
       </UTable>
       <UEmpty
         v-if="!fetching && feedbacks?.length === 0"
-        title="No feedback yet"
-        description="User feedback will appear here once submitted."
+        title="Ingen tilbakemeldinger ennå"
+        description="Tilbakemeldinger fra brukere vises her når de blir sendt inn."
       />
     </div>
 
     <UModal v-model:open="deleteModal">
       <template #content>
         <div class="p-6">
-          <h3 class="mb-4 text-lg font-semibold">Delete Feedback</h3>
+          <Icon name="lucide:triangle-alert" class="text-error size-8" />
+          <h3 class="my-2 text-lg font-semibold">Slett tilbakemelding</h3>
           <p class="text-dimmed mb-6">
-            Are you sure you want to delete this feedback? This action cannot
-            be undone.
+            Er du sikker på at du vil slette denne tilbakemeldingen? Denne
+            handlingen kan ikke angres.
           </p>
           <div class="flex justify-end gap-3">
-            <UButton variant="ghost" @click="deleteModal = false">
-              Cancel
+            <UButton
+              color="neutral"
+              variant="ghost"
+              @click="deleteModal = false"
+            >
+              Avbryt
             </UButton>
-            <UButton color="error" @click="handleDelete">Delete</UButton>
+            <UButton color="error" @click="handleDelete">
+              Ja, jeg vil slette
+            </UButton>
           </div>
         </div>
       </template>

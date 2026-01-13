@@ -10,7 +10,10 @@ INSERT INTO user_feedback (
     platform,
     screen_width,
     screen_height,
-    app_version
+    app_version,
+    locale,
+    project_id,
+    timezone
 ) VALUES (
     @id::text,
     @userid::text,
@@ -20,7 +23,10 @@ INSERT INTO user_feedback (
     @platform::text,
     @screenwidth::int,
     @screenheight::int,
-    @appversion::text
+    @appversion::text,
+    @locale::text,
+    NULLIF(@projectid::text, ''),
+    @timezone::text
 ) RETURNING *;
 
 -- name: GetRecentFeedbackCount :one

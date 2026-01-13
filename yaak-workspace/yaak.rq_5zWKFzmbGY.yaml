@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_5zWKFzmbGY
 createdAt: 2025-12-14T21:49:01.948267
-updatedAt: 2025-12-14T21:52:01.050134
+updatedAt: 2026-01-07T14:44:48.544491
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_qhH6J7tuNv
 authentication: {}
@@ -39,6 +39,6 @@ headers:
   id: 0s4xJY0Rq9
 method: POST
 name: Update Project
-sortPriority: 0.001
+sortPriority: 2000.0
 url: ${[ HOST ]}/graphql
 urlParameters: []

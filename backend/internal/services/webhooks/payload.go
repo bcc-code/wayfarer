@@ -1,6 +1,10 @@
 package webhooks
 
-import "time"
+import (
+	"time"
+
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+)
 
 // EventType represents the type of webhook event
 type EventType string
@@ -25,6 +29,40 @@ type UserData struct {
 	MembersID string `json:"members_id"`
 	Email     string `json:"email"`
 	Name      string `json:"name"`
+}
+
+// UserRow is a type constraint for sqlc user row types that have the fields needed for UserData.
+type UserRow interface {
+	*sqlc.GetUserByIDRow | *sqlc.GetUserByPersonUUIDRow
+}
+
+// NewUserData creates a UserData from a sqlc user row.
+func NewUserData[T UserRow](user T) *UserData {
+	name := ""
+	// Use type assertion to access fields since Go generics don't support field access
+	switch u := any(user).(type) {
+	case *sqlc.GetUserByIDRow:
+		if u.DisplayName != nil {
+			name = *u.DisplayName
+		}
+		return &UserData{
+			ID:        u.ID,
+			MembersID: u.MembersID,
+			Email:     u.Email,
+			Name:      name,
+		}
+	case *sqlc.GetUserByPersonUUIDRow:
+		if u.DisplayName != nil {
+			name = *u.DisplayName
+		}
+		return &UserData{
+			ID:        u.ID,
+			MembersID: u.MembersID,
+			Email:     u.Email,
+			Name:      name,
+		}
+	}
+	return nil
 }
 
 // ExternalContentEventData for external_content_event webhooks

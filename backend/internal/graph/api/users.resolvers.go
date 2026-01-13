@@ -12,7 +12,9 @@ import (
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
+	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/google/uuid"
 )
 
 // UpdateAvatar is the resolver for the updateAvatar field.
@@ -173,15 +175,24 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, fir
 		// Convert birthdate to string (always valid since birthdate is required)
 		birthdateStr := row.Birthdate.Time.Format("2006-01-02")
 
+		// Convert PersonUuid if valid
+		var personUUID *string
+		if row.PersonUuid.Valid {
+			s := uuid.UUID(row.PersonUuid.Bytes).String()
+			personUUID = &s
+		}
+
 		modelUsers[i] = model.User{
-			ID:        row.ID,
-			MembersID: row.MembersID,
-			Email:     row.Email,
-			Name:      row.Name,
-			Gender:    model.Gender(row.Gender),
-			Birthdate: birthdateStr,
-			ChurchID:  row.ChurchID,
-			Image:     row.AvatarUrl,
+			ID:         row.ID,
+			MembersID:  row.MembersID,
+			PersonUUID: personUUID,
+			Email:      row.Email,
+			Name:       row.Name,
+			Gender:     model.Gender(row.Gender),
+			Birthdate:  birthdateStr,
+			ChurchID:   row.ChurchID,
+			Image:      row.AvatarUrl,
+			CreatedAt:  scalars.DateTime{Time: row.CreatedAt.Time},
 		}
 	}
 

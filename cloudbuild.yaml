@@ -41,6 +41,34 @@ steps:
       - >-
         $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME
     id: Push
+  - name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        if [ -n "$_STATIC_BUCKET" ]; then
+          docker create --name static-extract $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+          docker cp static-extract:/static /workspace/static-files
+          docker rm static-extract
+          echo "Extracted static files to /workspace/static-files"
+        fi
+    id: Extract-Static
+    waitFor:
+      - Build
+  - name: gcr.io/cloud-builders/gsutil
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        if [ -n "$_STATIC_BUCKET" ]; then
+          gsutil -m rsync -r -d /workspace/static-files $_STATIC_BUCKET
+          echo "Synced static files to $_STATIC_BUCKET"
+        else
+          echo "Skipping bucket sync: _STATIC_BUCKET not configured"
+        fi
+    id: Sync-Static-To-Bucket
+    waitFor:
+      - Extract-Static
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
     args:
       - run
@@ -81,6 +109,7 @@ substitutions:
   _NUXT_PUBLIC_IS_STAGING: ""
   _NUXT_PUBLIC_AUTH0_CLIENT_ID: ""
   _NUXT_PUBLIC_AUTH0_AUDIENCE: ""
+  _STATIC_BUCKET: ""
 tags:
   - gcp-cloud-build-deploy-cloud-run
   - gcp-cloud-build-deploy-cloud-run-managed

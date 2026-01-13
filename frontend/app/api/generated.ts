@@ -494,9 +494,11 @@ export type DateRangeInput = {
 
 export type DeviceMetadata = {
   appVersion?: InputMaybe<Scalars['String']['input']>;
+  locale?: InputMaybe<Scalars['String']['input']>;
   platform: Scalars['String']['input'];
   screenHeight: Scalars['Int']['input'];
   screenWidth: Scalars['Int']['input'];
+  timezone?: InputMaybe<Scalars['String']['input']>;
   userAgent: Scalars['String']['input'];
 };
 
@@ -658,6 +660,12 @@ export type FeedbackEdge = {
 
 export type FeedbackFilter = {
   userId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type FirebaseTokenResponse = {
+  __typename?: 'FirebaseTokenResponse';
+  expiresIn: Scalars['Int']['output'];
+  token: Scalars['String']['output'];
 };
 
 export type FreeTextQuestion = QuizQuestion & {
@@ -1595,6 +1603,7 @@ export type Query = {
   externalContent: ExternalContent;
   externalContents: ExternalContentConnection;
   feedback: FeedbackConnection;
+  firebaseToken: FirebaseTokenResponse;
   instanceID: Scalars['String']['output'];
   me: User;
   myCurrentEvent: Event;
@@ -2214,6 +2223,7 @@ export type SubmitFeedbackInput = {
   canContactMe: Scalars['Boolean']['input'];
   device: DeviceMetadata;
   message: Scalars['String']['input'];
+  projectId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type SubmitQuizAnswerInput = {
@@ -2499,10 +2509,13 @@ export type UserFeedback = {
   canContactMe: Scalars['Boolean']['output'];
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
+  locale?: Maybe<Scalars['String']['output']>;
   message: Scalars['String']['output'];
   platform?: Maybe<Scalars['String']['output']>;
+  projectId?: Maybe<Scalars['ID']['output']>;
   screenHeight?: Maybe<Scalars['Int']['output']>;
   screenWidth?: Maybe<Scalars['Int']['output']>;
+  timezone?: Maybe<Scalars['String']['output']>;
   user: User;
   userAgent?: Maybe<Scalars['String']['output']>;
   userId: Scalars['ID']['output'];
@@ -3051,6 +3064,7 @@ export type AssignTeamLeadMutation = { __typename?: 'Mutation', assignTeamLead: 
 
 export type AdminExternalContentsQueryVariables = Exact<{
   filter: ExternalContentFilter;
+  sortBy?: InputMaybe<ExternalContentSortBy>;
   first?: InputMaybe<Scalars['Int']['input']>;
   after?: InputMaybe<Scalars['String']['input']>;
 }>;
@@ -3122,14 +3136,16 @@ export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __
       | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null }
     > } };
 
-export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
+export type ProfilePageQueryVariables = Exact<{
+  ageFilter?: InputMaybe<LeaderboardFilter>;
+}>;
 
 
 export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
-      | { __typename?: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number, nextItem?: { __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, title?: string | null, url?: string | null } } | null }
+      | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
     >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank?: number | null } | null } } };
 
 export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
@@ -3205,7 +3221,7 @@ export type AdminFeedbackPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminFeedbackPageQuery = { __typename?: 'Query', feedback: { __typename?: 'FeedbackConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'FeedbackEdge', cursor: string, node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, createdAt: any, user: { __typename?: 'User', id: string, name: string, email: string } } }> } };
+export type AdminFeedbackPageQuery = { __typename?: 'Query', feedback: { __typename?: 'FeedbackConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'FeedbackEdge', cursor: string, node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, locale?: string | null, projectId?: string | null, timezone?: string | null, createdAt: any, user: { __typename?: 'User', id: string, name: string, email: string } } }> } };
 
 export type AdminHomePageQueryVariables = Exact<{
   now: Scalars['DateTime']['input'];
@@ -3358,7 +3374,7 @@ export type AdminUserPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminUserPageQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, name: string, email: string, membersId: string, gender: Gender, birthdate: string, age?: number | null, image?: string | null, church: { __typename?: 'Church', id: string, name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType } | null }>, consentStatus: { __typename?: 'ConsentStatus', acceptedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number } }>, rejectedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number } }>, pendingConsents: Array<{ __typename?: 'Consent', id: string, key: string, title: string, version: number }> } }, adminScoreJournal: { __typename?: 'ScoreJournalConnection', totalCount: number, edges: Array<{ __typename?: 'ScoreJournalEdge', node: { __typename?: 'ScoreJournal', id: string, points: number, sourceType: ScoreSourceType, reason?: string | null, createdAt: any, project: { __typename?: 'Project', id: string, name: string }, awardedBy?: { __typename?: 'User', id: string, name: string } | null } }> }, feedback: { __typename?: 'FeedbackConnection', totalCount: number, edges: Array<{ __typename?: 'FeedbackEdge', node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, createdAt: any } }> } };
+export type AdminUserPageQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, personUuid?: string | null, createdAt: any, name: string, email: string, membersId: string, gender: Gender, birthdate: string, age?: number | null, image?: string | null, church: { __typename?: 'Church', id: string, name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType } | null }>, consentStatus: { __typename?: 'ConsentStatus', acceptedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number } }>, rejectedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number } }>, pendingConsents: Array<{ __typename?: 'Consent', id: string, key: string, title: string, version: number }> } }, adminScoreJournal: { __typename?: 'ScoreJournalConnection', totalCount: number, edges: Array<{ __typename?: 'ScoreJournalEdge', node: { __typename?: 'ScoreJournal', id: string, points: number, sourceType: ScoreSourceType, reason?: string | null, createdAt: any, project: { __typename?: 'Project', id: string, name: string }, awardedBy?: { __typename?: 'User', id: string, name: string } | null } }> }, feedback: { __typename?: 'FeedbackConnection', totalCount: number, edges: Array<{ __typename?: 'FeedbackEdge', node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, createdAt: any } }> } };
 
 export type AdminUsersPageQueryVariables = Exact<{
   filter?: InputMaybe<UserFilter>;
@@ -4144,8 +4160,8 @@ export function useAssignTeamLeadMutation() {
   return Urql.useMutation<AssignTeamLeadMutation, AssignTeamLeadMutationVariables>(AssignTeamLeadDocument);
 };
 export const AdminExternalContentsDocument = gql`
-    query AdminExternalContents($filter: ExternalContentFilter!, $first: Int, $after: String) {
-  externalContents(filter: $filter, first: $first, after: $after) {
+    query AdminExternalContents($filter: ExternalContentFilter!, $sortBy: ExternalContentSortBy, $first: Int, $after: String) {
+  externalContents(filter: $filter, sortBy: $sortBy, first: $first, after: $after) {
     edges {
       node {
         id
@@ -4321,7 +4337,7 @@ export function useChallengesPageQuery(options?: Omit<Urql.UseQueryArgs<never, C
   return Urql.useQuery<ChallengesPageQuery, ChallengesPageQueryVariables | undefined>({ query: ChallengesPageDocument, variables: undefined, ...options });
 };
 export const ProfilePageDocument = gql`
-    query ProfilePage {
+    query ProfilePage($ageFilter: LeaderboardFilter) {
   me {
     id
     name
@@ -4346,6 +4362,7 @@ export const ProfilePageDocument = gql`
     id
     name
     achievements {
+      __typename
       id
       name
       descriptionPending
@@ -4355,8 +4372,19 @@ export const ProfilePageDocument = gql`
       hidden
       achievedAt
       points
+      ... on ContentAchievement {
+        nextItem {
+          id
+          sortOrder
+          externalContent {
+            id
+            title
+            url
+          }
+        }
+      }
     }
-    leaderboard(entityType: PERSONS) {
+    leaderboard(entityType: PERSONS, filter: $ageFilter) {
       me {
         score
         rank
@@ -4630,6 +4658,9 @@ export const AdminFeedbackPageDocument = gql`
         screenWidth
         screenHeight
         appVersion
+        locale
+        projectId
+        timezone
         createdAt
         user {
           id
@@ -5233,6 +5264,8 @@ export const AdminUserPageDocument = gql`
     query AdminUserPage($id: ID!) {
   user(id: $id) {
     id
+    personUuid
+    createdAt
     name
     email
     membersId

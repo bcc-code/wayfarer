@@ -26,6 +26,7 @@ type Config struct {
 	VAPID    VAPIDConfig
 	Phrase   PhraseConfig
 	Plugin   PluginConfig
+	Firebase FirebaseConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -105,10 +106,9 @@ type SSFConfig struct {
 type S3Config struct {
 	Bucket          string // S3 bucket name
 	Region          string // AWS region
-	AccessKeyID     string // AWS access key ID (used locally, optional on Cloud Run)
-	SecretAccessKey string // AWS secret access key (used locally, optional on Cloud Run)
+	AccessKeyID     string // AWS access key ID
+	SecretAccessKey string // AWS secret access key
 	PublicBaseURL   string // Public base URL for uploaded files
-	RoleARN         string // AWS role ARN for OIDC auth on Cloud Run
 }
 
 // VAPIDConfig holds VAPID keys for web push notifications
@@ -136,6 +136,12 @@ type PhraseConfig struct {
 type PluginConfig struct {
 	LadderToHeavenAchievementID string // Achievement ID for Ladder to Heaven plugin (empty = disabled)
 	LadderToHeavenSecretKey     string // Secret key for webhook signature verification
+}
+
+// FirebaseConfig holds Firebase Admin SDK configuration
+type FirebaseConfig struct {
+	ServiceAccountJSON string // Path to service account JSON file or base64-encoded JSON content
+	DatabaseName       string // Firestore database name (default: "(default)")
 }
 
 // Load reads all environment variables and returns a Config struct
@@ -206,7 +212,6 @@ func Load() (*Config, error) {
 			AccessKeyID:     getEnv("AWS_S3_ACCESS_KEY_ID", ""),
 			SecretAccessKey: getEnv("AWS_S3_SECRET_ACCESS_KEY", ""),
 			PublicBaseURL:   getEnv("AWS_S3_PUBLIC_BASE_URL", ""),
-			RoleARN:         getEnv("AWS_S3_ROLE_ARN", ""),
 		},
 		VAPID: VAPIDConfig{
 			PublicKey:  getEnv("VAPID_PUBLIC_KEY", ""),
@@ -228,6 +233,10 @@ func Load() (*Config, error) {
 		Plugin: PluginConfig{
 			LadderToHeavenAchievementID: getEnv("PLUGIN_LADDER_TO_HEAVEN_ACHIEVEMENT_ID", ""),
 			LadderToHeavenSecretKey:     getEnv("PLUGIN_LADDER_TO_HEAVEN_SECRET_KEY", ""),
+		},
+		Firebase: FirebaseConfig{
+			ServiceAccountJSON: getEnv("FIREBASE_SERVICE_ACCOUNT", ""),
+			DatabaseName:       getEnv("FIREBASE_DATABASE_NAME", "(default)"),
 		},
 	}
 

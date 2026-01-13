@@ -2,7 +2,7 @@ type: folder
 model: folder
 id: fl_Translations
 createdAt: 2025-12-16T12:00:00
-updatedAt: 2025-12-16T12:00:00
+updatedAt: 2026-01-09T14:39:58.759160
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -10,4 +10,4 @@ authenticationType: null
 description: Translation export endpoints for Phrase TMS
 headers: []
 name: Translations
-sortPriority: 9000.0
+sortPriority: 13000.0

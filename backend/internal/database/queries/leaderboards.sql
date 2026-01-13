@@ -32,8 +32,8 @@ filtered_users AS MATERIALIZED (
     -- Apply age and church filters
     SELECT pu.id, pu.name, pu.avatar_url, pu.church_name
     FROM project_users pu
-    WHERE (@minage::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) >= @minage::int)
-      AND (@maxage::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) <= @maxage::int)
+    WHERE (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM pu.birthdate)) >= @minage::int)
+      AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM pu.birthdate)) <= @maxage::int)
       AND (@country::text = '' OR EXISTS (
           SELECT 1 FROM churches c
           WHERE c.id = pu.church_id AND c.country = @country::text
@@ -112,8 +112,8 @@ WITH ranked_scores AS (
       AND lpp.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR lpp.score <= @maxscore::int)
       AND (@churchid::text = '' OR u.church_id = @churchid::text)
-      AND (@minage::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) >= @minage::int)
-      AND (@maxage::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) <= @maxage::int)
+      AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
+      AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)
       -- Team filtering
       AND (@teamid::text = '' OR EXISTS (
           SELECT 1 FROM team_members tm
@@ -166,8 +166,8 @@ WITH project_users AS MATERIALIZED (
 )
 SELECT COUNT(*)::bigint AS total
 FROM project_users pu
-WHERE (@minage::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) >= @minage::int)
-  AND (@maxage::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) <= @maxage::int)
+WHERE (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM pu.birthdate)) >= @minage::int)
+  AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM pu.birthdate)) <= @maxage::int)
   AND (@country::text = '' OR EXISTS (
       SELECT 1 FROM churches c
       WHERE c.id = pu.church_id AND c.country = @country::text
@@ -529,8 +529,8 @@ WITH ranked_scores AS (
       AND lep.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR lep.score <= @maxscore::int)
       AND (@churchid::text = '' OR u.church_id = @churchid::text)
-      AND (@minage::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) >= @minage::int)
-      AND (@maxage::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) <= @maxage::int)
+      AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
+      AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)
       -- Team filtering
       AND (@teamid::text = '' OR EXISTS (
           SELECT 1 FROM team_members tm

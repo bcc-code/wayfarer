@@ -89,9 +89,9 @@ const isRemote = computed(() => {
 
 const url = computed(() => {
   if (props.consent.__typename == 'UserConsent') {
-    return props.consent.consent.url
+    return props.consent.consent.url ?? undefined
   }
-  return props.consent.url
+  return props.consent.url ?? undefined
 })
 
 const changing = ref(false)

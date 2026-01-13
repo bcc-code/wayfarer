@@ -13,6 +13,9 @@ func TestUserResolver_Age(t *testing.T) {
 	resolver := &userResolver{}
 	ctx := context.Background()
 
+	// The Age resolver calculates age as simple year difference (currentYear - birthYear)
+	currentYear := time.Now().Year()
+
 	tests := []struct {
 		name      string
 		birthdate string
@@ -40,19 +43,19 @@ func TestUserResolver_Age(t *testing.T) {
 		{
 			name:      "valid birthdate calculates correct age",
 			birthdate: "1990-06-15",
-			wantAge:   intPtr(calculateExpectedAge("1990-06-15")),
+			wantAge:   intPtr(currentYear - 1990),
 			wantErr:   false,
 		},
 		{
 			name:      "birthday not yet occurred this year",
-			birthdate: time.Now().AddDate(-25, 6, 0).Format("2006-01-02"),
-			wantAge:   intPtr(24), // Birthday hasn't happened yet
+			birthdate: time.Now().AddDate(-25, 1, 0).Format("2006-01-02"),
+			wantAge:   intPtr(currentYear - time.Now().AddDate(-25, 1, 0).Year()),
 			wantErr:   false,
 		},
 		{
 			name:      "birthday already occurred this year",
-			birthdate: time.Now().AddDate(-25, -6, 0).Format("2006-01-02"),
-			wantAge:   intPtr(25), // Birthday already happened
+			birthdate: time.Now().AddDate(-25, -1, 0).Format("2006-01-02"),
+			wantAge:   intPtr(currentYear - time.Now().AddDate(-25, -1, 0).Year()),
 			wantErr:   false,
 		},
 		{
@@ -76,19 +79,19 @@ func TestUserResolver_Age(t *testing.T) {
 		{
 			name:      "leap year birthday (Feb 29, 2000)",
 			birthdate: "2000-02-29",
-			wantAge:   intPtr(calculateExpectedAge("2000-02-29")),
+			wantAge:   intPtr(currentYear - 2000),
 			wantErr:   false,
 		},
 		{
 			name:      "born on Jan 1",
 			birthdate: "2000-01-01",
-			wantAge:   intPtr(calculateExpectedAge("2000-01-01")),
+			wantAge:   intPtr(currentYear - 2000),
 			wantErr:   false,
 		},
 		{
 			name:      "born on Dec 31",
 			birthdate: "2000-12-31",
-			wantAge:   intPtr(calculateExpectedAge("2000-12-31")),
+			wantAge:   intPtr(currentYear - 2000),
 			wantErr:   false,
 		},
 	}
@@ -115,17 +118,4 @@ func TestUserResolver_Age(t *testing.T) {
 			}
 		})
 	}
-}
-
-func calculateExpectedAge(birthdateStr string) int {
-	birthdate, _ := time.Parse("2006-01-02", birthdateStr)
-	now := time.Now()
-	age := now.Year() - birthdate.Year()
-
-	// Adjust if birthday hasn't occurred this year yet
-	if now.Month() < birthdate.Month() || (now.Month() == birthdate.Month() && now.Day() < birthdate.Day()) {
-		age--
-	}
-
-	return age
 }

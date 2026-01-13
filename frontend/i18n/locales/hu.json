@@ -21,6 +21,7 @@
     "continue": "Folytatás",
     "nextQuestion": "Következő kérdés",
     "done": "Kész",
+    "unavailable": "Ez a kvíz jelenleg nem elérhető.",
     "result": {
       "receivedNoPoints": "Nem szereztél pontot.",
       "receivedPoints": "{points} pontot gyűjtöttél.",
@@ -83,7 +84,7 @@
     "selectUnitLeader": "Unitvezető választása"
   },
   "place": "helyezés",
-  "points": "Pont",
+  "points": "pont",
   "givesYouXPoints": "{points} pontot ad",
   "consent": {
     "accepted": "Elfogadva",
@@ -117,10 +118,11 @@
     "thankYouDescription": "A visszajelzéseid a szolgáltatás továbbfejlesztéséhez fogjuk felhasználni.",
     "close": "Szívesen.",
     "canContactMe": "Igen, egyetértek azzal, hogy visszajelzésemmel kapcsolatban felvehetitek velem a kapcsolatot.",
-    "regards": "Üdvözlettel, {name}"
+    "disclosure": "A visszajelzés a felhasználói fiókodhoz lesz kapcsolva."
   },
   "pwa": {
     "updateAvailableTitle": "Frissítés elérhető",
     "updateAvailableButton": "Frissítsd most"
-  }
+  },
+  "goToHiddenTreasures": "Menj a Biblia tanulmányozására"
 }

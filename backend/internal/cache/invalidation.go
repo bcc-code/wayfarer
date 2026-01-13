@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -76,6 +77,38 @@ func (kr *KeyRegistry) Clear() {
 // - "challenge:project:PROJ123" (all challenges in project)
 func extractPrefixes(key string) []string {
 	prefixes := []string{}
+
+	// Handle leaderboard keys specially - they need to be registered under
+	// prefixes that match the invalidation patterns in InvalidateProject/InvalidateEvent
+	// Key formats:
+	// - leaderboard:full:project:{projectID}:{entityType}:{paramsHash}
+	// - leaderboard:full:event:{eventID}:{entityType}:{paramsHash}
+	// - leaderboard:project:{projectID}:{entityType}:{paramsHash}:{page}
+	// - leaderboard:position:project:{projectID}:{entityType}:{paramsHash}:{userID}
+	// - leaderboard:count:project:{projectID}:{entityType}:{paramsHash}
+	if strings.HasPrefix(key, PrefixLeaderboard) {
+		parts := strings.Split(key, ":")
+		if len(parts) >= 4 {
+			// Register under the base prefix for invalidation
+			// e.g., "leaderboard:full:project:PROJ123" or "leaderboard:project:PROJ123"
+			if parts[1] == "full" && len(parts) >= 5 {
+				// leaderboard:full:{context}:{contextID}:...
+				basePrefix := strings.Join(parts[:4], ":")
+				prefixes = append(prefixes, basePrefix)
+			} else if parts[1] == "position" || parts[1] == "count" {
+				// leaderboard:position:{context}:{contextID}:... or leaderboard:count:{context}:{contextID}:...
+				if len(parts) >= 5 {
+					basePrefix := strings.Join(parts[:4], ":")
+					prefixes = append(prefixes, basePrefix)
+				}
+			} else {
+				// leaderboard:{context}:{contextID}:...
+				basePrefix := strings.Join(parts[:3], ":")
+				prefixes = append(prefixes, basePrefix)
+			}
+		}
+		return prefixes
+	}
 
 	// Add the main entity prefix
 	// Note: More specific prefixes must come before general ones (e.g., PrefixTeamLeaderboardTags before PrefixTeam)

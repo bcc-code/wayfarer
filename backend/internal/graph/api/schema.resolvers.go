@@ -7,6 +7,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/middleware"
@@ -38,6 +39,51 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 // InstanceID is the resolver for the instanceID field.
 func (r *queryResolver) InstanceID(ctx context.Context) (string, error) {
 	return r.Resolver.InstanceID, nil
+}
+
+// FirebaseToken is the resolver for the firebaseToken field.
+func (r *queryResolver) FirebaseToken(ctx context.Context) (*model.FirebaseTokenResponse, error) {
+	// Get user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check if Firebase service is configured
+	if r.FirebaseService == nil {
+		return nil, fmt.Errorf("firebase service not available")
+	}
+
+	// Check cache first
+	cacheKey := fmt.Sprintf("firebase_token:%s", userID)
+	if cached, ok := r.Cache.Get(cacheKey); ok {
+		if response, ok := cached.(*model.FirebaseTokenResponse); ok {
+			return response, nil
+		}
+	}
+
+	// Load user to get church ID
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, userID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	// Create custom token with claims
+	token, err := r.FirebaseService.CreateCustomToken(ctx, userID, user.ChurchID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create firebase token: %w", err)
+	}
+
+	response := &model.FirebaseTokenResponse{
+		Token:     token,
+		ExpiresIn: 3600, // Firebase custom tokens expire after 1 hour
+	}
+
+	// Cache for 30 minutes
+	r.Cache.SetWithTTL(cacheKey, response, 30*time.Minute)
+
+	return response, nil
 }
 
 // Mutation returns MutationResolver implementation.

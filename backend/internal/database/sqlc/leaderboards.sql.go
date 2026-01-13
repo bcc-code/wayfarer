@@ -155,8 +155,8 @@ WITH project_users AS MATERIALIZED (
 )
 SELECT COUNT(*)::bigint AS total
 FROM project_users pu
-WHERE ($1::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) >= $1::int)
-  AND ($2::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) <= $2::int)
+WHERE ($1::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM pu.birthdate)) >= $1::int)
+  AND ($2::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM pu.birthdate)) <= $2::int)
   AND ($3::text = '' OR EXISTS (
       SELECT 1 FROM churches c
       WHERE c.id = pu.church_id AND c.country = $3::text
@@ -1172,8 +1172,8 @@ WITH ranked_scores AS (
       AND lep.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lep.score <= $3::int)
       AND ($4::text = '' OR u.church_id = $4::text)
-      AND ($5::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) >= $5::int)
-      AND ($6::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) <= $6::int)
+      AND ($5::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $5::int)
+      AND ($6::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $6::int)
       -- Team filtering
       AND ($7::text = '' OR EXISTS (
           SELECT 1 FROM team_members tm
@@ -1455,8 +1455,8 @@ WITH ranked_scores AS (
       AND lpp.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpp.score <= $3::int)
       AND ($4::text = '' OR u.church_id = $4::text)
-      AND ($5::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) >= $5::int)
-      AND ($6::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) <= $6::int)
+      AND ($5::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $5::int)
+      AND ($6::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $6::int)
       -- Team filtering
       AND ($7::text = '' OR EXISTS (
           SELECT 1 FROM team_members tm
@@ -1790,8 +1790,8 @@ filtered_users AS MATERIALIZED (
     -- Apply age and church filters
     SELECT pu.id, pu.name, pu.avatar_url, pu.church_name
     FROM project_users pu
-    WHERE ($11::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) >= $11::int)
-      AND ($12::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) <= $12::int)
+    WHERE ($11::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM pu.birthdate)) >= $11::int)
+      AND ($12::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM pu.birthdate)) <= $12::int)
       AND ($13::text = '' OR EXISTS (
           SELECT 1 FROM churches c
           WHERE c.id = pu.church_id AND c.country = $13::text

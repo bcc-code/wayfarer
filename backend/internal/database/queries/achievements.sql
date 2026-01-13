@@ -368,7 +368,7 @@ WHERE user_id = @user_id::text
   AND external_content_id = @external_content_id::text;
 
 -- name: GetPublishedContentAchievementsByExternalContent :many
--- Get all published (non-hidden) content achievements that contain a specific external content
+-- Get all content achievements that contain a specific external content
 SELECT DISTINCT
     a.id,
     a.achievement_type,
@@ -400,18 +400,15 @@ SELECT DISTINCT
 FROM achievements a
 INNER JOIN content_achievements ca ON a.id = ca.achievement_id
 INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
-WHERE cai.external_content_id = @external_content_id::text
-  AND (a.hidden IS NULL OR a.hidden = false);
+WHERE cai.external_content_id = @external_content_id::text;
 
 -- name: MarkContentItemCompletedForAllAchievements :exec
--- Mark content completed for a user across all published achievements containing this content
+-- Mark content completed for a user across all achievements containing this content
 INSERT INTO user_content_progress (user_id, achievement_id, external_content_id, completed_at)
 SELECT @user_id::text, ca.achievement_id, @external_content_id::text, now()
 FROM content_achievements ca
 INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
-INNER JOIN achievements a ON ca.achievement_id = a.id
 WHERE cai.external_content_id = @external_content_id::text
-  AND (a.hidden IS NULL OR a.hidden = false)
 ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING;
 
 -- name: UnmarkContentItemCompletedForAllAchievements :exec

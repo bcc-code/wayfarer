@@ -174,7 +174,7 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
       <UContainer>
         <UBreadcrumb
           :items="[
-            { label: 'Projects', to: { name: 'admin-projects' } },
+            { label: 'Prosjekter', to: { name: 'admin-projects' } },
             {
               label: state.name,
               to: {
@@ -183,7 +183,7 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
               },
             },
             {
-              label: 'Edit',
+              label: 'Rediger',
               to: {
                 name: 'admin-projects-projectId-edit',
                 params: { projectId: route.params.projectId },
@@ -200,22 +200,27 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
         class="flex max-w-md flex-col gap-8"
         @submit.prevent="updateProject"
       >
-        <UFormField name="name" label="Name">
+        <UFormField name="branding.logo" label="Logo" hint="(valgfritt)">
+          <AdminFileUpload v-model="state.branding.logo" />
+        </UFormField>
+        <UFormField name="name" label="Navn">
           <UInput v-model="state.name" size="xl" required class="w-full" />
         </UFormField>
         <UFormField
           name="description"
-          label="Description"
-          hint="(optional)"
-          help="This is only for admins to have better context"
+          label="Beskrivelse"
+          hint="(valgfritt)"
+          help="Dette er kun for at admins skal ha bedre kontekst"
         >
           <UTextarea v-model="state.description" class="w-full" autoresize />
         </UFormField>
-        <DateRangeField
-          v-model:start="state.startDate"
-          v-model:end="state.endDate"
-        />
-        <UFormField v-if="data?.project" label="Color Theme">
+        <UFormField label="Prosjektvarighet">
+          <DateRangeField
+            v-model:start="state.startDate"
+            v-model:end="state.endDate"
+          />
+        </UFormField>
+        <UFormField v-if="data?.project" label="Fargetema">
           <AdminProjectThemeEditor
             v-model="state.branding.colors"
             :project-name="data?.project.name"
@@ -223,13 +228,13 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
         </UFormField>
         <UFormField
           name="rules"
-          label="Project Rules"
-          hint="(optional)"
-          help="Explain how users collect points"
+          label="Prosjektregler"
+          hint="(valgfritt)"
+          help="Forklar hvordan brukere samler poeng"
         >
           <MarkdownEditor v-model="state.rules" />
         </UFormField>
-        <UButton type="submit" size="lg" block>Save changes</UButton>
+        <UButton type="submit" size="lg" block>Lagre endringer</UButton>
       </UForm>
     </UContainer>
   </div>

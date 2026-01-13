@@ -163,3 +163,28 @@ func SetupTestServer(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, fu
 
 	return router, cleanup, nil
 }
+
+// NewTestContentAchievementService creates a ContentAchievementService for testing
+// without push notifications or webhook dispatching
+func NewTestContentAchievementService(dbMgr *TestDBManager) (*services.ContentAchievementService, func(), error) {
+	testCache, err := NewTestCache()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	dataLoaders := loaders.NewLoaders(dbMgr.DB, testCache)
+
+	service := &services.ContentAchievementService{
+		DB:             dbMgr.DB,
+		Cache:          testCache,
+		PushService:    nil, // No push notifications in tests
+		Loaders:        dataLoaders,
+		WebhookService: nil, // No webhook dispatch in tests
+	}
+
+	cleanup := func() {
+		testCache.Close()
+	}
+
+	return service, cleanup, nil
+}

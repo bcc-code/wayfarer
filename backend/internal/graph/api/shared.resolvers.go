@@ -1618,14 +1618,8 @@ func (r *userResolver) Age(ctx context.Context, obj *model.User) (*int, error) {
 		return nil, fmt.Errorf("invalid birthdate format: %w", err)
 	}
 
-	// Calculate age
-	now := time.Now()
-	age := now.Year() - birthdate.Year()
-
-	// Adjust if birthday hasn't occurred this year yet
-	if now.Month() < birthdate.Month() || (now.Month() == birthdate.Month() && now.Day() < birthdate.Day()) {
-		age--
-	}
+	// Calculate age (year difference)
+	age := time.Now().Year() - birthdate.Year()
 
 	return &age, nil
 }

@@ -1,0 +1,127 @@
+{
+  "error": {
+    "title": "糟糕！出问题了"
+  },
+  "emptyStates": {
+    "standings": "目前还没有排行榜",
+    "unit": "你的小队暂无排行榜",
+    "challenges": "目前暂无挑战",
+    "pointHistory": "暂无积分"
+  },
+  "auth": {
+    "loginButton": "登录",
+    "logoutButton": "登出"
+  },
+  "quiz": {
+    "wrongAnswer": "答案错误",
+    "correctAnswer": "答案正确",
+    "yourAnswer": "你的回答",
+    "lockAnswer": "锁定回答",
+    "questionNumber": "{current} 的 {total}",
+    "continue": "继续",
+    "nextQuestion": "下一个问题",
+    "done": "完成",
+    "result": {
+      "receivedNoPoints": "你没有获得任何积分。",
+      "receivedPoints": "你收集了 {points} 积分。",
+      "betterLuckNextTime": "下次好运！",
+      "wellDone": "做得好！",
+      "perfect": "完美！"
+    }
+  },
+  "pages": {
+    "standings": "排行榜",
+    "challenges": "挑战",
+    "settings": "设置",
+    "pointHistory": "积分历史",
+    "rules": "规则",
+    "consents": "我的授权",
+    "addToHomeScreen": "将应用添加到主屏幕"
+  },
+  "navigation": {
+    "standings": "排行榜",
+    "profile": "我的",
+    "challenges": "挑战"
+  },
+  "emptyState": "这里没有内容",
+  "settings": {
+    "language": "应用程序语言",
+    "colorMode": "颜色模式",
+    "colorModes": {
+      "system": "系统",
+      "light": "亮色",
+      "dark": "暗色"
+    },
+    "consents": "我的授权",
+    "notifications": "通知",
+    "notificationsBlocked": "浏览器设置中已阻止通知",
+    "notificationsOnlyAvailableWhenInstalled": "只有将应用添加到主屏幕后，才能收到通知。",
+    "addToHomeScreen": "将应用添加到主屏幕",
+    "privacyPolicy": "隐私政策"
+  },
+  "standings": {
+    "global": "全球的",
+    "unit": "我的团队",
+    "local": "当地的",
+    "you": "你",
+    "rules": "规则",
+    "units": "团队",
+    "top": "顶部 {amount}",
+    "u18": "<b>18岁以下</b>",
+    "o18": "18岁以上"
+  },
+  "pointHistory": {
+    "pointHistoryButton": "积分历史",
+    "explanation": "在这里你可以看到你因哪些项目获得或失去积分。"
+  },
+  "unit": {
+    "editUnit": "编辑团队",
+    "unitLeader": "队长",
+    "saveChanges": "保存更改",
+    "unitName": "队名",
+    "noUnitLeader": "队长缺失",
+    "selectUnitLeader": "选择队长"
+  },
+  "place": "地点",
+  "points": "积分",
+  "givesYouXPoints": "给你 {points} 积分",
+  "consent": {
+    "accepted": "接受",
+    "rejected": "拒绝",
+    "acceptButton": "我同意",
+    "rejectButton": "拒绝这些条款",
+    "bannerTitle": "你需要决定是否同意某些条款。",
+    "bannerButton": "前往授权设置",
+    "readButton": "阅读条款和条件",
+    "change": "修改",
+    "goToConsent": "前往授权页面",
+    "continue": "下一步",
+    "changeDescription": "如需更改你的授权选项，请联系我们： {email}",
+    "changeConsent": "变更授权"
+  },
+  "achievement": {
+    "title": "成就",
+    "unlocked": "达成！"
+  },
+  "feedback": {
+    "title": "请给我们反馈",
+    "cta": "请给我们反馈",
+    "description": "我们非常希望收到你的反馈，以便我们能够进一步改进服务。",
+    "send": "请给我们反馈",
+    "label": "你觉得有什么地方做得好，或者有什么地方可以改进吗？",
+    "placeholder": "请在此处填写反馈意见……",
+    "success": "感谢你的反馈。",
+    "validationError": "你不能发送空白反馈。",
+    "lengthError": "反馈不能超过 {max} 符号",
+    "thankYou": "谢谢你的帮助！",
+    "thankYouDescription": "你的意见将有助于我们进一步完善这项服务。",
+    "close": "不客气",
+    "canContactMe": "是的，我同意您可以就我的反馈与我联系。",
+    "regards": "问候 {name}"
+  },
+  "pwa": {
+    "updateAvailableTitle": "有更新版本可用。",
+    "updateAvailableButton": "立即更新"
+  },
+  "goToHiddenTreasures": "参加圣经学习"
+}

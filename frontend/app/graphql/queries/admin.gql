@@ -2,10 +2,11 @@
 
 query AdminExternalContents(
   $filter: ExternalContentFilter!
+  $sortBy: ExternalContentSortBy
   $first: Int
   $after: String
 ) {
-  externalContents(filter: $filter, first: $first, after: $after) {
+  externalContents(filter: $filter, sortBy: $sortBy, first: $first, after: $after) {
     edges {
       node {
         id

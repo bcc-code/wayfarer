@@ -199,6 +199,12 @@ type FileUpload struct {
 	// User ID of admin who uploaded the file
 	UploadedBy string             `json:"uploaded_by"`
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	// Image width in pixels (null for non-images)
+	Width *int32 `json:"width"`
+	// Image height in pixels (null for non-images)
+	Height *int32 `json:"height"`
+	// Blurhash placeholder string (null for non-images)
+	Blurhash *string `json:"blurhash"`
 }
 
 type LeaderboardEventChurch struct {
@@ -648,6 +654,9 @@ type UserFeedback struct {
 	ScreenHeight *int32             `json:"screen_height"`
 	AppVersion   *string            `json:"app_version"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	Locale       *string            `json:"locale"`
+	ProjectID    *string            `json:"project_id"`
+	Timezone     *string            `json:"timezone"`
 }
 
 type UserProject struct {

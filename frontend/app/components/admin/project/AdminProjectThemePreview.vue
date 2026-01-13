@@ -2,34 +2,34 @@
 const leaderboard: LeaderboardEntry[] = [
   {
     id: '1',
-    name: 'Name Nameson',
+    name: 'Ola Nordmann',
     score: 100,
     rank: 1,
-    description: 'Local Church',
+    description: 'Lokal menighet',
     tags: [LeaderboardEntryTag.TeamLead],
   },
   {
     id: '2',
-    name: 'Jane Doe',
+    name: 'Kari Hansen',
     score: 90,
     rank: 2,
-    description: 'Global Church',
+    description: 'Global menighet',
     tags: [],
   },
   {
     id: '3',
-    name: 'Bob Smith',
+    name: 'Per Olsen',
     score: 80,
     rank: 3,
-    description: 'Local Church',
+    description: 'Lokal menighet',
     tags: [LeaderboardEntryTag.Me],
   },
   {
     id: '4',
-    name: 'John Doe',
+    name: 'Lisa Andersen',
     score: 70,
     rank: 4,
-    description: 'Global Church',
+    description: 'Global menighet',
     tags: [],
   },
 ]
@@ -39,10 +39,10 @@ const leaderboard: LeaderboardEntry[] = [
   <div
     class="border-default bg-background-default aspect-1/2 w-[400px] overflow-clip rounded-xl border text-start"
   >
-    <PageLayout title="Preview">
+    <PageLayout title="Forhåndsvisning">
       <div class="gap-list-section-gap flex flex-col p-list-outside">
-        <DesignButton>Primary Button</DesignButton>
-        <DesignButton variant="secondary">Secondary Button</DesignButton>
+        <DesignButton>Primærknapp</DesignButton>
+        <DesignButton variant="secondary">Sekundærknapp</DesignButton>
         <LeaderboardList
           :leaderboard
           :badge="
@@ -56,11 +56,11 @@ const leaderboard: LeaderboardEntry[] = [
         <div
           class="bg-background-indent rounded-list p-default mt-medium flex flex-col gap-1"
         >
-          <p class="text-label text-text-default">Default text color</p>
-          <p class="text-label text-text-muted">Muted text color</p>
-          <p class="text-label text-text-hint">Hint text color</p>
-          <p class="text-label text-accent-contrast">Accent contrast color</p>
-          <p class="text-label text-on-accent bg-accent">On accent color</p>
+          <p class="text-label text-text-default">Standard tekstfarge</p>
+          <p class="text-label text-text-muted">Dempet tekstfarge</p>
+          <p class="text-label text-text-hint">Hint tekstfarge</p>
+          <p class="text-label text-accent-contrast">Aksentkontrastfarge</p>
+          <p class="text-label text-on-accent bg-accent">På aksentfarge</p>
         </div>
       </div>
     </PageLayout>

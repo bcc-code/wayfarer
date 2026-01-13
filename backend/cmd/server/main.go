@@ -24,16 +24,17 @@ import (
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
+	"github.com/bcc-media/wayfarer/internal/firebase"
 	"github.com/bcc-media/wayfarer/internal/graph/api"
 	"github.com/bcc-media/wayfarer/internal/graph/directives"
 	"github.com/bcc-media/wayfarer/internal/handlers"
 	"github.com/bcc-media/wayfarer/internal/loaders"
-	"github.com/bcc-media/wayfarer/internal/plugins"
-	"github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
 	"github.com/bcc-media/wayfarer/internal/logger"
 	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/otel"
+	"github.com/bcc-media/wayfarer/internal/plugins"
+	"github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/services/webhooks"
@@ -166,7 +167,7 @@ func main() {
 			"debug_mode", cfg.SSF.DebugMode,
 		)
 
-		ssfSyncService = ssf.NewSyncService(ssfClient, db.Queries, lgr)
+		ssfSyncService = ssf.NewSyncService(ssfClient, db.Queries, db.Pool, lgr)
 	} else {
 		slog.Warn("SSF API client not initialized - missing API key")
 	}
@@ -241,7 +242,7 @@ func main() {
 	slog.Info("SettingsService initialized with background refresh")
 
 	// Initialize S3 upload service
-	s3Service, err := services.NewS3Service(ctx, cfg.S3)
+	s3Service, err := services.NewS3Service(cfg.S3)
 	if err != nil {
 		slog.Error("Failed to initialize S3 service", "error", err)
 		os.Exit(1)
@@ -265,6 +266,20 @@ func main() {
 	webhookService := webhooks.NewService(db.Queries)
 	slog.Info("WebhookService initialized")
 
+	// Initialize Firebase service (optional)
+	var firebaseService *firebase.Service
+	if cfg.Firebase.ServiceAccountJSON != "" {
+		var err error
+		firebaseService, err = firebase.New(ctx, cfg.Firebase)
+		if err != nil {
+			slog.Error("Failed to initialize Firebase service", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("Firebase service initialized")
+	} else {
+		slog.Warn("Firebase service not initialized - missing configuration")
+	}
+
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{
 		DB:                 db,
@@ -275,6 +290,7 @@ func main() {
 		Settings:           settingsService,
 		PushService:        pushService,
 		WebhookService:     webhookService,
+		FirebaseService:    firebaseService,
 		InstanceID:         cacheSync.InstanceID(),
 	}
 
@@ -375,24 +391,32 @@ func main() {
 	}
 	slog.Info("Profiling endpoints enabled at /debug/pprof")
 
-	// Authentication token endpoint (no JWT middleware)
-	authHandler := &handlers.AuthHandler{
-		DB:            db,
-		Cfg:           cfg,
-		JWKS:          jwks,
-		Auth0JWKS:     auth0JWKS,
-		MembersClient: membersClient,
-		RoleService:   roleService,
-	}
-	router.GET("/token", authHandler.Callback)
-
-	// Webhook handler for external content events
-	webhookHandler := &handlers.WebhookHandler{
+	// Content achievement service (shared between auth and webhook handlers)
+	contentAchievementService := &services.ContentAchievementService{
 		DB:             db,
 		Cache:          cacheInstance,
 		PushService:    pushService,
 		Loaders:        dataLoaders,
 		WebhookService: webhookService,
+	}
+
+	// Authentication token endpoint (no JWT middleware)
+	authHandler := &handlers.AuthHandler{
+		DB:                        db,
+		Cfg:                       cfg,
+		JWKS:                      jwks,
+		Auth0JWKS:                 auth0JWKS,
+		MembersClient:             membersClient,
+		RoleService:               roleService,
+		ContentAchievementService: contentAchievementService,
+	}
+	router.GET("/token", authHandler.Callback)
+
+	// Webhook handler for external content events
+	webhookHandler := &handlers.WebhookHandler{
+		DB:                        db,
+		WebhookService:            webhookService,
+		ContentAchievementService: contentAchievementService,
 	}
 	router.POST("/api/v1/content-events", middleware.APIKeyAuth(cfg.APIKey), webhookHandler.HandleContentEvent)
 

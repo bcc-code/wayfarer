@@ -21,6 +21,7 @@
     "continue": "Kontynuuj",
     "nextQuestion": "Następne pytanie",
     "done": "Gotowe",
+    "unavailable": "Ten quiz jest obecnie niedostępny.",
     "result": {
       "receivedNoPoints": "Nie zdobyłeś żadnych punktów.",
       "receivedPoints": "Zdobyłeś {points} pkt.",
@@ -101,7 +102,7 @@
   },
   "achievement": {
     "title": "Osiągnięcie",
-    "unlocked": "Osiągnięto!"
+    "unlocked": "Osiągnięte!"
   },
   "feedback": {
     "title": "Podziel się z nami swoją opinią",
@@ -117,10 +118,11 @@
     "thankYouDescription": "Twoje uwagi zostaną wykorzystane do dalszego rozwoju serwisu.",
     "close": "Nie ma za co.",
     "canContactMe": "Tak, wyrażam zgodę na kontaktowanie się ze mną w związku z moją opinią.",
-    "regards": "Pozdrawiam, {name}"
+    "disclosure": "Opinia zostanie powiązana z Twoim kontem użytkownika."
   },
   "pwa": {
     "updateAvailableTitle": "Dostępna jest aktualizacja",
     "updateAvailableButton": "Zaktualizuj teraz"
-  }
+  },
+  "goToHiddenTreasures": "Przejdź do projektu biblijnego"
 }

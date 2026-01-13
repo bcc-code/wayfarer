@@ -300,6 +300,25 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	FileUpload struct {
+		Blurhash       func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		FileSize       func(childComplexity int) int
+		Filename       func(childComplexity int) int
+		Height         func(childComplexity int) int
+		ID             func(childComplexity int) int
+		MimeType       func(childComplexity int) int
+		PublicURL      func(childComplexity int) int
+		StoredFilename func(childComplexity int) int
+		UploadedBy     func(childComplexity int) int
+		Width          func(childComplexity int) int
+	}
+
+	FirebaseTokenResponse struct {
+		ExpiresIn func(childComplexity int) int
+		Token     func(childComplexity int) int
+	}
+
 	FreeTextQuestion struct {
 		ID             func(childComplexity int) int
 		Points         func(childComplexity int) int
@@ -580,6 +599,8 @@ type ComplexityRoot struct {
 		ExternalContent               func(childComplexity int, id string) int
 		ExternalContents              func(childComplexity int, filter model.ExternalContentFilter, sortBy *model.ExternalContentSortBy, first *int, after *string, last *int, before *string) int
 		Feedback                      func(childComplexity int, filter *model.FeedbackFilter, first *int, after *string, last *int, before *string) int
+		FileUpload                    func(childComplexity int, id string) int
+		FirebaseToken                 func(childComplexity int) int
 		InstanceID                    func(childComplexity int) int
 		Me                            func(childComplexity int) int
 		MyCurrentEvent                func(childComplexity int) int
@@ -941,10 +962,13 @@ type ComplexityRoot struct {
 		CanContactMe func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
 		ID           func(childComplexity int) int
+		Locale       func(childComplexity int) int
 		Message      func(childComplexity int) int
 		Platform     func(childComplexity int) int
+		ProjectID    func(childComplexity int) int
 		ScreenHeight func(childComplexity int) int
 		ScreenWidth  func(childComplexity int) int
+		Timezone     func(childComplexity int) int
 		User         func(childComplexity int) int
 		UserAgent    func(childComplexity int) int
 		UserID       func(childComplexity int) int
@@ -1174,6 +1198,7 @@ type ProjectResolver interface {
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
 	InstanceID(ctx context.Context) (string, error)
+	FirebaseToken(ctx context.Context) (*model.FirebaseTokenResponse, error)
 	Project(ctx context.Context, id string) (*model.Project, error)
 	Projects(ctx context.Context, filter *model.ProjectFilter, first *int, after *string, last *int, before *string) (*model.ProjectConnection, error)
 	MyProjects(ctx context.Context) ([]model.Project, error)
@@ -1218,6 +1243,7 @@ type QueryResolver interface {
 	Feedback(ctx context.Context, filter *model.FeedbackFilter, first *int, after *string, last *int, before *string) (*model.FeedbackConnection, error)
 	Webhook(ctx context.Context, id string) (*model.Webhook, error)
 	Webhooks(ctx context.Context, projectID string) ([]model.Webhook, error)
+	FileUpload(ctx context.Context, id string) (*model.FileUpload, error)
 }
 type QuizResolver interface {
 	Project(ctx context.Context, obj *model.Quiz) (*model.Project, error)
@@ -2212,6 +2238,86 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FeedbackEdge.Node(childComplexity), true
+
+	case "FileUpload.blurhash":
+		if e.complexity.FileUpload.Blurhash == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.Blurhash(childComplexity), true
+	case "FileUpload.createdAt":
+		if e.complexity.FileUpload.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.CreatedAt(childComplexity), true
+	case "FileUpload.fileSize":
+		if e.complexity.FileUpload.FileSize == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.FileSize(childComplexity), true
+	case "FileUpload.filename":
+		if e.complexity.FileUpload.Filename == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.Filename(childComplexity), true
+	case "FileUpload.height":
+		if e.complexity.FileUpload.Height == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.Height(childComplexity), true
+	case "FileUpload.id":
+		if e.complexity.FileUpload.ID == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.ID(childComplexity), true
+	case "FileUpload.mimeType":
+		if e.complexity.FileUpload.MimeType == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.MimeType(childComplexity), true
+	case "FileUpload.publicUrl":
+		if e.complexity.FileUpload.PublicURL == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.PublicURL(childComplexity), true
+	case "FileUpload.storedFilename":
+		if e.complexity.FileUpload.StoredFilename == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.StoredFilename(childComplexity), true
+	case "FileUpload.uploadedBy":
+		if e.complexity.FileUpload.UploadedBy == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.UploadedBy(childComplexity), true
+	case "FileUpload.width":
+		if e.complexity.FileUpload.Width == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.Width(childComplexity), true
+
+	case "FirebaseTokenResponse.expiresIn":
+		if e.complexity.FirebaseTokenResponse.ExpiresIn == nil {
+			break
+		}
+
+		return e.complexity.FirebaseTokenResponse.ExpiresIn(childComplexity), true
+	case "FirebaseTokenResponse.token":
+		if e.complexity.FirebaseTokenResponse.Token == nil {
+			break
+		}
+
+		return e.complexity.FirebaseTokenResponse.Token(childComplexity), true
 
 	case "FreeTextQuestion.id":
 		if e.complexity.FreeTextQuestion.ID == nil {
@@ -4134,6 +4240,23 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Feedback(childComplexity, args["filter"].(*model.FeedbackFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
+	case "Query.fileUpload":
+		if e.complexity.Query.FileUpload == nil {
+			break
+		}
+
+		args, err := ec.field_Query_fileUpload_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.FileUpload(childComplexity, args["id"].(string)), true
+	case "Query.firebaseToken":
+		if e.complexity.Query.FirebaseToken == nil {
+			break
+		}
+
+		return e.complexity.Query.FirebaseToken(childComplexity), true
 	case "Query.instanceID":
 		if e.complexity.Query.InstanceID == nil {
 			break
@@ -5832,6 +5955,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UserFeedback.ID(childComplexity), true
+	case "UserFeedback.locale":
+		if e.complexity.UserFeedback.Locale == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.Locale(childComplexity), true
 	case "UserFeedback.message":
 		if e.complexity.UserFeedback.Message == nil {
 			break
@@ -5844,6 +5973,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UserFeedback.Platform(childComplexity), true
+	case "UserFeedback.projectId":
+		if e.complexity.UserFeedback.ProjectID == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.ProjectID(childComplexity), true
 	case "UserFeedback.screenHeight":
 		if e.complexity.UserFeedback.ScreenHeight == nil {
 			break
@@ -5856,6 +5991,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UserFeedback.ScreenWidth(childComplexity), true
+	case "UserFeedback.timezone":
+		if e.complexity.UserFeedback.Timezone == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.Timezone(childComplexity), true
 	case "UserFeedback.user":
 		if e.complexity.UserFeedback.User == nil {
 			break
@@ -7468,6 +7609,13 @@ type QuizSubmissionConnection {
     pageInfo: PageInfo!
     totalCount: Int!
 }
+
+# ==================== Firebase Types ====================
+
+type FirebaseTokenResponse {
+    token: String!
+    expiresIn: Int!
+}
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema.graphqls", Input: `# GraphQL Schema
 # Root type definitions - extended by domain-specific files
@@ -7480,6 +7628,7 @@ schema {
 type Query {
     me: User!
     instanceID: String!
+    firebaseToken: FirebaseTokenResponse!
 }
 
 type Mutation {
@@ -8091,6 +8240,9 @@ type UserFeedback {
     screenWidth: Int
     screenHeight: Int
     appVersion: String
+    locale: String
+    projectId: ID
+    timezone: String
     createdAt: DateTime!
 }
 
@@ -8100,12 +8252,15 @@ input DeviceMetadata {
     screenWidth: Int!
     screenHeight: Int!
     appVersion: String
+    locale: String
+    timezone: String
 }
 
 input SubmitFeedbackInput {
     message: String!
     canContactMe: Boolean!
     device: DeviceMetadata!
+    projectId: ID
 }
 
 type FeedbackConnection {
@@ -8200,6 +8355,24 @@ extend type Mutation {
     updateWebhook(id: ID!, input: UpdateWebhookInput!): Webhook! @requireRole(roles: ["superadmin"])
     deleteWebhook(id: ID!): Boolean! @requireRole(roles: ["superadmin"])
     testWebhook(id: ID!): WebhookLog! @requireRole(roles: ["superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/file_uploads.graphqls", Input: `extend type Query {
+    fileUpload(id: ID!): FileUpload
+}
+
+type FileUpload {
+    id: ID!
+    filename: String!
+    storedFilename: String!
+    fileSize: Int!
+    mimeType: String!
+    publicUrl: String!
+    uploadedBy: ID!
+    width: Int
+    height: Int
+    blurhash: String
+    createdAt: DateTime!
 }
 `, BuiltIn: false},
 }
@@ -10088,6 +10261,17 @@ func (ec *executionContext) field_Query_feedback_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["before"] = arg4
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_fileUpload_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -15020,10 +15204,393 @@ func (ec *executionContext) fieldContext_FeedbackEdge_node(_ context.Context, fi
 				return ec.fieldContext_UserFeedback_screenHeight(ctx, field)
 			case "appVersion":
 				return ec.fieldContext_UserFeedback_appVersion(ctx, field)
+			case "locale":
+				return ec.fieldContext_UserFeedback_locale(ctx, field)
+			case "projectId":
+				return ec.fieldContext_UserFeedback_projectId(ctx, field)
+			case "timezone":
+				return ec.fieldContext_UserFeedback_timezone(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserFeedback", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_id(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_filename(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_filename,
+		func(ctx context.Context) (any, error) {
+			return obj.Filename, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_filename(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_storedFilename(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_storedFilename,
+		func(ctx context.Context) (any, error) {
+			return obj.StoredFilename, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_storedFilename(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_fileSize(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_fileSize,
+		func(ctx context.Context) (any, error) {
+			return obj.FileSize, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_fileSize(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_mimeType(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_mimeType,
+		func(ctx context.Context) (any, error) {
+			return obj.MimeType, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_mimeType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_publicUrl(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_publicUrl,
+		func(ctx context.Context) (any, error) {
+			return obj.PublicURL, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_publicUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_uploadedBy(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_uploadedBy,
+		func(ctx context.Context) (any, error) {
+			return obj.UploadedBy, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_uploadedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_width(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_width,
+		func(ctx context.Context) (any, error) {
+			return obj.Width, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_width(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_height(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_height,
+		func(ctx context.Context) (any, error) {
+			return obj.Height, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_height(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_blurhash(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_blurhash,
+		func(ctx context.Context) (any, error) {
+			return obj.Blurhash, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_blurhash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FirebaseTokenResponse_token(ctx context.Context, field graphql.CollectedField, obj *model.FirebaseTokenResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FirebaseTokenResponse_token,
+		func(ctx context.Context) (any, error) {
+			return obj.Token, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FirebaseTokenResponse_token(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FirebaseTokenResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FirebaseTokenResponse_expiresIn(ctx context.Context, field graphql.CollectedField, obj *model.FirebaseTokenResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FirebaseTokenResponse_expiresIn,
+		func(ctx context.Context) (any, error) {
+			return obj.ExpiresIn, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FirebaseTokenResponse_expiresIn(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FirebaseTokenResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -22986,6 +23553,12 @@ func (ec *executionContext) fieldContext_Mutation_submitFeedback(ctx context.Con
 				return ec.fieldContext_UserFeedback_screenHeight(ctx, field)
 			case "appVersion":
 				return ec.fieldContext_UserFeedback_appVersion(ctx, field)
+			case "locale":
+				return ec.fieldContext_UserFeedback_locale(ctx, field)
+			case "projectId":
+				return ec.fieldContext_UserFeedback_projectId(ctx, field)
+			case "timezone":
+				return ec.fieldContext_UserFeedback_timezone(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
 			}
@@ -25628,6 +26201,41 @@ func (ec *executionContext) fieldContext_Query_instanceID(_ context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_firebaseToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_firebaseToken,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().FirebaseToken(ctx)
+		},
+		nil,
+		ec.marshalNFirebaseTokenResponse2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFirebaseTokenResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_firebaseToken(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "token":
+				return ec.fieldContext_FirebaseTokenResponse_token(ctx, field)
+			case "expiresIn":
+				return ec.fieldContext_FirebaseTokenResponse_expiresIn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FirebaseTokenResponse", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_project(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -28172,6 +28780,71 @@ func (ec *executionContext) fieldContext_Query_webhooks(ctx context.Context, fie
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_webhooks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_fileUpload(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_fileUpload,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().FileUpload(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalOFileUpload2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFileUpload,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_fileUpload(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_FileUpload_id(ctx, field)
+			case "filename":
+				return ec.fieldContext_FileUpload_filename(ctx, field)
+			case "storedFilename":
+				return ec.fieldContext_FileUpload_storedFilename(ctx, field)
+			case "fileSize":
+				return ec.fieldContext_FileUpload_fileSize(ctx, field)
+			case "mimeType":
+				return ec.fieldContext_FileUpload_mimeType(ctx, field)
+			case "publicUrl":
+				return ec.fieldContext_FileUpload_publicUrl(ctx, field)
+			case "uploadedBy":
+				return ec.fieldContext_FileUpload_uploadedBy(ctx, field)
+			case "width":
+				return ec.fieldContext_FileUpload_width(ctx, field)
+			case "height":
+				return ec.fieldContext_FileUpload_height(ctx, field)
+			case "blurhash":
+				return ec.fieldContext_FileUpload_blurhash(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_FileUpload_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FileUpload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_fileUpload_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -36590,6 +37263,93 @@ func (ec *executionContext) fieldContext_UserFeedback_appVersion(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _UserFeedback_locale(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_locale,
+		func(ctx context.Context) (any, error) {
+			return obj.Locale, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_locale(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_projectId(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_projectId,
+		func(ctx context.Context) (any, error) {
+			return obj.ProjectID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_projectId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_timezone(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_timezone,
+		func(ctx context.Context) (any, error) {
+			return obj.Timezone, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_timezone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UserFeedback_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -40703,7 +41463,7 @@ func (ec *executionContext) unmarshalInputDeviceMetadata(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"userAgent", "platform", "screenWidth", "screenHeight", "appVersion"}
+	fieldsInOrder := [...]string{"userAgent", "platform", "screenWidth", "screenHeight", "appVersion", "locale", "timezone"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -40745,6 +41505,20 @@ func (ec *executionContext) unmarshalInputDeviceMetadata(ctx context.Context, ob
 				return it, err
 			}
 			it.AppVersion = data
+		case "locale":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("locale"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Locale = data
+		case "timezone":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timezone"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Timezone = data
 		}
 	}
 
@@ -41487,7 +42261,7 @@ func (ec *executionContext) unmarshalInputSubmitFeedbackInput(ctx context.Contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"message", "canContactMe", "device"}
+	fieldsInOrder := [...]string{"message", "canContactMe", "device", "projectId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -41515,6 +42289,13 @@ func (ec *executionContext) unmarshalInputSubmitFeedbackInput(ctx context.Contex
 				return it, err
 			}
 			it.Device = data
+		case "projectId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectID = data
 		}
 	}
 
@@ -45037,6 +45818,130 @@ func (ec *executionContext) _FeedbackEdge(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var fileUploadImplementors = []string{"FileUpload"}
+
+func (ec *executionContext) _FileUpload(ctx context.Context, sel ast.SelectionSet, obj *model.FileUpload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fileUploadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FileUpload")
+		case "id":
+			out.Values[i] = ec._FileUpload_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "filename":
+			out.Values[i] = ec._FileUpload_filename(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "storedFilename":
+			out.Values[i] = ec._FileUpload_storedFilename(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fileSize":
+			out.Values[i] = ec._FileUpload_fileSize(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "mimeType":
+			out.Values[i] = ec._FileUpload_mimeType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "publicUrl":
+			out.Values[i] = ec._FileUpload_publicUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploadedBy":
+			out.Values[i] = ec._FileUpload_uploadedBy(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "width":
+			out.Values[i] = ec._FileUpload_width(ctx, field, obj)
+		case "height":
+			out.Values[i] = ec._FileUpload_height(ctx, field, obj)
+		case "blurhash":
+			out.Values[i] = ec._FileUpload_blurhash(ctx, field, obj)
+		case "createdAt":
+			out.Values[i] = ec._FileUpload_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var firebaseTokenResponseImplementors = []string{"FirebaseTokenResponse"}
+
+func (ec *executionContext) _FirebaseTokenResponse(ctx context.Context, sel ast.SelectionSet, obj *model.FirebaseTokenResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, firebaseTokenResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FirebaseTokenResponse")
+		case "token":
+			out.Values[i] = ec._FirebaseTokenResponse_token(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "expiresIn":
+			out.Values[i] = ec._FirebaseTokenResponse_expiresIn(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var freeTextQuestionImplementors = []string{"FreeTextQuestion", "QuizQuestion"}
 
 func (ec *executionContext) _FreeTextQuestion(ctx context.Context, sel ast.SelectionSet, obj *model.FreeTextQuestion) graphql.Marshaler {
@@ -47626,6 +48531,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "firebaseToken":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_firebaseToken(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "project":
 			field := field
 
@@ -48582,6 +49509,25 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "fileUpload":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_fileUpload(ctx, field)
 				return res
 			}
 
@@ -52900,6 +53846,12 @@ func (ec *executionContext) _UserFeedback(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._UserFeedback_screenHeight(ctx, field, obj)
 		case "appVersion":
 			out.Values[i] = ec._UserFeedback_appVersion(ctx, field, obj)
+		case "locale":
+			out.Values[i] = ec._UserFeedback_locale(ctx, field, obj)
+		case "projectId":
+			out.Values[i] = ec._UserFeedback_projectId(ctx, field, obj)
+		case "timezone":
+			out.Values[i] = ec._UserFeedback_timezone(ctx, field, obj)
 		case "createdAt":
 			out.Values[i] = ec._UserFeedback_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -54752,6 +55704,20 @@ func (ec *executionContext) marshalNFeedbackEdge2ᚕgithubᚗcomᚋbccᚑmedia�
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNFirebaseTokenResponse2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFirebaseTokenResponse(ctx context.Context, sel ast.SelectionSet, v model.FirebaseTokenResponse) graphql.Marshaler {
+	return ec._FirebaseTokenResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNFirebaseTokenResponse2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFirebaseTokenResponse(ctx context.Context, sel ast.SelectionSet, v *model.FirebaseTokenResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FirebaseTokenResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
@@ -57382,6 +58348,13 @@ func (ec *executionContext) unmarshalOFeedbackFilter2ᚖgithubᚗcomᚋbccᚑmed
 	}
 	res, err := ec.unmarshalInputFeedbackFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFileUpload2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFileUpload(ctx context.Context, sel ast.SelectionSet, v *model.FileUpload) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._FileUpload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v any) (*float64, error) {

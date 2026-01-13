@@ -37,16 +37,16 @@ const { data, fetching, error } = useAdminProjectStreakPageQuery({
 })
 
 const dateRangeSchema = z.object({
-  start: z.string().min(1, 'Start date is required'),
-  end: z.string().min(1, 'End date is required'),
+  start: z.string().min(1, 'Startdato er påkrevd'),
+  end: z.string().min(1, 'Sluttdato er påkrevd'),
 })
 
 const schema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
+  name: z.string().min(1, 'Navn er påkrevd'),
+  description: z.string().min(1, 'Beskrivelse er påkrevd'),
   relevantDays: z
     .array(dateRangeSchema)
-    .min(1, 'At least one date range is required'),
+    .min(1, 'Minst én datoperiode er påkrevd'),
 })
 type Schema = z.infer<typeof schema>
 const state = reactive<Schema>({
@@ -101,8 +101,8 @@ async function updateStreak(event: FormSubmitEvent<Schema>) {
         return
       }
       toast.add({
-        title: 'Success',
-        description: 'Streak updated successfully',
+        title: 'Suksess',
+        description: 'Streak oppdatert',
         color: 'success',
       })
       navigateTo({
@@ -115,7 +115,7 @@ async function updateStreak(event: FormSubmitEvent<Schema>) {
 
 async function deleteStreak() {
   const confirmed = confirm(
-    `Are you sure you want to delete "${state.name}"? This action cannot be undone.`,
+    `Er du sikker på at du vil slette "${state.name}"? Denne handlingen kan ikke angres.`,
   )
 
   if (!confirmed) {
@@ -132,8 +132,8 @@ async function deleteStreak() {
     return
   }
   toast.add({
-    title: 'Success',
-    description: 'Streak deleted successfully',
+    title: 'Suksess',
+    description: 'Streak slettet',
     color: 'success',
   })
   navigateTo({
@@ -150,7 +150,7 @@ async function deleteStreak() {
         <UBreadcrumb
           :items="[
             {
-              label: 'Projects',
+              label: 'Prosjekter',
               to: { name: 'admin-projects' },
             },
             {
@@ -161,7 +161,7 @@ async function deleteStreak() {
               },
             },
             {
-              label: 'Streaks',
+              label: 'Streaker',
             },
             {
               label: data?.streak.name ?? route.params.streakId,
@@ -188,10 +188,10 @@ async function deleteStreak() {
           class="flex max-w-md flex-col gap-6"
           @submit.prevent="updateStreak"
         >
-          <UFormField name="name" label="Name">
+          <UFormField name="name" label="Navn">
             <UInput v-model="state.name" size="xl" required class="w-full" />
           </UFormField>
-          <UFormField name="description" label="Description">
+          <UFormField name="description" label="Beskrivelse">
             <UTextarea
               v-model="state.description"
               class="w-full"
@@ -200,7 +200,7 @@ async function deleteStreak() {
             />
           </UFormField>
           <div class="flex flex-col gap-4">
-            <label class="text-sm font-medium">Relevant Days</label>
+            <label class="text-sm font-medium">Relevante dager</label>
             <div
               v-for="(range, index) in state.relevantDays"
               :key="index"
@@ -208,7 +208,7 @@ async function deleteStreak() {
             >
               <div class="flex items-center justify-between">
                 <span class="text-sm font-medium"
-                  >Date Range {{ index + 1 }}</span
+                  >Datoperiode {{ index + 1 }}</span
                 >
                 <UButton
                   v-if="state.relevantDays.length > 1"
@@ -217,7 +217,7 @@ async function deleteStreak() {
                   size="xs"
                   @click="removeDateRange(index)"
                 >
-                  Remove
+                  Fjern
                 </UButton>
               </div>
               <DateRangeField
@@ -226,10 +226,10 @@ async function deleteStreak() {
               />
             </div>
             <UButton type="button" variant="outline" @click="addDateRange">
-              Add Date Range
+              Legg til datoperiode
             </UButton>
           </div>
-          <UButton type="submit" size="lg" block>Save changes</UButton>
+          <UButton type="submit" size="lg" block>Lagre endringer</UButton>
           <UButton
             color="error"
             variant="ghost"
@@ -237,7 +237,7 @@ async function deleteStreak() {
             block
             @click="deleteStreak"
           >
-            Delete Streak
+            Slett streak
           </UButton>
         </UForm>
       </template>

@@ -21,6 +21,7 @@
     "continue": "Continue",
     "nextQuestion": "Próxima pergunta",
     "done": "Pronto",
+    "unavailable": "Este quiz não está disponível no momento.",
     "result": {
       "receivedNoPoints": "Você não acumulou nenhum ponto.",
       "receivedPoints": "Você acumulou {points} pontos.",
@@ -115,7 +116,13 @@
     "lengthError": "O feedback não pode ter mais de {max} caracteres",
     "thankYou": "Obrigado pela ajuda!",
     "thankYouDescription": "As suas sugestões serão utilizadas para o desenvolvimento futuro do serviço.",
-    "close": "Muito bom.",
-    "canContactMe": "Sim, concordo que vocês possam entrar em contato comigo em relação ao meu feedback."
-  }
+    "close": "De nada",
+    "canContactMe": "Sim, concordo que vocês possam entrar em contato comigo em relação ao meu feedback.",
+    "disclosure": "O feedback será associado à sua conta de usuário."
+  },
+  "pwa": {
+    "updateAvailableTitle": "Uma atualização está disponível",
+    "updateAvailableButton": "Atualizar agora"
+  },
+  "goToHiddenTreasures": "Ir para o estudo bíblico"
 }

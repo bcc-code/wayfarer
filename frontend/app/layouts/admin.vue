@@ -63,7 +63,7 @@ const links = computed<NavigationMenuItem[]>(() => {
 
   const items: NavigationMenuItem[] = [
     {
-      label: 'Home',
+      label: 'Hjem',
       icon: 'lucide:house',
       to: '/admin',
     },
@@ -71,7 +71,7 @@ const links = computed<NavigationMenuItem[]>(() => {
 
   if (canAccessProjects.value) {
     items.push({
-      label: 'Projects',
+      label: 'Prosjekter',
       icon: 'lucide:layers',
       active: route.fullPath.includes('/projects'),
       to: '/admin/projects',
@@ -80,7 +80,7 @@ const links = computed<NavigationMenuItem[]>(() => {
 
   if (canAccessTeams.value) {
     items.push({
-      label: 'Teams',
+      label: 'Lag',
       icon: 'lucide:users-round',
       active: route.fullPath.includes('/teams'),
       to: '/admin/teams',
@@ -89,7 +89,7 @@ const links = computed<NavigationMenuItem[]>(() => {
 
   if (canAccessUsers.value) {
     items.push({
-      label: 'Users',
+      label: 'Brukere',
       icon: 'lucide:user',
       active: route.fullPath.includes('/users'),
       to: '/admin/users',
@@ -98,7 +98,7 @@ const links = computed<NavigationMenuItem[]>(() => {
 
   if (canAccessScores.value) {
     items.push({
-      label: 'Scores',
+      label: 'Poeng',
       icon: 'lucide:trophy',
       active: route.fullPath.includes('/scores'),
       to: '/admin/scores',
@@ -107,7 +107,7 @@ const links = computed<NavigationMenuItem[]>(() => {
 
   if (canAccessConsents.value) {
     items.push({
-      label: 'Consents',
+      label: 'Samtykker',
       icon: 'lucide:file-check',
       active: route.fullPath.includes('/consents'),
       to: '/admin/consents',
@@ -116,7 +116,7 @@ const links = computed<NavigationMenuItem[]>(() => {
 
   if (canAccessFeedback.value) {
     items.push({
-      label: 'Feedback',
+      label: 'Tilbakemeldinger',
       icon: 'lucide:message-square',
       active: route.fullPath.includes('/feedback'),
       to: '/admin/feedback',
@@ -129,7 +129,7 @@ const links = computed<NavigationMenuItem[]>(() => {
 const groups = computed(() => [
   {
     id: 'links',
-    label: 'Go to',
+    label: 'Gå til',
     items: links.value.flat(),
   },
 ])

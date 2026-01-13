@@ -123,9 +123,9 @@ async function createProject(event: FormSubmitEvent<Schema>) {
       <UContainer>
         <UBreadcrumb
           :items="[
-            { label: 'Projects', to: { name: 'admin-projects' } },
+            { label: 'Prosjekter', to: { name: 'admin-projects' } },
             {
-              label: state.name || 'New project',
+              label: state.name || 'Nytt prosjekt',
             },
           ]"
         />
@@ -138,28 +138,33 @@ async function createProject(event: FormSubmitEvent<Schema>) {
         class="flex max-w-md flex-col gap-6"
         @submit.prevent="createProject"
       >
-        <UFormField name="name" label="Name">
+        <UFormField name="branding.logo" label="Logo" hint="(valgfritt)">
+          <AdminFileUpload v-model="state.branding.logo" />
+        </UFormField>
+        <UFormField name="name" label="Navn">
           <UInput v-model="state.name" size="xl" required class="w-full" />
         </UFormField>
         <UFormField
           name="description"
-          label="Description"
-          hint="(optional)"
-          help="This is only for admins to have better context"
+          label="Beskrivelse"
+          hint="(valgfritt)"
+          help="Dette er kun for at admins skal ha bedre kontekst"
         >
           <UTextarea v-model="state.description" class="w-full" autoresize />
         </UFormField>
-        <DateRangeField
-          v-model:start="state.startDate"
-          v-model:end="state.endDate"
-        />
-        <UFormField label="Color Theme">
-          <AdminProjectThemeEditor
-            v-model="state.branding.colors"
-            :project-name="state.name || 'New Project'"
+        <UFormField label="Prosjektvarighet">
+          <DateRangeField
+            v-model:start="state.startDate"
+            v-model:end="state.endDate"
           />
         </UFormField>
-        <UButton type="submit" size="lg" block>Create project</UButton>
+        <UFormField label="Fargetema">
+          <AdminProjectThemeEditor
+            v-model="state.branding.colors"
+            :project-name="state.name || 'Nytt prosjekt'"
+          />
+        </UFormField>
+        <UButton type="submit" size="lg" block>Opprett prosjekt</UButton>
       </UForm>
     </UContainer>
   </div>

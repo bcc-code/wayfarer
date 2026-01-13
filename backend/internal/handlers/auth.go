@@ -25,12 +25,13 @@ import (
 )
 
 type AuthHandler struct {
-	DB            *database.DB
-	Cfg           *config.Config
-	JWKS          keyfunc.Keyfunc
-	Auth0JWKS     keyfunc.Keyfunc
-	MembersClient *members.Client
-	RoleService   *services.RoleService
+	DB                        *database.DB
+	Cfg                       *config.Config
+	JWKS                      keyfunc.Keyfunc
+	Auth0JWKS                 keyfunc.Keyfunc
+	MembersClient             *members.Client
+	RoleService               *services.RoleService
+	ContentAchievementService *services.ContentAchievementService
 }
 
 // BrunstadTVClaims represents the JWT claims from Brunstad TV
@@ -370,8 +371,16 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 
 	// Try to find by person_uuid first (preferred)
 	if personUUID.Valid {
+		slog.Debug("auth: looking up user by person_uuid",
+			"person_uuid", uuid.UUID(personUUID.Bytes).String(),
+			"members_id", claims.PersonID,
+		)
 		user, err := h.DB.Queries.GetUserByPersonUUID(ctx, personUUID)
 		if err == nil {
+			slog.Debug("auth: found existing user by person_uuid",
+				"user_id", user.ID,
+				"person_uuid", uuid.UUID(personUUID.Bytes).String(),
+			)
 			// Convert GetUserByPersonUUIDRow to GetUserByMembersIDRow
 			return &sqlc.GetUserByMembersIDRow{
 				ID:          user.ID,
@@ -392,11 +401,21 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("database error while finding user by person_uuid: %w", err)
 		}
+		slog.Debug("auth: user not found by person_uuid, trying members_id",
+			"person_uuid", uuid.UUID(personUUID.Bytes).String(),
+		)
 	}
 
 	// Fallback: Try to find by members_id (old numeric ID)
+	slog.Debug("auth: looking up user by members_id",
+		"members_id", claims.PersonID,
+	)
 	user, err := h.DB.Queries.GetUserByMembersID(ctx, claims.PersonID)
 	if err == nil {
+		slog.Debug("auth: found existing user by members_id",
+			"user_id", user.ID,
+			"members_id", claims.PersonID,
+		)
 		// User exists but may not have person_uuid - update if we have it
 		if personUUID.Valid && !user.PersonUuid.Valid {
 			updateErr := h.DB.Queries.UpdateUserPersonUUID(ctx, sqlc.UpdateUserPersonUUIDParams{
@@ -417,6 +436,10 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("database error while finding user: %w", err)
 	}
+
+	slog.Debug("auth: user not found by members_id, will create new user",
+		"members_id", claims.PersonID,
+	)
 
 	slog.Info("callback: creating new user",
 		"members_id", claims.PersonID,
@@ -536,9 +559,34 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
+	slog.Debug("auth: user created successfully",
+		"user_id", newUser.ID,
+		"members_id", newUser.MembersID,
+		"person_uuid_valid", personUUID.Valid,
+	)
+
 	// Process any pending consent events for this user (using person_uuid if available)
 	if personUUID.Valid {
-		h.processPendingConsentEvents(ctx, newUser.ID, uuid.UUID(personUUID.Bytes).String())
+		personUUIDStr := uuid.UUID(personUUID.Bytes).String()
+		slog.Debug("auth: processing pending events for new user",
+			"user_id", newUser.ID,
+			"person_uuid", personUUIDStr,
+		)
+		h.processPendingConsentEvents(ctx, newUser.ID, personUUIDStr)
+		if h.ContentAchievementService != nil {
+			slog.Debug("auth: processing pending content events",
+				"user_id", newUser.ID,
+				"person_uuid", personUUIDStr,
+			)
+			h.ContentAchievementService.ProcessPendingContentEvents(ctx, newUser.ID, personUUID)
+			slog.Debug("auth: finished processing pending content events",
+				"user_id", newUser.ID,
+			)
+		}
+	} else {
+		slog.Debug("auth: skipping pending event processing - no person_uuid",
+			"user_id", newUser.ID,
+		)
 	}
 
 	// Convert CreateUserRow to GetUserByMembersIDRow
@@ -823,3 +871,4 @@ func (h *AuthHandler) processPendingConsentEvents(ctx context.Context, userID, p
 		)
 	}
 }
+

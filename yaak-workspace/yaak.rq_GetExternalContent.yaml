@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_GetExternalContent
 createdAt: 2025-12-10T13:00:00
-updatedAt: 2026-01-05T14:09:42.625865
+updatedAt: 2026-01-08T12:25:56.130793
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_ExternalContent
 authentication: {}

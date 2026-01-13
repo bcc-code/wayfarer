@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { findTeamLeader, findMemberById, isMemberTeamLead } from '~/utils/teams'
+
 const { isTeamLead } = useAuth()
 const { isAuthReady } = useAuthReady()
 const {
@@ -12,14 +14,12 @@ const {
 
 const isInitialLoading = computed(() => fetching.value && !data.value)
 
-const teamLeader = computed(() => {
-  return data.value?.myCurrentProject.myTeam?.memberLeaderboard.find((entry) =>
-    entry.tags?.includes(LeaderboardEntryTag.TeamLead),
-  )
-})
-
 const teamMembers = computed(() => {
   return data.value?.myCurrentProject.myTeam?.memberLeaderboard ?? []
+})
+
+const teamLeader = computed(() => {
+  return findTeamLeader(teamMembers.value)
 })
 
 // Update team
@@ -40,7 +40,7 @@ watch(
 
 const selectedTeamLeader = computed(() => {
   if (!form.teamLeadId) return null
-  return teamMembers.value.find((m) => m.id === form.teamLeadId)
+  return findMemberById(teamMembers.value, form.teamLeadId)
 })
 
 const { executeMutation } = useUpdateTeamMutation()
@@ -167,9 +167,7 @@ async function saveChanges() {
         :leaderboard="data.myCurrentProject.myTeam.memberLeaderboard"
         :badge="
           (entry) =>
-            entry.tags?.includes(LeaderboardEntryTag.TeamLead)
-              ? $t('unit.unitLeader')
-              : undefined
+            isMemberTeamLead(entry) ? $t('unit.unitLeader') : undefined
         "
         hide-medals
       />

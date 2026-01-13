@@ -21,6 +21,7 @@
     "continue": "Jätka",
     "nextQuestion": "Järgmine küsimus",
     "done": "Valmis",
+    "unavailable": "See küsimustik pole hetkel saadaval.",
     "result": {
       "receivedNoPoints": "Sa ei saanud ühtegi punkti.",
       "receivedPoints": "Sa kogusid {points} punkti.",
@@ -116,11 +117,12 @@
     "thankYou": "Täname abi eest!",
     "thankYouDescription": "Sinu ettepanekuid kasutatakse teenuse edasiarendamiseks.",
     "close": "Palun",
-    "canContactMe": "Jah, ma nõustun, et võite minuga seoses minu tagasisidega ühendust võtta"
+    "canContactMe": "Jah, ma nõustun, et võite minuga seoses minu tagasisidega ühendust võtta",
+    "disclosure": "Tagasiside seotakse sinu kasutajakontoga."
   },
   "pwa": {
     "updateAvailableTitle": "Uuendus on saadaval",
-    "updateAvailableDescription": "Uuendamiseks taaskäivita rakendus.",
     "updateAvailableButton": "Uuenda kohe"
-  }
+  },
+  "goToHiddenTreasures": "Mine piibliõppe juurde"
 }
