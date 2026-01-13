@@ -8338,10 +8338,6 @@ extend type Query {
         last: Int
         before: String
     ): QuizSubmissionConnection! @requireRole(roles: ["admin", "superadmin"])
-
-    # Quiz Sessions
-    quizSession(id: ID!): QuizSession @requireRole(roles: ["user", "admin", "superadmin"])
-    quizSessions(quizId: ID!, state: QuizSessionState): [QuizSession!]! @requireRole(roles: ["admin", "superadmin"])
 }
 
 extend type Mutation {
@@ -8372,7 +8368,17 @@ extend type Mutation {
         responses: [SubmitQuizAnswerInput!]!
         completedAt: DateTime
     ): QuizSubmission! @requireRole(roles: ["m2m", "admin", "superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/quiz_sessions.graphqls", Input: `# Quiz Session queries and mutations
 
+extend type Query {
+    # Quiz Sessions
+    quizSession(id: ID!): QuizSession @requireRole(roles: ["user", "admin", "superadmin"])
+    quizSessions(quizId: ID!, state: QuizSessionState): [QuizSession!]! @requireRole(roles: ["admin", "superadmin"])
+}
+
+extend type Mutation {
     # Session CRUD
     createQuizSession(input: CreateQuizSessionInput!): QuizSession!
     updateQuizSession(id: ID!, input: UpdateQuizSessionInput!): QuizSession!
