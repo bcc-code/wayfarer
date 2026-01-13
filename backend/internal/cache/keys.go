@@ -86,6 +86,9 @@ const (
 	PrefixExternalContent        = "externalcontent:"
 	PrefixExternalContentsFilter = "externalcontentsfilter:"
 	PrefixExternalContentsCount  = "externalcontentscount:"
+
+	// File uploads
+	PrefixFileUpload = "fileupload:"
 )
 
 // Key builders for different entity types
@@ -310,6 +313,11 @@ func UsersByTeamKey(teamID string) string {
 // UserRolesKey builds a cache key for user roles
 func UserRolesKey(userID string) string {
 	return PrefixUserRoles + userID
+}
+
+// FileUploadKey builds a cache key for a file upload by ID
+func FileUploadKey(fileUploadID string) string {
+	return PrefixFileUpload + fileUploadID
 }
 
 // Tag extraction helpers for invalidation

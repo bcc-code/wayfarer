@@ -641,6 +641,20 @@ type FeedbackFilter struct {
 	UserID *string `json:"userId,omitempty"`
 }
 
+type FileUpload struct {
+	ID             string           `json:"id"`
+	Filename       string           `json:"filename"`
+	StoredFilename string           `json:"storedFilename"`
+	FileSize       int              `json:"fileSize"`
+	MimeType       string           `json:"mimeType"`
+	PublicURL      string           `json:"publicUrl"`
+	UploadedBy     string           `json:"uploadedBy"`
+	Width          *int             `json:"width,omitempty"`
+	Height         *int             `json:"height,omitempty"`
+	Blurhash       *string          `json:"blurhash,omitempty"`
+	CreatedAt      scalars.DateTime `json:"createdAt"`
+}
+
 type FirebaseTokenResponse struct {
 	Token     string `json:"token"`
 	ExpiresIn int    `json:"expiresIn"`
