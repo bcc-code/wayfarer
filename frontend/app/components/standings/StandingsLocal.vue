@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getExtraItems } from '~/utils/leaderboard'
+
 const entityType = ref(LeaderboardEntityType.Persons)
 
 const { me } = useAuth()
@@ -22,11 +24,10 @@ const personLeaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
 })
 
 const personExtraItems = computed<Partial<LeaderboardEntry>[]>(() => {
-  const me = data.value?.myCurrentProject.personLeaderboard.me
-  if (me && !personLeaderboard.value.find((entry) => entry.id === me.id)) {
-    return [me]
-  }
-  return []
+  return getExtraItems(
+    personLeaderboard.value,
+    data.value?.myCurrentProject.personLeaderboard.me,
+  )
 })
 
 const unitLeaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
@@ -37,11 +38,10 @@ const unitLeaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
 })
 
 const unitExtraItems = computed<Partial<LeaderboardEntry>[]>(() => {
-  const me = data.value?.myCurrentProject.unitLeaderboard.me
-  if (me && !unitLeaderboard.value.find((entry) => entry.id === me.id)) {
-    return [me]
-  }
-  return []
+  return getExtraItems(
+    unitLeaderboard.value,
+    data.value?.myCurrentProject.unitLeaderboard.me,
+  )
 })
 
 const debouncedFetching = useDebounce(fetching, 200)

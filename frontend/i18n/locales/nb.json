@@ -21,6 +21,7 @@
     "continue": "Fortsett",
     "nextQuestion": "Neste spørsmål",
     "done": "Ferdig",
+    "unavailable": "Denne quizen er ikke tilgjengelig for øyeblikket.",
     "result": {
       "receivedNoPoints": "Du samlet ingen poeng.",
       "receivedPoints": "Du samlet {points} poeng.",

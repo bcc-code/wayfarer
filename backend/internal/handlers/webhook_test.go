@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -82,10 +81,8 @@ func TestContentEventRequest_ValidationErrors(t *testing.T) {
 			gin.SetMode(gin.TestMode)
 
 			// Create handler without DB - tests validation only
-			cacheInstance, _ := cache.NewCacheWithRegistry(cache.DefaultConfig())
 			handler := &WebhookHandler{
-				DB:    nil,
-				Cache: cacheInstance,
+				DB: nil,
 			}
 
 			// Create request
@@ -199,10 +196,8 @@ func TestContentEventRequest_ContentProgressValidation(t *testing.T) {
 func TestWebhookHandler_MissingAPIKeySource(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	cacheInstance, _ := cache.NewCacheWithRegistry(cache.DefaultConfig())
 	handler := &WebhookHandler{
-		DB:    nil,
-		Cache: cacheInstance,
+		DB: nil,
 	}
 
 	payload := map[string]interface{}{

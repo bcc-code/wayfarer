@@ -649,6 +649,20 @@ type FeedbackFilter struct {
 	UserID *string `json:"userId,omitempty"`
 }
 
+type FileUpload struct {
+	ID             string           `json:"id"`
+	Filename       string           `json:"filename"`
+	StoredFilename string           `json:"storedFilename"`
+	FileSize       int              `json:"fileSize"`
+	MimeType       string           `json:"mimeType"`
+	PublicURL      string           `json:"publicUrl"`
+	UploadedBy     string           `json:"uploadedBy"`
+	Width          *int             `json:"width,omitempty"`
+	Height         *int             `json:"height,omitempty"`
+	Blurhash       *string          `json:"blurhash,omitempty"`
+	CreatedAt      scalars.DateTime `json:"createdAt"`
+}
+
 type FirebaseTokenResponse struct {
 	Token     string `json:"token"`
 	ExpiresIn int    `json:"expiresIn"`
@@ -1618,20 +1632,21 @@ type UserEdge struct {
 }
 
 type UserFeedback struct {
-	ID           string           `json:"id"`
-	UserID       string           `json:"userId"`
-	User         *User            `json:"user"`
-	Message      string           `json:"message"`
-	CanContactMe bool             `json:"canContactMe"`
-	UserAgent    *string          `json:"userAgent,omitempty"`
-	Platform     *string          `json:"platform,omitempty"`
-	ScreenWidth  *int             `json:"screenWidth,omitempty"`
-	ScreenHeight *int             `json:"screenHeight,omitempty"`
-	AppVersion   *string          `json:"appVersion,omitempty"`
-	Locale       *string          `json:"locale,omitempty"`
-	ProjectID    *string          `json:"projectId,omitempty"`
-	Timezone     *string          `json:"timezone,omitempty"`
-	CreatedAt    scalars.DateTime `json:"createdAt"`
+	ID           string            `json:"id"`
+	UserID       string            `json:"userId"`
+	User         *User             `json:"user"`
+	Message      string            `json:"message"`
+	CanContactMe bool              `json:"canContactMe"`
+	UserAgent    *string           `json:"userAgent,omitempty"`
+	Platform     *string           `json:"platform,omitempty"`
+	ScreenWidth  *int              `json:"screenWidth,omitempty"`
+	ScreenHeight *int              `json:"screenHeight,omitempty"`
+	AppVersion   *string           `json:"appVersion,omitempty"`
+	Locale       *string           `json:"locale,omitempty"`
+	ProjectID    *string           `json:"projectId,omitempty"`
+	Timezone     *string           `json:"timezone,omitempty"`
+	CreatedAt    scalars.DateTime  `json:"createdAt"`
+	HandledAt    *scalars.DateTime `json:"handledAt,omitempty"`
 }
 
 type UserFilter struct {

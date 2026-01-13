@@ -981,7 +981,6 @@ FROM achievements a
 INNER JOIN content_achievements ca ON a.id = ca.achievement_id
 INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
 WHERE cai.external_content_id = $1::text
-  AND (a.hidden IS NULL OR a.hidden = false)
 `
 
 type GetPublishedContentAchievementsByExternalContentRow struct {
@@ -1003,7 +1002,7 @@ type GetPublishedContentAchievementsByExternalContentRow struct {
 	ContentItems         interface{}        `json:"content_items"`
 }
 
-// Get all published (non-hidden) content achievements that contain a specific external content
+// Get all content achievements that contain a specific external content
 func (q *Queries) GetPublishedContentAchievementsByExternalContent(ctx context.Context, externalContentID string) ([]*GetPublishedContentAchievementsByExternalContentRow, error) {
 	rows, err := q.db.Query(ctx, GetPublishedContentAchievementsByExternalContent, externalContentID)
 	if err != nil {
@@ -1183,9 +1182,7 @@ INSERT INTO user_content_progress (user_id, achievement_id, external_content_id,
 SELECT $1::text, ca.achievement_id, $2::text, now()
 FROM content_achievements ca
 INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
-INNER JOIN achievements a ON ca.achievement_id = a.id
 WHERE cai.external_content_id = $2::text
-  AND (a.hidden IS NULL OR a.hidden = false)
 ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING
 `
 
@@ -1194,7 +1191,7 @@ type MarkContentItemCompletedForAllAchievementsParams struct {
 	ExternalContentID string `json:"external_content_id"`
 }
 
-// Mark content completed for a user across all published achievements containing this content
+// Mark content completed for a user across all achievements containing this content
 func (q *Queries) MarkContentItemCompletedForAllAchievements(ctx context.Context, arg MarkContentItemCompletedForAllAchievementsParams) error {
 	_, err := q.db.Exec(ctx, MarkContentItemCompletedForAllAchievements, arg.UserID, arg.ExternalContentID)
 	return err

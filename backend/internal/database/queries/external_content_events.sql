@@ -23,3 +23,11 @@ WHERE source = @source::text
 ORDER BY received_at DESC
 LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END
 OFFSET CASE WHEN @queryoffset::int IS NULL THEN 0 ELSE @queryoffset::int END;
+
+-- name: GetExternalContentEventsForProcessing :many
+-- Returns one event per task_id (most recent) for a person_id, used when processing
+-- pending events for newly registered users.
+SELECT DISTINCT ON (task_id) id, person_id, task_id, plan_id, content_progress, consumed_at
+FROM external_content_events
+WHERE person_id = @personid::uuid
+ORDER BY task_id, consumed_at DESC;

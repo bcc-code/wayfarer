@@ -21,6 +21,7 @@
     "continue": "Continuer",
     "nextQuestion": "Question suivante",
     "done": "Terminé",
+    "unavailable": "Ce quiz n'est pas disponible pour le moment.",
     "result": {
       "receivedNoPoints": "Tu n’as marqué aucun point.",
       "receivedPoints": "Tu as marqué {points} points.",
@@ -117,10 +118,11 @@
     "thankYouDescription": "Tes commentaires seront utilisés pour améliorer le service.",
     "close": "Avec plaisir",
     "canContactMe": "Oui, j'accepte que vous me contactiez au sujet de mon commentaire.",
-    "regards": "Salutations {name}"
+    "disclosure": "Le commentaire sera associé à ton compte utilisateur."
   },
   "pwa": {
     "updateAvailableTitle": "Une mise à jour est disponible",
     "updateAvailableButton": "Mettre à jour maintenant"
-  }
+  },
+  "goToHiddenTreasures": "Aller à l’étude biblique"
 }

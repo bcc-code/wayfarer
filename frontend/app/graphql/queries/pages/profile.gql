@@ -1,4 +1,4 @@
-query ProfilePage {
+query ProfilePage($ageFilter: LeaderboardFilter) {
   me {
     id
     name
@@ -23,6 +23,7 @@ query ProfilePage {
     id
     name
     achievements {
+      __typename
       id
       name
       descriptionPending
@@ -32,8 +33,19 @@ query ProfilePage {
       hidden
       achievedAt
       points
+      ... on ContentAchievement {
+        nextItem {
+          id
+          sortOrder
+          externalContent {
+            id
+            title
+            url
+          }
+        }
+      }
     }
-    leaderboard(entityType: PERSONS) {
+    leaderboard(entityType: PERSONS, filter: $ageFilter) {
       me {
         score
         rank

@@ -1,6 +1,9 @@
 <script setup lang="ts">
+type ProjectCardAchievement =
+  ProfilePageQuery['myCurrentProject']['achievements'][number]
+
 const props = defineProps<{
-  achievement: Partial<Achievement>
+  achievement: ProjectCardAchievement
 }>()
 
 const { track } = useAnalytics()
@@ -30,7 +33,7 @@ watch(
   { immediate: true },
 )
 
-function descriptionFor(achievement: typeof props.achievement) {
+function descriptionFor(achievement: ProjectCardAchievement) {
   if (achievement.achievedAt) {
     return achievement.descriptionCompleted
   } else {
@@ -116,6 +119,26 @@ function descriptionFor(achievement: typeof props.achievement) {
               })
             }}
           </div>
+
+          <!-- <template v-if="achievement.__typename === 'ContentAchievement'">
+            <div
+              v-if="achievement.nextItem"
+              class="w-full mt-auto flex flex-col p-default text-center"
+            >
+              <p class="text-label text-text-default">
+                {{ achievement.nextItem.externalContent.title }}
+              </p>
+              <NuxtLink
+                v-if="achievement.nextItem.externalContent.url"
+                :to="achievement.nextItem.externalContent.url"
+                class="contents"
+              >
+                <DesignButton size="large" variant="primary">
+                  {{ $t('achievement.nextStep') }}
+                </DesignButton>
+              </NuxtLink>
+            </div>
+          </template> -->
         </div>
       </template>
     </DesignDrawer>

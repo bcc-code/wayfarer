@@ -13,6 +13,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/services/email"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 )
@@ -31,6 +32,7 @@ type Resolver struct {
 	PushService        *push.Service
 	WebhookService     *webhooks.Service
 	FirebaseService    *firebase.Service
+	EmailService       *email.Service
 	InstanceID         string
 }
 

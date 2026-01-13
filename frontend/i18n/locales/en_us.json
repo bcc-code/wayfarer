@@ -21,6 +21,7 @@
     "continue": "Continue",
     "nextQuestion": "Next question",
     "done": "Done",
+    "unavailable": "This quiz is not available at the moment.",
     "result": {
       "receivedNoPoints": "You did not receive any points.",
       "receivedPoints": "You received {points} points.",
@@ -117,7 +118,7 @@
     "thankYouDescription": "Your input will be used to further develop the service.",
     "close": "You're welcome",
     "canContactMe": "Yes, I agree that you can contact me in connection with my feedback",
-    "regards": "Greetings, {name}"
+    "disclosure": "The feedback will be linked to your user account."
   },
   "pwa": {
     "updateAvailableTitle": "An update is available",

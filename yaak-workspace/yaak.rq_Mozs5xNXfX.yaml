@@ -1,0 +1,35 @@
+type: http_request
+model: http_request
+id: rq_Mozs5xNXfX
+createdAt: 2026-01-13T12:47:21.530072
+updatedAt: 2026-01-13T13:18:03.258175
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_VXmq5ETCNS
+authentication: {}
+authenticationType: null
+body:
+  query: |-
+    mutation {
+      forwardFeedbackToDesk(feedbackId:"FB01KEEM2R2SDJAPN87ANK4TJAXK")
+    }
+  variables: ''
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: ykj3tfsHHJ
+- enabled: true
+  name: ''
+  value: ''
+  id: YGdtvWfsZs
+- enabled: true
+  name: ''
+  value: ''
+  id: 0s4xJY0Rq9
+method: POST
+name: Forward Feedback
+sortPriority: 0.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

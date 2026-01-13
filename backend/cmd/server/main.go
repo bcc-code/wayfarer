@@ -36,6 +36,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/plugins"
 	"github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
 	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/services/email"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ssf"
@@ -280,6 +281,15 @@ func main() {
 		slog.Warn("Firebase service not initialized - missing configuration")
 	}
 
+	// Initialize Email service for feedback forwarding
+	var emailService *email.Service
+	if cfg.Resend.APIKey != "" {
+		emailService = email.NewService(cfg.Resend.APIKey, cfg.Resend.AdminBaseURL)
+		slog.Info("Email service initialized")
+	} else {
+		slog.Warn("Email service not configured - RESEND_API_KEY not set")
+	}
+
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{
 		DB:                 db,
@@ -291,6 +301,7 @@ func main() {
 		PushService:        pushService,
 		WebhookService:     webhookService,
 		FirebaseService:    firebaseService,
+		EmailService:       emailService,
 		InstanceID:         cacheSync.InstanceID(),
 	}
 
@@ -391,24 +402,32 @@ func main() {
 	}
 	slog.Info("Profiling endpoints enabled at /debug/pprof")
 
-	// Authentication token endpoint (no JWT middleware)
-	authHandler := &handlers.AuthHandler{
-		DB:            db,
-		Cfg:           cfg,
-		JWKS:          jwks,
-		Auth0JWKS:     auth0JWKS,
-		MembersClient: membersClient,
-		RoleService:   roleService,
-	}
-	router.GET("/token", authHandler.Callback)
-
-	// Webhook handler for external content events
-	webhookHandler := &handlers.WebhookHandler{
+	// Content achievement service (shared between auth and webhook handlers)
+	contentAchievementService := &services.ContentAchievementService{
 		DB:             db,
 		Cache:          cacheInstance,
 		PushService:    pushService,
 		Loaders:        dataLoaders,
 		WebhookService: webhookService,
+	}
+
+	// Authentication token endpoint (no JWT middleware)
+	authHandler := &handlers.AuthHandler{
+		DB:                        db,
+		Cfg:                       cfg,
+		JWKS:                      jwks,
+		Auth0JWKS:                 auth0JWKS,
+		MembersClient:             membersClient,
+		RoleService:               roleService,
+		ContentAchievementService: contentAchievementService,
+	}
+	router.GET("/token", authHandler.Callback)
+
+	// Webhook handler for external content events
+	webhookHandler := &handlers.WebhookHandler{
+		DB:                        db,
+		WebhookService:            webhookService,
+		ContentAchievementService: contentAchievementService,
 	}
 	router.POST("/api/v1/content-events", middleware.APIKeyAuth(cfg.APIKey), webhookHandler.HandleContentEvent)
 

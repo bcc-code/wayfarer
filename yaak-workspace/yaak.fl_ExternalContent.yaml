@@ -2,12 +2,12 @@ type: folder
 model: folder
 id: fl_ExternalContent
 createdAt: 2025-12-10T13:00:00
-updatedAt: 2025-12-10T13:00:00
+updatedAt: 2026-01-09T14:39:58.755308
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
 authenticationType: null
-description: 'External content queries and mutations for achievements'
+description: External content queries and mutations for achievements
 headers: []
 name: External Content
-sortPriority: 6000.0
+sortPriority: 8000.0

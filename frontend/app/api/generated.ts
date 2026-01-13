@@ -3136,14 +3136,16 @@ export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __
       | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, image?: string | null, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null }
     > } };
 
-export type ProfilePageQueryVariables = Exact<{ [key: string]: never; }>;
+export type ProfilePageQueryVariables = Exact<{
+  ageFilter?: InputMaybe<LeaderboardFilter>;
+}>;
 
 
 export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
-      | { __typename?: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
-      | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number, nextItem?: { __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, title?: string | null, url?: string | null } } | null }
+      | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
+      | { __typename: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
     >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank?: number | null } | null } } };
 
 export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
@@ -3370,7 +3372,7 @@ export type AdminUserPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminUserPageQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, name: string, email: string, membersId: string, gender: Gender, birthdate: string, age?: number | null, image?: string | null, church: { __typename?: 'Church', id: string, name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType } | null }>, consentStatus: { __typename?: 'ConsentStatus', acceptedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number } }>, rejectedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number } }>, pendingConsents: Array<{ __typename?: 'Consent', id: string, key: string, title: string, version: number }> } }, adminScoreJournal: { __typename?: 'ScoreJournalConnection', totalCount: number, edges: Array<{ __typename?: 'ScoreJournalEdge', node: { __typename?: 'ScoreJournal', id: string, points: number, sourceType: ScoreSourceType, reason?: string | null, createdAt: any, project: { __typename?: 'Project', id: string, name: string }, awardedBy?: { __typename?: 'User', id: string, name: string } | null } }> }, feedback: { __typename?: 'FeedbackConnection', totalCount: number, edges: Array<{ __typename?: 'FeedbackEdge', node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, createdAt: any } }> } };
+export type AdminUserPageQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, personUuid?: string | null, createdAt: any, name: string, email: string, membersId: string, gender: Gender, birthdate: string, age?: number | null, image?: string | null, church: { __typename?: 'Church', id: string, name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType } | null }>, consentStatus: { __typename?: 'ConsentStatus', acceptedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number } }>, rejectedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number } }>, pendingConsents: Array<{ __typename?: 'Consent', id: string, key: string, title: string, version: number }> } }, adminScoreJournal: { __typename?: 'ScoreJournalConnection', totalCount: number, edges: Array<{ __typename?: 'ScoreJournalEdge', node: { __typename?: 'ScoreJournal', id: string, points: number, sourceType: ScoreSourceType, reason?: string | null, createdAt: any, project: { __typename?: 'Project', id: string, name: string }, awardedBy?: { __typename?: 'User', id: string, name: string } | null } }> }, feedback: { __typename?: 'FeedbackConnection', totalCount: number, edges: Array<{ __typename?: 'FeedbackEdge', node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, createdAt: any } }> } };
 
 export type AdminUsersPageQueryVariables = Exact<{
   filter?: InputMaybe<UserFilter>;
@@ -4333,7 +4335,7 @@ export function useChallengesPageQuery(options?: Omit<Urql.UseQueryArgs<never, C
   return Urql.useQuery<ChallengesPageQuery, ChallengesPageQueryVariables | undefined>({ query: ChallengesPageDocument, variables: undefined, ...options });
 };
 export const ProfilePageDocument = gql`
-    query ProfilePage {
+    query ProfilePage($ageFilter: LeaderboardFilter) {
   me {
     id
     name
@@ -4358,6 +4360,7 @@ export const ProfilePageDocument = gql`
     id
     name
     achievements {
+      __typename
       id
       name
       descriptionPending
@@ -4367,8 +4370,19 @@ export const ProfilePageDocument = gql`
       hidden
       achievedAt
       points
+      ... on ContentAchievement {
+        nextItem {
+          id
+          sortOrder
+          externalContent {
+            id
+            title
+            url
+          }
+        }
+      }
     }
-    leaderboard(entityType: PERSONS) {
+    leaderboard(entityType: PERSONS, filter: $ageFilter) {
       me {
         score
         rank
@@ -5226,6 +5240,8 @@ export const AdminUserPageDocument = gql`
     query AdminUserPage($id: ID!) {
   user(id: $id) {
     id
+    personUuid
+    createdAt
     name
     email
     membersId

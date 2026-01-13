@@ -664,6 +664,141 @@ func TestLeaderboardAgeCalculationYearBased(t *testing.T) {
 	})
 }
 
+// TestLeaderboardDenseRanking tests that entities with the same score share the same rank
+// and that ranks are consecutive (no gaps). This tests the DENSE_RANK() behavior.
+// Uses TEAMS entity type to avoid PERSONS visibility limit filtering.
+func TestLeaderboardDenseRanking(t *testing.T) {
+	ctx := context.Background()
+	dbMgr, _ := GetTestEnv()
+
+	// Clean database for fresh test data
+	require.NoError(t, dbMgr.Clean(ctx))
+
+	// Create test church
+	require.NoError(t, dbMgr.CreateTestChurch(ctx, testChurchID, "Test Church", "NO", "S"))
+
+	// Create test project
+	require.NoError(t, dbMgr.CreateTestProject(ctx, testProjectID, "Test Project"))
+
+	// Update settings to point to our test project
+	_, err := dbMgr.DB.Pool.Exec(ctx, `UPDATE settings SET value_text = $1 WHERE key = 'current_project_id'`, testProjectID)
+	require.NoError(t, err)
+
+	now := time.Now()
+	birthdate := now.AddDate(-25, 0, 0)
+
+	// Create teams with specific scores to test ranking:
+	// TeamAlpha: 100 pts (rank 1)
+	// TeamBeta: 100 pts (rank 1 - same as Alpha)
+	// TeamGamma: 50 pts (rank 2 - consecutive, no gap)
+	// TeamDelta: 50 pts (rank 2 - same as Gamma)
+	// TeamEpsilon: 25 pts (rank 3 - consecutive)
+	teams := []struct {
+		teamID string
+		name   string
+		userID string
+		score  int
+	}{
+		{"TM01TEST00000000000000ALPHA0", "TeamAlpha", "US01TEST00000000000000ALPHA0", 100},
+		{"TM01TEST00000000000000BETA00", "TeamBeta", "US01TEST00000000000000BETA00", 100},
+		{"TM01TEST00000000000000GAMMA0", "TeamGamma", "US01TEST00000000000000GAMMA0", 50},
+		{"TM01TEST00000000000000DELTA0", "TeamDelta", "US01TEST00000000000000DELTA0", 50},
+		{"TM01TEST0000000000000EPSILON", "TeamEpsilon", "US01TEST0000000000000EPSILON", 25},
+	}
+
+	for _, team := range teams {
+		// Create team
+		require.NoError(t, dbMgr.CreateTestTeam(ctx, team.teamID, team.name, testProjectID))
+
+		// Create a user for this team (needed for score calculation)
+		require.NoError(t, dbMgr.CreateTestUser(ctx, team.userID, team.name+"User", "MALE", birthdate, testChurchID))
+		require.NoError(t, dbMgr.EnrollUserInProject(ctx, team.userID, testProjectID))
+		require.NoError(t, dbMgr.AddUserToTeam(ctx, team.userID, team.teamID))
+		require.NoError(t, dbMgr.AddScoreForUser(ctx, team.userID, testProjectID, team.score))
+	}
+
+	// Setup test server
+	router, cleanup, err := testutil.SetupTestServer(ctx, dbMgr)
+	require.NoError(t, err)
+	defer cleanup()
+
+	client := testutil.NewGraphQLClient(router)
+	defer client.Close()
+
+	adminToken, err := testutil.GenerateAdminToken(teams[0].userID)
+	require.NoError(t, err)
+
+	const rankingQuery = `
+		query GetLeaderboard($projectId: ID!) {
+			project(id: $projectId) {
+				leaderboard(entityType: TEAMS, first: 100) {
+					edges {
+						node {
+							id
+							name
+							score
+							rank
+						}
+					}
+					totalCount
+				}
+			}
+		}
+	`
+
+	t.Run("teams with same score share the same rank (dense ranking)", func(t *testing.T) {
+		resp := client.WithAuth(adminToken).MustExecute(t, rankingQuery, map[string]any{
+			"projectId": testProjectID,
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result leaderboardMeResult
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		assert.Equal(t, 5, result.Project.Leaderboard.TotalCount)
+
+		// Build a map of name -> rank for easier assertions
+		ranks := make(map[string]int)
+		for _, edge := range result.Project.Leaderboard.Edges {
+			require.NotNil(t, edge.Node.Rank, "rank should not be nil for %s", edge.Node.Name)
+			ranks[edge.Node.Name] = *edge.Node.Rank
+		}
+
+		// TeamAlpha and TeamBeta both have 100 pts, should share rank 1
+		assert.Equal(t, 1, ranks["TeamAlpha"], "TeamAlpha with 100 pts should be rank 1")
+		assert.Equal(t, 1, ranks["TeamBeta"], "TeamBeta with 100 pts should be rank 1 (same as Alpha)")
+
+		// TeamGamma and TeamDelta both have 50 pts, should share rank 2 (dense - no gap)
+		assert.Equal(t, 2, ranks["TeamGamma"], "TeamGamma with 50 pts should be rank 2 (dense ranking)")
+		assert.Equal(t, 2, ranks["TeamDelta"], "TeamDelta with 50 pts should be rank 2 (same as Gamma)")
+
+		// TeamEpsilon has 25 pts, should be rank 3 (consecutive after rank 2)
+		assert.Equal(t, 3, ranks["TeamEpsilon"], "TeamEpsilon with 25 pts should be rank 3 (consecutive)")
+	})
+
+	t.Run("teams with same rank are sorted alphabetically by name", func(t *testing.T) {
+		resp := client.WithAuth(adminToken).MustExecute(t, rankingQuery, map[string]any{
+			"projectId": testProjectID,
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result leaderboardMeResult
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		// Extract names in order
+		names := make([]string, len(result.Project.Leaderboard.Edges))
+		for i, edge := range result.Project.Leaderboard.Edges {
+			names[i] = edge.Node.Name
+		}
+
+		// Expected order: TeamAlpha, TeamBeta (both rank 1, alpha), TeamDelta, TeamGamma (both rank 2, alpha), TeamEpsilon
+		expected := []string{"TeamAlpha", "TeamBeta", "TeamDelta", "TeamGamma", "TeamEpsilon"}
+		assert.Equal(t, expected, names, "leaderboard should be sorted by rank, then alphabetically by name")
+	})
+}
+
 // setupLeaderboardTestData creates test users with known ages
 func setupLeaderboardTestData(t *testing.T, ctx context.Context, dbMgr *testutil.TestDBManager) {
 	t.Helper()

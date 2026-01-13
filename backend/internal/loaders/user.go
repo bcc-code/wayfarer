@@ -9,6 +9,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/google/uuid"
 	"github.com/graph-gophers/dataloader/v7"
 )
 
@@ -59,9 +60,17 @@ func userByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 					displayName = *row.DisplayName
 				}
 
+				// Convert PersonUuid if valid
+				var personUUID *string
+				if row.PersonUuid.Valid {
+					s := uuid.UUID(row.PersonUuid.Bytes).String()
+					personUUID = &s
+				}
+
 				user := &model.User{
 					ID:            row.ID,
 					MembersID:     row.MembersID,
+					PersonUUID:    personUUID,
 					Gender:        model.Gender(row.Gender),
 					ChurchID:      row.ChurchID,
 					Birthdate:     birthdateStr,
@@ -70,6 +79,7 @@ func userByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 					Image:         row.AvatarUrl,
 					ConsentStatus: consentStatus,
 					Language:      row.Language,
+					CreatedAt:     scalars.DateTime{Time: row.CreatedAt.Time},
 				}
 
 				userMap[row.ID] = user

@@ -53,6 +53,14 @@ const canStartQuiz = computed(() => {
   return props.challenge.quiz.userCanStart
 })
 
+// Check if quiz is unavailable (can't start and no submissions to show)
+const isQuizUnavailable = computed(() => {
+  if (props.challenge.quiz.userCanStart) return false
+  if (completedSubmission.value) return false
+  if (activeSubmission.value) return false
+  return true
+})
+
 onMounted(async () => {
   track(AnalyticsEvent.ChallengeOpened, {
     challenge_id: props.challenge.id,
@@ -212,6 +220,15 @@ function handleQuizAbandoned() {
         :points-awarded="completedSubmission.pointsAwarded ?? 0"
         :results="completedSubmissionResults"
       />
+    </template>
+
+    <!-- Quiz unavailable: can't start and no submissions -->
+    <template v-else-if="isQuizUnavailable">
+      <div class="flex items-center justify-center grow p-default">
+        <p class="text-body text-text-secondary text-center">
+          {{ $t('quiz.unavailable') }}
+        </p>
+      </div>
     </template>
 
     <!-- Final fallback: show loading for any unexpected state -->

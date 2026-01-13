@@ -206,12 +206,12 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-8">
+  <div class="flex gap-8">
     <UForm
       :state
       :schema="schema"
       loading-auto
-      class="flex max-w-lg flex-col gap-6"
+      class="flex flex-col gap-6 grow"
       @submit.prevent="handleSubmit"
     >
       <!-- Type Selector (only in create mode) -->
@@ -275,20 +275,18 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
 
       <UFormField
         name="imagePending"
-        label="Bilde-URL (ikke oppnådd)"
+        label="Bilde (ikke oppnådd)"
         hint="(valgfritt)"
-        help="URL til et bilde for denne utmerkelsen"
       >
-        <UInput v-model="state.imagePending" size="xl" class="w-full" />
+        <AdminFileUpload v-model="state.imagePending" />
       </UFormField>
 
       <UFormField
         name="imageCompleted"
-        label="Bilde-URL (oppnådd)"
+        label="Bilde (oppnådd)"
         hint="(valgfritt)"
-        help="URL til et bilde for denne utmerkelsen"
       >
-        <UInput v-model="state.imageCompleted" size="xl" class="w-full" />
+        <AdminFileUpload v-model="state.imageCompleted" />
       </UFormField>
 
       <UFormField name="points" label="Poeng for utmerkelsen">
