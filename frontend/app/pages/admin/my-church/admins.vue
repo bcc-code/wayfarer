@@ -167,6 +167,17 @@ function cancelRemove() {
   pendingRemove.value = null
 }
 
+// Copy link to clipboard (links to my-church index, not admins page)
+async function copyLink() {
+  const route = useRouter().resolve({ name: 'admin-my-church' })
+  const url = new URL(route.href, window.location.origin).href
+  await navigator.clipboard.writeText(url)
+  toast.add({
+    title: t('admin.common.linkCopied'),
+    color: 'success',
+  })
+}
+
 // User item type for autocomplete
 type UserItem = {
   id: string
@@ -217,19 +228,25 @@ function handleUserSelect(item: UserItem | undefined) {
       </UContainer>
     </div>
     <UContainer class="py-6">
-      <UButton
-        color="neutral"
-        variant="soft"
-        size="lg"
-        :to="{ name: 'admin-my-church' }"
-      >
-        <Icon name="lucide:arrow-left" />
-        {{ $t('admin.common.back') }}
-      </UButton>
+      <div class="flex gap-2">
+        <UButton
+          color="neutral"
+          variant="soft"
+          size="lg"
+          :to="{ name: 'admin-my-church' }"
+        >
+          <Icon name="lucide:arrow-left" />
+          {{ $t('admin.common.back') }}
+        </UButton>
+        <UButton variant="soft" size="lg" @click="copyLink">
+          <Icon name="lucide:link" />
+          {{ $t('admin.common.copyLink') }}
+        </UButton>
+      </div>
 
       <LoadingState v-if="fetching && !hasLoadedOnce" />
       <ErrorState v-else-if="error" :error />
-      <div v-else-if="data" class="mt-12 max-w-2xl">
+      <div v-else-if="data" class="mt-12 max-w-2xl relative">
         <h2 class="text-2xl font-semibold mb-6">
           {{ $t('admin.churchHome.administrators') }}
         </h2>
@@ -254,7 +271,17 @@ function handleUserSelect(item: UserItem | undefined) {
         />
 
         <!-- Admins list -->
-        <div class="space-y-2">
+        <TransitionGroup
+          tag="div"
+          class="space-y-2"
+          enter-active-class="transition duration-300 ease-out"
+          enter-from-class="scale-95 opacity-0"
+          enter-to-class="scale-100 opacity-100"
+          leave-active-class="transition duration-300 ease-out absolute left-0 right-0"
+          leave-from-class="scale-100 opacity-100"
+          leave-to-class="scale-95 opacity-0"
+          move-class="transition duration-300 ease-out"
+        >
           <div
             v-for="admin in filteredAdmins"
             :key="admin.id"
@@ -289,7 +316,7 @@ function handleUserSelect(item: UserItem | undefined) {
           >
             {{ $t('admin.admins.noAdminsFound') }}
           </p>
-        </div>
+        </TransitionGroup>
       </div>
     </UContainer>
 

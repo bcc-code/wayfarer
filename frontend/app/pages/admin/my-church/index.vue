@@ -5,10 +5,21 @@ definePageMeta({
 })
 
 const { canManageChurchAdmins } = usePermissions()
+const toast = useToast()
+const { t } = useI18n()
+
+async function copyLink() {
+  const url = window.location.href
+  await navigator.clipboard.writeText(url)
+  toast.add({
+    title: t('admin.common.linkCopied'),
+    color: 'success',
+  })
+}
 </script>
 
 <template>
-  <UContainer class="py-12 flex items-center justify-center h-3/4">
+  <UContainer class="py-12 flex flex-col items-center justify-center h-3/4">
     <div class="grid xl:grid-cols-3 gap-12 text-4xl">
       <NuxtLink
         v-if="canManageChurchAdmins"
@@ -35,5 +46,10 @@ const { canManageChurchAdmins } = usePermissions()
         </p>
       </NuxtLink>
     </div>
+
+    <UButton variant="soft" size="xl" class="mt-8" @click="copyLink">
+      <Icon name="lucide:link" />
+      {{ $t('admin.common.copyLink') }}
+    </UButton>
   </UContainer>
 </template>

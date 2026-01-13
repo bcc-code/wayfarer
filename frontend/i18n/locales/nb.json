@@ -132,7 +132,9 @@
       "save": "Lagre",
       "create": "Opprett",
       "delete": "Slett",
-      "deleteAll": "Slett alle"
+      "deleteAll": "Slett alle",
+      "copyLink": "Kopier lenke til admin-side",
+      "linkCopied": "Lenke kopiert"
     },
     "breadcrumb": {
       "home": "Forside"
