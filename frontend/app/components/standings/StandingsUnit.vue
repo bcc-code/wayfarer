@@ -91,7 +91,8 @@ async function saveChanges() {
         <h2 class="text-heading text-balance">
           {{ data.myCurrentProject.myTeam.name }}
         </h2>
-        <DesignDrawer
+        <!-- TODO: Enable for kickoff -->
+        <!-- <DesignDrawer
           v-if="isTeamLead"
           v-model:open="showEditDrawer"
           :title="$t('unit.editUnit')"
@@ -159,7 +160,7 @@ async function saveChanges() {
               </div>
             </div>
           </template>
-        </DesignDrawer>
+        </DesignDrawer> -->
       </div>
       <LeaderboardList
         v-if="data.myCurrentProject.myTeam?.memberLeaderboard?.length"
