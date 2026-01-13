@@ -60,5 +60,14 @@ ORDER BY
     CASE WHEN @isbackward::bool = false OR @isbackward::bool IS NULL THEN id END DESC
 LIMIT @querylimit::int;
 
+-- name: GetFeedbackByID :one
+SELECT * FROM user_feedback WHERE id = @id::text;
+
+-- name: SetFeedbackHandledAt :one
+UPDATE user_feedback
+SET handled_at = @handled_at::timestamptz
+WHERE id = @id::text
+RETURNING *;
+
 -- name: DeleteFeedback :exec
 DELETE FROM user_feedback WHERE id = @id::text;

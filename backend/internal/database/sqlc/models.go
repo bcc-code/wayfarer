@@ -657,6 +657,7 @@ type UserFeedback struct {
 	Locale       *string            `json:"locale"`
 	ProjectID    *string            `json:"project_id"`
 	Timezone     *string            `json:"timezone"`
+	HandledAt    pgtype.Timestamptz `json:"handled_at"`
 }
 
 type UserProject struct {
