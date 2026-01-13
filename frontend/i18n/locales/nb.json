@@ -138,9 +138,29 @@
       "home": "Forside"
     },
     "churchHome": {
+      "administrators": "Administratorer",
       "unitsAndPeople": "Units og personer",
       "gameNights": "Game Nights",
       "comingSoon": "Kommer snart"
+    },
+    "admins": {
+      "searchPlaceholder": "Søk på administratorer...",
+      "addPlaceholder": "Legg til administrator...",
+      "you": "Deg",
+      "noAdminsFound": "Ingen administratorer funnet",
+      "confirmRemove": {
+        "title": "Fjern administrator?",
+        "message": "Er du sikker på at du vil fjerne {name} som administrator?",
+        "confirm": "Fjern"
+      },
+      "success": {
+        "added": "Administrator lagt til",
+        "removed": "Administrator fjernet"
+      },
+      "errors": {
+        "addFailed": "Kunne ikke legge til administrator",
+        "removeFailed": "Kunne ikke fjerne administrator"
+      }
     },
     "units": {
       "title": "Units",

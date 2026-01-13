@@ -237,6 +237,13 @@ export function usePermissions() {
     return isSuperAdmin.value || isAdmin.value
   })
 
+  /**
+   * Can manage church admins
+   */
+  const canManageChurchAdmins = computed(() => {
+    return isSuperAdmin.value || isAdmin.value || isChurchAdmin.value
+  })
+
   return {
     // Scoped helpers
     hasProjectAdminFor,
@@ -271,5 +278,6 @@ export function usePermissions() {
     canViewUser,
     canManageConsents,
     canToggleLeaderboardExclusion,
+    canManageChurchAdmins,
   }
 }

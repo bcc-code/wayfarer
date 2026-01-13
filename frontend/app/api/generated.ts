@@ -3254,6 +3254,13 @@ export type AdminHomePageQueryVariables = Exact<{
 
 export type AdminHomePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, adminDashboardStats: { __typename?: 'AdminDashboardStats', totalUsers: number, totalPointsAwarded: number, newUsersLast7Days: number }, feedback: { __typename?: 'FeedbackConnection', edges: Array<{ __typename?: 'FeedbackEdge', node: { __typename?: 'UserFeedback', id: string, message: string, createdAt: any, user: { __typename?: 'User', id: string, name: string } } }> }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } }, leaderboard: { __typename?: 'LeaderboardConnection', totalCount: number, edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, image?: string | null } }> } } }> } };
 
+export type ChurchAdminsPageQueryVariables = Exact<{
+  churchId: Scalars['ID']['input'];
+}>;
+
+
+export type ChurchAdminsPageQuery = { __typename?: 'Query', usersWithRole: Array<{ __typename?: 'User', id: string, name: string, email: string }>, users: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, name: string, email: string } }> } };
+
 export type MyChurchUnitsPageQueryVariables = Exact<{
   filter?: InputMaybe<UserFilter>;
 }>;
@@ -4764,6 +4771,28 @@ export const AdminHomePageDocument = gql`
 
 export function useAdminHomePageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminHomePageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminHomePageQuery, AdminHomePageQueryVariables | undefined>({ query: AdminHomePageDocument, variables: undefined, ...options });
+};
+export const ChurchAdminsPageDocument = gql`
+    query ChurchAdminsPage($churchId: ID!) {
+  usersWithRole(role: CHURCH_ADMIN, scopeType: CHURCH, scopeId: $churchId) {
+    id
+    name
+    email
+  }
+  users(filter: {churchId: $churchId}, first: 500) {
+    edges {
+      node {
+        id
+        name
+        email
+      }
+    }
+  }
+}
+    `;
+
+export function useChurchAdminsPageQuery(options?: Omit<Urql.UseQueryArgs<never, ChurchAdminsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ChurchAdminsPageQuery, ChurchAdminsPageQueryVariables | undefined>({ query: ChurchAdminsPageDocument, variables: undefined, ...options });
 };
 export const MyChurchUnitsPageDocument = gql`
     query MyChurchUnitsPage($filter: UserFilter) {

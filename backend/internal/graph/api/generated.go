@@ -7864,8 +7864,8 @@ extend type Query {
 }
 
 extend type Mutation {
-    assignRole(input: AssignRoleInput!): UserRole! @requireRole(roles: ["admin", "superadmin"])
-    revokeRole(input: RevokeRoleInput!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    assignRole(input: AssignRoleInput!): UserRole! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    revokeRole(input: RevokeRoleInput!): Boolean! @requireRole(roles: ["admin", "superadmin", "church_admin"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/churches.graphqls", Input: `# Church queries
@@ -21666,7 +21666,7 @@ func (ec *executionContext) _Mutation_assignRole(ctx context.Context, field grap
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
 				if err != nil {
 					var zeroVal *model.UserRole
 					return zeroVal, err
@@ -21735,7 +21735,7 @@ func (ec *executionContext) _Mutation_revokeRole(ctx context.Context, field grap
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err

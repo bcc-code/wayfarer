@@ -123,6 +123,53 @@ func TestCanAssignRole_ChurchAdminCanAssignTeamLead(t *testing.T) {
 
 }
 
+func TestCanAssignRole_ChurchAdminCanAssignChurchAdminInOwnChurch(t *testing.T) {
+	mockQueries := mocks.NewMockRoleQuerier(t)
+	service := NewRoleService(mockQueries, newTestCache())
+
+	ctx := context.Background()
+	assignerID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	churchID := "CH01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	otherChurchID := "CH02ARZ3NDEKTSV4RRFFQ69G5FAV"
+
+	// Mock: assigner is not a superadmin
+	mockQueries.On("HasRole", ctx, sqlc.HasRoleParams{
+		UserID: assignerID,
+		Role:   string(RoleSuperAdmin),
+	}).Return(false, nil)
+
+	// Mock: assigner is not an admin
+	mockQueries.On("HasRole", ctx, sqlc.HasRoleParams{
+		UserID: assignerID,
+		Role:   string(RoleAdmin),
+	}).Return(false, nil)
+
+	// Mock: assigner is church admin for their church
+	mockQueries.On("HasRoleInChurch", ctx, sqlc.HasRoleInChurchParams{
+		UserID:   assignerID,
+		Role:     string(RoleChurchAdmin),
+		ChurchID: &churchID,
+	}).Return(true, nil)
+
+	// Mock: assigner is NOT church admin for another church
+	mockQueries.On("HasRoleInChurch", ctx, sqlc.HasRoleInChurchParams{
+		UserID:   assignerID,
+		Role:     string(RoleChurchAdmin),
+		ChurchID: &otherChurchID,
+	}).Return(false, nil)
+
+	// Church admin CAN assign church admin role in their own church
+	canAssign, err := service.CanAssignRole(ctx, assignerID, RoleChurchAdmin, &churchID, nil, nil)
+	assert.NoError(t, err)
+	assert.True(t, canAssign, "Church admin should be able to assign church admin in their own church")
+
+	// Church admin CANNOT assign church admin role in another church
+	canAssign, err = service.CanAssignRole(ctx, assignerID, RoleChurchAdmin, &otherChurchID, nil, nil)
+	assert.NoError(t, err)
+	assert.False(t, canAssign, "Church admin should NOT be able to assign church admin in another church")
+
+}
+
 func TestIsAdmin_ReturnsTrueForSuperAdmin(t *testing.T) {
 	mockQueries := mocks.NewMockRoleQuerier(t)
 	service := NewRoleService(mockQueries, newTestCache())
