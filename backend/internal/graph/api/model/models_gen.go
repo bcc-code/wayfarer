@@ -960,6 +960,7 @@ type Quiz struct {
 	UserActiveSubmission *QuizSubmission   `json:"userActiveSubmission,omitempty"`
 	Sessions             []QuizSession     `json:"sessions"`
 	UserSessions         []QuizSession     `json:"userSessions"`
+	UserActiveSession    *QuizSession      `json:"userActiveSession,omitempty"`
 	ChallengeID          string            `json:"-"`
 	ProjectID            string            `json:"-"`
 }

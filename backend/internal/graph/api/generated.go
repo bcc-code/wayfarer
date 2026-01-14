@@ -666,6 +666,7 @@ type ComplexityRoot struct {
 		RevealCorrectAnswers func(childComplexity int) int
 		Sessions             func(childComplexity int, state *model.QuizSessionState) int
 		TimeoutSeconds       func(childComplexity int) int
+		UserActiveSession    func(childComplexity int) int
 		UserActiveSubmission func(childComplexity int) int
 		UserCanStart         func(childComplexity int) int
 		UserSessions         func(childComplexity int) int
@@ -1315,6 +1316,7 @@ type QuizResolver interface {
 	UserActiveSubmission(ctx context.Context, obj *model.Quiz) (*model.QuizSubmission, error)
 	Sessions(ctx context.Context, obj *model.Quiz, state *model.QuizSessionState) ([]model.QuizSession, error)
 	UserSessions(ctx context.Context, obj *model.Quiz) ([]model.QuizSession, error)
+	UserActiveSession(ctx context.Context, obj *model.Quiz) (*model.QuizSession, error)
 }
 type QuizAchievementResolver interface {
 	Project(ctx context.Context, obj *model.QuizAchievement) (*model.Project, error)
@@ -4881,6 +4883,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Quiz.TimeoutSeconds(childComplexity), true
+	case "Quiz.userActiveSession":
+		if e.complexity.Quiz.UserActiveSession == nil {
+			break
+		}
+
+		return e.complexity.Quiz.UserActiveSession(childComplexity), true
 	case "Quiz.userActiveSubmission":
 		if e.complexity.Quiz.UserActiveSubmission == nil {
 			break
@@ -7241,6 +7249,7 @@ type Quiz {
     # Session-based access (new)
     sessions(state: QuizSessionState): [QuizSession!]! @goField(forceResolver: true)
     userSessions: [QuizSession!]! @goField(forceResolver: true)
+    userActiveSession: QuizSession @goField(forceResolver: true)
 }
 
 # ==================== Quiz Question Interface ====================
@@ -16432,6 +16441,8 @@ func (ec *executionContext) fieldContext_FreeTextQuestion_quiz(_ context.Context
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -16883,6 +16894,8 @@ func (ec *executionContext) fieldContext_JsonQuestion_quiz(_ context.Context, fi
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -23099,6 +23112,8 @@ func (ec *executionContext) fieldContext_Mutation_createQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -23198,6 +23213,8 @@ func (ec *executionContext) fieldContext_Mutation_updateQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -23356,6 +23373,8 @@ func (ec *executionContext) fieldContext_Mutation_publishQuiz(ctx context.Contex
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -25756,6 +25775,8 @@ func (ec *executionContext) fieldContext_NumberQuestion_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -26410,6 +26431,8 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_quiz(_ context.Conte
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -29787,6 +29810,8 @@ func (ec *executionContext) fieldContext_Query_quiz(ctx context.Context, field g
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -31603,6 +31628,61 @@ func (ec *executionContext) fieldContext_Quiz_userSessions(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _Quiz_userActiveSession(ctx context.Context, field graphql.CollectedField, obj *model.Quiz) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Quiz_userActiveSession,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Quiz().UserActiveSession(ctx, obj)
+		},
+		nil,
+		ec.marshalOQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Quiz_userActiveSession(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Quiz",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSession_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSession_quiz(ctx, field)
+			case "name":
+				return ec.fieldContext_QuizSession_name(ctx, field)
+			case "state":
+				return ec.fieldContext_QuizSession_state(ctx, field)
+			case "openAt":
+				return ec.fieldContext_QuizSession_openAt(ctx, field)
+			case "lockAt":
+				return ec.fieldContext_QuizSession_lockAt(ctx, field)
+			case "finishAt":
+				return ec.fieldContext_QuizSession_finishAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_QuizSession_createdBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_QuizSession_createdAt(ctx, field)
+			case "accessCount":
+				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "userHasAccess":
+				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
+			case "userSubmission":
+				return ec.fieldContext_QuizSession_userSubmission(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSession", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _QuizAchievement_id(ctx context.Context, field graphql.CollectedField, obj *model.QuizAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -32123,6 +32203,8 @@ func (ec *executionContext) fieldContext_QuizAchievement_quiz(_ context.Context,
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -32737,6 +32819,8 @@ func (ec *executionContext) fieldContext_QuizChallenge_quiz(_ context.Context, f
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -32938,6 +33022,8 @@ func (ec *executionContext) fieldContext_QuizEdge_node(_ context.Context, field 
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -33181,6 +33267,8 @@ func (ec *executionContext) fieldContext_QuizSession_quiz(_ context.Context, fie
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -33643,6 +33731,8 @@ func (ec *executionContext) fieldContext_QuizSubmission_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_sessions(ctx, field)
 			case "userSessions":
 				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -53052,6 +53142,39 @@ func (ec *executionContext) _Quiz(ctx context.Context, sel ast.SelectionSet, obj
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "userActiveSession":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Quiz_userActiveSession(ctx, field, obj)
 				return res
 			}
 

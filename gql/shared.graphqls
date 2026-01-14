@@ -510,6 +510,7 @@ type Quiz {
     # Session-based access (new)
     sessions(state: QuizSessionState): [QuizSession!]! @goField(forceResolver: true)
     userSessions: [QuizSession!]! @goField(forceResolver: true)
+    userActiveSession: QuizSession @goField(forceResolver: true)
 }
 
 # ==================== Quiz Question Interface ====================

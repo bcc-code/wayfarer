@@ -7,6 +7,7 @@ import (
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/firebase"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
@@ -102,6 +103,7 @@ func (r *Resolver) LoadQuizWithVisibility(ctx context.Context, quizID string) (*
 
 // LoadChallengeWithVisibility loads a challenge and enforces visibility rules for non-admins.
 // Admins can see all challenges, non-admins can only see published challenges.
+// For quiz challenges, non-admins also need access to an open session.
 func (r *Resolver) LoadChallengeWithVisibility(ctx context.Context, challengeID string) (model.Challenge, error) {
 	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
 	challenge, err := thunk()
@@ -120,6 +122,24 @@ func (r *Resolver) LoadChallengeWithVisibility(ctx context.Context, challengeID 
 	publishedAt := getChallengePublishedAt(challenge)
 	if publishedAt == nil || publishedAt.Time.After(time.Now()) {
 		return nil, fmt.Errorf("challenge not found")
+	}
+
+	// For quiz challenges, check session access
+	if _, ok := challenge.(*model.QuizChallenge); ok && userID != "" {
+		// Load quiz by challenge ID to get quiz ID
+		quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, challengeID)
+		quiz, err := quizThunk()
+		if err != nil || quiz == nil {
+			return nil, fmt.Errorf("challenge not found")
+		}
+
+		hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
+			Quizid: quiz.ID,
+			Userid: userID,
+		})
+		if err != nil || !hasAccess {
+			return nil, fmt.Errorf("challenge not found")
+		}
 	}
 
 	return challenge, nil

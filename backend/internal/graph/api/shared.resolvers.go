@@ -186,10 +186,31 @@ func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]mod
 		return nil, err
 	}
 
-	// Apply translations to each challenge
-	result := make([]model.Challenge, len(challenges))
-	for i, ch := range challenges {
-		result[i] = r.ApplyTranslationToChallenge(ctx, ch)
+	userID, _ := middleware.GetUserID(ctx)
+	isAdmin := userID != "" && r.RoleService.CanManageProject(ctx, userID, obj.ProjectID)
+
+	// Filter out quiz challenges without session access (for non-admins)
+	result := make([]model.Challenge, 0, len(challenges))
+	for _, ch := range challenges {
+		// For quiz challenges, non-admins need session access
+		if _, ok := ch.(*model.QuizChallenge); ok && !isAdmin && userID != "" {
+			// Load quiz by challenge ID to get quiz ID
+			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
+			quiz, err := quizThunk()
+			if err != nil || quiz == nil {
+				continue // Skip this challenge
+			}
+
+			hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
+				Quizid: quiz.ID,
+				Userid: userID,
+			})
+			if err != nil || !hasAccess {
+				continue // Skip this challenge
+			}
+		}
+
+		result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
 	}
 
 	return result, nil
@@ -459,9 +480,31 @@ func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([
 		return nil, fmt.Errorf("failed to load challenges: %w", err)
 	}
 
-	result := make([]model.Challenge, len(challenges))
-	for i, ch := range challenges {
-		result[i] = r.ApplyTranslationToChallenge(ctx, ch)
+	userID, _ := middleware.GetUserID(ctx)
+	isAdmin := userID != "" && r.RoleService.CanManageProject(ctx, userID, obj.ID)
+
+	// Filter out quiz challenges without session access (for non-admins)
+	result := make([]model.Challenge, 0, len(challenges))
+	for _, ch := range challenges {
+		// For quiz challenges, non-admins need session access
+		if _, ok := ch.(*model.QuizChallenge); ok && !isAdmin && userID != "" {
+			// Load quiz by challenge ID to get quiz ID
+			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
+			quiz, err := quizThunk()
+			if err != nil || quiz == nil {
+				continue // Skip this challenge
+			}
+
+			hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
+				Quizid: quiz.ID,
+				Userid: userID,
+			})
+			if err != nil || !hasAccess {
+				continue // Skip this challenge
+			}
+		}
+
+		result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
 	}
 
 	return result, nil
@@ -819,6 +862,26 @@ func (r *quizResolver) UserSessions(ctx context.Context, obj *model.Quiz) ([]mod
 		sessions[i] = *convertQuizSessionToModel(row)
 	}
 	return sessions, nil
+}
+
+// UserActiveSession is the resolver for the userActiveSession field.
+// Returns the user's currently accessible open session for this quiz, or nil if none.
+func (r *quizResolver) UserActiveSession(ctx context.Context, obj *model.Quiz) (*model.QuizSession, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, nil
+	}
+
+	row, err := r.DB.Queries.GetUserActiveSessionForQuiz(ctx, sqlc.GetUserActiveSessionForQuizParams{
+		Quizid: obj.ID,
+		Userid: userID,
+	})
+	if err != nil {
+		// No active session found is not an error - return nil
+		return nil, nil
+	}
+
+	return convertQuizSessionToModel(row), nil
 }
 
 // Project is the resolver for the project field.

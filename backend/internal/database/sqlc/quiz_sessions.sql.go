@@ -794,6 +794,42 @@ func (q *Queries) GetUserAccessibleSessions(ctx context.Context, arg GetUserAcce
 	return items, nil
 }
 
+const GetUserActiveSessionForQuiz = `-- name: GetUserActiveSessionForQuiz :one
+
+SELECT qs.id, qs.quiz_id, qs.name, qs.state, qs.open_at, qs.lock_at, qs.finish_at, qs.created_by, qs.created_at, qs.updated_at
+FROM quiz_sessions qs
+JOIN quiz_session_access qsa ON qsa.session_id = qs.id
+WHERE qs.quiz_id = $1::text
+    AND qsa.user_id = $2::text
+    AND qs.state = 'OPEN'
+ORDER BY qs.created_at DESC
+LIMIT 1
+`
+
+type GetUserActiveSessionForQuizParams struct {
+	Quizid string `json:"quizid"`
+	Userid string `json:"userid"`
+}
+
+// ==================== User Active Session ====================
+func (q *Queries) GetUserActiveSessionForQuiz(ctx context.Context, arg GetUserActiveSessionForQuizParams) (*QuizSession, error) {
+	row := q.db.QueryRow(ctx, GetUserActiveSessionForQuiz, arg.Quizid, arg.Userid)
+	var i QuizSession
+	err := row.Scan(
+		&i.ID,
+		&i.QuizID,
+		&i.Name,
+		&i.State,
+		&i.OpenAt,
+		&i.LockAt,
+		&i.FinishAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
 const GetUserIDsByChurchIDs = `-- name: GetUserIDsByChurchIDs :many
 
 SELECT DISTINCT id AS user_id
@@ -950,4 +986,27 @@ func (q *Queries) UpdateQuizSessionState(ctx context.Context, arg UpdateQuizSess
 		&i.UpdatedAt,
 	)
 	return &i, err
+}
+
+const UserHasAccessToOpenSession = `-- name: UserHasAccessToOpenSession :one
+SELECT EXISTS (
+    SELECT 1
+    FROM quiz_sessions qs
+    JOIN quiz_session_access qsa ON qsa.session_id = qs.id
+    WHERE qs.quiz_id = $1::text
+        AND qsa.user_id = $2::text
+        AND qs.state = 'OPEN'
+) AS has_access
+`
+
+type UserHasAccessToOpenSessionParams struct {
+	Quizid string `json:"quizid"`
+	Userid string `json:"userid"`
+}
+
+func (q *Queries) UserHasAccessToOpenSession(ctx context.Context, arg UserHasAccessToOpenSessionParams) (bool, error) {
+	row := q.db.QueryRow(ctx, UserHasAccessToOpenSession, arg.Quizid, arg.Userid)
+	var has_access bool
+	err := row.Scan(&has_access)
+	return has_access, err
 }

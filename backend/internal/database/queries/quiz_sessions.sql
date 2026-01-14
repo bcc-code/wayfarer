@@ -225,3 +225,25 @@ FROM quiz_submissions qs
 JOIN users u ON u.id = qs.user_id
 WHERE qs.session_id = @sessionid::text
 ORDER BY qs.started_at;
+
+-- ==================== User Active Session ====================
+
+-- name: GetUserActiveSessionForQuiz :one
+SELECT qs.*
+FROM quiz_sessions qs
+JOIN quiz_session_access qsa ON qsa.session_id = qs.id
+WHERE qs.quiz_id = @quizid::text
+    AND qsa.user_id = @userid::text
+    AND qs.state = 'OPEN'
+ORDER BY qs.created_at DESC
+LIMIT 1;
+
+-- name: UserHasAccessToOpenSession :one
+SELECT EXISTS (
+    SELECT 1
+    FROM quiz_sessions qs
+    JOIN quiz_session_access qsa ON qsa.session_id = qs.id
+    WHERE qs.quiz_id = @quizid::text
+        AND qsa.user_id = @userid::text
+        AND qs.state = 'OPEN'
+) AS has_access;
