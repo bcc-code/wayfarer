@@ -25,6 +25,7 @@ export type Scalars = {
 
 export type Achievement = {
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
+  awardableFrom?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -260,6 +261,7 @@ export type ConsentStatus = {
 export type ContentAchievement = Achievement & {
   __typename?: 'ContentAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
+  awardableFrom?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   completedItemCount: Scalars['Int']['output'];
   descriptionCompleted: Scalars['String']['output'];
@@ -325,6 +327,7 @@ export type CreateContentAchievementFromExternalContentInput = {
 };
 
 export type CreateContentAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   descriptionCompleted: Scalars['String']['input'];
   descriptionPending: Scalars['String']['input'];
@@ -415,6 +418,7 @@ export type CreateScoreAdjustmentInput = {
 };
 
 export type CreateSimpleAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   descriptionCompleted: Scalars['String']['input'];
   descriptionPending: Scalars['String']['input'];
@@ -429,6 +433,7 @@ export type CreateSimpleAchievementInput = {
 };
 
 export type CreateStreakAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   descriptionCompleted: Scalars['String']['input'];
   descriptionPending: Scalars['String']['input'];
@@ -1009,7 +1014,7 @@ export type MutationCompleteChallengeArgs = {
 
 
 export type MutationCreateChallengeArgs = {
-  eventId: Scalars['ID']['input'];
+  eventId?: InputMaybe<Scalars['ID']['input']>;
   input: CreateChallengeInput;
   projectId: Scalars['ID']['input'];
 };
@@ -1923,6 +1928,7 @@ export type Quiz = {
 export type QuizAchievement = Achievement & {
   __typename?: 'QuizAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
+  awardableFrom?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -2159,6 +2165,7 @@ export type SetNotificationPreferenceInput = {
 export type SimpleAchievement = Achievement & {
   __typename?: 'SimpleAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
+  awardableFrom?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -2212,6 +2219,7 @@ export type StreakListenedDaysArgs = {
 export type StreakAchievement = Achievement & {
   __typename?: 'StreakAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
+  awardableFrom?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -2355,6 +2363,7 @@ export type TeamMember = {
 };
 
 export type UpdateAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   descriptionCompleted?: InputMaybe<Scalars['String']['input']>;
   descriptionPending?: InputMaybe<Scalars['String']['input']>;
@@ -2389,6 +2398,7 @@ export type UpdateChurchInput = {
 };
 
 export type UpdateContentAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   descriptionCompleted?: InputMaybe<Scalars['String']['input']>;
   descriptionPending?: InputMaybe<Scalars['String']['input']>;
@@ -2444,6 +2454,7 @@ export type UpdateQuizQuestionInput = {
 };
 
 export type UpdateStreakAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   descriptionCompleted?: InputMaybe<Scalars['String']['input']>;
   descriptionPending?: InputMaybe<Scalars['String']['input']>;
@@ -2783,7 +2794,7 @@ export type UpdateChallengeMutation = { __typename?: 'Mutation', updateChallenge
 
 export type CreateChallengeMutationVariables = Exact<{
   projectId: Scalars['ID']['input'];
-  eventId: Scalars['ID']['input'];
+  eventId?: InputMaybe<Scalars['ID']['input']>;
   input: CreateChallengeInput;
 }>;
 
@@ -3786,7 +3797,7 @@ export function useUpdateChallengeMutation() {
   return Urql.useMutation<UpdateChallengeMutation, UpdateChallengeMutationVariables>(UpdateChallengeDocument);
 };
 export const CreateChallengeDocument = gql`
-    mutation CreateChallenge($projectId: ID!, $eventId: ID!, $input: CreateChallengeInput!) {
+    mutation CreateChallenge($projectId: ID!, $eventId: ID, $input: CreateChallengeInput!) {
   createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
     id
   }

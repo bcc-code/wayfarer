@@ -45,7 +45,7 @@ func TestChallenges(t *testing.T) {
 
 	t.Run("admin can create SIMPLE challenge", func(t *testing.T) {
 		resp := client.WithAuth(adminToken).MustExecute(t, `
-			mutation CreateChallenge($projectId: ID!, $eventId: ID!, $input: CreateChallengeInput!) {
+			mutation CreateChallenge($projectId: ID!, $eventId: ID, $input: CreateChallengeInput!) {
 				createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
 					... on SimpleChallenge {
 						id
@@ -87,9 +87,51 @@ func TestChallenges(t *testing.T) {
 		assert.True(t, result.CreateChallenge.AllowSelfCompletion)
 	})
 
+	t.Run("admin can create challenge without event", func(t *testing.T) {
+		resp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation CreateChallenge($projectId: ID!, $input: CreateChallengeInput!) {
+				createChallenge(projectId: $projectId, input: $input) {
+					... on SimpleChallenge {
+						id
+						name
+						event {
+							id
+						}
+					}
+				}
+			}
+		`, map[string]any{
+			"projectId": projectID,
+			"input": map[string]any{
+				"type":                "SIMPLE",
+				"name":                "Project-Level Challenge",
+				"description":         "<p>No event</p>",
+				"buttonText":          "Complete",
+				"allowSelfCompletion": true,
+			},
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result struct {
+			CreateChallenge struct {
+				ID    string `json:"id"`
+				Name  string `json:"name"`
+				Event *struct {
+					ID string `json:"id"`
+				} `json:"event"`
+			} `json:"createChallenge"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		assert.NotEmpty(t, result.CreateChallenge.ID)
+		assert.Equal(t, "Project-Level Challenge", result.CreateChallenge.Name)
+		assert.Nil(t, result.CreateChallenge.Event, "event should be nil for project-level challenge")
+	})
+
 	t.Run("admin can create EXTERNAL challenge", func(t *testing.T) {
 		resp := client.WithAuth(adminToken).MustExecute(t, `
-			mutation CreateChallenge($projectId: ID!, $eventId: ID!, $input: CreateChallengeInput!) {
+			mutation CreateChallenge($projectId: ID!, $eventId: ID, $input: CreateChallengeInput!) {
 				createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
 					... on ExternalChallenge {
 						id
@@ -130,7 +172,7 @@ func TestChallenges(t *testing.T) {
 
 	t.Run("user cannot create challenge", func(t *testing.T) {
 		resp := client.WithAuth(userToken).MustExecute(t, `
-			mutation CreateChallenge($projectId: ID!, $eventId: ID!, $input: CreateChallengeInput!) {
+			mutation CreateChallenge($projectId: ID!, $eventId: ID, $input: CreateChallengeInput!) {
 				createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
 					... on SimpleChallenge {
 						id
@@ -154,7 +196,7 @@ func TestChallenges(t *testing.T) {
 	t.Run("admin can publish challenge", func(t *testing.T) {
 		// First create a challenge
 		createResp := client.WithAuth(adminToken).MustExecute(t, `
-			mutation CreateChallenge($projectId: ID!, $eventId: ID!, $input: CreateChallengeInput!) {
+			mutation CreateChallenge($projectId: ID!, $eventId: ID, $input: CreateChallengeInput!) {
 				createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
 					... on SimpleChallenge {
 						id
@@ -214,7 +256,7 @@ func TestChallenges(t *testing.T) {
 	t.Run("admin can set challenge visibility", func(t *testing.T) {
 		// Create a challenge
 		createResp := client.WithAuth(adminToken).MustExecute(t, `
-			mutation CreateChallenge($projectId: ID!, $eventId: ID!, $input: CreateChallengeInput!) {
+			mutation CreateChallenge($projectId: ID!, $eventId: ID, $input: CreateChallengeInput!) {
 				createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
 					... on SimpleChallenge {
 						id
@@ -276,7 +318,7 @@ func TestChallenges(t *testing.T) {
 	var selfCompleteChallengeID string
 	{
 		createResp := client.WithAuth(adminToken).MustExecute(t, `
-			mutation CreateChallenge($projectId: ID!, $eventId: ID!, $input: CreateChallengeInput!) {
+			mutation CreateChallenge($projectId: ID!, $eventId: ID, $input: CreateChallengeInput!) {
 				createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
 					... on SimpleChallenge {
 						id
@@ -353,7 +395,7 @@ func TestChallenges(t *testing.T) {
 	t.Run("user can unenroll from challenge", func(t *testing.T) {
 		// Create and publish a new challenge
 		createResp := client.WithAuth(adminToken).MustExecute(t, `
-			mutation CreateChallenge($projectId: ID!, $eventId: ID!, $input: CreateChallengeInput!) {
+			mutation CreateChallenge($projectId: ID!, $eventId: ID, $input: CreateChallengeInput!) {
 				createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
 					... on SimpleChallenge { id }
 				}
@@ -417,7 +459,7 @@ func TestChallenges(t *testing.T) {
 	t.Run("admin can complete challenge for user", func(t *testing.T) {
 		// Create and publish an EXTERNAL challenge (not self-completable)
 		createResp := client.WithAuth(adminToken).MustExecute(t, `
-			mutation CreateChallenge($projectId: ID!, $eventId: ID!, $input: CreateChallengeInput!) {
+			mutation CreateChallenge($projectId: ID!, $eventId: ID, $input: CreateChallengeInput!) {
 				createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
 					... on ExternalChallenge { id }
 				}
@@ -474,7 +516,7 @@ func TestChallenges(t *testing.T) {
 	t.Run("admin can bulk enroll users", func(t *testing.T) {
 		// Create and publish a challenge
 		createResp := client.WithAuth(adminToken).MustExecute(t, `
-			mutation CreateChallenge($projectId: ID!, $eventId: ID!, $input: CreateChallengeInput!) {
+			mutation CreateChallenge($projectId: ID!, $eventId: ID, $input: CreateChallengeInput!) {
 				createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
 					... on SimpleChallenge { id }
 				}
@@ -538,7 +580,7 @@ func TestChallenges(t *testing.T) {
 	t.Run("admin can assign challenge to event", func(t *testing.T) {
 		// Create a challenge without event assignment initially
 		createResp := client.WithAuth(adminToken).MustExecute(t, `
-			mutation CreateChallenge($projectId: ID!, $eventId: ID!, $input: CreateChallengeInput!) {
+			mutation CreateChallenge($projectId: ID!, $eventId: ID, $input: CreateChallengeInput!) {
 				createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
 					... on SimpleChallenge { id }
 				}
@@ -568,7 +610,7 @@ func TestChallenges(t *testing.T) {
 
 		// Assign to a different event
 		assignResp := client.WithAuth(adminToken).MustExecute(t, `
-			mutation AssignChallengeToEvent($challengeId: ID!, $eventId: ID!) {
+			mutation AssignChallengeToEvent($challengeId: ID!, $eventId: ID) {
 				assignChallengeToEvent(challengeId: $challengeId, eventId: $eventId) {
 					... on SimpleChallenge {
 						id
