@@ -79,6 +79,7 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.Create
 		Startdate:                   pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true},
 		Enddate:                     pgtype.Timestamptz{Time: input.EndDate.Time, Valid: true},
 		Logourl:                     input.Branding.Logo,
+		Bannerurl:                   input.Branding.Banner,
 		Colorlightaccent:            input.Branding.Colors.Light.Accent,
 		Colorlightaccentcontrast:    input.Branding.Colors.Light.AccentContrast,
 		Colorlightonaccent:          input.Branding.Colors.Light.OnAccent,
@@ -114,6 +115,10 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.Create
 	if row.LogoUrl != nil {
 		logo = row.LogoUrl
 	}
+	var banner *string
+	if row.BannerUrl != nil {
+		banner = row.BannerUrl
+	}
 
 	project := &model.Project{
 		ID:          row.ID,
@@ -123,7 +128,8 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.Create
 		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
 		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
 		Branding: &model.Branding{
-			Logo: logo,
+			Logo:   logo,
+			Banner: banner,
 			Colors: &model.Colors{
 				Light: &model.ColorSet{
 					Accent:            row.ColorLightAccent,
@@ -214,6 +220,9 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 		if input.Branding.Logo != nil {
 			params.Logourl = input.Branding.Logo
 		}
+		if input.Branding.Banner != nil {
+			params.Bannerurl = input.Branding.Banner
+		}
 		if input.Branding.Colors != nil {
 			if input.Branding.Colors.Light != nil {
 				params.Colorlightaccent = &input.Branding.Colors.Light.Accent
@@ -270,6 +279,10 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 	if row.LogoUrl != nil {
 		logo = row.LogoUrl
 	}
+	var banner *string
+	if row.BannerUrl != nil {
+		banner = row.BannerUrl
+	}
 
 	project := &model.Project{
 		ID:          row.ID,
@@ -279,7 +292,8 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
 		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
 		Branding: &model.Branding{
-			Logo: logo,
+			Logo:   logo,
+			Banner: banner,
 			Colors: &model.Colors{
 				Light: &model.ColorSet{
 					Accent:            row.ColorLightAccent,
