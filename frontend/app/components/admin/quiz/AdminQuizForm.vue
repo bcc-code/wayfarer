@@ -190,8 +190,8 @@ const questionTypeOptions = [
         />
       </UFormField>
 
-      <UFormField name="image" label="Bilde-URL" hint="(valgfritt)">
-        <UInput v-model="state.image" size="xl" class="w-full" />
+      <UFormField name="image" label="Bilde" hint="(valgfritt)">
+        <AdminFileUpload v-model="state.image" />
       </UFormField>
 
       <UFormField

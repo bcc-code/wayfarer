@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
 
+type ProjectCardAchievement =
+  ProfilePageQuery['myCurrentProject']['achievements'][number]
+
 const props = defineProps<{
   projectName: string
   score?: number
   rank?: number | null
-  achievements?: Partial<Achievement>[]
+  achievements?: ProjectCardAchievement[]
 }>()
 
 // Animated values for counting effect

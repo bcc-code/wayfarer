@@ -13,6 +13,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.created_at,
     a.updated_at,
     -- Content achievement data
@@ -52,6 +53,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.created_at,
     a.updated_at,
     -- Type-specific fields needed for model construction
@@ -81,6 +83,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.sort_order,
     a.created_at,
     a.updated_at,
@@ -108,6 +111,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.sort_order,
     a.created_at,
     a.updated_at,
@@ -174,7 +178,8 @@ INSERT INTO achievements (
     image_pending,
     image_completed,
     points,
-    hidden
+    hidden,
+    awardable_from
 ) VALUES (
     @id::text,
     @achievement_type::text,
@@ -188,7 +193,8 @@ INSERT INTO achievements (
     @image_pending::text,
     @image_completed::text,
     @points::int,
-    @hidden::bool
+    @hidden::bool,
+    sqlc.narg('awardable_from')::timestamptz
 ) RETURNING *;
 
 -- name: CreateContentAchievementJunction :exec
@@ -234,6 +240,7 @@ SET
     challenge_id = CASE WHEN sqlc.narg('challenge_id')::text IS NOT NULL THEN sqlc.narg('challenge_id')::text ELSE challenge_id END,
     points = CASE WHEN sqlc.narg('points')::int IS NOT NULL THEN sqlc.narg('points')::int ELSE points END,
     hidden = CASE WHEN sqlc.narg('hidden')::bool IS NOT NULL THEN sqlc.narg('hidden')::bool ELSE hidden END,
+    awardable_from = CASE WHEN sqlc.narg('awardable_from')::timestamptz IS NOT NULL THEN sqlc.narg('awardable_from')::timestamptz ELSE awardable_from END,
     updated_at = now()
 WHERE id = @id::text
 RETURNING *;
@@ -368,7 +375,7 @@ WHERE user_id = @user_id::text
   AND external_content_id = @external_content_id::text;
 
 -- name: GetPublishedContentAchievementsByExternalContent :many
--- Get all published (non-hidden) content achievements that contain a specific external content
+-- Get all content achievements that contain a specific external content
 SELECT DISTINCT
     a.id,
     a.achievement_type,
@@ -383,6 +390,7 @@ SELECT DISTINCT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.created_at,
     a.updated_at,
     COALESCE(
@@ -400,18 +408,15 @@ SELECT DISTINCT
 FROM achievements a
 INNER JOIN content_achievements ca ON a.id = ca.achievement_id
 INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
-WHERE cai.external_content_id = @external_content_id::text
-  AND (a.hidden IS NULL OR a.hidden = false);
+WHERE cai.external_content_id = @external_content_id::text;
 
 -- name: MarkContentItemCompletedForAllAchievements :exec
--- Mark content completed for a user across all published achievements containing this content
+-- Mark content completed for a user across all achievements containing this content
 INSERT INTO user_content_progress (user_id, achievement_id, external_content_id, completed_at)
 SELECT @user_id::text, ca.achievement_id, @external_content_id::text, now()
 FROM content_achievements ca
 INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
-INNER JOIN achievements a ON ca.achievement_id = a.id
 WHERE cai.external_content_id = @external_content_id::text
-  AND (a.hidden IS NULL OR a.hidden = false)
 ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING;
 
 -- name: UnmarkContentItemCompletedForAllAchievements :exec
@@ -462,6 +467,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.sort_order,
     a.created_at,
     a.updated_at

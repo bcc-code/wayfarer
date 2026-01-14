@@ -1,5 +1,15 @@
 <script setup lang="ts">
+// Age group filter for leaderboard rank
+function getAgeRangeFilter(age: number | null | undefined) {
+  if (age == null) return undefined
+  if (age >= 13 && age <= 19) return { min: 13, max: 19 } // U18
+  if (age >= 20 && age <= 37) return { min: 20, max: 37 } // O18
+  return undefined // Outside defined age groups
+}
+
 const { isAuthReady } = useAuthReady()
+const { me } = useAuth()
+
 const {
   data,
   error,
@@ -7,6 +17,11 @@ const {
   stale,
   executeQuery: refresh,
 } = useProfilePageQuery({
+  variables: computed(() => {
+    const ageRange = getAgeRangeFilter(me.value?.age)
+    if (!ageRange) return {}
+    return { ageFilter: { ageRange } }
+  }),
   pause: computed(() => !isAuthReady.value),
 })
 

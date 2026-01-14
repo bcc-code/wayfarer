@@ -15,6 +15,7 @@ type UserFeedback {
     projectId: ID
     timezone: String
     createdAt: DateTime!
+    handledAt: DateTime
 }
 
 input DeviceMetadata {
@@ -56,4 +57,6 @@ extend type Query {
 extend type Mutation {
     submitFeedback(input: SubmitFeedbackInput!): UserFeedback!
     deleteFeedback(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    forwardFeedbackToDesk(feedbackId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    markFeedbackHandled(feedbackId: ID!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
 }

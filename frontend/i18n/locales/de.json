@@ -21,6 +21,7 @@
     "continue": "Weiter",
     "nextQuestion": "Nächste Frage",
     "done": "Fertig",
+    "unavailable": "Dieses Quiz ist im Moment nicht verfügbar.",
     "result": {
       "receivedNoPoints": "Du hast keine Punkte gesammelt.",
       "receivedPoints": "Du hast {points} Punkte gesammelt.",
@@ -117,7 +118,7 @@
     "thankYouDescription": "Dein Feedback wird für die Weiterentwicklung des Services genutzt.",
     "close": "Gern geschehen",
     "canContactMe": "Ja, ich stimme zu, dass ihr mich im Zusammenhang mit meinem Feedback kontaktieren dürft.",
-    "regards": "Grüße {name}"
+    "disclosure": "Die Rückmeldung wird mit deinem Benutzerkonto verknüpft."
   },
   "pwa": {
     "updateAvailableTitle": "Ein Update ist verfügbar",

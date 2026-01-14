@@ -86,6 +86,9 @@ const (
 	PrefixExternalContent        = "externalcontent:"
 	PrefixExternalContentsFilter = "externalcontentsfilter:"
 	PrefixExternalContentsCount  = "externalcontentscount:"
+
+	// File uploads
+	PrefixFileUpload = "fileupload:"
 )
 
 // Key builders for different entity types
@@ -312,14 +315,23 @@ func UserRolesKey(userID string) string {
 	return PrefixUserRoles + userID
 }
 
+// FileUploadKey builds a cache key for a file upload by ID
+func FileUploadKey(fileUploadID string) string {
+	return PrefixFileUpload + fileUploadID
+}
+
 // Tag extraction helpers for invalidation
 
 // ExtractProjectTag extracts project ID from a key for tag-based invalidation
+// For keys like "challenge:project:PROJ123:CH456", extracts "PROJ123"
 func ExtractProjectTag(key string) (string, bool) {
 	if strings.Contains(key, ":project:") {
 		parts := strings.Split(key, ":project:")
 		if len(parts) == 2 {
-			return parts[1], true
+			// parts[1] may contain more segments (e.g., "PROJ123:CH456")
+			// Extract just the project ID (first segment)
+			idParts := strings.SplitN(parts[1], ":", 2)
+			return idParts[0], true
 		}
 	}
 	// Check if key is a direct project key
@@ -330,11 +342,15 @@ func ExtractProjectTag(key string) (string, bool) {
 }
 
 // ExtractEventTag extracts event ID from a key for tag-based invalidation
+// For keys like "challenge:event:EV123:CH456", extracts "EV123"
 func ExtractEventTag(key string) (string, bool) {
 	if strings.Contains(key, ":event:") {
 		parts := strings.Split(key, ":event:")
 		if len(parts) == 2 {
-			return parts[1], true
+			// parts[1] may contain more segments (e.g., "EV123:CH456")
+			// Extract just the event ID (first segment)
+			idParts := strings.SplitN(parts[1], ":", 2)
+			return idParts[0], true
 		}
 	}
 	if strings.HasPrefix(key, PrefixEvent) {

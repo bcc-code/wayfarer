@@ -152,13 +152,8 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         >
           <UTextarea v-model="state.description" class="w-full" autoresize />
         </UFormField>
-        <UFormField
-          name="image"
-          label="Bilde-URL"
-          hint="(valgfritt)"
-          help="URL til et bilde for denne utfordringen"
-        >
-          <UInput v-model="state.image" size="xl" class="w-full" />
+        <UFormField name="image" label="Bilde" hint="(valgfritt)">
+          <AdminFileUpload v-model="state.image" />
         </UFormField>
         <UFormField
           v-if="state.type === ChallengeType.External"

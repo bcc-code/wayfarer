@@ -51,11 +51,13 @@ func teamsByProjectBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(c
 				}
 
 				team := &model.Team{
-					ID:          row.ID,
-					ProjectID:   row.ProjectID,
-					Name:        row.Name,
-					Description: description,
-					SuperTeamID: superTeamID,
+					ID:                  row.ID,
+					ProjectID:           row.ProjectID,
+					Name:                row.Name,
+					Description:         description,
+					SuperTeamID:         superTeamID,
+					JoinCode:            row.JoinCode,
+					LeaderboardExcluded: row.LeaderboardExcluded,
 				}
 
 				teamsByProject[row.ProjectID] = append(teamsByProject[row.ProjectID], team)

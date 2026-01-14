@@ -186,6 +186,7 @@ type ComplexityRoot struct {
 
 	ContentAchievement struct {
 		AchievedAt           func(childComplexity int) int
+		AwardableFrom        func(childComplexity int) int
 		Challenge            func(childComplexity int) int
 		CompletedItemCount   func(childComplexity int) int
 		DescriptionCompleted func(childComplexity int) int
@@ -298,6 +299,20 @@ type ComplexityRoot struct {
 	FeedbackEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
+	}
+
+	FileUpload struct {
+		Blurhash       func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		FileSize       func(childComplexity int) int
+		Filename       func(childComplexity int) int
+		Height         func(childComplexity int) int
+		ID             func(childComplexity int) int
+		MimeType       func(childComplexity int) int
+		PublicURL      func(childComplexity int) int
+		StoredFilename func(childComplexity int) int
+		UploadedBy     func(childComplexity int) int
+		Width          func(childComplexity int) int
 	}
 
 	FirebaseTokenResponse struct {
@@ -423,11 +438,13 @@ type ComplexityRoot struct {
 		EnrollInChallenge                           func(childComplexity int, challengeID string) int
 		EnrollUserInChallenge                       func(childComplexity int, userID string, challengeID string) int
 		FinalizeQuiz                                func(childComplexity int, submissionID string) int
+		ForwardFeedbackToDesk                       func(childComplexity int, feedbackID string) int
 		JoinEvent                                   func(childComplexity int, eventID string) int
 		JoinProject                                 func(childComplexity int, projectID string) int
 		JoinTeam                                    func(childComplexity int, code string) int
 		LinkAchievementToChallenge                  func(childComplexity int, achievementID string, challengeID string) int
 		MarkContentItemCompleted                    func(childComplexity int, userID string, externalContentID string) int
+		MarkFeedbackHandled                         func(childComplexity int, feedbackID string) int
 		MoveEvent                                   func(childComplexity int, id string, newProjectID string) int
 		PublishChallenge                            func(childComplexity int, id string, publishedAt scalars.DateTime) int
 		PublishQuiz                                 func(childComplexity int, id string, publishedAt scalars.DateTime) int
@@ -585,6 +602,7 @@ type ComplexityRoot struct {
 		ExternalContent               func(childComplexity int, id string) int
 		ExternalContents              func(childComplexity int, filter model.ExternalContentFilter, sortBy *model.ExternalContentSortBy, first *int, after *string, last *int, before *string) int
 		Feedback                      func(childComplexity int, filter *model.FeedbackFilter, first *int, after *string, last *int, before *string) int
+		FileUpload                    func(childComplexity int, id string) int
 		FirebaseToken                 func(childComplexity int) int
 		InstanceID                    func(childComplexity int) int
 		Me                            func(childComplexity int) int
@@ -639,6 +657,7 @@ type ComplexityRoot struct {
 
 	QuizAchievement struct {
 		AchievedAt           func(childComplexity int) int
+		AwardableFrom        func(childComplexity int) int
 		Challenge            func(childComplexity int) int
 		DescriptionCompleted func(childComplexity int) int
 		DescriptionPending   func(childComplexity int) int
@@ -764,6 +783,7 @@ type ComplexityRoot struct {
 
 	SimpleAchievement struct {
 		AchievedAt           func(childComplexity int) int
+		AwardableFrom        func(childComplexity int) int
 		Challenge            func(childComplexity int) int
 		DescriptionCompleted func(childComplexity int) int
 		DescriptionPending   func(childComplexity int) int
@@ -809,6 +829,7 @@ type ComplexityRoot struct {
 
 	StreakAchievement struct {
 		AchievedAt           func(childComplexity int) int
+		AwardableFrom        func(childComplexity int) int
 		Challenge            func(childComplexity int) int
 		DescriptionCompleted func(childComplexity int) int
 		DescriptionPending   func(childComplexity int) int
@@ -862,14 +883,16 @@ type ComplexityRoot struct {
 	}
 
 	Team struct {
-		Description       func(childComplexity int) int
-		ID                func(childComplexity int) int
-		JoinCode          func(childComplexity int) int
-		MemberLeaderboard func(childComplexity int) int
-		Members           func(childComplexity int) int
-		Name              func(childComplexity int) int
-		ParentProject     func(childComplexity int) int
-		SuperTeam         func(childComplexity int) int
+		AverageAge          func(childComplexity int) int
+		Description         func(childComplexity int) int
+		ID                  func(childComplexity int) int
+		JoinCode            func(childComplexity int) int
+		LeaderboardExcluded func(childComplexity int) int
+		MemberLeaderboard   func(childComplexity int) int
+		Members             func(childComplexity int) int
+		Name                func(childComplexity int) int
+		ParentProject       func(childComplexity int) int
+		SuperTeam           func(childComplexity int) int
 	}
 
 	TeamConnection struct {
@@ -946,6 +969,7 @@ type ComplexityRoot struct {
 		AppVersion   func(childComplexity int) int
 		CanContactMe func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
+		HandledAt    func(childComplexity int) int
 		ID           func(childComplexity int) int
 		Locale       func(childComplexity int) int
 		Message      func(childComplexity int) int
@@ -1145,6 +1169,8 @@ type MutationResolver interface {
 	SendPushNotification(ctx context.Context, input model.SendPushNotificationInput) (*model.SendPushNotificationResult, error)
 	SubmitFeedback(ctx context.Context, input model.SubmitFeedbackInput) (*model.UserFeedback, error)
 	DeleteFeedback(ctx context.Context, id string) (bool, error)
+	ForwardFeedbackToDesk(ctx context.Context, feedbackID string) (bool, error)
+	MarkFeedbackHandled(ctx context.Context, feedbackID string) (*model.UserFeedback, error)
 	CreateWebhook(ctx context.Context, input model.CreateWebhookInput) (*model.Webhook, error)
 	UpdateWebhook(ctx context.Context, id string, input model.UpdateWebhookInput) (*model.Webhook, error)
 	DeleteWebhook(ctx context.Context, id string) (bool, error)
@@ -1228,6 +1254,7 @@ type QueryResolver interface {
 	Feedback(ctx context.Context, filter *model.FeedbackFilter, first *int, after *string, last *int, before *string) (*model.FeedbackConnection, error)
 	Webhook(ctx context.Context, id string) (*model.Webhook, error)
 	Webhooks(ctx context.Context, projectID string) ([]model.Webhook, error)
+	FileUpload(ctx context.Context, id string) (*model.FileUpload, error)
 }
 type QuizResolver interface {
 	Project(ctx context.Context, obj *model.Quiz) (*model.Project, error)
@@ -1319,6 +1346,7 @@ type SuperTeamResolver interface {
 	Teams(ctx context.Context, obj *model.SuperTeam) ([]model.Team, error)
 }
 type TeamResolver interface {
+	AverageAge(ctx context.Context, obj *model.Team) (*float64, error)
 	Members(ctx context.Context, obj *model.Team) ([]model.TeamMember, error)
 	MemberLeaderboard(ctx context.Context, obj *model.Team) ([]model.LeaderboardEntry, error)
 	ParentProject(ctx context.Context, obj *model.Team) (*model.Project, error)
@@ -1749,6 +1777,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ContentAchievement.AchievedAt(childComplexity), true
+	case "ContentAchievement.awardableFrom":
+		if e.complexity.ContentAchievement.AwardableFrom == nil {
+			break
+		}
+
+		return e.complexity.ContentAchievement.AwardableFrom(childComplexity), true
 	case "ContentAchievement.challenge":
 		if e.complexity.ContentAchievement.Challenge == nil {
 			break
@@ -2222,6 +2256,73 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FeedbackEdge.Node(childComplexity), true
+
+	case "FileUpload.blurhash":
+		if e.complexity.FileUpload.Blurhash == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.Blurhash(childComplexity), true
+	case "FileUpload.createdAt":
+		if e.complexity.FileUpload.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.CreatedAt(childComplexity), true
+	case "FileUpload.fileSize":
+		if e.complexity.FileUpload.FileSize == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.FileSize(childComplexity), true
+	case "FileUpload.filename":
+		if e.complexity.FileUpload.Filename == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.Filename(childComplexity), true
+	case "FileUpload.height":
+		if e.complexity.FileUpload.Height == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.Height(childComplexity), true
+	case "FileUpload.id":
+		if e.complexity.FileUpload.ID == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.ID(childComplexity), true
+	case "FileUpload.mimeType":
+		if e.complexity.FileUpload.MimeType == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.MimeType(childComplexity), true
+	case "FileUpload.publicUrl":
+		if e.complexity.FileUpload.PublicURL == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.PublicURL(childComplexity), true
+	case "FileUpload.storedFilename":
+		if e.complexity.FileUpload.StoredFilename == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.StoredFilename(childComplexity), true
+	case "FileUpload.uploadedBy":
+		if e.complexity.FileUpload.UploadedBy == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.UploadedBy(childComplexity), true
+	case "FileUpload.width":
+		if e.complexity.FileUpload.Width == nil {
+			break
+		}
+
+		return e.complexity.FileUpload.Width(childComplexity), true
 
 	case "FirebaseTokenResponse.expiresIn":
 		if e.complexity.FirebaseTokenResponse.ExpiresIn == nil {
@@ -3052,6 +3153,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.FinalizeQuiz(childComplexity, args["submissionId"].(string)), true
+	case "Mutation.forwardFeedbackToDesk":
+		if e.complexity.Mutation.ForwardFeedbackToDesk == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_forwardFeedbackToDesk_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ForwardFeedbackToDesk(childComplexity, args["feedbackId"].(string)), true
 	case "Mutation.joinEvent":
 		if e.complexity.Mutation.JoinEvent == nil {
 			break
@@ -3107,6 +3219,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.MarkContentItemCompleted(childComplexity, args["userId"].(string), args["externalContentId"].(string)), true
+	case "Mutation.markFeedbackHandled":
+		if e.complexity.Mutation.MarkFeedbackHandled == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_markFeedbackHandled_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.MarkFeedbackHandled(childComplexity, args["feedbackId"].(string)), true
 	case "Mutation.moveEvent":
 		if e.complexity.Mutation.MoveEvent == nil {
 			break
@@ -4157,6 +4280,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Feedback(childComplexity, args["filter"].(*model.FeedbackFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
+	case "Query.fileUpload":
+		if e.complexity.Query.FileUpload == nil {
+			break
+		}
+
+		args, err := ec.field_Query_fileUpload_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.FileUpload(childComplexity, args["id"].(string)), true
 	case "Query.firebaseToken":
 		if e.complexity.Query.FirebaseToken == nil {
 			break
@@ -4547,6 +4681,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizAchievement.AchievedAt(childComplexity), true
+	case "QuizAchievement.awardableFrom":
+		if e.complexity.QuizAchievement.AwardableFrom == nil {
+			break
+		}
+
+		return e.complexity.QuizAchievement.AwardableFrom(childComplexity), true
 	case "QuizAchievement.challenge":
 		if e.complexity.QuizAchievement.Challenge == nil {
 			break
@@ -5076,6 +5216,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SimpleAchievement.AchievedAt(childComplexity), true
+	case "SimpleAchievement.awardableFrom":
+		if e.complexity.SimpleAchievement.AwardableFrom == nil {
+			break
+		}
+
+		return e.complexity.SimpleAchievement.AwardableFrom(childComplexity), true
 	case "SimpleAchievement.challenge":
 		if e.complexity.SimpleAchievement.Challenge == nil {
 			break
@@ -5300,6 +5446,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StreakAchievement.AchievedAt(childComplexity), true
+	case "StreakAchievement.awardableFrom":
+		if e.complexity.StreakAchievement.AwardableFrom == nil {
+			break
+		}
+
+		return e.complexity.StreakAchievement.AwardableFrom(childComplexity), true
 	case "StreakAchievement.challenge":
 		if e.complexity.StreakAchievement.Challenge == nil {
 			break
@@ -5504,6 +5656,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SuperTeamEdge.Node(childComplexity), true
 
+	case "Team.averageAge":
+		if e.complexity.Team.AverageAge == nil {
+			break
+		}
+
+		return e.complexity.Team.AverageAge(childComplexity), true
 	case "Team.description":
 		if e.complexity.Team.Description == nil {
 			break
@@ -5522,6 +5680,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Team.JoinCode(childComplexity), true
+	case "Team.leaderboardExcluded":
+		if e.complexity.Team.LeaderboardExcluded == nil {
+			break
+		}
+
+		return e.complexity.Team.LeaderboardExcluded(childComplexity), true
 	case "Team.memberLeaderboard":
 		if e.complexity.Team.MemberLeaderboard == nil {
 			break
@@ -5855,6 +6019,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UserFeedback.CreatedAt(childComplexity), true
+	case "UserFeedback.handledAt":
+		if e.complexity.UserFeedback.HandledAt == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.HandledAt(childComplexity), true
 	case "UserFeedback.id":
 		if e.complexity.UserFeedback.ID == nil {
 			break
@@ -6504,6 +6674,8 @@ type Team {
     name: String!
     description: String!
     joinCode: String!
+    leaderboardExcluded: Boolean!
+    averageAge: Float @goField(forceResolver: true)
     members: [TeamMember!]! @goField(forceResolver: true)
     memberLeaderboard: [LeaderboardEntry!]! @goField(forceResolver: true)
     parentProject: Project! @goField(forceResolver: true)
@@ -6630,6 +6802,7 @@ interface Achievement {
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
 }
 
 # ==================== Achievement Implementations ====================
@@ -6648,6 +6821,7 @@ type SimpleAchievement implements Achievement {
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
 }
 
 type ContentAchievement implements Achievement {
@@ -6664,6 +6838,7 @@ type ContentAchievement implements Achievement {
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     # Content-specific fields
     items: [ContentItem!]! @goField(forceResolver: true)
     userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
@@ -6687,6 +6862,7 @@ type StreakAchievement implements Achievement {
     neededStreak: Int!
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     streak: Streak! @goField(forceResolver: true)
 }
 
@@ -6704,6 +6880,7 @@ type QuizAchievement implements Achievement {
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     quiz: Quiz! @goField(forceResolver: true)
     minScorePercentage: Int
     requireCompletion: Boolean!
@@ -6993,6 +7170,7 @@ input CreateSimpleAchievementInput {
     challengeId: ID
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
 }
 
 input CreateContentAchievementInput {
@@ -7007,6 +7185,7 @@ input CreateContentAchievementInput {
     challengeId: ID
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     items: [ContentItemInput!]!
 }
 
@@ -7022,6 +7201,7 @@ input CreateStreakAchievementInput {
     challengeId: ID
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     neededStreak: Int!
     streakId: ID!
 }
@@ -7141,6 +7321,7 @@ input UpdateAchievementInput {
     challengeId: ID
     points: Int
     hidden: Boolean
+    awardableFrom: DateTime
 }
 
 input UpdateContentAchievementInput {
@@ -7154,6 +7335,7 @@ input UpdateContentAchievementInput {
     challengeId: ID
     points: Int
     hidden: Boolean
+    awardableFrom: DateTime
     items: [ContentItemInput!]
 }
 
@@ -7168,6 +7350,7 @@ input UpdateStreakAchievementInput {
     challengeId: ID
     points: Int
     hidden: Boolean
+    awardableFrom: DateTime
     neededStreak: Int
     streakId: ID
 }
@@ -7180,6 +7363,7 @@ input CreateTeamInput {
 input UpdateTeamInput {
     name: String
     description: String
+    leaderboardExcluded: Boolean
 }
 
 input CreateSuperTeamInput {
@@ -7752,8 +7936,8 @@ extend type Query {
 }
 
 extend type Mutation {
-    assignRole(input: AssignRoleInput!): UserRole! @requireRole(roles: ["admin", "superadmin"])
-    revokeRole(input: RevokeRoleInput!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    assignRole(input: AssignRoleInput!): UserRole! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    revokeRole(input: RevokeRoleInput!): Boolean! @requireRole(roles: ["admin", "superadmin", "church_admin"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/churches.graphqls", Input: `# Church queries
@@ -8150,6 +8334,7 @@ type UserFeedback {
     projectId: ID
     timezone: String
     createdAt: DateTime!
+    handledAt: DateTime
 }
 
 input DeviceMetadata {
@@ -8191,6 +8376,8 @@ extend type Query {
 extend type Mutation {
     submitFeedback(input: SubmitFeedbackInput!): UserFeedback!
     deleteFeedback(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    forwardFeedbackToDesk(feedbackId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    markFeedbackHandled(feedbackId: ID!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/webhooks.graphqls", Input: `# ==================== Webhook Types ====================
@@ -8261,6 +8448,24 @@ extend type Mutation {
     updateWebhook(id: ID!, input: UpdateWebhookInput!): Webhook! @requireRole(roles: ["superadmin"])
     deleteWebhook(id: ID!): Boolean! @requireRole(roles: ["superadmin"])
     testWebhook(id: ID!): WebhookLog! @requireRole(roles: ["superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/file_uploads.graphqls", Input: `extend type Query {
+    fileUpload(id: ID!): FileUpload
+}
+
+type FileUpload {
+    id: ID!
+    filename: String!
+    storedFilename: String!
+    fileSize: Int!
+    mimeType: String!
+    publicUrl: String!
+    uploadedBy: ID!
+    width: Int
+    height: Int
+    blurhash: String
+    createdAt: DateTime!
 }
 `, BuiltIn: false},
 }
@@ -9042,6 +9247,17 @@ func (ec *executionContext) field_Mutation_finalizeQuiz_args(ctx context.Context
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_forwardFeedbackToDesk_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "feedbackId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["feedbackId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_joinEvent_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9104,6 +9320,17 @@ func (ec *executionContext) field_Mutation_markContentItemCompleted_args(ctx con
 		return nil, err
 	}
 	args["externalContentId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_markFeedbackHandled_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "feedbackId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["feedbackId"] = arg0
 	return args, nil
 }
 
@@ -10149,6 +10376,17 @@ func (ec *executionContext) field_Query_feedback_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["before"] = arg4
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_fileUpload_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -12950,6 +13188,35 @@ func (ec *executionContext) fieldContext_ContentAchievement_hidden(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _ContentAchievement_awardableFrom(ctx context.Context, field graphql.CollectedField, obj *model.ContentAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ContentAchievement_awardableFrom,
+		func(ctx context.Context) (any, error) {
+			return obj.AwardableFrom, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ContentAchievement_awardableFrom(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ContentAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ContentAchievement_items(ctx context.Context, field graphql.CollectedField, obj *model.ContentAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -15089,8 +15356,329 @@ func (ec *executionContext) fieldContext_FeedbackEdge_node(_ context.Context, fi
 				return ec.fieldContext_UserFeedback_timezone(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
+			case "handledAt":
+				return ec.fieldContext_UserFeedback_handledAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserFeedback", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_id(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_filename(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_filename,
+		func(ctx context.Context) (any, error) {
+			return obj.Filename, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_filename(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_storedFilename(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_storedFilename,
+		func(ctx context.Context) (any, error) {
+			return obj.StoredFilename, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_storedFilename(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_fileSize(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_fileSize,
+		func(ctx context.Context) (any, error) {
+			return obj.FileSize, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_fileSize(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_mimeType(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_mimeType,
+		func(ctx context.Context) (any, error) {
+			return obj.MimeType, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_mimeType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_publicUrl(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_publicUrl,
+		func(ctx context.Context) (any, error) {
+			return obj.PublicURL, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_publicUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_uploadedBy(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_uploadedBy,
+		func(ctx context.Context) (any, error) {
+			return obj.UploadedBy, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_uploadedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_width(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_width,
+		func(ctx context.Context) (any, error) {
+			return obj.Width, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_width(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_height(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_height,
+		func(ctx context.Context) (any, error) {
+			return obj.Height, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_height(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_blurhash(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_blurhash,
+		func(ctx context.Context) (any, error) {
+			return obj.Blurhash, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_blurhash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileUpload_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.FileUpload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FileUpload_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FileUpload_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileUpload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
 		},
 	}
 	return fc, nil
@@ -17313,6 +17901,10 @@ func (ec *executionContext) fieldContext_Mutation_joinTeam(ctx context.Context, 
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -17390,6 +17982,10 @@ func (ec *executionContext) fieldContext_Mutation_createTeam(ctx context.Context
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -17467,6 +18063,10 @@ func (ec *executionContext) fieldContext_Mutation_updateTeam(ctx context.Context
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -17603,6 +18203,10 @@ func (ec *executionContext) fieldContext_Mutation_addTeamMembers(ctx context.Con
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -17680,6 +18284,10 @@ func (ec *executionContext) fieldContext_Mutation_removeTeamMembers(ctx context.
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -17757,6 +18365,10 @@ func (ec *executionContext) fieldContext_Mutation_regenerateJoinCode(ctx context
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -17834,6 +18446,10 @@ func (ec *executionContext) fieldContext_Mutation_assignTeamLead(ctx context.Con
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -18443,6 +19059,8 @@ func (ec *executionContext) fieldContext_Mutation_createSimpleAchievement(ctx co
 				return ec.fieldContext_SimpleAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_SimpleAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_SimpleAchievement_awardableFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SimpleAchievement", field.Name)
 		},
@@ -18530,6 +19148,8 @@ func (ec *executionContext) fieldContext_Mutation_createContentAchievement(ctx c
 				return ec.fieldContext_ContentAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_ContentAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_ContentAchievement_awardableFrom(ctx, field)
 			case "items":
 				return ec.fieldContext_ContentAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -18629,6 +19249,8 @@ func (ec *executionContext) fieldContext_Mutation_createStreakAchievement(ctx co
 				return ec.fieldContext_StreakAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
 			case "streak":
 				return ec.fieldContext_StreakAchievement_streak(ctx, field)
 			}
@@ -18777,6 +19399,8 @@ func (ec *executionContext) fieldContext_Mutation_updateContentAchievement(ctx c
 				return ec.fieldContext_ContentAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_ContentAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_ContentAchievement_awardableFrom(ctx, field)
 			case "items":
 				return ec.fieldContext_ContentAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -18876,6 +19500,8 @@ func (ec *executionContext) fieldContext_Mutation_updateStreakAchievement(ctx co
 				return ec.fieldContext_StreakAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
 			case "streak":
 				return ec.fieldContext_StreakAchievement_streak(ctx, field)
 			}
@@ -19319,6 +19945,8 @@ func (ec *executionContext) fieldContext_Mutation_markContentItemCompleted(ctx c
 				return ec.fieldContext_ContentAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_ContentAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_ContentAchievement_awardableFrom(ctx, field)
 			case "items":
 				return ec.fieldContext_ContentAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -19416,6 +20044,8 @@ func (ec *executionContext) fieldContext_Mutation_unmarkContentItemCompleted(ctx
 				return ec.fieldContext_ContentAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_ContentAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_ContentAchievement_awardableFrom(ctx, field)
 			case "items":
 				return ec.fieldContext_ContentAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -19515,6 +20145,8 @@ func (ec *executionContext) fieldContext_Mutation_recordStreakActivity(ctx conte
 				return ec.fieldContext_StreakAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
 			case "streak":
 				return ec.fieldContext_StreakAchievement_streak(ctx, field)
 			}
@@ -21178,7 +21810,7 @@ func (ec *executionContext) _Mutation_assignRole(ctx context.Context, field grap
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
 				if err != nil {
 					var zeroVal *model.UserRole
 					return zeroVal, err
@@ -21247,7 +21879,7 @@ func (ec *executionContext) _Mutation_revokeRole(ctx context.Context, field grap
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -22420,6 +23052,8 @@ func (ec *executionContext) fieldContext_Mutation_createQuizAchievement(ctx cont
 				return ec.fieldContext_QuizAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_QuizAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_QuizAchievement_awardableFrom(ctx, field)
 			case "quiz":
 				return ec.fieldContext_QuizAchievement_quiz(ctx, field)
 			case "minScorePercentage":
@@ -22785,6 +23419,8 @@ func (ec *executionContext) fieldContext_Mutation_createContentAchievementFromEx
 				return ec.fieldContext_ContentAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_ContentAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_ContentAchievement_awardableFrom(ctx, field)
 			case "items":
 				return ec.fieldContext_ContentAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -23119,6 +23755,8 @@ func (ec *executionContext) fieldContext_Mutation_submitFeedback(ctx context.Con
 				return ec.fieldContext_UserFeedback_timezone(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
+			case "handledAt":
+				return ec.fieldContext_UserFeedback_handledAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserFeedback", field.Name)
 		},
@@ -23190,6 +23828,156 @@ func (ec *executionContext) fieldContext_Mutation_deleteFeedback(ctx context.Con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteFeedback_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_forwardFeedbackToDesk(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_forwardFeedbackToDesk,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().ForwardFeedbackToDesk(ctx, fc.Args["feedbackId"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal bool
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal bool
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_forwardFeedbackToDesk(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_forwardFeedbackToDesk_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_markFeedbackHandled(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_markFeedbackHandled,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().MarkFeedbackHandled(ctx, fc.Args["feedbackId"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.UserFeedback
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.UserFeedback
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNUserFeedback2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserFeedback,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_markFeedbackHandled(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserFeedback_id(ctx, field)
+			case "userId":
+				return ec.fieldContext_UserFeedback_userId(ctx, field)
+			case "user":
+				return ec.fieldContext_UserFeedback_user(ctx, field)
+			case "message":
+				return ec.fieldContext_UserFeedback_message(ctx, field)
+			case "canContactMe":
+				return ec.fieldContext_UserFeedback_canContactMe(ctx, field)
+			case "userAgent":
+				return ec.fieldContext_UserFeedback_userAgent(ctx, field)
+			case "platform":
+				return ec.fieldContext_UserFeedback_platform(ctx, field)
+			case "screenWidth":
+				return ec.fieldContext_UserFeedback_screenWidth(ctx, field)
+			case "screenHeight":
+				return ec.fieldContext_UserFeedback_screenHeight(ctx, field)
+			case "appVersion":
+				return ec.fieldContext_UserFeedback_appVersion(ctx, field)
+			case "locale":
+				return ec.fieldContext_UserFeedback_locale(ctx, field)
+			case "projectId":
+				return ec.fieldContext_UserFeedback_projectId(ctx, field)
+			case "timezone":
+				return ec.fieldContext_UserFeedback_timezone(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
+			case "handledAt":
+				return ec.fieldContext_UserFeedback_handledAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserFeedback", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_markFeedbackHandled_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -25107,6 +25895,10 @@ func (ec *executionContext) fieldContext_Project_teams(_ context.Context, field 
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -25154,6 +25946,10 @@ func (ec *executionContext) fieldContext_Project_myTeam(_ context.Context, field
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -26401,6 +27197,10 @@ func (ec *executionContext) fieldContext_Query_team(ctx context.Context, field g
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -28344,6 +29144,71 @@ func (ec *executionContext) fieldContext_Query_webhooks(ctx context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_fileUpload(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_fileUpload,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().FileUpload(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalOFileUpload2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFileUpload,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_fileUpload(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_FileUpload_id(ctx, field)
+			case "filename":
+				return ec.fieldContext_FileUpload_filename(ctx, field)
+			case "storedFilename":
+				return ec.fieldContext_FileUpload_storedFilename(ctx, field)
+			case "fileSize":
+				return ec.fieldContext_FileUpload_fileSize(ctx, field)
+			case "mimeType":
+				return ec.fieldContext_FileUpload_mimeType(ctx, field)
+			case "publicUrl":
+				return ec.fieldContext_FileUpload_publicUrl(ctx, field)
+			case "uploadedBy":
+				return ec.fieldContext_FileUpload_uploadedBy(ctx, field)
+			case "width":
+				return ec.fieldContext_FileUpload_width(ctx, field)
+			case "height":
+				return ec.fieldContext_FileUpload_height(ctx, field)
+			case "blurhash":
+				return ec.fieldContext_FileUpload_blurhash(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_FileUpload_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FileUpload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_fileUpload_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -29463,6 +30328,35 @@ func (ec *executionContext) fieldContext_QuizAchievement_hidden(_ context.Contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizAchievement_awardableFrom(ctx context.Context, field graphql.CollectedField, obj *model.QuizAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizAchievement_awardableFrom,
+		func(ctx context.Context) (any, error) {
+			return obj.AwardableFrom, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizAchievement_awardableFrom(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
 		},
 	}
 	return fc, nil
@@ -31350,6 +32244,10 @@ func (ec *executionContext) fieldContext_RoleScope_team(_ context.Context, field
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -32541,6 +33439,35 @@ func (ec *executionContext) fieldContext_SimpleAchievement_hidden(_ context.Cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleAchievement_awardableFrom(ctx context.Context, field graphql.CollectedField, obj *model.SimpleAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleAchievement_awardableFrom,
+		func(ctx context.Context) (any, error) {
+			return obj.AwardableFrom, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleAchievement_awardableFrom(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
 		},
 	}
 	return fc, nil
@@ -33781,6 +34708,35 @@ func (ec *executionContext) fieldContext_StreakAchievement_hidden(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _StreakAchievement_awardableFrom(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakAchievement_awardableFrom,
+		func(ctx context.Context) (any, error) {
+			return obj.AwardableFrom, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakAchievement_awardableFrom(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _StreakAchievement_streak(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -34292,6 +35248,10 @@ func (ec *executionContext) fieldContext_SuperTeam_teams(_ context.Context, fiel
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -34593,6 +35553,64 @@ func (ec *executionContext) fieldContext_Team_joinCode(_ context.Context, field 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Team_leaderboardExcluded(ctx context.Context, field graphql.CollectedField, obj *model.Team) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Team_leaderboardExcluded,
+		func(ctx context.Context) (any, error) {
+			return obj.LeaderboardExcluded, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Team_leaderboardExcluded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Team_averageAge(ctx context.Context, field graphql.CollectedField, obj *model.Team) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Team_averageAge,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Team().AverageAge(ctx, obj)
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Team_averageAge(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -34956,6 +35974,10 @@ func (ec *executionContext) fieldContext_TeamEdge_node(_ context.Context, field 
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -35666,6 +36688,10 @@ func (ec *executionContext) fieldContext_User_teams(_ context.Context, field gra
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -36860,6 +37886,35 @@ func (ec *executionContext) _UserFeedback_createdAt(ctx context.Context, field g
 }
 
 func (ec *executionContext) fieldContext_UserFeedback_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_handledAt(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_handledAt,
+		func(ctx context.Context) (any, error) {
+			return obj.HandledAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_handledAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UserFeedback",
 		Field:      field,
@@ -39838,7 +40893,7 @@ func (ec *executionContext) unmarshalInputCreateContentAchievementInput(ctx cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden", "items"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden", "awardableFrom", "items"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -39922,6 +40977,13 @@ func (ec *executionContext) unmarshalInputCreateContentAchievementInput(ctx cont
 				return it, err
 			}
 			it.Hidden = data
+		case "awardableFrom":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awardableFrom"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwardableFrom = data
 		case "items":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("items"))
 			data, err := ec.unmarshalNContentItemInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐContentItemInputᚄ(ctx, v)
@@ -40460,7 +41522,7 @@ func (ec *executionContext) unmarshalInputCreateSimpleAchievementInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden", "awardableFrom"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -40544,6 +41606,13 @@ func (ec *executionContext) unmarshalInputCreateSimpleAchievementInput(ctx conte
 				return it, err
 			}
 			it.Hidden = data
+		case "awardableFrom":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awardableFrom"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwardableFrom = data
 		}
 	}
 
@@ -40557,7 +41626,7 @@ func (ec *executionContext) unmarshalInputCreateStreakAchievementInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden", "neededStreak", "streakId"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden", "awardableFrom", "neededStreak", "streakId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -40641,6 +41710,13 @@ func (ec *executionContext) unmarshalInputCreateStreakAchievementInput(ctx conte
 				return it, err
 			}
 			it.Hidden = data
+		case "awardableFrom":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awardableFrom"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwardableFrom = data
 		case "neededStreak":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("neededStreak"))
 			data, err := ec.unmarshalNInt2int(ctx, v)
@@ -41988,7 +43064,7 @@ func (ec *executionContext) unmarshalInputUpdateAchievementInput(ctx context.Con
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden", "awardableFrom"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -42065,6 +43141,13 @@ func (ec *executionContext) unmarshalInputUpdateAchievementInput(ctx context.Con
 				return it, err
 			}
 			it.Hidden = data
+		case "awardableFrom":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awardableFrom"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwardableFrom = data
 		}
 	}
 
@@ -42223,7 +43306,7 @@ func (ec *executionContext) unmarshalInputUpdateContentAchievementInput(ctx cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden", "items"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden", "awardableFrom", "items"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -42300,6 +43383,13 @@ func (ec *executionContext) unmarshalInputUpdateContentAchievementInput(ctx cont
 				return it, err
 			}
 			it.Hidden = data
+		case "awardableFrom":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awardableFrom"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwardableFrom = data
 		case "items":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("items"))
 			data, err := ec.unmarshalOContentItemInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐContentItemInputᚄ(ctx, v)
@@ -42603,7 +43693,7 @@ func (ec *executionContext) unmarshalInputUpdateStreakAchievementInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden", "neededStreak", "streakId"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden", "awardableFrom", "neededStreak", "streakId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -42680,6 +43770,13 @@ func (ec *executionContext) unmarshalInputUpdateStreakAchievementInput(ctx conte
 				return it, err
 			}
 			it.Hidden = data
+		case "awardableFrom":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awardableFrom"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwardableFrom = data
 		case "neededStreak":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("neededStreak"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -42782,7 +43879,7 @@ func (ec *executionContext) unmarshalInputUpdateTeamInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description"}
+	fieldsInOrder := [...]string{"name", "description", "leaderboardExcluded"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -42803,6 +43900,13 @@ func (ec *executionContext) unmarshalInputUpdateTeamInput(ctx context.Context, o
 				return it, err
 			}
 			it.Description = data
+		case "leaderboardExcluded":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaderboardExcluded"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaderboardExcluded = data
 		}
 	}
 
@@ -44168,6 +45272,8 @@ func (ec *executionContext) _ContentAchievement(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "awardableFrom":
+			out.Values[i] = ec._ContentAchievement_awardableFrom(ctx, field, obj)
 		case "items":
 			field := field
 
@@ -45285,6 +46391,86 @@ func (ec *executionContext) _FeedbackEdge(ctx context.Context, sel ast.Selection
 			}
 		case "node":
 			out.Values[i] = ec._FeedbackEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var fileUploadImplementors = []string{"FileUpload"}
+
+func (ec *executionContext) _FileUpload(ctx context.Context, sel ast.SelectionSet, obj *model.FileUpload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fileUploadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FileUpload")
+		case "id":
+			out.Values[i] = ec._FileUpload_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "filename":
+			out.Values[i] = ec._FileUpload_filename(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "storedFilename":
+			out.Values[i] = ec._FileUpload_storedFilename(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fileSize":
+			out.Values[i] = ec._FileUpload_fileSize(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "mimeType":
+			out.Values[i] = ec._FileUpload_mimeType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "publicUrl":
+			out.Values[i] = ec._FileUpload_publicUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploadedBy":
+			out.Values[i] = ec._FileUpload_uploadedBy(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "width":
+			out.Values[i] = ec._FileUpload_width(ctx, field, obj)
+		case "height":
+			out.Values[i] = ec._FileUpload_height(ctx, field, obj)
+		case "blurhash":
+			out.Values[i] = ec._FileUpload_blurhash(ctx, field, obj)
+		case "createdAt":
+			out.Values[i] = ec._FileUpload_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -46701,6 +47887,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteFeedback":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteFeedback(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "forwardFeedbackToDesk":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_forwardFeedbackToDesk(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "markFeedbackHandled":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_markFeedbackHandled(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -48931,6 +50131,25 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "fileUpload":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_fileUpload(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -49443,6 +50662,8 @@ func (ec *executionContext) _QuizAchievement(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "awardableFrom":
+			out.Values[i] = ec._QuizAchievement_awardableFrom(ctx, field, obj)
 		case "quiz":
 			field := field
 
@@ -51071,6 +52292,8 @@ func (ec *executionContext) _SimpleAchievement(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "awardableFrom":
+			out.Values[i] = ec._SimpleAchievement_awardableFrom(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -51697,6 +52920,8 @@ func (ec *executionContext) _StreakAchievement(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "awardableFrom":
+			out.Values[i] = ec._StreakAchievement_awardableFrom(ctx, field, obj)
 		case "streak":
 			field := field
 
@@ -52174,6 +53399,44 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "leaderboardExcluded":
+			out.Values[i] = ec._Team_leaderboardExcluded(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "averageAge":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Team_averageAge(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "members":
 			field := field
 
@@ -53251,6 +54514,8 @@ func (ec *executionContext) _UserFeedback(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "handledAt":
+			out.Values[i] = ec._UserFeedback_handledAt(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -57742,6 +59007,13 @@ func (ec *executionContext) unmarshalOFeedbackFilter2ᚖgithubᚗcomᚋbccᚑmed
 	}
 	res, err := ec.unmarshalInputFeedbackFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFileUpload2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐFileUpload(ctx context.Context, sel ast.SelectionSet, v *model.FileUpload) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._FileUpload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v any) (*float64, error) {

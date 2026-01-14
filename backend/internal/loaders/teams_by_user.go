@@ -51,11 +51,13 @@ func teamsByUserBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(cont
 				}
 
 				team := &model.Team{
-					ID:          row.ID,
-					ProjectID:   row.ProjectID,
-					Name:        row.Name,
-					Description: description,
-					SuperTeamID: superTeamID,
+					ID:                  row.ID,
+					ProjectID:           row.ProjectID,
+					Name:                row.Name,
+					Description:         description,
+					SuperTeamID:         superTeamID,
+					JoinCode:            row.JoinCode,
+					LeaderboardExcluded: row.LeaderboardExcluded,
 				}
 				teamsByUser[row.UserID] = append(teamsByUser[row.UserID], team)
 			}

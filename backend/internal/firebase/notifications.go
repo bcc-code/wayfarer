@@ -51,9 +51,9 @@ func (s *Service) NotifyProjectEvents(ctx context.Context, projectID string) err
 }
 
 // NotifyAdminFeedback updates the timestamp for admin feedback notifications.
-// Path: admin/notifications/feedback
+// Path: admin/feedback
 func (s *Service) NotifyAdminFeedback(ctx context.Context) error {
-	return s.updateTimestamp(ctx, "admin/notifications/feedback")
+	return s.updateTimestamp(ctx, "admin/feedback")
 }
 
 // updateTimestamp sets the updatedAt field to the current server timestamp.

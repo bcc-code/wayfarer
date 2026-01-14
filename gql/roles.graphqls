@@ -6,6 +6,6 @@ extend type Query {
 }
 
 extend type Mutation {
-    assignRole(input: AssignRoleInput!): UserRole! @requireRole(roles: ["admin", "superadmin"])
-    revokeRole(input: RevokeRoleInput!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    assignRole(input: AssignRoleInput!): UserRole! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    revokeRole(input: RevokeRoleInput!): Boolean! @requireRole(roles: ["admin", "superadmin", "church_admin"])
 }

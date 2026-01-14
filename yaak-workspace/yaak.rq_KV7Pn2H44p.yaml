@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_KV7Pn2H44p
 createdAt: 2025-11-27T13:05:40.352277
-updatedAt: 2025-12-09T10:59:38.452395
+updatedAt: 2026-01-09T14:39:58.762660
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -65,6 +65,6 @@ headers:
   id: zNW4Vjp7UA
 method: POST
 name: ScoreJournal
-sortPriority: 13000.0
+sortPriority: 18000.0
 url: ${[ HOST ]}/graphql
 urlParameters: []

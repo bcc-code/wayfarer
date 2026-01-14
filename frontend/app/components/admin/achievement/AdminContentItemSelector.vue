@@ -81,15 +81,11 @@ const searchResults = computed(() => {
     })
     .filter((item) => !query || (item.score !== null && item.score >= 0))
 
-  // Sort by score (highest first), then by title
-  return scoredItems
-    .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score
-      const aTitle = a.node.title || a.node.id
-      const bTitle = b.node.title || b.node.id
-      return aTitle.localeCompare(bTitle)
-    })
-    .map((item) => item.node)
+  // Only sort by score when searching, otherwise keep backend order (PublishedAtDesc)
+  if (query) {
+    scoredItems.sort((a, b) => b.score - a.score)
+  }
+  return scoredItems.map((item) => item.node)
 })
 
 function addItem(externalContent: (typeof searchResults.value)[0]) {
@@ -158,9 +154,7 @@ function formatContentType(type: ExternalContentType): string {
         v-else-if="searchResults.length === 0"
         class="text-muted p-4 text-center text-sm"
       >
-        {{
-          debouncedSearch ? 'Ingen treff' : 'Ingen innhold tilgjengelig'
-        }}
+        {{ debouncedSearch ? 'Ingen treff' : 'Ingen innhold tilgjengelig' }}
       </div>
       <div v-else>
         <button
@@ -227,6 +221,12 @@ function formatContentType(type: ExternalContentType): string {
             <UBadge variant="subtle" size="sm">
               {{ formatContentType(item.externalContent.contentType) }}
             </UBadge>
+            <span
+              v-if="item.externalContent.publishedAt"
+              class="text-muted text-xs"
+            >
+              {{ formatDate(item.externalContent.publishedAt) }}
+            </span>
             <UButton
               variant="ghost"
               color="error"

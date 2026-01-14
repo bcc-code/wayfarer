@@ -10,6 +10,8 @@ import (
 	"github.com/bcc-media/wayfarer/cmd/seed/seeders"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
+	"github.com/bcc-media/wayfarer/internal/ulid"
+	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jaswdr/faker"
 	"github.com/pressly/goose/v3"
@@ -218,7 +220,7 @@ const (
 // AssignRole assigns a role to a user in the database
 func (m *TestDBManager) AssignRole(ctx context.Context, userID string, role RoleType) error {
 	// Generate a ULID for the role
-	roleID := "UR" + generateULID()
+	roleID := ulid.NewUserRoleID()
 
 	query := `
 		INSERT INTO user_roles (id, user_id, role, assigned_by, assigned_at)
@@ -233,7 +235,7 @@ func (m *TestDBManager) AssignRole(ctx context.Context, userID string, role Role
 
 // AssignRoleWithScope assigns a scoped role (church/project/team) to a user
 func (m *TestDBManager) AssignRoleWithScope(ctx context.Context, userID string, role RoleType, churchID, projectID, teamID *string) error {
-	roleID := "UR" + generateULID()
+	roleID := ulid.NewUserRoleID()
 
 	query := `
 		INSERT INTO user_roles (id, user_id, role, church_id, project_id, team_id, assigned_by, assigned_at)
@@ -244,17 +246,6 @@ func (m *TestDBManager) AssignRoleWithScope(ctx context.Context, userID string, 
 		return fmt.Errorf("failed to assign scoped role %s to user %s: %w", role, userID, err)
 	}
 	return nil
-}
-
-// generateULID generates a simple ULID-like ID for tests
-func generateULID() string {
-	// Simple timestamp + random for test purposes
-	const chars = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
-	b := make([]byte, 26)
-	for i := range b {
-		b[i] = chars[rand.Intn(len(chars))]
-	}
-	return string(b)
 }
 
 // GetUserLanguage returns the language stored for a user in the database
@@ -274,4 +265,297 @@ func (m *TestDBManager) SetUserLanguage(ctx context.Context, userID, language st
 		return fmt.Errorf("failed to set user language: %w", err)
 	}
 	return nil
+}
+
+// CreateTestUser creates a user with specific birthdate and gender for testing
+func (m *TestDBManager) CreateTestUser(ctx context.Context, id, name, gender string, birthdate time.Time, churchID string) error {
+	membersID := "TEST-" + id
+	email := id + "@test.example.com"
+
+	query := `
+		INSERT INTO users (id, members_id, email, name, gender, birthdate, church_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, id, membersID, email, name, gender, birthdate, churchID)
+	if err != nil {
+		return fmt.Errorf("failed to create test user %s: %w", id, err)
+	}
+	return nil
+}
+
+// CreateTestChurch creates a test church
+func (m *TestDBManager) CreateTestChurch(ctx context.Context, id, name, country, category string) error {
+	query := `
+		INSERT INTO churches (id, name, country, category)
+		VALUES ($1, $2, $3, $4)
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, id, name, country, category)
+	if err != nil {
+		return fmt.Errorf("failed to create test church %s: %w", id, err)
+	}
+	return nil
+}
+
+// CreateTestProject creates a test project with minimal required fields
+func (m *TestDBManager) CreateTestProject(ctx context.Context, id, name string) error {
+	query := `
+		INSERT INTO projects (
+			id, name, description, start_date, end_date,
+			color_light_accent, color_light_accent_contrast, color_light_on_accent,
+			color_light_background_default, color_light_background_raised, color_light_background_indent,
+			color_light_text_default, color_light_text_muted, color_light_text_hint,
+			color_light_shadow_default, color_light_shadow_blank, color_light_border_default,
+			color_dark_accent, color_dark_accent_contrast, color_dark_on_accent,
+			color_dark_background_default, color_dark_background_raised, color_dark_background_indent,
+			color_dark_text_default, color_dark_text_muted, color_dark_text_hint,
+			color_dark_shadow_default, color_dark_shadow_blank, color_dark_border_default,
+			rounding
+		)
+		VALUES (
+			$1, $2, 'Test project', now(), now() + interval '1 year',
+			'#000', '#000', '#000', '#000', '#000', '#000',
+			'#000', '#000', '#000', '#000', '#000', '#000',
+			'#000', '#000', '#000', '#000', '#000', '#000',
+			'#000', '#000', '#000', '#000', '#000', '#000',
+			0
+		)
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, id, name)
+	if err != nil {
+		return fmt.Errorf("failed to create test project %s: %w", id, err)
+	}
+	return nil
+}
+
+// CreateTestTeam creates a test team
+func (m *TestDBManager) CreateTestTeam(ctx context.Context, id, name, projectID string) error {
+	joinCode := "TEST-" + id
+	query := `
+		INSERT INTO teams (id, project_id, name, join_code)
+		VALUES ($1, $2, $3, $4)
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, id, projectID, name, joinCode)
+	if err != nil {
+		return fmt.Errorf("failed to create test team %s: %w", id, err)
+	}
+	return nil
+}
+
+// EnrollUserInProject adds a user to a project
+func (m *TestDBManager) EnrollUserInProject(ctx context.Context, userID, projectID string) error {
+	query := `
+		INSERT INTO user_projects (user_id, project_id)
+		VALUES ($1, $2)
+		ON CONFLICT DO NOTHING
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, userID, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to enroll user %s in project %s: %w", userID, projectID, err)
+	}
+	return nil
+}
+
+// AddUserToTeam adds a user as a team member
+func (m *TestDBManager) AddUserToTeam(ctx context.Context, userID, teamID string) error {
+	query := `
+		INSERT INTO team_members (team_id, user_id)
+		VALUES ($1, $2)
+		ON CONFLICT DO NOTHING
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, teamID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to add user %s to team %s: %w", userID, teamID, err)
+	}
+	return nil
+}
+
+// AddScoreForUser adds a score journal entry for a user in a project
+func (m *TestDBManager) AddScoreForUser(ctx context.Context, userID, projectID string, points int) error {
+	scoreID := ulid.NewScoreJournalID()
+	query := `
+		INSERT INTO score_journal (id, project_id, user_id, points, source_type, reason)
+		VALUES ($1, $2, $3, $4, 'MANUAL', 'Test score')
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, scoreID, projectID, userID, points)
+	if err != nil {
+		return fmt.Errorf("failed to add score for user %s: %w", userID, err)
+	}
+	return nil
+}
+
+// EnsureLeaderboardConsent ensures the leaderboard_consent consent type exists
+func (m *TestDBManager) EnsureLeaderboardConsent(ctx context.Context) (string, error) {
+	// Check if consent exists
+	var consentID string
+	err := m.DB.Pool.QueryRow(ctx, `
+		SELECT id FROM consents WHERE key = 'leaderboard_consent' LIMIT 1
+	`).Scan(&consentID)
+
+	if err == nil {
+		return consentID, nil
+	}
+
+	// Create consent if it doesn't exist
+	consentID = ulid.NewConsentID()
+	query := `
+		INSERT INTO consents (id, key, version, title, body, published_at)
+		VALUES ($1, 'leaderboard_consent', 1, 'Leaderboard Consent', 'Test consent for leaderboard visibility', now())
+	`
+	_, err = m.DB.Pool.Exec(ctx, query, consentID)
+	if err != nil {
+		return "", fmt.Errorf("failed to create leaderboard consent: %w", err)
+	}
+	return consentID, nil
+}
+
+// AddLeaderboardConsent adds leaderboard consent for a user
+func (m *TestDBManager) AddLeaderboardConsent(ctx context.Context, userID string) error {
+	consentID, err := m.EnsureLeaderboardConsent(ctx)
+	if err != nil {
+		return err
+	}
+
+	historyID := ulid.NewUserConsentHistoryID()
+	query := `
+		INSERT INTO user_consent_history (id, user_id, consent_id, consent_key, action, occurred_at)
+		VALUES ($1, $2, $3, 'leaderboard_consent', 'ACCEPTED', now())
+	`
+	_, err = m.DB.Pool.Exec(ctx, query, historyID, userID, consentID)
+	if err != nil {
+		return fmt.Errorf("failed to add leaderboard consent for user %s: %w", userID, err)
+	}
+	return nil
+}
+
+// CreateExternalContent creates an external content record for testing
+func (m *TestDBManager) CreateExternalContent(ctx context.Context, id, planID, taskID, contentType, source string) error {
+	query := `
+		INSERT INTO external_content (id, plan_id, task_id, content_type, source, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, now(), now())
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, id, planID, taskID, contentType, source)
+	if err != nil {
+		return fmt.Errorf("failed to create external content %s: %w", id, err)
+	}
+	return nil
+}
+
+// CreateExternalContentEvent creates a content event (simulating an event before user exists)
+func (m *TestDBManager) CreateExternalContentEvent(ctx context.Context, id string, personUUID uuid.UUID, taskID string, planID *string, source string, progress *float32) error {
+	query := `
+		INSERT INTO external_content_events (id, person_id, task_id, plan_id, source, received_at, content_progress, consumed_at)
+		VALUES ($1, $2, $3, $4, $5, now(), $6, now())
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, id, personUUID, taskID, planID, source, progress)
+	if err != nil {
+		return fmt.Errorf("failed to create external content event %s: %w", id, err)
+	}
+	return nil
+}
+
+// CreateContentAchievement creates a content achievement with linked content items
+func (m *TestDBManager) CreateContentAchievement(ctx context.Context, id, projectID, name string, points int, contentIDs []string, hidden bool) error {
+	// Create the achievement in the main achievements table
+	achievementQuery := `
+		INSERT INTO achievements (
+			id, project_id, name, achievement_type, points, hidden,
+			description_pending, description_completed, notification_text,
+			image_pending, image_completed, sort_order
+		)
+		VALUES ($1, $2, $3, 'CONTENT', $4, $5,
+			'Complete the content', 'Content completed!', 'Achievement unlocked!',
+			'https://example.com/pending.png', 'https://example.com/completed.png', 0)
+	`
+	_, err := m.DB.Pool.Exec(ctx, achievementQuery, id, projectID, name, points, hidden)
+	if err != nil {
+		return fmt.Errorf("failed to create content achievement %s: %w", id, err)
+	}
+
+	// Create entry in content_achievements junction table
+	contentAchievementQuery := `
+		INSERT INTO content_achievements (achievement_id)
+		VALUES ($1)
+	`
+	_, err = m.DB.Pool.Exec(ctx, contentAchievementQuery, id)
+	if err != nil {
+		return fmt.Errorf("failed to create content_achievements entry for %s: %w", id, err)
+	}
+
+	// Link content items to the achievement
+	for i, contentID := range contentIDs {
+		itemID := ulid.NewContentItemID()
+		itemQuery := `
+			INSERT INTO content_achievement_items (id, achievement_id, external_content_id, sort_order)
+			VALUES ($1, $2, $3, $4)
+		`
+		_, err := m.DB.Pool.Exec(ctx, itemQuery, itemID, id, contentID, i)
+		if err != nil {
+			return fmt.Errorf("failed to link content item %s to achievement %s: %w", contentID, id, err)
+		}
+	}
+
+	return nil
+}
+
+// CreateUserWithPersonUUID creates a user with a specific person_uuid for testing
+func (m *TestDBManager) CreateUserWithPersonUUID(ctx context.Context, id, name, churchID string, personUUID uuid.UUID) error {
+	membersID := "TEST-" + id
+	email := id + "@test.example.com"
+
+	query := `
+		INSERT INTO users (id, members_id, person_uuid, email, name, gender, birthdate, church_id)
+		VALUES ($1, $2, $3, $4, $5, 'UNKNOWN', '2000-01-01', $6)
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, id, membersID, personUUID, email, name, churchID)
+	if err != nil {
+		return fmt.Errorf("failed to create test user %s with person_uuid: %w", id, err)
+	}
+	return nil
+}
+
+// GetUserAchievements returns the achievement IDs awarded to a user
+func (m *TestDBManager) GetUserAchievements(ctx context.Context, userID string) ([]string, error) {
+	query := `SELECT achievement_id FROM user_achievements WHERE user_id = $1`
+	rows, err := m.DB.Pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user achievements: %w", err)
+	}
+	defer rows.Close()
+
+	var achievementIDs []string
+	for rows.Next() {
+		var achievementID string
+		if err := rows.Scan(&achievementID); err != nil {
+			return nil, fmt.Errorf("failed to scan achievement ID: %w", err)
+		}
+		achievementIDs = append(achievementIDs, achievementID)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating achievements: %w", err)
+	}
+
+	return achievementIDs, nil
+}
+
+// GetScoreJournalEntriesCount returns the count of score journal entries for a user in a project
+func (m *TestDBManager) GetScoreJournalEntriesCount(ctx context.Context, userID, projectID string) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM score_journal WHERE user_id = $1 AND project_id = $2`
+	err := m.DB.Pool.QueryRow(ctx, query, userID, projectID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count score journal entries: %w", err)
+	}
+	return count, nil
+}
+
+// GetUserContentProgress returns the count of completed content items for a user and achievement
+func (m *TestDBManager) GetUserContentProgress(ctx context.Context, userID, achievementID string) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM user_content_progress WHERE user_id = $1 AND achievement_id = $2`
+	err := m.DB.Pool.QueryRow(ctx, query, userID, achievementID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count user content progress: %w", err)
+	}
+	return count, nil
 }

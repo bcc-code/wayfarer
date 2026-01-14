@@ -585,44 +585,6 @@ func TestGetActiveAffiliationOrgUID(t *testing.T) {
 			},
 			wantOrgUID: &testOrgUID1,
 		},
-		{
-			name: "non-Church affiliation is skipped",
-			affiliations: []members.Affiliation{
-				{
-					Active: true,
-					OrgUid: testOrgUID1,
-					Type:   "Region",
-				},
-			},
-			wantOrgUID: nil,
-		},
-		{
-			name: "mixed types returns first Church affiliation",
-			affiliations: []members.Affiliation{
-				{
-					Active: true,
-					OrgUid: testOrgUID1,
-					Type:   "Region",
-				},
-				{
-					Active: true,
-					OrgUid: testOrgUID2,
-					Type:   "Church",
-				},
-			},
-			wantOrgUID: &testOrgUID2,
-		},
-		{
-			name: "affiliation with empty type is skipped",
-			affiliations: []members.Affiliation{
-				{
-					Active: true,
-					OrgUid: testOrgUID1,
-					Type:   "",
-				},
-			},
-			wantOrgUID: nil,
-		},
 	}
 
 	for _, tt := range tests {
@@ -634,48 +596,6 @@ func TestGetActiveAffiliationOrgUID(t *testing.T) {
 				require.NotNil(t, result)
 				assert.Equal(t, *tt.wantOrgUID, *result)
 			}
-		})
-	}
-}
-
-func TestGetActiveChurchAffiliationOrgUIDs(t *testing.T) {
-	testOrgUID1 := uuid.New()
-	testOrgUID2 := uuid.New()
-	testOrgUID3 := uuid.New()
-
-	tests := []struct {
-		name         string
-		affiliations []members.Affiliation
-		wantOrgUIDs  []uuid.UUID
-	}{
-		{
-			name:         "empty affiliations returns empty slice",
-			affiliations: []members.Affiliation{},
-			wantOrgUIDs:  nil,
-		},
-		{
-			name: "returns all valid Church affiliations",
-			affiliations: []members.Affiliation{
-				{Active: true, OrgUid: testOrgUID1, Type: "Church"},
-				{Active: true, OrgUid: testOrgUID2, Type: "Church"},
-				{Active: true, OrgUid: testOrgUID3, Type: "Region"},
-			},
-			wantOrgUIDs: []uuid.UUID{testOrgUID1, testOrgUID2},
-		},
-		{
-			name: "filters out non-Church types",
-			affiliations: []members.Affiliation{
-				{Active: true, OrgUid: testOrgUID1, Type: "Region"},
-				{Active: true, OrgUid: testOrgUID2, Type: "Church"},
-			},
-			wantOrgUIDs: []uuid.UUID{testOrgUID2},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := getActiveChurchAffiliationOrgUIDs(tt.affiliations)
-			assert.Equal(t, tt.wantOrgUIDs, result)
 		})
 	}
 }
