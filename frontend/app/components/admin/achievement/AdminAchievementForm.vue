@@ -155,11 +155,6 @@ watch(
 // Validation for type-specific fields
 const typeSpecificError = computed(() => {
   switch (selectedType.value) {
-    case 'CONTENT':
-      if (contentItems.value.length === 0) {
-        return 'Minst ett innholdselement er påkrevd'
-      }
-      break
     case 'STREAK':
       if (!streakId.value) {
         return 'En streak må velges'
