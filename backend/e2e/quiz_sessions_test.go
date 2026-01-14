@@ -105,6 +105,22 @@ func TestQuizSessions(t *testing.T) {
 		return result.CreateQuiz.ID
 	}
 
+	// Helper to publish a challenge
+	publishChallenge := func(t *testing.T, challengeID string) {
+		publishedTime := time.Now().Add(-1 * time.Hour).Format(time.RFC3339)
+		resp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation PublishChallenge($id: ID!, $publishedAt: DateTime!) {
+				publishChallenge(id: $id, publishedAt: $publishedAt) {
+					id
+				}
+			}
+		`, map[string]any{
+			"id":          challengeID,
+			"publishedAt": publishedTime,
+		})
+		require.False(t, resp.HasErrors(), "failed to publish challenge: %s", resp.ErrorMessage())
+	}
+
 	// Helper to add a question to quiz
 	addQuestion := func(t *testing.T, quizID string, questionText string) string {
 		resp := client.WithAuth(adminToken).MustExecute(t, `
@@ -1495,5 +1511,638 @@ func TestQuizSessions(t *testing.T) {
 		assert.True(t, queryWithSubmissionResult.QuizSession.UserHasAccess)
 		assert.NotNil(t, queryWithSubmissionResult.QuizSession.UserSubmission)
 		assert.NotEmpty(t, queryWithSubmissionResult.QuizSession.UserSubmission.ID)
+	})
+
+	// ==================== USER ACTIVE SESSION TESTS ====================
+
+	t.Run("userActiveSession returns nil when user has no access", func(t *testing.T) {
+		challengeID := createChallenge(t, "UserActiveSession No Access Challenge")
+		quizID := createQuiz(t, "UserActiveSession No Access Quiz", challengeID)
+		addQuestion(t, quizID, "Question?")
+
+		// Create session but don't grant access to user
+		createResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation CreateSession($input: CreateQuizSessionInput!) {
+				createQuizSession(input: $input) {
+					id
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"quizId": quizID,
+			},
+		})
+		require.False(t, createResp.HasErrors())
+
+		var createResult struct {
+			CreateQuizSession struct{ ID string } `json:"createQuizSession"`
+		}
+		require.NoError(t, createResp.UnmarshalData(&createResult))
+		sessionID := createResult.CreateQuizSession.ID
+
+		// Open session
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation OpenSession($id: ID!) {
+				openQuizSession(id: $id) { id }
+			}
+		`, map[string]any{"id": sessionID})
+
+		// Query quiz.userActiveSession as user (no access)
+		queryResp := client.WithAuth(userToken).MustExecute(t, `
+			query GetQuiz($id: ID!) {
+				quiz(id: $id) {
+					id
+					userActiveSession {
+						id
+						state
+					}
+				}
+			}
+		`, map[string]any{"id": quizID})
+		require.False(t, queryResp.HasErrors())
+
+		var queryResult struct {
+			Quiz struct {
+				ID                string `json:"id"`
+				UserActiveSession *struct {
+					ID    string `json:"id"`
+					State string `json:"state"`
+				} `json:"userActiveSession"`
+			} `json:"quiz"`
+		}
+		require.NoError(t, queryResp.UnmarshalData(&queryResult))
+		assert.Nil(t, queryResult.Quiz.UserActiveSession)
+	})
+
+	t.Run("userActiveSession returns nil when session is not OPEN", func(t *testing.T) {
+		challengeID := createChallenge(t, "UserActiveSession Not Open Challenge")
+		quizID := createQuiz(t, "UserActiveSession Not Open Quiz", challengeID)
+		addQuestion(t, quizID, "Question?")
+
+		// Create session and grant access but keep in DRAFT
+		createResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation CreateSession($input: CreateQuizSessionInput!) {
+				createQuizSession(input: $input) {
+					id
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"quizId": quizID,
+			},
+		})
+		require.False(t, createResp.HasErrors())
+
+		var createResult struct {
+			CreateQuizSession struct{ ID string } `json:"createQuizSession"`
+		}
+		require.NoError(t, createResp.UnmarshalData(&createResult))
+		sessionID := createResult.CreateQuizSession.ID
+
+		// Grant access but don't open
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation GrantAccess($input: GrantQuizSessionAccessInput!) {
+				grantQuizSessionAccess(input: $input)
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"sessionId": sessionID,
+				"userIds":   []string{userID},
+			},
+		})
+
+		// Query quiz.userActiveSession as user
+		queryResp := client.WithAuth(userToken).MustExecute(t, `
+			query GetQuiz($id: ID!) {
+				quiz(id: $id) {
+					id
+					userActiveSession {
+						id
+						state
+					}
+				}
+			}
+		`, map[string]any{"id": quizID})
+		require.False(t, queryResp.HasErrors())
+
+		var queryResult struct {
+			Quiz struct {
+				ID                string `json:"id"`
+				UserActiveSession *struct {
+					ID    string `json:"id"`
+					State string `json:"state"`
+				} `json:"userActiveSession"`
+			} `json:"quiz"`
+		}
+		require.NoError(t, queryResp.UnmarshalData(&queryResult))
+		assert.Nil(t, queryResult.Quiz.UserActiveSession)
+	})
+
+	t.Run("userActiveSession returns session when user has access to OPEN session", func(t *testing.T) {
+		challengeID := createChallenge(t, "UserActiveSession Open Challenge")
+		quizID := createQuiz(t, "UserActiveSession Open Quiz", challengeID)
+		addQuestion(t, quizID, "Question?")
+
+		// Create session
+		createResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation CreateSession($input: CreateQuizSessionInput!) {
+				createQuizSession(input: $input) {
+					id
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"quizId": quizID,
+			},
+		})
+		require.False(t, createResp.HasErrors())
+
+		var createResult struct {
+			CreateQuizSession struct{ ID string } `json:"createQuizSession"`
+		}
+		require.NoError(t, createResp.UnmarshalData(&createResult))
+		sessionID := createResult.CreateQuizSession.ID
+
+		// Grant access
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation GrantAccess($input: GrantQuizSessionAccessInput!) {
+				grantQuizSessionAccess(input: $input)
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"sessionId": sessionID,
+				"userIds":   []string{userID},
+			},
+		})
+
+		// Open session
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation OpenSession($id: ID!) {
+				openQuizSession(id: $id) { id }
+			}
+		`, map[string]any{"id": sessionID})
+
+		// Query quiz.userActiveSession as user
+		queryResp := client.WithAuth(userToken).MustExecute(t, `
+			query GetQuiz($id: ID!) {
+				quiz(id: $id) {
+					id
+					userActiveSession {
+						id
+						state
+					}
+				}
+			}
+		`, map[string]any{"id": quizID})
+		require.False(t, queryResp.HasErrors())
+
+		var queryResult struct {
+			Quiz struct {
+				ID                string `json:"id"`
+				UserActiveSession *struct {
+					ID    string `json:"id"`
+					State string `json:"state"`
+				} `json:"userActiveSession"`
+			} `json:"quiz"`
+		}
+		require.NoError(t, queryResp.UnmarshalData(&queryResult))
+		assert.NotNil(t, queryResult.Quiz.UserActiveSession)
+		assert.Equal(t, sessionID, queryResult.Quiz.UserActiveSession.ID)
+		assert.Equal(t, "OPEN", queryResult.Quiz.UserActiveSession.State)
+	})
+
+	// ==================== CHALLENGE VISIBILITY TESTS ====================
+
+	t.Run("non-admin user cannot see quiz challenge without session access", func(t *testing.T) {
+		challengeID := createChallenge(t, "Visibility No Access Challenge")
+		publishChallenge(t, challengeID)
+		quizID := createQuiz(t, "Visibility No Access Quiz", challengeID)
+		addQuestion(t, quizID, "Question?")
+
+		// Create session but don't grant access
+		createResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation CreateSession($input: CreateQuizSessionInput!) {
+				createQuizSession(input: $input) {
+					id
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"quizId": quizID,
+			},
+		})
+		require.False(t, createResp.HasErrors())
+
+		var createResult struct {
+			CreateQuizSession struct{ ID string } `json:"createQuizSession"`
+		}
+		require.NoError(t, createResp.UnmarshalData(&createResult))
+		sessionID := createResult.CreateQuizSession.ID
+
+		// Open session
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation OpenSession($id: ID!) {
+				openQuizSession(id: $id) { id }
+			}
+		`, map[string]any{"id": sessionID})
+
+		// Query event.challenges as non-admin user
+		queryResp := client.WithAuth(userToken).MustExecute(t, `
+			query GetEventChallenges($id: ID!) {
+				event(id: $id) {
+					challenges {
+						id
+						name
+					}
+				}
+			}
+		`, map[string]any{"id": eventID})
+		require.False(t, queryResp.HasErrors())
+
+		var queryResult struct {
+			Event struct {
+				Challenges []struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				} `json:"challenges"`
+			} `json:"event"`
+		}
+		require.NoError(t, queryResp.UnmarshalData(&queryResult))
+
+		// Challenge should NOT be in the list
+		for _, ch := range queryResult.Event.Challenges {
+			assert.NotEqual(t, challengeID, ch.ID, "quiz challenge should not be visible without session access")
+		}
+	})
+
+	t.Run("non-admin user can see quiz challenge with session access", func(t *testing.T) {
+		challengeID := createChallenge(t, "Visibility With Access Challenge")
+		publishChallenge(t, challengeID)
+		quizID := createQuiz(t, "Visibility With Access Quiz", challengeID)
+		addQuestion(t, quizID, "Question?")
+
+		// Create session
+		createResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation CreateSession($input: CreateQuizSessionInput!) {
+				createQuizSession(input: $input) {
+					id
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"quizId": quizID,
+			},
+		})
+		require.False(t, createResp.HasErrors())
+
+		var createResult struct {
+			CreateQuizSession struct{ ID string } `json:"createQuizSession"`
+		}
+		require.NoError(t, createResp.UnmarshalData(&createResult))
+		sessionID := createResult.CreateQuizSession.ID
+
+		// Grant access
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation GrantAccess($input: GrantQuizSessionAccessInput!) {
+				grantQuizSessionAccess(input: $input)
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"sessionId": sessionID,
+				"userIds":   []string{userID},
+			},
+		})
+
+		// Open session
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation OpenSession($id: ID!) {
+				openQuizSession(id: $id) { id }
+			}
+		`, map[string]any{"id": sessionID})
+
+		// Query event.challenges as non-admin user
+		queryResp := client.WithAuth(userToken).MustExecute(t, `
+			query GetEventChallenges($id: ID!) {
+				event(id: $id) {
+					challenges {
+						id
+						name
+					}
+				}
+			}
+		`, map[string]any{"id": eventID})
+		require.False(t, queryResp.HasErrors())
+
+		var queryResult struct {
+			Event struct {
+				Challenges []struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				} `json:"challenges"`
+			} `json:"event"`
+		}
+		require.NoError(t, queryResp.UnmarshalData(&queryResult))
+
+		// Challenge SHOULD be in the list
+		found := false
+		for _, ch := range queryResult.Event.Challenges {
+			if ch.ID == challengeID {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "quiz challenge should be visible with session access")
+	})
+
+	t.Run("admin user can see quiz challenge without session access", func(t *testing.T) {
+		challengeID := createChallenge(t, "Visibility Admin Challenge")
+		publishChallenge(t, challengeID)
+		quizID := createQuiz(t, "Visibility Admin Quiz", challengeID)
+		addQuestion(t, quizID, "Question?")
+
+		// Create session but don't grant access to anyone
+		createResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation CreateSession($input: CreateQuizSessionInput!) {
+				createQuizSession(input: $input) {
+					id
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"quizId": quizID,
+			},
+		})
+		require.False(t, createResp.HasErrors())
+
+		var createResult struct {
+			CreateQuizSession struct{ ID string } `json:"createQuizSession"`
+		}
+		require.NoError(t, createResp.UnmarshalData(&createResult))
+		sessionID := createResult.CreateQuizSession.ID
+
+		// Open session
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation OpenSession($id: ID!) {
+				openQuizSession(id: $id) { id }
+			}
+		`, map[string]any{"id": sessionID})
+
+		// Query event.challenges as admin user
+		queryResp := client.WithAuth(adminToken).MustExecute(t, `
+			query GetEventChallenges($id: ID!) {
+				event(id: $id) {
+					challenges {
+						id
+						name
+					}
+				}
+			}
+		`, map[string]any{"id": eventID})
+		require.False(t, queryResp.HasErrors())
+
+		var queryResult struct {
+			Event struct {
+				Challenges []struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				} `json:"challenges"`
+			} `json:"event"`
+		}
+		require.NoError(t, queryResp.UnmarshalData(&queryResult))
+
+		// Challenge SHOULD be in the list for admin
+		found := false
+		for _, ch := range queryResult.Event.Challenges {
+			if ch.ID == challengeID {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "admin should see quiz challenge without session access")
+	})
+
+	t.Run("project challenges filters quiz challenges by session access", func(t *testing.T) {
+		challengeID := createChallenge(t, "Project Visibility Challenge")
+		publishChallenge(t, challengeID)
+		quizID := createQuiz(t, "Project Visibility Quiz", challengeID)
+		addQuestion(t, quizID, "Question?")
+
+		// Create session but don't grant access
+		createResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation CreateSession($input: CreateQuizSessionInput!) {
+				createQuizSession(input: $input) {
+					id
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"quizId": quizID,
+			},
+		})
+		require.False(t, createResp.HasErrors())
+
+		var createResult struct {
+			CreateQuizSession struct{ ID string } `json:"createQuizSession"`
+		}
+		require.NoError(t, createResp.UnmarshalData(&createResult))
+		sessionID := createResult.CreateQuizSession.ID
+
+		// Open session
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation OpenSession($id: ID!) {
+				openQuizSession(id: $id) { id }
+			}
+		`, map[string]any{"id": sessionID})
+
+		// Query project.challenges as non-admin user - should NOT see challenge
+		queryResp1 := client.WithAuth(userToken).MustExecute(t, `
+			query GetProjectChallenges($id: ID!) {
+				project(id: $id) {
+					challenges {
+						id
+						name
+					}
+				}
+			}
+		`, map[string]any{"id": projectID})
+		require.False(t, queryResp1.HasErrors())
+
+		var queryResult1 struct {
+			Project struct {
+				Challenges []struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				} `json:"challenges"`
+			} `json:"project"`
+		}
+		require.NoError(t, queryResp1.UnmarshalData(&queryResult1))
+
+		found := false
+		for _, ch := range queryResult1.Project.Challenges {
+			if ch.ID == challengeID {
+				found = true
+				break
+			}
+		}
+		assert.False(t, found, "quiz challenge should not be visible without session access")
+
+		// Grant access
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation GrantAccess($input: GrantQuizSessionAccessInput!) {
+				grantQuizSessionAccess(input: $input)
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"sessionId": sessionID,
+				"userIds":   []string{userID},
+			},
+		})
+
+		// Query again - should now see challenge
+		queryResp2 := client.WithAuth(userToken).MustExecute(t, `
+			query GetProjectChallenges($id: ID!) {
+				project(id: $id) {
+					challenges {
+						id
+						name
+					}
+				}
+			}
+		`, map[string]any{"id": projectID})
+		require.False(t, queryResp2.HasErrors())
+
+		var queryResult2 struct {
+			Project struct {
+				Challenges []struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				} `json:"challenges"`
+			} `json:"project"`
+		}
+		require.NoError(t, queryResp2.UnmarshalData(&queryResult2))
+
+		found = false
+		for _, ch := range queryResult2.Project.Challenges {
+			if ch.ID == challengeID {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "quiz challenge should be visible after granting session access")
+	})
+
+	// ==================== DIRECT CHALLENGE QUERY TESTS ====================
+
+	t.Run("cannot load quiz challenge directly without session access", func(t *testing.T) {
+		challengeID := createChallenge(t, "Direct Query No Access Challenge")
+		publishChallenge(t, challengeID)
+		quizID := createQuiz(t, "Direct Query No Access Quiz", challengeID)
+		addQuestion(t, quizID, "Question?")
+
+		// Create session but don't grant access
+		createResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation CreateSession($input: CreateQuizSessionInput!) {
+				createQuizSession(input: $input) {
+					id
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"quizId": quizID,
+			},
+		})
+		require.False(t, createResp.HasErrors())
+
+		var createResult struct {
+			CreateQuizSession struct{ ID string } `json:"createQuizSession"`
+		}
+		require.NoError(t, createResp.UnmarshalData(&createResult))
+		sessionID := createResult.CreateQuizSession.ID
+
+		// Open session
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation OpenSession($id: ID!) {
+				openQuizSession(id: $id) { id }
+			}
+		`, map[string]any{"id": sessionID})
+
+		// Try to query challenge directly as non-admin user
+		queryResp := client.WithAuth(userToken).MustExecute(t, `
+			query GetChallenge($id: ID!) {
+				challenge(id: $id) {
+					id
+					name
+				}
+			}
+		`, map[string]any{"id": challengeID})
+
+		require.True(t, queryResp.HasErrors())
+		assert.Contains(t, queryResp.ErrorMessage(), "not found")
+	})
+
+	t.Run("can load quiz challenge directly with session access", func(t *testing.T) {
+		challengeID := createChallenge(t, "Direct Query With Access Challenge")
+		publishChallenge(t, challengeID)
+		quizID := createQuiz(t, "Direct Query With Access Quiz", challengeID)
+		addQuestion(t, quizID, "Question?")
+
+		// Create session
+		createResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation CreateSession($input: CreateQuizSessionInput!) {
+				createQuizSession(input: $input) {
+					id
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"quizId": quizID,
+			},
+		})
+		require.False(t, createResp.HasErrors())
+
+		var createResult struct {
+			CreateQuizSession struct{ ID string } `json:"createQuizSession"`
+		}
+		require.NoError(t, createResp.UnmarshalData(&createResult))
+		sessionID := createResult.CreateQuizSession.ID
+
+		// Grant access
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation GrantAccess($input: GrantQuizSessionAccessInput!) {
+				grantQuizSessionAccess(input: $input)
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"sessionId": sessionID,
+				"userIds":   []string{userID},
+			},
+		})
+
+		// Open session
+		client.WithAuth(adminToken).MustExecute(t, `
+			mutation OpenSession($id: ID!) {
+				openQuizSession(id: $id) { id }
+			}
+		`, map[string]any{"id": sessionID})
+
+		// Query challenge directly as non-admin user
+		queryResp := client.WithAuth(userToken).MustExecute(t, `
+			query GetChallenge($id: ID!) {
+				challenge(id: $id) {
+					id
+					name
+				}
+			}
+		`, map[string]any{"id": challengeID})
+		require.False(t, queryResp.HasErrors(), "failed to get challenge: %s", queryResp.ErrorMessage())
+
+		var queryResult struct {
+			Challenge struct {
+				ID   string `json:"id"`
+				Name string `json:"name"`
+			} `json:"challenge"`
+		}
+		require.NoError(t, queryResp.UnmarshalData(&queryResult))
+		assert.Equal(t, challengeID, queryResult.Challenge.ID)
 	})
 }
