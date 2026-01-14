@@ -124,5 +124,110 @@
     "updateAvailableTitle": "Ein Update ist verfügbar",
     "updateAvailableButton": "Jetzt aktualisieren"
   },
-  "goToHiddenTreasures": "Zum Bibelstudium"
+  "goToHiddenTreasures": "Zum Bibelstudium",
+  "admin": {
+    "common": {
+      "back": "Zurück",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "create": "Erstellen",
+      "delete": "Löschen",
+      "deleteAll": "Alle löschen",
+      "copyLink": "Link zur Admin-Seite kopieren",
+      "linkCopied": "Link kopiert"
+    },
+    "breadcrumb": {
+      "home": "Startseite"
+    },
+    "churchHome": {
+      "administrators": "Administratoren",
+      "unitsAndPeople": "Units und Personen",
+      "gameNights": "Game Nights",
+      "comingSoon": "Kommt bald"
+    },
+    "admins": {
+      "searchPlaceholder": "Such nach Admins...",
+      "addPlaceholder": "Administrator hinzufügen...",
+      "you": "Du",
+      "noAdminsFound": "Keine Admins gefunden",
+      "confirmRemove": {
+        "title": "Administrator entfernen?",
+        "message": "Bist du sicher, dass du {name} als Administrator löschen willst?",
+        "confirm": "Entfernen"
+      },
+      "success": {
+        "added": "Admin hinzugefügt",
+        "removed": "Admin entfernt"
+      },
+      "errors": {
+        "addFailed": "Konnte den Admin nicht hinzufügen",
+        "removeFailed": "Konnte den Administrator nicht entfernen"
+      }
+    },
+    "units": {
+      "title": "Units",
+      "people": "Personen",
+      "filter": {
+        "title": "Filter",
+        "all": "Alle",
+        "notInUnit": "Nicht in einer Unit",
+        "inUnit": "In einer Unit",
+        "showO36": "Personen über 36 anzeigen",
+        "showO36Description": "Personen über 36 Jahren werden nicht in den Bestenlisten angezeigt und nehmen nicht am Jugendwettbewerb teil"
+      },
+      "searchPlaceholder": "Such nach Units oder Personen...",
+      "searchPeoplePlaceholder": "Personen suchen...",
+      "expandAll": "Alle Units ausklappen",
+      "createOneUnit": "Eine Unit erstellen",
+      "createMultipleUnits": "Mehrere Units erstellen",
+      "namePlaceholder": "Name der Unit (optional)",
+      "selectAll": "Alle auswählen",
+      "noActiveProject": "Kein aktiver Wettbewerb",
+      "noUnitsFound": "Keine Units gefunden",
+      "noPeopleFound": "Keine Personen gefunden",
+      "years": "{years} Jahr",
+      "selectedCount": "{count}Unit ausgewählt | {count} Units ausgewählt",
+      "deleteSelected": "Auswahl löschen",
+      "bulkCreate": {
+        "countLabel": "Anzahl Units",
+        "autoGenerateInfo": "Die Namen werden automatisch generiert"
+      },
+      "confirmDelete": {
+        "title": "Unit löschen?",
+        "message": "Bist du sicher, dass du {name} löschen willst? Alle Mitglieder werden aus der Unit entfernt."
+      },
+      "confirmBulkDelete": {
+        "title": "Mehrere Units löschen?",
+        "message": "Bist du sicher, dass du {count} Units löschen möchtest? Alle Mitglieder werden aus diesen Units entfernt."
+      },
+      "success": {
+        "created": "Unit erstellt",
+        "bulkCreated": "{count} Units erstellt",
+        "deleted": "Unit gelöscht",
+        "bulkDeleted": "{count} Units gelöscht"
+      },
+      "errors": {
+        "createFailed": "Unit konnte nicht erstellt werden",
+        "bulkCreateFailed": "Units konnten nicht erstellt werden",
+        "addMemberFailed": "Mitglied konnte nicht hinzugefügt werden",
+        "removeMemberFailed": "Mitglied konnte nicht entfernt werden",
+        "assignLeaderFailed": "Leiter konnte nicht gesetzt werden",
+        "deleteFailed": "Unit konnte nicht gelöscht werden",
+        "bulkDeleteFailed": "Units konnten nicht gelöscht werden",
+        "renameFailed": "Name der Unit konnte nicht geändert werden",
+        "exclusionToggleFailed": "Sichtbarkeit in der Bestenliste konnte nicht geändert werden"
+      },
+      "ageWarning": "Das Durchschnittsalter dieser Unit liegt über 36 Jahren. Daher wird sie nicht in den Bestenlisten angezeigt und nimmt nicht am Wettbewerb für Jugendliche teil. Falls das nicht stimmt und sie am Wettbewerb für Jugendliche teilnehmen soll, gib uns bitte Bescheid unter {email}"
+    },
+    "unit": {
+      "noLeaderSelected": "Kein Leiter ausgewählt",
+      "members": "{count} Person | {count} Personen",
+      "makeLead": "Als Leiter festlegen",
+      "dragPeopleHere": "Keine Mitglieder – zieh eine Person hierher",
+      "addPersonPlaceholder": "Person hinzufügen...",
+      "excludeFromLeaderboard": "Aus Bestenliste ausschließen",
+      "excludeFromLeaderboardTooltip": "Wenn aktiviert, wird diese Unit nicht in der Bestenliste angezeigt",
+      "excludedFromLeaderboard": "Aus Bestenlisten ausgeblendet"
+    }
+  }
 }
