@@ -20,6 +20,7 @@ gql(`
       achievedAt
       points
       hidden
+      awardableFrom
       ... on ContentAchievement {
         items {
           id
@@ -117,6 +118,7 @@ const initialData = computed(() => {
     imageCompleted: a.imageCompleted,
     points: a.points,
     hidden: a.hidden,
+    awardableFrom: toLocalDatetimeLocal(a.awardableFrom),
   }
 
   // Add type-specific fields
@@ -168,6 +170,7 @@ async function handleSubmit(formData: AchievementFormData) {
     imageCompleted: formData.imageCompleted,
     points: formData.points,
     hidden: formData.hidden,
+    awardableFrom: toISOString(formData.awardableFrom),
   }
 
   switch (formData.achievementType) {
@@ -179,6 +182,7 @@ async function handleSubmit(formData: AchievementFormData) {
       break
 
     case 'CONTENT':
+      console.log(baseInput)
       response = await updateContent({
         id: route.params.achievementId,
         input: {

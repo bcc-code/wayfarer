@@ -323,6 +323,7 @@ type Project struct {
 	ColorDarkShadowBlank        string             `json:"color_dark_shadow_blank"`
 	ColorDarkBorderDefault      string             `json:"color_dark_border_default"`
 	Rules                       *string            `json:"rules"`
+	BannerUrl                   *string            `json:"banner_url"`
 }
 
 type ProjectTranslation struct {

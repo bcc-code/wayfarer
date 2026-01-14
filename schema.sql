@@ -80,6 +80,7 @@ CREATE TABLE projects (
     start_date TIMESTAMPTZ NOT NULL,
     end_date TIMESTAMPTZ NOT NULL,
     logo_url VARCHAR(500),
+    banner_url VARCHAR(500),
     -- Light mode colors
     color_light_accent VARCHAR(50) NOT NULL,
     color_light_accent_contrast VARCHAR(50) NOT NULL,

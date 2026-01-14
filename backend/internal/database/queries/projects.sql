@@ -7,6 +7,7 @@ SELECT
     p.start_date,
     p.end_date,
     p.logo_url,
+    p.banner_url,
     p.color_light_accent,
     p.color_light_accent_contrast,
     p.color_light_on_accent,
@@ -40,7 +41,7 @@ WHERE up.user_id = ANY(@user_ids::text[])
 ORDER BY up.user_id, p.start_date DESC;
 
 -- name: GetProjectByID :one
-SELECT id, name, description, rules, start_date, end_date, logo_url,
+SELECT id, name, description, rules, start_date, end_date, logo_url, banner_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -54,7 +55,7 @@ FROM projects
 WHERE id = @id;
 
 -- name: GetProjectsByIDs :many
-SELECT id, name, description, rules, start_date, end_date, logo_url,
+SELECT id, name, description, rules, start_date, end_date, logo_url, banner_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -68,7 +69,7 @@ FROM projects
 WHERE id = ANY(@ids::text[]);
 
 -- name: GetAllProjects :many
-SELECT id, name, description, rules, start_date, end_date, logo_url,
+SELECT id, name, description, rules, start_date, end_date, logo_url, banner_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -82,7 +83,7 @@ FROM projects
 ORDER BY start_date DESC;
 
 -- name: GetProjectsFilteredCursor :many
-SELECT id, name, description, rules, start_date, end_date, logo_url,
+SELECT id, name, description, rules, start_date, end_date, logo_url, banner_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -127,6 +128,7 @@ INSERT INTO projects (
     start_date,
     end_date,
     logo_url,
+    banner_url,
     color_light_accent,
     color_light_accent_contrast,
     color_light_on_accent,
@@ -161,6 +163,7 @@ VALUES (
     @startdate::timestamptz,
     @enddate::timestamptz,
     sqlc.narg('logourl')::text,
+    sqlc.narg('bannerurl')::text,
     @colorlightaccent::text,
     @colorlightaccentcontrast::text,
     @colorlightonaccent::text,
@@ -187,7 +190,7 @@ VALUES (
     @colordarkborderdefault::text,
     @rounding::int
 )
-RETURNING id, name, description, rules, start_date, end_date, logo_url,
+RETURNING id, name, description, rules, start_date, end_date, logo_url, banner_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -206,7 +209,14 @@ SET
     rules = COALESCE(sqlc.narg('rules')::text, rules),
     start_date = COALESCE(sqlc.narg('startdate')::timestamptz, start_date),
     end_date = COALESCE(sqlc.narg('enddate')::timestamptz, end_date),
-    logo_url = COALESCE(sqlc.narg('logourl')::text, logo_url),
+    logo_url = CASE
+        WHEN sqlc.narg('logourl')::text = '' THEN NULL
+        ELSE COALESCE(sqlc.narg('logourl')::text, logo_url)
+    END,
+    banner_url = CASE
+        WHEN sqlc.narg('bannerurl')::text = '' THEN NULL
+        ELSE COALESCE(sqlc.narg('bannerurl')::text, banner_url)
+    END,
     color_light_accent = COALESCE(sqlc.narg('colorlightaccent')::text, color_light_accent),
     color_light_accent_contrast = COALESCE(sqlc.narg('colorlightaccentcontrast')::text, color_light_accent_contrast),
     color_light_on_accent = COALESCE(sqlc.narg('colorlightonaccent')::text, color_light_on_accent),
@@ -234,7 +244,7 @@ SET
     rounding = COALESCE(sqlc.narg('rounding')::int, rounding),
     updated_at = now()
 WHERE id = @id::text
-RETURNING id, name, description, rules, start_date, end_date, logo_url,
+RETURNING id, name, description, rules, start_date, end_date, logo_url, banner_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,
@@ -255,7 +265,7 @@ SET
     archived = true,
     updated_at = now()
 WHERE id = @id::text
-RETURNING id, name, description, rules, start_date, end_date, logo_url,
+RETURNING id, name, description, rules, start_date, end_date, logo_url, banner_url,
     color_light_accent, color_light_accent_contrast, color_light_on_accent,
     color_light_background_default, color_light_background_raised, color_light_background_indent,
     color_light_text_default, color_light_text_muted, color_light_text_hint,

@@ -111,6 +111,7 @@ type ComplexityRoot struct {
 	}
 
 	Branding struct {
+		Banner   func(childComplexity int) int
 		Colors   func(childComplexity int) int
 		Logo     func(childComplexity int) int
 		Rounding func(childComplexity int) int
@@ -1548,6 +1549,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AgeRange.Min(childComplexity), true
 
+	case "Branding.banner":
+		if e.complexity.Branding.Banner == nil {
+			break
+		}
+
+		return e.complexity.Branding.Banner(childComplexity), true
 	case "Branding.colors":
 		if e.complexity.Branding.Colors == nil {
 			break
@@ -6804,6 +6811,7 @@ type ContentItem {
 
 type Branding {
     logo: String
+    banner: String
     colors: Colors!
     rounding: Int! # border-radius in pixels
 }
@@ -7365,6 +7373,7 @@ input AgeRangeInput {
 
 input BrandingInput {
     logo: String
+    banner: String
     colors: ColorsInput!
     rounding: Int!
 }
@@ -11846,6 +11855,35 @@ func (ec *executionContext) _Branding_logo(ctx context.Context, field graphql.Co
 }
 
 func (ec *executionContext) fieldContext_Branding_logo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Branding",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Branding_banner(ctx context.Context, field graphql.CollectedField, obj *model.Branding) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Branding_banner,
+		func(ctx context.Context) (any, error) {
+			return obj.Banner, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Branding_banner(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Branding",
 		Field:      field,
@@ -27011,6 +27049,8 @@ func (ec *executionContext) fieldContext_Project_branding(_ context.Context, fie
 			switch field.Name {
 			case "logo":
 				return ec.fieldContext_Branding_logo(ctx, field)
+			case "banner":
+				return ec.fieldContext_Branding_banner(ctx, field)
 			case "colors":
 				return ec.fieldContext_Branding_colors(ctx, field)
 			case "rounding":
@@ -42374,7 +42414,7 @@ func (ec *executionContext) unmarshalInputBrandingInput(ctx context.Context, obj
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"logo", "colors", "rounding"}
+	fieldsInOrder := [...]string{"logo", "banner", "colors", "rounding"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -42388,6 +42428,13 @@ func (ec *executionContext) unmarshalInputBrandingInput(ctx context.Context, obj
 				return it, err
 			}
 			it.Logo = data
+		case "banner":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("banner"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Banner = data
 		case "colors":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("colors"))
 			data, err := ec.unmarshalNColorsInput2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColorsInput(ctx, v)
@@ -46675,6 +46722,8 @@ func (ec *executionContext) _Branding(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = graphql.MarshalString("Branding")
 		case "logo":
 			out.Values[i] = ec._Branding_logo(ctx, field, obj)
+		case "banner":
+			out.Values[i] = ec._Branding_banner(ctx, field, obj)
 		case "colors":
 			out.Values[i] = ec._Branding_colors(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

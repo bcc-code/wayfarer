@@ -117,12 +117,14 @@ type AssignRoleInput struct {
 
 type Branding struct {
 	Logo     *string `json:"logo,omitempty"`
+	Banner   *string `json:"banner,omitempty"`
 	Colors   *Colors `json:"colors"`
 	Rounding int     `json:"rounding"`
 }
 
 type BrandingInput struct {
 	Logo     *string      `json:"logo,omitempty"`
+	Banner   *string      `json:"banner,omitempty"`
 	Colors   *ColorsInput `json:"colors"`
 	Rounding int          `json:"rounding"`
 }

@@ -43,7 +43,8 @@ const schema = z.object({
   startDate: z.string().nonempty({ error: 'Start date is required' }),
   endDate: z.string().nonempty({ error: 'End date is required' }),
   branding: z.object({
-    logo: z.string().optional(),
+    logo: z.string().nullish(),
+    banner: z.string().nullish(),
     colors: z.object({
       light: z.object({
         accent: z.string(),
@@ -86,6 +87,7 @@ const state = reactive<Schema>({
   endDate: '',
   branding: {
     logo: undefined,
+    banner: undefined,
     rounding: 0,
     colors: {
       light: {
@@ -130,6 +132,7 @@ watch(
       state.startDate = d.project.startDate
       state.endDate = d.project.endDate
       state.branding.logo = d.project.branding.logo ?? undefined
+      state.branding.banner = d.project.branding.banner ?? undefined
       state.branding.rounding = d.project.branding.rounding
       state.branding.colors = d.project.branding.colors
       state.rules = d.project.rules?.markdown
@@ -146,7 +149,17 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
     return
   }
 
-  executeMutation({ id: route.params.projectId, input: event.data }).then(
+  // Convert nullish logo/banner to empty string so backend can clear them
+  const input = {
+    ...event.data,
+    branding: {
+      ...event.data.branding,
+      logo: event.data.branding.logo ?? '',
+      banner: event.data.branding.banner ?? '',
+    },
+  }
+
+  executeMutation({ id: route.params.projectId, input }).then(
     (response) => {
       if (response.error) {
         toast.add({
@@ -202,6 +215,9 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
       >
         <UFormField name="branding.logo" label="Logo" hint="(valgfritt)">
           <AdminFileUpload v-model="state.branding.logo" />
+        </UFormField>
+        <UFormField name="branding.banner" label="Banner" hint="(valgfritt)">
+          <AdminFileUpload v-model="state.branding.banner" />
         </UFormField>
         <UFormField name="name" label="Navn">
           <UInput v-model="state.name" size="xl" required class="w-full" />
