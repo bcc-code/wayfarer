@@ -1,3 +1,5 @@
+import dayjs from 'dayjs'
+
 export function calculateDuration(startDate: string, endDate: string) {
   const start = new Date(startDate)
   const end = new Date(endDate)
@@ -73,4 +75,24 @@ export function formatDateWithTimezone(
   const timezoneStr = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`
 
   return `${y}-${m}-${d}T${hours}:${minutes}:${seconds}${timezoneStr}`
+}
+
+/**
+ * Convert an ISO datetime string to local datetime-local format for HTML inputs.
+ * Used in admin forms to display datetime values in the user's local timezone.
+ */
+export function toLocalDatetimeLocal(
+  isoString: string | null | undefined,
+): string | undefined {
+  if (!isoString) return undefined
+  return dayjs(isoString).format('YYYY-MM-DDTHH:mm')
+}
+
+/**
+ * Convert a datetime-local value (local time) to ISO string for sending to API.
+ * Parses the input as local time and returns UTC ISO format.
+ */
+export function toISOString(datetimeLocal: string | undefined): string | null {
+  if (!datetimeLocal) return null
+  return dayjs(datetimeLocal).toISOString()
 }

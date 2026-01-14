@@ -25,6 +25,7 @@ export type Scalars = {
 
 export type Achievement = {
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
+  awardableFrom?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -260,6 +261,7 @@ export type ConsentStatus = {
 export type ContentAchievement = Achievement & {
   __typename?: 'ContentAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
+  awardableFrom?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   completedItemCount: Scalars['Int']['output'];
   descriptionCompleted: Scalars['String']['output'];
@@ -325,6 +327,7 @@ export type CreateContentAchievementFromExternalContentInput = {
 };
 
 export type CreateContentAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   descriptionCompleted: Scalars['String']['input'];
   descriptionPending: Scalars['String']['input'];
@@ -415,6 +418,7 @@ export type CreateScoreAdjustmentInput = {
 };
 
 export type CreateSimpleAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   descriptionCompleted: Scalars['String']['input'];
   descriptionPending: Scalars['String']['input'];
@@ -429,6 +433,7 @@ export type CreateSimpleAchievementInput = {
 };
 
 export type CreateStreakAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   descriptionCompleted: Scalars['String']['input'];
   descriptionPending: Scalars['String']['input'];
@@ -1923,6 +1928,7 @@ export type Quiz = {
 export type QuizAchievement = Achievement & {
   __typename?: 'QuizAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
+  awardableFrom?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -2159,6 +2165,7 @@ export type SetNotificationPreferenceInput = {
 export type SimpleAchievement = Achievement & {
   __typename?: 'SimpleAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
+  awardableFrom?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -2212,6 +2219,7 @@ export type StreakListenedDaysArgs = {
 export type StreakAchievement = Achievement & {
   __typename?: 'StreakAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
+  awardableFrom?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -2355,6 +2363,7 @@ export type TeamMember = {
 };
 
 export type UpdateAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   descriptionCompleted?: InputMaybe<Scalars['String']['input']>;
   descriptionPending?: InputMaybe<Scalars['String']['input']>;
@@ -2389,6 +2398,7 @@ export type UpdateChurchInput = {
 };
 
 export type UpdateContentAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   descriptionCompleted?: InputMaybe<Scalars['String']['input']>;
   descriptionPending?: InputMaybe<Scalars['String']['input']>;
@@ -2444,6 +2454,7 @@ export type UpdateQuizQuestionInput = {
 };
 
 export type UpdateStreakAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   descriptionCompleted?: InputMaybe<Scalars['String']['input']>;
   descriptionPending?: InputMaybe<Scalars['String']['input']>;
@@ -3301,10 +3312,10 @@ export type AdminProjectAchievementPageQueryVariables = Exact<{
 
 
 export type AdminProjectAchievementPageQuery = { __typename?: 'Query', achievement:
-    | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, items: Array<{ __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, planId: string, taskId: string, contentId?: string | null, contentType: ExternalContentType, publishedAt?: any | null, source: string, syncedAt: any, createdAt: any, updatedAt: any, title?: string | null, translations: Array<{ __typename?: 'ExternalContentTranslation', languageCode: string, title?: string | null }> } }>, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename: 'QuizAchievement', minScorePercentage?: number | null, requireCompletion: boolean, id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, quiz: { __typename?: 'Quiz', id: string, name: string }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename: 'StreakAchievement', neededStreak: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, streak: { __typename?: 'Streak', id: string, name: string, description: string }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, items: Array<{ __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, planId: string, taskId: string, contentId?: string | null, contentType: ExternalContentType, publishedAt?: any | null, source: string, syncedAt: any, createdAt: any, updatedAt: any, title?: string | null, translations: Array<{ __typename?: 'ExternalContentTranslation', languageCode: string, title?: string | null }> } }>, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'QuizAchievement', minScorePercentage?: number | null, requireCompletion: boolean, id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'StreakAchievement', neededStreak: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, streak: { __typename?: 'Streak', id: string, name: string, description: string }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
    };
 
 export type AdminProjectAchievementsNewPageQueryVariables = Exact<{
@@ -4899,6 +4910,7 @@ export const AdminProjectAchievementPageDocument = gql`
     achievedAt
     points
     hidden
+    awardableFrom
     ... on ContentAchievement {
       items {
         id

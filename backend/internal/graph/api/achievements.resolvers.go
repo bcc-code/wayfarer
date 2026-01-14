@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -20,99 +19,6 @@ import (
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
-
-// isAchievementAwardable checks if an achievement can be awarded based on awardable_from timestamp.
-// Returns nil if awardable, error if not.
-func isAchievementAwardable(awardableFrom *scalars.DateTime) error {
-	if awardableFrom != nil && awardableFrom.Time.After(time.Now()) {
-		return fmt.Errorf("achievement is not yet available for awarding")
-	}
-	return nil
-}
-
-// getAchievementAwardableFrom extracts the AwardableFrom field from any Achievement type
-func getAchievementAwardableFrom(achievement model.Achievement) *scalars.DateTime {
-	switch a := achievement.(type) {
-	case *model.SimpleAchievement:
-		return a.AwardableFrom
-	case *model.ContentAchievement:
-		return a.AwardableFrom
-	case *model.StreakAchievement:
-		return a.AwardableFrom
-	case *model.QuizAchievement:
-		return a.AwardableFrom
-	default:
-		return nil
-	}
-}
-
-// getAchievementProjectID extracts the ProjectID field from any Achievement type
-func getAchievementProjectID(achievement model.Achievement) string {
-	switch a := achievement.(type) {
-	case *model.SimpleAchievement:
-		return a.ProjectID
-	case *model.ContentAchievement:
-		return a.ProjectID
-	case *model.StreakAchievement:
-		return a.ProjectID
-	case *model.QuizAchievement:
-		return a.ProjectID
-	default:
-		return ""
-	}
-}
-
-// getAchievementEventID extracts the EventID field from any Achievement type
-func getAchievementEventID(achievement model.Achievement) *string {
-	switch a := achievement.(type) {
-	case *model.SimpleAchievement:
-		return a.EventID
-	case *model.ContentAchievement:
-		return a.EventID
-	case *model.StreakAchievement:
-		return a.EventID
-	case *model.QuizAchievement:
-		return a.EventID
-	default:
-		return nil
-	}
-}
-
-// getAchievementPushInfo extracts push notification info from any Achievement type
-func getAchievementPushInfo(achievement model.Achievement) push.AchievementInfo {
-	switch a := achievement.(type) {
-	case *model.SimpleAchievement:
-		return push.AchievementInfo{
-			ID:               a.ID,
-			Name:             a.Name,
-			NotificationText: a.NotificationText,
-			ImageCompleted:   a.ImageCompleted,
-		}
-	case *model.ContentAchievement:
-		return push.AchievementInfo{
-			ID:               a.ID,
-			Name:             a.Name,
-			NotificationText: a.NotificationText,
-			ImageCompleted:   a.ImageCompleted,
-		}
-	case *model.StreakAchievement:
-		return push.AchievementInfo{
-			ID:               a.ID,
-			Name:             a.Name,
-			NotificationText: a.NotificationText,
-			ImageCompleted:   a.ImageCompleted,
-		}
-	case *model.QuizAchievement:
-		return push.AchievementInfo{
-			ID:               a.ID,
-			Name:             a.Name,
-			NotificationText: a.NotificationText,
-			ImageCompleted:   a.ImageCompleted,
-		}
-	default:
-		return push.AchievementInfo{}
-	}
-}
 
 // CreateSimpleAchievement is the resolver for the createSimpleAchievement field.
 func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input model.CreateSimpleAchievementInput) (*model.SimpleAchievement, error) {
@@ -560,7 +466,7 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 		qtx := r.DB.Queries.WithTx(tx)
 
 		// Update common fields if provided
-		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.NotificationText != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
+		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.NotificationText != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil || input.AwardableFrom != nil {
 			params := sqlc.UpdateAchievementParams{
 				ID:                   id,
 				Name:                 input.Name,
@@ -576,6 +482,9 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 			if input.Points != nil {
 				points := int32(*input.Points)
 				params.Points = &points
+			}
+			if input.AwardableFrom != nil {
+				params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
 			}
 
 			if _, err := qtx.UpdateAchievement(ctx, params); err != nil {
@@ -621,6 +530,9 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 		if input.Points != nil {
 			points := int32(*input.Points)
 			params.Points = &points
+		}
+		if input.AwardableFrom != nil {
+			params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
 		}
 
 		if _, err := r.DB.Queries.UpdateAchievement(ctx, params); err != nil {
@@ -704,7 +616,7 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 		qtx := r.DB.Queries.WithTx(tx)
 
 		// Update common fields if provided
-		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.NotificationText != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
+		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.NotificationText != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil || input.AwardableFrom != nil {
 			params := sqlc.UpdateAchievementParams{
 				ID:                   id,
 				Name:                 input.Name,
@@ -720,6 +632,9 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 			if input.Points != nil {
 				points := int32(*input.Points)
 				params.Points = &points
+			}
+			if input.AwardableFrom != nil {
+				params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
 			}
 
 			if _, err := qtx.UpdateAchievement(ctx, params); err != nil {
@@ -761,6 +676,9 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 		if input.Points != nil {
 			points := int32(*input.Points)
 			params.Points = &points
+		}
+		if input.AwardableFrom != nil {
+			params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
 		}
 
 		if _, err := r.DB.Queries.UpdateAchievement(ctx, params); err != nil {
