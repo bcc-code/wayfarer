@@ -39,7 +39,7 @@ useHead({
   title: 'Interact Admin',
 })
 
-const { me, isLoading } = useAuth()
+const { me, isLoading, isAuth0Loading, token } = useAuth()
 const {
   canAccessAdmin,
   canAccessProjects,
@@ -68,9 +68,12 @@ const isChurchAdminOnly = computed(() => {
 
 // Redirect unauthorized users after auth loads
 watch(
-  [isLoading, me, () => route.path],
-  ([loading, user, path]) => {
-    if (loading) return
+  [isLoading, isAuth0Loading, me, token, () => route.path],
+  ([loading, auth0Loading, user, hasToken, path]) => {
+    // Wait for both Wayfarer auth and Auth0 to finish loading
+    if (loading || auth0Loading) return
+    // If we have a token but no user data yet, wait for the query to complete
+    if (hasToken && !user) return
     if (!user || !canAccessAdmin.value) {
       navigateTo('/')
       return
