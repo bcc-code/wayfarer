@@ -24,6 +24,7 @@ fragment BrandingColorsFields on Colors {
 
 fragment BrandingFields on Branding {
   logo
+  banner
   rounding
   colors {
     ...BrandingColorsFields

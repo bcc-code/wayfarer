@@ -6,6 +6,7 @@ type ProjectCardAchievement =
 
 const props = defineProps<{
   projectName: string
+  banner?: string | null
   score?: number
   rank?: number | null
   achievements?: ProjectCardAchievement[]
@@ -53,9 +54,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <DesignCard>
+  <DesignCard class="overflow-clip">
+    <img v-if="banner" class="w-full object-cover h-50" :src="banner" />
     <div class="p-default gap-medium flex flex-col">
-      <p class="text-label text-center">{{ projectName }}</p>
+      <p v-if="!banner" class="text-label text-center">{{ projectName }}</p>
       <div class="divide-border-default grid grid-cols-2 divide-x py-2">
         <div class="flex flex-col items-center">
           <p class="title-text tabular-nums">

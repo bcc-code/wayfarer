@@ -22,6 +22,9 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
   myCurrentProject {
     id
     name
+    branding {
+      ...BrandingFields
+    }
     achievements {
       __typename
       id

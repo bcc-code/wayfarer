@@ -116,6 +116,7 @@ const hiddenTreasuresLink = computed(() => {
       <ProfileProjectCard
         v-if="data.myCurrentProject"
         :project-name="data.myCurrentProject.name"
+        :banner="data.myCurrentProject.branding.banner"
         :score="data.myCurrentProject.leaderboard.me?.score"
         :rank="data.myCurrentProject.leaderboard.me?.rank"
         :achievements="data.myCurrentProject.achievements"
