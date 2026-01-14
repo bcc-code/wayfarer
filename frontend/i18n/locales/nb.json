@@ -124,5 +124,110 @@
     "updateAvailableTitle": "En oppdatering er tilgjengelig",
     "updateAvailableButton": "Oppdater nå"
   },
-  "goToHiddenTreasures": "Gå til bibelstudie"
+  "goToHiddenTreasures": "Gå til bibelstudie",
+  "admin": {
+    "common": {
+      "back": "Tilbake",
+      "cancel": "Avbryt",
+      "save": "Lagre",
+      "create": "Opprett",
+      "delete": "Slett",
+      "deleteAll": "Slett alle",
+      "copyLink": "Kopier lenke til admin-side",
+      "linkCopied": "Lenke kopiert"
+    },
+    "breadcrumb": {
+      "home": "Forside"
+    },
+    "churchHome": {
+      "administrators": "Administratorer",
+      "unitsAndPeople": "Units og personer",
+      "gameNights": "Game Nights",
+      "comingSoon": "Kommer snart"
+    },
+    "admins": {
+      "searchPlaceholder": "Søk på administratorer...",
+      "addPlaceholder": "Legg til administrator...",
+      "you": "Deg",
+      "noAdminsFound": "Ingen administratorer funnet",
+      "confirmRemove": {
+        "title": "Fjern administrator?",
+        "message": "Er du sikker på at du vil fjerne {name} som administrator?",
+        "confirm": "Fjern"
+      },
+      "success": {
+        "added": "Administrator lagt til",
+        "removed": "Administrator fjernet"
+      },
+      "errors": {
+        "addFailed": "Kunne ikke legge til administrator",
+        "removeFailed": "Kunne ikke fjerne administrator"
+      }
+    },
+    "units": {
+      "title": "Units",
+      "people": "Personer",
+      "filter": {
+        "title": "Filtrer",
+        "all": "Alle",
+        "notInUnit": "Ikke i en unit",
+        "inUnit": "I en unit",
+        "showO36": "Vis personer over 36 år",
+        "showO36Description": "Personer over 36 år vises ikke i topplister, og deltar ikke i ungdomskonkurransen"
+      },
+      "searchPlaceholder": "Søk på units eller personer...",
+      "searchPeoplePlaceholder": "Søk på personer...",
+      "expandAll": "Ekspander alle units",
+      "createOneUnit": "Opprett én unit",
+      "createMultipleUnits": "Opprett flere units",
+      "namePlaceholder": "Navn på unit (valgfritt)",
+      "selectAll": "Velg alle",
+      "noActiveProject": "Ingen aktiv konkurranse",
+      "noUnitsFound": "Ingen units funnet",
+      "noPeopleFound": "Ingen personer funnet",
+      "years": "{years} år",
+      "selectedCount": "{count} unit valgt | {count} units valgt",
+      "deleteSelected": "Slett valgte",
+      "bulkCreate": {
+        "countLabel": "Antall units",
+        "autoGenerateInfo": "Navnene genereres automatisk"
+      },
+      "confirmDelete": {
+        "title": "Slett unit?",
+        "message": "Er du sikker på at du vil slette {name}? Alle medlemmer vil bli fjernet fra uniten."
+      },
+      "confirmBulkDelete": {
+        "title": "Slett flere units?",
+        "message": "Er du sikker på at du vil slette {count} units? Alle medlemmer vil bli fjernet fra disse unitene."
+      },
+      "success": {
+        "created": "Unit opprettet",
+        "bulkCreated": "{count} units opprettet",
+        "deleted": "Unit slettet",
+        "bulkDeleted": "{count} units slettet"
+      },
+      "errors": {
+        "createFailed": "Kunne ikke opprette unit",
+        "bulkCreateFailed": "Kunne ikke opprette units",
+        "addMemberFailed": "Kunne ikke legge til medlem",
+        "removeMemberFailed": "Kunne ikke fjerne medlem",
+        "assignLeaderFailed": "Kunne ikke sette leder",
+        "deleteFailed": "Kunne ikke slette unit",
+        "bulkDeleteFailed": "Kunne ikke slette units",
+        "renameFailed": "Kunne ikke endre navn på unit",
+        "exclusionToggleFailed": "Kunne ikke endre synlighet på toppliste"
+      },
+      "ageWarning": "Gjennomsnittsalderen på denne uniten er over 36 år, og den vil da ikke vises på topplister eller være med i konkurransen for ungdommer. Dersom dette er feil, og den skal delta i konkurransen for ungdom, gi oss beskjed på {email}"
+    },
+    "unit": {
+      "noLeaderSelected": "Ingen leder valgt",
+      "members": "{count} person | {count} personer",
+      "makeLead": "Gjør til leder",
+      "dragPeopleHere": "Ingen medlemmer - dra en person hit",
+      "addPersonPlaceholder": "Legg til person...",
+      "excludeFromLeaderboard": "Ekskluder fra toppliste",
+      "excludeFromLeaderboardTooltip": "Når aktivert vil denne uniten ikke vises på topplisten",
+      "excludedFromLeaderboard": "Skjult fra topplister"
+    }
+  }
 }

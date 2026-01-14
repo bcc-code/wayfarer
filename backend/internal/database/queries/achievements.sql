@@ -13,6 +13,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.created_at,
     a.updated_at,
     -- Content achievement data
@@ -52,6 +53,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.created_at,
     a.updated_at,
     -- Type-specific fields needed for model construction
@@ -81,6 +83,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.sort_order,
     a.created_at,
     a.updated_at,
@@ -108,6 +111,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.sort_order,
     a.created_at,
     a.updated_at,
@@ -174,7 +178,8 @@ INSERT INTO achievements (
     image_pending,
     image_completed,
     points,
-    hidden
+    hidden,
+    awardable_from
 ) VALUES (
     @id::text,
     @achievement_type::text,
@@ -188,7 +193,8 @@ INSERT INTO achievements (
     @image_pending::text,
     @image_completed::text,
     @points::int,
-    @hidden::bool
+    @hidden::bool,
+    sqlc.narg('awardable_from')::timestamptz
 ) RETURNING *;
 
 -- name: CreateContentAchievementJunction :exec
@@ -234,6 +240,7 @@ SET
     challenge_id = CASE WHEN sqlc.narg('challenge_id')::text IS NOT NULL THEN sqlc.narg('challenge_id')::text ELSE challenge_id END,
     points = CASE WHEN sqlc.narg('points')::int IS NOT NULL THEN sqlc.narg('points')::int ELSE points END,
     hidden = CASE WHEN sqlc.narg('hidden')::bool IS NOT NULL THEN sqlc.narg('hidden')::bool ELSE hidden END,
+    awardable_from = CASE WHEN sqlc.narg('awardable_from')::timestamptz IS NOT NULL THEN sqlc.narg('awardable_from')::timestamptz ELSE awardable_from END,
     updated_at = now()
 WHERE id = @id::text
 RETURNING *;
@@ -383,6 +390,7 @@ SELECT DISTINCT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.created_at,
     a.updated_at,
     COALESCE(
@@ -459,6 +467,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.sort_order,
     a.created_at,
     a.updated_at

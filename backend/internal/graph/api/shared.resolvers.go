@@ -1543,6 +1543,15 @@ func (r *superTeamResolver) Teams(ctx context.Context, obj *model.SuperTeam) ([]
 	return result, nil
 }
 
+// AverageAge is the resolver for the averageAge field.
+func (r *teamResolver) AverageAge(ctx context.Context, obj *model.Team) (*float64, error) {
+	avgAge, err := r.DB.Queries.GetTeamAverageAge(ctx, obj.ID)
+	if err != nil {
+		return nil, nil // Return nil on error (empty team or no members with birthdate)
+	}
+	return &avgAge, nil
+}
+
 // Members is the resolver for the members field.
 func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.TeamMember, error) {
 	// Get current user ID from context

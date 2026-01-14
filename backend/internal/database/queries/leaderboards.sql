@@ -192,6 +192,7 @@ WITH team_scores AS (
     LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = @projectid::text
     WHERE
         t.project_id = @projectid::text
+        AND t.leaderboard_excluded = false
         AND (@superteamid::text = '' OR t.super_team_id = @superteamid::text)
     GROUP BY t.id, t.name
 ),
@@ -226,6 +227,7 @@ WITH ranked_scores AS (
     FROM leaderboard_project_teams lpt
     INNER JOIN teams t ON lpt.team_id = t.id
     WHERE lpt.project_id = @projectid::text
+      AND t.leaderboard_excluded = false
       AND lpt.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR lpt.score <= @maxscore::int)
 ),
@@ -251,6 +253,7 @@ WITH ranked_scores AS (
     FROM leaderboard_project_teams lpt
     INNER JOIN teams t ON lpt.team_id = t.id
     WHERE lpt.project_id = @projectid::text
+      AND t.leaderboard_excluded = false
       AND lpt.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR lpt.score <= @maxscore::int)
 )
@@ -263,6 +266,7 @@ SELECT COUNT(DISTINCT t.id)::bigint AS total
 FROM teams t
 WHERE
     t.project_id = @projectid::text
+    AND t.leaderboard_excluded = false
     AND (@superteamid::text = '' OR t.super_team_id = @superteamid::text);
 
 -- ==================== Project SuperTeam Leaderboard ====================
@@ -599,6 +603,7 @@ team_scores AS (
     LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = @eventid::text
     WHERE
         t.project_id = ep.project_id
+        AND t.leaderboard_excluded = false
     GROUP BY t.id, t.name
 ),
 ranked_scores AS (
@@ -632,6 +637,7 @@ WITH ranked_scores AS (
     FROM leaderboard_event_teams let
     INNER JOIN teams t ON let.team_id = t.id
     WHERE let.event_id = @eventid::text
+      AND t.leaderboard_excluded = false
       AND let.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR let.score <= @maxscore::int)
 ),
@@ -658,6 +664,7 @@ WITH ranked_scores AS (
     FROM leaderboard_event_teams let
     INNER JOIN teams t ON let.team_id = t.id
     WHERE let.event_id = @eventid::text
+      AND t.leaderboard_excluded = false
       AND let.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR let.score <= @maxscore::int)
 )
@@ -672,7 +679,8 @@ WITH event_project AS (
 SELECT COUNT(DISTINCT t.id)::bigint AS total
 FROM teams t
 CROSS JOIN event_project ep
-WHERE t.project_id = ep.project_id;
+WHERE t.project_id = ep.project_id
+  AND t.leaderboard_excluded = false;
 
 -- ==================== Event SuperTeam Leaderboard ====================
 

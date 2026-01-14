@@ -6,31 +6,42 @@ import '~/assets/styles/admin.css'
 const { setLocale } = useI18n()
 setLocale('nb')
 
+// PWA update notification
+const { $pwa } = useNuxtApp()
+const toast = useToast()
+
+watch(
+  () => $pwa?.needRefresh,
+  (needRefresh) => {
+    if (needRefresh) {
+      toast.add({
+        id: 'pwa-update',
+        title: 'Oppdatering tilgjengelig',
+        description: 'En ny versjon av appen er klar.',
+        icon: 'lucide:download',
+        close: false,
+        duration: 0,
+        color: 'neutral',
+        actions: [
+          {
+            label: 'Oppdater nå',
+            color: 'neutral',
+            onClick: () => $pwa?.updateServiceWorker(true),
+          },
+        ],
+      })
+    }
+  },
+  { immediate: true },
+)
+
 useHead({
   title: 'Interact Admin',
 })
 
-gql(`
-  query AdminSidebar {
-    projects {
-      edges {
-        node {
-          id
-          name
-          endDate
-          startDate
-        }
-      }
-    }
-  }
-`)
-
-const { isAuthReady } = useAuthReady()
-const { data } = useAdminSidebarQuery({
-  pause: computed(() => !isAuthReady.value),
-})
-
+const { me, isLoading, isAuth0Loading, token } = useAuth()
 const {
+  canAccessAdmin,
   canAccessProjects,
   canAccessUsers,
   canAccessTeams,
@@ -39,19 +50,49 @@ const {
   canAccessFeedback,
 } = usePermissions()
 
-const projectsLinks = computed(() => {
-  return data.value?.projects.edges.map(({ node: project }) => ({
-    label: project.name,
-    badge: isWithinRange(new Date(), project.startDate, project.endDate)
-      ? 'Aktiv'
-      : undefined,
-    to: `/admin/projects/${project.id}`,
-  }))
-})
-
 const route = useRoute()
 
+// Check if user is church-admin-only
+const isChurchAdminOnly = computed(() => {
+  if (!me.value) return false
+  const hasFullAdminRole = me.value.roles.some((role: { role: RoleType }) =>
+    [RoleType.Admin, RoleType.Superadmin].includes(role.role),
+  )
+  return (
+    !hasFullAdminRole &&
+    me.value.roles.some(
+      (role: { role: RoleType }) => role.role === RoleType.ChurchAdmin,
+    )
+  )
+})
+
+// Redirect unauthorized users after auth loads
+watch(
+  [isLoading, isAuth0Loading, me, token, () => route.path],
+  ([loading, auth0Loading, user, hasToken, path]) => {
+    // Wait for both Wayfarer auth and Auth0 to finish loading
+    if (loading || auth0Loading) return
+    // If we have a token but no user data yet, wait for the query to complete
+    if (hasToken && !user) return
+    if (!user || !canAccessAdmin.value) {
+      navigateTo('/')
+      return
+    }
+
+    // Restrict church-admin-only users to /admin/my-church
+    if (isChurchAdminOnly.value && !path.startsWith('/admin/my-church')) {
+      navigateTo('/admin/my-church')
+    }
+  },
+  { immediate: true },
+)
+
 const links = computed<NavigationMenuItem[]>(() => {
+  // Church-admin-only users use a different layout, don't show main admin nav
+  if (isChurchAdminOnly.value) {
+    return []
+  }
+
   const items: NavigationMenuItem[] = [
     {
       label: 'Hjem',
@@ -122,11 +163,6 @@ const groups = computed(() => [
     id: 'links',
     label: 'Gå til',
     items: links.value.flat(),
-  },
-  {
-    id: 'projects',
-    label: 'Prosjekter',
-    items: projectsLinks.value,
   },
 ])
 </script>

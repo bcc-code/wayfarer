@@ -187,6 +187,7 @@ type ComplexityRoot struct {
 
 	ContentAchievement struct {
 		AchievedAt           func(childComplexity int) int
+		AwardableFrom        func(childComplexity int) int
 		Challenge            func(childComplexity int) int
 		CompletedItemCount   func(childComplexity int) int
 		DescriptionCompleted func(childComplexity int) int
@@ -673,6 +674,7 @@ type ComplexityRoot struct {
 
 	QuizAchievement struct {
 		AchievedAt           func(childComplexity int) int
+		AwardableFrom        func(childComplexity int) int
 		Challenge            func(childComplexity int) int
 		DescriptionCompleted func(childComplexity int) int
 		DescriptionPending   func(childComplexity int) int
@@ -815,6 +817,7 @@ type ComplexityRoot struct {
 
 	SimpleAchievement struct {
 		AchievedAt           func(childComplexity int) int
+		AwardableFrom        func(childComplexity int) int
 		Challenge            func(childComplexity int) int
 		DescriptionCompleted func(childComplexity int) int
 		DescriptionPending   func(childComplexity int) int
@@ -860,6 +863,7 @@ type ComplexityRoot struct {
 
 	StreakAchievement struct {
 		AchievedAt           func(childComplexity int) int
+		AwardableFrom        func(childComplexity int) int
 		Challenge            func(childComplexity int) int
 		DescriptionCompleted func(childComplexity int) int
 		DescriptionPending   func(childComplexity int) int
@@ -913,14 +917,16 @@ type ComplexityRoot struct {
 	}
 
 	Team struct {
-		Description       func(childComplexity int) int
-		ID                func(childComplexity int) int
-		JoinCode          func(childComplexity int) int
-		MemberLeaderboard func(childComplexity int) int
-		Members           func(childComplexity int) int
-		Name              func(childComplexity int) int
-		ParentProject     func(childComplexity int) int
-		SuperTeam         func(childComplexity int) int
+		AverageAge          func(childComplexity int) int
+		Description         func(childComplexity int) int
+		ID                  func(childComplexity int) int
+		JoinCode            func(childComplexity int) int
+		LeaderboardExcluded func(childComplexity int) int
+		MemberLeaderboard   func(childComplexity int) int
+		Members             func(childComplexity int) int
+		Name                func(childComplexity int) int
+		ParentProject       func(childComplexity int) int
+		SuperTeam           func(childComplexity int) int
 	}
 
 	TeamConnection struct {
@@ -1400,6 +1406,7 @@ type SuperTeamResolver interface {
 	Teams(ctx context.Context, obj *model.SuperTeam) ([]model.Team, error)
 }
 type TeamResolver interface {
+	AverageAge(ctx context.Context, obj *model.Team) (*float64, error)
 	Members(ctx context.Context, obj *model.Team) ([]model.TeamMember, error)
 	MemberLeaderboard(ctx context.Context, obj *model.Team) ([]model.LeaderboardEntry, error)
 	ParentProject(ctx context.Context, obj *model.Team) (*model.Project, error)
@@ -1830,6 +1837,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ContentAchievement.AchievedAt(childComplexity), true
+	case "ContentAchievement.awardableFrom":
+		if e.complexity.ContentAchievement.AwardableFrom == nil {
+			break
+		}
+
+		return e.complexity.ContentAchievement.AwardableFrom(childComplexity), true
 	case "ContentAchievement.challenge":
 		if e.complexity.ContentAchievement.Challenge == nil {
 			break
@@ -4899,6 +4912,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizAchievement.AchievedAt(childComplexity), true
+	case "QuizAchievement.awardableFrom":
+		if e.complexity.QuizAchievement.AwardableFrom == nil {
+			break
+		}
+
+		return e.complexity.QuizAchievement.AwardableFrom(childComplexity), true
 	case "QuizAchievement.challenge":
 		if e.complexity.QuizAchievement.Challenge == nil {
 			break
@@ -5513,6 +5532,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SimpleAchievement.AchievedAt(childComplexity), true
+	case "SimpleAchievement.awardableFrom":
+		if e.complexity.SimpleAchievement.AwardableFrom == nil {
+			break
+		}
+
+		return e.complexity.SimpleAchievement.AwardableFrom(childComplexity), true
 	case "SimpleAchievement.challenge":
 		if e.complexity.SimpleAchievement.Challenge == nil {
 			break
@@ -5737,6 +5762,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StreakAchievement.AchievedAt(childComplexity), true
+	case "StreakAchievement.awardableFrom":
+		if e.complexity.StreakAchievement.AwardableFrom == nil {
+			break
+		}
+
+		return e.complexity.StreakAchievement.AwardableFrom(childComplexity), true
 	case "StreakAchievement.challenge":
 		if e.complexity.StreakAchievement.Challenge == nil {
 			break
@@ -5941,6 +5972,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SuperTeamEdge.Node(childComplexity), true
 
+	case "Team.averageAge":
+		if e.complexity.Team.AverageAge == nil {
+			break
+		}
+
+		return e.complexity.Team.AverageAge(childComplexity), true
 	case "Team.description":
 		if e.complexity.Team.Description == nil {
 			break
@@ -5959,6 +5996,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Team.JoinCode(childComplexity), true
+	case "Team.leaderboardExcluded":
+		if e.complexity.Team.LeaderboardExcluded == nil {
+			break
+		}
+
+		return e.complexity.Team.LeaderboardExcluded(childComplexity), true
 	case "Team.memberLeaderboard":
 		if e.complexity.Team.MemberLeaderboard == nil {
 			break
@@ -6950,6 +6993,8 @@ type Team {
     name: String!
     description: String!
     joinCode: String!
+    leaderboardExcluded: Boolean!
+    averageAge: Float @goField(forceResolver: true)
     members: [TeamMember!]! @goField(forceResolver: true)
     memberLeaderboard: [LeaderboardEntry!]! @goField(forceResolver: true)
     parentProject: Project! @goField(forceResolver: true)
@@ -7076,6 +7121,7 @@ interface Achievement {
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
 }
 
 # ==================== Achievement Implementations ====================
@@ -7094,6 +7140,7 @@ type SimpleAchievement implements Achievement {
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
 }
 
 type ContentAchievement implements Achievement {
@@ -7110,6 +7157,7 @@ type ContentAchievement implements Achievement {
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     # Content-specific fields
     items: [ContentItem!]! @goField(forceResolver: true)
     userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
@@ -7133,6 +7181,7 @@ type StreakAchievement implements Achievement {
     neededStreak: Int!
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     streak: Streak! @goField(forceResolver: true)
 }
 
@@ -7150,6 +7199,7 @@ type QuizAchievement implements Achievement {
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     quiz: Quiz! @goField(forceResolver: true)
     minScorePercentage: Int
     requireCompletion: Boolean!
@@ -7445,6 +7495,7 @@ input CreateSimpleAchievementInput {
     challengeId: ID
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
 }
 
 input CreateContentAchievementInput {
@@ -7459,6 +7510,7 @@ input CreateContentAchievementInput {
     challengeId: ID
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     items: [ContentItemInput!]!
 }
 
@@ -7474,6 +7526,7 @@ input CreateStreakAchievementInput {
     challengeId: ID
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     neededStreak: Int!
     streakId: ID!
 }
@@ -7593,6 +7646,7 @@ input UpdateAchievementInput {
     challengeId: ID
     points: Int
     hidden: Boolean
+    awardableFrom: DateTime
 }
 
 input UpdateContentAchievementInput {
@@ -7606,6 +7660,7 @@ input UpdateContentAchievementInput {
     challengeId: ID
     points: Int
     hidden: Boolean
+    awardableFrom: DateTime
     items: [ContentItemInput!]
 }
 
@@ -7620,6 +7675,7 @@ input UpdateStreakAchievementInput {
     challengeId: ID
     points: Int
     hidden: Boolean
+    awardableFrom: DateTime
     neededStreak: Int
     streakId: ID
 }
@@ -7632,6 +7688,7 @@ input CreateTeamInput {
 input UpdateTeamInput {
     name: String
     description: String
+    leaderboardExcluded: Boolean
 }
 
 input CreateSuperTeamInput {
@@ -8204,8 +8261,8 @@ extend type Query {
 }
 
 extend type Mutation {
-    assignRole(input: AssignRoleInput!): UserRole! @requireRole(roles: ["admin", "superadmin"])
-    revokeRole(input: RevokeRoleInput!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    assignRole(input: AssignRoleInput!): UserRole! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    revokeRole(input: RevokeRoleInput!): Boolean! @requireRole(roles: ["admin", "superadmin", "church_admin"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/churches.graphqls", Input: `# Church queries
@@ -13730,6 +13787,35 @@ func (ec *executionContext) fieldContext_ContentAchievement_hidden(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _ContentAchievement_awardableFrom(ctx context.Context, field graphql.CollectedField, obj *model.ContentAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ContentAchievement_awardableFrom,
+		func(ctx context.Context) (any, error) {
+			return obj.AwardableFrom, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ContentAchievement_awardableFrom(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ContentAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ContentAchievement_items(ctx context.Context, field graphql.CollectedField, obj *model.ContentAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -18430,6 +18516,10 @@ func (ec *executionContext) fieldContext_Mutation_joinTeam(ctx context.Context, 
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -18507,6 +18597,10 @@ func (ec *executionContext) fieldContext_Mutation_createTeam(ctx context.Context
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -18584,6 +18678,10 @@ func (ec *executionContext) fieldContext_Mutation_updateTeam(ctx context.Context
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -18720,6 +18818,10 @@ func (ec *executionContext) fieldContext_Mutation_addTeamMembers(ctx context.Con
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -18797,6 +18899,10 @@ func (ec *executionContext) fieldContext_Mutation_removeTeamMembers(ctx context.
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -18874,6 +18980,10 @@ func (ec *executionContext) fieldContext_Mutation_regenerateJoinCode(ctx context
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -18951,6 +19061,10 @@ func (ec *executionContext) fieldContext_Mutation_assignTeamLead(ctx context.Con
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -19560,6 +19674,8 @@ func (ec *executionContext) fieldContext_Mutation_createSimpleAchievement(ctx co
 				return ec.fieldContext_SimpleAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_SimpleAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_SimpleAchievement_awardableFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SimpleAchievement", field.Name)
 		},
@@ -19647,6 +19763,8 @@ func (ec *executionContext) fieldContext_Mutation_createContentAchievement(ctx c
 				return ec.fieldContext_ContentAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_ContentAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_ContentAchievement_awardableFrom(ctx, field)
 			case "items":
 				return ec.fieldContext_ContentAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -19746,6 +19864,8 @@ func (ec *executionContext) fieldContext_Mutation_createStreakAchievement(ctx co
 				return ec.fieldContext_StreakAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
 			case "streak":
 				return ec.fieldContext_StreakAchievement_streak(ctx, field)
 			}
@@ -19894,6 +20014,8 @@ func (ec *executionContext) fieldContext_Mutation_updateContentAchievement(ctx c
 				return ec.fieldContext_ContentAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_ContentAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_ContentAchievement_awardableFrom(ctx, field)
 			case "items":
 				return ec.fieldContext_ContentAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -19993,6 +20115,8 @@ func (ec *executionContext) fieldContext_Mutation_updateStreakAchievement(ctx co
 				return ec.fieldContext_StreakAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
 			case "streak":
 				return ec.fieldContext_StreakAchievement_streak(ctx, field)
 			}
@@ -20436,6 +20560,8 @@ func (ec *executionContext) fieldContext_Mutation_markContentItemCompleted(ctx c
 				return ec.fieldContext_ContentAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_ContentAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_ContentAchievement_awardableFrom(ctx, field)
 			case "items":
 				return ec.fieldContext_ContentAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -20533,6 +20659,8 @@ func (ec *executionContext) fieldContext_Mutation_unmarkContentItemCompleted(ctx
 				return ec.fieldContext_ContentAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_ContentAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_ContentAchievement_awardableFrom(ctx, field)
 			case "items":
 				return ec.fieldContext_ContentAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -20632,6 +20760,8 @@ func (ec *executionContext) fieldContext_Mutation_recordStreakActivity(ctx conte
 				return ec.fieldContext_StreakAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_StreakAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_StreakAchievement_awardableFrom(ctx, field)
 			case "streak":
 				return ec.fieldContext_StreakAchievement_streak(ctx, field)
 			}
@@ -22295,7 +22425,7 @@ func (ec *executionContext) _Mutation_assignRole(ctx context.Context, field grap
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
 				if err != nil {
 					var zeroVal *model.UserRole
 					return zeroVal, err
@@ -22364,7 +22494,7 @@ func (ec *executionContext) _Mutation_revokeRole(ctx context.Context, field grap
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
 				if err != nil {
 					var zeroVal bool
 					return zeroVal, err
@@ -23549,6 +23679,8 @@ func (ec *executionContext) fieldContext_Mutation_createQuizAchievement(ctx cont
 				return ec.fieldContext_QuizAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_QuizAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_QuizAchievement_awardableFrom(ctx, field)
 			case "quiz":
 				return ec.fieldContext_QuizAchievement_quiz(ctx, field)
 			case "minScorePercentage":
@@ -24662,6 +24794,8 @@ func (ec *executionContext) fieldContext_Mutation_createContentAchievementFromEx
 				return ec.fieldContext_ContentAchievement_points(ctx, field)
 			case "hidden":
 				return ec.fieldContext_ContentAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_ContentAchievement_awardableFrom(ctx, field)
 			case "items":
 				return ec.fieldContext_ContentAchievement_items(ctx, field)
 			case "userCompletedItems":
@@ -27152,6 +27286,10 @@ func (ec *executionContext) fieldContext_Project_teams(_ context.Context, field 
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -27199,6 +27337,10 @@ func (ec *executionContext) fieldContext_Project_myTeam(_ context.Context, field
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -28446,6 +28588,10 @@ func (ec *executionContext) fieldContext_Query_team(ctx context.Context, field g
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -31886,6 +32032,35 @@ func (ec *executionContext) fieldContext_QuizAchievement_hidden(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _QuizAchievement_awardableFrom(ctx context.Context, field graphql.CollectedField, obj *model.QuizAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizAchievement_awardableFrom,
+		func(ctx context.Context) (any, error) {
+			return obj.AwardableFrom, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizAchievement_awardableFrom(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _QuizAchievement_quiz(ctx context.Context, field graphql.CollectedField, obj *model.QuizAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -34334,6 +34509,10 @@ func (ec *executionContext) fieldContext_RoleScope_team(_ context.Context, field
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -35525,6 +35704,35 @@ func (ec *executionContext) fieldContext_SimpleAchievement_hidden(_ context.Cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleAchievement_awardableFrom(ctx context.Context, field graphql.CollectedField, obj *model.SimpleAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleAchievement_awardableFrom,
+		func(ctx context.Context) (any, error) {
+			return obj.AwardableFrom, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleAchievement_awardableFrom(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
 		},
 	}
 	return fc, nil
@@ -36765,6 +36973,35 @@ func (ec *executionContext) fieldContext_StreakAchievement_hidden(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _StreakAchievement_awardableFrom(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StreakAchievement_awardableFrom,
+		func(ctx context.Context) (any, error) {
+			return obj.AwardableFrom, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_StreakAchievement_awardableFrom(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StreakAchievement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _StreakAchievement_streak(ctx context.Context, field graphql.CollectedField, obj *model.StreakAchievement) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -37276,6 +37513,10 @@ func (ec *executionContext) fieldContext_SuperTeam_teams(_ context.Context, fiel
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -37577,6 +37818,64 @@ func (ec *executionContext) fieldContext_Team_joinCode(_ context.Context, field 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Team_leaderboardExcluded(ctx context.Context, field graphql.CollectedField, obj *model.Team) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Team_leaderboardExcluded,
+		func(ctx context.Context) (any, error) {
+			return obj.LeaderboardExcluded, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Team_leaderboardExcluded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Team_averageAge(ctx context.Context, field graphql.CollectedField, obj *model.Team) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Team_averageAge,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Team().AverageAge(ctx, obj)
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Team_averageAge(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -37940,6 +38239,10 @@ func (ec *executionContext) fieldContext_TeamEdge_node(_ context.Context, field 
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -38650,6 +38953,10 @@ func (ec *executionContext) fieldContext_User_teams(_ context.Context, field gra
 				return ec.fieldContext_Team_description(ctx, field)
 			case "joinCode":
 				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
 			case "memberLeaderboard":
@@ -42851,7 +43158,7 @@ func (ec *executionContext) unmarshalInputCreateContentAchievementInput(ctx cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden", "items"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden", "awardableFrom", "items"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -42935,6 +43242,13 @@ func (ec *executionContext) unmarshalInputCreateContentAchievementInput(ctx cont
 				return it, err
 			}
 			it.Hidden = data
+		case "awardableFrom":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awardableFrom"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwardableFrom = data
 		case "items":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("items"))
 			data, err := ec.unmarshalNContentItemInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐContentItemInputᚄ(ctx, v)
@@ -43528,7 +43842,7 @@ func (ec *executionContext) unmarshalInputCreateSimpleAchievementInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden", "awardableFrom"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -43612,6 +43926,13 @@ func (ec *executionContext) unmarshalInputCreateSimpleAchievementInput(ctx conte
 				return it, err
 			}
 			it.Hidden = data
+		case "awardableFrom":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awardableFrom"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwardableFrom = data
 		}
 	}
 
@@ -43625,7 +43946,7 @@ func (ec *executionContext) unmarshalInputCreateStreakAchievementInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden", "neededStreak", "streakId"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "eventId", "challengeId", "points", "hidden", "awardableFrom", "neededStreak", "streakId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -43709,6 +44030,13 @@ func (ec *executionContext) unmarshalInputCreateStreakAchievementInput(ctx conte
 				return it, err
 			}
 			it.Hidden = data
+		case "awardableFrom":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awardableFrom"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwardableFrom = data
 		case "neededStreak":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("neededStreak"))
 			data, err := ec.unmarshalNInt2int(ctx, v)
@@ -45118,7 +45446,7 @@ func (ec *executionContext) unmarshalInputUpdateAchievementInput(ctx context.Con
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden", "awardableFrom"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -45195,6 +45523,13 @@ func (ec *executionContext) unmarshalInputUpdateAchievementInput(ctx context.Con
 				return it, err
 			}
 			it.Hidden = data
+		case "awardableFrom":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awardableFrom"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwardableFrom = data
 		}
 	}
 
@@ -45353,7 +45688,7 @@ func (ec *executionContext) unmarshalInputUpdateContentAchievementInput(ctx cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden", "items"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden", "awardableFrom", "items"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -45430,6 +45765,13 @@ func (ec *executionContext) unmarshalInputUpdateContentAchievementInput(ctx cont
 				return it, err
 			}
 			it.Hidden = data
+		case "awardableFrom":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awardableFrom"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwardableFrom = data
 		case "items":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("items"))
 			data, err := ec.unmarshalOContentItemInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐContentItemInputᚄ(ctx, v)
@@ -45781,7 +46123,7 @@ func (ec *executionContext) unmarshalInputUpdateStreakAchievementInput(ctx conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden", "neededStreak", "streakId"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "eventId", "challengeId", "points", "hidden", "awardableFrom", "neededStreak", "streakId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -45858,6 +46200,13 @@ func (ec *executionContext) unmarshalInputUpdateStreakAchievementInput(ctx conte
 				return it, err
 			}
 			it.Hidden = data
+		case "awardableFrom":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awardableFrom"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwardableFrom = data
 		case "neededStreak":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("neededStreak"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -45960,7 +46309,7 @@ func (ec *executionContext) unmarshalInputUpdateTeamInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description"}
+	fieldsInOrder := [...]string{"name", "description", "leaderboardExcluded"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -45981,6 +46330,13 @@ func (ec *executionContext) unmarshalInputUpdateTeamInput(ctx context.Context, o
 				return it, err
 			}
 			it.Description = data
+		case "leaderboardExcluded":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaderboardExcluded"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaderboardExcluded = data
 		}
 	}
 
@@ -47346,6 +47702,8 @@ func (ec *executionContext) _ContentAchievement(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "awardableFrom":
+			out.Values[i] = ec._ContentAchievement_awardableFrom(ctx, field, obj)
 		case "items":
 			field := field
 
@@ -52931,6 +53289,8 @@ func (ec *executionContext) _QuizAchievement(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "awardableFrom":
+			out.Values[i] = ec._QuizAchievement_awardableFrom(ctx, field, obj)
 		case "quiz":
 			field := field
 
@@ -54831,6 +55191,8 @@ func (ec *executionContext) _SimpleAchievement(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "awardableFrom":
+			out.Values[i] = ec._SimpleAchievement_awardableFrom(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -55457,6 +55819,8 @@ func (ec *executionContext) _StreakAchievement(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "awardableFrom":
+			out.Values[i] = ec._StreakAchievement_awardableFrom(ctx, field, obj)
 		case "streak":
 			field := field
 
@@ -55934,6 +56298,44 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "leaderboardExcluded":
+			out.Values[i] = ec._Team_leaderboardExcluded(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "averageAge":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Team_averageAge(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "members":
 			field := field
 

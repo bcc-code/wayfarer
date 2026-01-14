@@ -101,6 +101,7 @@ SELECT COUNT(DISTINCT t.id)::bigint AS total
 FROM teams t
 CROSS JOIN event_project ep
 WHERE t.project_id = ep.project_id
+  AND t.leaderboard_excluded = false
 `
 
 func (q *Queries) CountEventTeamLeaderboard(ctx context.Context, eventid string) (int64, error) {
@@ -214,6 +215,7 @@ SELECT COUNT(DISTINCT t.id)::bigint AS total
 FROM teams t
 WHERE
     t.project_id = $1::text
+    AND t.leaderboard_excluded = false
     AND ($2::text = '' OR t.super_team_id = $2::text)
 `
 
@@ -417,6 +419,7 @@ WITH ranked_scores AS (
     FROM leaderboard_event_teams let
     INNER JOIN teams t ON let.team_id = t.id
     WHERE let.event_id = $1::text
+      AND t.leaderboard_excluded = false
       AND let.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR let.score <= $3::int)
 ),
@@ -654,6 +657,7 @@ WITH ranked_scores AS (
     FROM leaderboard_project_teams lpt
     INNER JOIN teams t ON lpt.team_id = t.id
     WHERE lpt.project_id = $1::text
+      AND t.leaderboard_excluded = false
       AND lpt.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpt.score <= $3::int)
 ),
@@ -1023,6 +1027,7 @@ team_scores AS (
     LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = $6::text
     WHERE
         t.project_id = ep.project_id
+        AND t.leaderboard_excluded = false
     GROUP BY t.id, t.name
 ),
 ranked_scores AS (
@@ -1332,6 +1337,7 @@ WITH ranked_scores AS (
     FROM leaderboard_event_teams let
     INNER JOIN teams t ON let.team_id = t.id
     WHERE let.event_id = $1::text
+      AND t.leaderboard_excluded = false
       AND let.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR let.score <= $3::int)
 )
@@ -1615,6 +1621,7 @@ WITH ranked_scores AS (
     FROM leaderboard_project_teams lpt
     INNER JOIN teams t ON lpt.team_id = t.id
     WHERE lpt.project_id = $1::text
+      AND t.leaderboard_excluded = false
       AND lpt.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpt.score <= $3::int)
 )
@@ -2006,6 +2013,7 @@ WITH team_scores AS (
     LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = $6::text
     WHERE
         t.project_id = $6::text
+        AND t.leaderboard_excluded = false
         AND ($7::text = '' OR t.super_team_id = $7::text)
     GROUP BY t.id, t.name
 ),

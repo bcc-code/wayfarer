@@ -164,6 +164,14 @@ func (s *ContentAchievementService) processAchievements(ctx context.Context, use
 // awardAchievement awards an achievement to a user, creates a score journal entry,
 // and invalidates relevant caches. Only awards if not already awarded.
 func (s *ContentAchievementService) awardAchievement(ctx context.Context, userID string, achievement *sqlc.GetPublishedContentAchievementsByExternalContentRow) {
+	// Check if achievement is awardable based on awardable_from timestamp
+	// Silently skip if not yet available (progress is still tracked, but award is delayed)
+	if achievement.AwardableFrom.Valid && achievement.AwardableFrom.Time.After(time.Now()) {
+		slog.Debug("content_achievements: achievement is not yet available for awarding, skipping",
+			"user_id", userID, "achievement_id", achievement.ID, "awardable_from", achievement.AwardableFrom.Time)
+		return
+	}
+
 	// Check if user already has this achievement
 	hasAchievement, err := s.DB.Queries.CheckUserHasAchievement(ctx, sqlc.CheckUserHasAchievementParams{
 		UserID:        userID,

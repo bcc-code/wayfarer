@@ -51,11 +51,13 @@ func teamsBySuperTeamBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func
 				}
 
 				team := &model.Team{
-					ID:          row.ID,
-					ProjectID:   row.ProjectID,
-					Name:        row.Name,
-					Description: description,
-					SuperTeamID: superTeamID,
+					ID:                  row.ID,
+					ProjectID:           row.ProjectID,
+					Name:                row.Name,
+					Description:         description,
+					SuperTeamID:         superTeamID,
+					JoinCode:            row.JoinCode,
+					LeaderboardExcluded: row.LeaderboardExcluded,
 				}
 
 				// row.SuperTeamID is guaranteed to be non-nil because of the query's WHERE clause

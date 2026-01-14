@@ -262,6 +262,8 @@ type Team {
     name: String!
     description: String!
     joinCode: String!
+    leaderboardExcluded: Boolean!
+    averageAge: Float @goField(forceResolver: true)
     members: [TeamMember!]! @goField(forceResolver: true)
     memberLeaderboard: [LeaderboardEntry!]! @goField(forceResolver: true)
     parentProject: Project! @goField(forceResolver: true)
@@ -388,6 +390,7 @@ interface Achievement {
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
 }
 
 # ==================== Achievement Implementations ====================
@@ -406,6 +409,7 @@ type SimpleAchievement implements Achievement {
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
 }
 
 type ContentAchievement implements Achievement {
@@ -422,6 +426,7 @@ type ContentAchievement implements Achievement {
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     # Content-specific fields
     items: [ContentItem!]! @goField(forceResolver: true)
     userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
@@ -445,6 +450,7 @@ type StreakAchievement implements Achievement {
     neededStreak: Int!
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     streak: Streak! @goField(forceResolver: true)
 }
 
@@ -462,6 +468,7 @@ type QuizAchievement implements Achievement {
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     quiz: Quiz! @goField(forceResolver: true)
     minScorePercentage: Int
     requireCompletion: Boolean!
@@ -757,6 +764,7 @@ input CreateSimpleAchievementInput {
     challengeId: ID
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
 }
 
 input CreateContentAchievementInput {
@@ -771,6 +779,7 @@ input CreateContentAchievementInput {
     challengeId: ID
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     items: [ContentItemInput!]!
 }
 
@@ -786,6 +795,7 @@ input CreateStreakAchievementInput {
     challengeId: ID
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     neededStreak: Int!
     streakId: ID!
 }
@@ -905,6 +915,7 @@ input UpdateAchievementInput {
     challengeId: ID
     points: Int
     hidden: Boolean
+    awardableFrom: DateTime
 }
 
 input UpdateContentAchievementInput {
@@ -918,6 +929,7 @@ input UpdateContentAchievementInput {
     challengeId: ID
     points: Int
     hidden: Boolean
+    awardableFrom: DateTime
     items: [ContentItemInput!]
 }
 
@@ -932,6 +944,7 @@ input UpdateStreakAchievementInput {
     challengeId: ID
     points: Int
     hidden: Boolean
+    awardableFrom: DateTime
     neededStreak: Int
     streakId: ID
 }
@@ -944,6 +957,7 @@ input CreateTeamInput {
 input UpdateTeamInput {
     name: String
     description: String
+    leaderboardExcluded: Boolean
 }
 
 input CreateSuperTeamInput {

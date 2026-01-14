@@ -25,6 +25,8 @@ type Achievement struct {
 	ImageCompleted       string             `json:"image_completed"`
 	NotificationText     string             `json:"notification_text"`
 	SortOrder            int32              `json:"sort_order"`
+	// Earliest time the achievement can be awarded. NULL means always awardable.
+	AwardableFrom pgtype.Timestamptz `json:"awardable_from"`
 }
 
 type AchievementTranslation struct {
@@ -575,14 +577,15 @@ type SuperTeamTranslation struct {
 }
 
 type Team struct {
-	ID          string             `json:"id"`
-	ProjectID   string             `json:"project_id"`
-	Name        string             `json:"name"`
-	Description *string            `json:"description"`
-	JoinCode    string             `json:"join_code"`
-	SuperTeamID *string            `json:"super_team_id"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID                  string             `json:"id"`
+	ProjectID           string             `json:"project_id"`
+	Name                string             `json:"name"`
+	Description         *string            `json:"description"`
+	JoinCode            string             `json:"join_code"`
+	SuperTeamID         *string            `json:"super_team_id"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	LeaderboardExcluded bool               `json:"leaderboard_excluded"`
 }
 
 type TeamMember struct {

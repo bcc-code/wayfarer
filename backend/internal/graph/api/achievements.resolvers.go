@@ -8,15 +8,111 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
+	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+// isAchievementAwardable checks if an achievement can be awarded based on awardable_from timestamp.
+// Returns nil if awardable, error if not.
+func isAchievementAwardable(awardableFrom *scalars.DateTime) error {
+	if awardableFrom != nil && awardableFrom.Time.After(time.Now()) {
+		return fmt.Errorf("achievement is not yet available for awarding")
+	}
+	return nil
+}
+
+// getAchievementAwardableFrom extracts the AwardableFrom field from any Achievement type
+func getAchievementAwardableFrom(achievement model.Achievement) *scalars.DateTime {
+	switch a := achievement.(type) {
+	case *model.SimpleAchievement:
+		return a.AwardableFrom
+	case *model.ContentAchievement:
+		return a.AwardableFrom
+	case *model.StreakAchievement:
+		return a.AwardableFrom
+	case *model.QuizAchievement:
+		return a.AwardableFrom
+	default:
+		return nil
+	}
+}
+
+// getAchievementProjectID extracts the ProjectID field from any Achievement type
+func getAchievementProjectID(achievement model.Achievement) string {
+	switch a := achievement.(type) {
+	case *model.SimpleAchievement:
+		return a.ProjectID
+	case *model.ContentAchievement:
+		return a.ProjectID
+	case *model.StreakAchievement:
+		return a.ProjectID
+	case *model.QuizAchievement:
+		return a.ProjectID
+	default:
+		return ""
+	}
+}
+
+// getAchievementEventID extracts the EventID field from any Achievement type
+func getAchievementEventID(achievement model.Achievement) *string {
+	switch a := achievement.(type) {
+	case *model.SimpleAchievement:
+		return a.EventID
+	case *model.ContentAchievement:
+		return a.EventID
+	case *model.StreakAchievement:
+		return a.EventID
+	case *model.QuizAchievement:
+		return a.EventID
+	default:
+		return nil
+	}
+}
+
+// getAchievementPushInfo extracts push notification info from any Achievement type
+func getAchievementPushInfo(achievement model.Achievement) push.AchievementInfo {
+	switch a := achievement.(type) {
+	case *model.SimpleAchievement:
+		return push.AchievementInfo{
+			ID:               a.ID,
+			Name:             a.Name,
+			NotificationText: a.NotificationText,
+			ImageCompleted:   a.ImageCompleted,
+		}
+	case *model.ContentAchievement:
+		return push.AchievementInfo{
+			ID:               a.ID,
+			Name:             a.Name,
+			NotificationText: a.NotificationText,
+			ImageCompleted:   a.ImageCompleted,
+		}
+	case *model.StreakAchievement:
+		return push.AchievementInfo{
+			ID:               a.ID,
+			Name:             a.Name,
+			NotificationText: a.NotificationText,
+			ImageCompleted:   a.ImageCompleted,
+		}
+	case *model.QuizAchievement:
+		return push.AchievementInfo{
+			ID:               a.ID,
+			Name:             a.Name,
+			NotificationText: a.NotificationText,
+			ImageCompleted:   a.ImageCompleted,
+		}
+	default:
+		return push.AchievementInfo{}
+	}
+}
 
 // CreateSimpleAchievement is the resolver for the createSimpleAchievement field.
 func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input model.CreateSimpleAchievementInput) (*model.SimpleAchievement, error) {
@@ -56,6 +152,9 @@ func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input mo
 	if input.ChallengeID != nil {
 		params.ChallengeID = *input.ChallengeID
 	}
+	if input.AwardableFrom != nil {
+		params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
+	}
 
 	// Create achievement in database
 	achievement, err := r.DB.Queries.CreateAchievement(ctx, params)
@@ -75,6 +174,12 @@ func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input mo
 		hidden = *achievement.Hidden
 	}
 
+	// Convert AwardableFrom to GraphQL scalar
+	var awardableFrom *scalars.DateTime
+	if achievement.AwardableFrom.Valid {
+		awardableFrom = &scalars.DateTime{Time: achievement.AwardableFrom.Time}
+	}
+
 	return &model.SimpleAchievement{
 		ID:                   achievement.ID,
 		Name:                 achievement.Name,
@@ -85,6 +190,7 @@ func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input mo
 		ImageCompleted:       achievement.ImageCompleted,
 		Points:               int(achievement.Points),
 		Hidden:               hidden,
+		AwardableFrom:        awardableFrom,
 		ProjectID:            achievement.ProjectID,
 		EventID:              achievement.EventID,
 		ChallengeID:          achievement.ChallengeID,
@@ -141,6 +247,9 @@ func (r *mutationResolver) CreateContentAchievement(ctx context.Context, input m
 	if input.ChallengeID != nil {
 		achievementParams.ChallengeID = *input.ChallengeID
 	}
+	if input.AwardableFrom != nil {
+		achievementParams.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
+	}
 
 	achievement, err := qtx.CreateAchievement(ctx, achievementParams)
 	if err != nil {
@@ -183,6 +292,12 @@ func (r *mutationResolver) CreateContentAchievement(ctx context.Context, input m
 		hidden = *achievement.Hidden
 	}
 
+	// Convert AwardableFrom to GraphQL scalar
+	var awardableFrom *scalars.DateTime
+	if achievement.AwardableFrom.Valid {
+		awardableFrom = &scalars.DateTime{Time: achievement.AwardableFrom.Time}
+	}
+
 	return &model.ContentAchievement{
 		ID:                   achievement.ID,
 		Name:                 achievement.Name,
@@ -193,6 +308,7 @@ func (r *mutationResolver) CreateContentAchievement(ctx context.Context, input m
 		ImageCompleted:       achievement.ImageCompleted,
 		Points:               int(achievement.Points),
 		Hidden:               hidden,
+		AwardableFrom:        awardableFrom,
 		ProjectID:            achievement.ProjectID,
 		EventID:              achievement.EventID,
 		ChallengeID:          achievement.ChallengeID,
@@ -250,6 +366,9 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 	if input.ChallengeID != nil {
 		achievementParams.ChallengeID = *input.ChallengeID
 	}
+	if input.AwardableFrom != nil {
+		achievementParams.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
+	}
 
 	achievement, err := qtx.CreateAchievement(ctx, achievementParams)
 	if err != nil {
@@ -284,6 +403,12 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 		hidden = *achievement.Hidden
 	}
 
+	// Convert AwardableFrom to GraphQL scalar
+	var awardableFrom *scalars.DateTime
+	if achievement.AwardableFrom.Valid {
+		awardableFrom = &scalars.DateTime{Time: achievement.AwardableFrom.Time}
+	}
+
 	return &model.StreakAchievement{
 		ID:                   achievement.ID,
 		Name:                 achievement.Name,
@@ -294,6 +419,7 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 		ImageCompleted:       achievement.ImageCompleted,
 		Points:               int(achievement.Points),
 		Hidden:               hidden,
+		AwardableFrom:        awardableFrom,
 		ProjectID:            achievement.ProjectID,
 		EventID:              achievement.EventID,
 		ChallengeID:          achievement.ChallengeID,
@@ -357,6 +483,11 @@ func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, inp
 	if input.Points != nil {
 		points := int32(*input.Points)
 		params.Points = &points
+	}
+
+	// Convert AwardableFrom if provided
+	if input.AwardableFrom != nil {
+		params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
 	}
 
 	// Update achievement in database
@@ -770,17 +901,20 @@ func (r *mutationResolver) ReorderAchievements(ctx context.Context, projectID st
 
 // AwardAchievement is the resolver for the awardAchievement field.
 func (r *mutationResolver) AwardAchievement(ctx context.Context, userID string, achievementID string) (model.Achievement, error) {
-	// First, get the achievement to know which project/event it belongs to
-	achievementRow, err := r.DB.Queries.GetAchievementsByIDs(ctx, []string{achievementID})
-	if err != nil || len(achievementRow) == 0 {
+	// Load achievement via caching loader
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
+	achievement, err := achievementThunk()
+	if err != nil {
 		return nil, fmt.Errorf("failed to load achievement: %w", err)
 	}
 
-	projectID := achievementRow[0].ProjectID
-	var eventID *string
-	if achievementRow[0].EventID != nil && *achievementRow[0].EventID != "" {
-		eventID = achievementRow[0].EventID
+	// Check if achievement is awardable based on awardable_from timestamp
+	if err := isAchievementAwardable(getAchievementAwardableFrom(achievement)); err != nil {
+		return nil, err
 	}
+
+	projectID := getAchievementProjectID(achievement)
+	eventID := getAchievementEventID(achievement)
 
 	// Award achievement to user (will return error if already awarded)
 	if err := r.DB.Queries.AwardUserAchievement(ctx, sqlc.AwardUserAchievementParams{
@@ -800,19 +934,13 @@ func (r *mutationResolver) AwardAchievement(ctx context.Context, userID string, 
 	r.Cache.InvalidateProject(projectID)
 
 	// Invalidate event leaderboards if achievement belongs to an event
-	if eventID != nil {
+	if eventID != nil && *eventID != "" {
 		r.Cache.InvalidateEvent(*eventID)
 	}
 
 	// Send push notification in background with translated content
 	if r.PushService != nil {
-		achievement := achievementRow[0]
-		go push.SendTranslatedAchievementNotification(r.PushService, r.Loaders, userID, push.AchievementInfo{
-			ID:               achievement.ID,
-			Name:             achievement.Name,
-			NotificationText: achievement.NotificationText,
-			ImageCompleted:   achievement.ImageCompleted,
-		})
+		go push.SendTranslatedAchievementNotification(r.PushService, r.Loaders, userID, getAchievementPushInfo(achievement))
 	}
 
 	// Notify Firestore listeners

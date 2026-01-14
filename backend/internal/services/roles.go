@@ -230,7 +230,7 @@ func (s *RoleService) RevokeRole(ctx context.Context, revokerID, userID string, 
 // Permission hierarchy:
 // - SUPERADMIN can assign all roles
 // - ADMIN can assign CHURCH_ADMIN, PROJECT_ADMIN, TEAM_LEAD
-// - CHURCH_ADMIN can assign TEAM_LEAD (only within their church)
+// - CHURCH_ADMIN can assign CHURCH_ADMIN (only within their own church) and TEAM_LEAD
 func (s *RoleService) CanAssignRole(ctx context.Context, assignerID string, roleToAssign RoleType, churchID, projectID, teamID *string) (bool, error) {
 	// Check if assigner is a superadmin
 	if s.IsSuperAdmin(ctx, assignerID) {
@@ -244,8 +244,15 @@ func (s *RoleService) CanAssignRole(ctx context.Context, assignerID string, role
 	}
 
 	// Check if assigner is a church admin
+	// Church admins can assign CHURCH_ADMIN role to users within their own church
+	if roleToAssign == RoleChurchAdmin && churchID != nil {
+		if s.HasRoleInChurch(ctx, assignerID, RoleChurchAdmin, *churchID) {
+			return true, nil
+		}
+	}
+
+	// Church admins can assign team lead roles
 	if roleToAssign == RoleTeamLead && teamID != nil {
-		// Church admins can only assign team lead roles
 		// We need to check if the team belongs to a church where the assigner is a church admin
 		// For now, we'll check if the assigner is a church admin in any church
 		// A more sophisticated check would verify the team's church relationship
