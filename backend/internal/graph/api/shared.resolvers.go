@@ -735,15 +735,11 @@ func (r *quizResolver) UserSubmissions(ctx context.Context, obj *model.Quiz) ([]
 }
 
 // UserCanStart is the resolver for the userCanStart field on Quiz.
+// Note: This is a legacy field. Prefer using session-based access via userActiveSession.
 func (r *quizResolver) UserCanStart(ctx context.Context, obj *model.Quiz) (bool, error) {
 	// Get authenticated user ID
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
-		return false, nil
-	}
-
-	// Check if quiz is published
-	if obj.PublishedAt == nil || obj.PublishedAt.Time.After(time.Now()) {
 		return false, nil
 	}
 
@@ -931,24 +927,13 @@ func (r *quizChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.Q
 }
 
 // Quiz is the resolver for the quiz field.
+// Visibility is controlled by the challenge's publishedAt and session access.
 func (r *quizChallengeResolver) Quiz(ctx context.Context, obj *model.QuizChallenge) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, obj.ID)
 	quiz, err := thunk()
 	if err != nil {
 		return nil, err
 	}
-	if quiz == nil {
-		return nil, nil
-	}
-
-	// Check visibility for non-admins
-	userID, _ := middleware.GetUserID(ctx)
-	if userID == "" || !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
-		if quiz.PublishedAt == nil || quiz.PublishedAt.Time.After(time.Now()) {
-			return nil, nil // Return nil for field resolver
-		}
-	}
-
 	return quiz, nil
 }
 

@@ -499,7 +499,6 @@ type Quiz {
 
     questions: [QuizQuestion!]! @goField(forceResolver: true)
 
-    publishedAt: DateTime
     endTime: DateTime
 
     # User-specific fields (legacy - prefer session-based access)
@@ -831,7 +830,6 @@ input CreateQuizInput {
     allowRetakes: Boolean!
     completionPoints: Int!
 
-    publishedAt: DateTime
     endTime: DateTime
 }
 
@@ -847,7 +845,6 @@ input UpdateQuizInput {
     allowRetakes: Boolean
     completionPoints: Int
 
-    publishedAt: DateTime
     endTime: DateTime
 }
 
@@ -901,8 +898,6 @@ input QuizFilter {
     projectId: ID
     challengeId: ID
     ids: [ID!]
-    publishedAfter: DateTime
-    publishedBefore: DateTime
 }
 
 input UpdateAchievementInput {

@@ -75,9 +75,9 @@ func (r *Resolver) getUserChallengeEnrolledAt(ctx context.Context, challengeID s
 	return &scalars.DateTime{Time: *ts}, nil
 }
 
-// LoadQuizWithVisibility loads a quiz and enforces visibility rules for non-admins.
-// Admins can see all quizzes, non-admins can only see published quizzes.
-func (r *Resolver) LoadQuizWithVisibility(ctx context.Context, quizID string) (*model.Quiz, error) {
+// LoadQuizByID loads a quiz by ID.
+// Visibility is controlled by the challenge's published_at and session access.
+func (r *Resolver) LoadQuizByID(ctx context.Context, quizID string) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, quizID)
 	quiz, err := thunk()
 	if err != nil {
@@ -86,18 +86,6 @@ func (r *Resolver) LoadQuizWithVisibility(ctx context.Context, quizID string) (*
 	if quiz == nil {
 		return nil, fmt.Errorf("quiz not found")
 	}
-
-	// Admins can see all quizzes
-	userID, _ := middleware.GetUserID(ctx)
-	if userID != "" && r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
-		return quiz, nil
-	}
-
-	// Non-admins can only see published quizzes
-	if quiz.PublishedAt == nil || quiz.PublishedAt.Time.After(time.Now()) {
-		return nil, fmt.Errorf("quiz not found")
-	}
-
 	return quiz, nil
 }
 

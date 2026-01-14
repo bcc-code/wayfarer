@@ -454,7 +454,6 @@ type ComplexityRoot struct {
 		MoveEvent                                   func(childComplexity int, id string, newProjectID string) int
 		OpenQuizSession                             func(childComplexity int, id string) int
 		PublishChallenge                            func(childComplexity int, id string, publishedAt scalars.DateTime) int
-		PublishQuiz                                 func(childComplexity int, id string, publishedAt scalars.DateTime) int
 		RecordStreakActivity                        func(childComplexity int, userID string, achievementID string, currentStreak int) int
 		RegenerateJoinCode                          func(childComplexity int, teamID string) int
 		RegisterPushSubscription                    func(childComplexity int, input model.RegisterPushSubscriptionInput) int
@@ -476,7 +475,6 @@ type ComplexityRoot struct {
 		SetChallengeRequirements                    func(childComplexity int, id string, requiresTeamMembership *bool, requiresSuperTeamMembership *bool) int
 		SetChallengeVisibility                      func(childComplexity int, id string, visibleAt scalars.DateTime, startedAt *scalars.DateTime) int
 		SetNotificationPreference                   func(childComplexity int, input model.SetNotificationPreferenceInput) int
-		StartQuiz                                   func(childComplexity int, quizID string) int
 		StartQuizSession                            func(childComplexity int, sessionID string) int
 		SubmitFeedback                              func(childComplexity int, input model.SubmitFeedbackInput) int
 		SubmitQuizAnswer                            func(childComplexity int, submissionID string, input model.SubmitQuizAnswerInput) int
@@ -660,7 +658,6 @@ type ComplexityRoot struct {
 		Image                func(childComplexity int) int
 		Name                 func(childComplexity int) int
 		Project              func(childComplexity int) int
-		PublishedAt          func(childComplexity int) int
 		Questions            func(childComplexity int) int
 		RandomizeQuestions   func(childComplexity int) int
 		RevealCorrectAnswers func(childComplexity int) int
@@ -1186,13 +1183,11 @@ type MutationResolver interface {
 	CreateQuiz(ctx context.Context, input model.CreateQuizInput) (*model.Quiz, error)
 	UpdateQuiz(ctx context.Context, id string, input model.UpdateQuizInput) (*model.Quiz, error)
 	DeleteQuiz(ctx context.Context, id string) (bool, error)
-	PublishQuiz(ctx context.Context, id string, publishedAt scalars.DateTime) (*model.Quiz, error)
 	AddQuizQuestion(ctx context.Context, quizID string, input model.CreateQuizQuestionInput) (model.QuizQuestion, error)
 	UpdateQuizQuestion(ctx context.Context, id string, input model.UpdateQuizQuestionInput) (model.QuizQuestion, error)
 	DeleteQuizQuestion(ctx context.Context, id string) (bool, error)
 	ReorderQuizQuestions(ctx context.Context, quizID string, questionIds []string) ([]model.QuizQuestion, error)
 	CreateQuizAchievement(ctx context.Context, input model.CreateQuizAchievementInput) (*model.QuizAchievement, error)
-	StartQuiz(ctx context.Context, quizID string) (*model.QuizSubmission, error)
 	SubmitQuizAnswer(ctx context.Context, submissionID string, input model.SubmitQuizAnswerInput) (model.QuizResponse, error)
 	FinalizeQuiz(ctx context.Context, submissionID string) (*model.QuizSubmission, error)
 	CreateQuizSubmission(ctx context.Context, quizID string, userID string, responses []model.SubmitQuizAnswerInput, completedAt *scalars.DateTime) (*model.QuizSubmission, error)
@@ -3380,17 +3375,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.PublishChallenge(childComplexity, args["id"].(string), args["publishedAt"].(scalars.DateTime)), true
-	case "Mutation.publishQuiz":
-		if e.complexity.Mutation.PublishQuiz == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_publishQuiz_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.PublishQuiz(childComplexity, args["id"].(string), args["publishedAt"].(scalars.DateTime)), true
 	case "Mutation.recordStreakActivity":
 		if e.complexity.Mutation.RecordStreakActivity == nil {
 			break
@@ -3622,17 +3606,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.SetNotificationPreference(childComplexity, args["input"].(model.SetNotificationPreferenceInput)), true
-	case "Mutation.startQuiz":
-		if e.complexity.Mutation.StartQuiz == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_startQuiz_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.StartQuiz(childComplexity, args["quizId"].(string)), true
 	case "Mutation.startQuizSession":
 		if e.complexity.Mutation.StartQuizSession == nil {
 			break
@@ -4842,12 +4815,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Quiz.Project(childComplexity), true
-	case "Quiz.publishedAt":
-		if e.complexity.Quiz.PublishedAt == nil {
-			break
-		}
-
-		return e.complexity.Quiz.PublishedAt(childComplexity), true
 	case "Quiz.questions":
 		if e.complexity.Quiz.Questions == nil {
 			break
@@ -7238,7 +7205,6 @@ type Quiz {
 
     questions: [QuizQuestion!]! @goField(forceResolver: true)
 
-    publishedAt: DateTime
     endTime: DateTime
 
     # User-specific fields (legacy - prefer session-based access)
@@ -7570,7 +7536,6 @@ input CreateQuizInput {
     allowRetakes: Boolean!
     completionPoints: Int!
 
-    publishedAt: DateTime
     endTime: DateTime
 }
 
@@ -7586,7 +7551,6 @@ input UpdateQuizInput {
     allowRetakes: Boolean
     completionPoints: Int
 
-    publishedAt: DateTime
     endTime: DateTime
 }
 
@@ -7640,8 +7604,6 @@ input QuizFilter {
     projectId: ID
     challengeId: ID
     ids: [ID!]
-    publishedAfter: DateTime
-    publishedBefore: DateTime
 }
 
 input UpdateAchievementInput {
@@ -8411,7 +8373,6 @@ extend type Mutation {
     createQuiz(input: CreateQuizInput!): Quiz! @requireRole(roles: ["admin", "superadmin"])
     updateQuiz(id: ID!, input: UpdateQuizInput!): Quiz! @requireRole(roles: ["admin", "superadmin"])
     deleteQuiz(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-    publishQuiz(id: ID!, publishedAt: DateTime!): Quiz! @requireRole(roles: ["admin", "superadmin"])
 
     # Admin: Question management
     addQuizQuestion(quizId: ID!, input: CreateQuizQuestionInput!): QuizQuestion! @requireRole(roles: ["admin", "superadmin"])
@@ -8422,8 +8383,7 @@ extend type Mutation {
     # Admin: Achievement integration
     createQuizAchievement(input: CreateQuizAchievementInput!): QuizAchievement! @requireRole(roles: ["admin", "superadmin"])
 
-    # User: Taking quizzes
-    startQuiz(quizId: ID!): QuizSubmission!
+    # User: Taking quizzes (via sessions - use startQuizSession)
     submitQuizAnswer(submissionId: ID!, input: SubmitQuizAnswerInput!): QuizResponse!
     finalizeQuiz(submissionId: ID!): QuizSubmission!
 
@@ -9860,22 +9820,6 @@ func (ec *executionContext) field_Mutation_publishChallenge_args(ctx context.Con
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_publishQuiz_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "publishedAt", ec.unmarshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime)
-	if err != nil {
-		return nil, err
-	}
-	args["publishedAt"] = arg1
-	return args, nil
-}
-
 func (ec *executionContext) field_Mutation_recordStreakActivity_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -10185,17 +10129,6 @@ func (ec *executionContext) field_Mutation_startQuizSession_args(ctx context.Con
 		return nil, err
 	}
 	args["sessionId"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_startQuiz_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "quizId", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["quizId"] = arg0
 	return args, nil
 }
 
@@ -16427,8 +16360,6 @@ func (ec *executionContext) fieldContext_FreeTextQuestion_quiz(_ context.Context
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -16880,8 +16811,6 @@ func (ec *executionContext) fieldContext_JsonQuestion_quiz(_ context.Context, fi
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -23098,8 +23027,6 @@ func (ec *executionContext) fieldContext_Mutation_createQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -23199,8 +23126,6 @@ func (ec *executionContext) fieldContext_Mutation_updateQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -23286,107 +23211,6 @@ func (ec *executionContext) fieldContext_Mutation_deleteQuiz(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteQuiz_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_publishQuiz(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_publishQuiz,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().PublishQuiz(ctx, fc.Args["id"].(string), fc.Args["publishedAt"].(scalars.DateTime))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
-				if err != nil {
-					var zeroVal *model.Quiz
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Quiz
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
-		ec.marshalNQuiz2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuiz,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_publishQuiz(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Quiz_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Quiz_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Quiz_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Quiz_image(ctx, field)
-			case "project":
-				return ec.fieldContext_Quiz_project(ctx, field)
-			case "challenge":
-				return ec.fieldContext_Quiz_challenge(ctx, field)
-			case "timeoutSeconds":
-				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
-			case "randomizeQuestions":
-				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
-			case "revealCorrectAnswers":
-				return ec.fieldContext_Quiz_revealCorrectAnswers(ctx, field)
-			case "allowRetakes":
-				return ec.fieldContext_Quiz_allowRetakes(ctx, field)
-			case "completionPoints":
-				return ec.fieldContext_Quiz_completionPoints(ctx, field)
-			case "questions":
-				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Quiz_endTime(ctx, field)
-			case "userSubmissions":
-				return ec.fieldContext_Quiz_userSubmissions(ctx, field)
-			case "userCanStart":
-				return ec.fieldContext_Quiz_userCanStart(ctx, field)
-			case "userActiveSubmission":
-				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
-			case "sessions":
-				return ec.fieldContext_Quiz_sessions(ctx, field)
-			case "userSessions":
-				return ec.fieldContext_Quiz_userSessions(ctx, field)
-			case "userActiveSession":
-				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_publishQuiz_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -23718,81 +23542,6 @@ func (ec *executionContext) fieldContext_Mutation_createQuizAchievement(ctx cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createQuizAchievement_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_startQuiz(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_startQuiz,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().StartQuiz(ctx, fc.Args["quizId"].(string))
-		},
-		nil,
-		ec.marshalNQuizSubmission2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSubmission,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_startQuiz(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_QuizSubmission_id(ctx, field)
-			case "quiz":
-				return ec.fieldContext_QuizSubmission_quiz(ctx, field)
-			case "session":
-				return ec.fieldContext_QuizSubmission_session(ctx, field)
-			case "user":
-				return ec.fieldContext_QuizSubmission_user(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_QuizSubmission_startedAt(ctx, field)
-			case "completedAt":
-				return ec.fieldContext_QuizSubmission_completedAt(ctx, field)
-			case "expiresAt":
-				return ec.fieldContext_QuizSubmission_expiresAt(ctx, field)
-			case "isExpired":
-				return ec.fieldContext_QuizSubmission_isExpired(ctx, field)
-			case "autoSubmitted":
-				return ec.fieldContext_QuizSubmission_autoSubmitted(ctx, field)
-			case "questionOrder":
-				return ec.fieldContext_QuizSubmission_questionOrder(ctx, field)
-			case "orderedQuestions":
-				return ec.fieldContext_QuizSubmission_orderedQuestions(ctx, field)
-			case "responses":
-				return ec.fieldContext_QuizSubmission_responses(ctx, field)
-			case "score":
-				return ec.fieldContext_QuizSubmission_score(ctx, field)
-			case "maxScore":
-				return ec.fieldContext_QuizSubmission_maxScore(ctx, field)
-			case "scorePercentage":
-				return ec.fieldContext_QuizSubmission_scorePercentage(ctx, field)
-			case "pointsAwarded":
-				return ec.fieldContext_QuizSubmission_pointsAwarded(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type QuizSubmission", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_startQuiz_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -25761,8 +25510,6 @@ func (ec *executionContext) fieldContext_NumberQuestion_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -26417,8 +26164,6 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_quiz(_ context.Conte
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -29796,8 +29541,6 @@ func (ec *executionContext) fieldContext_Query_quiz(ctx context.Context, field g
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -31293,35 +31036,6 @@ func (ec *executionContext) fieldContext_Quiz_questions(_ context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Quiz_publishedAt(ctx context.Context, field graphql.CollectedField, obj *model.Quiz) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Quiz_publishedAt,
-		func(ctx context.Context) (any, error) {
-			return obj.PublishedAt, nil
-		},
-		nil,
-		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Quiz_publishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Quiz",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DateTime does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Quiz_endTime(ctx context.Context, field graphql.CollectedField, obj *model.Quiz) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -32189,8 +31903,6 @@ func (ec *executionContext) fieldContext_QuizAchievement_quiz(_ context.Context,
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -32805,8 +32517,6 @@ func (ec *executionContext) fieldContext_QuizChallenge_quiz(_ context.Context, f
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -33008,8 +32718,6 @@ func (ec *executionContext) fieldContext_QuizEdge_node(_ context.Context, field 
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -33253,8 +32961,6 @@ func (ec *executionContext) fieldContext_QuizSession_quiz(_ context.Context, fie
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -33717,8 +33423,6 @@ func (ec *executionContext) fieldContext_QuizSubmission_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -43621,7 +43325,7 @@ func (ec *executionContext) unmarshalInputCreateQuizInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "projectId", "challengeId", "timeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "publishedAt", "endTime"}
+	fieldsInOrder := [...]string{"name", "description", "image", "projectId", "challengeId", "timeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "endTime"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -43698,13 +43402,6 @@ func (ec *executionContext) unmarshalInputCreateQuizInput(ctx context.Context, o
 				return it, err
 			}
 			it.CompletionPoints = data
-		case "publishedAt":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedAt"))
-			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PublishedAt = data
 		case "endTime":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endTime"))
 			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
@@ -44938,7 +44635,7 @@ func (ec *executionContext) unmarshalInputQuizFilter(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"projectId", "challengeId", "ids", "publishedAfter", "publishedBefore"}
+	fieldsInOrder := [...]string{"projectId", "challengeId", "ids"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -44966,20 +44663,6 @@ func (ec *executionContext) unmarshalInputQuizFilter(ctx context.Context, obj an
 				return it, err
 			}
 			it.Ids = data
-		case "publishedAfter":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedAfter"))
-			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PublishedAfter = data
-		case "publishedBefore":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedBefore"))
-			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PublishedBefore = data
 		}
 	}
 
@@ -45992,7 +45675,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "timeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "publishedAt", "endTime"}
+	fieldsInOrder := [...]string{"name", "description", "image", "timeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "endTime"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -46055,13 +45738,6 @@ func (ec *executionContext) unmarshalInputUpdateQuizInput(ctx context.Context, o
 				return it, err
 			}
 			it.CompletionPoints = data
-		case "publishedAt":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedAt"))
-			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PublishedAt = data
 		case "endTime":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endTime"))
 			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
@@ -50285,13 +49961,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "publishQuiz":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_publishQuiz(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "addQuizQuestion":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_addQuizQuestion(ctx, field)
@@ -50323,13 +49992,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createQuizAchievement":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createQuizAchievement(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "startQuiz":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_startQuiz(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -52984,8 +52646,6 @@ func (ec *executionContext) _Quiz(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "publishedAt":
-			out.Values[i] = ec._Quiz_publishedAt(ctx, field, obj)
 		case "endTime":
 			out.Values[i] = ec._Quiz_endTime(ctx, field, obj)
 		case "userSubmissions":

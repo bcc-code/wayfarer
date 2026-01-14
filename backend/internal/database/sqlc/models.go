@@ -379,7 +379,6 @@ type Quiz struct {
 	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
 	AllowRetakes         bool               `json:"allow_retakes"`
 	CompletionPoints     int32              `json:"completion_points"`
-	PublishedAt          pgtype.Timestamptz `json:"published_at"`
 	EndTime              pgtype.Timestamptz `json:"end_time"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`

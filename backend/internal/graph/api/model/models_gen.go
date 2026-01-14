@@ -390,7 +390,6 @@ type CreateQuizInput struct {
 	RevealCorrectAnswers bool              `json:"revealCorrectAnswers"`
 	AllowRetakes         bool              `json:"allowRetakes"`
 	CompletionPoints     int               `json:"completionPoints"`
-	PublishedAt          *scalars.DateTime `json:"publishedAt,omitempty"`
 	EndTime              *scalars.DateTime `json:"endTime,omitempty"`
 }
 
@@ -953,7 +952,6 @@ type Quiz struct {
 	AllowRetakes         bool              `json:"allowRetakes"`
 	CompletionPoints     int               `json:"completionPoints"`
 	Questions            []QuizQuestion    `json:"questions"`
-	PublishedAt          *scalars.DateTime `json:"publishedAt,omitempty"`
 	EndTime              *scalars.DateTime `json:"endTime,omitempty"`
 	UserSubmissions      []QuizSubmission  `json:"userSubmissions"`
 	UserCanStart         bool              `json:"userCanStart"`
@@ -1061,11 +1059,9 @@ type QuizEdge struct {
 }
 
 type QuizFilter struct {
-	ProjectID       *string           `json:"projectId,omitempty"`
-	ChallengeID     *string           `json:"challengeId,omitempty"`
-	Ids             []string          `json:"ids,omitempty"`
-	PublishedAfter  *scalars.DateTime `json:"publishedAfter,omitempty"`
-	PublishedBefore *scalars.DateTime `json:"publishedBefore,omitempty"`
+	ProjectID   *string  `json:"projectId,omitempty"`
+	ChallengeID *string  `json:"challengeId,omitempty"`
+	Ids         []string `json:"ids,omitempty"`
 }
 
 type QuizPredefinedAnswer struct {
@@ -1534,7 +1530,6 @@ type UpdateQuizInput struct {
 	RevealCorrectAnswers *bool             `json:"revealCorrectAnswers,omitempty"`
 	AllowRetakes         *bool             `json:"allowRetakes,omitempty"`
 	CompletionPoints     *int              `json:"completionPoints,omitempty"`
-	PublishedAt          *scalars.DateTime `json:"publishedAt,omitempty"`
 	EndTime              *scalars.DateTime `json:"endTime,omitempty"`
 }
 

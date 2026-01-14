@@ -75,8 +75,6 @@ func TestQuizSessions(t *testing.T) {
 
 	// Helper to create a quiz
 	createQuiz := func(t *testing.T, name string, challengeID string) string {
-		publishedTime := time.Now().Add(-1 * time.Hour).Format(time.RFC3339)
-
 		resp := client.WithAuth(adminToken).MustExecute(t, `
 			mutation CreateQuiz($input: CreateQuizInput!) {
 				createQuiz(input: $input) {
@@ -93,7 +91,6 @@ func TestQuizSessions(t *testing.T) {
 				"revealCorrectAnswers": true,
 				"allowRetakes":         false,
 				"completionPoints":     10,
-				"publishedAt":          publishedTime,
 			},
 		})
 		require.False(t, resp.HasErrors(), "failed to create quiz: %s", resp.ErrorMessage())

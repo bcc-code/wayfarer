@@ -10,14 +10,10 @@ import (
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
-	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 )
 
 // TestBuildQuizFilterParamsCursor tests the buildQuizFilterParamsCursor function
 func TestBuildQuizFilterParamsCursor(t *testing.T) {
-	publishedAfter := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	publishedBefore := time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)
-
 	tests := []struct {
 		name        string
 		filter      *model.QuizFilter
@@ -32,11 +28,9 @@ func TestBuildQuizFilterParamsCursor(t *testing.T) {
 		{
 			name: "forward pagination with all filters",
 			filter: &model.QuizFilter{
-				ProjectID:       stringPtr("PR123"),
-				ChallengeID:     stringPtr("CL001"),
-				Ids:             []string{"QZ001", "QZ002"},
-				PublishedAfter:  &scalars.DateTime{Time: publishedAfter},
-				PublishedBefore: &scalars.DateTime{Time: publishedBefore},
+				ProjectID:   stringPtr("PR123"),
+				ChallengeID: stringPtr("CL001"),
+				Ids:         []string{"QZ001", "QZ002"},
 			},
 			first:       intPtr(10),
 			after:       stringPtr("QZ005"),
@@ -47,10 +41,6 @@ func TestBuildQuizFilterParamsCursor(t *testing.T) {
 				assert.Equal(t, "PR123", params.Projectid)
 				assert.Equal(t, "CL001", params.Challengeid)
 				assert.Equal(t, []string{"QZ001", "QZ002"}, params.Ids)
-				assert.True(t, params.Publishedafter.Valid)
-				assert.Equal(t, publishedAfter, params.Publishedafter.Time)
-				assert.True(t, params.Publishedbefore.Valid)
-				assert.Equal(t, publishedBefore, params.Publishedbefore.Time)
 				assert.Equal(t, int32(11), params.Querylimit) // 10 + 1 for hasMore check
 				assert.False(t, params.Isbackward)
 				assert.Equal(t, "QZ005", params.Aftercursor)
@@ -139,8 +129,6 @@ func TestBuildQuizFilterParamsCursor(t *testing.T) {
 				assert.Equal(t, int32(11), params.Querylimit)
 				assert.Equal(t, "", params.Projectid)
 				assert.Nil(t, params.Ids)
-				assert.False(t, params.Publishedafter.Valid)
-				assert.False(t, params.Publishedbefore.Valid)
 			},
 		},
 	}
@@ -164,9 +152,6 @@ func TestBuildQuizFilterParamsCursor(t *testing.T) {
 
 // TestBuildCountQuizzesFilterParams tests the buildCountQuizzesFilterParams function
 func TestBuildCountQuizzesFilterParams(t *testing.T) {
-	publishedAfter := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	publishedBefore := time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)
-
 	tests := []struct {
 		name   string
 		filter *model.QuizFilter
@@ -175,20 +160,14 @@ func TestBuildCountQuizzesFilterParams(t *testing.T) {
 		{
 			name: "all filters populated",
 			filter: &model.QuizFilter{
-				ProjectID:       stringPtr("PR123"),
-				ChallengeID:     stringPtr("CL001"),
-				Ids:             []string{"QZ001", "QZ002"},
-				PublishedAfter:  &scalars.DateTime{Time: publishedAfter},
-				PublishedBefore: &scalars.DateTime{Time: publishedBefore},
+				ProjectID:   stringPtr("PR123"),
+				ChallengeID: stringPtr("CL001"),
+				Ids:         []string{"QZ001", "QZ002"},
 			},
 			check: func(t *testing.T, params sqlc.CountQuizzesFilteredParams) {
 				assert.Equal(t, "PR123", params.Projectid)
 				assert.Equal(t, "CL001", params.Challengeid)
 				assert.Equal(t, []string{"QZ001", "QZ002"}, params.Ids)
-				assert.True(t, params.Publishedafter.Valid)
-				assert.Equal(t, publishedAfter, params.Publishedafter.Time)
-				assert.True(t, params.Publishedbefore.Valid)
-				assert.Equal(t, publishedBefore, params.Publishedbefore.Time)
 			},
 		},
 		{
@@ -199,8 +178,6 @@ func TestBuildCountQuizzesFilterParams(t *testing.T) {
 			check: func(t *testing.T, params sqlc.CountQuizzesFilteredParams) {
 				assert.Equal(t, "PR999", params.Projectid)
 				assert.Nil(t, params.Ids)
-				assert.False(t, params.Publishedafter.Valid)
-				assert.False(t, params.Publishedbefore.Valid)
 			},
 		},
 		{
@@ -210,8 +187,6 @@ func TestBuildCountQuizzesFilterParams(t *testing.T) {
 				assert.Equal(t, "", params.Projectid)
 				assert.Equal(t, "", params.Challengeid)
 				assert.Nil(t, params.Ids)
-				assert.False(t, params.Publishedafter.Valid)
-				assert.False(t, params.Publishedbefore.Valid)
 			},
 		},
 		{
@@ -221,8 +196,6 @@ func TestBuildCountQuizzesFilterParams(t *testing.T) {
 				assert.Equal(t, "", params.Projectid)
 				assert.Equal(t, "", params.Challengeid)
 				assert.Nil(t, params.Ids)
-				assert.False(t, params.Publishedafter.Valid)
-				assert.False(t, params.Publishedbefore.Valid)
 			},
 		},
 	}
@@ -240,9 +213,6 @@ func TestBuildCountQuizzesFilterParams(t *testing.T) {
 
 // TestBuildQuizCacheKeyParams tests the buildQuizCacheKeyParams function
 func TestBuildQuizCacheKeyParams(t *testing.T) {
-	publishedAfter := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	publishedBefore := time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)
-
 	tests := []struct {
 		name   string
 		filter *model.QuizFilter
@@ -255,11 +225,9 @@ func TestBuildQuizCacheKeyParams(t *testing.T) {
 		{
 			name: "all parameters populated",
 			filter: &model.QuizFilter{
-				ProjectID:       stringPtr("PR123"),
-				ChallengeID:     stringPtr("CL001"),
-				Ids:             []string{"QZ001", "QZ002"},
-				PublishedAfter:  &scalars.DateTime{Time: publishedAfter},
-				PublishedBefore: &scalars.DateTime{Time: publishedBefore},
+				ProjectID:   stringPtr("PR123"),
+				ChallengeID: stringPtr("CL001"),
+				Ids:         []string{"QZ001", "QZ002"},
 			},
 			first:  intPtr(10),
 			after:  stringPtr("QZ005"),
@@ -269,8 +237,6 @@ func TestBuildQuizCacheKeyParams(t *testing.T) {
 				assert.Equal(t, "PR123", params["projectid"])
 				assert.Equal(t, "CL001", params["challengeid"])
 				assert.Equal(t, "[QZ001 QZ002]", params["ids"])
-				assert.Equal(t, publishedAfter.Format(time.RFC3339), params["publishedafter"])
-				assert.Equal(t, publishedBefore.Format(time.RFC3339), params["publishedbefore"])
 				assert.Equal(t, "10", params["first"])
 				assert.Equal(t, "QZ005", params["after"])
 				_, hasLast := params["last"]

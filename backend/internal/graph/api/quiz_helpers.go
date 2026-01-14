@@ -22,7 +22,6 @@ type quizRow interface {
 	GetRevealCorrectAnswers() bool
 	GetAllowRetakes() bool
 	GetCompletionPoints() int32
-	GetPublishedAt() pgtype.Timestamptz
 	GetEndTime() pgtype.Timestamptz
 }
 
@@ -40,10 +39,9 @@ func (r createQuizRowAdapter) GetImageUrl() *string               { return r.Ima
 func (r createQuizRowAdapter) GetTimeoutSeconds() *int32          { return r.TimeoutSeconds }
 func (r createQuizRowAdapter) GetRandomizeQuestions() bool        { return r.RandomizeQuestions }
 func (r createQuizRowAdapter) GetRevealCorrectAnswers() bool      { return r.RevealCorrectAnswers }
-func (r createQuizRowAdapter) GetAllowRetakes() bool              { return r.AllowRetakes }
-func (r createQuizRowAdapter) GetCompletionPoints() int32         { return r.CompletionPoints }
-func (r createQuizRowAdapter) GetPublishedAt() pgtype.Timestamptz { return r.PublishedAt }
-func (r createQuizRowAdapter) GetEndTime() pgtype.Timestamptz     { return r.EndTime }
+func (r createQuizRowAdapter) GetAllowRetakes() bool      { return r.AllowRetakes }
+func (r createQuizRowAdapter) GetCompletionPoints() int32 { return r.CompletionPoints }
+func (r createQuizRowAdapter) GetEndTime() pgtype.Timestamptz { return r.EndTime }
 
 // Adapter for sqlc.UpdateQuizRow
 type updateQuizRowAdapter struct {
@@ -59,29 +57,9 @@ func (r updateQuizRowAdapter) GetImageUrl() *string               { return r.Ima
 func (r updateQuizRowAdapter) GetTimeoutSeconds() *int32          { return r.TimeoutSeconds }
 func (r updateQuizRowAdapter) GetRandomizeQuestions() bool        { return r.RandomizeQuestions }
 func (r updateQuizRowAdapter) GetRevealCorrectAnswers() bool      { return r.RevealCorrectAnswers }
-func (r updateQuizRowAdapter) GetAllowRetakes() bool              { return r.AllowRetakes }
-func (r updateQuizRowAdapter) GetCompletionPoints() int32         { return r.CompletionPoints }
-func (r updateQuizRowAdapter) GetPublishedAt() pgtype.Timestamptz { return r.PublishedAt }
-func (r updateQuizRowAdapter) GetEndTime() pgtype.Timestamptz     { return r.EndTime }
-
-// Adapter for sqlc.PublishQuizRow
-type publishQuizRowAdapter struct {
-	*sqlc.PublishQuizRow
-}
-
-func (r publishQuizRowAdapter) GetID() string                      { return r.ID }
-func (r publishQuizRowAdapter) GetProjectID() string               { return r.ProjectID }
-func (r publishQuizRowAdapter) GetChallengeID() string             { return r.ChallengeID }
-func (r publishQuizRowAdapter) GetName() string                    { return r.Name }
-func (r publishQuizRowAdapter) GetDescription() string             { return r.Description }
-func (r publishQuizRowAdapter) GetImageUrl() *string               { return r.ImageUrl }
-func (r publishQuizRowAdapter) GetTimeoutSeconds() *int32          { return r.TimeoutSeconds }
-func (r publishQuizRowAdapter) GetRandomizeQuestions() bool        { return r.RandomizeQuestions }
-func (r publishQuizRowAdapter) GetRevealCorrectAnswers() bool      { return r.RevealCorrectAnswers }
-func (r publishQuizRowAdapter) GetAllowRetakes() bool              { return r.AllowRetakes }
-func (r publishQuizRowAdapter) GetCompletionPoints() int32         { return r.CompletionPoints }
-func (r publishQuizRowAdapter) GetPublishedAt() pgtype.Timestamptz { return r.PublishedAt }
-func (r publishQuizRowAdapter) GetEndTime() pgtype.Timestamptz     { return r.EndTime }
+func (r updateQuizRowAdapter) GetAllowRetakes() bool          { return r.AllowRetakes }
+func (r updateQuizRowAdapter) GetCompletionPoints() int32     { return r.CompletionPoints }
+func (r updateQuizRowAdapter) GetEndTime() pgtype.Timestamptz { return r.EndTime }
 
 // Adapter for sqlc.GetQuizzesFilteredCursorRow
 type filteredCursorQuizRowAdapter struct {
@@ -97,17 +75,11 @@ func (r filteredCursorQuizRowAdapter) GetImageUrl() *string               { retu
 func (r filteredCursorQuizRowAdapter) GetTimeoutSeconds() *int32          { return r.TimeoutSeconds }
 func (r filteredCursorQuizRowAdapter) GetRandomizeQuestions() bool        { return r.RandomizeQuestions }
 func (r filteredCursorQuizRowAdapter) GetRevealCorrectAnswers() bool      { return r.RevealCorrectAnswers }
-func (r filteredCursorQuizRowAdapter) GetAllowRetakes() bool              { return r.AllowRetakes }
-func (r filteredCursorQuizRowAdapter) GetCompletionPoints() int32         { return r.CompletionPoints }
-func (r filteredCursorQuizRowAdapter) GetPublishedAt() pgtype.Timestamptz { return r.PublishedAt }
-func (r filteredCursorQuizRowAdapter) GetEndTime() pgtype.Timestamptz     { return r.EndTime }
+func (r filteredCursorQuizRowAdapter) GetAllowRetakes() bool          { return r.AllowRetakes }
+func (r filteredCursorQuizRowAdapter) GetCompletionPoints() int32     { return r.CompletionPoints }
+func (r filteredCursorQuizRowAdapter) GetEndTime() pgtype.Timestamptz { return r.EndTime }
 
 func convertQuizRowToQuiz(row quizRow) *model.Quiz {
-	var publishedAt *scalars.DateTime
-	if row.GetPublishedAt().Valid {
-		publishedAt = &scalars.DateTime{Time: row.GetPublishedAt().Time}
-	}
-
 	var endTime *scalars.DateTime
 	if row.GetEndTime().Valid {
 		endTime = &scalars.DateTime{Time: row.GetEndTime().Time}
@@ -131,7 +103,6 @@ func convertQuizRowToQuiz(row quizRow) *model.Quiz {
 		RevealCorrectAnswers: row.GetRevealCorrectAnswers(),
 		AllowRetakes:         row.GetAllowRetakes(),
 		CompletionPoints:     int(row.GetCompletionPoints()),
-		PublishedAt:          publishedAt,
 		EndTime:              endTime,
 	}
 }
@@ -142,10 +113,6 @@ func convertCreateQuizRowToQuiz(row *sqlc.CreateQuizRow) *model.Quiz {
 
 func convertUpdateQuizRowToQuiz(row *sqlc.UpdateQuizRow) *model.Quiz {
 	return convertQuizRowToQuiz(updateQuizRowAdapter{row})
-}
-
-func convertPublishQuizRowToQuiz(row *sqlc.PublishQuizRow) *model.Quiz {
-	return convertQuizRowToQuiz(publishQuizRowAdapter{row})
 }
 
 func convertFilteredCursorQuizRowToQuiz(row *sqlc.GetQuizzesFilteredCursorRow) *model.Quiz {
