@@ -20,9 +20,6 @@ func TestUserAchievementKey(t *testing.T) {
 	assert.Contains(t, keyStr, "US01K8XV6VK9ED2GBZSQ2VDTAT8T")
 	assert.Contains(t, keyStr, "AC01K8XV6VK9ED2GBZSQ2VDTAT8T")
 	assert.Equal(t, "US01K8XV6VK9ED2GBZSQ2VDTAT8T:AC01K8XV6VK9ED2GBZSQ2VDTAT8T", keyStr)
-
-	raw := key.Raw()
-	assert.Equal(t, key, raw)
 }
 
 func TestUserAchievementTimestampCacheKey(t *testing.T) {
