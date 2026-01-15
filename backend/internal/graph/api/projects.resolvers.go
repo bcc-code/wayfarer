@@ -584,11 +584,3 @@ func (r *queryResolver) CurrentProject(ctx context.Context) (*model.Project, err
 	// Use translation-aware wrapper to fetch project
 	return r.LoadProjectWithTranslation(ctx, projectID)
 }
-
-// toDateTimePointer converts a pgtype.Timestamptz to *scalars.DateTime
-func toDateTimePointer(ts pgtype.Timestamptz) *scalars.DateTime {
-	if !ts.Valid {
-		return nil
-	}
-	return &scalars.DateTime{Time: ts.Time}
-}

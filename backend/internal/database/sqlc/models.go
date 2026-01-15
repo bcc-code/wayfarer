@@ -337,7 +337,6 @@ type ProjectTranslation struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 	Rules        *string            `json:"rules"`
-	InfoMessage  *string            `json:"info_message"`
 }
 
 type PushNotificationLog struct {

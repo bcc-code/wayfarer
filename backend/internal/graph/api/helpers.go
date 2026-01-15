@@ -9,6 +9,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // resolveProjectByID is a helper function to load a project by ID using the dataloader
@@ -328,4 +329,12 @@ func parseRankCursor(cursor string) (int64, error) {
 	var rank int64
 	_, err := fmt.Sscanf(cursor, "%d", &rank)
 	return rank, err
+}
+
+// toDateTimePointer converts a pgtype.Timestamptz to *scalars.DateTime
+func toDateTimePointer(ts pgtype.Timestamptz) *scalars.DateTime {
+	if !ts.Valid {
+		return nil
+	}
+	return &scalars.DateTime{Time: ts.Time}
 }
