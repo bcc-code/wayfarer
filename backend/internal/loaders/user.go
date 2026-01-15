@@ -207,9 +207,10 @@ func buildConsentStatus(userID string, birthdate time.Time, latestConsents map[s
 		// Check by consent key (to handle rejection persistence across versions)
 		if userConsent, hasAction := userConsents[consent.Key]; hasAction {
 			// User has taken action on this consent
-			if userConsent.Action == model.ConsentActionAccepted {
+			switch userConsent.Action {
+			case model.ConsentActionAccepted:
 				acceptedConsents = append(acceptedConsents, *userConsent)
-			} else if userConsent.Action == model.ConsentActionRejected {
+			case model.ConsentActionRejected:
 				rejectedConsents = append(rejectedConsents, *userConsent)
 			}
 		} else {

@@ -1344,17 +1344,9 @@ func (r *superTeamResolver) Members(ctx context.Context, obj *model.SuperTeam, f
 	}
 
 	// Check permissions - only admins, project admins can access super team members
-	allowed := false
-
-	// 1. Admins/SuperAdmins/M2M can see all super team members
-	if r.RoleService.IsAdmin(ctx, currentUserID) || r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) {
-		allowed = true
-	}
-
-	// 2. Project admins can see members of super teams in their projects
-	if !allowed && r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, obj.ProjectID) {
-		allowed = true
-	}
+	allowed := r.RoleService.IsAdmin(ctx, currentUserID) ||
+		r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) ||
+		r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, obj.ProjectID)
 
 	if !allowed {
 		return nil, fmt.Errorf("permission denied: you do not have access to this super team's members")
@@ -1503,22 +1495,10 @@ func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.Te
 	}
 
 	// Check permissions - only admins, project admins, and team leads can access team members
-	allowed := false
-
-	// 1. Admins/SuperAdmins/M2M can see all team members
-	if r.RoleService.IsAdmin(ctx, currentUserID) || r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) {
-		allowed = true
-	}
-
-	// 2. Project admins can see members of teams in their projects
-	if !allowed && r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, obj.ProjectID) {
-		allowed = true
-	}
-
-	// 3. Team leads can see members of teams they lead
-	if !allowed && r.RoleService.HasRoleInTeam(ctx, currentUserID, services.RoleTeamLead, obj.ID) {
-		allowed = true
-	}
+	allowed := r.RoleService.IsAdmin(ctx, currentUserID) ||
+		r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) ||
+		r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, obj.ProjectID) ||
+		r.RoleService.HasRoleInTeam(ctx, currentUserID, services.RoleTeamLead, obj.ID)
 
 	if !allowed {
 		return nil, fmt.Errorf("permission denied: you do not have access to this team's members")

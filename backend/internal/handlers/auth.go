@@ -719,7 +719,7 @@ func (h *AuthHandler) findChurchFromAffiliations(ctx context.Context, affiliatio
 // findChurchByOrgUID finds a church by looking up the org UUID in Members API first
 func (h *AuthHandler) findChurchByOrgUID(ctx context.Context, orgUID uuid.UUID) (*sqlc.GetChurchByExternalIDRow, error) {
 	if h.MembersClient == nil {
-		return nil, fmt.Errorf("Members API not configured")
+		return nil, fmt.Errorf("members API not configured")
 	}
 
 	org, err := h.MembersClient.GetOrganizationByUID(ctx, orgUID)
