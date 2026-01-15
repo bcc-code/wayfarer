@@ -552,6 +552,53 @@ func (r *projectResolver) Teams(ctx context.Context, obj *model.Project) ([]mode
 	return result, nil
 }
 
+// MyChurchTeams is the resolver for the myChurchTeams field.
+func (r *projectResolver) MyChurchTeams(ctx context.Context, obj *model.Project) ([]model.Team, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load current user to get their church ID
+	userThunk := r.Loaders.UserByIDLoader.Load(ctx, currentUserID)
+	user, err := userThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	// Query teams filtered by project and church
+	rows, err := r.DB.Queries.GetTeamsByProjectIDAndChurchID(ctx, sqlc.GetTeamsByProjectIDAndChurchIDParams{
+		Projectid: obj.ID,
+		Churchid:  user.ChurchID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load teams: %w", err)
+	}
+
+	// Convert to GraphQL models
+	result := make([]model.Team, len(rows))
+	for i, row := range rows {
+		description := ""
+		if row.Description != nil {
+			description = *row.Description
+		}
+
+		team := &model.Team{
+			ID:                  row.ID,
+			ProjectID:           row.ProjectID,
+			Name:                row.Name,
+			Description:         description,
+			SuperTeamID:         row.SuperTeamID,
+			LeaderboardExcluded: row.LeaderboardExcluded,
+		}
+		translated := r.ApplyTranslationToTeam(ctx, team)
+		result[i] = *translated
+	}
+
+	return result, nil
+}
+
 // MyTeam is the resolver for the myTeam field.
 func (r *projectResolver) MyTeam(ctx context.Context, obj *model.Project) (*model.Team, error) {
 	// Get current user ID from context

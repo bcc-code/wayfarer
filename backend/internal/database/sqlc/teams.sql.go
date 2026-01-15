@@ -104,17 +104,18 @@ func (q *Queries) CountTeamsFiltered(ctx context.Context, arg CountTeamsFiltered
 }
 
 const CreateTeam = `-- name: CreateTeam :one
-INSERT INTO teams (id, project_id, name, description, join_code)
-VALUES ($1::text, $2::text, $3::text, $4::text, $5::text)
+INSERT INTO teams (id, project_id, name, description, join_code, created_by_user_id)
+VALUES ($1::text, $2::text, $3::text, $4::text, $5::text, $6::text)
 RETURNING id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at
 `
 
 type CreateTeamParams struct {
-	ID          string `json:"id"`
-	Projectid   string `json:"projectid"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Joincode    string `json:"joincode"`
+	ID              string `json:"id"`
+	Projectid       string `json:"projectid"`
+	Name            string `json:"name"`
+	Description     string `json:"description"`
+	Joincode        string `json:"joincode"`
+	Createdbyuserid string `json:"createdbyuserid"`
 }
 
 type CreateTeamRow struct {
@@ -136,6 +137,7 @@ func (q *Queries) CreateTeam(ctx context.Context, arg CreateTeamParams) (*Create
 		arg.Name,
 		arg.Description,
 		arg.Joincode,
+		arg.Createdbyuserid,
 	)
 	var i CreateTeamRow
 	err := row.Scan(
@@ -349,6 +351,64 @@ func (q *Queries) GetTeamsByIDs(ctx context.Context, ids []string) ([]*GetTeamsB
 	items := []*GetTeamsByIDsRow{}
 	for rows.Next() {
 		var i GetTeamsByIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Name,
+			&i.Description,
+			&i.JoinCode,
+			&i.SuperTeamID,
+			&i.LeaderboardExcluded,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetTeamsByProjectIDAndChurchID = `-- name: GetTeamsByProjectIDAndChurchID :many
+SELECT DISTINCT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.leaderboard_excluded, t.created_at, t.updated_at
+FROM teams t
+LEFT JOIN team_members tm ON t.id = tm.team_id
+LEFT JOIN users member_user ON tm.user_id = member_user.id
+LEFT JOIN users creator_user ON t.created_by_user_id = creator_user.id
+WHERE t.project_id = $1::text
+  AND (member_user.church_id = $2::text OR creator_user.church_id = $2::text)
+ORDER BY t.created_at DESC
+`
+
+type GetTeamsByProjectIDAndChurchIDParams struct {
+	Projectid string `json:"projectid"`
+	Churchid  string `json:"churchid"`
+}
+
+type GetTeamsByProjectIDAndChurchIDRow struct {
+	ID                  string             `json:"id"`
+	ProjectID           string             `json:"project_id"`
+	Name                string             `json:"name"`
+	Description         *string            `json:"description"`
+	JoinCode            string             `json:"join_code"`
+	SuperTeamID         *string            `json:"super_team_id"`
+	LeaderboardExcluded bool               `json:"leaderboard_excluded"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetTeamsByProjectIDAndChurchID(ctx context.Context, arg GetTeamsByProjectIDAndChurchIDParams) ([]*GetTeamsByProjectIDAndChurchIDRow, error) {
+	rows, err := q.db.Query(ctx, GetTeamsByProjectIDAndChurchID, arg.Projectid, arg.Churchid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetTeamsByProjectIDAndChurchIDRow{}
+	for rows.Next() {
+		var i GetTeamsByProjectIDAndChurchIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProjectID,
