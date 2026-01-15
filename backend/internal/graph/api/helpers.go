@@ -340,3 +340,4 @@ func parseRankCursor(cursor string) (int64, error) {
 	_, err := fmt.Sscanf(cursor, "%d", &rank)
 	return rank, err
 }
+

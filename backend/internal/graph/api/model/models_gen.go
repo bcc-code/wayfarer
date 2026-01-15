@@ -357,12 +357,15 @@ type CreatePredefinedAnswerInput struct {
 }
 
 type CreateProjectInput struct {
-	Name        string           `json:"name"`
-	Description *string          `json:"description,omitempty"`
-	Rules       *string          `json:"rules,omitempty"`
-	StartDate   scalars.DateTime `json:"startDate"`
-	EndDate     scalars.DateTime `json:"endDate"`
-	Branding    *BrandingInput   `json:"branding"`
+	Name             string            `json:"name"`
+	Description      *string           `json:"description,omitempty"`
+	Rules            *string           `json:"rules,omitempty"`
+	InfoMessage      *string           `json:"infoMessage,omitempty"`
+	InfoMessageStart *scalars.DateTime `json:"infoMessageStart,omitempty"`
+	InfoMessageEnd   *scalars.DateTime `json:"infoMessageEnd,omitempty"`
+	StartDate        scalars.DateTime  `json:"startDate"`
+	EndDate          scalars.DateTime  `json:"endDate"`
+	Branding         *BrandingInput    `json:"branding"`
 }
 
 type CreateQuizAchievementInput struct {
@@ -875,23 +878,27 @@ func (this PredefinedResponse) GetTimeSpentSeconds() *int        { return this.T
 func (this PredefinedResponse) GetPointsEarned() *int            { return this.PointsEarned }
 
 type Project struct {
-	ID           string                  `json:"id"`
-	Name         string                  `json:"name"`
-	Description  string                  `json:"description"`
-	Rules        *MarkdownText           `json:"rules,omitempty"`
-	Challenges   []Challenge             `json:"challenges"`
-	Leaderboard  *LeaderboardConnection  `json:"leaderboard"`
-	Events       []Event                 `json:"events"`
-	StartDate    scalars.DateTime        `json:"startDate"`
-	EndDate      scalars.DateTime        `json:"endDate"`
-	Branding     *Branding               `json:"branding"`
-	Teams        []Team                  `json:"teams"`
-	MyTeam       *Team                   `json:"myTeam,omitempty"`
-	Achievements []Achievement           `json:"achievements"`
-	Streaks      []Streak                `json:"streaks"`
-	Journal      *ScoreJournalConnection `json:"journal"`
-	ArchivedAt   *bool                   `json:"archivedAt,omitempty"`
-	RulesRaw     *string                 `json:"-"`
+	ID               string                  `json:"id"`
+	Name             string                  `json:"name"`
+	Description      string                  `json:"description"`
+	Rules            *MarkdownText           `json:"rules,omitempty"`
+	InfoMessage      *MarkdownText           `json:"infoMessage,omitempty"`
+	InfoMessageStart *scalars.DateTime       `json:"infoMessageStart,omitempty"`
+	InfoMessageEnd   *scalars.DateTime       `json:"infoMessageEnd,omitempty"`
+	Challenges       []Challenge             `json:"challenges"`
+	Leaderboard      *LeaderboardConnection  `json:"leaderboard"`
+	Events           []Event                 `json:"events"`
+	StartDate        scalars.DateTime        `json:"startDate"`
+	EndDate          scalars.DateTime        `json:"endDate"`
+	Branding         *Branding               `json:"branding"`
+	Teams            []Team                  `json:"teams"`
+	MyTeam           *Team                   `json:"myTeam,omitempty"`
+	Achievements     []Achievement           `json:"achievements"`
+	Streaks          []Streak                `json:"streaks"`
+	Journal          *ScoreJournalConnection `json:"journal"`
+	ArchivedAt       *bool                   `json:"archivedAt,omitempty"`
+	InfoMessageRaw   *string                 `json:"-"`
+	RulesRaw         *string                 `json:"-"`
 }
 
 type ProjectConnection struct {
@@ -1483,12 +1490,15 @@ type UpdateEventInput struct {
 }
 
 type UpdateProjectInput struct {
-	Name        *string           `json:"name,omitempty"`
-	Description *string           `json:"description,omitempty"`
-	Rules       *string           `json:"rules,omitempty"`
-	StartDate   *scalars.DateTime `json:"startDate,omitempty"`
-	EndDate     *scalars.DateTime `json:"endDate,omitempty"`
-	Branding    *BrandingInput    `json:"branding,omitempty"`
+	Name             *string           `json:"name,omitempty"`
+	Description      *string           `json:"description,omitempty"`
+	Rules            *string           `json:"rules,omitempty"`
+	InfoMessage      *string           `json:"infoMessage,omitempty"`
+	InfoMessageStart *scalars.DateTime `json:"infoMessageStart,omitempty"`
+	InfoMessageEnd   *scalars.DateTime `json:"infoMessageEnd,omitempty"`
+	StartDate        *scalars.DateTime `json:"startDate,omitempty"`
+	EndDate          *scalars.DateTime `json:"endDate,omitempty"`
+	Branding         *BrandingInput    `json:"branding,omitempty"`
 }
 
 type UpdateQuizInput struct {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
 import z from 'zod'
+import { toLocalDatetimeLocal, toISOString } from '~/utils/dates'
 
 definePageMeta({
   layout: 'admin',
@@ -23,6 +24,12 @@ gql(`
         markdown
         html
       }
+      infoMessage {
+        markdown
+        html
+      }
+      infoMessageStart
+      infoMessageEnd
     }
   }
 `)
@@ -78,6 +85,9 @@ const schema = z.object({
     rounding: z.number(),
   }),
   rules: z.string().optional(),
+  infoMessage: z.string().optional(),
+  infoMessageStart: z.string().nullish(),
+  infoMessageEnd: z.string().nullish(),
 })
 type Schema = z.infer<typeof schema>
 const state = reactive<Schema>({
@@ -121,6 +131,9 @@ const state = reactive<Schema>({
     },
   },
   rules: '',
+  infoMessage: '',
+  infoMessageStart: undefined,
+  infoMessageEnd: undefined,
 })
 
 watch(
@@ -136,6 +149,9 @@ watch(
       state.branding.rounding = d.project.branding.rounding
       state.branding.colors = d.project.branding.colors
       state.rules = d.project.rules?.markdown
+      state.infoMessage = d.project.infoMessage?.markdown
+      state.infoMessageStart = toLocalDatetimeLocal(d.project.infoMessageStart)
+      state.infoMessageEnd = toLocalDatetimeLocal(d.project.infoMessageEnd)
     }
   },
   { once: true },
@@ -150,6 +166,7 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
   }
 
   // Convert nullish logo/banner to empty string so backend can clear them
+  // Convert datetime-local values to ISO strings
   const input = {
     ...event.data,
     branding: {
@@ -157,6 +174,8 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
       logo: event.data.branding.logo ?? '',
       banner: event.data.branding.banner ?? '',
     },
+    infoMessageStart: toISOString(event.data.infoMessageStart ?? undefined),
+    infoMessageEnd: toISOString(event.data.infoMessageEnd ?? undefined),
   }
 
   executeMutation({ id: route.params.projectId, input }).then(
@@ -249,6 +268,40 @@ async function updateProject(event: FormSubmitEvent<Schema>) {
           help="Forklar hvordan brukere samler poeng"
         >
           <MarkdownEditor v-model="state.rules" />
+        </UFormField>
+        <UFormField
+          name="infoMessage"
+          label="Info-melding"
+          hint="(valgfritt)"
+          help="Vises som banner på forsiden. Brukere kan lukke den."
+        >
+          <MarkdownEditor v-model="state.infoMessage" />
+        </UFormField>
+        <UFormField
+          name="infoMessageStart"
+          label="Info-melding synlig fra"
+          hint="(valgfritt)"
+          help="Når info-meldingen skal begynne å vises"
+        >
+          <UInput
+            v-model="state.infoMessageStart"
+            type="datetime-local"
+            size="xl"
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField
+          name="infoMessageEnd"
+          label="Info-melding synlig til"
+          hint="(valgfritt)"
+          help="Når info-meldingen skal slutte å vises"
+        >
+          <UInput
+            v-model="state.infoMessageEnd"
+            type="datetime-local"
+            size="xl"
+            class="w-full"
+          />
         </UFormField>
         <UButton type="submit" size="lg" block>Lagre endringer</UButton>
       </UForm>

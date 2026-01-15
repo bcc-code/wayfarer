@@ -41,7 +41,7 @@ export function isWithinRange(
  * Extract only the date portion (YYYY-MM-DD) from an ISO timestamp string.
  */
 export function extractDateOnly(
-  dateStr: string | undefined,
+  dateStr: string | null | undefined,
 ): string | undefined {
   if (!dateStr || dateStr.trim() === '') return undefined
   return dateStr.split('T')[0]

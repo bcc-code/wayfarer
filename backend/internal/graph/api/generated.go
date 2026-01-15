@@ -547,22 +547,25 @@ type ComplexityRoot struct {
 	}
 
 	Project struct {
-		Achievements func(childComplexity int) int
-		ArchivedAt   func(childComplexity int) int
-		Branding     func(childComplexity int) int
-		Challenges   func(childComplexity int) int
-		Description  func(childComplexity int) int
-		EndDate      func(childComplexity int) int
-		Events       func(childComplexity int) int
-		ID           func(childComplexity int) int
-		Journal      func(childComplexity int, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
-		Leaderboard  func(childComplexity int, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) int
-		MyTeam       func(childComplexity int) int
-		Name         func(childComplexity int) int
-		Rules        func(childComplexity int) int
-		StartDate    func(childComplexity int) int
-		Streaks      func(childComplexity int) int
-		Teams        func(childComplexity int) int
+		Achievements     func(childComplexity int) int
+		ArchivedAt       func(childComplexity int) int
+		Branding         func(childComplexity int) int
+		Challenges       func(childComplexity int) int
+		Description      func(childComplexity int) int
+		EndDate          func(childComplexity int) int
+		Events           func(childComplexity int) int
+		ID               func(childComplexity int) int
+		InfoMessage      func(childComplexity int) int
+		InfoMessageEnd   func(childComplexity int) int
+		InfoMessageStart func(childComplexity int) int
+		Journal          func(childComplexity int, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
+		Leaderboard      func(childComplexity int, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) int
+		MyTeam           func(childComplexity int) int
+		Name             func(childComplexity int) int
+		Rules            func(childComplexity int) int
+		StartDate        func(childComplexity int) int
+		Streaks          func(childComplexity int) int
+		Teams            func(childComplexity int) int
 	}
 
 	ProjectConnection struct {
@@ -1202,6 +1205,8 @@ type PredefinedResponseResolver interface {
 }
 type ProjectResolver interface {
 	Rules(ctx context.Context, obj *model.Project) (*model.MarkdownText, error)
+	InfoMessage(ctx context.Context, obj *model.Project) (*model.MarkdownText, error)
+
 	Challenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error)
 	Leaderboard(ctx context.Context, obj *model.Project, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) (*model.LeaderboardConnection, error)
 	Events(ctx context.Context, obj *model.Project) ([]model.Event, error)
@@ -4019,6 +4024,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Project.ID(childComplexity), true
+	case "Project.infoMessage":
+		if e.complexity.Project.InfoMessage == nil {
+			break
+		}
+
+		return e.complexity.Project.InfoMessage(childComplexity), true
+	case "Project.infoMessageEnd":
+		if e.complexity.Project.InfoMessageEnd == nil {
+			break
+		}
+
+		return e.complexity.Project.InfoMessageEnd(childComplexity), true
+	case "Project.infoMessageStart":
+		if e.complexity.Project.InfoMessageStart == nil {
+			break
+		}
+
+		return e.complexity.Project.InfoMessageStart(childComplexity), true
 	case "Project.journal":
 		if e.complexity.Project.Journal == nil {
 			break
@@ -6647,6 +6670,9 @@ type Project {
     name: String!
     description: String!
     rules: MarkdownText @goField(forceResolver: true)
+    infoMessage: MarkdownText @goField(forceResolver: true)
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
     challenges: [Challenge!]! @goField(forceResolver: true)
     leaderboard(
         entityType: LeaderboardEntityType!
@@ -7141,6 +7167,9 @@ input CreateProjectInput {
     name: String!
     description: String
     rules: String
+    infoMessage: String
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
     startDate: DateTime!
     endDate: DateTime!
     branding: BrandingInput!
@@ -7150,6 +7179,9 @@ input UpdateProjectInput {
     name: String
     description: String
     rules: String
+    infoMessage: String
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
     startDate: DateTime
     endDate: DateTime
     branding: BrandingInput
@@ -13101,6 +13133,12 @@ func (ec *executionContext) fieldContext_ContentAchievement_project(_ context.Co
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -13923,6 +13961,12 @@ func (ec *executionContext) fieldContext_Event_parentProject(_ context.Context, 
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -14281,6 +14325,12 @@ func (ec *executionContext) fieldContext_ExternalChallenge_project(_ context.Con
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -17317,6 +17367,12 @@ func (ec *executionContext) fieldContext_Mutation_joinProject(ctx context.Contex
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -17410,6 +17466,12 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -17503,6 +17565,12 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -25868,6 +25936,99 @@ func (ec *executionContext) fieldContext_Project_rules(_ context.Context, field 
 	return fc, nil
 }
 
+func (ec *executionContext) _Project_infoMessage(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_infoMessage,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Project().InfoMessage(ctx, obj)
+		},
+		nil,
+		ec.marshalOMarkdownText2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMarkdownText,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_infoMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "markdown":
+				return ec.fieldContext_MarkdownText_markdown(ctx, field)
+			case "html":
+				return ec.fieldContext_MarkdownText_html(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MarkdownText", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Project_infoMessageStart(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_infoMessageStart,
+		func(ctx context.Context) (any, error) {
+			return obj.InfoMessageStart, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_infoMessageStart(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Project_infoMessageEnd(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_infoMessageEnd,
+		func(ctx context.Context) (any, error) {
+			return obj.InfoMessageEnd, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_infoMessageEnd(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Project_challenges(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -26510,6 +26671,12 @@ func (ec *executionContext) fieldContext_ProjectEdge_node(_ context.Context, fie
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -26852,6 +27019,12 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -26975,6 +27148,12 @@ func (ec *executionContext) fieldContext_Query_myProjects(_ context.Context, fie
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -27038,6 +27217,12 @@ func (ec *executionContext) fieldContext_Query_myCurrentProject(_ context.Contex
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -27101,6 +27286,12 @@ func (ec *executionContext) fieldContext_Query_currentProject(_ context.Context,
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -29694,6 +29885,12 @@ func (ec *executionContext) fieldContext_Quiz_project(_ context.Context, field g
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -30368,6 +30565,12 @@ func (ec *executionContext) fieldContext_QuizAchievement_project(_ context.Conte
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -30862,6 +31065,12 @@ func (ec *executionContext) fieldContext_QuizChallenge_project(_ context.Context
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -32410,6 +32619,12 @@ func (ec *executionContext) fieldContext_RoleScope_project(_ context.Context, fi
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -32553,6 +32768,12 @@ func (ec *executionContext) fieldContext_ScoreJournal_project(_ context.Context,
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -33479,6 +33700,12 @@ func (ec *executionContext) fieldContext_SimpleAchievement_project(_ context.Con
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -33850,6 +34077,12 @@ func (ec *executionContext) fieldContext_SimpleChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -34448,6 +34681,12 @@ func (ec *executionContext) fieldContext_Streak_project(_ context.Context, field
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -34714,6 +34953,12 @@ func (ec *executionContext) fieldContext_StreakAchievement_project(_ context.Con
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -35414,6 +35659,12 @@ func (ec *executionContext) fieldContext_SuperTeam_parentProject(_ context.Conte
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -35967,6 +36218,12 @@ func (ec *executionContext) fieldContext_Team_parentProject(_ context.Context, f
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -36809,6 +37066,12 @@ func (ec *executionContext) fieldContext_User_projects(_ context.Context, field 
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -38445,6 +38708,12 @@ func (ec *executionContext) fieldContext_Webhook_project(_ context.Context, fiel
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -41389,7 +41658,7 @@ func (ec *executionContext) unmarshalInputCreateProjectInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "rules", "startDate", "endDate", "branding"}
+	fieldsInOrder := [...]string{"name", "description", "rules", "infoMessage", "infoMessageStart", "infoMessageEnd", "startDate", "endDate", "branding"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -41417,6 +41686,27 @@ func (ec *executionContext) unmarshalInputCreateProjectInput(ctx context.Context
 				return it, err
 			}
 			it.Rules = data
+		case "infoMessage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("infoMessage"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InfoMessage = data
+		case "infoMessageStart":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("infoMessageStart"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InfoMessageStart = data
+		case "infoMessageEnd":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("infoMessageEnd"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InfoMessageEnd = data
 		case "startDate":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startDate"))
 			data, err := ec.unmarshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
@@ -43775,7 +44065,7 @@ func (ec *executionContext) unmarshalInputUpdateProjectInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "rules", "startDate", "endDate", "branding"}
+	fieldsInOrder := [...]string{"name", "description", "rules", "infoMessage", "infoMessageStart", "infoMessageEnd", "startDate", "endDate", "branding"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -43803,6 +44093,27 @@ func (ec *executionContext) unmarshalInputUpdateProjectInput(ctx context.Context
 				return it, err
 			}
 			it.Rules = data
+		case "infoMessage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("infoMessage"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InfoMessage = data
+		case "infoMessageStart":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("infoMessageStart"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InfoMessageStart = data
+		case "infoMessageEnd":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("infoMessageEnd"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InfoMessageEnd = data
 		case "startDate":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startDate"))
 			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
@@ -48898,6 +49209,43 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "infoMessage":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_infoMessage(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "infoMessageStart":
+			out.Values[i] = ec._Project_infoMessageStart(ctx, field, obj)
+		case "infoMessageEnd":
+			out.Values[i] = ec._Project_infoMessageEnd(ctx, field, obj)
 		case "challenges":
 			field := field
 

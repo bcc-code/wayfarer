@@ -194,6 +194,9 @@ type Project {
     name: String!
     description: String!
     rules: MarkdownText @goField(forceResolver: true)
+    infoMessage: MarkdownText @goField(forceResolver: true)
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
     challenges: [Challenge!]! @goField(forceResolver: true)
     leaderboard(
         entityType: LeaderboardEntityType!
@@ -688,6 +691,9 @@ input CreateProjectInput {
     name: String!
     description: String
     rules: String
+    infoMessage: String
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
     startDate: DateTime!
     endDate: DateTime!
     branding: BrandingInput!
@@ -697,6 +703,9 @@ input UpdateProjectInput {
     name: String
     description: String
     rules: String
+    infoMessage: String
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
     startDate: DateTime
     endDate: DateTime
     branding: BrandingInput

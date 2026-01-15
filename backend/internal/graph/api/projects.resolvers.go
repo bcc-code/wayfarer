@@ -70,12 +70,24 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.Create
 		description = *input.Description
 	}
 
+	// Build info message visibility params
+	var infoMessageStart, infoMessageEnd pgtype.Timestamptz
+	if input.InfoMessageStart != nil {
+		infoMessageStart = pgtype.Timestamptz{Time: input.InfoMessageStart.Time, Valid: true}
+	}
+	if input.InfoMessageEnd != nil {
+		infoMessageEnd = pgtype.Timestamptz{Time: input.InfoMessageEnd.Time, Valid: true}
+	}
+
 	// Create project in database
 	row, err := r.DB.Queries.CreateProject(ctx, sqlc.CreateProjectParams{
 		ID:                          projectID,
 		Name:                        input.Name,
 		Description:                 description,
 		Rules:                       input.Rules,
+		Infomessage:                 input.InfoMessage,
+		Infomessagestart:            infoMessageStart,
+		Infomessageend:              infoMessageEnd,
 		Startdate:                   pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true},
 		Enddate:                     pgtype.Timestamptz{Time: input.EndDate.Time, Valid: true},
 		Logourl:                     input.Branding.Logo,
@@ -121,12 +133,15 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.Create
 	}
 
 	project := &model.Project{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: row.Description,
-		RulesRaw:    row.Rules,
-		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
-		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+		ID:               row.ID,
+		Name:             row.Name,
+		Description:      row.Description,
+		RulesRaw:         row.Rules,
+		InfoMessageRaw:   row.InfoMessage,
+		InfoMessageStart: scalars.ToDateTimePointer(row.InfoMessageStart),
+		InfoMessageEnd:   scalars.ToDateTimePointer(row.InfoMessageEnd),
+		StartDate:        scalars.DateTime{Time: row.StartDate.Time},
+		EndDate:          scalars.DateTime{Time: row.EndDate.Time},
 		Branding: &model.Branding{
 			Logo:   logo,
 			Banner: banner,
@@ -210,6 +225,15 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 	if input.Rules != nil {
 		params.Rules = input.Rules
 	}
+	if input.InfoMessage != nil {
+		params.Infomessage = input.InfoMessage
+	}
+	if input.InfoMessageStart != nil {
+		params.Infomessagestart = pgtype.Timestamptz{Time: input.InfoMessageStart.Time, Valid: true}
+	}
+	if input.InfoMessageEnd != nil {
+		params.Infomessageend = pgtype.Timestamptz{Time: input.InfoMessageEnd.Time, Valid: true}
+	}
 	if input.StartDate != nil {
 		params.Startdate = pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true}
 	}
@@ -285,12 +309,15 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 	}
 
 	project := &model.Project{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: row.Description,
-		RulesRaw:    row.Rules,
-		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
-		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+		ID:               row.ID,
+		Name:             row.Name,
+		Description:      row.Description,
+		RulesRaw:         row.Rules,
+		InfoMessageRaw:   row.InfoMessage,
+		InfoMessageStart: scalars.ToDateTimePointer(row.InfoMessageStart),
+		InfoMessageEnd:   scalars.ToDateTimePointer(row.InfoMessageEnd),
+		StartDate:        scalars.DateTime{Time: row.StartDate.Time},
+		EndDate:          scalars.DateTime{Time: row.EndDate.Time},
 		Branding: &model.Branding{
 			Logo:   logo,
 			Banner: banner,
@@ -457,12 +484,15 @@ func (r *queryResolver) Projects(ctx context.Context, filter *model.ProjectFilte
 	modelProjects := make([]model.Project, len(projects))
 	for i, row := range projects {
 		modelProjects[i] = model.Project{
-			ID:          row.ID,
-			Name:        row.Name,
-			Description: row.Description,
-			RulesRaw:    row.Rules,
-			StartDate:   scalars.DateTime{Time: row.StartDate.Time},
-			EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+			ID:               row.ID,
+			Name:             row.Name,
+			Description:      row.Description,
+			RulesRaw:         row.Rules,
+			InfoMessageRaw:   row.InfoMessage,
+			InfoMessageStart: scalars.ToDateTimePointer(row.InfoMessageStart),
+			InfoMessageEnd:   scalars.ToDateTimePointer(row.InfoMessageEnd),
+			StartDate:        scalars.DateTime{Time: row.StartDate.Time},
+			EndDate:          scalars.DateTime{Time: row.EndDate.Time},
 			Branding: &model.Branding{
 				Logo: row.LogoUrl,
 				Colors: &model.Colors{

@@ -22,6 +22,11 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
   myCurrentProject {
     id
     name
+    infoMessage {
+      html
+    }
+    infoMessageStart
+    infoMessageEnd
     branding {
       ...BrandingFields
     }

@@ -112,7 +112,25 @@ const hiddenTreasuresLink = computed(() => {
       <ProfileProjectCardSkeleton />
     </div>
     <ErrorState v-else-if="error" :error />
-    <div v-else-if="data" class="space-y-default p-list-outside">
+    <TransitionGroup
+      v-else-if="data"
+      tag="div"
+      class="space-y-list-section-gap p-list-outside"
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="scale-95 opacity-0"
+      enter-to-class="scale-100 opacity-100"
+      leave-active-class="transition duration-300 ease-out absolute left-0 right-0"
+      leave-from-class="scale-100 opacity-100"
+      leave-to-class="scale-95 opacity-0"
+      move-class="transition duration-300 ease-out"
+    >
+      <ProjectInfoBanner
+        v-if="data.myCurrentProject.infoMessage"
+        :project-id="data.myCurrentProject.id"
+        :info-message="data.myCurrentProject.infoMessage"
+        :info-message-start="data.myCurrentProject.infoMessageStart"
+        :info-message-end="data.myCurrentProject.infoMessageEnd"
+      />
       <ProfileProjectCard
         v-if="data.myCurrentProject"
         :project-name="data.myCurrentProject.name"
@@ -138,7 +156,10 @@ const hiddenTreasuresLink = computed(() => {
           </NuxtLink>
         </div>
       </ProfileProjectCard>
-      <UserFeedback :project-id="data.myCurrentProject?.id" />
-    </div>
+      <UserFeedback
+        :project-id="data.myCurrentProject?.id"
+        class="mt-default"
+      />
+    </TransitionGroup>
   </PageLayout>
 </template>

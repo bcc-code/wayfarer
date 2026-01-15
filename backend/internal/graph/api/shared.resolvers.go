@@ -451,6 +451,15 @@ func (r *projectResolver) Rules(ctx context.Context, obj *model.Project) (*model
 	return &model.MarkdownText{Markdown: *rules}, nil
 }
 
+// InfoMessage is the resolver for the infoMessage field.
+// Note: InfoMessage is intentionally not translated - it's only shown in the source language.
+func (r *projectResolver) InfoMessage(ctx context.Context, obj *model.Project) (*model.MarkdownText, error) {
+	if obj.InfoMessageRaw == nil || *obj.InfoMessageRaw == "" {
+		return nil, nil
+	}
+	return &model.MarkdownText{Markdown: *obj.InfoMessageRaw}, nil
+}
+
 // Challenges is the resolver for the challenges field.
 func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error) {
 	thunk := r.Loaders.ChallengesByProjectLoader.Load(ctx, obj.ID)
