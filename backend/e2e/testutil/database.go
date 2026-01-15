@@ -559,3 +559,44 @@ func (m *TestDBManager) GetUserContentProgress(ctx context.Context, userID, achi
 	}
 	return count, nil
 }
+
+// CreateTestConsent creates a test consent with the given key
+func (m *TestDBManager) CreateTestConsent(ctx context.Context, key string, isRemote bool) (string, error) {
+	consentID := ulid.NewConsentID()
+	query := `
+		INSERT INTO consents (id, key, version, title, short_text, body, published_at, is_remote)
+		VALUES ($1, $2, 1, $3, 'Short text for consent', 'Body of the consent document', now(), $4)
+	`
+	title := "Test Consent: " + key
+	_, err := m.DB.Pool.Exec(ctx, query, consentID, key, title, isRemote)
+	if err != nil {
+		return "", fmt.Errorf("failed to create test consent %s: %w", key, err)
+	}
+	return consentID, nil
+}
+
+// GetUserConsentHistoryCount returns the count of consent history entries for a user and consent key
+func (m *TestDBManager) GetUserConsentHistoryCount(ctx context.Context, userID, consentKey string) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM user_consent_history WHERE user_id = $1 AND consent_key = $2`
+	err := m.DB.Pool.QueryRow(ctx, query, userID, consentKey).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count user consent history: %w", err)
+	}
+	return count, nil
+}
+
+// GetLatestUserConsentAction returns the latest action and source for a user's consent
+func (m *TestDBManager) GetLatestUserConsentAction(ctx context.Context, userID, consentKey string) (action string, source *string, err error) {
+	query := `
+		SELECT action, source FROM user_consent_history
+		WHERE user_id = $1 AND consent_key = $2
+		ORDER BY occurred_at DESC
+		LIMIT 1
+	`
+	err = m.DB.Pool.QueryRow(ctx, query, userID, consentKey).Scan(&action, &source)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to get latest consent action: %w", err)
+	}
+	return action, source, nil
+}
