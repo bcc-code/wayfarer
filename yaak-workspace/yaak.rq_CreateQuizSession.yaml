@@ -1,0 +1,48 @@
+type: http_request
+model: http_request
+id: rq_CreateQuizSession
+createdAt: 2026-01-15T12:00:00
+updatedAt: 2026-01-15T09:51:55.607462
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation CreateQuizSession($input: CreateQuizSessionInput!) {
+      createQuizSession(input: $input) {
+        id
+        name
+        state
+        openAt
+        lockAt
+        finishAt
+        createdAt
+        quiz {
+          id
+          name
+        }
+      }
+    }
+  variables: |
+    {
+      "input": {
+        "quizId": "QZ01KCF91CSRSGJWA3JKYHR587GS",
+        "name": "Test 123",
+        "openAt": null,
+        "lockAt": null,
+        "finishAt": null
+      }
+    }
+bodyType: graphql
+description: Create a new quiz session
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_CreateQuizSession
+method: POST
+name: Create Quiz Session
+sortPriority: 4100.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_ListQuizzes
 createdAt: 2025-12-08T12:00:00
-updatedAt: 2025-12-08T19:48:31.635180
+updatedAt: 2026-01-15T09:50:37.717605
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Quizzes
 authentication: {}
@@ -17,7 +17,6 @@ body:
             id
             name
             description
-            publishedAt
             endTime
             completionPoints
             userCanStart
