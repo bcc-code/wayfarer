@@ -324,6 +324,9 @@ type Project struct {
 	ColorDarkBorderDefault      string             `json:"color_dark_border_default"`
 	Rules                       *string            `json:"rules"`
 	BannerUrl                   *string            `json:"banner_url"`
+	InfoMessage                 *string            `json:"info_message"`
+	InfoMessageStart            pgtype.Timestamptz `json:"info_message_start"`
+	InfoMessageEnd              pgtype.Timestamptz `json:"info_message_end"`
 }
 
 type ProjectTranslation struct {
@@ -334,6 +337,7 @@ type ProjectTranslation struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 	Rules        *string            `json:"rules"`
+	InfoMessage  *string            `json:"info_message"`
 }
 
 type PushNotificationLog struct {

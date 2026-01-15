@@ -2,7 +2,7 @@
 -- Each query fetches translations for multiple entity IDs with a specific language code
 
 -- name: GetProjectTranslationsByIDs :many
-SELECT project_id, language_code, name, description, rules
+SELECT project_id, language_code, name, description, rules, info_message
 FROM project_translations
 WHERE project_id = ANY(@entity_ids::text[])
   AND language_code = @language_code::text;

@@ -68,8 +68,12 @@ models:
     fields:
       rules:
         resolver: true
+      infoMessage:
+        resolver: true
     extraFields:
       RulesRaw:
+        type: "*string"
+      InfoMessageRaw:
         type: "*string"
 
   # Add ProjectID field to types that have project relationships
