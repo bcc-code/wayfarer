@@ -131,6 +131,7 @@ type LeaderboardEntry {
     rank: Int
     tags: [LeaderboardEntryTag!]!
     image: String
+    lastScoreAt: DateTime
 }
 
 type LeaderboardEdge {

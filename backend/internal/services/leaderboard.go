@@ -12,6 +12,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/loaders"
+	"github.com/bcc-media/wayfarer/internal/utils"
 )
 
 // LeaderboardQuerier defines the database operations needed for leaderboards
@@ -95,6 +96,7 @@ type LeaderboardEntry struct {
 	Image       *string
 	Score       int
 	Rank        int64
+	LastScoreAt *time.Time
 }
 
 // GetProjectLeaderboard retrieves leaderboard for a project
@@ -178,6 +180,7 @@ func (s *LeaderboardService) getProjectPersonLeaderboard(ctx context.Context, pa
 				Image:       row.Image,
 				Score:       int(row.Score),
 				Rank:        row.Rank,
+				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
 			})
 		}
 	}
@@ -253,11 +256,12 @@ func (s *LeaderboardService) getProjectTeamLeaderboard(ctx context.Context, para
 	for _, row := range rows {
 		if row != nil {
 			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID: row.EntityID,
-				Name:     row.Name,
-				Image:    row.Image,
-				Score:    int(row.Score),
-				Rank:     row.Rank,
+				EntityID:    row.EntityID,
+				Name:        row.Name,
+				Image:       row.Image,
+				Score:       int(row.Score),
+				Rank:        row.Rank,
+				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
 			})
 		}
 	}
@@ -344,11 +348,12 @@ func (s *LeaderboardService) getProjectSuperTeamLeaderboard(ctx context.Context,
 	for _, row := range rows {
 		if row != nil {
 			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID: row.EntityID,
-				Name:     row.Name,
-				Image:    row.Image,
-				Score:    int(row.Score),
-				Rank:     row.Rank,
+				EntityID:    row.EntityID,
+				Name:        row.Name,
+				Image:       row.Image,
+				Score:       int(row.Score),
+				Rank:        row.Rank,
+				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
 			})
 		}
 	}
@@ -429,11 +434,12 @@ func (s *LeaderboardService) getProjectChurchLeaderboard(ctx context.Context, pa
 	for _, row := range rows {
 		if row != nil {
 			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID: row.EntityID,
-				Name:     row.Name,
-				Image:    row.Image,
-				Score:    int(row.Score),
-				Rank:     row.Rank,
+				EntityID:    row.EntityID,
+				Name:        row.Name,
+				Image:       row.Image,
+				Score:       int(row.Score),
+				Rank:        row.Rank,
+				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
 			})
 		}
 	}
@@ -511,6 +517,7 @@ func (s *LeaderboardService) getEventPersonLeaderboard(ctx context.Context, para
 				Image:       row.Image,
 				Score:       int(row.Score),
 				Rank:        row.Rank,
+				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
 			})
 		}
 	}
@@ -590,11 +597,12 @@ func (s *LeaderboardService) getEventTeamLeaderboard(ctx context.Context, params
 	for _, row := range rows {
 		if row != nil {
 			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID: row.EntityID,
-				Name:     row.Name,
-				Image:    row.Image,
-				Score:    int(row.Score),
-				Rank:     row.Rank,
+				EntityID:    row.EntityID,
+				Name:        row.Name,
+				Image:       row.Image,
+				Score:       int(row.Score),
+				Rank:        row.Rank,
+				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
 			})
 		}
 	}
@@ -689,11 +697,12 @@ func (s *LeaderboardService) getEventSuperTeamLeaderboard(ctx context.Context, p
 	for _, row := range rows {
 		if row != nil {
 			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID: row.EntityID,
-				Name:     row.Name,
-				Image:    row.Image,
-				Score:    int(row.Score),
-				Rank:     row.Rank,
+				EntityID:    row.EntityID,
+				Name:        row.Name,
+				Image:       row.Image,
+				Score:       int(row.Score),
+				Rank:        row.Rank,
+				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
 			})
 		}
 	}
@@ -778,11 +787,12 @@ func (s *LeaderboardService) getEventChurchLeaderboard(ctx context.Context, para
 	for _, row := range rows {
 		if row != nil {
 			fullLeaderboard = append(fullLeaderboard, LeaderboardEntry{
-				EntityID: row.EntityID,
-				Name:     row.Name,
-				Image:    row.Image,
-				Score:    int(row.Score),
-				Rank:     row.Rank,
+				EntityID:    row.EntityID,
+				Name:        row.Name,
+				Image:       row.Image,
+				Score:       int(row.Score),
+				Rank:        row.Rank,
+				LastScoreAt: utils.TimestamptzToPtr(row.LastScoreAt),
 			})
 		}
 	}

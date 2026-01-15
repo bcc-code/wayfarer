@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
@@ -10,6 +11,14 @@ import (
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
 )
+
+// timeToDateTime converts a *time.Time to *scalars.DateTime
+func timeToDateTime(t *time.Time) *scalars.DateTime {
+	if t == nil {
+		return nil
+	}
+	return &scalars.DateTime{Time: *t}
+}
 
 // resolveProjectByID is a helper function to load a project by ID using the dataloader
 // and applies translations for the requested language
@@ -205,6 +214,7 @@ func buildLeaderboardConnection(
 				Rank:        &rank,
 				Tags:        tags,
 				Image:       entry.Image,
+				LastScoreAt: timeToDateTime(entry.LastScoreAt),
 			},
 		}
 	}
@@ -239,6 +249,7 @@ func buildLeaderboardConnection(
 			Rank:        &meRank,
 			Tags:        meTags,
 			Image:       meEntry.Image,
+			LastScoreAt: timeToDateTime(meEntry.LastScoreAt),
 		}
 	}
 

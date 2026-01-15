@@ -210,17 +210,19 @@ type FileUpload struct {
 }
 
 type LeaderboardEventChurch struct {
-	EventID   string             `json:"event_id"`
-	ChurchID  string             `json:"church_id"`
-	Score     int64              `json:"score"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	EventID     string             `json:"event_id"`
+	ChurchID    string             `json:"church_id"`
+	Score       int64              `json:"score"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 type LeaderboardEventPerson struct {
-	EventID   string             `json:"event_id"`
-	UserID    string             `json:"user_id"`
-	Score     int64              `json:"score"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	EventID     string             `json:"event_id"`
+	UserID      string             `json:"user_id"`
+	Score       int64              `json:"score"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 type LeaderboardEventSuperteam struct {
@@ -228,27 +230,31 @@ type LeaderboardEventSuperteam struct {
 	SuperTeamID string             `json:"super_team_id"`
 	Score       int64              `json:"score"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 type LeaderboardEventTeam struct {
-	EventID   string             `json:"event_id"`
-	TeamID    string             `json:"team_id"`
-	Score     int64              `json:"score"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	EventID     string             `json:"event_id"`
+	TeamID      string             `json:"team_id"`
+	Score       int64              `json:"score"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 type LeaderboardProjectChurch struct {
-	ProjectID string             `json:"project_id"`
-	ChurchID  string             `json:"church_id"`
-	Score     int64              `json:"score"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ProjectID   string             `json:"project_id"`
+	ChurchID    string             `json:"church_id"`
+	Score       int64              `json:"score"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 type LeaderboardProjectPerson struct {
-	ProjectID string             `json:"project_id"`
-	UserID    string             `json:"user_id"`
-	Score     int64              `json:"score"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ProjectID   string             `json:"project_id"`
+	UserID      string             `json:"user_id"`
+	Score       int64              `json:"score"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 type LeaderboardProjectSuperteam struct {
@@ -256,13 +262,15 @@ type LeaderboardProjectSuperteam struct {
 	SuperTeamID string             `json:"super_team_id"`
 	Score       int64              `json:"score"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 type LeaderboardProjectTeam struct {
-	ProjectID string             `json:"project_id"`
-	TeamID    string             `json:"team_id"`
-	Score     int64              `json:"score"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ProjectID   string             `json:"project_id"`
+	TeamID      string             `json:"team_id"`
+	Score       int64              `json:"score"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 // Stores consent events for users not yet registered in Wayfarer

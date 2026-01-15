@@ -764,6 +764,7 @@ type LeaderboardEntry struct {
 	Rank        *int                  `json:"rank,omitempty"`
 	Tags        []LeaderboardEntryTag `json:"tags"`
 	Image       *string               `json:"image,omitempty"`
+	LastScoreAt *scalars.DateTime     `json:"lastScoreAt,omitempty"`
 }
 
 type LeaderboardFilter struct {
