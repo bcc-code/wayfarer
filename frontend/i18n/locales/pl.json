@@ -124,5 +124,110 @@
     "updateAvailableTitle": "Dostępna jest aktualizacja",
     "updateAvailableButton": "Zaktualizuj teraz"
   },
-  "goToHiddenTreasures": "Przejdź do projektu biblijnego"
+  "goToHiddenTreasures": "Przejdź do projektu biblijnego",
+  "admin": {
+    "common": {
+      "back": "Wróć",
+      "cancel": "Anuluj",
+      "save": "Zapisz",
+      "create": "Utwórz",
+      "delete": "Usuń",
+      "deleteAll": "Usuń wszystkie",
+      "copyLink": "Skopiuj link do strony administratora",
+      "linkCopied": "Link skopiowany"
+    },
+    "breadcrumb": {
+      "home": "Strona główna"
+    },
+    "churchHome": {
+      "administrators": "Administratorzy",
+      "unitsAndPeople": "Unity i osoby",
+      "gameNights": "Game Nights",
+      "comingSoon": "Pojawi się wkrótce"
+    },
+    "admins": {
+      "searchPlaceholder": "Wyszukaj wśród administratorów...",
+      "addPlaceholder": "Dodaj administratora...",
+      "you": "Ty",
+      "noAdminsFound": "Nie znaleziono administratorów",
+      "confirmRemove": {
+        "title": "Usunąć administratora?",
+        "message": "Czy na pewno chcesz usunąć {name} z administratorów?",
+        "confirm": "Usuń"
+      },
+      "success": {
+        "added": "Administrator dodany",
+        "removed": "Administrator usunięty"
+      },
+      "errors": {
+        "addFailed": "Nie można dodać administratora",
+        "removeFailed": "Nie można usunąć administratora"
+      }
+    },
+    "units": {
+      "title": "Unity",
+      "people": "Osoby",
+      "filter": {
+        "title": "Filtruj",
+        "all": "Wszyscy",
+        "notInUnit": "W żadnym unicie",
+        "inUnit": "W unicie",
+        "showO36": "Pokaż osoby powyżej 36 roku życia",
+        "showO36Description": "Osoby powyżej 36 roku życia nie pojawiają się na listach rankingowych i nie biorą udziału w konkursie młodzieżowym"
+      },
+      "searchPlaceholder": "Wyszukaj unity lub osoby...",
+      "searchPeoplePlaceholder": "Wyszukaj osoby...",
+      "expandAll": "Rozwiń wszystkie unity",
+      "createOneUnit": "Utwórz jeden unit",
+      "createMultipleUnits": "Utwórz kilka unitów",
+      "namePlaceholder": "Nazwa unitu (opcjonalnie)",
+      "selectAll": "Wybierz wszystkie",
+      "noActiveProject": "Brak aktywnej konkurencji",
+      "noUnitsFound": "Nie znaleziono żadnych unitów",
+      "noPeopleFound": "Nie znaleziono żadnych osób",
+      "years": "{years} lat",
+      "selectedCount": "{count} wybrany unit | {count} wybranych unitów",
+      "deleteSelected": "Usuń wybrane",
+      "bulkCreate": {
+        "countLabel": "Liczba unitów",
+        "autoGenerateInfo": "Nazwy są generowane automatycznie"
+      },
+      "confirmDelete": {
+        "title": "Usunąć unit?",
+        "message": "Czy na pewno chcesz usunąć {name}? Wszyscy członkowie zostaną usunięci z unitu."
+      },
+      "confirmBulkDelete": {
+        "title": "Usunąć kilka unitów?",
+        "message": "Czy na pewno chcesz usunąć {count} unitów? Wszyscy członkowie zostaną usunięci z tych unitów."
+      },
+      "success": {
+        "created": "Unit utworzony",
+        "bulkCreated": "Utworzono {count} unitów",
+        "deleted": "Unit usunięty",
+        "bulkDeleted": "Usunięto {count} unitów"
+      },
+      "errors": {
+        "createFailed": "Nie można utworzyć unitu",
+        "bulkCreateFailed": "Nie można utworzyć unitów",
+        "addMemberFailed": "Nie można dodać członka",
+        "removeMemberFailed": "Nie można usunąć członka",
+        "assignLeaderFailed": "Nie można ustawić lidera",
+        "deleteFailed": "Nie można usunąć unitu",
+        "bulkDeleteFailed": "Nie można usunąć unitów",
+        "renameFailed": "Nie można zmienić nazwy jednostki",
+        "exclusionToggleFailed": "Nie można zmienić widoczności na liście rankingowej"
+      },
+      "ageWarning": "Średnia wieku w tym unicie wynosi ponad 36 lat, więc nie pojawi się on na listach rankingowych ani nie weźmie udziału w konkursie dla młodzieży. Jeśli jest to błąd i unit ma brać udział w konkursie dla młodzieży, daj nam znać pod adresem {email}"
+    },
+    "unit": {
+      "noLeaderSelected": "Nie wybrano żadnego lidera",
+      "members": "{count} osoba | {count} osób",
+      "makeLead": "Wybierz na lidera",
+      "dragPeopleHere": "Brak członków - przeciągnij osobę tutaj",
+      "addPersonPlaceholder": "Dodaj osobę...",
+      "excludeFromLeaderboard": "Wyklucz z listy rankingowej",
+      "excludeFromLeaderboardTooltip": "Po aktywacji ten unit nie będzie wyświetlany na liście rankingowej.",
+      "excludedFromLeaderboard": "Ukryty z list rankingowych"
+    }
+  }
 }

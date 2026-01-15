@@ -124,5 +124,111 @@
     "updateAvailableTitle": "Frissítés elérhető",
     "updateAvailableButton": "Frissítsd most"
   },
-  "goToHiddenTreasures": "Menj a Biblia tanulmányozására"
+  "goToHiddenTreasures": "Menj a Biblia tanulmányozására",
+  "admin": {
+    "common": {
+      "back": "Vissza",
+      "cancel": "Mégsem",
+      "save": "Mentés",
+      "create": "Létrehozás",
+      "delete": "Törlés",
+      "deleteAll": "Összes törlése",
+      "copyLink": "Link másolása az adminisztrációs oldalra",
+      "linkCopied": "Link másolva"
+    },
+    "breadcrumb": {
+      "home": "Főoldal"
+    },
+    "churchHome": {
+      "administrators": "Adminisztrátorok",
+      "unitsAndPeople": "Unitok és személyek",
+      "gameNights": "Játékesték",
+      "comingSoon": "Hamarosan jön"
+    },
+    "admins": {
+      "searchPlaceholder": "Adminisztrátorok keresése...",
+      "addPlaceholder": "Adminisztrátor hozzáadása...",
+      "you": "Te",
+      "noAdminsFound": "Nincs rendszergazda",
+      "confirmRemove": {
+        "title": "Rendszergazda törlése?",
+        "message": "Biztosan törölni szeretnéd a „ {name} ” rendszergazdaként?",
+        "confirm": "Eltávolítás"
+      },
+      "success": {
+        "added": "Adminisztrátor hozzáadva",
+        "removed": "Adminisztrátor eltávolítva"
+      },
+      "errors": {
+        "addFailed": "Nem sikerült hozzáadni a rendszergazdát",
+        "removeFailed": "Nem sikerült eltávolítani a rendszergazdát"
+      },
+      "copyLinkDescription": "Ossza meg a linket más rendszergazdákkal"
+    },
+    "units": {
+      "title": "Unitok",
+      "people": "Személyek",
+      "filter": {
+        "title": "Szűrés",
+        "all": "Minden",
+        "notInUnit": "Nincs unitban",
+        "inUnit": "Unitban van",
+        "showO36": "36 év feletti személyek megjelenítése",
+        "showO36Description": "A 36 év feletti személyek nem szerepelnek a ranglistákon és nem vehetnek részt az ifjúsági versenyen."
+      },
+      "searchPlaceholder": "Unitok vagy személyek keresése...",
+      "searchPeoplePlaceholder": "Személyek keresése...",
+      "expandAll": "Minden unit kibontása",
+      "createOneUnit": "Unit létrehozása",
+      "createMultipleUnits": "Több unit létrehozása",
+      "namePlaceholder": "Unit neve (opcionális)",
+      "selectAll": "Összes kijelölése",
+      "noActiveProject": "Nincs aktív verseny",
+      "noUnitsFound": "Unit nem található",
+      "noPeopleFound": "Személyek nem találhatók",
+      "years": "{years} év",
+      "selectedCount": "{count} unit kiválasztva | {count} unit kiválasztva",
+      "deleteSelected": "Kiválasztottak törlése",
+      "bulkCreate": {
+        "countLabel": "Unitok száma",
+        "autoGenerateInfo": "A nevek automatikusan generálódnak."
+      },
+      "confirmDelete": {
+        "title": "Unit törlése?",
+        "message": "Biztos vagy benne, hogy ezt akarod törölni? {name} Minden tagot eltávolítunk a unitból."
+      },
+      "confirmBulkDelete": {
+        "title": "Több unit törlése?",
+        "message": "Biztos vagy benne, hogy {count} unitot akarsz törölni? Minden tagot eltávolítunk ezekből a unitokból."
+      },
+      "success": {
+        "created": "Unit létrehozva",
+        "bulkCreated": "{count} unit létrehozva",
+        "deleted": "Unit törölve",
+        "bulkDeleted": "{count} unit törölve"
+      },
+      "errors": {
+        "createFailed": "Nem sikerült létrehozni a unitot",
+        "bulkCreateFailed": "Nem sikerült létrehozni a unitokat",
+        "addMemberFailed": "Nem sikerült hozzáadni a tagot",
+        "removeMemberFailed": "A tagot nem lehetett eltávolítani",
+        "assignLeaderFailed": "Nem sikerült beállítani a vezetőt",
+        "deleteFailed": "A unitot nem lehetett törölni.",
+        "bulkDeleteFailed": "A unitokat nem lehetett törölni.",
+        "renameFailed": "Nem lehetett megváltoztatni a unit nevét.",
+        "exclusionToggleFailed": "Nem lehetett megváltoztatni a láthatóságot a toplistán"
+      },
+      "ageWarning": "A unit átlagéletkora meghaladja a 36 évet, ezért nem fog megjelenni a toplistákon, és nem fog részt venni a fiatalok számára meghirdetett versenyeken. Ha ez nem helyes, és ő részt vesz az ifjúsági versenyen, kérjük, jelezd nekünk a {email}"
+    },
+    "unit": {
+      "noLeaderSelected": "Nincs kiválasztott vezető",
+      "members": "{count} személy | {count} személy",
+      "makeLead": "Vezetővé tenni",
+      "dragPeopleHere": "Nincs tag - húzzál ide egy személyt",
+      "addPersonPlaceholder": "Személy hozzáadása...",
+      "excludeFromLeaderboard": "Kizárás a toplistából",
+      "excludeFromLeaderboardTooltip": "Aktiválás esetén ez a unit nem jelenik meg a felső listán.",
+      "excludedFromLeaderboard": "Elrejtve a toplistákról"
+    }
+  }
 }
