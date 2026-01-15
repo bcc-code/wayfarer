@@ -162,7 +162,8 @@
       "errors": {
         "addFailed": "Nem sikerült hozzáadni a rendszergazdát",
         "removeFailed": "Nem sikerült eltávolítani a rendszergazdát"
-      }
+      },
+      "copyLinkDescription": "Ossza meg a linket más rendszergazdákkal"
     },
     "units": {
       "title": "Unitok",
