@@ -87,8 +87,6 @@ func DefaultSeedConfig() seeders.SeedConfig {
 
 // Seed populates the database with deterministic test data
 func (m *TestDBManager) Seed(ctx context.Context, seed int64, cfg seeders.SeedConfig) (*seeders.SeededData, error) {
-	// Seed both the faker and math/rand with the same seed for determinism
-	rand.Seed(seed)
 	fake := faker.NewWithSeed(rand.NewSource(seed))
 
 	m.data = seeders.NewSeededData()

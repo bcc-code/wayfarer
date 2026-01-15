@@ -22,11 +22,11 @@ import (
 )
 
 const (
-	minAge       = 12
-	maxAge       = 37
-	apiPageSize  = 500
-	dbBatchSize  = 100
-	defaultLang  = "no"
+	minAge      = 12
+	maxAge      = 37
+	apiPageSize = 500
+	dbBatchSize = 100
+	defaultLang = "no"
 )
 
 // ExcludedChurchNames contains organization names that should not be used for church assignment
