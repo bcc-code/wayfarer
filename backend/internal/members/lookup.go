@@ -134,3 +134,29 @@ func (c *Client) GetAllOrganizations(ctx context.Context) ([]Organization, error
 	}
 	return *orgs, nil
 }
+
+// GetMembersByBirthdateRange retrieves members born between minDate and maxDate (YYYY-MM-DD format).
+// Uses pagination with offset/limit to handle large result sets.
+func (c *Client) GetMembersByBirthdateRange(ctx context.Context, minDate, maxDate string, limit, offset int) ([]Member, error) {
+	filter := map[string]any{
+		"birthDate": map[string]any{
+			"_gte": minDate,
+			"_lte": maxDate,
+		},
+	}
+
+	encoded, err := json.Marshal(filter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode filter: %w", err)
+	}
+
+	endpoint := fmt.Sprintf("v2/persons?filter=%s&fields=%s&limit=%d&offset=%d",
+		encoded, personFields, limit, offset)
+
+	ms, err := get[[]Member](ctx, c, endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get members by birthdate range: %w", err)
+	}
+
+	return *ms, nil
+}
