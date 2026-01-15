@@ -90,9 +90,11 @@ func quizSubmissionsByUserBatchFunc(db *database.DB, c *cache.CacheWithRegistry)
 					Score:         score,
 					MaxScore:      maxScore,
 					PointsAwarded: pointsAwarded,
+					AutoSubmitted: row.AutoSubmitted,
 					// Fields for resolvers
-					QuizID: row.QuizID,
-					UserID: row.UserID,
+					QuizID:    row.QuizID,
+					SessionID: row.SessionID,
+					UserID:    row.UserID,
 				}
 
 				submissionsMap[row.UserID] = append(submissionsMap[row.UserID], submission)

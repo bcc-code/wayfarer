@@ -53,8 +53,10 @@ const canStartQuiz = computed(() => {
   return props.challenge.quiz.userCanStart
 })
 
-// Check if quiz is unavailable (can't start and no submissions to show)
+// Check if quiz is unavailable (no active session, or can't start and no submissions to show)
 const isQuizUnavailable = computed(() => {
+  // No active session means quiz is unavailable
+  if (!props.challenge.quiz.userActiveSession?.id) return true
   if (props.challenge.quiz.userCanStart) return false
   if (completedSubmission.value) return false
   if (activeSubmission.value) return false
