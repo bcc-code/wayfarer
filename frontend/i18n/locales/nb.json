@@ -162,7 +162,8 @@
       "errors": {
         "addFailed": "Kunne ikke legge til administrator",
         "removeFailed": "Kunne ikke fjerne administrator"
-      }
+      },
+      "copyLinkDescription": "Del lenken med andre administratorer"
     },
     "units": {
       "title": "Units",
