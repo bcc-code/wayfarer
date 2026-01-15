@@ -162,7 +162,8 @@
       "errors": {
         "addFailed": "Nie można dodać administratora",
         "removeFailed": "Nie można usunąć administratora"
-      }
+      },
+      "copyLinkDescription": "Udostępnij link innym administratorom"
     },
     "units": {
       "title": "Unity",
