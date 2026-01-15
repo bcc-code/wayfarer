@@ -6,12 +6,12 @@ const props = defineProps<{
   placeholder?: string
 }>()
 
-const start = defineModel<string | null>('start')
-const end = defineModel<string | null>('end')
+const start = defineModel<string>('start')
+const end = defineModel<string>('end')
 
 const isOpen = ref(false)
 
-function toCalendarDate(dateStr: string | null | undefined): DateValue | undefined {
+function toCalendarDate(dateStr: string | undefined): DateValue | undefined {
   const dateOnly = extractDateOnly(dateStr)
   if (!dateOnly) return undefined
   try {
@@ -48,7 +48,7 @@ const range = computed<{ start: DateValue; end: DateValue } | undefined>({
   },
 })
 
-function _formatDate(dateStr: string | null | undefined) {
+function _formatDate(dateStr: string | undefined) {
   if (!dateStr || dateStr.trim() === '') return undefined
   return formatDate(dateStr)
 }
