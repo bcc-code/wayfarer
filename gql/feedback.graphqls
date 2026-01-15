@@ -14,6 +14,8 @@ type UserFeedback {
     locale: String
     projectId: ID
     timezone: String
+    contextUrl: String
+    tags: [String!]!
     createdAt: DateTime!
     handledAt: DateTime
 }
@@ -26,6 +28,7 @@ input DeviceMetadata {
     appVersion: String
     locale: String
     timezone: String
+    contextUrl: String
 }
 
 input SubmitFeedbackInput {
@@ -33,6 +36,7 @@ input SubmitFeedbackInput {
     canContactMe: Boolean!
     device: DeviceMetadata!
     projectId: ID
+    tags: [String!]
 }
 
 type FeedbackConnection {
@@ -48,6 +52,7 @@ type FeedbackEdge {
 
 input FeedbackFilter {
     userId: ID
+    tags: [String!]
 }
 
 extend type Query {

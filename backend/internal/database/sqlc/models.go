@@ -670,6 +670,8 @@ type UserFeedback struct {
 	ProjectID    *string            `json:"project_id"`
 	Timezone     *string            `json:"timezone"`
 	HandledAt    pgtype.Timestamptz `json:"handled_at"`
+	ContextUrl   *string            `json:"context_url"`
+	Tags         []string           `json:"tags"`
 }
 
 type UserProject struct {

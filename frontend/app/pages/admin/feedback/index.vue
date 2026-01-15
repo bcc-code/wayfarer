@@ -30,6 +30,8 @@ gql(`
           locale
           projectId
           timezone
+          contextUrl
+          tags
           createdAt
           handledAt
           user {
@@ -47,10 +49,28 @@ const pagination = usePagination({
   defaultPageSize: 15,
 })
 
+// Tag filter
+const selectedTags = ref<string[]>([])
+const availableTags = ['admin'] // Predefined tags that can be filtered
+
+const filter = computed(() => ({
+  tags: selectedTags.value.length > 0 ? selectedTags.value : undefined,
+}))
+
+const queryVariables = computed(() => ({
+  ...pagination.variables.value,
+  filter: filter.value,
+}))
+
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error, executeQuery } = useAdminFeedbackPageQuery({
-  variables: pagination.variables,
+  variables: queryVariables,
   pause: computed(() => !isAuthReady.value),
+})
+
+// Reset pagination when filter changes
+watch(selectedTags, () => {
+  pagination.reset()
 })
 
 watch(
@@ -68,6 +88,7 @@ type FeedbackNode = NonNullable<typeof feedbacks.value>[number]
 
 const columns: TableColumn<FeedbackNode>[] = [
   { accessorKey: 'user.name', id: 'user', header: 'Bruker' },
+  { accessorKey: 'tags', id: 'tags', header: 'Tags' },
   { accessorKey: 'message', header: 'Melding' },
   { accessorKey: 'createdAt', header: 'Dato' },
   { id: 'actions', header: '' },
@@ -171,6 +192,29 @@ const { canDeleteFeedback, canForwardFeedback } = usePermissions()
     <ErrorState v-if="error" :error />
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-dimmed">Filtrer:</span>
+          <UButton
+            v-for="tag in availableTags"
+            :key="tag"
+            :variant="selectedTags.includes(tag) ? 'solid' : 'outline'"
+            size="sm"
+            :label="tag"
+            @click="
+              selectedTags.includes(tag)
+                ? (selectedTags = selectedTags.filter((t) => t !== tag))
+                : (selectedTags = [...selectedTags, tag])
+            "
+          />
+          <UButton
+            v-if="selectedTags.length > 0"
+            variant="ghost"
+            size="sm"
+            color="neutral"
+            label="Nullstill"
+            @click="selectedTags = []"
+          />
+        </div>
         <RelayPagination v-model:pagination="pagination" />
       </div>
       <UTable :data="feedbacks" :loading="fetching" :columns>
@@ -188,6 +232,18 @@ const { canDeleteFeedback, canForwardFeedback } = usePermissions()
             <span class="text-dimmed text-xs">{{
               row.original.user.email
             }}</span>
+          </div>
+        </template>
+        <template #tags-cell="{ row }">
+          <div class="flex flex-wrap gap-1">
+            <UBadge
+              v-for="tag in row.original.tags"
+              :key="tag"
+              variant="subtle"
+              size="sm"
+              :label="tag"
+            />
+            <span v-if="row.original.tags.length === 0" class="text-dimmed text-sm">-</span>
           </div>
         </template>
         <template #message-cell="{ row }">
@@ -288,6 +344,10 @@ const { canDeleteFeedback, canForwardFeedback } = usePermissions()
                   <template v-if="row.original.appVersion">
                     <span class="text-dimmed">Versjon:</span>
                     <code>{{ row.original.appVersion }}</code>
+                  </template>
+                  <template v-if="row.original.contextUrl">
+                    <span class="text-dimmed">Side:</span>
+                    <code class="text-xs">{{ row.original.contextUrl }}</code>
                   </template>
                 </div>
               </template>

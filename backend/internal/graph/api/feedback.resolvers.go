@@ -60,9 +60,17 @@ func (r *mutationResolver) SubmitFeedback(ctx context.Context, input model.Submi
 	if input.Device.Timezone != nil {
 		timezone = *input.Device.Timezone
 	}
+	contextUrl := ""
+	if input.Device.ContextURL != nil {
+		contextUrl = *input.Device.ContextURL
+	}
 	projectID := ""
 	if input.ProjectID != nil {
 		projectID = *input.ProjectID
+	}
+	tags := []string{}
+	if input.Tags != nil {
+		tags = input.Tags
 	}
 
 	// Create feedback entry
@@ -79,6 +87,8 @@ func (r *mutationResolver) SubmitFeedback(ctx context.Context, input model.Submi
 		Locale:       locale,
 		Projectid:    projectID,
 		Timezone:     timezone,
+		Contexturl:   contextUrl,
+		Tags:         tags,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create feedback: %w", err)
@@ -247,6 +257,10 @@ func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilt
 	if filter != nil && filter.UserID != nil {
 		filterUserID = *filter.UserID
 	}
+	filterTags := []string{}
+	if filter != nil && filter.Tags != nil {
+		filterTags = filter.Tags
+	}
 
 	// Fetch one more than requested to determine if there are more results
 	rows, err := r.DB.Queries.GetFeedbackCursor(ctx, sqlc.GetFeedbackCursorParams{
@@ -255,6 +269,7 @@ func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilt
 		Isbackward:   isBackward,
 		Querylimit:   int32(limit + 1),
 		Filteruserid: filterUserID,
+		Filtertags:   filterTags,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch feedback: %w", err)
@@ -274,7 +289,10 @@ func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilt
 	}
 
 	// Get total count
-	totalCount, err := r.DB.Queries.CountAllFeedback(ctx, filterUserID)
+	totalCount, err := r.DB.Queries.CountAllFeedback(ctx, sqlc.CountAllFeedbackParams{
+		Filteruserid: filterUserID,
+		Filtertags:   filterTags,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to count feedback: %w", err)
 	}

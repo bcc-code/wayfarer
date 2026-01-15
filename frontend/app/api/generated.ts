@@ -501,6 +501,7 @@ export type DateRangeInput = {
 
 export type DeviceMetadata = {
   appVersion?: InputMaybe<Scalars['String']['input']>;
+  contextUrl?: InputMaybe<Scalars['String']['input']>;
   locale?: InputMaybe<Scalars['String']['input']>;
   platform: Scalars['String']['input'];
   screenHeight: Scalars['Int']['input'];
@@ -666,6 +667,7 @@ export type FeedbackEdge = {
 };
 
 export type FeedbackFilter = {
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
   userId?: InputMaybe<Scalars['ID']['input']>;
 };
 
@@ -763,6 +765,7 @@ export type LeaderboardEntry = {
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
+  lastScoreAt?: Maybe<Scalars['DateTime']['output']>;
   name: Scalars['String']['output'];
   rank?: Maybe<Scalars['Int']['output']>;
   score: Scalars['Int']['output'];
@@ -799,6 +802,7 @@ export type Mutation = {
   acceptConsent: UserConsent;
   addQuizQuestion: QuizQuestion;
   addTeamMembers: Team;
+  adminSetUserConsent: UserConsentHistoryEntry;
   archiveProject: Scalars['Boolean']['output'];
   assignChallengeToEvent: Challenge;
   assignRole: UserRole;
@@ -916,6 +920,13 @@ export type MutationAddTeamMembersArgs = {
   force?: InputMaybe<Scalars['Boolean']['input']>;
   teamId: Scalars['ID']['input'];
   userIds: Array<Scalars['ID']['input']>;
+};
+
+
+export type MutationAdminSetUserConsentArgs = {
+  action: ConsentAction;
+  consentId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -2267,6 +2278,7 @@ export type SubmitFeedbackInput = {
   device: DeviceMetadata;
   message: Scalars['String']['input'];
   projectId?: InputMaybe<Scalars['ID']['input']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type SubmitQuizAnswerInput = {
@@ -2556,6 +2568,7 @@ export type UserFeedback = {
   __typename?: 'UserFeedback';
   appVersion?: Maybe<Scalars['String']['output']>;
   canContactMe: Scalars['Boolean']['output'];
+  contextUrl?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['DateTime']['output'];
   handledAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
@@ -2565,6 +2578,7 @@ export type UserFeedback = {
   projectId?: Maybe<Scalars['ID']['output']>;
   screenHeight?: Maybe<Scalars['Int']['output']>;
   screenWidth?: Maybe<Scalars['Int']['output']>;
+  tags: Array<Scalars['String']['output']>;
   timezone?: Maybe<Scalars['String']['output']>;
   user: User;
   userAgent?: Maybe<Scalars['String']['output']>;
@@ -3285,14 +3299,14 @@ export type AdminFeedbackPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminFeedbackPageQuery = { __typename?: 'Query', feedback: { __typename?: 'FeedbackConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'FeedbackEdge', cursor: string, node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, locale?: string | null, projectId?: string | null, timezone?: string | null, createdAt: any, handledAt?: any | null, user: { __typename?: 'User', id: string, name: string, email: string } } }> } };
+export type AdminFeedbackPageQuery = { __typename?: 'Query', feedback: { __typename?: 'FeedbackConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'FeedbackEdge', cursor: string, node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, locale?: string | null, projectId?: string | null, timezone?: string | null, contextUrl?: string | null, tags: Array<string>, createdAt: any, handledAt?: any | null, user: { __typename?: 'User', id: string, name: string, email: string } } }> } };
 
 export type AdminHomePageQueryVariables = Exact<{
   now: Scalars['DateTime']['input'];
 }>;
 
 
-export type AdminHomePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, adminDashboardStats: { __typename?: 'AdminDashboardStats', totalUsers: number, totalPointsAwarded: number, newUsersLast7Days: number }, feedback: { __typename?: 'FeedbackConnection', edges: Array<{ __typename?: 'FeedbackEdge', node: { __typename?: 'UserFeedback', id: string, message: string, createdAt: any, user: { __typename?: 'User', id: string, name: string } } }> }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } }, leaderboard: { __typename?: 'LeaderboardConnection', totalCount: number, edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, image?: string | null } }> } } }> } };
+export type AdminHomePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, adminDashboardStats: { __typename?: 'AdminDashboardStats', totalUsers: number, totalPointsAwarded: number, newUsersLast7Days: number }, feedback: { __typename?: 'FeedbackConnection', edges: Array<{ __typename?: 'FeedbackEdge', node: { __typename?: 'UserFeedback', id: string, message: string, createdAt: any, user: { __typename?: 'User', id: string, name: string } } }> }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } } }> } };
 
 export type ChurchAdminsPageQueryVariables = Exact<{
   churchId: Scalars['ID']['input'];
@@ -4757,6 +4771,8 @@ export const AdminFeedbackPageDocument = gql`
         locale
         projectId
         timezone
+        contextUrl
+        tags
         createdAt
         handledAt
         user {
@@ -4814,18 +4830,6 @@ export const AdminHomePageDocument = gql`
             }
             dark {
               accent
-            }
-          }
-        }
-        leaderboard(entityType: PERSONS, first: 5) {
-          totalCount
-          edges {
-            node {
-              id
-              name
-              score
-              rank
-              image
             }
           }
         }

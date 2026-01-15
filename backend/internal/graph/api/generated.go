@@ -971,6 +971,7 @@ type ComplexityRoot struct {
 	UserFeedback struct {
 		AppVersion   func(childComplexity int) int
 		CanContactMe func(childComplexity int) int
+		ContextURL   func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
 		HandledAt    func(childComplexity int) int
 		ID           func(childComplexity int) int
@@ -980,6 +981,7 @@ type ComplexityRoot struct {
 		ProjectID    func(childComplexity int) int
 		ScreenHeight func(childComplexity int) int
 		ScreenWidth  func(childComplexity int) int
+		Tags         func(childComplexity int) int
 		Timezone     func(childComplexity int) int
 		User         func(childComplexity int) int
 		UserAgent    func(childComplexity int) int
@@ -6040,6 +6042,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UserFeedback.CanContactMe(childComplexity), true
+	case "UserFeedback.contextUrl":
+		if e.complexity.UserFeedback.ContextURL == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.ContextURL(childComplexity), true
 	case "UserFeedback.createdAt":
 		if e.complexity.UserFeedback.CreatedAt == nil {
 			break
@@ -6094,6 +6102,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UserFeedback.ScreenWidth(childComplexity), true
+	case "UserFeedback.tags":
+		if e.complexity.UserFeedback.Tags == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.Tags(childComplexity), true
 	case "UserFeedback.timezone":
 		if e.complexity.UserFeedback.Timezone == nil {
 			break
@@ -8371,6 +8385,8 @@ type UserFeedback {
     locale: String
     projectId: ID
     timezone: String
+    contextUrl: String
+    tags: [String!]!
     createdAt: DateTime!
     handledAt: DateTime
 }
@@ -8383,6 +8399,7 @@ input DeviceMetadata {
     appVersion: String
     locale: String
     timezone: String
+    contextUrl: String
 }
 
 input SubmitFeedbackInput {
@@ -8390,6 +8407,7 @@ input SubmitFeedbackInput {
     canContactMe: Boolean!
     device: DeviceMetadata!
     projectId: ID
+    tags: [String!]
 }
 
 type FeedbackConnection {
@@ -8405,6 +8423,7 @@ type FeedbackEdge {
 
 input FeedbackFilter {
     userId: ID
+    tags: [String!]
 }
 
 extend type Query {
@@ -15442,6 +15461,10 @@ func (ec *executionContext) fieldContext_FeedbackEdge_node(_ context.Context, fi
 				return ec.fieldContext_UserFeedback_projectId(ctx, field)
 			case "timezone":
 				return ec.fieldContext_UserFeedback_timezone(ctx, field)
+			case "contextUrl":
+				return ec.fieldContext_UserFeedback_contextUrl(ctx, field)
+			case "tags":
+				return ec.fieldContext_UserFeedback_tags(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
 			case "handledAt":
@@ -23949,6 +23972,10 @@ func (ec *executionContext) fieldContext_Mutation_submitFeedback(ctx context.Con
 				return ec.fieldContext_UserFeedback_projectId(ctx, field)
 			case "timezone":
 				return ec.fieldContext_UserFeedback_timezone(ctx, field)
+			case "contextUrl":
+				return ec.fieldContext_UserFeedback_contextUrl(ctx, field)
+			case "tags":
+				return ec.fieldContext_UserFeedback_tags(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
 			case "handledAt":
@@ -24158,6 +24185,10 @@ func (ec *executionContext) fieldContext_Mutation_markFeedbackHandled(ctx contex
 				return ec.fieldContext_UserFeedback_projectId(ctx, field)
 			case "timezone":
 				return ec.fieldContext_UserFeedback_timezone(ctx, field)
+			case "contextUrl":
+				return ec.fieldContext_UserFeedback_contextUrl(ctx, field)
+			case "tags":
+				return ec.fieldContext_UserFeedback_tags(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
 			case "handledAt":
@@ -38069,6 +38100,64 @@ func (ec *executionContext) fieldContext_UserFeedback_timezone(_ context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _UserFeedback_contextUrl(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_contextUrl,
+		func(ctx context.Context) (any, error) {
+			return obj.ContextURL, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_contextUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_tags(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_tags,
+		func(ctx context.Context) (any, error) {
+			return obj.Tags, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_tags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UserFeedback_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -42239,7 +42328,7 @@ func (ec *executionContext) unmarshalInputDeviceMetadata(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"userAgent", "platform", "screenWidth", "screenHeight", "appVersion", "locale", "timezone"}
+	fieldsInOrder := [...]string{"userAgent", "platform", "screenWidth", "screenHeight", "appVersion", "locale", "timezone", "contextUrl"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -42295,6 +42384,13 @@ func (ec *executionContext) unmarshalInputDeviceMetadata(ctx context.Context, ob
 				return it, err
 			}
 			it.Timezone = data
+		case "contextUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextUrl"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextURL = data
 		}
 	}
 
@@ -42501,7 +42597,7 @@ func (ec *executionContext) unmarshalInputFeedbackFilter(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"userId"}
+	fieldsInOrder := [...]string{"userId", "tags"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -42515,6 +42611,13 @@ func (ec *executionContext) unmarshalInputFeedbackFilter(ctx context.Context, ob
 				return it, err
 			}
 			it.UserID = data
+		case "tags":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tags = data
 		}
 	}
 
@@ -43037,7 +43140,7 @@ func (ec *executionContext) unmarshalInputSubmitFeedbackInput(ctx context.Contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"message", "canContactMe", "device", "projectId"}
+	fieldsInOrder := [...]string{"message", "canContactMe", "device", "projectId", "tags"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -43072,6 +43175,13 @@ func (ec *executionContext) unmarshalInputSubmitFeedbackInput(ctx context.Contex
 				return it, err
 			}
 			it.ProjectID = data
+		case "tags":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tags = data
 		}
 	}
 
@@ -54727,6 +54837,13 @@ func (ec *executionContext) _UserFeedback(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._UserFeedback_projectId(ctx, field, obj)
 		case "timezone":
 			out.Values[i] = ec._UserFeedback_timezone(ctx, field, obj)
+		case "contextUrl":
+			out.Values[i] = ec._UserFeedback_contextUrl(ctx, field, obj)
+		case "tags":
+			out.Values[i] = ec._UserFeedback_tags(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "createdAt":
 			out.Values[i] = ec._UserFeedback_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -59495,6 +59612,42 @@ func (ec *executionContext) unmarshalOStreakFilter2ᚖgithubᚗcomᚋbccᚑmedia
 	}
 	res, err := ec.unmarshalInputStreakFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

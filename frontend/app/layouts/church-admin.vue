@@ -24,10 +24,13 @@ const { me, logout } = useAuth()
           />
         </NuxtLink>
         <div class="ml-auto flex gap-4 items-center">
+          <AdminUserFeedback />
           <div class="text-end flex flex-col">
             <span class="text-sm">{{ me?.name }}</span>
           </div>
-          <UButton variant="soft" @click="logout">Logg ut</UButton>
+          <UButton variant="soft" color="neutral" @click="logout">
+            {{ $t('auth.logoutButton') }}
+          </UButton>
         </div>
       </UContainer>
     </header>

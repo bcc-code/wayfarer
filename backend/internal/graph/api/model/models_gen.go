@@ -505,6 +505,7 @@ type DeviceMetadata struct {
 	AppVersion   *string `json:"appVersion,omitempty"`
 	Locale       *string `json:"locale,omitempty"`
 	Timezone     *string `json:"timezone,omitempty"`
+	ContextURL   *string `json:"contextUrl,omitempty"`
 }
 
 type EnrollmentTargetInput struct {
@@ -646,7 +647,8 @@ type FeedbackEdge struct {
 }
 
 type FeedbackFilter struct {
-	UserID *string `json:"userId,omitempty"`
+	UserID *string  `json:"userId,omitempty"`
+	Tags   []string `json:"tags,omitempty"`
 }
 
 type FileUpload struct {
@@ -1335,6 +1337,7 @@ type SubmitFeedbackInput struct {
 	CanContactMe bool            `json:"canContactMe"`
 	Device       *DeviceMetadata `json:"device"`
 	ProjectID    *string         `json:"projectId,omitempty"`
+	Tags         []string        `json:"tags,omitempty"`
 }
 
 type SubmitQuizAnswerInput struct {
@@ -1620,6 +1623,8 @@ type UserFeedback struct {
 	Locale       *string           `json:"locale,omitempty"`
 	ProjectID    *string           `json:"projectId,omitempty"`
 	Timezone     *string           `json:"timezone,omitempty"`
+	ContextURL   *string           `json:"contextUrl,omitempty"`
+	Tags         []string          `json:"tags"`
 	CreatedAt    scalars.DateTime  `json:"createdAt"`
 	HandledAt    *scalars.DateTime `json:"handledAt,omitempty"`
 }
