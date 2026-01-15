@@ -28,7 +28,7 @@ const dismissedHashes = useLocalStorage<Record<string, string>>(
   {},
 )
 
-// Update every minute to check visibility
+// Update every second to check visibility
 const now = useNow({ interval: 1000 })
 
 const contentHash = computed(() => {
