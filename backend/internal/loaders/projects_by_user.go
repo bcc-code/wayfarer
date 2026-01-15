@@ -56,8 +56,8 @@ func projectsByUserBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(c
 					Description:        row.Description,
 					RulesRaw:           row.Rules,
 					InfoMessageRaw:     row.InfoMessage,
-					InfoMessageStart:   toDateTimePointer(row.InfoMessageStart),
-					InfoMessageEnd:     toDateTimePointer(row.InfoMessageEnd),
+					InfoMessageStart:   scalars.ToDateTimePointer(row.InfoMessageStart),
+					InfoMessageEnd:     scalars.ToDateTimePointer(row.InfoMessageEnd),
 					StartDate:          scalars.DateTime{Time: row.StartDate.Time},
 					EndDate:            scalars.DateTime{Time: row.EndDate.Time},
 					Branding: &model.Branding{

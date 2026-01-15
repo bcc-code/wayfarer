@@ -138,8 +138,8 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.Create
 		Description:      row.Description,
 		RulesRaw:         row.Rules,
 		InfoMessageRaw:   row.InfoMessage,
-		InfoMessageStart: toDateTimePointer(row.InfoMessageStart),
-		InfoMessageEnd:   toDateTimePointer(row.InfoMessageEnd),
+		InfoMessageStart: scalars.ToDateTimePointer(row.InfoMessageStart),
+		InfoMessageEnd:   scalars.ToDateTimePointer(row.InfoMessageEnd),
 		StartDate:        scalars.DateTime{Time: row.StartDate.Time},
 		EndDate:          scalars.DateTime{Time: row.EndDate.Time},
 		Branding: &model.Branding{
@@ -314,8 +314,8 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 		Description:      row.Description,
 		RulesRaw:         row.Rules,
 		InfoMessageRaw:   row.InfoMessage,
-		InfoMessageStart: toDateTimePointer(row.InfoMessageStart),
-		InfoMessageEnd:   toDateTimePointer(row.InfoMessageEnd),
+		InfoMessageStart: scalars.ToDateTimePointer(row.InfoMessageStart),
+		InfoMessageEnd:   scalars.ToDateTimePointer(row.InfoMessageEnd),
 		StartDate:        scalars.DateTime{Time: row.StartDate.Time},
 		EndDate:          scalars.DateTime{Time: row.EndDate.Time},
 		Branding: &model.Branding{
@@ -489,8 +489,8 @@ func (r *queryResolver) Projects(ctx context.Context, filter *model.ProjectFilte
 			Description:      row.Description,
 			RulesRaw:         row.Rules,
 			InfoMessageRaw:   row.InfoMessage,
-			InfoMessageStart: toDateTimePointer(row.InfoMessageStart),
-			InfoMessageEnd:   toDateTimePointer(row.InfoMessageEnd),
+			InfoMessageStart: scalars.ToDateTimePointer(row.InfoMessageStart),
+			InfoMessageEnd:   scalars.ToDateTimePointer(row.InfoMessageEnd),
 			StartDate:        scalars.DateTime{Time: row.StartDate.Time},
 			EndDate:          scalars.DateTime{Time: row.EndDate.Time},
 			Branding: &model.Branding{

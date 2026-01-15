@@ -8,18 +8,8 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
-	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/graph-gophers/dataloader/v7"
-	"github.com/jackc/pgx/v5/pgtype"
 )
-
-// toDateTimePointer converts a pgtype.Timestamptz to *scalars.DateTime
-func toDateTimePointer(ts pgtype.Timestamptz) *scalars.DateTime {
-	if !ts.Valid {
-		return nil
-	}
-	return &scalars.DateTime{Time: ts.Time}
-}
 
 // Loaders holds all dataloader instances for batching database queries
 // These are shared globally across all requests and rely on Ristretto cache for data caching
