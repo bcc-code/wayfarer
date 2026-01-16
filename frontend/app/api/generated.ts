@@ -897,6 +897,7 @@ export type Mutation = {
   updateConsent: Consent;
   updateContentAchievement: ContentAchievement;
   updateEvent: Event;
+  updateFeedbackTags: UserFeedback;
   updateProject: Project;
   updateQuiz: Quiz;
   updateQuizQuestion: QuizQuestion;
@@ -1445,6 +1446,12 @@ export type MutationUpdateContentAchievementArgs = {
 export type MutationUpdateEventArgs = {
   id: Scalars['ID']['input'];
   input: UpdateEventInput;
+};
+
+
+export type MutationUpdateFeedbackTagsArgs = {
+  feedbackId: Scalars['ID']['input'];
+  tags: Array<Scalars['String']['input']>;
 };
 
 
@@ -3310,6 +3317,14 @@ export type AdminFeedbackPageQueryVariables = Exact<{
 
 export type AdminFeedbackPageQuery = { __typename?: 'Query', feedback: { __typename?: 'FeedbackConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'FeedbackEdge', cursor: string, node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, locale?: string | null, projectId?: string | null, timezone?: string | null, contextUrl?: string | null, tags: Array<string>, createdAt: any, handledAt?: any | null, user: { __typename?: 'User', id: string, name: string, email: string } } }> } };
 
+export type UpdateFeedbackTagsMutationVariables = Exact<{
+  feedbackId: Scalars['ID']['input'];
+  tags: Array<Scalars['String']['input']> | Scalars['String']['input'];
+}>;
+
+
+export type UpdateFeedbackTagsMutation = { __typename?: 'Mutation', updateFeedbackTags: { __typename?: 'UserFeedback', id: string, tags: Array<string> } };
+
 export type AdminHomePageQueryVariables = Exact<{
   now: Scalars['DateTime']['input'];
 }>;
@@ -4811,6 +4826,18 @@ export const AdminFeedbackPageDocument = gql`
 
 export function useAdminFeedbackPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminFeedbackPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminFeedbackPageQuery, AdminFeedbackPageQueryVariables | undefined>({ query: AdminFeedbackPageDocument, variables: undefined, ...options });
+};
+export const UpdateFeedbackTagsDocument = gql`
+    mutation UpdateFeedbackTags($feedbackId: ID!, $tags: [String!]!) {
+  updateFeedbackTags(feedbackId: $feedbackId, tags: $tags) {
+    id
+    tags
+  }
+}
+    `;
+
+export function useUpdateFeedbackTagsMutation() {
+  return Urql.useMutation<UpdateFeedbackTagsMutation, UpdateFeedbackTagsMutationVariables>(UpdateFeedbackTagsDocument);
 };
 export const AdminHomePageDocument = gql`
     query AdminHomePage($now: DateTime!) {

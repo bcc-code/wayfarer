@@ -78,3 +78,9 @@ RETURNING *;
 
 -- name: DeleteFeedback :exec
 DELETE FROM user_feedback WHERE id = @id::text;
+
+-- name: UpdateFeedbackTags :one
+UPDATE user_feedback
+SET tags = @tags::text[]
+WHERE id = @id::text
+RETURNING *;

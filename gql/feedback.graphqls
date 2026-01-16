@@ -64,4 +64,5 @@ extend type Mutation {
     deleteFeedback(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
     forwardFeedbackToDesk(feedbackId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
     markFeedbackHandled(feedbackId: ID!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
+    updateFeedbackTags(feedbackId: ID!, tags: [String!]!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
 }
