@@ -572,7 +572,7 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 			"user_id", newUser.ID,
 			"person_uuid", personUUIDStr,
 		)
-		h.processPendingConsentEvents(ctx, newUser.ID, personUUIDStr)
+		h.ProcessPendingConsentEvents(ctx, newUser.ID, personUUIDStr)
 		if h.ContentAchievementService != nil {
 			slog.Debug("auth: processing pending content events",
 				"user_id", newUser.ID,
@@ -790,9 +790,9 @@ func generateDisplayName(firstName, lastName, fallbackName string) string {
 	return fallbackName
 }
 
-// processPendingConsentEvents processes any pending consent events for a newly registered user
+// ProcessPendingConsentEvents processes any pending consent events for a newly registered user
 // personUUID is the person's UUID string used to match pending events
-func (h *AuthHandler) processPendingConsentEvents(ctx context.Context, userID, personUUID string) {
+func (h *AuthHandler) ProcessPendingConsentEvents(ctx context.Context, userID, personUUID string) {
 	// Get all pending consent events for this person_uuid (stored in members_id field of pending_consent_events)
 	pendingEvents, err := h.DB.Queries.GetPendingConsentEventsByMembersID(ctx, personUUID)
 	if err != nil {
