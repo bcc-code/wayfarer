@@ -3451,7 +3451,7 @@ export type DeleteScoreJournalEntryMutation = { __typename?: 'Mutation', deleteS
 export type AdminScoresNewPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminScoresNewPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string } }> }, users: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, name: string, email: string } }> } };
+export type AdminScoresNewPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string } }> } };
 
 export type CreateScoreAdjustmentMutationVariables = Exact<{
   input: CreateScoreAdjustmentInput;
@@ -5332,15 +5332,6 @@ export const AdminScoresNewPageDocument = gql`
       node {
         id
         name
-      }
-    }
-  }
-  users(first: 100) {
-    edges {
-      node {
-        id
-        name
-        email
       }
     }
   }

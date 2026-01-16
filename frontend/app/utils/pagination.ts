@@ -71,6 +71,21 @@ export function buildFirstPageVariables(
 }
 
 /**
+ * Build variables for the last page (backward pagination - newest first)
+ */
+export function buildLastPageVariables(
+  pageSize: number,
+  initialCursor?: string | null,
+): CursorPaginationVariables {
+  return {
+    first: null,
+    after: null,
+    last: pageSize,
+    before: initialCursor ?? null,
+  }
+}
+
+/**
  * Check if currently on the first page
  */
 export function isFirstPage(pageInfo: CursorPageInfo | null): boolean {
