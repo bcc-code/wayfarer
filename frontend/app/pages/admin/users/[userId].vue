@@ -164,6 +164,14 @@ const newRole = reactive({
   scopeId: '',
 })
 
+const showRemoveConsentModal = ref(false)
+const consentToRemove = ref<{ id: string; title: string } | null>(null)
+
+function openRemoveConsentModal(consentId: string, consentTitle: string) {
+  consentToRemove.value = { id: consentId, title: consentTitle }
+  showRemoveConsentModal.value = true
+}
+
 function resetNewRoleForm() {
   newRole.role = RoleType.User
   newRole.scopeType = null
@@ -234,10 +242,13 @@ async function handleRevokeRole(
   refetch({ requestPolicy: 'network-only' })
 }
 
-async function handleRemoveConsent(consentId: string, consentTitle: string) {
+async function handleRemoveConsent() {
+  if (!consentToRemove.value) return
+
+  const { id, title } = consentToRemove.value
   const result = await adminSetUserConsent({
     userId: route.params.userId,
-    consentId,
+    consentId: id,
     action: ConsentAction.Rejected,
   })
 
@@ -252,10 +263,12 @@ async function handleRemoveConsent(consentId: string, consentTitle: string) {
 
   toast.add({
     title: 'Samtykke fjernet',
-    description: `Fjernet samtykke for "${consentTitle}"`,
+    description: `Fjernet samtykke for "${title}"`,
     color: 'success',
   })
 
+  showRemoveConsentModal.value = false
+  consentToRemove.value = null
   refetch()
 }
 
@@ -500,7 +513,10 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
                     size="sm"
                     class="ml-auto"
                     @click="
-                      handleRemoveConsent(item.consent.id, item.consent.title)
+                      openRemoveConsentModal(
+                        item.consent.id,
+                        item.consent.title,
+                      )
                     "
                   >
                     Fjern samtykke
@@ -736,6 +752,44 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             Avbryt
           </UButton>
           <UButton @click="handleAssignRole"> Tildel rolle </UButton>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Remove Consent Confirmation Modal -->
+    <UModal v-model:open="showRemoveConsentModal">
+      <template #header>
+        <h3 class="text-lg font-semibold">Fjern samtykke</h3>
+      </template>
+
+      <template #body>
+        <p>
+          Er du sikker på at du vil fjerne samtykke for
+          <strong>{{ consentToRemove?.title }}</strong
+          >?
+        </p>
+        <p class="text-dimmed mt-2 text-sm">
+          Samtykket vil bli markert som avvist.
+        </p>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-3 w-full">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            @click="
+              () => {
+                showRemoveConsentModal = false
+                consentToRemove = null
+              }
+            "
+          >
+            Avbryt
+          </UButton>
+          <UButton color="error" @click="handleRemoveConsent">
+            Fjern samtykke
+          </UButton>
         </div>
       </template>
     </UModal>
