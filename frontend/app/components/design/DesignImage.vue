@@ -104,7 +104,7 @@ const showImage = computed(() => props.image?.url && !hasError.value)
     <canvas
       v-if="hasBlurhash && !hasError"
       ref="canvasRef"
-      class="absolute inset-0 size-full object-cover transition-opacity duration-1000"
+      class="absolute inset-0 size-full object-cover transition-opacity duration-600"
       :class="isLoaded ? 'opacity-0' : 'opacity-100'"
       aria-hidden="true"
     />
@@ -115,7 +115,7 @@ const showImage = computed(() => props.image?.url && !hasError.value)
       :src="image!.url"
       :alt="alt"
       :style="aspectRatio ? { aspectRatio } : undefined"
-      class="size-full object-cover transition-opacity duration-1000"
+      class="size-full object-cover transition-opacity duration-600"
       :class="isLoaded || !hasBlurhash ? 'opacity-100' : 'opacity-0'"
       loading="lazy"
       @load="onLoad"

@@ -13,7 +13,10 @@ const open = ref(false)
 
 // Determine which image to show based on achievement state
 const currentImage = computed(() => {
-  if (props.achievement.achievedAt && props.achievement.imageCompletedObject?.url) {
+  if (
+    props.achievement.achievedAt &&
+    props.achievement.imageCompletedObject?.url
+  ) {
     return props.achievement.imageCompletedObject
   }
   return props.achievement.imagePendingObject
