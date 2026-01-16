@@ -81,10 +81,16 @@ const columns: TableColumn<
       </div>
       <UTable :data="users" :loading="fetching" :columns>
         <template #name-cell="{ row }">
-          <div class="flex flex-col">
+          <NuxtLink
+            :to="{
+              name: 'admin-users-userId',
+              params: { userId: row.original.id },
+            }"
+            class="flex flex-col hover:underline"
+          >
             <span>{{ row.original.name }}</span>
             <span class="text-dimmed text-xs">{{ row.original.email }}</span>
-          </div>
+          </NuxtLink>
         </template>
         <template #roles-cell="{ row }">
           <div class="flex flex-wrap gap-1">
@@ -95,19 +101,6 @@ const columns: TableColumn<
             >
               {{ role.role }}
             </UBadge>
-          </div>
-        </template>
-        <template #actions-cell="{ row }">
-          <div class="flex justify-end">
-            <UButton
-              variant="ghost"
-              :to="{
-                name: 'admin-users-userId',
-                params: { userId: row.original.id },
-              }"
-            >
-              Rediger
-            </UButton>
           </div>
         </template>
       </UTable>

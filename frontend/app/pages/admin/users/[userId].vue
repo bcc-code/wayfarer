@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { RoleType, ScopeType } from '~/api/generated'
+import {
+  ConsentAction,
+  ConsentManagementType,
+  RoleType,
+  ScopeType,
+} from '~/api/generated'
 
 definePageMeta({
   layout: 'admin',
@@ -41,6 +46,7 @@ gql(`
 						key
 						title
 						version
+						managementType
 					}
 				}
 				rejectedConsents {
@@ -101,6 +107,15 @@ gql(`
 	}
 `)
 
+gql(`
+	mutation AdminSetUserConsent($userId: ID!, $consentId: ID!, $action: ConsentAction!) {
+		adminSetUserConsent(userId: $userId, consentId: $consentId, action: $action) {
+			id
+			action
+		}
+	}
+`)
+
 const route = useRoute('admin-users-userId')
 
 const { isAuthReady } = useAuthReady()
@@ -118,6 +133,8 @@ const {
 
 const { executeMutation: assignRole } = useAssignRoleMutation()
 const { executeMutation: revokeRole } = useRevokeRoleMutation()
+const { executeMutation: adminSetUserConsent } =
+  useAdminSetUserConsentMutation()
 const toast = useToast()
 
 // Permissions
@@ -215,6 +232,31 @@ async function handleRevokeRole(
   })
 
   refetch({ requestPolicy: 'network-only' })
+}
+
+async function handleRemoveConsent(consentId: string, consentTitle: string) {
+  const result = await adminSetUserConsent({
+    userId: route.params.userId,
+    consentId,
+    action: ConsentAction.Rejected,
+  })
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke fjerne samtykke',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({
+    title: 'Samtykke fjernet',
+    description: `Fjernet samtykke for "${consentTitle}"`,
+    color: 'success',
+  })
+
+  refetch()
 }
 
 // Score journal helpers
@@ -437,21 +479,36 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
                 <div
                   v-for="item in data.user.consentStatus.acceptedConsents"
                   :key="item.id"
-                  class="border-default flex items-center justify-between rounded-md border p-3"
+                  class="border-default flex items-center justify-between gap-4 rounded-md border p-3"
                 >
                   <div class="flex items-center gap-3">
                     <UBadge variant="soft" color="success">Akseptert</UBadge>
                     <div>
                       <span class="font-medium">{{ item.consent.title }}</span>
-                      <span class="text-dimmed ml-2 text-xs"
-                        >v{{ item.consent.version }}</span
-                      >
+                      <span class="text-dimmed ml-2 text-xs">
+                        v{{ item.consent.version }}
+                      </span>
                     </div>
                   </div>
+                  <UButton
+                    v-if="
+                      item.consent.managementType ===
+                      ConsentManagementType.Local
+                    "
+                    color="neutral"
+                    variant="soft"
+                    size="sm"
+                    class="ml-auto"
+                    @click="
+                      handleRemoveConsent(item.consent.id, item.consent.title)
+                    "
+                  >
+                    Fjern samtykke
+                  </UButton>
                   <div class="text-right">
-                    <code class="text-dimmed text-xs">{{
-                      item.consent.key
-                    }}</code>
+                    <code class="text-dimmed text-xs">
+                      {{ item.consent.key }}
+                    </code>
                     <div class="text-dimmed text-xs">
                       {{ formatDateTime(item.actionDate) }}
                     </div>
