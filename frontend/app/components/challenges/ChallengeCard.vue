@@ -23,11 +23,11 @@ function onChallengeClick() {
 
 <template>
   <div class="shadow-large rounded-card overflow-clip">
-    <img
-      v-if="challenge.image"
-      :src="challenge.image"
-      loading="lazy"
-      class="bg-accent aspect-[1.25] w-full object-cover"
+    <DesignImage
+      v-if="challenge.imageObject"
+      :image="challenge.imageObject"
+      :alt="challenge.name"
+      class="bg-accent aspect-[1.25] w-full"
     />
     <div class="bg-background-raised p-default gap-default space-y-default">
       <div class="space-y-small">

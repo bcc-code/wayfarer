@@ -21,6 +21,26 @@ import (
 	pgx "github.com/jackc/pgx/v5"
 )
 
+// LogoImage is the resolver for the logoImage field.
+func (r *brandingResolver) LogoImage(ctx context.Context, obj *model.Branding) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Logo)
+}
+
+// BannerImage is the resolver for the bannerImage field.
+func (r *brandingResolver) BannerImage(ctx context.Context, obj *model.Branding) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Banner)
+}
+
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *contentAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.ContentAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *contentAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.ContentAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
+}
+
 // Project is the resolver for the project field.
 func (r *contentAchievementResolver) Project(ctx context.Context, obj *model.ContentAchievement) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
@@ -242,6 +262,11 @@ func (r *eventResolver) ParentProject(ctx context.Context, obj *model.Event) (*m
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
+// ImageObject is the resolver for the imageObject field.
+func (r *externalChallengeResolver) ImageObject(ctx context.Context, obj *model.ExternalChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
 // Project is the resolver for the project field.
 func (r *externalChallengeResolver) Project(ctx context.Context, obj *model.ExternalChallenge) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
@@ -316,6 +341,11 @@ func (r *jsonResponseResolver) Question(ctx context.Context, obj *model.JSONResp
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
 	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *leaderboardEntryResolver) ImageObject(ctx context.Context, obj *model.LeaderboardEntry) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
 }
 
 // HTML is the resolver for the html field.
@@ -638,6 +668,11 @@ func (r *projectResolver) Journal(ctx context.Context, obj *model.Project, filte
 	return r.Resolver.getScoreJournal(ctx, obj.ID, userID, filter, first, after, last, before)
 }
 
+// ImageObject is the resolver for the imageObject field.
+func (r *quizResolver) ImageObject(ctx context.Context, obj *model.Quiz) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
 // Project is the resolver for the project field on Quiz.
 func (r *quizResolver) Project(ctx context.Context, obj *model.Quiz) (*model.Project, error) {
 	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, obj.ProjectID)
@@ -786,6 +821,16 @@ func (r *quizResolver) UserActiveSubmission(ctx context.Context, obj *model.Quiz
 	return nil, nil
 }
 
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *quizAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.QuizAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *quizAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.QuizAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
+}
+
 // Project is the resolver for the project field.
 func (r *quizAchievementResolver) Project(ctx context.Context, obj *model.QuizAchievement) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
@@ -810,6 +855,11 @@ func (r *quizAchievementResolver) AchievedAt(ctx context.Context, obj *model.Qui
 func (r *quizAchievementResolver) Quiz(ctx context.Context, obj *model.QuizAchievement) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
 	return thunk()
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *quizChallengeResolver) ImageObject(ctx context.Context, obj *model.QuizChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
 }
 
 // Project is the resolver for the project field.
@@ -1112,6 +1162,16 @@ func (r *scoreJournalResolver) AwardedBy(ctx context.Context, obj *model.ScoreJo
 	return user, nil
 }
 
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *simpleAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.SimpleAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *simpleAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.SimpleAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
+}
+
 // Project is the resolver for the project field.
 func (r *simpleAchievementResolver) Project(ctx context.Context, obj *model.SimpleAchievement) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
@@ -1130,6 +1190,11 @@ func (r *simpleAchievementResolver) Challenge(ctx context.Context, obj *model.Si
 // AchievedAt is the resolver for the achievedAt field.
 func (r *simpleAchievementResolver) AchievedAt(ctx context.Context, obj *model.SimpleAchievement) (*scalars.DateTime, error) {
 	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *simpleChallengeResolver) ImageObject(ctx context.Context, obj *model.SimpleChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
 }
 
 // Project is the resolver for the project field.
@@ -1317,6 +1382,16 @@ func (r *streakResolver) ListenedDays(ctx context.Context, obj *model.Streak, la
 // Project is the resolver for the project field.
 func (r *streakResolver) Project(ctx context.Context, obj *model.Streak) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *streakAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.StreakAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *streakAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.StreakAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
 }
 
 // Project is the resolver for the project field.
@@ -1622,6 +1697,11 @@ func (r *userResolver) Age(ctx context.Context, obj *model.User) (*int, error) {
 	return &age, nil
 }
 
+// ImageObject is the resolver for the imageObject field.
+func (r *userResolver) ImageObject(ctx context.Context, obj *model.User) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
 // Projects is the resolver for the projects field.
 func (r *userResolver) Projects(ctx context.Context, obj *model.User) ([]model.Project, error) {
 	// Use dataloader to fetch projects for this user (Load returns a Thunk that must be called)
@@ -1751,6 +1831,9 @@ func (r *userRoleResolver) Scope(ctx context.Context, obj *model.UserRole) (*mod
 	return obj.Scope, nil
 }
 
+// Branding returns BrandingResolver implementation.
+func (r *Resolver) Branding() BrandingResolver { return &brandingResolver{r} }
+
 // ContentAchievement returns ContentAchievementResolver implementation.
 func (r *Resolver) ContentAchievement() ContentAchievementResolver {
 	return &contentAchievementResolver{r}
@@ -1778,6 +1861,9 @@ func (r *Resolver) JsonQuestion() JsonQuestionResolver { return &jsonQuestionRes
 
 // JsonResponse returns JsonResponseResolver implementation.
 func (r *Resolver) JsonResponse() JsonResponseResolver { return &jsonResponseResolver{r} }
+
+// LeaderboardEntry returns LeaderboardEntryResolver implementation.
+func (r *Resolver) LeaderboardEntry() LeaderboardEntryResolver { return &leaderboardEntryResolver{r} }
 
 // MarkdownText returns MarkdownTextResolver implementation.
 func (r *Resolver) MarkdownText() MarkdownTextResolver { return &markdownTextResolver{r} }
@@ -1855,6 +1941,7 @@ func (r *Resolver) User() UserResolver { return &userResolver{r} }
 // UserRole returns UserRoleResolver implementation.
 func (r *Resolver) UserRole() UserRoleResolver { return &userRoleResolver{r} }
 
+type brandingResolver struct{ *Resolver }
 type contentAchievementResolver struct{ *Resolver }
 type contentItemResolver struct{ *Resolver }
 type eventResolver struct{ *Resolver }
@@ -1863,6 +1950,7 @@ type freeTextQuestionResolver struct{ *Resolver }
 type freeTextResponseResolver struct{ *Resolver }
 type jsonQuestionResolver struct{ *Resolver }
 type jsonResponseResolver struct{ *Resolver }
+type leaderboardEntryResolver struct{ *Resolver }
 type markdownTextResolver struct{ *Resolver }
 type numberQuestionResolver struct{ *Resolver }
 type numberResponseResolver struct{ *Resolver }

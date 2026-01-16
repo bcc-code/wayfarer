@@ -80,6 +80,13 @@ enum ConsentManagementType {
 
 # ==================== Supporting Types ====================
 
+type Image {
+    url: String!
+    width: Int
+    height: Int
+    blurhash: String
+}
+
 type MarkdownText {
     markdown: String!
     html: String! @goField(forceResolver: true)
@@ -97,8 +104,10 @@ type ContentItem {
 }
 
 type Branding {
-    logo: String
-    banner: String
+    logo: String @deprecated(reason: "Use logoImage instead")
+    logoImage: Image @goField(forceResolver: true)
+    banner: String @deprecated(reason: "Use bannerImage instead")
+    bannerImage: Image @goField(forceResolver: true)
     colors: Colors!
     rounding: Int! # border-radius in pixels
 }
@@ -130,7 +139,8 @@ type LeaderboardEntry {
     score: Int!
     rank: Int
     tags: [LeaderboardEntryTag!]!
-    image: String
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
     lastScoreAt: DateTime
 }
 
@@ -171,7 +181,8 @@ type User {
     age: Int @goField(forceResolver: true)
     email: String!
     name: String!
-    image: String
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
     projects: [Project!]! @goField(forceResolver: true)
     events: [Event!]! @goField(forceResolver: true)
     teams: [Team!]! @goField(forceResolver: true)
@@ -299,7 +310,8 @@ interface Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
@@ -325,7 +337,8 @@ type SimpleChallenge implements Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
@@ -345,7 +358,8 @@ type QuizChallenge implements Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
@@ -365,7 +379,8 @@ type ExternalChallenge implements Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
@@ -387,8 +402,10 @@ interface Achievement {
     descriptionPending: String!
     descriptionCompleted: String!
     notificationText: String!
-    imagePending: String!
-    imageCompleted: String!
+    imagePending: String! @deprecated(reason: "Use imagePendingObject instead")
+    imagePendingObject: Image!
+    imageCompleted: String! @deprecated(reason: "Use imageCompletedObject instead")
+    imageCompletedObject: Image!
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -406,8 +423,10 @@ type SimpleAchievement implements Achievement {
     descriptionPending: String!
     descriptionCompleted: String!
     notificationText: String!
-    imagePending: String!
-    imageCompleted: String!
+    imagePending: String! @deprecated(reason: "Use imagePendingObject instead")
+    imagePendingObject: Image! @goField(forceResolver: true)
+    imageCompleted: String! @deprecated(reason: "Use imageCompletedObject instead")
+    imageCompletedObject: Image! @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -423,8 +442,10 @@ type ContentAchievement implements Achievement {
     descriptionPending: String!
     descriptionCompleted: String!
     notificationText: String!
-    imagePending: String!
-    imageCompleted: String!
+    imagePending: String! @deprecated(reason: "Use imagePendingObject instead")
+    imagePendingObject: Image! @goField(forceResolver: true)
+    imageCompleted: String! @deprecated(reason: "Use imageCompletedObject instead")
+    imageCompletedObject: Image! @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -446,8 +467,10 @@ type StreakAchievement implements Achievement {
     descriptionPending: String!
     descriptionCompleted: String!
     notificationText: String!
-    imagePending: String!
-    imageCompleted: String!
+    imagePending: String! @deprecated(reason: "Use imagePendingObject instead")
+    imagePendingObject: Image! @goField(forceResolver: true)
+    imageCompleted: String! @deprecated(reason: "Use imageCompletedObject instead")
+    imageCompletedObject: Image! @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -465,8 +488,10 @@ type QuizAchievement implements Achievement {
     descriptionPending: String!
     descriptionCompleted: String!
     notificationText: String!
-    imagePending: String!
-    imageCompleted: String!
+    imagePending: String! @deprecated(reason: "Use imagePendingObject instead")
+    imagePendingObject: Image! @goField(forceResolver: true)
+    imageCompleted: String! @deprecated(reason: "Use imageCompletedObject instead")
+    imageCompletedObject: Image! @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -492,7 +517,8 @@ type Quiz {
     id: ID!
     name: String!
     description: String!
-    image: String
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     challenge: Challenge! @goField(forceResolver: true)
 

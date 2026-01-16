@@ -102,6 +102,71 @@ func (q *Queries) GetFileUpload(ctx context.Context, id string) (*FileUpload, er
 	return &i, err
 }
 
+const GetFileUploadByURL = `-- name: GetFileUploadByURL :one
+SELECT id, public_url, width, height, blurhash FROM file_uploads
+WHERE public_url = $1::text
+`
+
+type GetFileUploadByURLRow struct {
+	ID        string  `json:"id"`
+	PublicUrl string  `json:"public_url"`
+	Width     *int32  `json:"width"`
+	Height    *int32  `json:"height"`
+	Blurhash  *string `json:"blurhash"`
+}
+
+func (q *Queries) GetFileUploadByURL(ctx context.Context, url string) (*GetFileUploadByURLRow, error) {
+	row := q.db.QueryRow(ctx, GetFileUploadByURL, url)
+	var i GetFileUploadByURLRow
+	err := row.Scan(
+		&i.ID,
+		&i.PublicUrl,
+		&i.Width,
+		&i.Height,
+		&i.Blurhash,
+	)
+	return &i, err
+}
+
+const GetFileUploadsByURLs = `-- name: GetFileUploadsByURLs :many
+SELECT id, public_url, width, height, blurhash FROM file_uploads
+WHERE public_url = ANY($1::text[])
+`
+
+type GetFileUploadsByURLsRow struct {
+	ID        string  `json:"id"`
+	PublicUrl string  `json:"public_url"`
+	Width     *int32  `json:"width"`
+	Height    *int32  `json:"height"`
+	Blurhash  *string `json:"blurhash"`
+}
+
+func (q *Queries) GetFileUploadsByURLs(ctx context.Context, urls []string) ([]*GetFileUploadsByURLsRow, error) {
+	rows, err := q.db.Query(ctx, GetFileUploadsByURLs, urls)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetFileUploadsByURLsRow{}
+	for rows.Next() {
+		var i GetFileUploadsByURLsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PublicUrl,
+			&i.Width,
+			&i.Height,
+			&i.Blurhash,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetFileUploadsByUser = `-- name: GetFileUploadsByUser :many
 SELECT id, filename, stored_filename, file_size, mime_type, public_url, uploaded_by, created_at, width, height, blurhash FROM file_uploads
 WHERE uploaded_by = $1::text
