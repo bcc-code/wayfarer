@@ -42,12 +42,26 @@ gql(`
   }
 `)
 
+const searchQuery = ref('')
+const debouncedSearch = refDebounced(searchQuery, 300)
+
 const pagination = usePagination({
   defaultPageSize: 15,
 })
+
+// Reset pagination when search changes
+watch(debouncedSearch, () => {
+  pagination.reset()
+})
+
+const queryVariables = computed(() => ({
+  ...pagination.variables.value,
+  filter: debouncedSearch.value ? { query: debouncedSearch.value } : undefined,
+}))
+
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminUsersPageQuery({
-  variables: pagination.variables,
+  variables: queryVariables,
   pause: computed(() => !isAuthReady.value),
 })
 
@@ -77,6 +91,12 @@ const columns: TableColumn<
     <ErrorState v-if="error" :error />
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between gap-2">
+        <UInput
+          v-model="searchQuery"
+          placeholder="Søk etter navn eller e-post..."
+          icon="i-lucide-search"
+          class="w-64"
+        />
         <RelayPagination v-model:pagination="pagination" />
       </div>
       <UTable :data="users" :loading="fetching" :columns>

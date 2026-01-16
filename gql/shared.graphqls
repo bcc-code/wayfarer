@@ -1019,6 +1019,7 @@ input UpdateStreakInput {
 
 # Query Filter Inputs
 input UserFilter {
+    query: String
     churchId: ID
     gender: Gender
     minAge: Int

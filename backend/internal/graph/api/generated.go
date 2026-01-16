@@ -7508,6 +7508,7 @@ input UpdateStreakInput {
 
 # Query Filter Inputs
 input UserFilter {
+    query: String
     churchId: ID
     gender: Gender
     minAge: Int
@@ -44735,13 +44736,20 @@ func (ec *executionContext) unmarshalInputUserFilter(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"churchId", "gender", "minAge", "maxAge", "projectId", "eventId", "teamId", "ids"}
+	fieldsInOrder := [...]string{"query", "churchId", "gender", "minAge", "maxAge", "projectId", "eventId", "teamId", "ids"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "query":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("query"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Query = data
 		case "churchId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("churchId"))
 			data, err := ec.unmarshalOID2ᚖstring(ctx, v)

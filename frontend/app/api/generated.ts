@@ -2609,6 +2609,7 @@ export type UserFilter = {
   maxAge?: InputMaybe<Scalars['Int']['input']>;
   minAge?: InputMaybe<Scalars['Int']['input']>;
   projectId?: InputMaybe<Scalars['ID']['input']>;
+  query?: InputMaybe<Scalars['String']['input']>;
   teamId?: InputMaybe<Scalars['ID']['input']>;
 };
 
