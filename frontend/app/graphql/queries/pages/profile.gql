@@ -23,6 +23,7 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
     id
     name
     infoMessage {
+      markdown
       html
     }
     infoMessageStart
