@@ -1,6 +1,11 @@
 {
   "error": {
-    "title": "Oops! Noe gikk galt"
+    "title": "Oops! Noe gikk galt",
+    "hint": "Vennligst prøv igjen. Hvis problemet vedvarer, prøv å oppdatere siden.",
+    "networkHint": "Det ser ut som du har tilkoblingsproblemer. Sjekk internettforbindelsen din og prøv igjen.",
+    "retry": "Prøv igjen",
+    "showDetails": "Vis tekniske detaljer",
+    "hideDetails": "Skjul tekniske detaljer"
   },
   "emptyStates": {
     "standings": "Ingen toppliste ennå",
@@ -162,7 +167,8 @@
       "errors": {
         "addFailed": "Kunne ikke legge til administrator",
         "removeFailed": "Kunne ikke fjerne administrator"
-      }
+      },
+      "copyLinkDescription": "Del lenken med andre administratorer"
     },
     "units": {
       "title": "Units",

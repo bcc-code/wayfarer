@@ -28,14 +28,6 @@ func applyHTMLTranslation(translated *string, base scalars.HTML) scalars.HTML {
 	return base
 }
 
-// applyMarkdownTranslation returns the translated value as Markdown if non-nil and non-empty, otherwise the base value
-func applyMarkdownTranslation(translated *string, base scalars.Markdown) scalars.Markdown {
-	if translated != nil && *translated != "" {
-		return scalars.Markdown(*translated)
-	}
-	return base
-}
-
 // LoadProjectWithTranslation loads a project and applies translation for the requested language
 func (r *Resolver) LoadProjectWithTranslation(ctx context.Context, id string) (*model.Project, error) {
 	project, err := r.Loaders.ProjectByIDLoader.Load(ctx, id)()

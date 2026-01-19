@@ -88,7 +88,8 @@ const (
 	PrefixExternalContentsCount  = "externalcontentscount:"
 
 	// File uploads
-	PrefixFileUpload = "fileupload:"
+	PrefixFileUpload         = "fileupload:"
+	PrefixImageMetadataByURL = "imagemetadata:url:"
 )
 
 // Key builders for different entity types
@@ -318,6 +319,11 @@ func UserRolesKey(userID string) string {
 // FileUploadKey builds a cache key for a file upload by ID
 func FileUploadKey(fileUploadID string) string {
 	return PrefixFileUpload + fileUploadID
+}
+
+// ImageMetadataByURLKey builds a cache key for image metadata by URL
+func ImageMetadataByURLKey(url string) string {
+	return PrefixImageMetadataByURL + url
 }
 
 // Tag extraction helpers for invalidation

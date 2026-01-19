@@ -40,7 +40,7 @@ func (d *Datetime) UnmarshalJSON(b []byte) error {
 	for _, layout := range layouts {
 		t, err = time.Parse(layout, s)
 		if err == nil {
-			d = (*Datetime)(&t)
+			*d = Datetime(t)
 			return nil
 		}
 	}

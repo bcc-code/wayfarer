@@ -21,6 +21,26 @@ import (
 	pgx "github.com/jackc/pgx/v5"
 )
 
+// LogoImage is the resolver for the logoImage field.
+func (r *brandingResolver) LogoImage(ctx context.Context, obj *model.Branding) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Logo)
+}
+
+// BannerImage is the resolver for the bannerImage field.
+func (r *brandingResolver) BannerImage(ctx context.Context, obj *model.Branding) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Banner)
+}
+
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *contentAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.ContentAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *contentAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.ContentAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
+}
+
 // Project is the resolver for the project field.
 func (r *contentAchievementResolver) Project(ctx context.Context, obj *model.ContentAchievement) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
@@ -263,6 +283,11 @@ func (r *eventResolver) ParentProject(ctx context.Context, obj *model.Event) (*m
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
+// ImageObject is the resolver for the imageObject field.
+func (r *externalChallengeResolver) ImageObject(ctx context.Context, obj *model.ExternalChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
 // Project is the resolver for the project field.
 func (r *externalChallengeResolver) Project(ctx context.Context, obj *model.ExternalChallenge) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
@@ -337,6 +362,11 @@ func (r *jsonResponseResolver) Question(ctx context.Context, obj *model.JSONResp
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
 	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *leaderboardEntryResolver) ImageObject(ctx context.Context, obj *model.LeaderboardEntry) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
 }
 
 // HTML is the resolver for the html field.
@@ -472,6 +502,15 @@ func (r *projectResolver) Rules(ctx context.Context, obj *model.Project) (*model
 	return &model.MarkdownText{Markdown: *rules}, nil
 }
 
+// InfoMessage is the resolver for the infoMessage field.
+// Note: InfoMessage is intentionally not translated - it's only shown in the source language.
+func (r *projectResolver) InfoMessage(ctx context.Context, obj *model.Project) (*model.MarkdownText, error) {
+	if obj.InfoMessageRaw == nil || *obj.InfoMessageRaw == "" {
+		return nil, nil
+	}
+	return &model.MarkdownText{Markdown: *obj.InfoMessageRaw}, nil
+}
+
 // Challenges is the resolver for the challenges field.
 func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error) {
 	thunk := r.Loaders.ChallengesByProjectLoader.Load(ctx, obj.ID)
@@ -586,6 +625,53 @@ func (r *projectResolver) Teams(ctx context.Context, obj *model.Project) ([]mode
 	return result, nil
 }
 
+// MyChurchTeams is the resolver for the myChurchTeams field.
+func (r *projectResolver) MyChurchTeams(ctx context.Context, obj *model.Project) ([]model.Team, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load current user to get their church ID
+	userThunk := r.Loaders.UserByIDLoader.Load(ctx, currentUserID)
+	user, err := userThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	// Query teams filtered by project and church
+	rows, err := r.DB.Queries.GetTeamsByProjectIDAndChurchID(ctx, sqlc.GetTeamsByProjectIDAndChurchIDParams{
+		Projectid: obj.ID,
+		Churchid:  user.ChurchID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load teams: %w", err)
+	}
+
+	// Convert to GraphQL models
+	result := make([]model.Team, len(rows))
+	for i, row := range rows {
+		description := ""
+		if row.Description != nil {
+			description = *row.Description
+		}
+
+		team := &model.Team{
+			ID:                  row.ID,
+			ProjectID:           row.ProjectID,
+			Name:                row.Name,
+			Description:         description,
+			SuperTeamID:         row.SuperTeamID,
+			LeaderboardExcluded: row.LeaderboardExcluded,
+		}
+		translated := r.ApplyTranslationToTeam(ctx, team)
+		result[i] = *translated
+	}
+
+	return result, nil
+}
+
 // MyTeam is the resolver for the myTeam field.
 func (r *projectResolver) MyTeam(ctx context.Context, obj *model.Project) (*model.Team, error) {
 	// Get current user ID from context
@@ -670,6 +756,11 @@ func (r *projectResolver) Journal(ctx context.Context, obj *model.Project, filte
 		return nil, fmt.Errorf("user not authenticated")
 	}
 	return r.Resolver.getScoreJournal(ctx, obj.ID, userID, filter, first, after, last, before)
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *quizResolver) ImageObject(ctx context.Context, obj *model.Quiz) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
 }
 
 // Project is the resolver for the project field on Quiz.
@@ -880,6 +971,16 @@ func (r *quizResolver) UserActiveSession(ctx context.Context, obj *model.Quiz) (
 	return convertQuizSessionToModel(row), nil
 }
 
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *quizAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.QuizAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *quizAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.QuizAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
+}
+
 // Project is the resolver for the project field.
 func (r *quizAchievementResolver) Project(ctx context.Context, obj *model.QuizAchievement) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
@@ -904,6 +1005,11 @@ func (r *quizAchievementResolver) AchievedAt(ctx context.Context, obj *model.Qui
 func (r *quizAchievementResolver) Quiz(ctx context.Context, obj *model.QuizAchievement) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
 	return thunk()
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *quizChallengeResolver) ImageObject(ctx context.Context, obj *model.QuizChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
 }
 
 // Project is the resolver for the project field.
@@ -1209,6 +1315,16 @@ func (r *scoreJournalResolver) AwardedBy(ctx context.Context, obj *model.ScoreJo
 	return user, nil
 }
 
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *simpleAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.SimpleAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *simpleAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.SimpleAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
+}
+
 // Project is the resolver for the project field.
 func (r *simpleAchievementResolver) Project(ctx context.Context, obj *model.SimpleAchievement) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
@@ -1227,6 +1343,11 @@ func (r *simpleAchievementResolver) Challenge(ctx context.Context, obj *model.Si
 // AchievedAt is the resolver for the achievedAt field.
 func (r *simpleAchievementResolver) AchievedAt(ctx context.Context, obj *model.SimpleAchievement) (*scalars.DateTime, error) {
 	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *simpleChallengeResolver) ImageObject(ctx context.Context, obj *model.SimpleChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
 }
 
 // Project is the resolver for the project field.
@@ -1416,6 +1537,16 @@ func (r *streakResolver) Project(ctx context.Context, obj *model.Streak) (*model
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
 }
 
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *streakAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.StreakAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *streakAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.StreakAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
+}
+
 // Project is the resolver for the project field.
 func (r *streakAchievementResolver) Project(ctx context.Context, obj *model.StreakAchievement) (*model.Project, error) {
 	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
@@ -1450,17 +1581,9 @@ func (r *superTeamResolver) Members(ctx context.Context, obj *model.SuperTeam, f
 	}
 
 	// Check permissions - only admins, project admins can access super team members
-	allowed := false
-
-	// 1. Admins/SuperAdmins/M2M can see all super team members
-	if r.RoleService.IsAdmin(ctx, currentUserID) || r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) {
-		allowed = true
-	}
-
-	// 2. Project admins can see members of super teams in their projects
-	if !allowed && r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, obj.ProjectID) {
-		allowed = true
-	}
+	allowed := r.RoleService.IsAdmin(ctx, currentUserID) ||
+		r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) ||
+		r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, obj.ProjectID)
 
 	if !allowed {
 		return nil, fmt.Errorf("permission denied: you do not have access to this super team's members")
@@ -1609,22 +1732,10 @@ func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.Te
 	}
 
 	// Check permissions - only admins, project admins, and team leads can access team members
-	allowed := false
-
-	// 1. Admins/SuperAdmins/M2M can see all team members
-	if r.RoleService.IsAdmin(ctx, currentUserID) || r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) {
-		allowed = true
-	}
-
-	// 2. Project admins can see members of teams in their projects
-	if !allowed && r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, obj.ProjectID) {
-		allowed = true
-	}
-
-	// 3. Team leads can see members of teams they lead
-	if !allowed && r.RoleService.HasRoleInTeam(ctx, currentUserID, services.RoleTeamLead, obj.ID) {
-		allowed = true
-	}
+	allowed := r.RoleService.IsAdmin(ctx, currentUserID) ||
+		r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) ||
+		r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, obj.ProjectID) ||
+		r.RoleService.HasRoleInTeam(ctx, currentUserID, services.RoleTeamLead, obj.ID)
 
 	if !allowed {
 		return nil, fmt.Errorf("permission denied: you do not have access to this team's members")
@@ -1737,6 +1848,11 @@ func (r *userResolver) Age(ctx context.Context, obj *model.User) (*int, error) {
 	age := time.Now().Year() - birthdate.Year()
 
 	return &age, nil
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *userResolver) ImageObject(ctx context.Context, obj *model.User) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
 }
 
 // Projects is the resolver for the projects field.
@@ -1868,6 +1984,9 @@ func (r *userRoleResolver) Scope(ctx context.Context, obj *model.UserRole) (*mod
 	return obj.Scope, nil
 }
 
+// Branding returns BrandingResolver implementation.
+func (r *Resolver) Branding() BrandingResolver { return &brandingResolver{r} }
+
 // ContentAchievement returns ContentAchievementResolver implementation.
 func (r *Resolver) ContentAchievement() ContentAchievementResolver {
 	return &contentAchievementResolver{r}
@@ -1895,6 +2014,9 @@ func (r *Resolver) JsonQuestion() JsonQuestionResolver { return &jsonQuestionRes
 
 // JsonResponse returns JsonResponseResolver implementation.
 func (r *Resolver) JsonResponse() JsonResponseResolver { return &jsonResponseResolver{r} }
+
+// LeaderboardEntry returns LeaderboardEntryResolver implementation.
+func (r *Resolver) LeaderboardEntry() LeaderboardEntryResolver { return &leaderboardEntryResolver{r} }
 
 // MarkdownText returns MarkdownTextResolver implementation.
 func (r *Resolver) MarkdownText() MarkdownTextResolver { return &markdownTextResolver{r} }
@@ -1972,6 +2094,7 @@ func (r *Resolver) User() UserResolver { return &userResolver{r} }
 // UserRole returns UserRoleResolver implementation.
 func (r *Resolver) UserRole() UserRoleResolver { return &userRoleResolver{r} }
 
+type brandingResolver struct{ *Resolver }
 type contentAchievementResolver struct{ *Resolver }
 type contentItemResolver struct{ *Resolver }
 type eventResolver struct{ *Resolver }
@@ -1980,6 +2103,7 @@ type freeTextQuestionResolver struct{ *Resolver }
 type freeTextResponseResolver struct{ *Resolver }
 type jsonQuestionResolver struct{ *Resolver }
 type jsonResponseResolver struct{ *Resolver }
+type leaderboardEntryResolver struct{ *Resolver }
 type markdownTextResolver struct{ *Resolver }
 type numberQuestionResolver struct{ *Resolver }
 type numberResponseResolver struct{ *Resolver }

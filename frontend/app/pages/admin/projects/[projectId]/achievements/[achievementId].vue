@@ -14,8 +14,12 @@ gql(`
       name
       descriptionPending
       descriptionCompleted
-      imagePending
-      imageCompleted
+      imagePendingObject {
+        ...ImageFields
+      }
+      imageCompletedObject {
+        ...ImageFields
+      }
       notificationText
       achievedAt
       points
@@ -114,8 +118,8 @@ const initialData = computed(() => {
     descriptionPending: a.descriptionPending,
     descriptionCompleted: a.descriptionCompleted,
     notificationText: a.notificationText,
-    imagePending: a.imagePending,
-    imageCompleted: a.imageCompleted,
+    imagePending: a.imagePendingObject?.url ?? '',
+    imageCompleted: a.imageCompletedObject?.url ?? '',
     points: a.points,
     hidden: a.hidden,
     awardableFrom: toLocalDatetimeLocal(a.awardableFrom),

@@ -1,0 +1,6 @@
+fragment ImageFields on Image {
+  url
+  width
+  height
+  blurhash
+}

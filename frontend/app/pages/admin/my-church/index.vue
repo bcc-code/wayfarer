@@ -51,5 +51,8 @@ async function copyLink() {
       <Icon name="lucide:link" />
       {{ $t('admin.common.copyLink') }}
     </UButton>
+    <p class="text-muted text-sm mt-2">
+      {{ $t('admin.admins.copyLinkDescription') }}
+    </p>
   </UContainer>
 </template>

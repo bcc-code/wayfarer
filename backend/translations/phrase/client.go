@@ -62,9 +62,7 @@ func NewClient(queries *sqlc.Queries, config Config, languages []string) *Client
 		baseURL = "https://cloud.memsource.com/web/api2"
 	}
 
-	if strings.HasSuffix(baseURL, "/") {
-		baseURL = baseURL[:len(baseURL)-1]
-	}
+	baseURL = strings.TrimSuffix(baseURL, "/")
 
 	r := resty.New()
 	r.BaseURL = baseURL
@@ -610,7 +608,7 @@ func (c *Client) NotifyAssignedJobs(projectUID string, jobUIDs []string, emailTe
 	}
 	if resp.StatusCode() >= 300 {
 		log.Error().Str("projectUID", projectUID).Int("status", resp.StatusCode()).Str("body", resp.String()).Msg("Phrase notifyAssigned failed")
-		return fmt.Errorf("Phrase notifyAssigned failed: %s", resp.String())
+		return fmt.Errorf("phrase notifyAssigned failed: %s", resp.String())
 	}
 	return nil
 }

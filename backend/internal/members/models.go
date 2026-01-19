@@ -35,6 +35,28 @@ type Affiliation struct {
 	ValidTo   *time.Time `json:"validTo"`
 }
 
+// RoleAssignment represents a role assignment for a member
+type RoleAssignment struct {
+	Uid     uuid.UUID `json:"uid"`
+	RoleUid uuid.UUID `json:"roleUid"`
+	OrgUid  uuid.UUID `json:"orgUid"`
+}
+
+// MemberWithRoles is a member with role assignments
+type MemberWithRoles struct {
+	PersonID        int              `json:"personID"`
+	Uid             uuid.UUID        `json:"uid"`
+	BirthDate       string           `json:"birthDate"`
+	Email           string           `json:"email"`
+	EmailVerified   bool             `json:"emailVerified"`
+	DisplayName     string           `json:"displayName"`
+	FirstName       string           `json:"firstName"`
+	LastName        string           `json:"lastName"`
+	MiddleName      string           `json:"middleName"`
+	Gender          string           `json:"gender"`
+	RoleAssignments []RoleAssignment `json:"roleAssignments"`
+}
+
 // OrganizationAddress contains address data for an organization
 type OrganizationAddress struct {
 	CountryCode string `json:"countryCode"`

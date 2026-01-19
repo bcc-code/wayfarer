@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	personFields = "*,affiliations.*"
-	orgFields    = "districtName,type,orgID,uid,visitingAddress.countryCode"
+	personFields         = "*,affiliations.*"
+	personFieldsWithRole = "*,roleAssignments.*"
+	orgFields            = "districtName,type,orgID,uid,visitingAddress.countryCode"
 )
 
 // Lookup returns a member from the members api
@@ -133,4 +134,57 @@ func (c *Client) GetAllOrganizations(ctx context.Context) ([]Organization, error
 		return nil, fmt.Errorf("failed to get organizations: %w", err)
 	}
 	return *orgs, nil
+}
+
+// GetMembersByBirthdateRange retrieves members born between minDate and maxDate (YYYY-MM-DD format).
+// Uses pagination with offset/limit to handle large result sets.
+func (c *Client) GetMembersByBirthdateRange(ctx context.Context, minDate, maxDate string, limit, offset int) ([]Member, error) {
+	filter := map[string]any{
+		"birthDate": map[string]any{
+			"_gte": minDate,
+			"_lte": maxDate,
+		},
+	}
+
+	encoded, err := json.Marshal(filter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode filter: %w", err)
+	}
+
+	endpoint := fmt.Sprintf("v2/persons?filter=%s&fields=%s&limit=%d&offset=%d",
+		encoded, personFields, limit, offset)
+
+	ms, err := get[[]Member](ctx, c, endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get members by birthdate range: %w", err)
+	}
+
+	return *ms, nil
+}
+
+// GetMembersByRoleAssignment retrieves members who have a specific role assigned.
+// Uses pagination with offset/limit to handle large result sets.
+func (c *Client) GetMembersByRoleAssignment(ctx context.Context, roleUid uuid.UUID, limit, offset int) ([]MemberWithRoles, error) {
+	filter := map[string]any{
+		"roleAssignments": map[string]any{
+			"roleUid": map[string]any{
+				"_eq": roleUid.String(),
+			},
+		},
+	}
+
+	encoded, err := json.Marshal(filter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode filter: %w", err)
+	}
+
+	endpoint := fmt.Sprintf("v2/persons?filter=%s&fields=%s&limit=%d&offset=%d",
+		encoded, personFieldsWithRole, limit, offset)
+
+	ms, err := get[[]MemberWithRoles](ctx, c, endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get members by role assignment: %w", err)
+	}
+
+	return *ms, nil
 }

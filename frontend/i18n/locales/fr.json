@@ -1,6 +1,11 @@
 {
   "error": {
-    "title": "Oups ! Une erreur s’est produite"
+    "title": "Oups ! Une erreur s’est produite",
+    "hint": "Merci de réessayer. Si le problème persiste, essaie d'actualiser la page.",
+    "networkHint": "Il semble que tu aies des problèmes de connexion. Vérifie ta connexion Internet et réessaie.",
+    "retry": "Réessayer",
+    "showDetails": "Afficher les détails techniques",
+    "hideDetails": "Masquer les détails techniques"
   },
   "emptyStates": {
     "standings": "Aucun classement pour l’instant",
@@ -124,5 +129,111 @@
     "updateAvailableTitle": "Une mise à jour est disponible",
     "updateAvailableButton": "Mettre à jour maintenant"
   },
-  "goToHiddenTreasures": "Aller à l’étude biblique"
+  "goToHiddenTreasures": "Aller à l’étude biblique",
+  "admin": {
+    "common": {
+      "back": "Retour",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "create": "Créer",
+      "delete": "Supprimer",
+      "deleteAll": "Tout supprimer",
+      "copyLink": "Copier le lien vers la page d'administration",
+      "linkCopied": "Lien copié"
+    },
+    "breadcrumb": {
+      "home": "Page d'accueil"
+    },
+    "churchHome": {
+      "administrators": "Administrateurs",
+      "unitsAndPeople": "Unités et personnes",
+      "gameNights": "Game Nights",
+      "comingSoon": "Bientôt disponible"
+    },
+    "admins": {
+      "searchPlaceholder": "Rechercher des administrateurs...",
+      "addPlaceholder": "Ajouter un administrateur...",
+      "you": "Toi",
+      "noAdminsFound": "Aucun administrateur trouvé",
+      "confirmRemove": {
+        "title": "Supprimer l'administrateur ?",
+        "message": "Es-tu sûr de vouloir supprimer {name} en tant qu'administrateur ?",
+        "confirm": "Supprimer"
+      },
+      "success": {
+        "added": "Administrateur ajouté",
+        "removed": "Administrateur supprimé"
+      },
+      "errors": {
+        "addFailed": "Impossible d'ajouter un administrateur",
+        "removeFailed": "Impossible de supprimer l'administrateur"
+      },
+      "copyLinkDescription": "Partager le lien avec d'autres administrateurs"
+    },
+    "units": {
+      "title": "Unités",
+      "people": "Personnes",
+      "filter": {
+        "title": "Filtrer",
+        "all": "Tous",
+        "notInUnit": "Pas dans une unité",
+        "inUnit": "Dans une unité",
+        "showO36": "Afficher les personnes O 36",
+        "showO36Description": "Les O 36 n'apparaissent pas dans les classements et ne participent pas au concours pour les jeunes"
+      },
+      "searchPlaceholder": "Rechercher des unités ou des personnes...",
+      "searchPeoplePlaceholder": "Rechercher des personnes...",
+      "expandAll": "Déployer toutes les unités",
+      "createOneUnit": "Créer une unité",
+      "createMultipleUnits": "Créer plusieurs unités",
+      "namePlaceholder": "Nom de l'unité (facultatif)",
+      "selectAll": "Tout sélectionner",
+      "noActiveProject": "Pas de concours actif",
+      "noUnitsFound": "Aucune unité trouvée",
+      "noPeopleFound": "Aucune personne trouvée",
+      "years": "{years} ans",
+      "selectedCount": "{count} unité sélectionnée | {count} unités sélectionnées",
+      "deleteSelected": "Supprimer la sélection",
+      "bulkCreate": {
+        "countLabel": "Nombre d'unités",
+        "autoGenerateInfo": "Les noms sont générés automatiquement."
+      },
+      "confirmDelete": {
+        "title": "Supprimer l'unité ?",
+        "message": "Es-tu sûr de vouloir supprimer {name}? Tous les membres seront retirés de l'unité."
+      },
+      "confirmBulkDelete": {
+        "title": "Supprimer plusieurs unités ?",
+        "message": "Es-tu sûr de vouloir supprimer{count} unités ? Tous les membres seront retirés de ces unités."
+      },
+      "success": {
+        "created": "Unité créée",
+        "bulkCreated": "{count} unités créées",
+        "deleted": "Unité supprimée",
+        "bulkDeleted": "{count} unités supprimées"
+      },
+      "errors": {
+        "createFailed": "Impossible de créer l'unité",
+        "bulkCreateFailed": "Impossible de créer les unités",
+        "addMemberFailed": "Impossible d'ajouter un membre",
+        "removeMemberFailed": "Impossible de supprimer un membre",
+        "assignLeaderFailed": "Impossible de définir un chef d’équipe",
+        "deleteFailed": "Impossible de supprimer l'unité",
+        "bulkDeleteFailed": "Impossible de supprimer les unités",
+        "renameFailed": "Impossible de modifier le nom de l'unité",
+        "exclusionToggleFailed": "Impossible de modifier la visibilité dans la liste des classements"
+      },
+      "ageWarning": "La moyenne d'âge de cette unité est supérieure à 36 ans, elle n'apparaîtra donc pas dans les classements ni ne participera au concours réservé aux jeunes. Si cela n’est pas exact et qu'elle doit participer au concours pour les jeunes, veuillez nous en informer à l'adresse suivante {email}"
+    },
+    "unit": {
+      "noLeaderSelected": "Aucun chef d’équipe désigné",
+      "members": "{count} personne | {count} personnes",
+      "makeLead": "Désigner comme chef d’équipe",
+      "dragPeopleHere": "Aucun membre - faire venir une personne ici",
+      "addPersonPlaceholder": "Ajouter une personne...",
+      "excludeFromLeaderboard": "Exclure de la liste des classements",
+      "excludeFromLeaderboardTooltip": "Une fois activé, cette unité n'apparaîtra pas dans la liste des classements",
+      "excludedFromLeaderboard": "Masquée dans les classements"
+    }
+  }
 }

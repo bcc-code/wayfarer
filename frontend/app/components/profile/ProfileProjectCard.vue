@@ -4,9 +4,16 @@ import { gsap } from 'gsap'
 type ProjectCardAchievement =
   ProfilePageQuery['myCurrentProject']['achievements'][number]
 
+interface BannerImage {
+  url: string
+  width?: number | null
+  height?: number | null
+  blurhash?: string | null
+}
+
 const props = defineProps<{
   projectName: string
-  banner?: string | null
+  banner?: BannerImage | null
   score?: number
   rank?: number | null
   achievements?: ProjectCardAchievement[]
@@ -55,7 +62,7 @@ onMounted(() => {
 
 <template>
   <DesignCard class="overflow-clip">
-    <img v-if="banner" class="w-full object-cover h-50" :src="banner" />
+    <DesignImage v-if="banner" :image="banner" class="w-full h-50" />
     <div class="p-default gap-medium flex flex-col">
       <p v-if="!banner" class="text-label text-center">{{ projectName }}</p>
       <div class="divide-border-default grid grid-cols-2 divide-x py-2">

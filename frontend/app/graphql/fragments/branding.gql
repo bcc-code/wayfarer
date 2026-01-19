@@ -23,8 +23,12 @@ fragment BrandingColorsFields on Colors {
 }
 
 fragment BrandingFields on Branding {
-  logo
-  banner
+  logoImage {
+    ...ImageFields
+  }
+  bannerImage {
+    ...ImageFields
+  }
   rounding
   colors {
     ...BrandingColorsFields

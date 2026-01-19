@@ -9,6 +9,10 @@ import (
 
 // feedbackRowToModel converts a sqlc UserFeedback row to a GraphQL model
 func feedbackRowToModel(row *sqlc.UserFeedback) *model.UserFeedback {
+	tags := row.Tags
+	if tags == nil {
+		tags = []string{}
+	}
 	result := &model.UserFeedback{
 		ID:           row.ID,
 		UserID:       row.UserID,
@@ -22,6 +26,8 @@ func feedbackRowToModel(row *sqlc.UserFeedback) *model.UserFeedback {
 		Locale:       row.Locale,
 		ProjectID:    row.ProjectID,
 		Timezone:     row.Timezone,
+		ContextURL:   row.ContextUrl,
+		Tags:         tags,
 		CreatedAt:    scalars.DateTime{Time: row.CreatedAt.Time},
 	}
 	if row.HandledAt.Valid {

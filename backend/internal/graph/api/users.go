@@ -176,6 +176,10 @@ func buildUserFilterParamsCursor(filter *model.UserFilter, first *int, after *st
 	params := sqlc.GetUsersFilteredCursorParams{}
 
 	// Apply filters
+	if filter.Query != nil && *filter.Query != "" {
+		params.Query = *filter.Query
+	}
+
 	if filter.ChurchID != nil {
 		params.Churchid = *filter.ChurchID
 	}
@@ -250,6 +254,9 @@ func buildCountFilterParams(filter *model.UserFilter) sqlc.CountUsersFilteredPar
 	params := sqlc.CountUsersFilteredParams{}
 
 	// Apply filters
+	if filter.Query != nil && *filter.Query != "" {
+		params.Query = *filter.Query
+	}
 	if filter.ChurchID != nil {
 		params.Churchid = *filter.ChurchID
 	}
@@ -286,6 +293,9 @@ func buildCacheKeyParams(filter *model.UserFilter, first *int, after *string, la
 
 	// Add filter parameters
 	if filter != nil {
+		if filter.Query != nil && *filter.Query != "" {
+			params["query"] = *filter.Query
+		}
 		if filter.ChurchID != nil && *filter.ChurchID != "" {
 			params["churchid"] = *filter.ChurchID
 		}

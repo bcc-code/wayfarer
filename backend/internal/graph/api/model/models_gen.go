@@ -19,7 +19,9 @@ type Achievement interface {
 	GetDescriptionCompleted() string
 	GetNotificationText() string
 	GetImagePending() string
+	GetImagePendingObject() *Image
 	GetImageCompleted() string
+	GetImageCompletedObject() *Image
 	GetProject() *Project
 	GetEvent() *Event
 	GetChallenge() Challenge
@@ -35,6 +37,7 @@ type Challenge interface {
 	GetName() string
 	GetDescription() scalars.HTML
 	GetImage() *string
+	GetImageObject() *Image
 	GetProject() *Project
 	GetEvent() *Event
 	GetButtonText() string
@@ -116,10 +119,12 @@ type AssignRoleInput struct {
 }
 
 type Branding struct {
-	Logo     *string `json:"logo,omitempty"`
-	Banner   *string `json:"banner,omitempty"`
-	Colors   *Colors `json:"colors"`
-	Rounding int     `json:"rounding"`
+	Logo        *string `json:"logo,omitempty"`
+	LogoImage   *Image  `json:"logoImage,omitempty"`
+	Banner      *string `json:"banner,omitempty"`
+	BannerImage *Image  `json:"bannerImage,omitempty"`
+	Colors      *Colors `json:"colors"`
+	Rounding    int     `json:"rounding"`
 }
 
 type BrandingInput struct {
@@ -246,7 +251,9 @@ type ContentAchievement struct {
 	DescriptionCompleted string            `json:"descriptionCompleted"`
 	NotificationText     string            `json:"notificationText"`
 	ImagePending         string            `json:"imagePending"`
+	ImagePendingObject   *Image            `json:"imagePendingObject"`
 	ImageCompleted       string            `json:"imageCompleted"`
+	ImageCompletedObject *Image            `json:"imageCompletedObject"`
 	Project              *Project          `json:"project"`
 	Event                *Event            `json:"event,omitempty"`
 	Challenge            Challenge         `json:"challenge,omitempty"`
@@ -271,7 +278,9 @@ func (this ContentAchievement) GetDescriptionPending() string       { return thi
 func (this ContentAchievement) GetDescriptionCompleted() string     { return this.DescriptionCompleted }
 func (this ContentAchievement) GetNotificationText() string         { return this.NotificationText }
 func (this ContentAchievement) GetImagePending() string             { return this.ImagePending }
+func (this ContentAchievement) GetImagePendingObject() *Image       { return this.ImagePendingObject }
 func (this ContentAchievement) GetImageCompleted() string           { return this.ImageCompleted }
+func (this ContentAchievement) GetImageCompletedObject() *Image     { return this.ImageCompletedObject }
 func (this ContentAchievement) GetProject() *Project                { return this.Project }
 func (this ContentAchievement) GetEvent() *Event                    { return this.Event }
 func (this ContentAchievement) GetChallenge() Challenge             { return this.Challenge }
@@ -357,12 +366,15 @@ type CreatePredefinedAnswerInput struct {
 }
 
 type CreateProjectInput struct {
-	Name        string           `json:"name"`
-	Description *string          `json:"description,omitempty"`
-	Rules       *string          `json:"rules,omitempty"`
-	StartDate   scalars.DateTime `json:"startDate"`
-	EndDate     scalars.DateTime `json:"endDate"`
-	Branding    *BrandingInput   `json:"branding"`
+	Name             string            `json:"name"`
+	Description      *string           `json:"description,omitempty"`
+	Rules            *string           `json:"rules,omitempty"`
+	InfoMessage      *string           `json:"infoMessage,omitempty"`
+	InfoMessageStart *scalars.DateTime `json:"infoMessageStart,omitempty"`
+	InfoMessageEnd   *scalars.DateTime `json:"infoMessageEnd,omitempty"`
+	StartDate        scalars.DateTime  `json:"startDate"`
+	EndDate          scalars.DateTime  `json:"endDate"`
+	Branding         *BrandingInput    `json:"branding"`
 }
 
 type CreateQuizAchievementInput struct {
@@ -512,6 +524,7 @@ type DeviceMetadata struct {
 	AppVersion   *string `json:"appVersion,omitempty"`
 	Locale       *string `json:"locale,omitempty"`
 	Timezone     *string `json:"timezone,omitempty"`
+	ContextURL   *string `json:"contextUrl,omitempty"`
 }
 
 type EnrollmentTargetInput struct {
@@ -561,6 +574,7 @@ type ExternalChallenge struct {
 	Name                        string            `json:"name"`
 	Description                 scalars.HTML      `json:"description"`
 	Image                       *string           `json:"image,omitempty"`
+	ImageObject                 *Image            `json:"imageObject,omitempty"`
 	Project                     *Project          `json:"project"`
 	Event                       *Event            `json:"event,omitempty"`
 	ButtonText                  string            `json:"buttonText"`
@@ -582,6 +596,7 @@ func (this ExternalChallenge) GetID() string                     { return this.I
 func (this ExternalChallenge) GetName() string                   { return this.Name }
 func (this ExternalChallenge) GetDescription() scalars.HTML      { return this.Description }
 func (this ExternalChallenge) GetImage() *string                 { return this.Image }
+func (this ExternalChallenge) GetImageObject() *Image            { return this.ImageObject }
 func (this ExternalChallenge) GetProject() *Project              { return this.Project }
 func (this ExternalChallenge) GetEvent() *Event                  { return this.Event }
 func (this ExternalChallenge) GetButtonText() string             { return this.ButtonText }
@@ -653,7 +668,8 @@ type FeedbackEdge struct {
 }
 
 type FeedbackFilter struct {
-	UserID *string `json:"userId,omitempty"`
+	UserID *string  `json:"userId,omitempty"`
+	Tags   []string `json:"tags,omitempty"`
 }
 
 type FileUpload struct {
@@ -722,6 +738,13 @@ type GrantQuizSessionAccessInput struct {
 	AllProjectUsers *bool    `json:"allProjectUsers,omitempty"`
 }
 
+type Image struct {
+	URL      string  `json:"url"`
+	Width    *int    `json:"width,omitempty"`
+	Height   *int    `json:"height,omitempty"`
+	Blurhash *string `json:"blurhash,omitempty"`
+}
+
 type JSONQuestion struct {
 	ID             string `json:"id"`
 	Quiz           *Quiz  `json:"quiz"`
@@ -780,6 +803,8 @@ type LeaderboardEntry struct {
 	Rank        *int                  `json:"rank,omitempty"`
 	Tags        []LeaderboardEntryTag `json:"tags"`
 	Image       *string               `json:"image,omitempty"`
+	ImageObject *Image                `json:"imageObject,omitempty"`
+	LastScoreAt *scalars.DateTime     `json:"lastScoreAt,omitempty"`
 }
 
 type LeaderboardFilter struct {
@@ -888,23 +913,28 @@ func (this PredefinedResponse) GetTimeSpentSeconds() *int        { return this.T
 func (this PredefinedResponse) GetPointsEarned() *int            { return this.PointsEarned }
 
 type Project struct {
-	ID           string                  `json:"id"`
-	Name         string                  `json:"name"`
-	Description  string                  `json:"description"`
-	Rules        *MarkdownText           `json:"rules,omitempty"`
-	Challenges   []Challenge             `json:"challenges"`
-	Leaderboard  *LeaderboardConnection  `json:"leaderboard"`
-	Events       []Event                 `json:"events"`
-	StartDate    scalars.DateTime        `json:"startDate"`
-	EndDate      scalars.DateTime        `json:"endDate"`
-	Branding     *Branding               `json:"branding"`
-	Teams        []Team                  `json:"teams"`
-	MyTeam       *Team                   `json:"myTeam,omitempty"`
-	Achievements []Achievement           `json:"achievements"`
-	Streaks      []Streak                `json:"streaks"`
-	Journal      *ScoreJournalConnection `json:"journal"`
-	ArchivedAt   *bool                   `json:"archivedAt,omitempty"`
-	RulesRaw     *string                 `json:"-"`
+	ID               string                  `json:"id"`
+	Name             string                  `json:"name"`
+	Description      string                  `json:"description"`
+	Rules            *MarkdownText           `json:"rules,omitempty"`
+	InfoMessage      *MarkdownText           `json:"infoMessage,omitempty"`
+	InfoMessageStart *scalars.DateTime       `json:"infoMessageStart,omitempty"`
+	InfoMessageEnd   *scalars.DateTime       `json:"infoMessageEnd,omitempty"`
+	Challenges       []Challenge             `json:"challenges"`
+	Leaderboard      *LeaderboardConnection  `json:"leaderboard"`
+	Events           []Event                 `json:"events"`
+	StartDate        scalars.DateTime        `json:"startDate"`
+	EndDate          scalars.DateTime        `json:"endDate"`
+	Branding         *Branding               `json:"branding"`
+	Teams            []Team                  `json:"teams"`
+	MyChurchTeams    []Team                  `json:"myChurchTeams"`
+	MyTeam           *Team                   `json:"myTeam,omitempty"`
+	Achievements     []Achievement           `json:"achievements"`
+	Streaks          []Streak                `json:"streaks"`
+	Journal          *ScoreJournalConnection `json:"journal"`
+	ArchivedAt       *bool                   `json:"archivedAt,omitempty"`
+	InfoMessageRaw   *string                 `json:"-"`
+	RulesRaw         *string                 `json:"-"`
 }
 
 type ProjectConnection struct {
@@ -946,6 +976,7 @@ type Quiz struct {
 	Name                 string            `json:"name"`
 	Description          string            `json:"description"`
 	Image                *string           `json:"image,omitempty"`
+	ImageObject          *Image            `json:"imageObject,omitempty"`
 	Project              *Project          `json:"project"`
 	Challenge            Challenge         `json:"challenge"`
 	TimeoutSeconds       *int              `json:"timeoutSeconds,omitempty"`
@@ -972,7 +1003,9 @@ type QuizAchievement struct {
 	DescriptionCompleted string            `json:"descriptionCompleted"`
 	NotificationText     string            `json:"notificationText"`
 	ImagePending         string            `json:"imagePending"`
+	ImagePendingObject   *Image            `json:"imagePendingObject"`
 	ImageCompleted       string            `json:"imageCompleted"`
+	ImageCompletedObject *Image            `json:"imageCompletedObject"`
 	Project              *Project          `json:"project"`
 	Event                *Event            `json:"event,omitempty"`
 	Challenge            Challenge         `json:"challenge,omitempty"`
@@ -996,7 +1029,9 @@ func (this QuizAchievement) GetDescriptionPending() string       { return this.D
 func (this QuizAchievement) GetDescriptionCompleted() string     { return this.DescriptionCompleted }
 func (this QuizAchievement) GetNotificationText() string         { return this.NotificationText }
 func (this QuizAchievement) GetImagePending() string             { return this.ImagePending }
+func (this QuizAchievement) GetImagePendingObject() *Image       { return this.ImagePendingObject }
 func (this QuizAchievement) GetImageCompleted() string           { return this.ImageCompleted }
+func (this QuizAchievement) GetImageCompletedObject() *Image     { return this.ImageCompletedObject }
 func (this QuizAchievement) GetProject() *Project                { return this.Project }
 func (this QuizAchievement) GetEvent() *Event                    { return this.Event }
 func (this QuizAchievement) GetChallenge() Challenge             { return this.Challenge }
@@ -1012,6 +1047,7 @@ type QuizChallenge struct {
 	Name                        string            `json:"name"`
 	Description                 scalars.HTML      `json:"description"`
 	Image                       *string           `json:"image,omitempty"`
+	ImageObject                 *Image            `json:"imageObject,omitempty"`
 	Project                     *Project          `json:"project"`
 	Event                       *Event            `json:"event,omitempty"`
 	ButtonText                  string            `json:"buttonText"`
@@ -1033,6 +1069,7 @@ func (this QuizChallenge) GetID() string                     { return this.ID }
 func (this QuizChallenge) GetName() string                   { return this.Name }
 func (this QuizChallenge) GetDescription() scalars.HTML      { return this.Description }
 func (this QuizChallenge) GetImage() *string                 { return this.Image }
+func (this QuizChallenge) GetImageObject() *Image            { return this.ImageObject }
 func (this QuizChallenge) GetProject() *Project              { return this.Project }
 func (this QuizChallenge) GetEvent() *Event                  { return this.Event }
 func (this QuizChallenge) GetButtonText() string             { return this.ButtonText }
@@ -1219,7 +1256,9 @@ type SimpleAchievement struct {
 	DescriptionCompleted string            `json:"descriptionCompleted"`
 	NotificationText     string            `json:"notificationText"`
 	ImagePending         string            `json:"imagePending"`
+	ImagePendingObject   *Image            `json:"imagePendingObject"`
 	ImageCompleted       string            `json:"imageCompleted"`
+	ImageCompletedObject *Image            `json:"imageCompletedObject"`
 	Project              *Project          `json:"project"`
 	Event                *Event            `json:"event,omitempty"`
 	Challenge            Challenge         `json:"challenge,omitempty"`
@@ -1239,7 +1278,9 @@ func (this SimpleAchievement) GetDescriptionPending() string       { return this
 func (this SimpleAchievement) GetDescriptionCompleted() string     { return this.DescriptionCompleted }
 func (this SimpleAchievement) GetNotificationText() string         { return this.NotificationText }
 func (this SimpleAchievement) GetImagePending() string             { return this.ImagePending }
+func (this SimpleAchievement) GetImagePendingObject() *Image       { return this.ImagePendingObject }
 func (this SimpleAchievement) GetImageCompleted() string           { return this.ImageCompleted }
+func (this SimpleAchievement) GetImageCompletedObject() *Image     { return this.ImageCompletedObject }
 func (this SimpleAchievement) GetProject() *Project                { return this.Project }
 func (this SimpleAchievement) GetEvent() *Event                    { return this.Event }
 func (this SimpleAchievement) GetChallenge() Challenge             { return this.Challenge }
@@ -1255,6 +1296,7 @@ type SimpleChallenge struct {
 	Name                        string            `json:"name"`
 	Description                 scalars.HTML      `json:"description"`
 	Image                       *string           `json:"image,omitempty"`
+	ImageObject                 *Image            `json:"imageObject,omitempty"`
 	Project                     *Project          `json:"project"`
 	Event                       *Event            `json:"event,omitempty"`
 	ButtonText                  string            `json:"buttonText"`
@@ -1276,6 +1318,7 @@ func (this SimpleChallenge) GetID() string                     { return this.ID 
 func (this SimpleChallenge) GetName() string                   { return this.Name }
 func (this SimpleChallenge) GetDescription() scalars.HTML      { return this.Description }
 func (this SimpleChallenge) GetImage() *string                 { return this.Image }
+func (this SimpleChallenge) GetImageObject() *Image            { return this.ImageObject }
 func (this SimpleChallenge) GetProject() *Project              { return this.Project }
 func (this SimpleChallenge) GetEvent() *Event                  { return this.Event }
 func (this SimpleChallenge) GetButtonText() string             { return this.ButtonText }
@@ -1310,7 +1353,9 @@ type StreakAchievement struct {
 	DescriptionCompleted string            `json:"descriptionCompleted"`
 	NotificationText     string            `json:"notificationText"`
 	ImagePending         string            `json:"imagePending"`
+	ImagePendingObject   *Image            `json:"imagePendingObject"`
 	ImageCompleted       string            `json:"imageCompleted"`
+	ImageCompletedObject *Image            `json:"imageCompletedObject"`
 	Project              *Project          `json:"project"`
 	Event                *Event            `json:"event,omitempty"`
 	Challenge            Challenge         `json:"challenge,omitempty"`
@@ -1333,7 +1378,9 @@ func (this StreakAchievement) GetDescriptionPending() string       { return this
 func (this StreakAchievement) GetDescriptionCompleted() string     { return this.DescriptionCompleted }
 func (this StreakAchievement) GetNotificationText() string         { return this.NotificationText }
 func (this StreakAchievement) GetImagePending() string             { return this.ImagePending }
+func (this StreakAchievement) GetImagePendingObject() *Image       { return this.ImagePendingObject }
 func (this StreakAchievement) GetImageCompleted() string           { return this.ImageCompleted }
+func (this StreakAchievement) GetImageCompletedObject() *Image     { return this.ImageCompletedObject }
 func (this StreakAchievement) GetProject() *Project                { return this.Project }
 func (this StreakAchievement) GetEvent() *Event                    { return this.Event }
 func (this StreakAchievement) GetChallenge() Challenge             { return this.Challenge }
@@ -1370,6 +1417,7 @@ type SubmitFeedbackInput struct {
 	CanContactMe bool            `json:"canContactMe"`
 	Device       *DeviceMetadata `json:"device"`
 	ProjectID    *string         `json:"projectId,omitempty"`
+	Tags         []string        `json:"tags,omitempty"`
 }
 
 type SubmitQuizAnswerInput struct {
@@ -1515,12 +1563,15 @@ type UpdateEventInput struct {
 }
 
 type UpdateProjectInput struct {
-	Name        *string           `json:"name,omitempty"`
-	Description *string           `json:"description,omitempty"`
-	Rules       *string           `json:"rules,omitempty"`
-	StartDate   *scalars.DateTime `json:"startDate,omitempty"`
-	EndDate     *scalars.DateTime `json:"endDate,omitempty"`
-	Branding    *BrandingInput    `json:"branding,omitempty"`
+	Name             *string           `json:"name,omitempty"`
+	Description      *string           `json:"description,omitempty"`
+	Rules            *string           `json:"rules,omitempty"`
+	InfoMessage      *string           `json:"infoMessage,omitempty"`
+	InfoMessageStart *scalars.DateTime `json:"infoMessageStart,omitempty"`
+	InfoMessageEnd   *scalars.DateTime `json:"infoMessageEnd,omitempty"`
+	StartDate        *scalars.DateTime `json:"startDate,omitempty"`
+	EndDate          *scalars.DateTime `json:"endDate,omitempty"`
+	Branding         *BrandingInput    `json:"branding,omitempty"`
 }
 
 type UpdateQuizInput struct {
@@ -1608,6 +1659,7 @@ type User struct {
 	Email         string           `json:"email"`
 	Name          string           `json:"name"`
 	Image         *string          `json:"image,omitempty"`
+	ImageObject   *Image           `json:"imageObject,omitempty"`
 	Projects      []Project        `json:"projects"`
 	Events        []Event          `json:"events"`
 	Teams         []Team           `json:"teams"`
@@ -1661,11 +1713,14 @@ type UserFeedback struct {
 	Locale       *string           `json:"locale,omitempty"`
 	ProjectID    *string           `json:"projectId,omitempty"`
 	Timezone     *string           `json:"timezone,omitempty"`
+	ContextURL   *string           `json:"contextUrl,omitempty"`
+	Tags         []string          `json:"tags"`
 	CreatedAt    scalars.DateTime  `json:"createdAt"`
 	HandledAt    *scalars.DateTime `json:"handledAt,omitempty"`
 }
 
 type UserFilter struct {
+	Query     *string  `json:"query,omitempty"`
 	ChurchID  *string  `json:"churchId,omitempty"`
 	Gender    *Gender  `json:"gender,omitempty"`
 	MinAge    *int     `json:"minAge,omitempty"`

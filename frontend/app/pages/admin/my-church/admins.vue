@@ -228,47 +228,47 @@ function handleUserSelect(item: UserItem | undefined) {
       </UContainer>
     </div>
     <UContainer class="py-6">
-      <div class="flex gap-2">
-        <UButton
-          color="neutral"
-          variant="soft"
-          size="lg"
-          :to="{ name: 'admin-my-church' }"
-        >
-          <Icon name="lucide:arrow-left" />
-          {{ $t('admin.common.back') }}
-        </UButton>
-        <UButton variant="soft" size="lg" @click="copyLink">
-          <Icon name="lucide:link" />
-          {{ $t('admin.common.copyLink') }}
-        </UButton>
-      </div>
+      <UButton
+        color="neutral"
+        variant="soft"
+        size="lg"
+        :to="{ name: 'admin-my-church' }"
+      >
+        <Icon name="lucide:arrow-left" />
+        {{ $t('admin.common.back') }}
+      </UButton>
 
       <LoadingState v-if="fetching && !hasLoadedOnce" />
       <ErrorState v-else-if="error" :error />
       <div v-else-if="data" class="mt-12 max-w-2xl relative">
-        <h2 class="text-2xl font-semibold mb-6">
+        <h2 class="text-3xl font-semibold mb-4">
           {{ $t('admin.churchHome.administrators') }}
         </h2>
+        <UButton variant="soft" size="lg" @click="copyLink">
+          <Icon name="lucide:link" />
+          {{ $t('admin.common.copyLink') }}
+        </UButton>
+        <p class="text-muted text-sm mt-2">
+          {{ $t('admin.admins.copyLinkDescription') }}
+        </p>
 
-        <!-- Search -->
-        <UInput
-          v-model="searchQuery"
-          :placeholder="$t('admin.admins.searchPlaceholder')"
-          icon="lucide:search"
-          class="mb-4 mr-2"
-        />
-
-        <!-- Add admin autocomplete -->
-        <UInputMenu
-          v-model="selectedUser"
-          :items="userItems"
-          :placeholder="$t('admin.admins.addPlaceholder')"
-          icon="lucide:user-plus"
-          class="mb-6"
-          :loading="addingAdminId !== null"
-          @update:model-value="handleUserSelect"
-        />
+        <div class="flex gap-2 mb-6 mt-8">
+          <!-- Search -->
+          <UInput
+            v-model="searchQuery"
+            :placeholder="$t('admin.admins.searchPlaceholder')"
+            icon="lucide:search"
+          />
+          <!-- Add admin autocomplete -->
+          <UInputMenu
+            v-model="selectedUser"
+            :items="userItems"
+            :placeholder="$t('admin.admins.addPlaceholder')"
+            icon="lucide:user-plus"
+            :loading="addingAdminId !== null"
+            @update:model-value="handleUserSelect"
+          />
+        </div>
 
         <!-- Admins list -->
         <TransitionGroup

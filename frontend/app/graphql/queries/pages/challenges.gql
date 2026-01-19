@@ -5,7 +5,9 @@ query ChallengesPage {
       id
       name
       description
-      image
+      imageObject {
+        ...ImageFields
+      }
       buttonText
       publishedAt
       endTime

@@ -345,6 +345,74 @@ func (r *mutationResolver) UpdateConsent(ctx context.Context, id string, title *
 	}, nil
 }
 
+// AdminSetUserConsent is the resolver for the adminSetUserConsent field.
+func (r *mutationResolver) AdminSetUserConsent(ctx context.Context, userID string, consentID string, action model.ConsentAction) (*model.UserConsentHistoryEntry, error) {
+	// Get admin user ID from context for audit tracking
+	adminUserID, ok := middleware.GetUserID(ctx)
+	if !ok || adminUserID == "" {
+		return nil, fmt.Errorf("admin not authenticated")
+	}
+
+	// Validate target user exists
+	_, err := r.DB.Queries.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+
+	// Fetch consent and validate
+	consent, err := r.DB.Queries.GetConsentByID(ctx, consentID)
+	if err != nil {
+		return nil, fmt.Errorf("consent not found: %w", err)
+	}
+
+	// Block remote consents - must be managed externally
+	if consent.IsRemote {
+		return nil, fmt.Errorf("cannot set consent for remote-managed consents")
+	}
+
+	// Convert action enum to string
+	actionStr := "ACCEPTED"
+	if action == model.ConsentActionRejected {
+		actionStr = "REJECTED"
+	}
+
+	// Create history entry with admin's user ID as source
+	source := adminUserID
+	historyEntry, err := r.DB.Queries.CreateUserConsentHistory(ctx, sqlc.CreateUserConsentHistoryParams{
+		ID:                ulid.NewUserConsentHistoryID(),
+		UserID:            userID,
+		ConsentID:         consentID,
+		ConsentKey:        consent.Key,
+		Action:            actionStr,
+		OccurredAt:        pgtype.Timestamptz{Time: time.Now(), Valid: true},
+		Source:            &source,
+		ExternalConsentID: nil,
+		ExternalTimestamp: pgtype.Timestamptz{},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create consent history: %w", err)
+	}
+
+	// Invalidate target user's cache
+	r.Cache.Delete(cache.UserKey(userID))
+
+	// Load consent for return value
+	consentModel, err := r.LoadConsentWithTranslation(ctx, historyEntry.ConsentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load consent: %w", err)
+	}
+
+	return &model.UserConsentHistoryEntry{
+		ID:                historyEntry.ID,
+		Consent:           consentModel,
+		Action:            action,
+		OccurredAt:        scalars.DateTime{Time: historyEntry.OccurredAt.Time},
+		Source:            historyEntry.Source,
+		ExternalConsentID: historyEntry.ExternalConsentID,
+		ExternalTimestamp: nil,
+	}, nil
+}
+
 // Consents is the resolver for the consents field.
 func (r *queryResolver) Consents(ctx context.Context) ([]model.Consent, error) {
 	rows, err := r.DB.Queries.GetAllLatestPublishedConsents(ctx)

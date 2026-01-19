@@ -13,11 +13,18 @@ import (
 
 const CountAllFeedback = `-- name: CountAllFeedback :one
 SELECT COUNT(*) FROM user_feedback
-WHERE ($1::text = '' OR user_id = $1::text)
+WHERE
+    ($1::text = '' OR user_id = $1::text)
+    AND (cardinality($2::text[]) = 0 OR tags && $2::text[])
 `
 
-func (q *Queries) CountAllFeedback(ctx context.Context, filteruserid string) (int64, error) {
-	row := q.db.QueryRow(ctx, CountAllFeedback, filteruserid)
+type CountAllFeedbackParams struct {
+	Filteruserid string   `json:"filteruserid"`
+	Filtertags   []string `json:"filtertags"`
+}
+
+func (q *Queries) CountAllFeedback(ctx context.Context, arg CountAllFeedbackParams) (int64, error) {
+	row := q.db.QueryRow(ctx, CountAllFeedback, arg.Filteruserid, arg.Filtertags)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -37,7 +44,9 @@ INSERT INTO user_feedback (
     app_version,
     locale,
     project_id,
-    timezone
+    timezone,
+    context_url,
+    tags
 ) VALUES (
     $1::text,
     $2::text,
@@ -50,23 +59,27 @@ INSERT INTO user_feedback (
     $9::text,
     $10::text,
     NULLIF($11::text, ''),
-    $12::text
-) RETURNING id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at
+    $12::text,
+    $13::text,
+    $14::text[]
+) RETURNING id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags
 `
 
 type CreateUserFeedbackParams struct {
-	ID           string `json:"id"`
-	Userid       string `json:"userid"`
-	Message      string `json:"message"`
-	Cancontactme bool   `json:"cancontactme"`
-	Useragent    string `json:"useragent"`
-	Platform     string `json:"platform"`
-	Screenwidth  int32  `json:"screenwidth"`
-	Screenheight int32  `json:"screenheight"`
-	Appversion   string `json:"appversion"`
-	Locale       string `json:"locale"`
-	Projectid    string `json:"projectid"`
-	Timezone     string `json:"timezone"`
+	ID           string   `json:"id"`
+	Userid       string   `json:"userid"`
+	Message      string   `json:"message"`
+	Cancontactme bool     `json:"cancontactme"`
+	Useragent    string   `json:"useragent"`
+	Platform     string   `json:"platform"`
+	Screenwidth  int32    `json:"screenwidth"`
+	Screenheight int32    `json:"screenheight"`
+	Appversion   string   `json:"appversion"`
+	Locale       string   `json:"locale"`
+	Projectid    string   `json:"projectid"`
+	Timezone     string   `json:"timezone"`
+	Contexturl   string   `json:"contexturl"`
+	Tags         []string `json:"tags"`
 }
 
 // User Feedback
@@ -84,6 +97,8 @@ func (q *Queries) CreateUserFeedback(ctx context.Context, arg CreateUserFeedback
 		arg.Locale,
 		arg.Projectid,
 		arg.Timezone,
+		arg.Contexturl,
+		arg.Tags,
 	)
 	var i UserFeedback
 	err := row.Scan(
@@ -101,6 +116,8 @@ func (q *Queries) CreateUserFeedback(ctx context.Context, arg CreateUserFeedback
 		&i.ProjectID,
 		&i.Timezone,
 		&i.HandledAt,
+		&i.ContextUrl,
+		&i.Tags,
 	)
 	return &i, err
 }
@@ -115,7 +132,7 @@ func (q *Queries) DeleteFeedback(ctx context.Context, id string) error {
 }
 
 const GetAllFeedback = `-- name: GetAllFeedback :many
-SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at FROM user_feedback
+SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags FROM user_feedback
 ORDER BY created_at DESC
 LIMIT $2::int
 OFFSET $1::int
@@ -150,6 +167,8 @@ func (q *Queries) GetAllFeedback(ctx context.Context, arg GetAllFeedbackParams) 
 			&i.ProjectID,
 			&i.Timezone,
 			&i.HandledAt,
+			&i.ContextUrl,
+			&i.Tags,
 		); err != nil {
 			return nil, err
 		}
@@ -162,7 +181,7 @@ func (q *Queries) GetAllFeedback(ctx context.Context, arg GetAllFeedbackParams) 
 }
 
 const GetFeedbackByID = `-- name: GetFeedbackByID :one
-SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at FROM user_feedback WHERE id = $1::text
+SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags FROM user_feedback WHERE id = $1::text
 `
 
 func (q *Queries) GetFeedbackByID(ctx context.Context, id string) (*UserFeedback, error) {
@@ -183,28 +202,32 @@ func (q *Queries) GetFeedbackByID(ctx context.Context, id string) (*UserFeedback
 		&i.ProjectID,
 		&i.Timezone,
 		&i.HandledAt,
+		&i.ContextUrl,
+		&i.Tags,
 	)
 	return &i, err
 }
 
 const GetFeedbackCursor = `-- name: GetFeedbackCursor :many
-SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at FROM user_feedback
+SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags FROM user_feedback
 WHERE
     ($1::text = '' OR id < $1::text)
     AND ($2::text = '' OR id > $2::text)
     AND ($3::text = '' OR user_id = $3::text)
+    AND (cardinality($4::text[]) = 0 OR tags && $4::text[])
 ORDER BY
-    CASE WHEN $4::bool = true THEN id END ASC,
-    CASE WHEN $4::bool = false OR $4::bool IS NULL THEN id END DESC
-LIMIT $5::int
+    CASE WHEN $5::bool = true THEN id END ASC,
+    CASE WHEN $5::bool = false OR $5::bool IS NULL THEN id END DESC
+LIMIT $6::int
 `
 
 type GetFeedbackCursorParams struct {
-	Aftercursor  string `json:"aftercursor"`
-	Beforecursor string `json:"beforecursor"`
-	Filteruserid string `json:"filteruserid"`
-	Isbackward   bool   `json:"isbackward"`
-	Querylimit   int32  `json:"querylimit"`
+	Aftercursor  string   `json:"aftercursor"`
+	Beforecursor string   `json:"beforecursor"`
+	Filteruserid string   `json:"filteruserid"`
+	Filtertags   []string `json:"filtertags"`
+	Isbackward   bool     `json:"isbackward"`
+	Querylimit   int32    `json:"querylimit"`
 }
 
 func (q *Queries) GetFeedbackCursor(ctx context.Context, arg GetFeedbackCursorParams) ([]*UserFeedback, error) {
@@ -212,6 +235,7 @@ func (q *Queries) GetFeedbackCursor(ctx context.Context, arg GetFeedbackCursorPa
 		arg.Aftercursor,
 		arg.Beforecursor,
 		arg.Filteruserid,
+		arg.Filtertags,
 		arg.Isbackward,
 		arg.Querylimit,
 	)
@@ -237,6 +261,8 @@ func (q *Queries) GetFeedbackCursor(ctx context.Context, arg GetFeedbackCursorPa
 			&i.ProjectID,
 			&i.Timezone,
 			&i.HandledAt,
+			&i.ContextUrl,
+			&i.Tags,
 		); err != nil {
 			return nil, err
 		}
@@ -267,7 +293,7 @@ func (q *Queries) GetRecentFeedbackCount(ctx context.Context, arg GetRecentFeedb
 }
 
 const GetUserFeedback = `-- name: GetUserFeedback :many
-SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at FROM user_feedback
+SELECT id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags FROM user_feedback
 WHERE user_id = $1::text
 ORDER BY created_at DESC
 `
@@ -296,6 +322,8 @@ func (q *Queries) GetUserFeedback(ctx context.Context, userid string) ([]*UserFe
 			&i.ProjectID,
 			&i.Timezone,
 			&i.HandledAt,
+			&i.ContextUrl,
+			&i.Tags,
 		); err != nil {
 			return nil, err
 		}
@@ -311,7 +339,7 @@ const SetFeedbackHandledAt = `-- name: SetFeedbackHandledAt :one
 UPDATE user_feedback
 SET handled_at = $1::timestamptz
 WHERE id = $2::text
-RETURNING id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at
+RETURNING id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags
 `
 
 type SetFeedbackHandledAtParams struct {
@@ -337,6 +365,44 @@ func (q *Queries) SetFeedbackHandledAt(ctx context.Context, arg SetFeedbackHandl
 		&i.ProjectID,
 		&i.Timezone,
 		&i.HandledAt,
+		&i.ContextUrl,
+		&i.Tags,
+	)
+	return &i, err
+}
+
+const UpdateFeedbackTags = `-- name: UpdateFeedbackTags :one
+UPDATE user_feedback
+SET tags = $1::text[]
+WHERE id = $2::text
+RETURNING id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags
+`
+
+type UpdateFeedbackTagsParams struct {
+	Tags []string `json:"tags"`
+	ID   string   `json:"id"`
+}
+
+func (q *Queries) UpdateFeedbackTags(ctx context.Context, arg UpdateFeedbackTagsParams) (*UserFeedback, error) {
+	row := q.db.QueryRow(ctx, UpdateFeedbackTags, arg.Tags, arg.ID)
+	var i UserFeedback
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Message,
+		&i.CanContactMe,
+		&i.UserAgent,
+		&i.Platform,
+		&i.ScreenWidth,
+		&i.ScreenHeight,
+		&i.AppVersion,
+		&i.CreatedAt,
+		&i.Locale,
+		&i.ProjectID,
+		&i.Timezone,
+		&i.HandledAt,
+		&i.ContextUrl,
+		&i.Tags,
 	)
 	return &i, err
 }

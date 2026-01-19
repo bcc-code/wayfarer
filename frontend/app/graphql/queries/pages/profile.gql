@@ -22,6 +22,12 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
   myCurrentProject {
     id
     name
+    infoMessage {
+      markdown
+      html
+    }
+    infoMessageStart
+    infoMessageEnd
     branding {
       ...BrandingFields
     }
@@ -31,8 +37,12 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
       name
       descriptionPending
       descriptionCompleted
-      imagePending
-      imageCompleted
+      imagePendingObject {
+        ...ImageFields
+      }
+      imageCompletedObject {
+        ...ImageFields
+      }
       hidden
       achievedAt
       points
