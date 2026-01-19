@@ -39,3 +39,11 @@ WHERE uploaded_by = @uploaded_by::text
 ORDER BY created_at DESC
 LIMIT @limit_count::int
 OFFSET @offset_count::int;
+
+-- name: GetFileUploadByURL :one
+SELECT id, public_url, width, height, blurhash FROM file_uploads
+WHERE public_url = @url::text;
+
+-- name: GetFileUploadsByURLs :many
+SELECT id, public_url, width, height, blurhash FROM file_uploads
+WHERE public_url = ANY(@urls::text[]);

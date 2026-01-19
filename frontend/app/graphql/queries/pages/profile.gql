@@ -37,8 +37,12 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
       name
       descriptionPending
       descriptionCompleted
-      imagePending
-      imageCompleted
+      imagePendingObject {
+        ...ImageFields
+      }
+      imageCompletedObject {
+        ...ImageFields
+      }
       hidden
       achievedAt
       points

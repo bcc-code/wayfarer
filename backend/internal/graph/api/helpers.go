@@ -341,3 +341,38 @@ func parseRankCursor(cursor string) (int64, error) {
 	return rank, err
 }
 
+// resolveImageByURL loads image metadata by URL using the dataloader.
+// If the URL is empty or nil, returns nil. If no metadata is found in file_uploads,
+// returns an Image object with just the URL.
+func resolveImageByURL(ctx context.Context, ldrs *loaders.Loaders, url *string) (*model.Image, error) {
+	if url == nil || *url == "" {
+		return nil, nil
+	}
+
+	thunk := ldrs.ImageMetadataByURLLoader.Load(ctx, *url)
+	image, err := thunk()
+	if err != nil {
+		// On error, return image with just the URL
+		return &model.Image{URL: *url}, nil
+	}
+
+	return image, nil
+}
+
+// resolveImageByURLNonNullable is like resolveImageByURL but for non-nullable fields.
+// It returns an Image with just the URL even if the URL is empty.
+func resolveImageByURLNonNullable(ctx context.Context, ldrs *loaders.Loaders, url string) (*model.Image, error) {
+	if url == "" {
+		return &model.Image{URL: ""}, nil
+	}
+
+	thunk := ldrs.ImageMetadataByURLLoader.Load(ctx, url)
+	image, err := thunk()
+	if err != nil {
+		// On error, return image with just the URL
+		return &model.Image{URL: url}, nil
+	}
+
+	return image, nil
+}
+

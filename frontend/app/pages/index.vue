@@ -136,7 +136,7 @@ const hiddenTreasuresLink = computed(() => {
         v-if="data.myCurrentProject"
         key="current-project"
         :project-name="data.myCurrentProject.name"
-        :banner="data.myCurrentProject.branding.banner"
+        :banner="data.myCurrentProject.branding.bannerImage"
         :score="data.myCurrentProject.leaderboard.me?.score"
         :rank="data.myCurrentProject.leaderboard.me?.rank"
         :achievements="data.myCurrentProject.achievements"

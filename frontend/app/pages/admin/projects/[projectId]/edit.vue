@@ -144,8 +144,8 @@ watch(
       state.description = d.project.description
       state.startDate = d.project.startDate
       state.endDate = d.project.endDate
-      state.branding.logo = d.project.branding.logo ?? undefined
-      state.branding.banner = d.project.branding.banner ?? undefined
+      state.branding.logo = d.project.branding.logoImage?.url ?? undefined
+      state.branding.banner = d.project.branding.bannerImage?.url ?? undefined
       state.branding.rounding = d.project.branding.rounding
       state.branding.colors = d.project.branding.colors
       state.rules = d.project.rules?.markdown
