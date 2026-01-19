@@ -103,8 +103,8 @@ type FeedbackNode = NonNullable<typeof feedbacks.value>[number]
 
 const columns: TableColumn<FeedbackNode>[] = [
   { accessorKey: 'user.name', id: 'user', header: 'Bruker' },
-  { accessorKey: 'tags', id: 'tags', header: 'Tags' },
   { accessorKey: 'message', header: 'Melding' },
+  { accessorKey: 'tags', id: 'tags', header: 'Tags' },
   { accessorKey: 'createdAt', header: 'Dato' },
   { id: 'actions', header: '' },
 ]
@@ -282,7 +282,7 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
             <p
               :class="[
                 'text-sm whitespace-pre-wrap',
-                expandedMessages.has(row.original.id) ? '' : 'line-clamp-3',
+                expandedMessages.has(row.original.id) ? '' : 'line-clamp-4',
               ]"
             >
               {{ row.original.message }}

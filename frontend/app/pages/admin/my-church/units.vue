@@ -10,7 +10,7 @@ definePageMeta({
 
 gql(`
   query MyChurchUnitsPage($filter: UserFilter) {
-    users(filter: $filter, first: 500) {
+    users(filter: $filter, first: 1000) {
       edges {
         node {
           id

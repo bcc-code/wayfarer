@@ -5126,7 +5126,7 @@ export function useChurchAdminsPageQuery(options?: Omit<Urql.UseQueryArgs<never,
 };
 export const MyChurchUnitsPageDocument = gql`
     query MyChurchUnitsPage($filter: UserFilter) {
-  users(filter: $filter, first: 500) {
+  users(filter: $filter, first: 1000) {
     edges {
       node {
         id
