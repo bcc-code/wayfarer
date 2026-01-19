@@ -129,6 +129,12 @@
     "updateAvailableTitle": "En oppdatering er tilgjengelig",
     "updateAvailableButton": "Oppdater nå"
   },
+  "notifications": {
+    "promptTitle": "Få med deg alle dine utmerkelser, slå på varsler",
+    "promptDescription": "Da får du et varsel hver gang du mottar en ny utmerkelse eller utfordring.",
+    "turnOn": "Slå på varsler",
+    "notNow": "Ikke nå"
+  },
   "goToHiddenTreasures": "Gå til bibelstudie",
   "admin": {
     "common": {

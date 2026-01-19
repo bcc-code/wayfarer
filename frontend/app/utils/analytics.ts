@@ -37,6 +37,9 @@ export enum AnalyticsEvent {
   PushSubscriptionEnabled = 'push_subscription_enabled',
   PushSubscriptionDisabled = 'push_subscription_disabled',
   PushNotificationsToggled = 'push_notifications_toggled',
+  NotificationPromptShown = 'notification_prompt_shown',
+  NotificationPromptAccepted = 'notification_prompt_accepted',
+  NotificationPromptDismissed = 'notification_prompt_dismissed',
 
   // Notification Events (service worker)
   NotificationReceived = 'notification_received',

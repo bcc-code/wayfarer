@@ -9,6 +9,57 @@ function getAgeRangeFilter(age: number | null | undefined) {
 
 const { isAuthReady } = useAuthReady()
 const { me } = useAuth()
+const { $pwa } = useNuxtApp()
+const { track } = useAnalytics()
+
+// Push notification prompt
+const {
+  isSupported: isPushSupported,
+  isSubscribed,
+  permission: pushPermission,
+} = usePushNotifications()
+
+const notificationPromptDismissed = useLocalStorage(
+  'notificationPromptDismissed',
+  false,
+)
+
+const notificationPromptOpen = ref(false)
+
+const shouldShowNotificationPrompt = computed(() => {
+  // Only show when:
+  // 1. PWA is installed (standalone mode)
+  // 2. User hasn't subscribed to notifications
+  // 3. User hasn't permanently dismissed the prompt
+  // 4. Notification permission isn't denied
+  // 5. Push notifications are supported
+  return true
+  return (
+    $pwa?.isPWAInstalled &&
+    isPushSupported.value &&
+    !isSubscribed.value &&
+    !notificationPromptDismissed.value &&
+    pushPermission.value !== 'denied'
+  )
+})
+
+// Auto-open/close the prompt based on conditions
+watch(
+  shouldShowNotificationPrompt,
+  (shouldShow) => {
+    if (shouldShow && !notificationPromptOpen.value) {
+      notificationPromptOpen.value = true
+      track(AnalyticsEvent.NotificationPromptShown)
+    } else if (!shouldShow && notificationPromptOpen.value) {
+      notificationPromptOpen.value = false
+    }
+  },
+  { immediate: true },
+)
+
+function handleNotificationPromptDismiss() {
+  notificationPromptDismissed.value = true
+}
 
 const {
   data,
@@ -164,5 +215,11 @@ const hiddenTreasuresLink = computed(() => {
         class="mt-default"
       />
     </TransitionGroup>
+
+    <!-- Notification prompt for PWA users -->
+    <PwaNotificationPrompt
+      v-model:open="notificationPromptOpen"
+      @dismiss="handleNotificationPromptDismiss"
+    />
   </PageLayout>
 </template>
