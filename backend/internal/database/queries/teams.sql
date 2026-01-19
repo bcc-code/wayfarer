@@ -67,7 +67,13 @@ LEFT JOIN team_members tm ON t.id = tm.team_id
 LEFT JOIN users member_user ON tm.user_id = member_user.id
 LEFT JOIN users creator_user ON t.created_by_user_id = creator_user.id
 WHERE t.project_id = @projectid::text
-  AND (member_user.church_id = @churchid::text OR creator_user.church_id = @churchid::text)
+  AND (
+    -- If team has members: match by member's church
+    member_user.church_id = @churchid::text
+    OR
+    -- If team is empty: fall back to creator's church
+    (NOT EXISTS (SELECT 1 FROM team_members WHERE team_id = t.id) AND creator_user.church_id = @churchid::text)
+  )
 ORDER BY t.created_at DESC;
 
 -- name: GetUserTeamByProjectID :one
