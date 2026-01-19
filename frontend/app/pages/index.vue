@@ -16,6 +16,7 @@ const { track } = useAnalytics()
 const {
   isSupported: isPushSupported,
   isSubscribed,
+  isInitialized: isPushInitialized,
   permission: pushPermission,
 } = usePushNotifications()
 
@@ -28,12 +29,14 @@ const notificationPromptOpen = ref(false)
 
 const shouldShowNotificationPrompt = computed(() => {
   // Only show when:
-  // 1. PWA is installed (standalone mode)
-  // 2. User hasn't subscribed to notifications
-  // 3. User hasn't permanently dismissed the prompt
-  // 4. Notification permission isn't denied
-  // 5. Push notifications are supported
+  // 1. Push state is initialized (prevents flash on load)
+  // 2. PWA is installed (standalone mode)
+  // 3. User hasn't subscribed to notifications
+  // 4. User hasn't permanently dismissed the prompt
+  // 5. Notification permission isn't denied
+  // 6. Push notifications are supported
   return (
+    isPushInitialized.value &&
     $pwa?.isPWAInstalled &&
     isPushSupported.value &&
     !isSubscribed.value &&
