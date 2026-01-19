@@ -48,6 +48,7 @@ async function handleSubmit(formData: AchievementFormData) {
     imageCompleted: formData.imageCompleted ?? '',
     points: formData.points,
     hidden: formData.hidden,
+    awardableFrom: toISOString(formData.awardableFrom),
     projectId: route.params.projectId,
   }
 

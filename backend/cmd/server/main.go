@@ -460,9 +460,10 @@ func main() {
 
 	// Maintenance handler for syncing user data from Members API
 	maintenanceHandler := &handlers.MaintenanceHandler{
-		DB:            db,
-		MembersClient: membersClient,
-		AuthHandler:   authHandler,
+		DB:                        db,
+		MembersClient:             membersClient,
+		AuthHandler:               authHandler,
+		ContentAchievementService: contentAchievementService,
 	}
 	router.POST("/api/maintenance/sync-user-data", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncUserData)
 	router.POST("/api/maintenance/sync-user/:user_id", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncSingleUser)

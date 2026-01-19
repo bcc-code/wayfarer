@@ -25,6 +25,7 @@ interface InitialData {
   imageCompleted?: string
   points: number
   hidden: boolean
+  awardableFrom?: string
   // Content achievement
   items?: ContentItem[]
   // Streak achievement
@@ -45,6 +46,7 @@ export interface AchievementFormData {
   imageCompleted?: string
   points: number
   hidden: boolean
+  awardableFrom?: string
   achievementType: AchievementType
   // Content achievement
   items?: ContentItem[]
@@ -81,6 +83,7 @@ const schema = z.object({
   imageCompleted: z.string().optional(),
   points: z.number().min(0, 'Points must be at least 0'),
   hidden: z.boolean(),
+  awardableFrom: z.string().optional(),
 })
 type Schema = z.infer<typeof schema>
 
@@ -97,6 +100,7 @@ const state = reactive<Schema>({
   imageCompleted: props.initialData?.imageCompleted ?? '',
   points: props.initialData?.points ?? 0,
   hidden: props.initialData?.hidden ?? false,
+  awardableFrom: props.initialData?.awardableFrom ?? '',
 })
 
 // Type-specific state
@@ -124,6 +128,7 @@ watch(
       state.imageCompleted = data.imageCompleted
       state.points = data.points
       state.hidden = data.hidden
+      state.awardableFrom = data.awardableFrom ?? ''
       // Type-specific
       contentItems.value = data.items ?? []
       streakId.value = data.streakId
@@ -150,11 +155,6 @@ watch(
 // Validation for type-specific fields
 const typeSpecificError = computed(() => {
   switch (selectedType.value) {
-    case 'CONTENT':
-      if (contentItems.value.length === 0) {
-        return 'Minst ett innholdselement er påkrevd'
-      }
-      break
     case 'STREAK':
       if (!streakId.value) {
         return 'En streak må velges'
@@ -211,7 +211,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
       :state
       :schema="schema"
       loading-auto
-      class="flex flex-col gap-6 grow"
+      class="flex flex-col gap-8 grow"
       @submit.prevent="handleSubmit"
     >
       <!-- Type Selector (only in create mode) -->
@@ -303,6 +303,20 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         <UCheckbox
           v-model="state.hidden"
           label="Skjul denne utmerkelsen fra brukere frem til de oppnår den"
+        />
+      </UFormField>
+
+      <UFormField
+        name="awardableFrom"
+        label="Tidligste tildelings-tidspunkt"
+        hint="(valgfritt)"
+        description="Utmerkelsen kan tidligst tildeles fra dette tidspunktet"
+      >
+        <UInput
+          v-model="state.awardableFrom"
+          type="datetime-local"
+          size="xl"
+          class="w-full"
         />
       </UFormField>
 

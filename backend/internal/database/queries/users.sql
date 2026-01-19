@@ -41,7 +41,8 @@ OFFSET CASE WHEN @queryoffset::int IS NULL THEN 0 ELSE @queryoffset::int END;
 SELECT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url, u.language, u.created_at
 FROM users u
 WHERE
-    (@churchid::text = '' OR u.church_id = @churchid::text)
+    (@query::text = '' OR (u.name ILIKE '%' || @query::text || '%' OR u.email ILIKE '%' || @query::text || '%'))
+    AND (@churchid::text = '' OR u.church_id = @churchid::text)
     AND (@gender::text = '' OR u.gender = @gender::text)
     AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
     AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)
@@ -66,7 +67,8 @@ LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END;
 SELECT COUNT(u.id)
 FROM users u
 WHERE
-    (@churchid::text = '' OR u.church_id = @churchid::text)
+    (@query::text = '' OR (u.name ILIKE '%' || @query::text || '%' OR u.email ILIKE '%' || @query::text || '%'))
+    AND (@churchid::text = '' OR u.church_id = @churchid::text)
     AND (@gender::text = '' OR u.gender = @gender::text)
     AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
     AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)

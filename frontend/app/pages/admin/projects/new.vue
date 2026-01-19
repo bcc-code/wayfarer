@@ -13,7 +13,8 @@ const schema = z.object({
   startDate: z.string().nonempty({ error: 'Start date is required' }),
   endDate: z.string().nonempty({ error: 'End date is required' }),
   branding: z.object({
-    logo: z.string().optional(),
+    logo: z.string().nullish(),
+    banner: z.string().nullish(),
     colors: z.object({
       light: z.object({
         accent: z.string(),
@@ -55,6 +56,7 @@ const state = reactive<Schema>({
   endDate: '',
   branding: {
     logo: undefined,
+    banner: undefined,
     rounding: 0,
     colors: {
       light: {
@@ -140,6 +142,9 @@ async function createProject(event: FormSubmitEvent<Schema>) {
       >
         <UFormField name="branding.logo" label="Logo" hint="(valgfritt)">
           <AdminFileUpload v-model="state.branding.logo" />
+        </UFormField>
+        <UFormField name="branding.banner" label="Banner" hint="(valgfritt)">
+          <AdminFileUpload v-model="state.branding.banner" />
         </UFormField>
         <UFormField name="name" label="Navn">
           <UInput v-model="state.name" size="xl" required class="w-full" />

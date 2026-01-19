@@ -42,12 +42,26 @@ gql(`
   }
 `)
 
+const searchQuery = ref('')
+const debouncedSearch = refDebounced(searchQuery, 300)
+
 const pagination = usePagination({
   defaultPageSize: 15,
 })
+
+// Reset pagination when search changes
+watch(debouncedSearch, () => {
+  pagination.reset()
+})
+
+const queryVariables = computed(() => ({
+  ...pagination.variables.value,
+  filter: debouncedSearch.value ? { query: debouncedSearch.value } : undefined,
+}))
+
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminUsersPageQuery({
-  variables: pagination.variables,
+  variables: queryVariables,
   pause: computed(() => !isAuthReady.value),
 })
 
@@ -77,14 +91,26 @@ const columns: TableColumn<
     <ErrorState v-if="error" :error />
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between gap-2">
+        <UInput
+          v-model="searchQuery"
+          placeholder="Søk etter navn eller e-post..."
+          icon="i-lucide-search"
+          class="w-64"
+        />
         <RelayPagination v-model:pagination="pagination" />
       </div>
       <UTable :data="users" :loading="fetching" :columns>
         <template #name-cell="{ row }">
-          <div class="flex flex-col">
+          <NuxtLink
+            :to="{
+              name: 'admin-users-userId',
+              params: { userId: row.original.id },
+            }"
+            class="flex flex-col hover:underline"
+          >
             <span>{{ row.original.name }}</span>
             <span class="text-dimmed text-xs">{{ row.original.email }}</span>
-          </div>
+          </NuxtLink>
         </template>
         <template #roles-cell="{ row }">
           <div class="flex flex-wrap gap-1">
@@ -95,19 +121,6 @@ const columns: TableColumn<
             >
               {{ role.role }}
             </UBadge>
-          </div>
-        </template>
-        <template #actions-cell="{ row }">
-          <div class="flex justify-end">
-            <UButton
-              variant="ghost"
-              :to="{
-                name: 'admin-users-userId',
-                params: { userId: row.original.id },
-              }"
-            >
-              Rediger
-            </UButton>
           </div>
         </template>
       </UTable>

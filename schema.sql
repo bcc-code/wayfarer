@@ -80,6 +80,7 @@ CREATE TABLE projects (
     start_date TIMESTAMPTZ NOT NULL,
     end_date TIMESTAMPTZ NOT NULL,
     logo_url VARCHAR(500),
+    banner_url VARCHAR(500),
     -- Light mode colors
     color_light_accent VARCHAR(50) NOT NULL,
     color_light_accent_contrast VARCHAR(50) NOT NULL,
@@ -108,6 +109,10 @@ CREATE TABLE projects (
     color_dark_border_default VARCHAR(50) NOT NULL,
     rounding INT NOT NULL DEFAULT 0,
     archived BOOLEAN DEFAULT false,
+    rules TEXT,
+    info_message TEXT,
+    info_message_start TIMESTAMPTZ,
+    info_message_end TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     CHECK (end_date > start_date)
@@ -364,6 +369,8 @@ CREATE TABLE project_translations (
     language_code VARCHAR(10) NOT NULL,
     name VARCHAR(255),
     description TEXT,
+    rules TEXT,
+    info_message TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     PRIMARY KEY (project_id, language_code)

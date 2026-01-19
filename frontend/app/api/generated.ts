@@ -89,12 +89,14 @@ export type AssignRoleInput = {
 
 export type Branding = {
   __typename?: 'Branding';
+  banner?: Maybe<Scalars['String']['output']>;
   colors: Colors;
   logo?: Maybe<Scalars['String']['output']>;
   rounding: Scalars['Int']['output'];
 };
 
 export type BrandingInput = {
+  banner?: InputMaybe<Scalars['String']['input']>;
   colors: ColorsInput;
   logo?: InputMaybe<Scalars['String']['input']>;
   rounding: Scalars['Int']['input'];
@@ -359,6 +361,9 @@ export type CreateProjectInput = {
   branding: BrandingInput;
   description?: InputMaybe<Scalars['String']['input']>;
   endDate: Scalars['DateTime']['input'];
+  infoMessage?: InputMaybe<Scalars['String']['input']>;
+  infoMessageEnd?: InputMaybe<Scalars['DateTime']['input']>;
+  infoMessageStart?: InputMaybe<Scalars['DateTime']['input']>;
   name: Scalars['String']['input'];
   rules?: InputMaybe<Scalars['String']['input']>;
   startDate: Scalars['DateTime']['input'];
@@ -499,6 +504,7 @@ export type DateRangeInput = {
 
 export type DeviceMetadata = {
   appVersion?: InputMaybe<Scalars['String']['input']>;
+  contextUrl?: InputMaybe<Scalars['String']['input']>;
   locale?: InputMaybe<Scalars['String']['input']>;
   platform: Scalars['String']['input'];
   screenHeight: Scalars['Int']['input'];
@@ -664,6 +670,7 @@ export type FeedbackEdge = {
 };
 
 export type FeedbackFilter = {
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
   userId?: InputMaybe<Scalars['ID']['input']>;
 };
 
@@ -761,6 +768,7 @@ export type LeaderboardEntry = {
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
+  lastScoreAt?: Maybe<Scalars['DateTime']['output']>;
   name: Scalars['String']['output'];
   rank?: Maybe<Scalars['Int']['output']>;
   score: Scalars['Int']['output'];
@@ -797,6 +805,7 @@ export type Mutation = {
   acceptConsent: UserConsent;
   addQuizQuestion: QuizQuestion;
   addTeamMembers: Team;
+  adminSetUserConsent: UserConsentHistoryEntry;
   archiveProject: Scalars['Boolean']['output'];
   assignChallengeToEvent: Challenge;
   assignRole: UserRole;
@@ -888,6 +897,7 @@ export type Mutation = {
   updateConsent: Consent;
   updateContentAchievement: ContentAchievement;
   updateEvent: Event;
+  updateFeedbackTags: UserFeedback;
   updateProject: Project;
   updateQuiz: Quiz;
   updateQuizQuestion: QuizQuestion;
@@ -914,6 +924,13 @@ export type MutationAddTeamMembersArgs = {
   force?: InputMaybe<Scalars['Boolean']['input']>;
   teamId: Scalars['ID']['input'];
   userIds: Array<Scalars['ID']['input']>;
+};
+
+
+export type MutationAdminSetUserConsentArgs = {
+  action: ConsentAction;
+  consentId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -1432,6 +1449,12 @@ export type MutationUpdateEventArgs = {
 };
 
 
+export type MutationUpdateFeedbackTagsArgs = {
+  feedbackId: Scalars['ID']['input'];
+  tags: Array<Scalars['String']['input']>;
+};
+
+
 export type MutationUpdateProjectArgs = {
   id: Scalars['ID']['input'];
   input: UpdateProjectInput;
@@ -1552,6 +1575,9 @@ export type Project = {
   endDate: Scalars['DateTime']['output'];
   events: Array<Event>;
   id: Scalars['ID']['output'];
+  infoMessage?: Maybe<MarkdownText>;
+  infoMessageEnd?: Maybe<Scalars['DateTime']['output']>;
+  infoMessageStart?: Maybe<Scalars['DateTime']['output']>;
   journal: ScoreJournalConnection;
   leaderboard: LeaderboardConnection;
   myTeam?: Maybe<Team>;
@@ -2265,6 +2291,7 @@ export type SubmitFeedbackInput = {
   device: DeviceMetadata;
   message: Scalars['String']['input'];
   projectId?: InputMaybe<Scalars['ID']['input']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type SubmitQuizAnswerInput = {
@@ -2423,6 +2450,9 @@ export type UpdateProjectInput = {
   branding?: InputMaybe<BrandingInput>;
   description?: InputMaybe<Scalars['String']['input']>;
   endDate?: InputMaybe<Scalars['DateTime']['input']>;
+  infoMessage?: InputMaybe<Scalars['String']['input']>;
+  infoMessageEnd?: InputMaybe<Scalars['DateTime']['input']>;
+  infoMessageStart?: InputMaybe<Scalars['DateTime']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   rules?: InputMaybe<Scalars['String']['input']>;
   startDate?: InputMaybe<Scalars['DateTime']['input']>;
@@ -2554,6 +2584,7 @@ export type UserFeedback = {
   __typename?: 'UserFeedback';
   appVersion?: Maybe<Scalars['String']['output']>;
   canContactMe: Scalars['Boolean']['output'];
+  contextUrl?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['DateTime']['output'];
   handledAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
@@ -2563,6 +2594,7 @@ export type UserFeedback = {
   projectId?: Maybe<Scalars['ID']['output']>;
   screenHeight?: Maybe<Scalars['Int']['output']>;
   screenWidth?: Maybe<Scalars['Int']['output']>;
+  tags: Array<Scalars['String']['output']>;
   timezone?: Maybe<Scalars['String']['output']>;
   user: User;
   userAgent?: Maybe<Scalars['String']['output']>;
@@ -2577,6 +2609,7 @@ export type UserFilter = {
   maxAge?: InputMaybe<Scalars['Int']['input']>;
   minAge?: InputMaybe<Scalars['Int']['input']>;
   projectId?: InputMaybe<Scalars['ID']['input']>;
+  query?: InputMaybe<Scalars['String']['input']>;
   teamId?: InputMaybe<Scalars['ID']['input']>;
 };
 
@@ -2656,7 +2689,7 @@ export type ColorSetFieldsFragment = { __typename?: 'ColorSet', accent: string, 
 
 export type BrandingColorsFieldsFragment = { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } };
 
-export type BrandingFieldsFragment = { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } };
+export type BrandingFieldsFragment = { __typename?: 'Branding', logo?: string | null, banner?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } };
 
 export type LeaderboardEntryFieldsFragment = { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, tags: Array<LeaderboardEntryTag> };
 
@@ -3203,7 +3236,7 @@ export type ProfilePageQueryVariables = Exact<{
 }>;
 
 
-export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, achievements: Array<
+export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, infoMessageStart?: any | null, infoMessageEnd?: any | null, infoMessage?: { __typename?: 'MarkdownText', markdown: string, html: string } | null, branding: { __typename?: 'Branding', logo?: string | null, banner?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, achievements: Array<
       | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number, nextItem?: { __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, title?: string | null, url?: string | null } } | null }
       | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
       | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, hidden: boolean, achievedAt?: any | null, points: number }
@@ -3245,7 +3278,7 @@ export type VapidPublicKeyQuery = { __typename?: 'Query', vapidPublicKey: string
 export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } };
+export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', logo?: string | null, banner?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } };
 
 export type AdminChurchPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -3283,14 +3316,22 @@ export type AdminFeedbackPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminFeedbackPageQuery = { __typename?: 'Query', feedback: { __typename?: 'FeedbackConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'FeedbackEdge', cursor: string, node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, locale?: string | null, projectId?: string | null, timezone?: string | null, createdAt: any, handledAt?: any | null, user: { __typename?: 'User', id: string, name: string, email: string } } }> } };
+export type AdminFeedbackPageQuery = { __typename?: 'Query', feedback: { __typename?: 'FeedbackConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ __typename?: 'FeedbackEdge', cursor: string, node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, locale?: string | null, projectId?: string | null, timezone?: string | null, contextUrl?: string | null, tags: Array<string>, createdAt: any, handledAt?: any | null, user: { __typename?: 'User', id: string, name: string, email: string } } }> } };
+
+export type UpdateFeedbackTagsMutationVariables = Exact<{
+  feedbackId: Scalars['ID']['input'];
+  tags: Array<Scalars['String']['input']> | Scalars['String']['input'];
+}>;
+
+
+export type UpdateFeedbackTagsMutation = { __typename?: 'Mutation', updateFeedbackTags: { __typename?: 'UserFeedback', id: string, tags: Array<string> } };
 
 export type AdminHomePageQueryVariables = Exact<{
   now: Scalars['DateTime']['input'];
 }>;
 
 
-export type AdminHomePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, adminDashboardStats: { __typename?: 'AdminDashboardStats', totalUsers: number, totalPointsAwarded: number, newUsersLast7Days: number }, feedback: { __typename?: 'FeedbackConnection', edges: Array<{ __typename?: 'FeedbackEdge', node: { __typename?: 'UserFeedback', id: string, message: string, createdAt: any, user: { __typename?: 'User', id: string, name: string } } }> }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } }, leaderboard: { __typename?: 'LeaderboardConnection', totalCount: number, edges: Array<{ __typename?: 'LeaderboardEdge', node: { __typename?: 'LeaderboardEntry', id: string, name: string, score: number, rank?: number | null, image?: string | null } }> } } }> } };
+export type AdminHomePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string }, adminDashboardStats: { __typename?: 'AdminDashboardStats', totalUsers: number, totalPointsAwarded: number, newUsersLast7Days: number }, feedback: { __typename?: 'FeedbackConnection', edges: Array<{ __typename?: 'FeedbackEdge', node: { __typename?: 'UserFeedback', id: string, message: string, createdAt: any, user: { __typename?: 'User', id: string, name: string } } }> }, projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string, description: string, endDate: any, startDate: any, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string }, dark: { __typename?: 'ColorSet', accent: string } } } } }> } };
 
 export type ChurchAdminsPageQueryVariables = Exact<{
   churchId: Scalars['ID']['input'];
@@ -3312,10 +3353,10 @@ export type AdminProjectAchievementPageQueryVariables = Exact<{
 
 
 export type AdminProjectAchievementPageQuery = { __typename?: 'Query', achievement:
-    | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, items: Array<{ __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, planId: string, taskId: string, contentId?: string | null, contentType: ExternalContentType, publishedAt?: any | null, source: string, syncedAt: any, createdAt: any, updatedAt: any, title?: string | null, translations: Array<{ __typename?: 'ExternalContentTranslation', languageCode: string, title?: string | null }> } }>, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename: 'QuizAchievement', minScorePercentage?: number | null, requireCompletion: boolean, id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, quiz: { __typename?: 'Quiz', id: string, name: string }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename: 'StreakAchievement', neededStreak: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, streak: { __typename?: 'Streak', id: string, name: string, description: string }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, items: Array<{ __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, planId: string, taskId: string, contentId?: string | null, contentType: ExternalContentType, publishedAt?: any | null, source: string, syncedAt: any, createdAt: any, updatedAt: any, title?: string | null, translations: Array<{ __typename?: 'ExternalContentTranslation', languageCode: string, title?: string | null }> } }>, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'QuizAchievement', minScorePercentage?: number | null, requireCompletion: boolean, id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'StreakAchievement', neededStreak: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, imagePending: string, imageCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, streak: { __typename?: 'Streak', id: string, name: string, description: string }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
    };
 
 export type AdminProjectAchievementsNewPageQueryVariables = Exact<{
@@ -3353,7 +3394,7 @@ export type AdminProjectEditPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminProjectEditPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, archivedAt?: boolean | null, branding: { __typename?: 'Branding', logo?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, rules?: { __typename?: 'MarkdownText', markdown: string, html: string } | null } };
+export type AdminProjectEditPageQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, name: string, description: string, startDate: any, endDate: any, archivedAt?: boolean | null, infoMessageStart?: any | null, infoMessageEnd?: any | null, branding: { __typename?: 'Branding', logo?: string | null, banner?: string | null, rounding: number, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, rules?: { __typename?: 'MarkdownText', markdown: string, html: string } | null, infoMessage?: { __typename?: 'MarkdownText', markdown: string, html: string } | null } };
 
 export type AdminProjectEventPageQueryVariables = Exact<{
   eventId: Scalars['ID']['input'];
@@ -3411,7 +3452,7 @@ export type DeleteScoreJournalEntryMutation = { __typename?: 'Mutation', deleteS
 export type AdminScoresNewPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminScoresNewPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string } }> }, users: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, name: string, email: string } }> } };
+export type AdminScoresNewPageQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectConnection', edges: Array<{ __typename?: 'ProjectEdge', node: { __typename?: 'Project', id: string, name: string } }> } };
 
 export type CreateScoreAdjustmentMutationVariables = Exact<{
   input: CreateScoreAdjustmentInput;
@@ -3443,7 +3484,16 @@ export type AdminUserPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminUserPageQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, personUuid?: string | null, createdAt: any, name: string, email: string, membersId: string, gender: Gender, birthdate: string, age?: number | null, image?: string | null, church: { __typename?: 'Church', id: string, name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType } | null }>, consentStatus: { __typename?: 'ConsentStatus', acceptedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number } }>, rejectedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number } }>, pendingConsents: Array<{ __typename?: 'Consent', id: string, key: string, title: string, version: number }> } }, adminScoreJournal: { __typename?: 'ScoreJournalConnection', totalCount: number, edges: Array<{ __typename?: 'ScoreJournalEdge', node: { __typename?: 'ScoreJournal', id: string, points: number, sourceType: ScoreSourceType, reason?: string | null, createdAt: any, project: { __typename?: 'Project', id: string, name: string }, awardedBy?: { __typename?: 'User', id: string, name: string } | null } }> }, feedback: { __typename?: 'FeedbackConnection', totalCount: number, edges: Array<{ __typename?: 'FeedbackEdge', node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, createdAt: any } }> } };
+export type AdminUserPageQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, personUuid?: string | null, createdAt: any, name: string, email: string, membersId: string, gender: Gender, birthdate: string, age?: number | null, image?: string | null, church: { __typename?: 'Church', id: string, name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType } | null }>, consentStatus: { __typename?: 'ConsentStatus', acceptedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number, managementType: ConsentManagementType } }>, rejectedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number } }>, pendingConsents: Array<{ __typename?: 'Consent', id: string, key: string, title: string, version: number }> } }, adminScoreJournal: { __typename?: 'ScoreJournalConnection', totalCount: number, edges: Array<{ __typename?: 'ScoreJournalEdge', node: { __typename?: 'ScoreJournal', id: string, points: number, sourceType: ScoreSourceType, reason?: string | null, createdAt: any, project: { __typename?: 'Project', id: string, name: string }, awardedBy?: { __typename?: 'User', id: string, name: string } | null } }> }, feedback: { __typename?: 'FeedbackConnection', totalCount: number, edges: Array<{ __typename?: 'FeedbackEdge', node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, createdAt: any } }> } };
+
+export type AdminSetUserConsentMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  consentId: Scalars['ID']['input'];
+  action: ConsentAction;
+}>;
+
+
+export type AdminSetUserConsentMutation = { __typename?: 'Mutation', adminSetUserConsent: { __typename?: 'UserConsentHistoryEntry', id: string, action: ConsentAction } };
 
 export type AdminUsersPageQueryVariables = Exact<{
   filter?: InputMaybe<UserFilter>;
@@ -3490,6 +3540,7 @@ export const BrandingColorsFieldsFragmentDoc = gql`
 export const BrandingFieldsFragmentDoc = gql`
     fragment BrandingFields on Branding {
   logo
+  banner
   rounding
   colors {
     ...BrandingColorsFields
@@ -4451,6 +4502,15 @@ export const ProfilePageDocument = gql`
   myCurrentProject {
     id
     name
+    infoMessage {
+      markdown
+      html
+    }
+    infoMessageStart
+    infoMessageEnd
+    branding {
+      ...BrandingFields
+    }
     achievements {
       __typename
       id
@@ -4482,7 +4542,7 @@ export const ProfilePageDocument = gql`
     }
   }
 }
-    `;
+    ${BrandingFieldsFragmentDoc}`;
 
 export function useProfilePageQuery(options?: Omit<Urql.UseQueryArgs<never, ProfilePageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<ProfilePageQuery, ProfilePageQueryVariables | undefined>({ query: ProfilePageDocument, variables: undefined, ...options });
@@ -4751,6 +4811,8 @@ export const AdminFeedbackPageDocument = gql`
         locale
         projectId
         timezone
+        contextUrl
+        tags
         createdAt
         handledAt
         user {
@@ -4766,6 +4828,18 @@ export const AdminFeedbackPageDocument = gql`
 
 export function useAdminFeedbackPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminFeedbackPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminFeedbackPageQuery, AdminFeedbackPageQueryVariables | undefined>({ query: AdminFeedbackPageDocument, variables: undefined, ...options });
+};
+export const UpdateFeedbackTagsDocument = gql`
+    mutation UpdateFeedbackTags($feedbackId: ID!, $tags: [String!]!) {
+  updateFeedbackTags(feedbackId: $feedbackId, tags: $tags) {
+    id
+    tags
+  }
+}
+    `;
+
+export function useUpdateFeedbackTagsMutation() {
+  return Urql.useMutation<UpdateFeedbackTagsMutation, UpdateFeedbackTagsMutationVariables>(UpdateFeedbackTagsDocument);
 };
 export const AdminHomePageDocument = gql`
     query AdminHomePage($now: DateTime!) {
@@ -4808,18 +4882,6 @@ export const AdminHomePageDocument = gql`
             }
             dark {
               accent
-            }
-          }
-        }
-        leaderboard(entityType: PERSONS, first: 5) {
-          totalCount
-          edges {
-            node {
-              id
-              name
-              score
-              rank
-              image
             }
           }
         }
@@ -4910,6 +4972,7 @@ export const AdminProjectAchievementPageDocument = gql`
     achievedAt
     points
     hidden
+    awardableFrom
     ... on ContentAchievement {
       items {
         id
@@ -5074,6 +5137,12 @@ export const AdminProjectEditPageDocument = gql`
       markdown
       html
     }
+    infoMessage {
+      markdown
+      html
+    }
+    infoMessageStart
+    infoMessageEnd
   }
 }
     ${BrandingFieldsFragmentDoc}`;
@@ -5268,15 +5337,6 @@ export const AdminScoresNewPageDocument = gql`
       }
     }
   }
-  users(first: 100) {
-    edges {
-      node {
-        id
-        name
-        email
-      }
-    }
-  }
 }
     `;
 
@@ -5412,6 +5472,7 @@ export const AdminUserPageDocument = gql`
           key
           title
           version
+          managementType
         }
       }
       rejectedConsents {
@@ -5474,6 +5535,18 @@ export const AdminUserPageDocument = gql`
 
 export function useAdminUserPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminUserPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminUserPageQuery, AdminUserPageQueryVariables | undefined>({ query: AdminUserPageDocument, variables: undefined, ...options });
+};
+export const AdminSetUserConsentDocument = gql`
+    mutation AdminSetUserConsent($userId: ID!, $consentId: ID!, $action: ConsentAction!) {
+  adminSetUserConsent(userId: $userId, consentId: $consentId, action: $action) {
+    id
+    action
+  }
+}
+    `;
+
+export function useAdminSetUserConsentMutation() {
+  return Urql.useMutation<AdminSetUserConsentMutation, AdminSetUserConsentMutationVariables>(AdminSetUserConsentDocument);
 };
 export const AdminUsersPageDocument = gql`
     query AdminUsersPage($filter: UserFilter, $first: Int, $after: String, $last: Int, $before: String) {

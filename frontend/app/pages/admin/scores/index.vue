@@ -56,6 +56,7 @@ gql(`
 
 const pagination = usePagination({
   defaultPageSize: 15,
+  direction: 'backward',
 })
 
 const { isAuthReady } = useAuthReady()

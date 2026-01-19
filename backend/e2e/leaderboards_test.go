@@ -777,7 +777,7 @@ func TestLeaderboardDenseRanking(t *testing.T) {
 		assert.Equal(t, 3, ranks["TeamEpsilon"], "TeamEpsilon with 25 pts should be rank 3 (consecutive)")
 	})
 
-	t.Run("teams with same rank are sorted alphabetically by name", func(t *testing.T) {
+	t.Run("teams with same rank are sorted by most recent score first, then alphabetically", func(t *testing.T) {
 		resp := client.WithAuth(adminToken).MustExecute(t, rankingQuery, map[string]any{
 			"projectId": testProjectID,
 		})
@@ -793,9 +793,13 @@ func TestLeaderboardDenseRanking(t *testing.T) {
 			names[i] = edge.Node.Name
 		}
 
-		// Expected order: TeamAlpha, TeamBeta (both rank 1, alpha), TeamDelta, TeamGamma (both rank 2, alpha), TeamEpsilon
-		expected := []string{"TeamAlpha", "TeamBeta", "TeamDelta", "TeamGamma", "TeamEpsilon"}
-		assert.Equal(t, expected, names, "leaderboard should be sorted by rank, then alphabetically by name")
+		// Expected order: sorted by rank, then by most recent score (last_score_at DESC), then alphabetically
+		// Since teams are created in order (Alpha, Beta, Gamma, Delta, Epsilon), the later ones have more recent scores
+		// Rank 1 (100 pts): TeamBeta (most recent), TeamAlpha
+		// Rank 2 (50 pts): TeamDelta (most recent), TeamGamma
+		// Rank 3 (25 pts): TeamEpsilon
+		expected := []string{"TeamBeta", "TeamAlpha", "TeamDelta", "TeamGamma", "TeamEpsilon"}
+		assert.Equal(t, expected, names, "leaderboard should be sorted by rank, then by most recent score, then alphabetically")
 	})
 }
 

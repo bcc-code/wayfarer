@@ -110,6 +110,7 @@ type ComplexityRoot struct {
 	}
 
 	Branding struct {
+		Banner   func(childComplexity int) int
 		Colors   func(childComplexity int) int
 		Logo     func(childComplexity int) int
 		Rounding func(childComplexity int) int
@@ -374,6 +375,7 @@ type ComplexityRoot struct {
 		Description func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Image       func(childComplexity int) int
+		LastScoreAt func(childComplexity int) int
 		Name        func(childComplexity int) int
 		Rank        func(childComplexity int) int
 		Score       func(childComplexity int) int
@@ -389,6 +391,7 @@ type ComplexityRoot struct {
 		AcceptConsent                               func(childComplexity int, consentID string) int
 		AddQuizQuestion                             func(childComplexity int, quizID string, input model.CreateQuizQuestionInput) int
 		AddTeamMembers                              func(childComplexity int, teamID string, userIds []string, force *bool) int
+		AdminSetUserConsent                         func(childComplexity int, userID string, consentID string, action model.ConsentAction) int
 		ArchiveProject                              func(childComplexity int, id string) int
 		AssignChallengeToEvent                      func(childComplexity int, challengeID string, eventID string) int
 		AssignRole                                  func(childComplexity int, input model.AssignRoleInput) int
@@ -481,6 +484,7 @@ type ComplexityRoot struct {
 		UpdateConsent                               func(childComplexity int, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime, managedBy *string) int
 		UpdateContentAchievement                    func(childComplexity int, id string, input model.UpdateContentAchievementInput) int
 		UpdateEvent                                 func(childComplexity int, id string, input model.UpdateEventInput) int
+		UpdateFeedbackTags                          func(childComplexity int, feedbackID string, tags []string) int
 		UpdateProject                               func(childComplexity int, id string, input model.UpdateProjectInput) int
 		UpdateQuiz                                  func(childComplexity int, id string, input model.UpdateQuizInput) int
 		UpdateQuizQuestion                          func(childComplexity int, id string, input model.UpdateQuizQuestionInput) int
@@ -544,22 +548,25 @@ type ComplexityRoot struct {
 	}
 
 	Project struct {
-		Achievements func(childComplexity int) int
-		ArchivedAt   func(childComplexity int) int
-		Branding     func(childComplexity int) int
-		Challenges   func(childComplexity int) int
-		Description  func(childComplexity int) int
-		EndDate      func(childComplexity int) int
-		Events       func(childComplexity int) int
-		ID           func(childComplexity int) int
-		Journal      func(childComplexity int, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
-		Leaderboard  func(childComplexity int, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) int
-		MyTeam       func(childComplexity int) int
-		Name         func(childComplexity int) int
-		Rules        func(childComplexity int) int
-		StartDate    func(childComplexity int) int
-		Streaks      func(childComplexity int) int
-		Teams        func(childComplexity int) int
+		Achievements     func(childComplexity int) int
+		ArchivedAt       func(childComplexity int) int
+		Branding         func(childComplexity int) int
+		Challenges       func(childComplexity int) int
+		Description      func(childComplexity int) int
+		EndDate          func(childComplexity int) int
+		Events           func(childComplexity int) int
+		ID               func(childComplexity int) int
+		InfoMessage      func(childComplexity int) int
+		InfoMessageEnd   func(childComplexity int) int
+		InfoMessageStart func(childComplexity int) int
+		Journal          func(childComplexity int, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
+		Leaderboard      func(childComplexity int, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) int
+		MyTeam           func(childComplexity int) int
+		Name             func(childComplexity int) int
+		Rules            func(childComplexity int) int
+		StartDate        func(childComplexity int) int
+		Streaks          func(childComplexity int) int
+		Teams            func(childComplexity int) int
 	}
 
 	ProjectConnection struct {
@@ -968,6 +975,7 @@ type ComplexityRoot struct {
 	UserFeedback struct {
 		AppVersion   func(childComplexity int) int
 		CanContactMe func(childComplexity int) int
+		ContextURL   func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
 		HandledAt    func(childComplexity int) int
 		ID           func(childComplexity int) int
@@ -977,6 +985,7 @@ type ComplexityRoot struct {
 		ProjectID    func(childComplexity int) int
 		ScreenHeight func(childComplexity int) int
 		ScreenWidth  func(childComplexity int) int
+		Tags         func(childComplexity int) int
 		Timezone     func(childComplexity int) int
 		User         func(childComplexity int) int
 		UserAgent    func(childComplexity int) int
@@ -1148,6 +1157,7 @@ type MutationResolver interface {
 	RejectConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
 	CreateConsent(ctx context.Context, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) (*model.Consent, error)
 	UpdateConsent(ctx context.Context, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime, managedBy *string) (*model.Consent, error)
+	AdminSetUserConsent(ctx context.Context, userID string, consentID string, action model.ConsentAction) (*model.UserConsentHistoryEntry, error)
 	CreateQuiz(ctx context.Context, input model.CreateQuizInput) (*model.Quiz, error)
 	UpdateQuiz(ctx context.Context, id string, input model.UpdateQuizInput) (*model.Quiz, error)
 	DeleteQuiz(ctx context.Context, id string) (bool, error)
@@ -1171,6 +1181,7 @@ type MutationResolver interface {
 	DeleteFeedback(ctx context.Context, id string) (bool, error)
 	ForwardFeedbackToDesk(ctx context.Context, feedbackID string) (bool, error)
 	MarkFeedbackHandled(ctx context.Context, feedbackID string) (*model.UserFeedback, error)
+	UpdateFeedbackTags(ctx context.Context, feedbackID string, tags []string) (*model.UserFeedback, error)
 	CreateWebhook(ctx context.Context, input model.CreateWebhookInput) (*model.Webhook, error)
 	UpdateWebhook(ctx context.Context, id string, input model.UpdateWebhookInput) (*model.Webhook, error)
 	DeleteWebhook(ctx context.Context, id string) (bool, error)
@@ -1196,6 +1207,8 @@ type PredefinedResponseResolver interface {
 }
 type ProjectResolver interface {
 	Rules(ctx context.Context, obj *model.Project) (*model.MarkdownText, error)
+	InfoMessage(ctx context.Context, obj *model.Project) (*model.MarkdownText, error)
+
 	Challenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error)
 	Leaderboard(ctx context.Context, obj *model.Project, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) (*model.LeaderboardConnection, error)
 	Events(ctx context.Context, obj *model.Project) ([]model.Event, error)
@@ -1491,6 +1504,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AgeRange.Min(childComplexity), true
 
+	case "Branding.banner":
+		if e.complexity.Branding.Banner == nil {
+			break
+		}
+
+		return e.complexity.Branding.Banner(childComplexity), true
 	case "Branding.colors":
 		if e.complexity.Branding.Colors == nil {
 			break
@@ -2553,6 +2572,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.LeaderboardEntry.Image(childComplexity), true
+	case "LeaderboardEntry.lastScoreAt":
+		if e.complexity.LeaderboardEntry.LastScoreAt == nil {
+			break
+		}
+
+		return e.complexity.LeaderboardEntry.LastScoreAt(childComplexity), true
 	case "LeaderboardEntry.name":
 		if e.complexity.LeaderboardEntry.Name == nil {
 			break
@@ -2624,6 +2649,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.AddTeamMembers(childComplexity, args["teamId"].(string), args["userIds"].([]string), args["force"].(*bool)), true
+	case "Mutation.adminSetUserConsent":
+		if e.complexity.Mutation.AdminSetUserConsent == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_adminSetUserConsent_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AdminSetUserConsent(childComplexity, args["userId"].(string), args["consentId"].(string), args["action"].(model.ConsentAction)), true
 	case "Mutation.archiveProject":
 		if e.complexity.Mutation.ArchiveProject == nil {
 			break
@@ -3626,6 +3662,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateEvent(childComplexity, args["id"].(string), args["input"].(model.UpdateEventInput)), true
+	case "Mutation.updateFeedbackTags":
+		if e.complexity.Mutation.UpdateFeedbackTags == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateFeedbackTags_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateFeedbackTags(childComplexity, args["feedbackId"].(string), args["tags"].([]string)), true
 	case "Mutation.updateProject":
 		if e.complexity.Mutation.UpdateProject == nil {
 			break
@@ -3990,6 +4037,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Project.ID(childComplexity), true
+	case "Project.infoMessage":
+		if e.complexity.Project.InfoMessage == nil {
+			break
+		}
+
+		return e.complexity.Project.InfoMessage(childComplexity), true
+	case "Project.infoMessageEnd":
+		if e.complexity.Project.InfoMessageEnd == nil {
+			break
+		}
+
+		return e.complexity.Project.InfoMessageEnd(childComplexity), true
+	case "Project.infoMessageStart":
+		if e.complexity.Project.InfoMessageStart == nil {
+			break
+		}
+
+		return e.complexity.Project.InfoMessageStart(childComplexity), true
 	case "Project.journal":
 		if e.complexity.Project.Journal == nil {
 			break
@@ -6013,6 +6078,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UserFeedback.CanContactMe(childComplexity), true
+	case "UserFeedback.contextUrl":
+		if e.complexity.UserFeedback.ContextURL == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.ContextURL(childComplexity), true
 	case "UserFeedback.createdAt":
 		if e.complexity.UserFeedback.CreatedAt == nil {
 			break
@@ -6067,6 +6138,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UserFeedback.ScreenWidth(childComplexity), true
+	case "UserFeedback.tags":
+		if e.complexity.UserFeedback.Tags == nil {
+			break
+		}
+
+		return e.complexity.UserFeedback.Tags(childComplexity), true
 	case "UserFeedback.timezone":
 		if e.complexity.UserFeedback.Timezone == nil {
 			break
@@ -6510,6 +6587,7 @@ type ContentItem {
 
 type Branding {
     logo: String
+    banner: String
     colors: Colors!
     rounding: Int! # border-radius in pixels
 }
@@ -6542,6 +6620,7 @@ type LeaderboardEntry {
     rank: Int
     tags: [LeaderboardEntryTag!]!
     image: String
+    lastScoreAt: DateTime
 }
 
 type LeaderboardEdge {
@@ -6604,6 +6683,9 @@ type Project {
     name: String!
     description: String!
     rules: MarkdownText @goField(forceResolver: true)
+    infoMessage: MarkdownText @goField(forceResolver: true)
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
     challenges: [Challenge!]! @goField(forceResolver: true)
     leaderboard(
         entityType: LeaderboardEntityType!
@@ -7065,6 +7147,7 @@ input AgeRangeInput {
 
 input BrandingInput {
     logo: String
+    banner: String
     colors: ColorsInput!
     rounding: Int!
 }
@@ -7097,6 +7180,9 @@ input CreateProjectInput {
     name: String!
     description: String
     rules: String
+    infoMessage: String
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
     startDate: DateTime!
     endDate: DateTime!
     branding: BrandingInput!
@@ -7106,6 +7192,9 @@ input UpdateProjectInput {
     name: String
     description: String
     rules: String
+    infoMessage: String
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
     startDate: DateTime
     endDate: DateTime
     branding: BrandingInput
@@ -7419,6 +7508,7 @@ input UpdateStreakInput {
 
 # Query Filter Inputs
 input UserFilter {
+    query: String
     churchId: ID
     gender: Gender
     minAge: Int
@@ -8046,6 +8136,14 @@ extend type Mutation {
         publishedAt: DateTime
         managedBy: String
     ): Consent! @requireRole(roles: ["admin", "superadmin"])
+
+    # Manually set a user's consent action (admin action)
+    # Only works for local consents. The admin's user ID is recorded in the source field.
+    adminSetUserConsent(
+        userId: ID!
+        consentId: ID!
+        action: ConsentAction!
+    ): UserConsentHistoryEntry! @requireRole(roles: ["admin", "superadmin"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/quizzes.graphqls", Input: `# Quiz queries and mutations
@@ -8333,6 +8431,8 @@ type UserFeedback {
     locale: String
     projectId: ID
     timezone: String
+    contextUrl: String
+    tags: [String!]!
     createdAt: DateTime!
     handledAt: DateTime
 }
@@ -8345,6 +8445,7 @@ input DeviceMetadata {
     appVersion: String
     locale: String
     timezone: String
+    contextUrl: String
 }
 
 input SubmitFeedbackInput {
@@ -8352,6 +8453,7 @@ input SubmitFeedbackInput {
     canContactMe: Boolean!
     device: DeviceMetadata!
     projectId: ID
+    tags: [String!]
 }
 
 type FeedbackConnection {
@@ -8367,6 +8469,7 @@ type FeedbackEdge {
 
 input FeedbackFilter {
     userId: ID
+    tags: [String!]
 }
 
 extend type Query {
@@ -8378,6 +8481,7 @@ extend type Mutation {
     deleteFeedback(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
     forwardFeedbackToDesk(feedbackId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
     markFeedbackHandled(feedbackId: ID!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
+    updateFeedbackTags(feedbackId: ID!, tags: [String!]!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/webhooks.graphqls", Input: `# ==================== Webhook Types ====================
@@ -8567,6 +8671,27 @@ func (ec *executionContext) field_Mutation_addTeamMembers_args(ctx context.Conte
 		return nil, err
 	}
 	args["force"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_adminSetUserConsent_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "consentId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["consentId"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "action", ec.unmarshalNConsentAction2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐConsentAction)
+	if err != nil {
+		return nil, err
+	}
+	args["action"] = arg2
 	return args, nil
 }
 
@@ -9882,6 +10007,22 @@ func (ec *executionContext) field_Mutation_updateEvent_args(ctx context.Context,
 		return nil, err
 	}
 	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateFeedbackTags_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "feedbackId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["feedbackId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "tags", ec.unmarshalNString2ᚕstringᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["tags"] = arg1
 	return args, nil
 }
 
@@ -11305,6 +11446,35 @@ func (ec *executionContext) _Branding_logo(ctx context.Context, field graphql.Co
 }
 
 func (ec *executionContext) fieldContext_Branding_logo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Branding",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Branding_banner(ctx context.Context, field graphql.CollectedField, obj *model.Branding) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Branding_banner,
+		func(ctx context.Context) (any, error) {
+			return obj.Banner, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Branding_banner(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Branding",
 		Field:      field,
@@ -12994,6 +13164,12 @@ func (ec *executionContext) fieldContext_ContentAchievement_project(_ context.Co
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -13816,6 +13992,12 @@ func (ec *executionContext) fieldContext_Event_parentProject(_ context.Context, 
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -14174,6 +14356,12 @@ func (ec *executionContext) fieldContext_ExternalChallenge_project(_ context.Con
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -15354,6 +15542,10 @@ func (ec *executionContext) fieldContext_FeedbackEdge_node(_ context.Context, fi
 				return ec.fieldContext_UserFeedback_projectId(ctx, field)
 			case "timezone":
 				return ec.fieldContext_UserFeedback_timezone(ctx, field)
+			case "contextUrl":
+				return ec.fieldContext_UserFeedback_contextUrl(ctx, field)
+			case "tags":
+				return ec.fieldContext_UserFeedback_tags(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
 			case "handledAt":
@@ -16769,6 +16961,8 @@ func (ec *executionContext) fieldContext_LeaderboardConnection_me(_ context.Cont
 				return ec.fieldContext_LeaderboardEntry_tags(ctx, field)
 			case "image":
 				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
+			case "lastScoreAt":
+				return ec.fieldContext_LeaderboardEntry_lastScoreAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type LeaderboardEntry", field.Name)
 		},
@@ -16843,6 +17037,8 @@ func (ec *executionContext) fieldContext_LeaderboardEdge_node(_ context.Context,
 				return ec.fieldContext_LeaderboardEntry_tags(ctx, field)
 			case "image":
 				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
+			case "lastScoreAt":
+				return ec.fieldContext_LeaderboardEntry_lastScoreAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type LeaderboardEntry", field.Name)
 		},
@@ -17053,6 +17249,35 @@ func (ec *executionContext) fieldContext_LeaderboardEntry_image(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _LeaderboardEntry_lastScoreAt(ctx context.Context, field graphql.CollectedField, obj *model.LeaderboardEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LeaderboardEntry_lastScoreAt,
+		func(ctx context.Context) (any, error) {
+			return obj.LastScoreAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LeaderboardEntry_lastScoreAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeaderboardEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _MarkdownText_markdown(ctx context.Context, field graphql.CollectedField, obj *model.MarkdownText) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -17173,6 +17398,12 @@ func (ec *executionContext) fieldContext_Mutation_joinProject(ctx context.Contex
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -17266,6 +17497,12 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -17359,6 +17596,12 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -22403,6 +22646,81 @@ func (ec *executionContext) fieldContext_Mutation_updateConsent(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_adminSetUserConsent(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_adminSetUserConsent,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().AdminSetUserConsent(ctx, fc.Args["userId"].(string), fc.Args["consentId"].(string), fc.Args["action"].(model.ConsentAction))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.UserConsentHistoryEntry
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.UserConsentHistoryEntry
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNUserConsentHistoryEntry2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConsentHistoryEntry,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_adminSetUserConsent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserConsentHistoryEntry_id(ctx, field)
+			case "consent":
+				return ec.fieldContext_UserConsentHistoryEntry_consent(ctx, field)
+			case "action":
+				return ec.fieldContext_UserConsentHistoryEntry_action(ctx, field)
+			case "occurredAt":
+				return ec.fieldContext_UserConsentHistoryEntry_occurredAt(ctx, field)
+			case "source":
+				return ec.fieldContext_UserConsentHistoryEntry_source(ctx, field)
+			case "externalConsentId":
+				return ec.fieldContext_UserConsentHistoryEntry_externalConsentId(ctx, field)
+			case "externalTimestamp":
+				return ec.fieldContext_UserConsentHistoryEntry_externalTimestamp(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserConsentHistoryEntry", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_adminSetUserConsent_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createQuiz(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -23753,6 +24071,10 @@ func (ec *executionContext) fieldContext_Mutation_submitFeedback(ctx context.Con
 				return ec.fieldContext_UserFeedback_projectId(ctx, field)
 			case "timezone":
 				return ec.fieldContext_UserFeedback_timezone(ctx, field)
+			case "contextUrl":
+				return ec.fieldContext_UserFeedback_contextUrl(ctx, field)
+			case "tags":
+				return ec.fieldContext_UserFeedback_tags(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
 			case "handledAt":
@@ -23962,6 +24284,10 @@ func (ec *executionContext) fieldContext_Mutation_markFeedbackHandled(ctx contex
 				return ec.fieldContext_UserFeedback_projectId(ctx, field)
 			case "timezone":
 				return ec.fieldContext_UserFeedback_timezone(ctx, field)
+			case "contextUrl":
+				return ec.fieldContext_UserFeedback_contextUrl(ctx, field)
+			case "tags":
+				return ec.fieldContext_UserFeedback_tags(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
 			case "handledAt":
@@ -23978,6 +24304,101 @@ func (ec *executionContext) fieldContext_Mutation_markFeedbackHandled(ctx contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_markFeedbackHandled_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateFeedbackTags(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateFeedbackTags,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateFeedbackTags(ctx, fc.Args["feedbackId"].(string), fc.Args["tags"].([]string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.UserFeedback
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.UserFeedback
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNUserFeedback2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserFeedback,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateFeedbackTags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserFeedback_id(ctx, field)
+			case "userId":
+				return ec.fieldContext_UserFeedback_userId(ctx, field)
+			case "user":
+				return ec.fieldContext_UserFeedback_user(ctx, field)
+			case "message":
+				return ec.fieldContext_UserFeedback_message(ctx, field)
+			case "canContactMe":
+				return ec.fieldContext_UserFeedback_canContactMe(ctx, field)
+			case "userAgent":
+				return ec.fieldContext_UserFeedback_userAgent(ctx, field)
+			case "platform":
+				return ec.fieldContext_UserFeedback_platform(ctx, field)
+			case "screenWidth":
+				return ec.fieldContext_UserFeedback_screenWidth(ctx, field)
+			case "screenHeight":
+				return ec.fieldContext_UserFeedback_screenHeight(ctx, field)
+			case "appVersion":
+				return ec.fieldContext_UserFeedback_appVersion(ctx, field)
+			case "locale":
+				return ec.fieldContext_UserFeedback_locale(ctx, field)
+			case "projectId":
+				return ec.fieldContext_UserFeedback_projectId(ctx, field)
+			case "timezone":
+				return ec.fieldContext_UserFeedback_timezone(ctx, field)
+			case "contextUrl":
+				return ec.fieldContext_UserFeedback_contextUrl(ctx, field)
+			case "tags":
+				return ec.fieldContext_UserFeedback_tags(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
+			case "handledAt":
+				return ec.fieldContext_UserFeedback_handledAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserFeedback", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateFeedbackTags_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -25641,6 +26062,99 @@ func (ec *executionContext) fieldContext_Project_rules(_ context.Context, field 
 	return fc, nil
 }
 
+func (ec *executionContext) _Project_infoMessage(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_infoMessage,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Project().InfoMessage(ctx, obj)
+		},
+		nil,
+		ec.marshalOMarkdownText2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐMarkdownText,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_infoMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "markdown":
+				return ec.fieldContext_MarkdownText_markdown(ctx, field)
+			case "html":
+				return ec.fieldContext_MarkdownText_html(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MarkdownText", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Project_infoMessageStart(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_infoMessageStart,
+		func(ctx context.Context) (any, error) {
+			return obj.InfoMessageStart, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_infoMessageStart(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Project_infoMessageEnd(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_infoMessageEnd,
+		func(ctx context.Context) (any, error) {
+			return obj.InfoMessageEnd, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_infoMessageEnd(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Project_challenges(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -25852,6 +26366,8 @@ func (ec *executionContext) fieldContext_Project_branding(_ context.Context, fie
 			switch field.Name {
 			case "logo":
 				return ec.fieldContext_Branding_logo(ctx, field)
+			case "banner":
+				return ec.fieldContext_Branding_banner(ctx, field)
 			case "colors":
 				return ec.fieldContext_Branding_colors(ctx, field)
 			case "rounding":
@@ -26281,6 +26797,12 @@ func (ec *executionContext) fieldContext_ProjectEdge_node(_ context.Context, fie
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -26623,6 +27145,12 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -26746,6 +27274,12 @@ func (ec *executionContext) fieldContext_Query_myProjects(_ context.Context, fie
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -26809,6 +27343,12 @@ func (ec *executionContext) fieldContext_Query_myCurrentProject(_ context.Contex
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -26872,6 +27412,12 @@ func (ec *executionContext) fieldContext_Query_currentProject(_ context.Context,
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -29465,6 +30011,12 @@ func (ec *executionContext) fieldContext_Quiz_project(_ context.Context, field g
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -30139,6 +30691,12 @@ func (ec *executionContext) fieldContext_QuizAchievement_project(_ context.Conte
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -30633,6 +31191,12 @@ func (ec *executionContext) fieldContext_QuizChallenge_project(_ context.Context
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -32181,6 +32745,12 @@ func (ec *executionContext) fieldContext_RoleScope_project(_ context.Context, fi
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -32324,6 +32894,12 @@ func (ec *executionContext) fieldContext_ScoreJournal_project(_ context.Context,
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -33250,6 +33826,12 @@ func (ec *executionContext) fieldContext_SimpleAchievement_project(_ context.Con
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -33621,6 +34203,12 @@ func (ec *executionContext) fieldContext_SimpleChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -34219,6 +34807,12 @@ func (ec *executionContext) fieldContext_Streak_project(_ context.Context, field
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -34485,6 +35079,12 @@ func (ec *executionContext) fieldContext_StreakAchievement_project(_ context.Con
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -35185,6 +35785,12 @@ func (ec *executionContext) fieldContext_SuperTeam_parentProject(_ context.Conte
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -35697,6 +36303,8 @@ func (ec *executionContext) fieldContext_Team_memberLeaderboard(_ context.Contex
 				return ec.fieldContext_LeaderboardEntry_tags(ctx, field)
 			case "image":
 				return ec.fieldContext_LeaderboardEntry_image(ctx, field)
+			case "lastScoreAt":
+				return ec.fieldContext_LeaderboardEntry_lastScoreAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type LeaderboardEntry", field.Name)
 		},
@@ -35736,6 +36344,12 @@ func (ec *executionContext) fieldContext_Team_parentProject(_ context.Context, f
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -36578,6 +37192,12 @@ func (ec *executionContext) fieldContext_User_projects(_ context.Context, field 
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -37869,6 +38489,64 @@ func (ec *executionContext) fieldContext_UserFeedback_timezone(_ context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _UserFeedback_contextUrl(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_contextUrl,
+		func(ctx context.Context) (any, error) {
+			return obj.ContextURL, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_contextUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserFeedback_tags(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserFeedback_tags,
+		func(ctx context.Context) (any, error) {
+			return obj.Tags, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserFeedback_tags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserFeedback",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UserFeedback_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.UserFeedback) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -38156,6 +38834,12 @@ func (ec *executionContext) fieldContext_Webhook_project(_ context.Context, fiel
 				return ec.fieldContext_Project_description(ctx, field)
 			case "rules":
 				return ec.fieldContext_Project_rules(ctx, field)
+			case "infoMessage":
+				return ec.fieldContext_Project_infoMessage(ctx, field)
+			case "infoMessageStart":
+				return ec.fieldContext_Project_infoMessageStart(ctx, field)
+			case "infoMessageEnd":
+				return ec.fieldContext_Project_infoMessageEnd(ctx, field)
 			case "challenges":
 				return ec.fieldContext_Project_challenges(ctx, field)
 			case "leaderboard":
@@ -40315,7 +40999,7 @@ func (ec *executionContext) unmarshalInputBrandingInput(ctx context.Context, obj
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"logo", "colors", "rounding"}
+	fieldsInOrder := [...]string{"logo", "banner", "colors", "rounding"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -40329,6 +41013,13 @@ func (ec *executionContext) unmarshalInputBrandingInput(ctx context.Context, obj
 				return it, err
 			}
 			it.Logo = data
+		case "banner":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("banner"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Banner = data
 		case "colors":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("colors"))
 			data, err := ec.unmarshalNColorsInput2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐColorsInput(ctx, v)
@@ -41093,7 +41784,7 @@ func (ec *executionContext) unmarshalInputCreateProjectInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "rules", "startDate", "endDate", "branding"}
+	fieldsInOrder := [...]string{"name", "description", "rules", "infoMessage", "infoMessageStart", "infoMessageEnd", "startDate", "endDate", "branding"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -41121,6 +41812,27 @@ func (ec *executionContext) unmarshalInputCreateProjectInput(ctx context.Context
 				return it, err
 			}
 			it.Rules = data
+		case "infoMessage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("infoMessage"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InfoMessage = data
+		case "infoMessageStart":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("infoMessageStart"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InfoMessageStart = data
+		case "infoMessageEnd":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("infoMessageEnd"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InfoMessageEnd = data
 		case "startDate":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startDate"))
 			data, err := ec.unmarshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
@@ -42032,7 +42744,7 @@ func (ec *executionContext) unmarshalInputDeviceMetadata(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"userAgent", "platform", "screenWidth", "screenHeight", "appVersion", "locale", "timezone"}
+	fieldsInOrder := [...]string{"userAgent", "platform", "screenWidth", "screenHeight", "appVersion", "locale", "timezone", "contextUrl"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -42088,6 +42800,13 @@ func (ec *executionContext) unmarshalInputDeviceMetadata(ctx context.Context, ob
 				return it, err
 			}
 			it.Timezone = data
+		case "contextUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextUrl"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextURL = data
 		}
 	}
 
@@ -42294,7 +43013,7 @@ func (ec *executionContext) unmarshalInputFeedbackFilter(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"userId"}
+	fieldsInOrder := [...]string{"userId", "tags"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -42308,6 +43027,13 @@ func (ec *executionContext) unmarshalInputFeedbackFilter(ctx context.Context, ob
 				return it, err
 			}
 			it.UserID = data
+		case "tags":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tags = data
 		}
 	}
 
@@ -42830,7 +43556,7 @@ func (ec *executionContext) unmarshalInputSubmitFeedbackInput(ctx context.Contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"message", "canContactMe", "device", "projectId"}
+	fieldsInOrder := [...]string{"message", "canContactMe", "device", "projectId", "tags"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -42865,6 +43591,13 @@ func (ec *executionContext) unmarshalInputSubmitFeedbackInput(ctx context.Contex
 				return it, err
 			}
 			it.ProjectID = data
+		case "tags":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tags = data
 		}
 	}
 
@@ -43458,7 +44191,7 @@ func (ec *executionContext) unmarshalInputUpdateProjectInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "rules", "startDate", "endDate", "branding"}
+	fieldsInOrder := [...]string{"name", "description", "rules", "infoMessage", "infoMessageStart", "infoMessageEnd", "startDate", "endDate", "branding"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -43486,6 +44219,27 @@ func (ec *executionContext) unmarshalInputUpdateProjectInput(ctx context.Context
 				return it, err
 			}
 			it.Rules = data
+		case "infoMessage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("infoMessage"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InfoMessage = data
+		case "infoMessageStart":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("infoMessageStart"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InfoMessageStart = data
+		case "infoMessageEnd":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("infoMessageEnd"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InfoMessageEnd = data
 		case "startDate":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startDate"))
 			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
@@ -43982,13 +44736,20 @@ func (ec *executionContext) unmarshalInputUserFilter(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"churchId", "gender", "minAge", "maxAge", "projectId", "eventId", "teamId", "ids"}
+	fieldsInOrder := [...]string{"query", "churchId", "gender", "minAge", "maxAge", "projectId", "eventId", "teamId", "ids"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "query":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("query"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Query = data
 		case "churchId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("churchId"))
 			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
@@ -44479,6 +45240,8 @@ func (ec *executionContext) _Branding(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = graphql.MarshalString("Branding")
 		case "logo":
 			out.Values[i] = ec._Branding_logo(ctx, field, obj)
+		case "banner":
+			out.Values[i] = ec._Branding_banner(ctx, field, obj)
 		case "colors":
 			out.Values[i] = ec._Branding_colors(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -47098,6 +47861,8 @@ func (ec *executionContext) _LeaderboardEntry(ctx context.Context, sel ast.Selec
 			}
 		case "image":
 			out.Values[i] = ec._LeaderboardEntry_image(ctx, field, obj)
+		case "lastScoreAt":
+			out.Values[i] = ec._LeaderboardEntry_lastScoreAt(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -47744,6 +48509,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "adminSetUserConsent":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_adminSetUserConsent(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createQuiz":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createQuiz(ctx, field)
@@ -47901,6 +48673,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "markFeedbackHandled":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_markFeedbackHandled(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateFeedbackTags":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateFeedbackTags(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -48570,6 +49349,43 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "infoMessage":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_infoMessage(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "infoMessageStart":
+			out.Values[i] = ec._Project_infoMessageStart(ctx, field, obj)
+		case "infoMessageEnd":
+			out.Values[i] = ec._Project_infoMessageEnd(ctx, field, obj)
 		case "challenges":
 			field := field
 
@@ -54509,6 +55325,13 @@ func (ec *executionContext) _UserFeedback(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._UserFeedback_projectId(ctx, field, obj)
 		case "timezone":
 			out.Values[i] = ec._UserFeedback_timezone(ctx, field, obj)
+		case "contextUrl":
+			out.Values[i] = ec._UserFeedback_contextUrl(ctx, field, obj)
+		case "tags":
+			out.Values[i] = ec._UserFeedback_tags(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "createdAt":
 			out.Values[i] = ec._UserFeedback_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -58262,6 +59085,16 @@ func (ec *executionContext) marshalNUserConsentHistoryEntry2ᚕgithubᚗcomᚋbc
 	return ret
 }
 
+func (ec *executionContext) marshalNUserConsentHistoryEntry2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserConsentHistoryEntry(ctx context.Context, sel ast.SelectionSet, v *model.UserConsentHistoryEntry) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UserConsentHistoryEntry(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNUserEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserEdge(ctx context.Context, sel ast.SelectionSet, v model.UserEdge) graphql.Marshaler {
 	return ec._UserEdge(ctx, sel, &v)
 }
@@ -59267,6 +60100,42 @@ func (ec *executionContext) unmarshalOStreakFilter2ᚖgithubᚗcomᚋbccᚑmedia
 	}
 	res, err := ec.unmarshalInputStreakFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

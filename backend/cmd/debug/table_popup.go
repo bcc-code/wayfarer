@@ -22,7 +22,6 @@ type TablePopup struct {
 	rows        []TableRow
 	cursor      int
 	filter      string
-	selected    *TableRow
 	columnWidth []int
 }
 

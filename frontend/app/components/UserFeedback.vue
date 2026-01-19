@@ -110,115 +110,115 @@ watch(open, (isOpen) => {
 </script>
 
 <template>
-  <DesignDrawer v-model:open="open" :title="$t('feedback.title')">
-    <slot>
-      <DesignPanel class="flex flex-col">
-        <button
-          class="flex text-start items-center justify-between gap-4 px-3 py-4 disabled:opacity-25 disabled:cursor-not-allowed"
-        >
-          <div>
-            <p class="text-label text-text-default mb-1">
-              {{ $t('feedback.cta') }}
-            </p>
-            <p class="text-caption text-text-muted">
-              {{ $t('feedback.description') }}
-            </p>
-          </div>
-          <IconChevronRight class="size-6 shrink-0" />
-        </button>
-      </DesignPanel>
-    </slot>
-    <template #content="{ close }">
-      <Transition
-        mode="out-in"
-        enter-active-class="transition ease-out duration-400"
-        enter-from-class="opacity-0 scale-95"
-        leave-active-class="transition ease-out duration-200"
-        leave-to-class="opacity-0 scale-95"
-      >
-        <form
-          v-if="!hasSent"
-          class="flex flex-col grow"
-          @submit.prevent="handleSubmit"
-        >
-          <p class="text-label mx-4 mb-4">
-            {{ $t('feedback.label') }}
-          </p>
-          <DesignTextarea
-            v-model="message"
-            :error="showValidationError || showLengthError"
-            :placeholder="$t('feedback.placeholder')"
-            :maxlength="maxMessageLength"
-          />
-          <Transition
-            enter-active-class="transition ease-out duration-200"
-            enter-from-class="opacity-0 -translate-y-4"
+  <div class="contents">
+    <DesignDrawer v-model:open="open" :title="$t('feedback.title')">
+      <slot>
+        <DesignPanel class="flex flex-col">
+          <button
+            class="flex text-start items-center justify-between gap-4 px-3 py-4 disabled:opacity-25 disabled:cursor-not-allowed"
           >
-            <p
-              v-if="showValidationError"
-              class="text-accent-negative text-label my-2 px-4"
-            >
-              {{ $t('feedback.validationError') }}
-            </p>
-            <p
-              v-else-if="showLengthError"
-              class="text-accent-negative text-label my-2 px-4"
-            >
-              {{ $t('feedback.lengthError', { max: maxMessageLength }) }}
-            </p>
-          </Transition>
-          <Transition
-            enter-active-class="transition ease-out duration-200"
-            enter-from-class="opacity-0 -translate-y-4"
+            <div>
+              <p class="text-label text-text-default mb-1">
+                {{ $t('feedback.cta') }}
+              </p>
+              <p class="text-caption text-text-muted">
+                {{ $t('feedback.description') }}
+              </p>
+            </div>
+            <IconChevronRight class="size-6 shrink-0" />
+          </button>
+        </DesignPanel>
+      </slot>
+      <template #content="{ close }">
+        <Transition
+          mode="out-in"
+          enter-active-class="transition ease-out duration-400"
+          enter-from-class="opacity-0 scale-95"
+          leave-active-class="transition ease-out duration-200"
+          leave-to-class="opacity-0 scale-95"
+        >
+          <form
+            v-if="!hasSent"
+            class="flex flex-col grow"
+            @submit.prevent="handleSubmit"
           >
-            <p
-              v-if="errorMessage"
-              class="text-accent-negative text-label my-2 px-4"
-            >
-              {{ errorMessage }}
+            <p class="text-label mx-4 mb-4">
+              {{ $t('feedback.label') }}
             </p>
-          </Transition>
-          <!-- <div class="px-medium py-6">
-            <UCheckbox
-              v-model="canContactMe"
-              :ui="{
-                label: 'text-label',
-                base: 'size-11 rounded-lg!',
-                container: 'h-auto',
-                root: 'gap-2',
-                indicator: 'bg-accent text-on-accent',
-              }"
-              :label="$t('feedback.canContactMe')"
+            <DesignTextarea
+              v-model="message"
+              :error="showValidationError || showLengthError"
+              :placeholder="$t('feedback.placeholder')"
+              :maxlength="maxMessageLength"
             />
-          </div> -->
-          <p class="px-medium text-caption text-text-muted pt-medium">
-            {{ $t('feedback.disclosure') }}
-          </p>
-          <div class="p-medium grow-0 mt-auto">
-            <DesignButton
-              size="large"
-              class="w-full"
-              type="submit"
-              :disabled="isSubmitting"
+            <Transition
+              enter-active-class="transition ease-out duration-200"
+              enter-from-class="opacity-0 -translate-y-4"
             >
-              {{ $t('feedback.send') }}
+              <p
+                v-if="showValidationError || showLengthError"
+                class="text-accent-negative text-label my-2 px-4"
+              >
+                {{
+                  showValidationError
+                    ? $t('feedback.validationError')
+                    : $t('feedback.lengthError', { max: maxMessageLength })
+                }}
+              </p>
+            </Transition>
+            <Transition
+              enter-active-class="transition ease-out duration-200"
+              enter-from-class="opacity-0 -translate-y-4"
+            >
+              <p
+                v-if="errorMessage"
+                class="text-accent-negative text-label my-2 px-4"
+              >
+                {{ errorMessage }}
+              </p>
+            </Transition>
+            <!-- <div class="px-medium py-6">
+              <UCheckbox
+                v-model="canContactMe"
+                :ui="{
+                  label: 'text-label',
+                  base: 'size-11 rounded-lg!',
+                  container: 'h-auto',
+                  root: 'gap-2',
+                  indicator: 'bg-accent text-on-accent',
+                }"
+                :label="$t('feedback.canContactMe')"
+              />
+            </div> -->
+            <p class="px-medium text-caption text-text-muted pt-medium">
+              {{ $t('feedback.disclosure') }}
+            </p>
+            <div class="p-medium grow-0 mt-auto">
+              <DesignButton
+                size="large"
+                class="w-full"
+                type="submit"
+                :disabled="isSubmitting"
+              >
+                {{ $t('feedback.send') }}
+              </DesignButton>
+            </div>
+          </form>
+          <div
+            v-else
+            class="flex flex-col items-center justify-center grow p-default text-center mb-24"
+          >
+            <IconSupport class="size-12 mb-6" />
+            <p class="text-title mb-2">{{ $t('feedback.thankYou') }}</p>
+            <p class="text-label text-text-muted mb-8">
+              {{ $t('feedback.thankYouDescription') }}
+            </p>
+            <DesignButton class="grow-0" @click="() => closeFeedback(close)">
+              {{ $t('feedback.close') }}
             </DesignButton>
           </div>
-        </form>
-        <div
-          v-else
-          class="flex flex-col items-center justify-center grow p-default text-center mb-24"
-        >
-          <IconSupport class="size-12 mb-6" />
-          <p class="text-title mb-2">{{ $t('feedback.thankYou') }}</p>
-          <p class="text-label text-text-muted mb-8">
-            {{ $t('feedback.thankYouDescription') }}
-          </p>
-          <DesignButton class="grow-0" @click="() => closeFeedback(close)">
-            {{ $t('feedback.close') }}
-          </DesignButton>
-        </div>
-      </Transition>
-    </template>
-  </DesignDrawer>
+        </Transition>
+      </template>
+    </DesignDrawer>
+  </div>
 </template>
