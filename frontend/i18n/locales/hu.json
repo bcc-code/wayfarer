@@ -129,6 +129,12 @@
     "updateAvailableTitle": "Frissítés elérhető",
     "updateAvailableButton": "Frissítsd most"
   },
+  "notifications": {
+    "promptTitle": "Szerezd meg az összes díjadat, kapcsold be az értesítéseket",
+    "promptDescription": "Ezután minden alkalommal értesítést kapsz, amikor új díjat vagy kihívást kapsz.",
+    "turnOn": "Értesítések bekapcsolása",
+    "notNow": "Most nem"
+  },
   "goToHiddenTreasures": "Menj a Biblia tanulmányozására",
   "admin": {
     "common": {
