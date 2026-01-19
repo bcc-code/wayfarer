@@ -370,3 +370,39 @@ func (q *Queries) SetFeedbackHandledAt(ctx context.Context, arg SetFeedbackHandl
 	)
 	return &i, err
 }
+
+const UpdateFeedbackTags = `-- name: UpdateFeedbackTags :one
+UPDATE user_feedback
+SET tags = $1::text[]
+WHERE id = $2::text
+RETURNING id, user_id, message, can_contact_me, user_agent, platform, screen_width, screen_height, app_version, created_at, locale, project_id, timezone, handled_at, context_url, tags
+`
+
+type UpdateFeedbackTagsParams struct {
+	Tags []string `json:"tags"`
+	ID   string   `json:"id"`
+}
+
+func (q *Queries) UpdateFeedbackTags(ctx context.Context, arg UpdateFeedbackTagsParams) (*UserFeedback, error) {
+	row := q.db.QueryRow(ctx, UpdateFeedbackTags, arg.Tags, arg.ID)
+	var i UserFeedback
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Message,
+		&i.CanContactMe,
+		&i.UserAgent,
+		&i.Platform,
+		&i.ScreenWidth,
+		&i.ScreenHeight,
+		&i.AppVersion,
+		&i.CreatedAt,
+		&i.Locale,
+		&i.ProjectID,
+		&i.Timezone,
+		&i.HandledAt,
+		&i.ContextUrl,
+		&i.Tags,
+	)
+	return &i, err
+}

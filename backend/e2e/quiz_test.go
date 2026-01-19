@@ -46,7 +46,7 @@ func TestQuizLifecycle(t *testing.T) {
 	// Helper to create a challenge
 	createChallenge := func(t *testing.T, name string) string {
 		resp := client.WithAuth(adminToken).MustExecute(t, `
-			mutation CreateChallenge($projectId: ID!, $eventId: ID!, $input: CreateChallengeInput!) {
+			mutation CreateChallenge($projectId: ID!, $eventId: ID, $input: CreateChallengeInput!) {
 				createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
 					id
 				}

@@ -1,6 +1,11 @@
 {
   "error": {
-    "title": "Ups! Coś poszło nie tak"
+    "title": "Ups! Coś poszło nie tak",
+    "hint": "Spróbuj ponownie. Jeśli problem nadal występuje, spróbuj odświeżyć stronę.",
+    "networkHint": "Wygląda na to, że masz problemy z połączeniem. Sprawdź połączenie internetowe i spróbuj ponownie.",
+    "retry": "Spróbuj ponownie",
+    "showDetails": "Pokaż szczegóły techniczne",
+    "hideDetails": "Ukryj szczegóły techniczne"
   },
   "emptyStates": {
     "standings": "Nie ma jeszcze żadnej listy rankingowej",
@@ -162,7 +167,8 @@
       "errors": {
         "addFailed": "Nie można dodać administratora",
         "removeFailed": "Nie można usunąć administratora"
-      }
+      },
+      "copyLinkDescription": "Udostępnij link innym administratorom"
     },
     "units": {
       "title": "Unity",

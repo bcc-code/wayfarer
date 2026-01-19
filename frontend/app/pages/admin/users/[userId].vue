@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { RoleType, ScopeType } from '~/api/generated'
+import {
+  ConsentAction,
+  ConsentManagementType,
+  RoleType,
+  ScopeType,
+} from '~/api/generated'
 
 definePageMeta({
   layout: 'admin',
@@ -41,6 +46,7 @@ gql(`
 						key
 						title
 						version
+						managementType
 					}
 				}
 				rejectedConsents {
@@ -101,6 +107,15 @@ gql(`
 	}
 `)
 
+gql(`
+	mutation AdminSetUserConsent($userId: ID!, $consentId: ID!, $action: ConsentAction!) {
+		adminSetUserConsent(userId: $userId, consentId: $consentId, action: $action) {
+			id
+			action
+		}
+	}
+`)
+
 const route = useRoute('admin-users-userId')
 
 const { isAuthReady } = useAuthReady()
@@ -118,6 +133,8 @@ const {
 
 const { executeMutation: assignRole } = useAssignRoleMutation()
 const { executeMutation: revokeRole } = useRevokeRoleMutation()
+const { executeMutation: adminSetUserConsent } =
+  useAdminSetUserConsentMutation()
 const toast = useToast()
 
 // Permissions
@@ -146,6 +163,14 @@ const newRole = reactive({
   scopeType: null as ScopeType | null,
   scopeId: '',
 })
+
+const showRemoveConsentModal = ref(false)
+const consentToRemove = ref<{ id: string; title: string } | null>(null)
+
+function openRemoveConsentModal(consentId: string, consentTitle: string) {
+  consentToRemove.value = { id: consentId, title: consentTitle }
+  showRemoveConsentModal.value = true
+}
 
 function resetNewRoleForm() {
   newRole.role = RoleType.User
@@ -215,6 +240,36 @@ async function handleRevokeRole(
   })
 
   refetch({ requestPolicy: 'network-only' })
+}
+
+async function handleRemoveConsent() {
+  if (!consentToRemove.value) return
+
+  const { id, title } = consentToRemove.value
+  const result = await adminSetUserConsent({
+    userId: route.params.userId,
+    consentId: id,
+    action: ConsentAction.Rejected,
+  })
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke fjerne samtykke',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({
+    title: 'Samtykke fjernet',
+    description: `Fjernet samtykke for "${title}"`,
+    color: 'success',
+  })
+
+  showRemoveConsentModal.value = false
+  consentToRemove.value = null
+  refetch()
 }
 
 // Score journal helpers
@@ -437,21 +492,39 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
                 <div
                   v-for="item in data.user.consentStatus.acceptedConsents"
                   :key="item.id"
-                  class="border-default flex items-center justify-between rounded-md border p-3"
+                  class="border-default flex items-center justify-between gap-4 rounded-md border p-3"
                 >
                   <div class="flex items-center gap-3">
                     <UBadge variant="soft" color="success">Akseptert</UBadge>
                     <div>
                       <span class="font-medium">{{ item.consent.title }}</span>
-                      <span class="text-dimmed ml-2 text-xs"
-                        >v{{ item.consent.version }}</span
-                      >
+                      <span class="text-dimmed ml-2 text-xs">
+                        v{{ item.consent.version }}
+                      </span>
                     </div>
                   </div>
+                  <UButton
+                    v-if="
+                      item.consent.managementType ===
+                      ConsentManagementType.Local
+                    "
+                    color="neutral"
+                    variant="soft"
+                    size="sm"
+                    class="ml-auto"
+                    @click="
+                      openRemoveConsentModal(
+                        item.consent.id,
+                        item.consent.title,
+                      )
+                    "
+                  >
+                    Fjern samtykke
+                  </UButton>
                   <div class="text-right">
-                    <code class="text-dimmed text-xs">{{
-                      item.consent.key
-                    }}</code>
+                    <code class="text-dimmed text-xs">
+                      {{ item.consent.key }}
+                    </code>
                     <div class="text-dimmed text-xs">
                       {{ formatDateTime(item.actionDate) }}
                     </div>
@@ -679,6 +752,44 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             Avbryt
           </UButton>
           <UButton @click="handleAssignRole"> Tildel rolle </UButton>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Remove Consent Confirmation Modal -->
+    <UModal v-model:open="showRemoveConsentModal">
+      <template #header>
+        <h3 class="text-lg font-semibold">Fjern samtykke</h3>
+      </template>
+
+      <template #body>
+        <p>
+          Er du sikker på at du vil fjerne samtykke for
+          <strong>{{ consentToRemove?.title }}</strong
+          >?
+        </p>
+        <p class="text-dimmed mt-2 text-sm">
+          Samtykket vil bli markert som avvist.
+        </p>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-3 w-full">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            @click="
+              () => {
+                showRemoveConsentModal = false
+                consentToRemove = null
+              }
+            "
+          >
+            Avbryt
+          </UButton>
+          <UButton color="error" @click="handleRemoveConsent">
+            Fjern samtykke
+          </UButton>
         </div>
       </template>
     </UModal>

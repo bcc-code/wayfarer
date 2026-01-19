@@ -1641,6 +1641,7 @@ type UserFeedback struct {
 }
 
 type UserFilter struct {
+	Query     *string  `json:"query,omitempty"`
 	ChurchID  *string  `json:"churchId,omitempty"`
 	Gender    *Gender  `json:"gender,omitempty"`
 	MinAge    *int     `json:"minAge,omitempty"`

@@ -126,6 +126,7 @@ const hiddenTreasuresLink = computed(() => {
     >
       <ProjectInfoBanner
         v-if="data.myCurrentProject.infoMessage"
+        key="info-message"
         :project-id="data.myCurrentProject.id"
         :info-message="data.myCurrentProject.infoMessage"
         :info-message-start="data.myCurrentProject.infoMessageStart"
@@ -133,6 +134,7 @@ const hiddenTreasuresLink = computed(() => {
       />
       <ProfileProjectCard
         v-if="data.myCurrentProject"
+        key="current-project"
         :project-name="data.myCurrentProject.name"
         :banner="data.myCurrentProject.branding.banner"
         :score="data.myCurrentProject.leaderboard.me?.score"
@@ -157,6 +159,7 @@ const hiddenTreasuresLink = computed(() => {
         </div>
       </ProfileProjectCard>
       <UserFeedback
+        key="user-feedback"
         :project-id="data.myCurrentProject?.id"
         class="mt-default"
       />

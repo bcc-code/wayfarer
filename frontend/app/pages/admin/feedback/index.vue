@@ -45,13 +45,21 @@ gql(`
   }
 `)
 
+gql(`
+  mutation UpdateFeedbackTags($feedbackId: ID!, $tags: [String!]!) {
+    updateFeedbackTags(feedbackId: $feedbackId, tags: $tags) {
+      id
+      tags
+    }
+  }
+`)
+
 const pagination = usePagination({
   defaultPageSize: 15,
 })
 
 // Tag filter
 const selectedTags = ref<string[]>([])
-const availableTags = ['admin'] // Predefined tags that can be filtered
 
 const filter = computed(() => ({
   tags: selectedTags.value.length > 0 ? selectedTags.value : undefined,
@@ -83,6 +91,13 @@ watch(
 const feedbacks = computed(() =>
   data.value?.feedback.edges.map((edge) => edge.node),
 )
+
+// Collect all unique tags from current feedbacks for filter suggestions
+const allUniqueTags = computed(() => {
+  const tags = new Set<string>()
+  feedbacks.value?.forEach((f) => f.tags.forEach((t) => tags.add(t)))
+  return Array.from(tags).sort()
+})
 
 type FeedbackNode = NonNullable<typeof feedbacks.value>[number]
 
@@ -182,6 +197,24 @@ async function handleMarkHandled(id: string) {
 }
 
 const { canDeleteFeedback, canForwardFeedback } = usePermissions()
+
+// Update tags functionality
+const { executeMutation: updateFeedbackTags } = useUpdateFeedbackTagsMutation()
+
+async function handleUpdateTags(feedbackId: string, tags: string[]) {
+  const result = await updateFeedbackTags({
+    feedbackId,
+    tags,
+  })
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke oppdatere tags',
+      description: result.error.message,
+      color: 'error',
+    })
+  }
+}
 </script>
 
 <template>
@@ -193,9 +226,9 @@ const { canDeleteFeedback, canForwardFeedback } = usePermissions()
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2">
-          <span class="text-sm text-dimmed">Filtrer:</span>
+          <span class="text-dimmed text-sm">Filtrer:</span>
           <UButton
-            v-for="tag in availableTags"
+            v-for="tag in allUniqueTags"
             :key="tag"
             :variant="selectedTags.includes(tag) ? 'solid' : 'outline'"
             size="sm"
@@ -219,32 +252,30 @@ const { canDeleteFeedback, canForwardFeedback } = usePermissions()
       </div>
       <UTable :data="feedbacks" :loading="fetching" :columns>
         <template #user-cell="{ row }">
-          <div class="flex flex-col">
-            <NuxtLink
-              :to="{
-                name: 'admin-users-userId',
-                params: { userId: row.original.user.id },
-              }"
-              class="hover:underline"
-            >
+          <NuxtLink
+            :to="{
+              name: 'admin-users-userId',
+              params: { userId: row.original.user.id },
+            }"
+            class="flex flex-col group"
+          >
+            <span class="group-hover:underline">
               {{ row.original.user.name }}
-            </NuxtLink>
-            <span class="text-dimmed text-xs">{{
-              row.original.user.email
-            }}</span>
-          </div>
+            </span>
+            <span class="text-dimmed text-xs">
+              {{ row.original.user.email }}
+            </span>
+          </NuxtLink>
         </template>
         <template #tags-cell="{ row }">
-          <div class="flex flex-wrap gap-1">
-            <UBadge
-              v-for="tag in row.original.tags"
-              :key="tag"
-              variant="subtle"
-              size="sm"
-              :label="tag"
-            />
-            <span v-if="row.original.tags.length === 0" class="text-dimmed text-sm">-</span>
-          </div>
+          <UInputTags
+            :model-value="row.original.tags"
+            placeholder="Legg til..."
+            size="xs"
+            color="neutral"
+            class="w-full"
+            @update:model-value="handleUpdateTags(row.original.id, $event)"
+          />
         </template>
         <template #message-cell="{ row }">
           <div class="max-w-lg">

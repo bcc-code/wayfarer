@@ -409,7 +409,7 @@ type ComplexityRoot struct {
 		BulkUnenrollUsersFromChallenge              func(childComplexity int, target model.EnrollmentTargetInput, challengeID string) int
 		ClearAllCache                               func(childComplexity int) int
 		CompleteChallenge                           func(childComplexity int, userID string, challengeID string, completedAt *scalars.DateTime) int
-		CreateChallenge                             func(childComplexity int, projectID string, eventID string, input model.CreateChallengeInput) int
+		CreateChallenge                             func(childComplexity int, projectID string, eventID *string, input model.CreateChallengeInput) int
 		CreateConsent                               func(childComplexity int, key string, title string, shortText *string, body string, url *string, publishedAt *scalars.DateTime, isRemote *bool, managedBy *string) int
 		CreateContentAchievement                    func(childComplexity int, input model.CreateContentAchievementInput) int
 		CreateContentAchievementFromExternalContent func(childComplexity int, input model.CreateContentAchievementFromExternalContentInput) int
@@ -484,6 +484,7 @@ type ComplexityRoot struct {
 		UpdateConsent                               func(childComplexity int, id string, title *string, shortText *string, body *string, url *string, publishedAt *scalars.DateTime, managedBy *string) int
 		UpdateContentAchievement                    func(childComplexity int, id string, input model.UpdateContentAchievementInput) int
 		UpdateEvent                                 func(childComplexity int, id string, input model.UpdateEventInput) int
+		UpdateFeedbackTags                          func(childComplexity int, feedbackID string, tags []string) int
 		UpdateProject                               func(childComplexity int, id string, input model.UpdateProjectInput) int
 		UpdateQuiz                                  func(childComplexity int, id string, input model.UpdateQuizInput) int
 		UpdateQuizQuestion                          func(childComplexity int, id string, input model.UpdateQuizQuestionInput) int
@@ -1123,7 +1124,7 @@ type MutationResolver interface {
 	MarkContentItemCompleted(ctx context.Context, userID string, externalContentID string) ([]model.ContentAchievement, error)
 	UnmarkContentItemCompleted(ctx context.Context, userID string, externalContentID string) ([]model.ContentAchievement, error)
 	RecordStreakActivity(ctx context.Context, userID string, achievementID string, currentStreak int) (*model.StreakAchievement, error)
-	CreateChallenge(ctx context.Context, projectID string, eventID string, input model.CreateChallengeInput) (model.Challenge, error)
+	CreateChallenge(ctx context.Context, projectID string, eventID *string, input model.CreateChallengeInput) (model.Challenge, error)
 	UpdateChallenge(ctx context.Context, id string, input model.UpdateChallengeInput) (model.Challenge, error)
 	DeleteChallenge(ctx context.Context, id string) (bool, error)
 	PublishChallenge(ctx context.Context, id string, publishedAt scalars.DateTime) (model.Challenge, error)
@@ -1181,6 +1182,7 @@ type MutationResolver interface {
 	DeleteFeedback(ctx context.Context, id string) (bool, error)
 	ForwardFeedbackToDesk(ctx context.Context, feedbackID string) (bool, error)
 	MarkFeedbackHandled(ctx context.Context, feedbackID string) (*model.UserFeedback, error)
+	UpdateFeedbackTags(ctx context.Context, feedbackID string, tags []string) (*model.UserFeedback, error)
 	CreateWebhook(ctx context.Context, input model.CreateWebhookInput) (*model.Webhook, error)
 	UpdateWebhook(ctx context.Context, id string, input model.UpdateWebhookInput) (*model.Webhook, error)
 	DeleteWebhook(ctx context.Context, id string) (bool, error)
@@ -2852,7 +2854,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateChallenge(childComplexity, args["projectId"].(string), args["eventId"].(string), args["input"].(model.CreateChallengeInput)), true
+		return e.complexity.Mutation.CreateChallenge(childComplexity, args["projectId"].(string), args["eventId"].(*string), args["input"].(model.CreateChallengeInput)), true
 	case "Mutation.createConsent":
 		if e.complexity.Mutation.CreateConsent == nil {
 			break
@@ -3662,6 +3664,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateEvent(childComplexity, args["id"].(string), args["input"].(model.UpdateEventInput)), true
+	case "Mutation.updateFeedbackTags":
+		if e.complexity.Mutation.UpdateFeedbackTags == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateFeedbackTags_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateFeedbackTags(childComplexity, args["feedbackId"].(string), args["tags"].([]string)), true
 	case "Mutation.updateProject":
 		if e.complexity.Mutation.UpdateProject == nil {
 			break
@@ -7504,6 +7517,7 @@ input UpdateStreakInput {
 
 # Query Filter Inputs
 input UserFilter {
+    query: String
     churchId: ID
     gender: Gender
     minAge: Int
@@ -7951,7 +7965,7 @@ extend type Query {
 
 extend type Mutation {
     # Admin management - Create and update (type determined by input.type for create, existing type for update)
-    createChallenge(projectId: ID!, eventId: ID!, input: CreateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
+    createChallenge(projectId: ID!, eventId: ID, input: CreateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     updateChallenge(id: ID!, input: UpdateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
 
     # Admin management - Common operations
@@ -8476,6 +8490,7 @@ extend type Mutation {
     deleteFeedback(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
     forwardFeedbackToDesk(feedbackId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
     markFeedbackHandled(feedbackId: ID!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
+    updateFeedbackTags(feedbackId: ID!, tags: [String!]!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/webhooks.graphqls", Input: `# ==================== Webhook Types ====================
@@ -8953,7 +8968,7 @@ func (ec *executionContext) field_Mutation_createChallenge_args(ctx context.Cont
 		return nil, err
 	}
 	args["projectId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "eventId", ec.unmarshalNID2string)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "eventId", ec.unmarshalOID2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
@@ -10001,6 +10016,22 @@ func (ec *executionContext) field_Mutation_updateEvent_args(ctx context.Context,
 		return nil, err
 	}
 	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateFeedbackTags_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "feedbackId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["feedbackId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "tags", ec.unmarshalNString2ᚕstringᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["tags"] = arg1
 	return args, nil
 }
 
@@ -20408,7 +20439,7 @@ func (ec *executionContext) _Mutation_createChallenge(ctx context.Context, field
 		ec.fieldContext_Mutation_createChallenge,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().CreateChallenge(ctx, fc.Args["projectId"].(string), fc.Args["eventId"].(string), fc.Args["input"].(model.CreateChallengeInput))
+			return ec.resolvers.Mutation().CreateChallenge(ctx, fc.Args["projectId"].(string), fc.Args["eventId"].(*string), fc.Args["input"].(model.CreateChallengeInput))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -24294,6 +24325,101 @@ func (ec *executionContext) fieldContext_Mutation_markFeedbackHandled(ctx contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_markFeedbackHandled_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateFeedbackTags(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateFeedbackTags,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateFeedbackTags(ctx, fc.Args["feedbackId"].(string), fc.Args["tags"].([]string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.UserFeedback
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.UserFeedback
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNUserFeedback2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserFeedback,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateFeedbackTags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserFeedback_id(ctx, field)
+			case "userId":
+				return ec.fieldContext_UserFeedback_userId(ctx, field)
+			case "user":
+				return ec.fieldContext_UserFeedback_user(ctx, field)
+			case "message":
+				return ec.fieldContext_UserFeedback_message(ctx, field)
+			case "canContactMe":
+				return ec.fieldContext_UserFeedback_canContactMe(ctx, field)
+			case "userAgent":
+				return ec.fieldContext_UserFeedback_userAgent(ctx, field)
+			case "platform":
+				return ec.fieldContext_UserFeedback_platform(ctx, field)
+			case "screenWidth":
+				return ec.fieldContext_UserFeedback_screenWidth(ctx, field)
+			case "screenHeight":
+				return ec.fieldContext_UserFeedback_screenHeight(ctx, field)
+			case "appVersion":
+				return ec.fieldContext_UserFeedback_appVersion(ctx, field)
+			case "locale":
+				return ec.fieldContext_UserFeedback_locale(ctx, field)
+			case "projectId":
+				return ec.fieldContext_UserFeedback_projectId(ctx, field)
+			case "timezone":
+				return ec.fieldContext_UserFeedback_timezone(ctx, field)
+			case "contextUrl":
+				return ec.fieldContext_UserFeedback_contextUrl(ctx, field)
+			case "tags":
+				return ec.fieldContext_UserFeedback_tags(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_UserFeedback_createdAt(ctx, field)
+			case "handledAt":
+				return ec.fieldContext_UserFeedback_handledAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserFeedback", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateFeedbackTags_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -44718,13 +44844,20 @@ func (ec *executionContext) unmarshalInputUserFilter(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"churchId", "gender", "minAge", "maxAge", "projectId", "eventId", "teamId", "ids"}
+	fieldsInOrder := [...]string{"query", "churchId", "gender", "minAge", "maxAge", "projectId", "eventId", "teamId", "ids"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "query":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("query"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Query = data
 		case "churchId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("churchId"))
 			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
@@ -48648,6 +48781,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "markFeedbackHandled":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_markFeedbackHandled(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateFeedbackTags":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateFeedbackTags(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

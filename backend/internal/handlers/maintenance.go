@@ -9,6 +9,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/members"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -16,9 +17,10 @@ import (
 
 // MaintenanceHandler handles maintenance tasks like syncing user data
 type MaintenanceHandler struct {
-	DB            *database.DB
-	MembersClient *members.Client
-	AuthHandler   *AuthHandler
+	DB                        *database.DB
+	MembersClient             *members.Client
+	AuthHandler               *AuthHandler
+	ContentAchievementService *services.ContentAchievementService
 }
 
 // SyncUserDataResponse contains the results of a user data sync operation
@@ -233,6 +235,7 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 	}
 
 	// Always update person_uuid from member data
+	onboardingProcessed := false
 	if member.Uid != uuid.Nil {
 		err = h.DB.Queries.UpdateUserPersonUUID(ctx, sqlc.UpdateUserPersonUUIDParams{
 			ID:         userID,
@@ -241,19 +244,34 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 		if err != nil {
 			slog.Warn("maintenance: failed to update person_uuid", "user_id", userID, "error", err)
 		}
+
+		// Process onboarding events (pending consent and content events)
+		personUUIDStr := member.Uid.String()
+		personUUID := pgtype.UUID{Bytes: member.Uid, Valid: true}
+
+		h.AuthHandler.ProcessPendingConsentEvents(ctx, userID, personUUIDStr)
+
+		if h.ContentAchievementService != nil {
+			h.ContentAchievementService.ProcessPendingContentEvents(ctx, userID, personUUID)
+		}
+
+		onboardingProcessed = true
+		slog.Info("maintenance: processed onboarding events", "user_id", userID, "person_uuid", personUUIDStr)
 	}
 
 	slog.Info("maintenance: updated user data",
 		"user_id", userID,
 		"new_gender", newGender,
 		"new_church_id", newChurchID,
+		"onboarding_processed", onboardingProcessed,
 	)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":       "user updated",
-		"user_id":       userID,
-		"new_gender":    newGender,
-		"new_church_id": newChurchID,
+		"message":              "user updated",
+		"user_id":              userID,
+		"new_gender":           newGender,
+		"new_church_id":        newChurchID,
+		"onboarding_processed": onboardingProcessed,
 	})
 }
 

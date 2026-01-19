@@ -105,15 +105,6 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
 }
 
 async function handleSubmit(formData: ChallengeFormData) {
-  if (!eventId.value) {
-    toast.add({
-      title: 'Feil',
-      description: 'Vennligst velg et arrangement',
-      color: 'error',
-    })
-    return
-  }
-
   const { type, allowSelfCompletion, url, quiz, ...rest } = formData
 
   // Only include type-specific fields
@@ -126,7 +117,7 @@ async function handleSubmit(formData: ChallengeFormData) {
 
   const response = await executeMutation({
     projectId: route.params.projectId,
-    eventId: eventId.value,
+    eventId: eventId.value || undefined,
     input,
   })
 
@@ -202,11 +193,11 @@ async function handleSubmit(formData: ChallengeFormData) {
         @submit="handleSubmit"
       >
         <template #before-type>
-          <UFormField name="eventId" label="Arrangement">
+          <UFormField name="eventId" label="Arrangement (valgfritt)">
             <USelect
               v-model="eventId"
               :items="eventOptions"
-              required
+              placeholder="Ingen (prosjekt-nivå)"
               class="w-full"
             />
           </UFormField>

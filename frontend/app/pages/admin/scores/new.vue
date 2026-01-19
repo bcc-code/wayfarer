@@ -18,15 +18,6 @@ gql(`
         }
       }
     }
-    users(first: 100) {
-      edges {
-        node {
-          id
-          name
-          email
-        }
-      }
-    }
   }
 `)
 
@@ -49,14 +40,10 @@ const projects = computed(
   () => data.value?.projects.edges.map((edge) => edge.node) ?? [],
 )
 
-const users = computed(
-  () => data.value?.users.edges.map((edge) => edge.node) ?? [],
-)
-
 const schema = z.object({
-  projectId: z.string().min(1, 'Project is required'),
-  userId: z.string().min(1, 'User is required'),
-  points: z.number().int('Points must be a whole number'),
+  projectId: z.string().min(1, 'Prosjekt er påkrevd'),
+  userId: z.string().min(1, 'Bruker ID er påkrevd'),
+  points: z.number().int('Poengjustering må være heltall'),
   reason: z.string().optional(),
 })
 
@@ -125,24 +112,16 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
             <UFormField name="projectId" label="Prosjekt" required>
               <USelect
                 v-model="state.projectId"
-                :items="
-                  projects.map((p) => ({ label: p.name, value: p.id }))
-                "
+                :items="projects.map((p) => ({ label: p.name, value: p.id }))"
                 placeholder="Velg et prosjekt"
                 class="w-full"
               />
             </UFormField>
 
-            <UFormField name="userId" label="Bruker" required>
-              <USelect
+            <UFormField name="userId" label="Bruker ID" required>
+              <UInput
                 v-model="state.userId"
-                :items="
-                  users.map((u) => ({
-                    label: `${u.name} (${u.email})`,
-                    value: u.id,
-                  }))
-                "
-                placeholder="Velg en bruker"
+                placeholder="Skriv bruker ID her..."
                 class="w-full"
               />
             </UFormField>

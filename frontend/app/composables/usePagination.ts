@@ -3,6 +3,7 @@ import {
   buildNextPageVariables,
   buildPreviousPageVariables,
   buildFirstPageVariables,
+  buildLastPageVariables,
   isFirstPage as isFirstPagePure,
   isLastPage as isLastPagePure,
   validatePageSize,
@@ -29,6 +30,8 @@ export interface UsePaginationOptions {
   defaultPageSize?: number
   /** Initial cursor to start from */
   initialCursor?: string | null
+  /** Pagination direction: 'forward' (oldest first) or 'backward' (newest first) */
+  direction?: 'forward' | 'backward'
 }
 
 export interface UsePaginationReturn {
@@ -84,26 +87,38 @@ export interface UsePaginationReturn {
 export function usePagination(
   options: UsePaginationOptions = {},
 ): UsePaginationReturn {
-  const { defaultPageSize = 20, initialCursor = null } = options
+  const { defaultPageSize = 20, initialCursor = null, direction = 'forward' } = options
+  const isBackward = direction === 'backward'
+
+  // Build initial variables based on direction
+  const buildInitialVariables = (size: number) =>
+    isBackward
+      ? buildLastPageVariables(size, initialCursor)
+      : buildFirstPageVariables(size, initialCursor)
 
   // Reactive state
   const pageSize = ref(defaultPageSize)
   const pageInfo = ref<PaginationPageInfo | null>(null)
   const totalCount = ref<number | null>(null)
-  const variables = ref<PaginationVariables>({
-    first: defaultPageSize,
-    after: initialCursor,
-  })
+  const variables = ref<PaginationVariables>(buildInitialVariables(defaultPageSize))
 
   // Computed properties
-  const isFirstPage = computed(() => isFirstPagePure(pageInfo.value))
-  const isLastPage = computed(() => isLastPagePure(pageInfo.value))
+  // For backward pagination, "first page" is the last page of data (newest items)
+  const isFirstPage = computed(() =>
+    isBackward ? isLastPagePure(pageInfo.value) : isFirstPagePure(pageInfo.value),
+  )
+  const isLastPage = computed(() =>
+    isBackward ? isFirstPagePure(pageInfo.value) : isLastPagePure(pageInfo.value),
+  )
 
   // Methods
+  // For backward pagination, "next" means older items, "previous" means newer items
   function nextPage() {
     if (!pageInfo.value) return
 
-    const nextVars = buildNextPageVariables(pageInfo.value, pageSize.value)
+    const nextVars = isBackward
+      ? buildPreviousPageVariables(pageInfo.value, pageSize.value)
+      : buildNextPageVariables(pageInfo.value, pageSize.value)
     if (nextVars) {
       variables.value = nextVars
     }
@@ -112,14 +127,16 @@ export function usePagination(
   function previousPage() {
     if (!pageInfo.value) return
 
-    const prevVars = buildPreviousPageVariables(pageInfo.value, pageSize.value)
+    const prevVars = isBackward
+      ? buildNextPageVariables(pageInfo.value, pageSize.value)
+      : buildPreviousPageVariables(pageInfo.value, pageSize.value)
     if (prevVars) {
       variables.value = prevVars
     }
   }
 
   function firstPage() {
-    variables.value = buildFirstPageVariables(pageSize.value, initialCursor)
+    variables.value = buildInitialVariables(pageSize.value)
     pageInfo.value = null
     totalCount.value = null
   }
@@ -138,7 +155,7 @@ export function usePagination(
   function reset() {
     pageInfo.value = null
     totalCount.value = null
-    variables.value = buildFirstPageVariables(pageSize.value, initialCursor)
+    variables.value = buildInitialVariables(pageSize.value)
   }
 
   function setPageSize(size: number) {

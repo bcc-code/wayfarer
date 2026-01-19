@@ -21,7 +21,7 @@ extend type Query {
 
 extend type Mutation {
     # Admin management - Create and update (type determined by input.type for create, existing type for update)
-    createChallenge(projectId: ID!, eventId: ID!, input: CreateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
+    createChallenge(projectId: ID!, eventId: ID, input: CreateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
     updateChallenge(id: ID!, input: UpdateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
 
     # Admin management - Common operations

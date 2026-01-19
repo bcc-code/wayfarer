@@ -68,7 +68,7 @@ INSERT INTO challenges (
 VALUES (
     @id::text,
     @projectid::text,
-    @eventid::text,
+    sqlc.narg('eventid')::text,
     @challengetype::text,
     @name::text,
     @description::text,

@@ -219,6 +219,19 @@ func (r *mutationResolver) MarkFeedbackHandled(ctx context.Context, feedbackID s
 	return feedbackRowToModel(feedback), nil
 }
 
+// UpdateFeedbackTags is the resolver for the updateFeedbackTags field.
+func (r *mutationResolver) UpdateFeedbackTags(ctx context.Context, feedbackID string, tags []string) (*model.UserFeedback, error) {
+	feedback, err := r.DB.Queries.UpdateFeedbackTags(ctx, sqlc.UpdateFeedbackTagsParams{
+		ID:   feedbackID,
+		Tags: tags,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update feedback tags: %w", err)
+	}
+
+	return feedbackRowToModel(feedback), nil
+}
+
 // Feedback is the resolver for the feedback field.
 func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilter, first *int, after *string, last *int, before *string) (*model.FeedbackConnection, error) {
 	// Default page size

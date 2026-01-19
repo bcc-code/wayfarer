@@ -1,6 +1,11 @@
 {
   "error": {
-    "title": "Hoppá! Valami baj történt"
+    "title": "Hoppá! Valami baj történt",
+    "hint": "Kérjük, próbálkozz újra. Ha a probléma továbbra is fennáll, próbáld meg frissíteni az oldalt.",
+    "networkHint": "Úgy tűnik, hogy kapcsolódási problémák merültek fel. Ellenőrizd az internetkapcsolatát, és próbáld meg újra.",
+    "retry": "Próbáld újra",
+    "showDetails": "Műszaki részletek megjelenítése",
+    "hideDetails": "Műszaki részletek megjelenítése"
   },
   "emptyStates": {
     "standings": "Még nincs top lista",
