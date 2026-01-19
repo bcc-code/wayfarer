@@ -2,11 +2,9 @@ package api
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // buildQuizFilterParamsCursor converts GraphQL filter and cursor pagination params to database query parameters
@@ -25,20 +23,6 @@ func buildQuizFilterParamsCursor(filter *model.QuizFilter, first *int, after *st
 
 		if filter.ChallengeID != nil {
 			params.Challengeid = *filter.ChallengeID
-		}
-
-		if filter.PublishedAfter != nil {
-			params.Publishedafter = pgtype.Timestamptz{
-				Time:  filter.PublishedAfter.Time,
-				Valid: true,
-			}
-		}
-
-		if filter.PublishedBefore != nil {
-			params.Publishedbefore = pgtype.Timestamptz{
-				Time:  filter.PublishedBefore.Time,
-				Valid: true,
-			}
 		}
 	}
 
@@ -93,20 +77,6 @@ func buildCountQuizzesFilterParams(filter *model.QuizFilter) sqlc.CountQuizzesFi
 		if filter.ChallengeID != nil {
 			params.Challengeid = *filter.ChallengeID
 		}
-
-		if filter.PublishedAfter != nil {
-			params.Publishedafter = pgtype.Timestamptz{
-				Time:  filter.PublishedAfter.Time,
-				Valid: true,
-			}
-		}
-
-		if filter.PublishedBefore != nil {
-			params.Publishedbefore = pgtype.Timestamptz{
-				Time:  filter.PublishedBefore.Time,
-				Valid: true,
-			}
-		}
 	}
 
 	return params
@@ -126,12 +96,6 @@ func buildQuizCacheKeyParams(filter *model.QuizFilter, first *int, after *string
 		}
 		if filter.ChallengeID != nil {
 			params["challengeid"] = *filter.ChallengeID
-		}
-		if filter.PublishedAfter != nil {
-			params["publishedafter"] = filter.PublishedAfter.Format(time.RFC3339)
-		}
-		if filter.PublishedBefore != nil {
-			params["publishedbefore"] = filter.PublishedBefore.Format(time.RFC3339)
 		}
 	}
 

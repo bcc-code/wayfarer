@@ -19,7 +19,6 @@ body:
         revealCorrectAnswers
         allowRetakes
         completionPoints
-        publishedAt
         endTime
       }
     }

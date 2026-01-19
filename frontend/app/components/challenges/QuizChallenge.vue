@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { QuizChallengeData, QuestionResult } from './quiz/types'
-import type { FinalizeQuizMutation, StartQuizMutation } from '~/api/generated'
+import type { FinalizeQuizMutation, StartQuizSessionMutation } from '~/api/generated'
 
 const props = defineProps<{
   challenge: QuizChallengeData
@@ -12,20 +12,20 @@ const emit = defineEmits<{
 }>()
 
 const { track } = useAnalytics()
-const { executeMutation: startQuiz } = useStartQuizMutation()
+const { executeMutation: startQuizSession } = useStartQuizSessionMutation()
 const { executeMutation: finalizeQuiz } = useFinalizeQuizMutation()
 
 const currentQuestionIndex = ref(0)
 const questionResults = ref<QuestionResult[]>([])
 const quizCompleted = ref(false)
 const finalResult = ref<FinalizeQuizMutation['finalizeQuiz'] | null>(null)
-const startedSubmission = ref<StartQuizMutation['startQuiz'] | null>(null)
+const startedSubmission = ref<StartQuizSessionMutation['startQuizSession'] | null>(null)
 
-// Start with loading true if we need to start a quiz (no active submission and can start)
+// Start with loading true if we need to start a quiz (no active submission and have session)
 const needsToStartQuiz = computed(() => {
   return (
     !props.challenge.quiz.userActiveSubmission?.id &&
-    props.challenge.quiz.userCanStart
+    props.challenge.quiz.userActiveSession?.id != null
   )
 })
 const isLoading = ref(needsToStartQuiz.value)
@@ -53,8 +53,10 @@ const canStartQuiz = computed(() => {
   return props.challenge.quiz.userCanStart
 })
 
-// Check if quiz is unavailable (can't start and no submissions to show)
+// Check if quiz is unavailable (no active session, or can't start and no submissions to show)
 const isQuizUnavailable = computed(() => {
+  // No active session means quiz is unavailable
+  if (!props.challenge.quiz.userActiveSession?.id) return true
   if (props.challenge.quiz.userCanStart) return false
   if (completedSubmission.value) return false
   if (activeSubmission.value) return false
@@ -68,13 +70,13 @@ onMounted(async () => {
     challenge_type: 'quiz',
   })
 
-  // If there's no active submission and we can start, start the quiz
-  if (needsToStartQuiz.value) {
-    const result = await startQuiz({
-      quizId: props.challenge.quiz.id,
+  // If there's no active submission and we have a session, start the quiz
+  if (needsToStartQuiz.value && props.challenge.quiz.userActiveSession?.id) {
+    const result = await startQuizSession({
+      sessionId: props.challenge.quiz.userActiveSession.id,
     })
-    if (result.data?.startQuiz) {
-      startedSubmission.value = result.data.startQuiz
+    if (result.data?.startQuizSession) {
+      startedSubmission.value = result.data.startQuizSession
     }
     isLoading.value = false
     emit('start')

@@ -14,6 +14,7 @@ schema:
   - ../gql/scoring.graphqls
   - ../gql/consents.graphqls
   - ../gql/quizzes.graphqls
+  - ../gql/quiz_sessions.graphqls
   - ../gql/external_content.graphqls
   - ../gql/admin.graphqls
   - ../gql/push_notifications.graphqls
@@ -361,9 +362,29 @@ models:
       IsCorrectValue:
         type: bool
 
+  QuizSession:
+    fields:
+      quiz:
+        resolver: true
+      createdBy:
+        resolver: true
+      accessCount:
+        resolver: true
+      userHasAccess:
+        resolver: true
+      userSubmission:
+        resolver: true
+    extraFields:
+      QuizID:
+        type: string
+      CreatedByID:
+        type: string
+
   QuizSubmission:
     fields:
       quiz:
+        resolver: true
+      session:
         resolver: true
       user:
         resolver: true
@@ -380,6 +401,8 @@ models:
         type: string
       UserID:
         type: string
+      SessionID:
+        type: "*string"
 
   # QuizResponse implementations
   PredefinedResponse:

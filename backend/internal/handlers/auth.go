@@ -660,13 +660,21 @@ func normalizeGender(gender string) string {
 	return "UNKNOWN"
 }
 
-// getActiveChurchAffiliationOrgUIDs returns all OrgUids of active affiliations.
-// Active is determined by time: ValidFrom < now AND (ValidTo > now OR ValidTo == nil)
-// Returns empty slice if no active affiliation is found.
+// getActiveChurchAffiliationOrgUIDs returns all OrgUids of active Church affiliations.
+// Active is determined by: Active=true AND Type="Church" AND ValidFrom < now AND (ValidTo > now OR ValidTo == nil)
+// Returns empty slice if no active Church affiliation is found.
 func getActiveChurchAffiliationOrgUIDs(affiliations []members.Affiliation) []uuid.UUID {
 	now := time.Now()
 	var result []uuid.UUID
 	for _, aff := range affiliations {
+		// Skip if not active
+		if !aff.Active {
+			continue
+		}
+		// Skip if not a Church affiliation
+		if aff.Type != "Church" {
+			continue
+		}
 		// Skip if not yet valid
 		if aff.ValidFrom != nil && now.Before(*aff.ValidFrom) {
 			continue

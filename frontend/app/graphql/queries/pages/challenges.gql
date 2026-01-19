@@ -22,6 +22,9 @@ query ChallengesPage {
       ... on QuizChallenge {
         quiz {
           userCanStart
+          userActiveSession {
+            id
+          }
         }
       }
     }

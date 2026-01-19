@@ -391,7 +391,6 @@ type Quiz struct {
 	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
 	AllowRetakes         bool               `json:"allow_retakes"`
 	CompletionPoints     int32              `json:"completion_points"`
-	PublishedAt          pgtype.Timestamptz `json:"published_at"`
 	EndTime              pgtype.Timestamptz `json:"end_time"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
@@ -460,6 +459,29 @@ type QuizResponse struct {
 	PointsEarned      *int32             `json:"points_earned"`
 }
 
+type QuizSession struct {
+	ID        string             `json:"id"`
+	QuizID    string             `json:"quiz_id"`
+	Name      *string            `json:"name"`
+	State     string             `json:"state"`
+	OpenAt    pgtype.Timestamptz `json:"open_at"`
+	LockAt    pgtype.Timestamptz `json:"lock_at"`
+	FinishAt  pgtype.Timestamptz `json:"finish_at"`
+	CreatedBy string             `json:"created_by"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type QuizSessionAccess struct {
+	ID         string             `json:"id"`
+	SessionID  string             `json:"session_id"`
+	UserID     string             `json:"user_id"`
+	GrantedBy  string             `json:"granted_by"`
+	GrantedAt  pgtype.Timestamptz `json:"granted_at"`
+	SourceType string             `json:"source_type"`
+	SourceID   *string            `json:"source_id"`
+}
+
 type QuizSubmission struct {
 	ID            string             `json:"id"`
 	QuizID        string             `json:"quiz_id"`
@@ -472,6 +494,8 @@ type QuizSubmission struct {
 	MaxScore      *int32             `json:"max_score"`
 	PointsAwarded *int32             `json:"points_awarded"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	SessionID     *string            `json:"session_id"`
+	AutoSubmitted bool               `json:"auto_submitted"`
 }
 
 type QuizTranslation struct {

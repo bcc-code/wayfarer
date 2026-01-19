@@ -42,6 +42,8 @@ const (
 	PrefixUserFeedback        = "FB" // User Feedback
 	PrefixWebhook             = "WH" // Webhooks
 	PrefixWebhookLog          = "WL" // Webhook Logs
+	PrefixQuizSession         = "QN" // Quiz Sessions (QS taken by submissions)
+	PrefixQuizSessionAccess   = "QX" // Quiz Session Access
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -404,4 +406,24 @@ func IsWebhookID(id string) bool {
 // IsWebhookLogID validates a webhook log ID
 func IsWebhookLogID(id string) bool {
 	return IsValidID(id, PrefixWebhookLog)
+}
+
+// NewQuizSessionID generates a new ID for a quiz session (QN prefix)
+func NewQuizSessionID() string {
+	return newID(PrefixQuizSession)
+}
+
+// NewQuizSessionAccessID generates a new ID for a quiz session access entry (QX prefix)
+func NewQuizSessionAccessID() string {
+	return newID(PrefixQuizSessionAccess)
+}
+
+// IsQuizSessionID validates a quiz session ID
+func IsQuizSessionID(id string) bool {
+	return IsValidID(id, PrefixQuizSession)
+}
+
+// IsQuizSessionAccessID validates a quiz session access ID
+func IsQuizSessionAccessID(id string) bool {
+	return IsValidID(id, PrefixQuizSessionAccess)
 }

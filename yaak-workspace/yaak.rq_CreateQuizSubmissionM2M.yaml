@@ -34,14 +34,30 @@ body:
         }
         responses {
           id
+          answeredAt
+          timeSpentSeconds
           question {
             id
             questionText
           }
-          selectedAnswerIds
-          textResponse
-          numberResponse
-          isCorrect
+          ... on PredefinedResponse {
+            selectedAnswerIds
+            selectedAnswers {
+              id
+              answerText
+              isCorrect
+            }
+            isCorrect
+            pointsEarned
+          }
+          ... on FreeTextResponse {
+            textResponse
+            pointsEarned
+          }
+          ... on NumberResponse {
+            numberResponse
+            pointsEarned
+          }
         }
       }
     }

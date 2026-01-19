@@ -20,7 +20,6 @@ body:
         revealCorrectAnswers
         allowRetakes
         completionPoints
-        publishedAt
         endTime
         userCanStart
         userActiveSubmission {

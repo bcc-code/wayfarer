@@ -408,7 +408,6 @@ export type CreateQuizInput = {
   image?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   projectId: Scalars['ID']['input'];
-  publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   randomizeQuestions: Scalars['Boolean']['input'];
   revealCorrectAnswers: Scalars['Boolean']['input'];
   timeoutSeconds?: InputMaybe<Scalars['Int']['input']>;
@@ -425,6 +424,14 @@ export type CreateQuizQuestionInput = {
   questionType: QuizQuestionType;
   stepValue?: InputMaybe<Scalars['Float']['input']>;
   timeoutSeconds?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type CreateQuizSessionInput = {
+  finishAt?: InputMaybe<Scalars['DateTime']['input']>;
+  lockAt?: InputMaybe<Scalars['DateTime']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  openAt?: InputMaybe<Scalars['DateTime']['input']>;
+  quizId: Scalars['ID']['input'];
 };
 
 export type CreateScoreAdjustmentInput = {
@@ -737,6 +744,15 @@ export enum Gender {
   Male = 'MALE'
 }
 
+export type GrantQuizSessionAccessInput = {
+  allProjectUsers?: InputMaybe<Scalars['Boolean']['input']>;
+  churchIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  sessionId: Scalars['ID']['input'];
+  superTeamIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  teamIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  userIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
 export type Image = {
   __typename?: 'Image';
   blurhash?: Maybe<Scalars['String']['output']>;
@@ -857,6 +873,7 @@ export type Mutation = {
   createProject: Project;
   createQuiz: Quiz;
   createQuizAchievement: QuizAchievement;
+  createQuizSession: QuizSession;
   createQuizSubmission: QuizSubmission;
   createScoreAdjustment: ScoreJournal;
   createSimpleAchievement: SimpleAchievement;
@@ -872,6 +889,7 @@ export type Mutation = {
   deleteProject: Scalars['Boolean']['output'];
   deleteQuiz: Scalars['Boolean']['output'];
   deleteQuizQuestion: Scalars['Boolean']['output'];
+  deleteQuizSession: Scalars['Boolean']['output'];
   deleteScoreJournalEntry: Scalars['Boolean']['output'];
   deleteStreak: Scalars['Boolean']['output'];
   deleteSuperTeam: Scalars['Boolean']['output'];
@@ -880,25 +898,32 @@ export type Mutation = {
   enrollInChallenge: Challenge;
   enrollUserInChallenge: Challenge;
   finalizeQuiz: QuizSubmission;
+  finishQuizSession: QuizSession;
   forwardFeedbackToDesk: Scalars['Boolean']['output'];
+  grantQuizSessionAccess: Scalars['Int']['output'];
   joinEvent: Event;
   joinProject: Project;
   joinTeam: Team;
   linkAchievementToChallenge: Achievement;
+  lockQuizSession: QuizSession;
   markContentItemCompleted: Array<ContentAchievement>;
   markFeedbackHandled: UserFeedback;
   moveEvent: Event;
+  openQuizSession: QuizSession;
   publishChallenge: Challenge;
-  publishQuiz: Quiz;
   recordStreakActivity: StreakAchievement;
   regenerateJoinCode: Team;
   registerPushSubscription: PushSubscription;
   rejectConsent: UserConsent;
   removeTeamMembers: Team;
   removeUserFromProject: User;
+  reopenQuizSession: QuizSession;
   reorderAchievements: Array<Achievement>;
   reorderQuizQuestions: Array<QuizQuestion>;
+  resetQuizSessionSubmission: Scalars['Boolean']['output'];
   revokeAchievement: Scalars['Boolean']['output'];
+  revokeAllQuizSessionAccess: Scalars['Boolean']['output'];
+  revokeQuizSessionAccess: Scalars['Boolean']['output'];
   revokeRole: Scalars['Boolean']['output'];
   revokeSuperTeamAchievement: Scalars['Boolean']['output'];
   revokeTeamAchievement: Scalars['Boolean']['output'];
@@ -907,7 +932,7 @@ export type Mutation = {
   setChallengeRequirements: Challenge;
   setChallengeVisibility: Challenge;
   setNotificationPreference: PushNotificationPreference;
-  startQuiz: QuizSubmission;
+  startQuizSession: QuizSubmission;
   submitFeedback: UserFeedback;
   submitQuizAnswer: QuizResponse;
   testWebhook: WebhookLog;
@@ -927,6 +952,7 @@ export type Mutation = {
   updateProject: Project;
   updateQuiz: Quiz;
   updateQuizQuestion: QuizQuestion;
+  updateQuizSession: QuizSession;
   updateStreak: Streak;
   updateStreakAchievement: StreakAchievement;
   updateSuperTeam: SuperTeam;
@@ -1106,6 +1132,11 @@ export type MutationCreateQuizAchievementArgs = {
 };
 
 
+export type MutationCreateQuizSessionArgs = {
+  input: CreateQuizSessionInput;
+};
+
+
 export type MutationCreateQuizSubmissionArgs = {
   completedAt?: InputMaybe<Scalars['DateTime']['input']>;
   quizId: Scalars['ID']['input'];
@@ -1186,6 +1217,11 @@ export type MutationDeleteQuizQuestionArgs = {
 };
 
 
+export type MutationDeleteQuizSessionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationDeleteScoreJournalEntryArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1227,8 +1263,18 @@ export type MutationFinalizeQuizArgs = {
 };
 
 
+export type MutationFinishQuizSessionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationForwardFeedbackToDeskArgs = {
   feedbackId: Scalars['ID']['input'];
+};
+
+
+export type MutationGrantQuizSessionAccessArgs = {
+  input: GrantQuizSessionAccessInput;
 };
 
 
@@ -1253,6 +1299,11 @@ export type MutationLinkAchievementToChallengeArgs = {
 };
 
 
+export type MutationLockQuizSessionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationMarkContentItemCompletedArgs = {
   externalContentId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
@@ -1270,13 +1321,12 @@ export type MutationMoveEventArgs = {
 };
 
 
-export type MutationPublishChallengeArgs = {
+export type MutationOpenQuizSessionArgs = {
   id: Scalars['ID']['input'];
-  publishedAt: Scalars['DateTime']['input'];
 };
 
 
-export type MutationPublishQuizArgs = {
+export type MutationPublishChallengeArgs = {
   id: Scalars['ID']['input'];
   publishedAt: Scalars['DateTime']['input'];
 };
@@ -1316,6 +1366,11 @@ export type MutationRemoveUserFromProjectArgs = {
 };
 
 
+export type MutationReopenQuizSessionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationReorderAchievementsArgs = {
   achievementIds: Array<Scalars['ID']['input']>;
   projectId: Scalars['ID']['input'];
@@ -1328,9 +1383,25 @@ export type MutationReorderQuizQuestionsArgs = {
 };
 
 
+export type MutationResetQuizSessionSubmissionArgs = {
+  sessionId: Scalars['ID']['input'];
+};
+
+
 export type MutationRevokeAchievementArgs = {
   achievementId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationRevokeAllQuizSessionAccessArgs = {
+  sessionId: Scalars['ID']['input'];
+};
+
+
+export type MutationRevokeQuizSessionAccessArgs = {
+  sessionId: Scalars['ID']['input'];
+  userIds: Array<Scalars['ID']['input']>;
 };
 
 
@@ -1380,8 +1451,8 @@ export type MutationSetNotificationPreferenceArgs = {
 };
 
 
-export type MutationStartQuizArgs = {
-  quizId: Scalars['ID']['input'];
+export type MutationStartQuizSessionArgs = {
+  sessionId: Scalars['ID']['input'];
 };
 
 
@@ -1496,6 +1567,12 @@ export type MutationUpdateQuizArgs = {
 export type MutationUpdateQuizQuestionArgs = {
   id: Scalars['ID']['input'];
   input: UpdateQuizQuestionInput;
+};
+
+
+export type MutationUpdateQuizSessionArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateQuizSessionInput;
 };
 
 
@@ -1702,6 +1779,8 @@ export type Query = {
   projects: ProjectConnection;
   pushNotificationsEnabled: Scalars['Boolean']['output'];
   quiz: Quiz;
+  quizSession?: Maybe<QuizSession>;
+  quizSessions: Array<QuizSession>;
   quizSubmission: QuizSubmission;
   quizSubmissions: QuizSubmissionConnection;
   quizzes: QuizConnection;
@@ -1845,6 +1924,17 @@ export type QueryQuizArgs = {
 };
 
 
+export type QueryQuizSessionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryQuizSessionsArgs = {
+  quizId: Scalars['ID']['input'];
+  state?: InputMaybe<QuizSessionState>;
+};
+
+
 export type QueryQuizSubmissionArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1970,15 +2060,30 @@ export type Quiz = {
   imageObject?: Maybe<Image>;
   name: Scalars['String']['output'];
   project: Project;
-  publishedAt?: Maybe<Scalars['DateTime']['output']>;
   questions: Array<QuizQuestion>;
   randomizeQuestions: Scalars['Boolean']['output'];
   revealCorrectAnswers: Scalars['Boolean']['output'];
+  sessions: Array<QuizSession>;
   timeoutSeconds?: Maybe<Scalars['Int']['output']>;
+  userActiveSession?: Maybe<QuizSession>;
   userActiveSubmission?: Maybe<QuizSubmission>;
   userCanStart: Scalars['Boolean']['output'];
+  userSessions: Array<QuizSession>;
   userSubmissions: Array<QuizSubmission>;
 };
+
+
+export type QuizSessionsArgs = {
+  state?: InputMaybe<QuizSessionState>;
+};
+
+export enum QuizAccessSourceType {
+  All = 'ALL',
+  Church = 'CHURCH',
+  Direct = 'DIRECT',
+  SuperTeam = 'SUPER_TEAM',
+  Team = 'TEAM'
+}
 
 export type QuizAchievement = Achievement & {
   __typename?: 'QuizAchievement';
@@ -2044,8 +2149,6 @@ export type QuizFilter = {
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   projectId?: InputMaybe<Scalars['ID']['input']>;
-  publishedAfter?: InputMaybe<Scalars['DateTime']['input']>;
-  publishedBefore?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
 export type QuizPredefinedAnswer = {
@@ -2082,8 +2185,32 @@ export type QuizResponse = {
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
 };
 
+export type QuizSession = {
+  __typename?: 'QuizSession';
+  accessCount: Scalars['Int']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  createdBy: User;
+  finishAt?: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['ID']['output'];
+  lockAt?: Maybe<Scalars['DateTime']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  openAt?: Maybe<Scalars['DateTime']['output']>;
+  quiz: Quiz;
+  state: QuizSessionState;
+  userHasAccess: Scalars['Boolean']['output'];
+  userSubmission?: Maybe<QuizSubmission>;
+};
+
+export enum QuizSessionState {
+  Draft = 'DRAFT',
+  Finished = 'FINISHED',
+  Locked = 'LOCKED',
+  Open = 'OPEN'
+}
+
 export type QuizSubmission = {
   __typename?: 'QuizSubmission';
+  autoSubmitted: Scalars['Boolean']['output'];
   completedAt?: Maybe<Scalars['DateTime']['output']>;
   expiresAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
@@ -2096,6 +2223,7 @@ export type QuizSubmission = {
   responses: Array<QuizResponse>;
   score?: Maybe<Scalars['Int']['output']>;
   scorePercentage?: Maybe<Scalars['Float']['output']>;
+  session?: Maybe<QuizSession>;
   startedAt: Scalars['DateTime']['output'];
   user: User;
 };
@@ -2510,7 +2638,6 @@ export type UpdateQuizInput = {
   endTime?: InputMaybe<Scalars['DateTime']['input']>;
   image?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
-  publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   randomizeQuestions?: InputMaybe<Scalars['Boolean']['input']>;
   revealCorrectAnswers?: InputMaybe<Scalars['Boolean']['input']>;
   timeoutSeconds?: InputMaybe<Scalars['Int']['input']>;
@@ -2526,6 +2653,13 @@ export type UpdateQuizQuestionInput = {
   questionText?: InputMaybe<Scalars['String']['input']>;
   stepValue?: InputMaybe<Scalars['Float']['input']>;
   timeoutSeconds?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type UpdateQuizSessionInput = {
+  finishAt?: InputMaybe<Scalars['DateTime']['input']>;
+  lockAt?: InputMaybe<Scalars['DateTime']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  openAt?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
 export type UpdateStreakAchievementInput = {
@@ -3063,12 +3197,12 @@ export type DeleteQuizQuestionMutationVariables = Exact<{
 
 export type DeleteQuizQuestionMutation = { __typename?: 'Mutation', deleteQuizQuestion: boolean };
 
-export type StartQuizMutationVariables = Exact<{
-  quizId: Scalars['ID']['input'];
+export type StartQuizSessionMutationVariables = Exact<{
+  sessionId: Scalars['ID']['input'];
 }>;
 
 
-export type StartQuizMutation = { __typename?: 'Mutation', startQuiz: { __typename?: 'QuizSubmission', id: string, startedAt: any, expiresAt?: any | null, isExpired: boolean, questionOrder: Array<string>, orderedQuestions: Array<
+export type StartQuizSessionMutation = { __typename?: 'Mutation', startQuizSession: { __typename?: 'QuizSubmission', id: string, startedAt: any, expiresAt?: any | null, isExpired: boolean, questionOrder: Array<string>, orderedQuestions: Array<
       | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
       | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
       | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
@@ -3237,7 +3371,7 @@ export type ChallengePageQueryVariables = Exact<{
 
 export type ChallengePageQuery = { __typename?: 'Query', challenge:
     | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null }
-    | { __typename: 'QuizChallenge', id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, publishedAt?: any | null, endTime?: any | null, userCanStart: boolean, userActiveSubmission?: { __typename?: 'QuizSubmission', id: string } | null, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null, orderedQuestions: Array<
+    | { __typename: 'QuizChallenge', id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, endTime?: any | null, userCanStart: boolean, userActiveSubmission?: { __typename?: 'QuizSubmission', id: string } | null, userActiveSession?: { __typename?: 'QuizSession', id: string } | null, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null, orderedQuestions: Array<
             | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
             | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
             | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
@@ -3276,7 +3410,7 @@ export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', challenges: Array<
       | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
-      | { __typename: 'QuizChallenge', id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', userCanStart: boolean }, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+      | { __typename: 'QuizChallenge', id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', userCanStart: boolean, userActiveSession?: { __typename?: 'QuizSession', id: string } | null }, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
       | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
     > } };
 
@@ -4170,9 +4304,9 @@ export const DeleteQuizQuestionDocument = gql`
 export function useDeleteQuizQuestionMutation() {
   return Urql.useMutation<DeleteQuizQuestionMutation, DeleteQuizQuestionMutationVariables>(DeleteQuizQuestionDocument);
 };
-export const StartQuizDocument = gql`
-    mutation StartQuiz($quizId: ID!) {
-  startQuiz(quizId: $quizId) {
+export const StartQuizSessionDocument = gql`
+    mutation StartQuizSession($sessionId: ID!) {
+  startQuizSession(sessionId: $sessionId) {
     id
     startedAt
     expiresAt
@@ -4190,8 +4324,8 @@ export const StartQuizDocument = gql`
 }
     ${QuizQuestionUserFieldsFragmentDoc}`;
 
-export function useStartQuizMutation() {
-  return Urql.useMutation<StartQuizMutation, StartQuizMutationVariables>(StartQuizDocument);
+export function useStartQuizSessionMutation() {
+  return Urql.useMutation<StartQuizSessionMutation, StartQuizSessionMutationVariables>(StartQuizSessionDocument);
 };
 export const SubmitQuizAnswerDocument = gql`
     mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
@@ -4450,10 +4584,12 @@ export const ChallengePageDocument = gql`
         revealCorrectAnswers
         allowRetakes
         completionPoints
-        publishedAt
         endTime
         userCanStart
         userActiveSubmission {
+          id
+        }
+        userActiveSession {
           id
         }
         userSubmissions {
@@ -4531,6 +4667,9 @@ export const ChallengesPageDocument = gql`
       ... on QuizChallenge {
         quiz {
           userCanStart
+          userActiveSession {
+            id
+          }
         }
       }
     }

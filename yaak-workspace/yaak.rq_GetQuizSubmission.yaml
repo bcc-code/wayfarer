@@ -31,22 +31,34 @@ body:
         }
         responses {
           id
+          answeredAt
+          timeSpentSeconds
           question {
             id
             questionText
-            questionType
           }
-          selectedAnswers {
-            id
-            answerText
+          ... on PredefinedResponse {
+            selectedAnswerIds
+            selectedAnswers {
+              id
+              answerText
+              isCorrect
+            }
             isCorrect
+            pointsEarned
           }
-          textResponse
-          numberResponse
-          jsonResponse
-          isCorrect
-          answeredAt
-          timeSpentSeconds
+          ... on FreeTextResponse {
+            textResponse
+            pointsEarned
+          }
+          ... on NumberResponse {
+            numberResponse
+            pointsEarned
+          }
+          ... on JsonResponse {
+            jsonResponse
+            pointsEarned
+          }
         }
       }
     }

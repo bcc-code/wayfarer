@@ -206,10 +206,31 @@ func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]mod
 		return nil, err
 	}
 
-	// Apply translations to each challenge
-	result := make([]model.Challenge, len(challenges))
-	for i, ch := range challenges {
-		result[i] = r.ApplyTranslationToChallenge(ctx, ch)
+	userID, _ := middleware.GetUserID(ctx)
+	isAdmin := userID != "" && r.RoleService.CanManageProject(ctx, userID, obj.ProjectID)
+
+	// Filter out quiz challenges without session access (for non-admins)
+	result := make([]model.Challenge, 0, len(challenges))
+	for _, ch := range challenges {
+		// For quiz challenges, non-admins need session access
+		if _, ok := ch.(*model.QuizChallenge); ok && !isAdmin && userID != "" {
+			// Load quiz by challenge ID to get quiz ID
+			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
+			quiz, err := quizThunk()
+			if err != nil || quiz == nil {
+				continue // Skip this challenge
+			}
+
+			hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
+				Quizid: quiz.ID,
+				Userid: userID,
+			})
+			if err != nil || !hasAccess {
+				continue // Skip this challenge
+			}
+		}
+
+		result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
 	}
 
 	return result, nil
@@ -303,7 +324,7 @@ func (r *freeTextResponseResolver) Submission(ctx context.Context, obj *model.Fr
 	if err != nil {
 		return nil, fmt.Errorf("failed to load submission: %w", err)
 	}
-	return convertSubmissionRowToModel(row), nil
+	return convertGetQuizSubmissionByIDRow(row), nil
 }
 
 // Question is the resolver for the question field.
@@ -331,7 +352,7 @@ func (r *jsonResponseResolver) Submission(ctx context.Context, obj *model.JSONRe
 	if err != nil {
 		return nil, fmt.Errorf("failed to load submission: %w", err)
 	}
-	return convertSubmissionRowToModel(row), nil
+	return convertGetQuizSubmissionByIDRow(row), nil
 }
 
 // Question is the resolver for the question field.
@@ -369,7 +390,7 @@ func (r *numberResponseResolver) Submission(ctx context.Context, obj *model.Numb
 	if err != nil {
 		return nil, fmt.Errorf("failed to load submission: %w", err)
 	}
-	return convertSubmissionRowToModel(row), nil
+	return convertGetQuizSubmissionByIDRow(row), nil
 }
 
 // Question is the resolver for the question field.
@@ -413,7 +434,7 @@ func (r *predefinedResponseResolver) Submission(ctx context.Context, obj *model.
 	if err != nil {
 		return nil, fmt.Errorf("failed to load submission: %w", err)
 	}
-	return convertSubmissionRowToModel(row), nil
+	return convertGetQuizSubmissionByIDRow(row), nil
 }
 
 // Question is the resolver for the question field.
@@ -498,9 +519,31 @@ func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([
 		return nil, fmt.Errorf("failed to load challenges: %w", err)
 	}
 
-	result := make([]model.Challenge, len(challenges))
-	for i, ch := range challenges {
-		result[i] = r.ApplyTranslationToChallenge(ctx, ch)
+	userID, _ := middleware.GetUserID(ctx)
+	isAdmin := userID != "" && r.RoleService.CanManageProject(ctx, userID, obj.ID)
+
+	// Filter out quiz challenges without session access (for non-admins)
+	result := make([]model.Challenge, 0, len(challenges))
+	for _, ch := range challenges {
+		// For quiz challenges, non-admins need session access
+		if _, ok := ch.(*model.QuizChallenge); ok && !isAdmin && userID != "" {
+			// Load quiz by challenge ID to get quiz ID
+			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
+			quiz, err := quizThunk()
+			if err != nil || quiz == nil {
+				continue // Skip this challenge
+			}
+
+			hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
+				Quizid: quiz.ID,
+				Userid: userID,
+			})
+			if err != nil || !hasAccess {
+				continue // Skip this challenge
+			}
+		}
+
+		result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
 	}
 
 	return result, nil
@@ -783,15 +826,11 @@ func (r *quizResolver) UserSubmissions(ctx context.Context, obj *model.Quiz) ([]
 }
 
 // UserCanStart is the resolver for the userCanStart field on Quiz.
+// Note: This is a legacy field. Prefer using session-based access via userActiveSession.
 func (r *quizResolver) UserCanStart(ctx context.Context, obj *model.Quiz) (bool, error) {
 	// Get authenticated user ID
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
-		return false, nil
-	}
-
-	// Check if quiz is published
-	if obj.PublishedAt == nil || obj.PublishedAt.Time.After(time.Now()) {
 		return false, nil
 	}
 
@@ -868,6 +907,70 @@ func (r *quizResolver) UserActiveSubmission(ctx context.Context, obj *model.Quiz
 	return nil, nil
 }
 
+// Sessions is the resolver for the sessions field.
+func (r *quizResolver) Sessions(ctx context.Context, obj *model.Quiz, state *model.QuizSessionState) ([]model.QuizSession, error) {
+	stateFilter := ""
+	if state != nil {
+		stateFilter = string(*state)
+	}
+
+	rows, err := r.DB.Queries.GetQuizSessionsByQuiz(ctx, sqlc.GetQuizSessionsByQuizParams{
+		Quizid: obj.ID,
+		State:  stateFilter,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get quiz sessions: %w", err)
+	}
+
+	sessions := make([]model.QuizSession, len(rows))
+	for i, row := range rows {
+		sessions[i] = *convertQuizSessionToModel(row)
+	}
+	return sessions, nil
+}
+
+// UserSessions is the resolver for the userSessions field.
+func (r *quizResolver) UserSessions(ctx context.Context, obj *model.Quiz) ([]model.QuizSession, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return []model.QuizSession{}, nil
+	}
+
+	rows, err := r.DB.Queries.GetUserAccessibleSessions(ctx, sqlc.GetUserAccessibleSessionsParams{
+		Userid: userID,
+		Quizid: obj.ID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user sessions: %w", err)
+	}
+
+	sessions := make([]model.QuizSession, len(rows))
+	for i, row := range rows {
+		sessions[i] = *convertQuizSessionToModel(row)
+	}
+	return sessions, nil
+}
+
+// UserActiveSession is the resolver for the userActiveSession field.
+// Returns the user's currently accessible open session for this quiz, or nil if none.
+func (r *quizResolver) UserActiveSession(ctx context.Context, obj *model.Quiz) (*model.QuizSession, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, nil
+	}
+
+	row, err := r.DB.Queries.GetUserActiveSessionForQuiz(ctx, sqlc.GetUserActiveSessionForQuizParams{
+		Quizid: obj.ID,
+		Userid: userID,
+	})
+	if err != nil {
+		// No active session found is not an error - return nil
+		return nil, nil
+	}
+
+	return convertQuizSessionToModel(row), nil
+}
+
 // ImagePendingObject is the resolver for the imagePendingObject field.
 func (r *quizAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.QuizAchievement) (*model.Image, error) {
 	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
@@ -930,24 +1033,13 @@ func (r *quizChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.Q
 }
 
 // Quiz is the resolver for the quiz field.
+// Visibility is controlled by the challenge's publishedAt and session access.
 func (r *quizChallengeResolver) Quiz(ctx context.Context, obj *model.QuizChallenge) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, obj.ID)
 	quiz, err := thunk()
 	if err != nil {
 		return nil, err
 	}
-	if quiz == nil {
-		return nil, nil
-	}
-
-	// Check visibility for non-admins
-	userID, _ := middleware.GetUserID(ctx)
-	if userID == "" || !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
-		if quiz.PublishedAt == nil || quiz.PublishedAt.Time.After(time.Now()) {
-			return nil, nil // Return nil for field resolver
-		}
-	}
-
 	return quiz, nil
 }
 
@@ -970,6 +1062,20 @@ func (r *quizPredefinedAnswerResolver) IsCorrect(ctx context.Context, obj *model
 func (r *quizSubmissionResolver) Quiz(ctx context.Context, obj *model.QuizSubmission) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
 	return thunk()
+}
+
+// Session is the resolver for the session field.
+func (r *quizSubmissionResolver) Session(ctx context.Context, obj *model.QuizSubmission) (*model.QuizSession, error) {
+	if obj.SessionID == nil || *obj.SessionID == "" {
+		return nil, nil
+	}
+
+	row, err := r.DB.Queries.GetQuizSession(ctx, *obj.SessionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get quiz session: %w", err)
+	}
+
+	return convertQuizSessionToModel(row), nil
 }
 
 // User is the resolver for the user field on QuizSubmission.

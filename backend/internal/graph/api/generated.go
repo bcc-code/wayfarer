@@ -63,6 +63,7 @@ type ResolverRoot interface {
 	QuizAchievement() QuizAchievementResolver
 	QuizChallenge() QuizChallengeResolver
 	QuizPredefinedAnswer() QuizPredefinedAnswerResolver
+	QuizSession() QuizSessionResolver
 	QuizSubmission() QuizSubmissionResolver
 	RoleScope() RoleScopeResolver
 	ScoreJournal() ScoreJournalResolver
@@ -432,6 +433,7 @@ type ComplexityRoot struct {
 		CreateProject                               func(childComplexity int, input model.CreateProjectInput) int
 		CreateQuiz                                  func(childComplexity int, input model.CreateQuizInput) int
 		CreateQuizAchievement                       func(childComplexity int, input model.CreateQuizAchievementInput) int
+		CreateQuizSession                           func(childComplexity int, input model.CreateQuizSessionInput) int
 		CreateQuizSubmission                        func(childComplexity int, quizID string, userID string, responses []model.SubmitQuizAnswerInput, completedAt *scalars.DateTime) int
 		CreateScoreAdjustment                       func(childComplexity int, input model.CreateScoreAdjustmentInput) int
 		CreateSimpleAchievement                     func(childComplexity int, input model.CreateSimpleAchievementInput) int
@@ -447,6 +449,7 @@ type ComplexityRoot struct {
 		DeleteProject                               func(childComplexity int, id string) int
 		DeleteQuiz                                  func(childComplexity int, id string) int
 		DeleteQuizQuestion                          func(childComplexity int, id string) int
+		DeleteQuizSession                           func(childComplexity int, id string) int
 		DeleteScoreJournalEntry                     func(childComplexity int, id string) int
 		DeleteStreak                                func(childComplexity int, id string) int
 		DeleteSuperTeam                             func(childComplexity int, id string) int
@@ -456,25 +459,32 @@ type ComplexityRoot struct {
 		EnrollInChallenge                           func(childComplexity int, challengeID string) int
 		EnrollUserInChallenge                       func(childComplexity int, userID string, challengeID string) int
 		FinalizeQuiz                                func(childComplexity int, submissionID string) int
+		FinishQuizSession                           func(childComplexity int, id string) int
 		ForwardFeedbackToDesk                       func(childComplexity int, feedbackID string) int
+		GrantQuizSessionAccess                      func(childComplexity int, input model.GrantQuizSessionAccessInput) int
 		JoinEvent                                   func(childComplexity int, eventID string) int
 		JoinProject                                 func(childComplexity int, projectID string) int
 		JoinTeam                                    func(childComplexity int, code string) int
 		LinkAchievementToChallenge                  func(childComplexity int, achievementID string, challengeID string) int
+		LockQuizSession                             func(childComplexity int, id string) int
 		MarkContentItemCompleted                    func(childComplexity int, userID string, externalContentID string) int
 		MarkFeedbackHandled                         func(childComplexity int, feedbackID string) int
 		MoveEvent                                   func(childComplexity int, id string, newProjectID string) int
+		OpenQuizSession                             func(childComplexity int, id string) int
 		PublishChallenge                            func(childComplexity int, id string, publishedAt scalars.DateTime) int
-		PublishQuiz                                 func(childComplexity int, id string, publishedAt scalars.DateTime) int
 		RecordStreakActivity                        func(childComplexity int, userID string, achievementID string, currentStreak int) int
 		RegenerateJoinCode                          func(childComplexity int, teamID string) int
 		RegisterPushSubscription                    func(childComplexity int, input model.RegisterPushSubscriptionInput) int
 		RejectConsent                               func(childComplexity int, consentID string) int
 		RemoveTeamMembers                           func(childComplexity int, teamID string, userIds []string) int
 		RemoveUserFromProject                       func(childComplexity int, userID string, projectID string) int
+		ReopenQuizSession                           func(childComplexity int, id string) int
 		ReorderAchievements                         func(childComplexity int, projectID string, achievementIds []string) int
 		ReorderQuizQuestions                        func(childComplexity int, quizID string, questionIds []string) int
+		ResetQuizSessionSubmission                  func(childComplexity int, sessionID string) int
 		RevokeAchievement                           func(childComplexity int, userID string, achievementID string) int
+		RevokeAllQuizSessionAccess                  func(childComplexity int, sessionID string) int
+		RevokeQuizSessionAccess                     func(childComplexity int, sessionID string, userIds []string) int
 		RevokeRole                                  func(childComplexity int, input model.RevokeRoleInput) int
 		RevokeSuperTeamAchievement                  func(childComplexity int, superTeamID string, achievementID string) int
 		RevokeTeamAchievement                       func(childComplexity int, teamID string, achievementID string) int
@@ -483,7 +493,7 @@ type ComplexityRoot struct {
 		SetChallengeRequirements                    func(childComplexity int, id string, requiresTeamMembership *bool, requiresSuperTeamMembership *bool) int
 		SetChallengeVisibility                      func(childComplexity int, id string, visibleAt scalars.DateTime, startedAt *scalars.DateTime) int
 		SetNotificationPreference                   func(childComplexity int, input model.SetNotificationPreferenceInput) int
-		StartQuiz                                   func(childComplexity int, quizID string) int
+		StartQuizSession                            func(childComplexity int, sessionID string) int
 		SubmitFeedback                              func(childComplexity int, input model.SubmitFeedbackInput) int
 		SubmitQuizAnswer                            func(childComplexity int, submissionID string, input model.SubmitQuizAnswerInput) int
 		TestWebhook                                 func(childComplexity int, id string) int
@@ -503,6 +513,7 @@ type ComplexityRoot struct {
 		UpdateProject                               func(childComplexity int, id string, input model.UpdateProjectInput) int
 		UpdateQuiz                                  func(childComplexity int, id string, input model.UpdateQuizInput) int
 		UpdateQuizQuestion                          func(childComplexity int, id string, input model.UpdateQuizQuestionInput) int
+		UpdateQuizSession                           func(childComplexity int, id string, input model.UpdateQuizSessionInput) int
 		UpdateStreak                                func(childComplexity int, id string, input model.UpdateStreakInput) int
 		UpdateStreakAchievement                     func(childComplexity int, id string, input model.UpdateStreakAchievementInput) int
 		UpdateSuperTeam                             func(childComplexity int, id string, input model.UpdateSuperTeamInput) int
@@ -639,6 +650,8 @@ type ComplexityRoot struct {
 		Projects                      func(childComplexity int, filter *model.ProjectFilter, first *int, after *string, last *int, before *string) int
 		PushNotificationsEnabled      func(childComplexity int) int
 		Quiz                          func(childComplexity int, id string) int
+		QuizSession                   func(childComplexity int, id string) int
+		QuizSessions                  func(childComplexity int, quizID string, state *model.QuizSessionState) int
 		QuizSubmission                func(childComplexity int, id string) int
 		QuizSubmissions               func(childComplexity int, quizID string, userID *string, first *int, after *string, last *int, before *string) int
 		Quizzes                       func(childComplexity int, filter *model.QuizFilter, first *int, after *string, last *int, before *string) int
@@ -669,13 +682,15 @@ type ComplexityRoot struct {
 		ImageObject          func(childComplexity int) int
 		Name                 func(childComplexity int) int
 		Project              func(childComplexity int) int
-		PublishedAt          func(childComplexity int) int
 		Questions            func(childComplexity int) int
 		RandomizeQuestions   func(childComplexity int) int
 		RevealCorrectAnswers func(childComplexity int) int
+		Sessions             func(childComplexity int, state *model.QuizSessionState) int
 		TimeoutSeconds       func(childComplexity int) int
+		UserActiveSession    func(childComplexity int) int
 		UserActiveSubmission func(childComplexity int) int
 		UserCanStart         func(childComplexity int) int
+		UserSessions         func(childComplexity int) int
 		UserSubmissions      func(childComplexity int) int
 	}
 
@@ -740,7 +755,23 @@ type ComplexityRoot struct {
 		Question    func(childComplexity int) int
 	}
 
+	QuizSession struct {
+		AccessCount    func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		CreatedBy      func(childComplexity int) int
+		FinishAt       func(childComplexity int) int
+		ID             func(childComplexity int) int
+		LockAt         func(childComplexity int) int
+		Name           func(childComplexity int) int
+		OpenAt         func(childComplexity int) int
+		Quiz           func(childComplexity int) int
+		State          func(childComplexity int) int
+		UserHasAccess  func(childComplexity int) int
+		UserSubmission func(childComplexity int) int
+	}
+
 	QuizSubmission struct {
+		AutoSubmitted    func(childComplexity int) int
 		CompletedAt      func(childComplexity int) int
 		ExpiresAt        func(childComplexity int) int
 		ID               func(childComplexity int) int
@@ -753,6 +784,7 @@ type ComplexityRoot struct {
 		Responses        func(childComplexity int) int
 		Score            func(childComplexity int) int
 		ScorePercentage  func(childComplexity int) int
+		Session          func(childComplexity int) int
 		StartedAt        func(childComplexity int) int
 		User             func(childComplexity int) int
 	}
@@ -1199,16 +1231,26 @@ type MutationResolver interface {
 	CreateQuiz(ctx context.Context, input model.CreateQuizInput) (*model.Quiz, error)
 	UpdateQuiz(ctx context.Context, id string, input model.UpdateQuizInput) (*model.Quiz, error)
 	DeleteQuiz(ctx context.Context, id string) (bool, error)
-	PublishQuiz(ctx context.Context, id string, publishedAt scalars.DateTime) (*model.Quiz, error)
 	AddQuizQuestion(ctx context.Context, quizID string, input model.CreateQuizQuestionInput) (model.QuizQuestion, error)
 	UpdateQuizQuestion(ctx context.Context, id string, input model.UpdateQuizQuestionInput) (model.QuizQuestion, error)
 	DeleteQuizQuestion(ctx context.Context, id string) (bool, error)
 	ReorderQuizQuestions(ctx context.Context, quizID string, questionIds []string) ([]model.QuizQuestion, error)
 	CreateQuizAchievement(ctx context.Context, input model.CreateQuizAchievementInput) (*model.QuizAchievement, error)
-	StartQuiz(ctx context.Context, quizID string) (*model.QuizSubmission, error)
 	SubmitQuizAnswer(ctx context.Context, submissionID string, input model.SubmitQuizAnswerInput) (model.QuizResponse, error)
 	FinalizeQuiz(ctx context.Context, submissionID string) (*model.QuizSubmission, error)
 	CreateQuizSubmission(ctx context.Context, quizID string, userID string, responses []model.SubmitQuizAnswerInput, completedAt *scalars.DateTime) (*model.QuizSubmission, error)
+	CreateQuizSession(ctx context.Context, input model.CreateQuizSessionInput) (*model.QuizSession, error)
+	UpdateQuizSession(ctx context.Context, id string, input model.UpdateQuizSessionInput) (*model.QuizSession, error)
+	DeleteQuizSession(ctx context.Context, id string) (bool, error)
+	OpenQuizSession(ctx context.Context, id string) (*model.QuizSession, error)
+	LockQuizSession(ctx context.Context, id string) (*model.QuizSession, error)
+	FinishQuizSession(ctx context.Context, id string) (*model.QuizSession, error)
+	ReopenQuizSession(ctx context.Context, id string) (*model.QuizSession, error)
+	GrantQuizSessionAccess(ctx context.Context, input model.GrantQuizSessionAccessInput) (int, error)
+	RevokeQuizSessionAccess(ctx context.Context, sessionID string, userIds []string) (bool, error)
+	RevokeAllQuizSessionAccess(ctx context.Context, sessionID string) (bool, error)
+	StartQuizSession(ctx context.Context, sessionID string) (*model.QuizSubmission, error)
+	ResetQuizSessionSubmission(ctx context.Context, sessionID string) (bool, error)
 	CreateContentAchievementFromExternalContent(ctx context.Context, input model.CreateContentAchievementFromExternalContentInput) (*model.ContentAchievement, error)
 	ClearAllCache(ctx context.Context) (bool, error)
 	RegisterPushSubscription(ctx context.Context, input model.RegisterPushSubscriptionInput) (*model.PushSubscription, error)
@@ -1297,6 +1339,8 @@ type QueryResolver interface {
 	Quizzes(ctx context.Context, filter *model.QuizFilter, first *int, after *string, last *int, before *string) (*model.QuizConnection, error)
 	QuizSubmission(ctx context.Context, id string) (*model.QuizSubmission, error)
 	QuizSubmissions(ctx context.Context, quizID string, userID *string, first *int, after *string, last *int, before *string) (*model.QuizSubmissionConnection, error)
+	QuizSession(ctx context.Context, id string) (*model.QuizSession, error)
+	QuizSessions(ctx context.Context, quizID string, state *model.QuizSessionState) ([]model.QuizSession, error)
 	ExternalContent(ctx context.Context, id string) (*model.ExternalContent, error)
 	ExternalContents(ctx context.Context, filter model.ExternalContentFilter, sortBy *model.ExternalContentSortBy, first *int, after *string, last *int, before *string) (*model.ExternalContentConnection, error)
 	AdminDashboardStats(ctx context.Context) (*model.AdminDashboardStats, error)
@@ -1318,6 +1362,9 @@ type QuizResolver interface {
 	UserSubmissions(ctx context.Context, obj *model.Quiz) ([]model.QuizSubmission, error)
 	UserCanStart(ctx context.Context, obj *model.Quiz) (bool, error)
 	UserActiveSubmission(ctx context.Context, obj *model.Quiz) (*model.QuizSubmission, error)
+	Sessions(ctx context.Context, obj *model.Quiz, state *model.QuizSessionState) ([]model.QuizSession, error)
+	UserSessions(ctx context.Context, obj *model.Quiz) ([]model.QuizSession, error)
+	UserActiveSession(ctx context.Context, obj *model.Quiz) (*model.QuizSession, error)
 }
 type QuizAchievementResolver interface {
 	ImagePendingObject(ctx context.Context, obj *model.QuizAchievement) (*model.Image, error)
@@ -1344,8 +1391,18 @@ type QuizPredefinedAnswerResolver interface {
 
 	IsCorrect(ctx context.Context, obj *model.QuizPredefinedAnswer) (*bool, error)
 }
+type QuizSessionResolver interface {
+	Quiz(ctx context.Context, obj *model.QuizSession) (*model.Quiz, error)
+
+	CreatedBy(ctx context.Context, obj *model.QuizSession) (*model.User, error)
+
+	AccessCount(ctx context.Context, obj *model.QuizSession) (int, error)
+	UserHasAccess(ctx context.Context, obj *model.QuizSession) (bool, error)
+	UserSubmission(ctx context.Context, obj *model.QuizSession) (*model.QuizSubmission, error)
+}
 type QuizSubmissionResolver interface {
 	Quiz(ctx context.Context, obj *model.QuizSubmission) (*model.Quiz, error)
+	Session(ctx context.Context, obj *model.QuizSubmission) (*model.QuizSession, error)
 	User(ctx context.Context, obj *model.QuizSubmission) (*model.User, error)
 
 	IsExpired(ctx context.Context, obj *model.QuizSubmission) (bool, error)
@@ -3043,6 +3100,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.CreateQuizAchievement(childComplexity, args["input"].(model.CreateQuizAchievementInput)), true
+	case "Mutation.createQuizSession":
+		if e.complexity.Mutation.CreateQuizSession == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createQuizSession_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateQuizSession(childComplexity, args["input"].(model.CreateQuizSessionInput)), true
 	case "Mutation.createQuizSubmission":
 		if e.complexity.Mutation.CreateQuizSubmission == nil {
 			break
@@ -3208,6 +3276,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.DeleteQuizQuestion(childComplexity, args["id"].(string)), true
+	case "Mutation.deleteQuizSession":
+		if e.complexity.Mutation.DeleteQuizSession == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteQuizSession_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteQuizSession(childComplexity, args["id"].(string)), true
 	case "Mutation.deleteScoreJournalEntry":
 		if e.complexity.Mutation.DeleteScoreJournalEntry == nil {
 			break
@@ -3302,6 +3381,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.FinalizeQuiz(childComplexity, args["submissionId"].(string)), true
+	case "Mutation.finishQuizSession":
+		if e.complexity.Mutation.FinishQuizSession == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_finishQuizSession_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.FinishQuizSession(childComplexity, args["id"].(string)), true
 	case "Mutation.forwardFeedbackToDesk":
 		if e.complexity.Mutation.ForwardFeedbackToDesk == nil {
 			break
@@ -3313,6 +3403,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.ForwardFeedbackToDesk(childComplexity, args["feedbackId"].(string)), true
+	case "Mutation.grantQuizSessionAccess":
+		if e.complexity.Mutation.GrantQuizSessionAccess == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_grantQuizSessionAccess_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.GrantQuizSessionAccess(childComplexity, args["input"].(model.GrantQuizSessionAccessInput)), true
 	case "Mutation.joinEvent":
 		if e.complexity.Mutation.JoinEvent == nil {
 			break
@@ -3357,6 +3458,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.LinkAchievementToChallenge(childComplexity, args["achievementId"].(string), args["challengeId"].(string)), true
+	case "Mutation.lockQuizSession":
+		if e.complexity.Mutation.LockQuizSession == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_lockQuizSession_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.LockQuizSession(childComplexity, args["id"].(string)), true
 	case "Mutation.markContentItemCompleted":
 		if e.complexity.Mutation.MarkContentItemCompleted == nil {
 			break
@@ -3390,6 +3502,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.MoveEvent(childComplexity, args["id"].(string), args["newProjectId"].(string)), true
+	case "Mutation.openQuizSession":
+		if e.complexity.Mutation.OpenQuizSession == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_openQuizSession_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.OpenQuizSession(childComplexity, args["id"].(string)), true
 	case "Mutation.publishChallenge":
 		if e.complexity.Mutation.PublishChallenge == nil {
 			break
@@ -3401,17 +3524,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.PublishChallenge(childComplexity, args["id"].(string), args["publishedAt"].(scalars.DateTime)), true
-	case "Mutation.publishQuiz":
-		if e.complexity.Mutation.PublishQuiz == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_publishQuiz_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.PublishQuiz(childComplexity, args["id"].(string), args["publishedAt"].(scalars.DateTime)), true
 	case "Mutation.recordStreakActivity":
 		if e.complexity.Mutation.RecordStreakActivity == nil {
 			break
@@ -3478,6 +3590,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.RemoveUserFromProject(childComplexity, args["userId"].(string), args["projectId"].(string)), true
+	case "Mutation.reopenQuizSession":
+		if e.complexity.Mutation.ReopenQuizSession == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reopenQuizSession_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ReopenQuizSession(childComplexity, args["id"].(string)), true
 	case "Mutation.reorderAchievements":
 		if e.complexity.Mutation.ReorderAchievements == nil {
 			break
@@ -3500,6 +3623,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.ReorderQuizQuestions(childComplexity, args["quizId"].(string), args["questionIds"].([]string)), true
+	case "Mutation.resetQuizSessionSubmission":
+		if e.complexity.Mutation.ResetQuizSessionSubmission == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_resetQuizSessionSubmission_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ResetQuizSessionSubmission(childComplexity, args["sessionId"].(string)), true
 	case "Mutation.revokeAchievement":
 		if e.complexity.Mutation.RevokeAchievement == nil {
 			break
@@ -3511,6 +3645,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.RevokeAchievement(childComplexity, args["userId"].(string), args["achievementId"].(string)), true
+	case "Mutation.revokeAllQuizSessionAccess":
+		if e.complexity.Mutation.RevokeAllQuizSessionAccess == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_revokeAllQuizSessionAccess_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RevokeAllQuizSessionAccess(childComplexity, args["sessionId"].(string)), true
+	case "Mutation.revokeQuizSessionAccess":
+		if e.complexity.Mutation.RevokeQuizSessionAccess == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_revokeQuizSessionAccess_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RevokeQuizSessionAccess(childComplexity, args["sessionId"].(string), args["userIds"].([]string)), true
 	case "Mutation.revokeRole":
 		if e.complexity.Mutation.RevokeRole == nil {
 			break
@@ -3599,17 +3755,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.SetNotificationPreference(childComplexity, args["input"].(model.SetNotificationPreferenceInput)), true
-	case "Mutation.startQuiz":
-		if e.complexity.Mutation.StartQuiz == nil {
+	case "Mutation.startQuizSession":
+		if e.complexity.Mutation.StartQuizSession == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_startQuiz_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_startQuizSession_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.StartQuiz(childComplexity, args["quizId"].(string)), true
+		return e.complexity.Mutation.StartQuizSession(childComplexity, args["sessionId"].(string)), true
 	case "Mutation.submitFeedback":
 		if e.complexity.Mutation.SubmitFeedback == nil {
 			break
@@ -3819,6 +3975,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateQuizQuestion(childComplexity, args["id"].(string), args["input"].(model.UpdateQuizQuestionInput)), true
+	case "Mutation.updateQuizSession":
+		if e.complexity.Mutation.UpdateQuizSession == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateQuizSession_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateQuizSession(childComplexity, args["id"].(string), args["input"].(model.UpdateQuizSessionInput)), true
 	case "Mutation.updateStreak":
 		if e.complexity.Mutation.UpdateStreak == nil {
 			break
@@ -4573,6 +4740,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Quiz(childComplexity, args["id"].(string)), true
+	case "Query.quizSession":
+		if e.complexity.Query.QuizSession == nil {
+			break
+		}
+
+		args, err := ec.field_Query_quizSession_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.QuizSession(childComplexity, args["id"].(string)), true
+	case "Query.quizSessions":
+		if e.complexity.Query.QuizSessions == nil {
+			break
+		}
+
+		args, err := ec.field_Query_quizSessions_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.QuizSessions(childComplexity, args["quizId"].(string), args["state"].(*model.QuizSessionState)), true
 	case "Query.quizSubmission":
 		if e.complexity.Query.QuizSubmission == nil {
 			break
@@ -4816,12 +5005,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Quiz.Project(childComplexity), true
-	case "Quiz.publishedAt":
-		if e.complexity.Quiz.PublishedAt == nil {
-			break
-		}
-
-		return e.complexity.Quiz.PublishedAt(childComplexity), true
 	case "Quiz.questions":
 		if e.complexity.Quiz.Questions == nil {
 			break
@@ -4840,12 +5023,29 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Quiz.RevealCorrectAnswers(childComplexity), true
+	case "Quiz.sessions":
+		if e.complexity.Quiz.Sessions == nil {
+			break
+		}
+
+		args, err := ec.field_Quiz_sessions_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Quiz.Sessions(childComplexity, args["state"].(*model.QuizSessionState)), true
 	case "Quiz.timeoutSeconds":
 		if e.complexity.Quiz.TimeoutSeconds == nil {
 			break
 		}
 
 		return e.complexity.Quiz.TimeoutSeconds(childComplexity), true
+	case "Quiz.userActiveSession":
+		if e.complexity.Quiz.UserActiveSession == nil {
+			break
+		}
+
+		return e.complexity.Quiz.UserActiveSession(childComplexity), true
 	case "Quiz.userActiveSubmission":
 		if e.complexity.Quiz.UserActiveSubmission == nil {
 			break
@@ -4858,6 +5058,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Quiz.UserCanStart(childComplexity), true
+	case "Quiz.userSessions":
+		if e.complexity.Quiz.UserSessions == nil {
+			break
+		}
+
+		return e.complexity.Quiz.UserSessions(childComplexity), true
 	case "Quiz.userSubmissions":
 		if e.complexity.Quiz.UserSubmissions == nil {
 			break
@@ -5146,6 +5352,85 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.QuizPredefinedAnswer.Question(childComplexity), true
 
+	case "QuizSession.accessCount":
+		if e.complexity.QuizSession.AccessCount == nil {
+			break
+		}
+
+		return e.complexity.QuizSession.AccessCount(childComplexity), true
+	case "QuizSession.createdAt":
+		if e.complexity.QuizSession.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.QuizSession.CreatedAt(childComplexity), true
+	case "QuizSession.createdBy":
+		if e.complexity.QuizSession.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.QuizSession.CreatedBy(childComplexity), true
+	case "QuizSession.finishAt":
+		if e.complexity.QuizSession.FinishAt == nil {
+			break
+		}
+
+		return e.complexity.QuizSession.FinishAt(childComplexity), true
+	case "QuizSession.id":
+		if e.complexity.QuizSession.ID == nil {
+			break
+		}
+
+		return e.complexity.QuizSession.ID(childComplexity), true
+	case "QuizSession.lockAt":
+		if e.complexity.QuizSession.LockAt == nil {
+			break
+		}
+
+		return e.complexity.QuizSession.LockAt(childComplexity), true
+	case "QuizSession.name":
+		if e.complexity.QuizSession.Name == nil {
+			break
+		}
+
+		return e.complexity.QuizSession.Name(childComplexity), true
+	case "QuizSession.openAt":
+		if e.complexity.QuizSession.OpenAt == nil {
+			break
+		}
+
+		return e.complexity.QuizSession.OpenAt(childComplexity), true
+	case "QuizSession.quiz":
+		if e.complexity.QuizSession.Quiz == nil {
+			break
+		}
+
+		return e.complexity.QuizSession.Quiz(childComplexity), true
+	case "QuizSession.state":
+		if e.complexity.QuizSession.State == nil {
+			break
+		}
+
+		return e.complexity.QuizSession.State(childComplexity), true
+	case "QuizSession.userHasAccess":
+		if e.complexity.QuizSession.UserHasAccess == nil {
+			break
+		}
+
+		return e.complexity.QuizSession.UserHasAccess(childComplexity), true
+	case "QuizSession.userSubmission":
+		if e.complexity.QuizSession.UserSubmission == nil {
+			break
+		}
+
+		return e.complexity.QuizSession.UserSubmission(childComplexity), true
+
+	case "QuizSubmission.autoSubmitted":
+		if e.complexity.QuizSubmission.AutoSubmitted == nil {
+			break
+		}
+
+		return e.complexity.QuizSubmission.AutoSubmitted(childComplexity), true
 	case "QuizSubmission.completedAt":
 		if e.complexity.QuizSubmission.CompletedAt == nil {
 			break
@@ -5218,6 +5503,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizSubmission.ScorePercentage(childComplexity), true
+	case "QuizSubmission.session":
+		if e.complexity.QuizSubmission.Session == nil {
+			break
+		}
+
+		return e.complexity.QuizSubmission.Session(childComplexity), true
 	case "QuizSubmission.startedAt":
 		if e.complexity.QuizSubmission.StartedAt == nil {
 			break
@@ -6528,6 +6819,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateQuizAchievementInput,
 		ec.unmarshalInputCreateQuizInput,
 		ec.unmarshalInputCreateQuizQuestionInput,
+		ec.unmarshalInputCreateQuizSessionInput,
 		ec.unmarshalInputCreateScoreAdjustmentInput,
 		ec.unmarshalInputCreateSimpleAchievementInput,
 		ec.unmarshalInputCreateStreakAchievementInput,
@@ -6542,6 +6834,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputEventFilter,
 		ec.unmarshalInputExternalContentFilter,
 		ec.unmarshalInputFeedbackFilter,
+		ec.unmarshalInputGrantQuizSessionAccessInput,
 		ec.unmarshalInputLeaderboardFilter,
 		ec.unmarshalInputProjectFilter,
 		ec.unmarshalInputQuizFilter,
@@ -6563,6 +6856,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateProjectInput,
 		ec.unmarshalInputUpdateQuizInput,
 		ec.unmarshalInputUpdateQuizQuestionInput,
+		ec.unmarshalInputUpdateQuizSessionInput,
 		ec.unmarshalInputUpdateStreakAchievementInput,
 		ec.unmarshalInputUpdateStreakInput,
 		ec.unmarshalInputUpdateSuperTeamInput,
@@ -7199,13 +7493,17 @@ type Quiz {
 
     questions: [QuizQuestion!]! @goField(forceResolver: true)
 
-    publishedAt: DateTime
     endTime: DateTime
 
-    # User-specific fields
+    # User-specific fields (legacy - prefer session-based access)
     userSubmissions: [QuizSubmission!]! @goField(forceResolver: true)
     userCanStart: Boolean! @goField(forceResolver: true)
     userActiveSubmission: QuizSubmission @goField(forceResolver: true)
+
+    # Session-based access (new)
+    sessions(state: QuizSessionState): [QuizSession!]! @goField(forceResolver: true)
+    userSessions: [QuizSession!]! @goField(forceResolver: true)
+    userActiveSession: QuizSession @goField(forceResolver: true)
 }
 
 # ==================== Quiz Question Interface ====================
@@ -7271,12 +7569,14 @@ type QuizPredefinedAnswer {
 type QuizSubmission {
     id: ID!
     quiz: Quiz! @goField(forceResolver: true)
+    session: QuizSession @goField(forceResolver: true)
     user: User! @goField(forceResolver: true)
 
     startedAt: DateTime!
     completedAt: DateTime
     expiresAt: DateTime
     isExpired: Boolean! @goField(forceResolver: true)
+    autoSubmitted: Boolean!
 
     questionOrder: [ID!]!
     orderedQuestions: [QuizQuestion!]! @goField(forceResolver: true)
@@ -7531,7 +7831,6 @@ input CreateQuizInput {
     allowRetakes: Boolean!
     completionPoints: Int!
 
-    publishedAt: DateTime
     endTime: DateTime
 }
 
@@ -7547,7 +7846,6 @@ input UpdateQuizInput {
     allowRetakes: Boolean
     completionPoints: Int
 
-    publishedAt: DateTime
     endTime: DateTime
 }
 
@@ -7601,8 +7899,6 @@ input QuizFilter {
     projectId: ID
     challengeId: ID
     ids: [ID!]
-    publishedAfter: DateTime
-    publishedBefore: DateTime
 }
 
 input UpdateAchievementInput {
@@ -8381,7 +8677,6 @@ extend type Mutation {
     createQuiz(input: CreateQuizInput!): Quiz! @requireRole(roles: ["admin", "superadmin"])
     updateQuiz(id: ID!, input: UpdateQuizInput!): Quiz! @requireRole(roles: ["admin", "superadmin"])
     deleteQuiz(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-    publishQuiz(id: ID!, publishedAt: DateTime!): Quiz! @requireRole(roles: ["admin", "superadmin"])
 
     # Admin: Question management
     addQuizQuestion(quizId: ID!, input: CreateQuizQuestionInput!): QuizQuestion! @requireRole(roles: ["admin", "superadmin"])
@@ -8392,8 +8687,7 @@ extend type Mutation {
     # Admin: Achievement integration
     createQuizAchievement(input: CreateQuizAchievementInput!): QuizAchievement! @requireRole(roles: ["admin", "superadmin"])
 
-    # User: Taking quizzes
-    startQuiz(quizId: ID!): QuizSubmission!
+    # User: Taking quizzes (via sessions - use startQuizSession)
     submitQuizAnswer(submissionId: ID!, input: SubmitQuizAnswerInput!): QuizResponse!
     finalizeQuiz(submissionId: ID!): QuizSubmission!
 
@@ -8404,6 +8698,100 @@ extend type Mutation {
         responses: [SubmitQuizAnswerInput!]!
         completedAt: DateTime
     ): QuizSubmission! @requireRole(roles: ["m2m", "admin", "superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/quiz_sessions.graphqls", Input: `# Quiz Session queries and mutations
+
+extend type Query {
+    # Quiz Sessions
+    quizSession(id: ID!): QuizSession @requireRole(roles: ["user", "admin", "superadmin"])
+    quizSessions(quizId: ID!, state: QuizSessionState): [QuizSession!]! @requireRole(roles: ["admin", "superadmin"])
+}
+
+extend type Mutation {
+    # Session CRUD
+    createQuizSession(input: CreateQuizSessionInput!): QuizSession!
+    updateQuizSession(id: ID!, input: UpdateQuizSessionInput!): QuizSession!
+    deleteQuizSession(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+
+    # Session state transitions
+    openQuizSession(id: ID!): QuizSession!
+    lockQuizSession(id: ID!): QuizSession!
+    finishQuizSession(id: ID!): QuizSession!
+    reopenQuizSession(id: ID!): QuizSession! @requireRole(roles: ["admin", "superadmin"])
+
+    # Session access management
+    grantQuizSessionAccess(input: GrantQuizSessionAccessInput!): Int!
+    revokeQuizSessionAccess(sessionId: ID!, userIds: [ID!]!): Boolean!
+    revokeAllQuizSessionAccess(sessionId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+
+    # User actions on sessions
+    startQuizSession(sessionId: ID!): QuizSubmission!
+    resetQuizSessionSubmission(sessionId: ID!): Boolean!
+}
+
+# ==================== Quiz Session Types ====================
+
+enum QuizSessionState {
+    DRAFT
+    OPEN
+    LOCKED
+    FINISHED
+}
+
+enum QuizAccessSourceType {
+    DIRECT
+    TEAM
+    SUPER_TEAM
+    CHURCH
+    ALL
+}
+
+type QuizSession {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    name: String
+
+    state: QuizSessionState!
+    openAt: DateTime
+    lockAt: DateTime
+    finishAt: DateTime
+
+    createdBy: User! @goField(forceResolver: true)
+    createdAt: DateTime!
+
+    # Access info (admin only)
+    accessCount: Int! @goField(forceResolver: true)
+
+    # User-specific fields
+    userHasAccess: Boolean! @goField(forceResolver: true)
+    userSubmission: QuizSubmission @goField(forceResolver: true)
+}
+
+# ==================== Quiz Session Input Types ====================
+
+input CreateQuizSessionInput {
+    quizId: ID!
+    name: String
+    openAt: DateTime
+    lockAt: DateTime
+    finishAt: DateTime
+}
+
+input UpdateQuizSessionInput {
+    name: String
+    openAt: DateTime
+    lockAt: DateTime
+    finishAt: DateTime
+}
+
+input GrantQuizSessionAccessInput {
+    sessionId: ID!
+    userIds: [ID!]
+    teamIds: [ID!]
+    superTeamIds: [ID!]
+    churchIds: [ID!]
+    allProjectUsers: Boolean
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/external_content.graphqls", Input: `# External Content queries and mutations
@@ -9284,6 +9672,17 @@ func (ec *executionContext) field_Mutation_createQuizAchievement_args(ctx contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createQuizSession_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateQuizSessionInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateQuizSessionInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createQuizSubmission_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9474,6 +9873,17 @@ func (ec *executionContext) field_Mutation_deleteQuizQuestion_args(ctx context.C
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_deleteQuizSession_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteQuiz_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9578,6 +9988,17 @@ func (ec *executionContext) field_Mutation_finalizeQuiz_args(ctx context.Context
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_finishQuizSession_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_forwardFeedbackToDesk_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9586,6 +10007,17 @@ func (ec *executionContext) field_Mutation_forwardFeedbackToDesk_args(ctx contex
 		return nil, err
 	}
 	args["feedbackId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_grantQuizSessionAccess_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNGrantQuizSessionAccessInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐGrantQuizSessionAccessInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -9638,6 +10070,17 @@ func (ec *executionContext) field_Mutation_linkAchievementToChallenge_args(ctx c
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_lockQuizSession_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_markContentItemCompleted_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9681,7 +10124,7 @@ func (ec *executionContext) field_Mutation_moveEvent_args(ctx context.Context, r
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_publishChallenge_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_openQuizSession_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
@@ -9689,15 +10132,10 @@ func (ec *executionContext) field_Mutation_publishChallenge_args(ctx context.Con
 		return nil, err
 	}
 	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "publishedAt", ec.unmarshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime)
-	if err != nil {
-		return nil, err
-	}
-	args["publishedAt"] = arg1
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_publishQuiz_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_publishChallenge_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
@@ -9799,6 +10237,17 @@ func (ec *executionContext) field_Mutation_removeUserFromProject_args(ctx contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_reopenQuizSession_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_reorderAchievements_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9831,6 +10280,17 @@ func (ec *executionContext) field_Mutation_reorderQuizQuestions_args(ctx context
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_resetQuizSessionSubmission_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "sessionId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["sessionId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_revokeAchievement_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9844,6 +10304,33 @@ func (ec *executionContext) field_Mutation_revokeAchievement_args(ctx context.Co
 		return nil, err
 	}
 	args["achievementId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_revokeAllQuizSessionAccess_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "sessionId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["sessionId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_revokeQuizSessionAccess_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "sessionId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["sessionId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "userIds", ec.unmarshalNID2ᚕstringᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["userIds"] = arg1
 	return args, nil
 }
 
@@ -9965,14 +10452,14 @@ func (ec *executionContext) field_Mutation_setNotificationPreference_args(ctx co
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_startQuiz_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_startQuizSession_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "quizId", ec.unmarshalNID2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "sessionId", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
 	}
-	args["quizId"] = arg0
+	args["sessionId"] = arg0
 	return args, nil
 }
 
@@ -10257,6 +10744,22 @@ func (ec *executionContext) field_Mutation_updateQuizQuestion_args(ctx context.C
 	}
 	args["id"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateQuizQuestionInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateQuizQuestionInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateQuizSession_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateQuizSessionInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateQuizSessionInput)
 	if err != nil {
 		return nil, err
 	}
@@ -10790,6 +11293,33 @@ func (ec *executionContext) field_Query_projects_args(ctx context.Context, rawAr
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_quizSession_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_quizSessions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "quizId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["quizId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "state", ec.unmarshalOQuizSessionState2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSessionState)
+	if err != nil {
+		return nil, err
+	}
+	args["state"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_quizSubmission_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -11139,6 +11669,17 @@ func (ec *executionContext) field_Query_webhooks_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["projectId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Quiz_sessions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "state", ec.unmarshalOQuizSessionState2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSessionState)
+	if err != nil {
+		return nil, err
+	}
+	args["state"] = arg0
 	return args, nil
 }
 
@@ -16420,8 +16961,6 @@ func (ec *executionContext) fieldContext_FreeTextQuestion_quiz(_ context.Context
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -16430,6 +16969,12 @@ func (ec *executionContext) fieldContext_FreeTextQuestion_quiz(_ context.Context
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "sessions":
+				return ec.fieldContext_Quiz_sessions(ctx, field)
+			case "userSessions":
+				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -16610,6 +17155,8 @@ func (ec *executionContext) fieldContext_FreeTextResponse_submission(_ context.C
 				return ec.fieldContext_QuizSubmission_id(ctx, field)
 			case "quiz":
 				return ec.fieldContext_QuizSubmission_quiz(ctx, field)
+			case "session":
+				return ec.fieldContext_QuizSubmission_session(ctx, field)
 			case "user":
 				return ec.fieldContext_QuizSubmission_user(ctx, field)
 			case "startedAt":
@@ -16620,6 +17167,8 @@ func (ec *executionContext) fieldContext_FreeTextResponse_submission(_ context.C
 				return ec.fieldContext_QuizSubmission_expiresAt(ctx, field)
 			case "isExpired":
 				return ec.fieldContext_QuizSubmission_isExpired(ctx, field)
+			case "autoSubmitted":
+				return ec.fieldContext_QuizSubmission_autoSubmitted(ctx, field)
 			case "questionOrder":
 				return ec.fieldContext_QuizSubmission_questionOrder(ctx, field)
 			case "orderedQuestions":
@@ -16981,8 +17530,6 @@ func (ec *executionContext) fieldContext_JsonQuestion_quiz(_ context.Context, fi
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -16991,6 +17538,12 @@ func (ec *executionContext) fieldContext_JsonQuestion_quiz(_ context.Context, fi
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "sessions":
+				return ec.fieldContext_Quiz_sessions(ctx, field)
+			case "userSessions":
+				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -17171,6 +17724,8 @@ func (ec *executionContext) fieldContext_JsonResponse_submission(_ context.Conte
 				return ec.fieldContext_QuizSubmission_id(ctx, field)
 			case "quiz":
 				return ec.fieldContext_QuizSubmission_quiz(ctx, field)
+			case "session":
+				return ec.fieldContext_QuizSubmission_session(ctx, field)
 			case "user":
 				return ec.fieldContext_QuizSubmission_user(ctx, field)
 			case "startedAt":
@@ -17181,6 +17736,8 @@ func (ec *executionContext) fieldContext_JsonResponse_submission(_ context.Conte
 				return ec.fieldContext_QuizSubmission_expiresAt(ctx, field)
 			case "isExpired":
 				return ec.fieldContext_QuizSubmission_isExpired(ctx, field)
+			case "autoSubmitted":
+				return ec.fieldContext_QuizSubmission_autoSubmitted(ctx, field)
 			case "questionOrder":
 				return ec.fieldContext_QuizSubmission_questionOrder(ctx, field)
 			case "orderedQuestions":
@@ -23408,8 +23965,6 @@ func (ec *executionContext) fieldContext_Mutation_createQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -23418,6 +23973,12 @@ func (ec *executionContext) fieldContext_Mutation_createQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "sessions":
+				return ec.fieldContext_Quiz_sessions(ctx, field)
+			case "userSessions":
+				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -23505,8 +24066,6 @@ func (ec *executionContext) fieldContext_Mutation_updateQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -23515,6 +24074,12 @@ func (ec *executionContext) fieldContext_Mutation_updateQuiz(ctx context.Context
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "sessions":
+				return ec.fieldContext_Quiz_sessions(ctx, field)
+			case "userSessions":
+				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -23586,103 +24151,6 @@ func (ec *executionContext) fieldContext_Mutation_deleteQuiz(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteQuiz_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_publishQuiz(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_publishQuiz,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().PublishQuiz(ctx, fc.Args["id"].(string), fc.Args["publishedAt"].(scalars.DateTime))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
-				if err != nil {
-					var zeroVal *model.Quiz
-					return zeroVal, err
-				}
-				if ec.directives.RequireRole == nil {
-					var zeroVal *model.Quiz
-					return zeroVal, errors.New("directive requireRole is not implemented")
-				}
-				return ec.directives.RequireRole(ctx, nil, directive0, roles)
-			}
-
-			next = directive1
-			return next
-		},
-		ec.marshalNQuiz2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuiz,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_publishQuiz(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Quiz_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Quiz_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Quiz_description(ctx, field)
-			case "image":
-				return ec.fieldContext_Quiz_image(ctx, field)
-			case "imageObject":
-				return ec.fieldContext_Quiz_imageObject(ctx, field)
-			case "project":
-				return ec.fieldContext_Quiz_project(ctx, field)
-			case "challenge":
-				return ec.fieldContext_Quiz_challenge(ctx, field)
-			case "timeoutSeconds":
-				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
-			case "randomizeQuestions":
-				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
-			case "revealCorrectAnswers":
-				return ec.fieldContext_Quiz_revealCorrectAnswers(ctx, field)
-			case "allowRetakes":
-				return ec.fieldContext_Quiz_allowRetakes(ctx, field)
-			case "completionPoints":
-				return ec.fieldContext_Quiz_completionPoints(ctx, field)
-			case "questions":
-				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
-			case "endTime":
-				return ec.fieldContext_Quiz_endTime(ctx, field)
-			case "userSubmissions":
-				return ec.fieldContext_Quiz_userSubmissions(ctx, field)
-			case "userCanStart":
-				return ec.fieldContext_Quiz_userCanStart(ctx, field)
-			case "userActiveSubmission":
-				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_publishQuiz_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -24024,77 +24492,6 @@ func (ec *executionContext) fieldContext_Mutation_createQuizAchievement(ctx cont
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_startQuiz(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_startQuiz,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().StartQuiz(ctx, fc.Args["quizId"].(string))
-		},
-		nil,
-		ec.marshalNQuizSubmission2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSubmission,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_startQuiz(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_QuizSubmission_id(ctx, field)
-			case "quiz":
-				return ec.fieldContext_QuizSubmission_quiz(ctx, field)
-			case "user":
-				return ec.fieldContext_QuizSubmission_user(ctx, field)
-			case "startedAt":
-				return ec.fieldContext_QuizSubmission_startedAt(ctx, field)
-			case "completedAt":
-				return ec.fieldContext_QuizSubmission_completedAt(ctx, field)
-			case "expiresAt":
-				return ec.fieldContext_QuizSubmission_expiresAt(ctx, field)
-			case "isExpired":
-				return ec.fieldContext_QuizSubmission_isExpired(ctx, field)
-			case "questionOrder":
-				return ec.fieldContext_QuizSubmission_questionOrder(ctx, field)
-			case "orderedQuestions":
-				return ec.fieldContext_QuizSubmission_orderedQuestions(ctx, field)
-			case "responses":
-				return ec.fieldContext_QuizSubmission_responses(ctx, field)
-			case "score":
-				return ec.fieldContext_QuizSubmission_score(ctx, field)
-			case "maxScore":
-				return ec.fieldContext_QuizSubmission_maxScore(ctx, field)
-			case "scorePercentage":
-				return ec.fieldContext_QuizSubmission_scorePercentage(ctx, field)
-			case "pointsAwarded":
-				return ec.fieldContext_QuizSubmission_pointsAwarded(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type QuizSubmission", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_startQuiz_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_submitQuizAnswer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -24165,6 +24562,8 @@ func (ec *executionContext) fieldContext_Mutation_finalizeQuiz(ctx context.Conte
 				return ec.fieldContext_QuizSubmission_id(ctx, field)
 			case "quiz":
 				return ec.fieldContext_QuizSubmission_quiz(ctx, field)
+			case "session":
+				return ec.fieldContext_QuizSubmission_session(ctx, field)
 			case "user":
 				return ec.fieldContext_QuizSubmission_user(ctx, field)
 			case "startedAt":
@@ -24175,6 +24574,8 @@ func (ec *executionContext) fieldContext_Mutation_finalizeQuiz(ctx context.Conte
 				return ec.fieldContext_QuizSubmission_expiresAt(ctx, field)
 			case "isExpired":
 				return ec.fieldContext_QuizSubmission_isExpired(ctx, field)
+			case "autoSubmitted":
+				return ec.fieldContext_QuizSubmission_autoSubmitted(ctx, field)
 			case "questionOrder":
 				return ec.fieldContext_QuizSubmission_questionOrder(ctx, field)
 			case "orderedQuestions":
@@ -24254,6 +24655,8 @@ func (ec *executionContext) fieldContext_Mutation_createQuizSubmission(ctx conte
 				return ec.fieldContext_QuizSubmission_id(ctx, field)
 			case "quiz":
 				return ec.fieldContext_QuizSubmission_quiz(ctx, field)
+			case "session":
+				return ec.fieldContext_QuizSubmission_session(ctx, field)
 			case "user":
 				return ec.fieldContext_QuizSubmission_user(ctx, field)
 			case "startedAt":
@@ -24264,6 +24667,8 @@ func (ec *executionContext) fieldContext_Mutation_createQuizSubmission(ctx conte
 				return ec.fieldContext_QuizSubmission_expiresAt(ctx, field)
 			case "isExpired":
 				return ec.fieldContext_QuizSubmission_isExpired(ctx, field)
+			case "autoSubmitted":
+				return ec.fieldContext_QuizSubmission_autoSubmitted(ctx, field)
 			case "questionOrder":
 				return ec.fieldContext_QuizSubmission_questionOrder(ctx, field)
 			case "orderedQuestions":
@@ -24290,6 +24695,742 @@ func (ec *executionContext) fieldContext_Mutation_createQuizSubmission(ctx conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createQuizSubmission_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createQuizSession(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_createQuizSession,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().CreateQuizSession(ctx, fc.Args["input"].(model.CreateQuizSessionInput))
+		},
+		nil,
+		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createQuizSession(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSession_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSession_quiz(ctx, field)
+			case "name":
+				return ec.fieldContext_QuizSession_name(ctx, field)
+			case "state":
+				return ec.fieldContext_QuizSession_state(ctx, field)
+			case "openAt":
+				return ec.fieldContext_QuizSession_openAt(ctx, field)
+			case "lockAt":
+				return ec.fieldContext_QuizSession_lockAt(ctx, field)
+			case "finishAt":
+				return ec.fieldContext_QuizSession_finishAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_QuizSession_createdBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_QuizSession_createdAt(ctx, field)
+			case "accessCount":
+				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "userHasAccess":
+				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
+			case "userSubmission":
+				return ec.fieldContext_QuizSession_userSubmission(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSession", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createQuizSession_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateQuizSession(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateQuizSession,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateQuizSession(ctx, fc.Args["id"].(string), fc.Args["input"].(model.UpdateQuizSessionInput))
+		},
+		nil,
+		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateQuizSession(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSession_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSession_quiz(ctx, field)
+			case "name":
+				return ec.fieldContext_QuizSession_name(ctx, field)
+			case "state":
+				return ec.fieldContext_QuizSession_state(ctx, field)
+			case "openAt":
+				return ec.fieldContext_QuizSession_openAt(ctx, field)
+			case "lockAt":
+				return ec.fieldContext_QuizSession_lockAt(ctx, field)
+			case "finishAt":
+				return ec.fieldContext_QuizSession_finishAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_QuizSession_createdBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_QuizSession_createdAt(ctx, field)
+			case "accessCount":
+				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "userHasAccess":
+				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
+			case "userSubmission":
+				return ec.fieldContext_QuizSession_userSubmission(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSession", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateQuizSession_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteQuizSession(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteQuizSession,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().DeleteQuizSession(ctx, fc.Args["id"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal bool
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal bool
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteQuizSession(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteQuizSession_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_openQuizSession(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_openQuizSession,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().OpenQuizSession(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_openQuizSession(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSession_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSession_quiz(ctx, field)
+			case "name":
+				return ec.fieldContext_QuizSession_name(ctx, field)
+			case "state":
+				return ec.fieldContext_QuizSession_state(ctx, field)
+			case "openAt":
+				return ec.fieldContext_QuizSession_openAt(ctx, field)
+			case "lockAt":
+				return ec.fieldContext_QuizSession_lockAt(ctx, field)
+			case "finishAt":
+				return ec.fieldContext_QuizSession_finishAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_QuizSession_createdBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_QuizSession_createdAt(ctx, field)
+			case "accessCount":
+				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "userHasAccess":
+				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
+			case "userSubmission":
+				return ec.fieldContext_QuizSession_userSubmission(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSession", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_openQuizSession_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_lockQuizSession(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_lockQuizSession,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().LockQuizSession(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_lockQuizSession(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSession_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSession_quiz(ctx, field)
+			case "name":
+				return ec.fieldContext_QuizSession_name(ctx, field)
+			case "state":
+				return ec.fieldContext_QuizSession_state(ctx, field)
+			case "openAt":
+				return ec.fieldContext_QuizSession_openAt(ctx, field)
+			case "lockAt":
+				return ec.fieldContext_QuizSession_lockAt(ctx, field)
+			case "finishAt":
+				return ec.fieldContext_QuizSession_finishAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_QuizSession_createdBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_QuizSession_createdAt(ctx, field)
+			case "accessCount":
+				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "userHasAccess":
+				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
+			case "userSubmission":
+				return ec.fieldContext_QuizSession_userSubmission(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSession", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_lockQuizSession_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_finishQuizSession(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_finishQuizSession,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().FinishQuizSession(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_finishQuizSession(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSession_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSession_quiz(ctx, field)
+			case "name":
+				return ec.fieldContext_QuizSession_name(ctx, field)
+			case "state":
+				return ec.fieldContext_QuizSession_state(ctx, field)
+			case "openAt":
+				return ec.fieldContext_QuizSession_openAt(ctx, field)
+			case "lockAt":
+				return ec.fieldContext_QuizSession_lockAt(ctx, field)
+			case "finishAt":
+				return ec.fieldContext_QuizSession_finishAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_QuizSession_createdBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_QuizSession_createdAt(ctx, field)
+			case "accessCount":
+				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "userHasAccess":
+				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
+			case "userSubmission":
+				return ec.fieldContext_QuizSession_userSubmission(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSession", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_finishQuizSession_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_reopenQuizSession(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_reopenQuizSession,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().ReopenQuizSession(ctx, fc.Args["id"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_reopenQuizSession(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSession_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSession_quiz(ctx, field)
+			case "name":
+				return ec.fieldContext_QuizSession_name(ctx, field)
+			case "state":
+				return ec.fieldContext_QuizSession_state(ctx, field)
+			case "openAt":
+				return ec.fieldContext_QuizSession_openAt(ctx, field)
+			case "lockAt":
+				return ec.fieldContext_QuizSession_lockAt(ctx, field)
+			case "finishAt":
+				return ec.fieldContext_QuizSession_finishAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_QuizSession_createdBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_QuizSession_createdAt(ctx, field)
+			case "accessCount":
+				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "userHasAccess":
+				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
+			case "userSubmission":
+				return ec.fieldContext_QuizSession_userSubmission(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSession", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_reopenQuizSession_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_grantQuizSessionAccess(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_grantQuizSessionAccess,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().GrantQuizSessionAccess(ctx, fc.Args["input"].(model.GrantQuizSessionAccessInput))
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_grantQuizSessionAccess(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_grantQuizSessionAccess_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_revokeQuizSessionAccess(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_revokeQuizSessionAccess,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().RevokeQuizSessionAccess(ctx, fc.Args["sessionId"].(string), fc.Args["userIds"].([]string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_revokeQuizSessionAccess(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_revokeQuizSessionAccess_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_revokeAllQuizSessionAccess(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_revokeAllQuizSessionAccess,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().RevokeAllQuizSessionAccess(ctx, fc.Args["sessionId"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal bool
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal bool
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_revokeAllQuizSessionAccess(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_revokeAllQuizSessionAccess_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_startQuizSession(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_startQuizSession,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().StartQuizSession(ctx, fc.Args["sessionId"].(string))
+		},
+		nil,
+		ec.marshalNQuizSubmission2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSubmission,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_startQuizSession(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSubmission_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSubmission_quiz(ctx, field)
+			case "session":
+				return ec.fieldContext_QuizSubmission_session(ctx, field)
+			case "user":
+				return ec.fieldContext_QuizSubmission_user(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_QuizSubmission_startedAt(ctx, field)
+			case "completedAt":
+				return ec.fieldContext_QuizSubmission_completedAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_QuizSubmission_expiresAt(ctx, field)
+			case "isExpired":
+				return ec.fieldContext_QuizSubmission_isExpired(ctx, field)
+			case "autoSubmitted":
+				return ec.fieldContext_QuizSubmission_autoSubmitted(ctx, field)
+			case "questionOrder":
+				return ec.fieldContext_QuizSubmission_questionOrder(ctx, field)
+			case "orderedQuestions":
+				return ec.fieldContext_QuizSubmission_orderedQuestions(ctx, field)
+			case "responses":
+				return ec.fieldContext_QuizSubmission_responses(ctx, field)
+			case "score":
+				return ec.fieldContext_QuizSubmission_score(ctx, field)
+			case "maxScore":
+				return ec.fieldContext_QuizSubmission_maxScore(ctx, field)
+			case "scorePercentage":
+				return ec.fieldContext_QuizSubmission_scorePercentage(ctx, field)
+			case "pointsAwarded":
+				return ec.fieldContext_QuizSubmission_pointsAwarded(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSubmission", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_startQuizSession_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_resetQuizSessionSubmission(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_resetQuizSessionSubmission,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().ResetQuizSessionSubmission(ctx, fc.Args["sessionId"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_resetQuizSessionSubmission(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_resetQuizSessionSubmission_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -25422,8 +26563,6 @@ func (ec *executionContext) fieldContext_NumberQuestion_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -25432,6 +26571,12 @@ func (ec *executionContext) fieldContext_NumberQuestion_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "sessions":
+				return ec.fieldContext_Quiz_sessions(ctx, field)
+			case "userSessions":
+				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -25699,6 +26844,8 @@ func (ec *executionContext) fieldContext_NumberResponse_submission(_ context.Con
 				return ec.fieldContext_QuizSubmission_id(ctx, field)
 			case "quiz":
 				return ec.fieldContext_QuizSubmission_quiz(ctx, field)
+			case "session":
+				return ec.fieldContext_QuizSubmission_session(ctx, field)
 			case "user":
 				return ec.fieldContext_QuizSubmission_user(ctx, field)
 			case "startedAt":
@@ -25709,6 +26856,8 @@ func (ec *executionContext) fieldContext_NumberResponse_submission(_ context.Con
 				return ec.fieldContext_QuizSubmission_expiresAt(ctx, field)
 			case "isExpired":
 				return ec.fieldContext_QuizSubmission_isExpired(ctx, field)
+			case "autoSubmitted":
+				return ec.fieldContext_QuizSubmission_autoSubmitted(ctx, field)
 			case "questionOrder":
 				return ec.fieldContext_QuizSubmission_questionOrder(ctx, field)
 			case "orderedQuestions":
@@ -26070,8 +27219,6 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_quiz(_ context.Conte
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -26080,6 +27227,12 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_quiz(_ context.Conte
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "sessions":
+				return ec.fieldContext_Quiz_sessions(ctx, field)
+			case "userSessions":
+				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -26330,6 +27483,8 @@ func (ec *executionContext) fieldContext_PredefinedResponse_submission(_ context
 				return ec.fieldContext_QuizSubmission_id(ctx, field)
 			case "quiz":
 				return ec.fieldContext_QuizSubmission_quiz(ctx, field)
+			case "session":
+				return ec.fieldContext_QuizSubmission_session(ctx, field)
 			case "user":
 				return ec.fieldContext_QuizSubmission_user(ctx, field)
 			case "startedAt":
@@ -26340,6 +27495,8 @@ func (ec *executionContext) fieldContext_PredefinedResponse_submission(_ context
 				return ec.fieldContext_QuizSubmission_expiresAt(ctx, field)
 			case "isExpired":
 				return ec.fieldContext_QuizSubmission_isExpired(ctx, field)
+			case "autoSubmitted":
+				return ec.fieldContext_QuizSubmission_autoSubmitted(ctx, field)
 			case "questionOrder":
 				return ec.fieldContext_QuizSubmission_questionOrder(ctx, field)
 			case "orderedQuestions":
@@ -29637,8 +30794,6 @@ func (ec *executionContext) fieldContext_Query_quiz(ctx context.Context, field g
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -29647,6 +30802,12 @@ func (ec *executionContext) fieldContext_Query_quiz(ctx context.Context, field g
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "sessions":
+				return ec.fieldContext_Quiz_sessions(ctx, field)
+			case "userSessions":
+				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -29779,6 +30940,8 @@ func (ec *executionContext) fieldContext_Query_quizSubmission(ctx context.Contex
 				return ec.fieldContext_QuizSubmission_id(ctx, field)
 			case "quiz":
 				return ec.fieldContext_QuizSubmission_quiz(ctx, field)
+			case "session":
+				return ec.fieldContext_QuizSubmission_session(ctx, field)
 			case "user":
 				return ec.fieldContext_QuizSubmission_user(ctx, field)
 			case "startedAt":
@@ -29789,6 +30952,8 @@ func (ec *executionContext) fieldContext_Query_quizSubmission(ctx context.Contex
 				return ec.fieldContext_QuizSubmission_expiresAt(ctx, field)
 			case "isExpired":
 				return ec.fieldContext_QuizSubmission_isExpired(ctx, field)
+			case "autoSubmitted":
+				return ec.fieldContext_QuizSubmission_autoSubmitted(ctx, field)
 			case "questionOrder":
 				return ec.fieldContext_QuizSubmission_questionOrder(ctx, field)
 			case "orderedQuestions":
@@ -29882,6 +31047,176 @@ func (ec *executionContext) fieldContext_Query_quizSubmissions(ctx context.Conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_quizSubmissions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_quizSession(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_quizSession,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().QuizSession(ctx, fc.Args["id"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user", "admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.QuizSession
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalOQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_quizSession(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSession_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSession_quiz(ctx, field)
+			case "name":
+				return ec.fieldContext_QuizSession_name(ctx, field)
+			case "state":
+				return ec.fieldContext_QuizSession_state(ctx, field)
+			case "openAt":
+				return ec.fieldContext_QuizSession_openAt(ctx, field)
+			case "lockAt":
+				return ec.fieldContext_QuizSession_lockAt(ctx, field)
+			case "finishAt":
+				return ec.fieldContext_QuizSession_finishAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_QuizSession_createdBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_QuizSession_createdAt(ctx, field)
+			case "accessCount":
+				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "userHasAccess":
+				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
+			case "userSubmission":
+				return ec.fieldContext_QuizSession_userSubmission(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSession", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_quizSession_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_quizSessions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_quizSessions,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().QuizSessions(ctx, fc.Args["quizId"].(string), fc.Args["state"].(*model.QuizSessionState))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal []model.QuizSession
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal []model.QuizSession
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNQuizSession2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSessionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_quizSessions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSession_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSession_quiz(ctx, field)
+			case "name":
+				return ec.fieldContext_QuizSession_name(ctx, field)
+			case "state":
+				return ec.fieldContext_QuizSession_state(ctx, field)
+			case "openAt":
+				return ec.fieldContext_QuizSession_openAt(ctx, field)
+			case "lockAt":
+				return ec.fieldContext_QuizSession_lockAt(ctx, field)
+			case "finishAt":
+				return ec.fieldContext_QuizSession_finishAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_QuizSession_createdBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_QuizSession_createdAt(ctx, field)
+			case "accessCount":
+				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "userHasAccess":
+				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
+			case "userSubmission":
+				return ec.fieldContext_QuizSession_userSubmission(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSession", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_quizSessions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -31001,35 +32336,6 @@ func (ec *executionContext) fieldContext_Quiz_questions(_ context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Quiz_publishedAt(ctx context.Context, field graphql.CollectedField, obj *model.Quiz) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Quiz_publishedAt,
-		func(ctx context.Context) (any, error) {
-			return obj.PublishedAt, nil
-		},
-		nil,
-		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Quiz_publishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Quiz",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DateTime does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Quiz_endTime(ctx context.Context, field graphql.CollectedField, obj *model.Quiz) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -31087,6 +32393,8 @@ func (ec *executionContext) fieldContext_Quiz_userSubmissions(_ context.Context,
 				return ec.fieldContext_QuizSubmission_id(ctx, field)
 			case "quiz":
 				return ec.fieldContext_QuizSubmission_quiz(ctx, field)
+			case "session":
+				return ec.fieldContext_QuizSubmission_session(ctx, field)
 			case "user":
 				return ec.fieldContext_QuizSubmission_user(ctx, field)
 			case "startedAt":
@@ -31097,6 +32405,8 @@ func (ec *executionContext) fieldContext_Quiz_userSubmissions(_ context.Context,
 				return ec.fieldContext_QuizSubmission_expiresAt(ctx, field)
 			case "isExpired":
 				return ec.fieldContext_QuizSubmission_isExpired(ctx, field)
+			case "autoSubmitted":
+				return ec.fieldContext_QuizSubmission_autoSubmitted(ctx, field)
 			case "questionOrder":
 				return ec.fieldContext_QuizSubmission_questionOrder(ctx, field)
 			case "orderedQuestions":
@@ -31175,6 +32485,8 @@ func (ec *executionContext) fieldContext_Quiz_userActiveSubmission(_ context.Con
 				return ec.fieldContext_QuizSubmission_id(ctx, field)
 			case "quiz":
 				return ec.fieldContext_QuizSubmission_quiz(ctx, field)
+			case "session":
+				return ec.fieldContext_QuizSubmission_session(ctx, field)
 			case "user":
 				return ec.fieldContext_QuizSubmission_user(ctx, field)
 			case "startedAt":
@@ -31185,6 +32497,8 @@ func (ec *executionContext) fieldContext_Quiz_userActiveSubmission(_ context.Con
 				return ec.fieldContext_QuizSubmission_expiresAt(ctx, field)
 			case "isExpired":
 				return ec.fieldContext_QuizSubmission_isExpired(ctx, field)
+			case "autoSubmitted":
+				return ec.fieldContext_QuizSubmission_autoSubmitted(ctx, field)
 			case "questionOrder":
 				return ec.fieldContext_QuizSubmission_questionOrder(ctx, field)
 			case "orderedQuestions":
@@ -31201,6 +32515,183 @@ func (ec *executionContext) fieldContext_Quiz_userActiveSubmission(_ context.Con
 				return ec.fieldContext_QuizSubmission_pointsAwarded(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type QuizSubmission", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Quiz_sessions(ctx context.Context, field graphql.CollectedField, obj *model.Quiz) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Quiz_sessions,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Quiz().Sessions(ctx, obj, fc.Args["state"].(*model.QuizSessionState))
+		},
+		nil,
+		ec.marshalNQuizSession2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSessionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Quiz_sessions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Quiz",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSession_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSession_quiz(ctx, field)
+			case "name":
+				return ec.fieldContext_QuizSession_name(ctx, field)
+			case "state":
+				return ec.fieldContext_QuizSession_state(ctx, field)
+			case "openAt":
+				return ec.fieldContext_QuizSession_openAt(ctx, field)
+			case "lockAt":
+				return ec.fieldContext_QuizSession_lockAt(ctx, field)
+			case "finishAt":
+				return ec.fieldContext_QuizSession_finishAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_QuizSession_createdBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_QuizSession_createdAt(ctx, field)
+			case "accessCount":
+				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "userHasAccess":
+				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
+			case "userSubmission":
+				return ec.fieldContext_QuizSession_userSubmission(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSession", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Quiz_sessions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Quiz_userSessions(ctx context.Context, field graphql.CollectedField, obj *model.Quiz) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Quiz_userSessions,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Quiz().UserSessions(ctx, obj)
+		},
+		nil,
+		ec.marshalNQuizSession2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSessionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Quiz_userSessions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Quiz",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSession_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSession_quiz(ctx, field)
+			case "name":
+				return ec.fieldContext_QuizSession_name(ctx, field)
+			case "state":
+				return ec.fieldContext_QuizSession_state(ctx, field)
+			case "openAt":
+				return ec.fieldContext_QuizSession_openAt(ctx, field)
+			case "lockAt":
+				return ec.fieldContext_QuizSession_lockAt(ctx, field)
+			case "finishAt":
+				return ec.fieldContext_QuizSession_finishAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_QuizSession_createdBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_QuizSession_createdAt(ctx, field)
+			case "accessCount":
+				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "userHasAccess":
+				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
+			case "userSubmission":
+				return ec.fieldContext_QuizSession_userSubmission(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSession", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Quiz_userActiveSession(ctx context.Context, field graphql.CollectedField, obj *model.Quiz) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Quiz_userActiveSession,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Quiz().UserActiveSession(ctx, obj)
+		},
+		nil,
+		ec.marshalOQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Quiz_userActiveSession(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Quiz",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSession_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSession_quiz(ctx, field)
+			case "name":
+				return ec.fieldContext_QuizSession_name(ctx, field)
+			case "state":
+				return ec.fieldContext_QuizSession_state(ctx, field)
+			case "openAt":
+				return ec.fieldContext_QuizSession_openAt(ctx, field)
+			case "lockAt":
+				return ec.fieldContext_QuizSession_lockAt(ctx, field)
+			case "finishAt":
+				return ec.fieldContext_QuizSession_finishAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_QuizSession_createdBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_QuizSession_createdAt(ctx, field)
+			case "accessCount":
+				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "userHasAccess":
+				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
+			case "userSubmission":
+				return ec.fieldContext_QuizSession_userSubmission(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSession", field.Name)
 		},
 	}
 	return fc, nil
@@ -31800,8 +33291,6 @@ func (ec *executionContext) fieldContext_QuizAchievement_quiz(_ context.Context,
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -31810,6 +33299,12 @@ func (ec *executionContext) fieldContext_QuizAchievement_quiz(_ context.Context,
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "sessions":
+				return ec.fieldContext_Quiz_sessions(ctx, field)
+			case "userSessions":
+				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -32459,8 +33954,6 @@ func (ec *executionContext) fieldContext_QuizChallenge_quiz(_ context.Context, f
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -32469,6 +33962,12 @@ func (ec *executionContext) fieldContext_QuizChallenge_quiz(_ context.Context, f
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "sessions":
+				return ec.fieldContext_Quiz_sessions(ctx, field)
+			case "userSessions":
+				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -32658,8 +34157,6 @@ func (ec *executionContext) fieldContext_QuizEdge_node(_ context.Context, field 
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -32668,6 +34165,12 @@ func (ec *executionContext) fieldContext_QuizEdge_node(_ context.Context, field 
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "sessions":
+				return ec.fieldContext_Quiz_sessions(ctx, field)
+			case "userSessions":
+				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
 		},
@@ -32820,6 +34323,472 @@ func (ec *executionContext) fieldContext_QuizPredefinedAnswer_isCorrect(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _QuizSession_id(ctx context.Context, field graphql.CollectedField, obj *model.QuizSession) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizSession_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizSession_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizSession",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizSession_quiz(ctx context.Context, field graphql.CollectedField, obj *model.QuizSession) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizSession_quiz,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizSession().Quiz(ctx, obj)
+		},
+		nil,
+		ec.marshalNQuiz2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuiz,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizSession_quiz(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizSession",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Quiz_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Quiz_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Quiz_description(ctx, field)
+			case "image":
+				return ec.fieldContext_Quiz_image(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_Quiz_imageObject(ctx, field)
+			case "project":
+				return ec.fieldContext_Quiz_project(ctx, field)
+			case "challenge":
+				return ec.fieldContext_Quiz_challenge(ctx, field)
+			case "timeoutSeconds":
+				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
+			case "randomizeQuestions":
+				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
+			case "revealCorrectAnswers":
+				return ec.fieldContext_Quiz_revealCorrectAnswers(ctx, field)
+			case "allowRetakes":
+				return ec.fieldContext_Quiz_allowRetakes(ctx, field)
+			case "completionPoints":
+				return ec.fieldContext_Quiz_completionPoints(ctx, field)
+			case "questions":
+				return ec.fieldContext_Quiz_questions(ctx, field)
+			case "endTime":
+				return ec.fieldContext_Quiz_endTime(ctx, field)
+			case "userSubmissions":
+				return ec.fieldContext_Quiz_userSubmissions(ctx, field)
+			case "userCanStart":
+				return ec.fieldContext_Quiz_userCanStart(ctx, field)
+			case "userActiveSubmission":
+				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "sessions":
+				return ec.fieldContext_Quiz_sessions(ctx, field)
+			case "userSessions":
+				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizSession_name(ctx context.Context, field graphql.CollectedField, obj *model.QuizSession) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizSession_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizSession_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizSession",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizSession_state(ctx context.Context, field graphql.CollectedField, obj *model.QuizSession) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizSession_state,
+		func(ctx context.Context) (any, error) {
+			return obj.State, nil
+		},
+		nil,
+		ec.marshalNQuizSessionState2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSessionState,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizSession_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizSession",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type QuizSessionState does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizSession_openAt(ctx context.Context, field graphql.CollectedField, obj *model.QuizSession) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizSession_openAt,
+		func(ctx context.Context) (any, error) {
+			return obj.OpenAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizSession_openAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizSession",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizSession_lockAt(ctx context.Context, field graphql.CollectedField, obj *model.QuizSession) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizSession_lockAt,
+		func(ctx context.Context) (any, error) {
+			return obj.LockAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizSession_lockAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizSession",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizSession_finishAt(ctx context.Context, field graphql.CollectedField, obj *model.QuizSession) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizSession_finishAt,
+		func(ctx context.Context) (any, error) {
+			return obj.FinishAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizSession_finishAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizSession",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizSession_createdBy(ctx context.Context, field graphql.CollectedField, obj *model.QuizSession) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizSession_createdBy,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizSession().CreatedBy(ctx, obj)
+		},
+		nil,
+		ec.marshalNUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizSession_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizSession",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "membersId":
+				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "churchId":
+				return ec.fieldContext_User_churchId(ctx, field)
+			case "church":
+				return ec.fieldContext_User_church(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "image":
+				return ec.fieldContext_User_image(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_User_imageObject(ctx, field)
+			case "projects":
+				return ec.fieldContext_User_projects(ctx, field)
+			case "events":
+				return ec.fieldContext_User_events(ctx, field)
+			case "teams":
+				return ec.fieldContext_User_teams(ctx, field)
+			case "superTeams":
+				return ec.fieldContext_User_superTeams(ctx, field)
+			case "roles":
+				return ec.fieldContext_User_roles(ctx, field)
+			case "consentStatus":
+				return ec.fieldContext_User_consentStatus(ctx, field)
+			case "language":
+				return ec.fieldContext_User_language(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizSession_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.QuizSession) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizSession_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizSession_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizSession",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizSession_accessCount(ctx context.Context, field graphql.CollectedField, obj *model.QuizSession) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizSession_accessCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizSession().AccessCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizSession_accessCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizSession",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizSession_userHasAccess(ctx context.Context, field graphql.CollectedField, obj *model.QuizSession) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizSession_userHasAccess,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizSession().UserHasAccess(ctx, obj)
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizSession_userHasAccess(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizSession",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizSession_userSubmission(ctx context.Context, field graphql.CollectedField, obj *model.QuizSession) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizSession_userSubmission,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizSession().UserSubmission(ctx, obj)
+		},
+		nil,
+		ec.marshalOQuizSubmission2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSubmission,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizSession_userSubmission(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizSession",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSubmission_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSubmission_quiz(ctx, field)
+			case "session":
+				return ec.fieldContext_QuizSubmission_session(ctx, field)
+			case "user":
+				return ec.fieldContext_QuizSubmission_user(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_QuizSubmission_startedAt(ctx, field)
+			case "completedAt":
+				return ec.fieldContext_QuizSubmission_completedAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_QuizSubmission_expiresAt(ctx, field)
+			case "isExpired":
+				return ec.fieldContext_QuizSubmission_isExpired(ctx, field)
+			case "autoSubmitted":
+				return ec.fieldContext_QuizSubmission_autoSubmitted(ctx, field)
+			case "questionOrder":
+				return ec.fieldContext_QuizSubmission_questionOrder(ctx, field)
+			case "orderedQuestions":
+				return ec.fieldContext_QuizSubmission_orderedQuestions(ctx, field)
+			case "responses":
+				return ec.fieldContext_QuizSubmission_responses(ctx, field)
+			case "score":
+				return ec.fieldContext_QuizSubmission_score(ctx, field)
+			case "maxScore":
+				return ec.fieldContext_QuizSubmission_maxScore(ctx, field)
+			case "scorePercentage":
+				return ec.fieldContext_QuizSubmission_scorePercentage(ctx, field)
+			case "pointsAwarded":
+				return ec.fieldContext_QuizSubmission_pointsAwarded(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSubmission", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _QuizSubmission_id(ctx context.Context, field graphql.CollectedField, obj *model.QuizSubmission) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -32899,8 +34868,6 @@ func (ec *executionContext) fieldContext_QuizSubmission_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_completionPoints(ctx, field)
 			case "questions":
 				return ec.fieldContext_Quiz_questions(ctx, field)
-			case "publishedAt":
-				return ec.fieldContext_Quiz_publishedAt(ctx, field)
 			case "endTime":
 				return ec.fieldContext_Quiz_endTime(ctx, field)
 			case "userSubmissions":
@@ -32909,8 +34876,69 @@ func (ec *executionContext) fieldContext_QuizSubmission_quiz(_ context.Context, 
 				return ec.fieldContext_Quiz_userCanStart(ctx, field)
 			case "userActiveSubmission":
 				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "sessions":
+				return ec.fieldContext_Quiz_sessions(ctx, field)
+			case "userSessions":
+				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizSubmission_session(ctx context.Context, field graphql.CollectedField, obj *model.QuizSubmission) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizSubmission_session,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizSubmission().Session(ctx, obj)
+		},
+		nil,
+		ec.marshalOQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizSubmission_session(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizSubmission",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSession_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSession_quiz(ctx, field)
+			case "name":
+				return ec.fieldContext_QuizSession_name(ctx, field)
+			case "state":
+				return ec.fieldContext_QuizSession_state(ctx, field)
+			case "openAt":
+				return ec.fieldContext_QuizSession_openAt(ctx, field)
+			case "lockAt":
+				return ec.fieldContext_QuizSession_lockAt(ctx, field)
+			case "finishAt":
+				return ec.fieldContext_QuizSession_finishAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_QuizSession_createdBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_QuizSession_createdAt(ctx, field)
+			case "accessCount":
+				return ec.fieldContext_QuizSession_accessCount(ctx, field)
+			case "userHasAccess":
+				return ec.fieldContext_QuizSession_userHasAccess(ctx, field)
+			case "userSubmission":
+				return ec.fieldContext_QuizSession_userSubmission(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSession", field.Name)
 		},
 	}
 	return fc, nil
@@ -33096,6 +35124,35 @@ func (ec *executionContext) fieldContext_QuizSubmission_isExpired(_ context.Cont
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizSubmission_autoSubmitted(ctx context.Context, field graphql.CollectedField, obj *model.QuizSubmission) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizSubmission_autoSubmitted,
+		func(ctx context.Context) (any, error) {
+			return obj.AutoSubmitted, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizSubmission_autoSubmitted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizSubmission",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
 		},
@@ -33466,6 +35523,8 @@ func (ec *executionContext) fieldContext_QuizSubmissionEdge_node(_ context.Conte
 				return ec.fieldContext_QuizSubmission_id(ctx, field)
 			case "quiz":
 				return ec.fieldContext_QuizSubmission_quiz(ctx, field)
+			case "session":
+				return ec.fieldContext_QuizSubmission_session(ctx, field)
 			case "user":
 				return ec.fieldContext_QuizSubmission_user(ctx, field)
 			case "startedAt":
@@ -33476,6 +35535,8 @@ func (ec *executionContext) fieldContext_QuizSubmissionEdge_node(_ context.Conte
 				return ec.fieldContext_QuizSubmission_expiresAt(ctx, field)
 			case "isExpired":
 				return ec.fieldContext_QuizSubmission_isExpired(ctx, field)
+			case "autoSubmitted":
+				return ec.fieldContext_QuizSubmission_autoSubmitted(ctx, field)
 			case "questionOrder":
 				return ec.fieldContext_QuizSubmission_questionOrder(ctx, field)
 			case "orderedQuestions":
@@ -43127,7 +45188,7 @@ func (ec *executionContext) unmarshalInputCreateQuizInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "projectId", "challengeId", "timeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "publishedAt", "endTime"}
+	fieldsInOrder := [...]string{"name", "description", "image", "projectId", "challengeId", "timeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "endTime"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -43204,13 +45265,6 @@ func (ec *executionContext) unmarshalInputCreateQuizInput(ctx context.Context, o
 				return it, err
 			}
 			it.CompletionPoints = data
-		case "publishedAt":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedAt"))
-			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PublishedAt = data
 		case "endTime":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endTime"))
 			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
@@ -43308,6 +45362,61 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.StepValue = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateQuizSessionInput(ctx context.Context, obj any) (model.CreateQuizSessionInput, error) {
+	var it model.CreateQuizSessionInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"quizId", "name", "openAt", "lockAt", "finishAt"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "quizId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("quizId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.QuizID = data
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "openAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("openAt"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OpenAt = data
+		case "lockAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lockAt"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LockAt = data
+		case "finishAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("finishAt"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FinishAt = data
 		}
 	}
 
@@ -44189,6 +46298,68 @@ func (ec *executionContext) unmarshalInputFeedbackFilter(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputGrantQuizSessionAccessInput(ctx context.Context, obj any) (model.GrantQuizSessionAccessInput, error) {
+	var it model.GrantQuizSessionAccessInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"sessionId", "userIds", "teamIds", "superTeamIds", "churchIds", "allProjectUsers"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "sessionId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sessionId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SessionID = data
+		case "userIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userIds"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserIds = data
+		case "teamIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("teamIds"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TeamIds = data
+		case "superTeamIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("superTeamIds"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SuperTeamIds = data
+		case "churchIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("churchIds"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChurchIds = data
+		case "allProjectUsers":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allProjectUsers"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AllProjectUsers = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputLeaderboardFilter(ctx context.Context, obj any) (model.LeaderboardFilter, error) {
 	var it model.LeaderboardFilter
 	asMap := map[string]any{}
@@ -44341,7 +46512,7 @@ func (ec *executionContext) unmarshalInputQuizFilter(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"projectId", "challengeId", "ids", "publishedAfter", "publishedBefore"}
+	fieldsInOrder := [...]string{"projectId", "challengeId", "ids"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -44369,20 +46540,6 @@ func (ec *executionContext) unmarshalInputQuizFilter(ctx context.Context, obj an
 				return it, err
 			}
 			it.Ids = data
-		case "publishedAfter":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedAfter"))
-			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PublishedAfter = data
-		case "publishedBefore":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedBefore"))
-			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PublishedBefore = data
 		}
 	}
 
@@ -45423,7 +47580,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "timeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "publishedAt", "endTime"}
+	fieldsInOrder := [...]string{"name", "description", "image", "timeoutSeconds", "randomizeQuestions", "revealCorrectAnswers", "allowRetakes", "completionPoints", "endTime"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -45486,13 +47643,6 @@ func (ec *executionContext) unmarshalInputUpdateQuizInput(ctx context.Context, o
 				return it, err
 			}
 			it.CompletionPoints = data
-		case "publishedAt":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedAt"))
-			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PublishedAt = data
 		case "endTime":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endTime"))
 			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
@@ -45583,6 +47733,54 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.StepValue = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateQuizSessionInput(ctx context.Context, obj any) (model.UpdateQuizSessionInput, error) {
+	var it model.UpdateQuizSessionInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "openAt", "lockAt", "finishAt"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "openAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("openAt"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OpenAt = data
+		case "lockAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lockAt"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LockAt = data
+		case "finishAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("finishAt"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FinishAt = data
 		}
 	}
 
@@ -49935,13 +52133,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "publishQuiz":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_publishQuiz(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "addQuizQuestion":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_addQuizQuestion(ctx, field)
@@ -49977,13 +52168,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "startQuiz":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_startQuiz(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "submitQuizAnswer":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_submitQuizAnswer(ctx, field)
@@ -50001,6 +52185,90 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createQuizSubmission":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createQuizSubmission(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createQuizSession":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createQuizSession(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateQuizSession":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateQuizSession(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteQuizSession":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteQuizSession(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "openQuizSession":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_openQuizSession(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lockQuizSession":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_lockQuizSession(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "finishQuizSession":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_finishQuizSession(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reopenQuizSession":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reopenQuizSession(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "grantQuizSessionAccess":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_grantQuizSessionAccess(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "revokeQuizSessionAccess":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_revokeQuizSessionAccess(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "revokeAllQuizSessionAccess":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_revokeAllQuizSessionAccess(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "startQuizSession":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_startQuizSession(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resetQuizSessionSubmission":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_resetQuizSessionSubmission(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -52186,6 +54454,47 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "quizSession":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_quizSession(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "quizSessions":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_quizSessions(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "externalContent":
 			field := field
 
@@ -52622,8 +54931,6 @@ func (ec *executionContext) _Quiz(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "publishedAt":
-			out.Values[i] = ec._Quiz_publishedAt(ctx, field, obj)
 		case "endTime":
 			out.Values[i] = ec._Quiz_endTime(ctx, field, obj)
 		case "userSubmissions":
@@ -52708,6 +55015,111 @@ func (ec *executionContext) _Quiz(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Quiz_userActiveSubmission(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "sessions":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Quiz_sessions(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "userSessions":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Quiz_userSessions(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "userActiveSession":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Quiz_userActiveSession(ctx, field, obj)
 				return res
 			}
 
@@ -53574,6 +55986,240 @@ func (ec *executionContext) _QuizPredefinedAnswer(ctx context.Context, sel ast.S
 	return out
 }
 
+var quizSessionImplementors = []string{"QuizSession"}
+
+func (ec *executionContext) _QuizSession(ctx context.Context, sel ast.SelectionSet, obj *model.QuizSession) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, quizSessionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("QuizSession")
+		case "id":
+			out.Values[i] = ec._QuizSession_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "quiz":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizSession_quiz(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "name":
+			out.Values[i] = ec._QuizSession_name(ctx, field, obj)
+		case "state":
+			out.Values[i] = ec._QuizSession_state(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "openAt":
+			out.Values[i] = ec._QuizSession_openAt(ctx, field, obj)
+		case "lockAt":
+			out.Values[i] = ec._QuizSession_lockAt(ctx, field, obj)
+		case "finishAt":
+			out.Values[i] = ec._QuizSession_finishAt(ctx, field, obj)
+		case "createdBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizSession_createdBy(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._QuizSession_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "accessCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizSession_accessCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "userHasAccess":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizSession_userHasAccess(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "userSubmission":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizSession_userSubmission(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var quizSubmissionImplementors = []string{"QuizSubmission"}
 
 func (ec *executionContext) _QuizSubmission(ctx context.Context, sel ast.SelectionSet, obj *model.QuizSubmission) graphql.Marshaler {
@@ -53603,6 +56249,39 @@ func (ec *executionContext) _QuizSubmission(ctx context.Context, sel ast.Selecti
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "session":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizSubmission_session(ctx, field, obj)
 				return res
 			}
 
@@ -53707,6 +56386,11 @@ func (ec *executionContext) _QuizSubmission(ctx context.Context, sel ast.Selecti
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "autoSubmitted":
+			out.Values[i] = ec._QuizSubmission_autoSubmitted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "questionOrder":
 			out.Values[i] = ec._QuizSubmission_questionOrder(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -58516,6 +61200,11 @@ func (ec *executionContext) unmarshalNCreateQuizQuestionInput2githubᚗcomᚋbcc
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNCreateQuizSessionInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateQuizSessionInput(ctx context.Context, v any) (model.CreateQuizSessionInput, error) {
+	res, err := ec.unmarshalInputCreateQuizSessionInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNCreateScoreAdjustmentInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateScoreAdjustmentInput(ctx context.Context, v any) (model.CreateScoreAdjustmentInput, error) {
 	res, err := ec.unmarshalInputCreateScoreAdjustmentInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -59008,6 +61697,11 @@ func (ec *executionContext) unmarshalNGender2githubᚗcomᚋbccᚑmediaᚋwayfar
 
 func (ec *executionContext) marshalNGender2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐGender(ctx context.Context, sel ast.SelectionSet, v model.Gender) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) unmarshalNGrantQuizSessionAccessInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐGrantQuizSessionAccessInput(ctx context.Context, v any) (model.GrantQuizSessionAccessInput, error) {
+	res, err := ec.unmarshalInputGrantQuizSessionAccessInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNHTML2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐHTML(ctx context.Context, v any) (scalars.HTML, error) {
@@ -59791,6 +62485,74 @@ func (ec *executionContext) marshalNQuizResponse2ᚕgithubᚗcomᚋbccᚑmedia�
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNQuizSession2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession(ctx context.Context, sel ast.SelectionSet, v model.QuizSession) graphql.Marshaler {
+	return ec._QuizSession(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNQuizSession2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSessionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.QuizSession) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNQuizSession2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession(ctx context.Context, sel ast.SelectionSet, v *model.QuizSession) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._QuizSession(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNQuizSessionState2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSessionState(ctx context.Context, v any) (model.QuizSessionState, error) {
+	var res model.QuizSessionState
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNQuizSessionState2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSessionState(ctx context.Context, sel ast.SelectionSet, v model.QuizSessionState) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNQuizSubmission2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSubmission(ctx context.Context, sel ast.SelectionSet, v model.QuizSubmission) graphql.Marshaler {
@@ -60659,6 +63421,11 @@ func (ec *executionContext) unmarshalNUpdateQuizInput2githubᚗcomᚋbccᚑmedia
 
 func (ec *executionContext) unmarshalNUpdateQuizQuestionInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateQuizQuestionInput(ctx context.Context, v any) (model.UpdateQuizQuestionInput, error) {
 	res, err := ec.unmarshalInputUpdateQuizQuestionInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateQuizSessionInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateQuizSessionInput(ctx context.Context, v any) (model.UpdateQuizSessionInput, error) {
+	res, err := ec.unmarshalInputUpdateQuizSessionInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -61834,6 +64601,29 @@ func (ec *executionContext) unmarshalOQuizFilter2ᚖgithubᚗcomᚋbccᚑmedia�
 	}
 	res, err := ec.unmarshalInputQuizFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOQuizSession2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSession(ctx context.Context, sel ast.SelectionSet, v *model.QuizSession) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._QuizSession(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOQuizSessionState2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSessionState(ctx context.Context, v any) (*model.QuizSessionState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.QuizSessionState)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOQuizSessionState2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSessionState(ctx context.Context, sel ast.SelectionSet, v *model.QuizSessionState) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) marshalOQuizSubmission2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSubmission(ctx context.Context, sel ast.SelectionSet, v *model.QuizSubmission) graphql.Marshaler {
