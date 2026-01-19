@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { VueDraggable } from 'vue-draggable-plus'
 import { ExternalContentType, ExternalContentSortBy } from '~/api/generated'
 import { fuzzyMatch } from '~/utils/fuzzySearch'
 
@@ -102,16 +101,18 @@ function addItem(externalContent: (typeof searchResults.value)[0]) {
   emit('update:modelValue', [...props.modelValue, newItem])
 }
 
-function removeItem(index: number) {
-  const newItems = [...props.modelValue]
-  newItems.splice(index, 1)
+function removeItem(item: ContentItem) {
+  const newItems = props.modelValue.filter((i) => i.id !== item.id)
   emit('update:modelValue', newItems)
 }
 
-function handleReorder() {
-  // The v-model binding on VueDraggable automatically updates the array order
-  emit('update:modelValue', [...props.modelValue])
-}
+const sortedSelectedItems = computed(() => {
+  return [...props.modelValue].sort((a, b) => {
+    const dateA = a.externalContent.publishedAt ?? ''
+    const dateB = b.externalContent.publishedAt ?? ''
+    return dateB.localeCompare(dateA)
+  })
+})
 
 function formatContentType(type: ExternalContentType): string {
   const labels: Record<ExternalContentType, string> = {
@@ -187,55 +188,35 @@ function formatContentType(type: ExternalContentType): string {
     <div>
       <div class="text-muted mb-2 text-sm font-medium">
         Valgte elementer ({{ modelValue.length }})
-        <span v-if="modelValue.length > 1" class="font-normal">
-          - dra for å sortere
-        </span>
       </div>
       <div class="border-default rounded-lg border">
-        <VueDraggable
-          :model-value="modelValue"
-          handle=".drag-handle"
-          ghost-class="opacity-50"
-          :animation="200"
-          @update:model-value="
-            (items: ContentItem[]) => emit('update:modelValue', items)
-          "
-          @end="handleReorder"
+        <div
+          v-for="item in sortedSelectedItems"
+          :key="item.id"
+          class="border-default flex items-center gap-3 border-b px-4 py-2 last:border-b-0"
         >
-          <div
-            v-for="(item, index) in modelValue"
-            :key="item.id"
-            class="border-default flex items-center gap-3 border-b px-4 py-2 last:border-b-0"
-          >
-            <div
-              class="drag-handle text-muted cursor-grab active:cursor-grabbing"
-            >
-              <UIcon name="lucide:grip-vertical" class="size-4" />
+          <div class="min-w-0 flex-1">
+            <div class="truncate text-sm font-medium">
+              {{ item.externalContent.title || item.externalContent.id }}
             </div>
-            <span class="text-muted w-6 text-sm">{{ index + 1 }}.</span>
-            <div class="min-w-0 flex-1">
-              <div class="truncate text-sm font-medium">
-                {{ item.externalContent.title || item.externalContent.id }}
-              </div>
-            </div>
-            <UBadge variant="subtle" size="sm">
-              {{ formatContentType(item.externalContent.contentType) }}
-            </UBadge>
-            <span
-              v-if="item.externalContent.publishedAt"
-              class="text-muted text-xs"
-            >
-              {{ formatDate(item.externalContent.publishedAt) }}
-            </span>
-            <UButton
-              variant="ghost"
-              color="error"
-              size="xs"
-              icon="lucide:x"
-              @click="removeItem(index)"
-            />
           </div>
-        </VueDraggable>
+          <UBadge variant="subtle" size="sm">
+            {{ formatContentType(item.externalContent.contentType) }}
+          </UBadge>
+          <span
+            v-if="item.externalContent.publishedAt"
+            class="text-muted text-xs"
+          >
+            {{ formatDate(item.externalContent.publishedAt) }}
+          </span>
+          <UButton
+            variant="ghost"
+            color="error"
+            size="xs"
+            icon="lucide:x"
+            @click="removeItem(item)"
+          />
+        </div>
         <div
           v-if="modelValue.length === 0"
           class="text-muted py-6 text-center text-sm"
