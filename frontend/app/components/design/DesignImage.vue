@@ -24,7 +24,9 @@ const props = withDefaults(
 
 const isLoaded = ref(false)
 const hasError = ref(false)
+const isCached = ref(false)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const imgRef = ref<HTMLImageElement | null>(null)
 
 // Compute aspect ratio from image dimensions
 const aspectRatio = computed(() => {
@@ -73,13 +75,26 @@ watch(
   { immediate: true },
 )
 
-// Reset loaded state when image URL changes
+// Reset loaded state when image URL changes and check if cached
 watch(
   () => props.image?.url,
-  () => {
+  (url) => {
     isLoaded.value = false
     hasError.value = false
+    isCached.value = false
+
+    if (url) {
+      // Create a test image to check cache status synchronously
+      const testImg = new Image()
+      testImg.src = url
+      // If complete is true immediately after setting src, image is cached
+      if (testImg.complete) {
+        isCached.value = true
+        isLoaded.value = true
+      }
+    }
   },
+  { immediate: true },
 )
 
 function onLoad() {
@@ -100,9 +115,9 @@ const showImage = computed(() => props.image?.url && !hasError.value)
 
 <template>
   <div class="relative overflow-hidden">
-    <!-- Blurhash placeholder - stays rendered for crossfade -->
+    <!-- Blurhash placeholder - stays rendered for crossfade, hidden when cached -->
     <canvas
-      v-if="hasBlurhash && !hasError"
+      v-if="hasBlurhash && !hasError && !isCached"
       ref="canvasRef"
       class="absolute inset-0 size-full object-cover transition-opacity duration-600"
       :class="isLoaded ? 'opacity-0' : 'opacity-100'"
@@ -112,6 +127,7 @@ const showImage = computed(() => props.image?.url && !hasError.value)
     <!-- Actual image -->
     <img
       v-if="showImage"
+      ref="imgRef"
       :src="image!.url"
       :alt="alt"
       :style="aspectRatio ? { aspectRatio } : undefined"
