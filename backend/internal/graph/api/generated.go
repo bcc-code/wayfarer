@@ -561,6 +561,7 @@ type ComplexityRoot struct {
 		InfoMessageStart func(childComplexity int) int
 		Journal          func(childComplexity int, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) int
 		Leaderboard      func(childComplexity int, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) int
+		MyChurchTeams    func(childComplexity int) int
 		MyTeam           func(childComplexity int) int
 		Name             func(childComplexity int) int
 		Rules            func(childComplexity int) int
@@ -1214,6 +1215,7 @@ type ProjectResolver interface {
 	Events(ctx context.Context, obj *model.Project) ([]model.Event, error)
 
 	Teams(ctx context.Context, obj *model.Project) ([]model.Team, error)
+	MyChurchTeams(ctx context.Context, obj *model.Project) ([]model.Team, error)
 	MyTeam(ctx context.Context, obj *model.Project) (*model.Team, error)
 	Achievements(ctx context.Context, obj *model.Project) ([]model.Achievement, error)
 	Streaks(ctx context.Context, obj *model.Project) ([]model.Streak, error)
@@ -4077,6 +4079,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Project.Leaderboard(childComplexity, args["entityType"].(model.LeaderboardEntityType), args["filter"].(*model.LeaderboardFilter), args["first"].(*int), args["after"].(*string), args["last"].(*int), args["before"].(*string)), true
+	case "Project.myChurchTeams":
+		if e.complexity.Project.MyChurchTeams == nil {
+			break
+		}
+
+		return e.complexity.Project.MyChurchTeams(childComplexity), true
 	case "Project.myTeam":
 		if e.complexity.Project.MyTeam == nil {
 			break
@@ -6700,6 +6708,7 @@ type Project {
     endDate: DateTime!
     branding: Branding!
     teams: [Team!]! @goField(forceResolver: true)
+    myChurchTeams: [Team!]! @goField(forceResolver: true)
     myTeam: Team @goField(forceResolver: true)
     achievements: [Achievement!]! @goField(forceResolver: true)
     streaks: [Streak!]! @goField(forceResolver: true)
@@ -13184,6 +13193,8 @@ func (ec *executionContext) fieldContext_ContentAchievement_project(_ context.Co
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -14012,6 +14023,8 @@ func (ec *executionContext) fieldContext_Event_parentProject(_ context.Context, 
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -14376,6 +14389,8 @@ func (ec *executionContext) fieldContext_ExternalChallenge_project(_ context.Con
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -17418,6 +17433,8 @@ func (ec *executionContext) fieldContext_Mutation_joinProject(ctx context.Contex
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -17517,6 +17534,8 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -17616,6 +17635,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -26430,6 +26451,57 @@ func (ec *executionContext) fieldContext_Project_teams(_ context.Context, field 
 	return fc, nil
 }
 
+func (ec *executionContext) _Project_myChurchTeams(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_myChurchTeams,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Project().MyChurchTeams(ctx, obj)
+		},
+		nil,
+		ec.marshalNTeam2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_myChurchTeams(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Team_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Team_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
+			case "members":
+				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
+			case "parentProject":
+				return ec.fieldContext_Team_parentProject(ctx, field)
+			case "superTeam":
+				return ec.fieldContext_Team_superTeam(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Team", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Project_myTeam(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -26817,6 +26889,8 @@ func (ec *executionContext) fieldContext_ProjectEdge_node(_ context.Context, fie
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -27165,6 +27239,8 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -27294,6 +27370,8 @@ func (ec *executionContext) fieldContext_Query_myProjects(_ context.Context, fie
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -27363,6 +27441,8 @@ func (ec *executionContext) fieldContext_Query_myCurrentProject(_ context.Contex
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -27432,6 +27512,8 @@ func (ec *executionContext) fieldContext_Query_currentProject(_ context.Context,
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -30031,6 +30113,8 @@ func (ec *executionContext) fieldContext_Quiz_project(_ context.Context, field g
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -30711,6 +30795,8 @@ func (ec *executionContext) fieldContext_QuizAchievement_project(_ context.Conte
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -31211,6 +31297,8 @@ func (ec *executionContext) fieldContext_QuizChallenge_project(_ context.Context
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -32765,6 +32853,8 @@ func (ec *executionContext) fieldContext_RoleScope_project(_ context.Context, fi
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -32914,6 +33004,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_project(_ context.Context,
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -33846,6 +33938,8 @@ func (ec *executionContext) fieldContext_SimpleAchievement_project(_ context.Con
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -34223,6 +34317,8 @@ func (ec *executionContext) fieldContext_SimpleChallenge_project(_ context.Conte
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -34827,6 +34923,8 @@ func (ec *executionContext) fieldContext_Streak_project(_ context.Context, field
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -35099,6 +35197,8 @@ func (ec *executionContext) fieldContext_StreakAchievement_project(_ context.Con
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -35805,6 +35905,8 @@ func (ec *executionContext) fieldContext_SuperTeam_parentProject(_ context.Conte
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -36364,6 +36466,8 @@ func (ec *executionContext) fieldContext_Team_parentProject(_ context.Context, f
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -37212,6 +37316,8 @@ func (ec *executionContext) fieldContext_User_projects(_ context.Context, field 
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -38854,6 +38960,8 @@ func (ec *executionContext) fieldContext_Webhook_project(_ context.Context, fiel
 				return ec.fieldContext_Project_branding(ctx, field)
 			case "teams":
 				return ec.fieldContext_Project_teams(ctx, field)
+			case "myChurchTeams":
+				return ec.fieldContext_Project_myChurchTeams(ctx, field)
 			case "myTeam":
 				return ec.fieldContext_Project_myTeam(ctx, field)
 			case "achievements":
@@ -49519,6 +49627,42 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 					}
 				}()
 				res = ec._Project_teams(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "myChurchTeams":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_myChurchTeams(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

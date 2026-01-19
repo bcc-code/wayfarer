@@ -892,6 +892,7 @@ type Project struct {
 	EndDate          scalars.DateTime        `json:"endDate"`
 	Branding         *Branding               `json:"branding"`
 	Teams            []Team                  `json:"teams"`
+	MyChurchTeams    []Team                  `json:"myChurchTeams"`
 	MyTeam           *Team                   `json:"myTeam,omitempty"`
 	Achievements     []Achievement           `json:"achievements"`
 	Streaks          []Streak                `json:"streaks"`
