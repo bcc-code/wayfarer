@@ -1,6 +1,11 @@
 {
   "error": {
-    "title": "Ups! Midagi läks valesti"
+    "title": "Ups! Midagi läks valesti",
+    "hint": "Palun proovi uuesti. Kui probleem püsib, proovi lehte uuendada.",
+    "networkHint": "Tundub, et sul on probleeme ühendusega. Kontrolli oma internetiühendust ja proovie uuesti.",
+    "retry": "Proovi uuesti",
+    "showDetails": "Näita tehnilisi üksikasju",
+    "hideDetails": "Peida tehnilised üksikasjad"
   },
   "emptyStates": {
     "standings": "Edetabelit pole veel",
@@ -124,5 +129,111 @@
     "updateAvailableTitle": "Uuendus on saadaval",
     "updateAvailableButton": "Uuenda kohe"
   },
-  "goToHiddenTreasures": "Mine piibliõppe juurde"
+  "goToHiddenTreasures": "Mine piibliõppe juurde",
+  "admin": {
+    "common": {
+      "back": "Tagasi",
+      "cancel": "Tühista",
+      "save": "Salvesta",
+      "create": "Loo",
+      "delete": "Kustuta",
+      "deleteAll": "Kustuta kõik",
+      "copyLink": "Kopeeri link administraatori lehele",
+      "linkCopied": "Link kopeeritud"
+    },
+    "breadcrumb": {
+      "home": "Esileht"
+    },
+    "churchHome": {
+      "administrators": "Administraatorid",
+      "unitsAndPeople": "Üksused ja isikud",
+      "gameNights": "Mänguõhtud",
+      "comingSoon": "Peagi saadaval"
+    },
+    "admins": {
+      "searchPlaceholder": "Otsi administraatoreid...",
+      "addPlaceholder": "Lisa administraator...",
+      "you": "Sina",
+      "noAdminsFound": "Ühtegi administraatorit ei leitud",
+      "confirmRemove": {
+        "title": "Kas eemaldada administraator?",
+        "message": "Kas sa soovid kindlasti, et {name} administraatori rollist eemaldataks?",
+        "confirm": "Eemalda"
+      },
+      "success": {
+        "added": "Administraator lisatud",
+        "removed": "Administraator eemaldatud"
+      },
+      "errors": {
+        "addFailed": "Ei õnnestunud administraatorit lisada",
+        "removeFailed": "Ei õnnestunud administraatorit eemaldada"
+      },
+      "copyLinkDescription": "Jaga linki teiste administraatoritega"
+    },
+    "units": {
+      "title": "Üksused",
+      "people": "Isikud",
+      "filter": {
+        "title": "Filtreeri",
+        "all": "Kõik",
+        "notInUnit": "Mitte üheski üksuses",
+        "inUnit": "Üksuses",
+        "showO36": "Näita üle 36-aastaseid isikuid",
+        "showO36Description": "Üle 36-aastaseid isikuid edetabelites ei näidata ja nad ei osale noorte võistlusel"
+      },
+      "searchPlaceholder": "Otsi üksusi või isikuid...",
+      "searchPeoplePlaceholder": "Otsi isikuid...",
+      "expandAll": "Ava kõik üksused",
+      "createOneUnit": "Loo üks üksus",
+      "createMultipleUnits": "Loo rohkem üksusi",
+      "namePlaceholder": "Üksuse nimi (valikuline)",
+      "selectAll": "Vali kõik",
+      "noActiveProject": "Mitte ühtegi käimasolevat võistlust",
+      "noUnitsFound": "Ühtegi üksust ei leitud",
+      "noPeopleFound": "Ühtegi isikut ei leitud",
+      "years": "{years} aastane",
+      "selectedCount": "{count} üksus valitud | {count} üksust valitud",
+      "deleteSelected": "Kustuta valitud",
+      "bulkCreate": {
+        "countLabel": "Üksuste arv",
+        "autoGenerateInfo": "Nimed luuakse automaatselt"
+      },
+      "confirmDelete": {
+        "title": "Kas kustutada üksus?",
+        "message": "Oled sa kindel, et tahad {name} ära kustutada? Kõik liikmed eemaldatakse üksusest."
+      },
+      "confirmBulkDelete": {
+        "title": "Kustuta rohkem üksusi?",
+        "message": "Oled sa kindel, et tahad {count} üksust ära kustutada? Kõik liikmed eemaldatakse nendest üksustest."
+      },
+      "success": {
+        "created": "Üksus loodud",
+        "bulkCreated": "{count} üksust loodud",
+        "deleted": "Üksus kustutatud",
+        "bulkDeleted": "{count} üksust kustutatud"
+      },
+      "errors": {
+        "createFailed": "Ei õnnestunud üksust luua",
+        "bulkCreateFailed": "Ei õnnestunud üksuseid luua",
+        "addMemberFailed": "Ei õnnestunud liiget lisada",
+        "removeMemberFailed": "Ei õnnestunud liiget eemaldada",
+        "assignLeaderFailed": "Ei õnnestunud juhti määrata",
+        "deleteFailed": "Ei õnnestunud üksust kustutada",
+        "bulkDeleteFailed": "Ei õnnestunud üksuseid kustutada",
+        "renameFailed": "Ei õnnestunud üksuse nime muuta",
+        "exclusionToggleFailed": "Ei õnnestunud muuta nähtavust edetabelites"
+      },
+      "ageWarning": "Selle üksuse keskmine vanus on üle 36 aasta, seega seda edetabelites ei näidata ega osale see noorte võistlusel. Kui see on vale ja see peaks noorte võistlusel osalema, palun andke meile teada aadressil {email}"
+    },
+    "unit": {
+      "noLeaderSelected": "Ühtegi juhti pole valitud",
+      "members": "{count} isik | {count} isikut",
+      "makeLead": "Tee juhiks",
+      "dragPeopleHere": "Liikmeid pole - tiri siia üks isik",
+      "addPersonPlaceholder": "Lisa isik...",
+      "excludeFromLeaderboard": "Jäta edetabelist välja",
+      "excludeFromLeaderboardTooltip": "Kui see seade on aktiveeritud, siis seda üksust edetabelis ei kuvata.",
+      "excludedFromLeaderboard": "Edetabelites peidetud"
+    }
+  }
 }
