@@ -27,7 +27,7 @@ gql(`
     myCurrentProject {
       id
       name
-      teams {
+      myChurchTeams {
         id
         name
         leaderboardExcluded
@@ -82,7 +82,7 @@ watch(data, (newData) => {
   if (!newData) return
   hasLoadedOnce.value = true
 
-  if (newData.myCurrentProject.teams.length > 10) {
+  if (newData.myCurrentProject.myChurchTeams.length > 10) {
     expandAll.value = false
   }
 })
@@ -99,8 +99,10 @@ const allUsers = computed(
   () => data.value?.users.edges.map((edge) => edge.node) ?? [],
 )
 
-// Get teams from active project
-const projectTeams = computed(() => data.value?.myCurrentProject?.teams ?? [])
+// Get teams from active project (filtered to user's church)
+const projectTeams = computed(
+  () => data.value?.myCurrentProject?.myChurchTeams ?? [],
+)
 
 // Search and filter state
 const unitSearch = ref('')

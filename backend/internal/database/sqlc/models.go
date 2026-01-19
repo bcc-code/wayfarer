@@ -573,6 +573,7 @@ type Team struct {
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
 	LeaderboardExcluded bool               `json:"leaderboard_excluded"`
+	CreatedByUserID     *string            `json:"created_by_user_id"`
 }
 
 type TeamMember struct {

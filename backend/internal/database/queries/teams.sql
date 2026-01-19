@@ -60,6 +60,22 @@ FROM teams
 WHERE project_id = ANY(@project_ids::text[])
 ORDER BY project_id, created_at DESC;
 
+-- name: GetTeamsByProjectIDAndChurchID :many
+SELECT DISTINCT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.leaderboard_excluded, t.created_at, t.updated_at
+FROM teams t
+LEFT JOIN team_members tm ON t.id = tm.team_id
+LEFT JOIN users member_user ON tm.user_id = member_user.id
+LEFT JOIN users creator_user ON t.created_by_user_id = creator_user.id
+WHERE t.project_id = @projectid::text
+  AND (
+    -- If team has members: match by member's church
+    member_user.church_id = @churchid::text
+    OR
+    -- If team is empty: fall back to creator's church
+    (NOT EXISTS (SELECT 1 FROM team_members WHERE team_id = t.id) AND creator_user.church_id = @churchid::text)
+  )
+ORDER BY t.created_at DESC;
+
 -- name: GetUserTeamByProjectID :one
 SELECT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.leaderboard_excluded, t.created_at, t.updated_at
 FROM teams t
@@ -69,8 +85,8 @@ WHERE tm.user_id = @userid::text
 LIMIT 1;
 
 -- name: CreateTeam :one
-INSERT INTO teams (id, project_id, name, description, join_code)
-VALUES (@id::text, @projectid::text, @name::text, @description::text, @joincode::text)
+INSERT INTO teams (id, project_id, name, description, join_code, created_by_user_id)
+VALUES (@id::text, @projectid::text, @name::text, @description::text, @joincode::text, @createdbyuserid::text)
 RETURNING id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at;
 
 -- name: UpdateTeam :one

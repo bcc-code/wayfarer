@@ -164,11 +164,12 @@ func (r *mutationResolver) CreateTeam(ctx context.Context, projectID string, inp
 
 	// Create the team
 	team, err := r.DB.Queries.CreateTeam(ctx, sqlc.CreateTeamParams{
-		ID:          teamID,
-		Projectid:   projectID,
-		Name:        input.Name,
-		Description: input.Description,
-		Joincode:    joinCode,
+		ID:              teamID,
+		Projectid:       projectID,
+		Name:            input.Name,
+		Description:     input.Description,
+		Joincode:        joinCode,
+		Createdbyuserid: userID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create team: %w", err)
