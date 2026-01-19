@@ -129,6 +129,12 @@
     "updateAvailableTitle": "Une mise à jour est disponible",
     "updateAvailableButton": "Mettre à jour maintenant"
   },
+  "notifications": {
+    "promptTitle": "Ne rate aucun badge, active les notifications",
+    "promptDescription": "Tu recevras alors une notification chaque fois que tu obtiendras un nouveau badge ou un nouveau défi.",
+    "turnOn": "Activer les notifications",
+    "notNow": "Pas maintenant"
+  },
   "goToHiddenTreasures": "Aller à l’étude biblique",
   "admin": {
     "common": {
