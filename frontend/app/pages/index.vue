@@ -33,7 +33,6 @@ const shouldShowNotificationPrompt = computed(() => {
   // 3. User hasn't permanently dismissed the prompt
   // 4. Notification permission isn't denied
   // 5. Push notifications are supported
-  return true
   return (
     $pwa?.isPWAInstalled &&
     isPushSupported.value &&
