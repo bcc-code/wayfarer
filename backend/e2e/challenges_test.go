@@ -610,7 +610,7 @@ func TestChallenges(t *testing.T) {
 
 		// Assign to a different event
 		assignResp := client.WithAuth(adminToken).MustExecute(t, `
-			mutation AssignChallengeToEvent($challengeId: ID!, $eventId: ID) {
+			mutation AssignChallengeToEvent($challengeId: ID!, $eventId: ID!) {
 				assignChallengeToEvent(challengeId: $challengeId, eventId: $eventId) {
 					... on SimpleChallenge {
 						id
