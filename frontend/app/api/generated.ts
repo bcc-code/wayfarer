@@ -1031,7 +1031,7 @@ export type MutationCompleteChallengeArgs = {
 
 
 export type MutationCreateChallengeArgs = {
-  eventId: Scalars['ID']['input'];
+  eventId?: InputMaybe<Scalars['ID']['input']>;
   input: CreateChallengeInput;
   projectId: Scalars['ID']['input'];
 };
@@ -2827,7 +2827,7 @@ export type UpdateChallengeMutation = { __typename?: 'Mutation', updateChallenge
 
 export type CreateChallengeMutationVariables = Exact<{
   projectId: Scalars['ID']['input'];
-  eventId: Scalars['ID']['input'];
+  eventId?: InputMaybe<Scalars['ID']['input']>;
   input: CreateChallengeInput;
 }>;
 
@@ -3848,7 +3848,7 @@ export function useUpdateChallengeMutation() {
   return Urql.useMutation<UpdateChallengeMutation, UpdateChallengeMutationVariables>(UpdateChallengeDocument);
 };
 export const CreateChallengeDocument = gql`
-    mutation CreateChallenge($projectId: ID!, $eventId: ID!, $input: CreateChallengeInput!) {
+    mutation CreateChallenge($projectId: ID!, $eventId: ID, $input: CreateChallengeInput!) {
   createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
     id
   }

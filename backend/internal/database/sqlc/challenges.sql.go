@@ -353,7 +353,7 @@ RETURNING id, project_id, event_id, challenge_type, name, description, image_url
 type CreateChallengeParams struct {
 	ID                          string             `json:"id"`
 	Projectid                   string             `json:"projectid"`
-	Eventid                     string             `json:"eventid"`
+	Eventid                     *string            `json:"eventid"`
 	Challengetype               string             `json:"challengetype"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
