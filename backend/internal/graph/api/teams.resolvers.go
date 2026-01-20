@@ -259,12 +259,6 @@ func (r *mutationResolver) UpdateTeam(ctx context.Context, id string, input mode
 	r.Cache.DeletePrefix(cache.PrefixTeamsFilter)
 	r.Cache.DeletePrefix(cache.PrefixTeamsCount)
 
-	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.Description != nil {
-		_ = r.DB.Queries.DeleteTeamTranslations(ctx, id)
-		r.Cache.DeletePrefix(cache.PrefixTranslation + "team:" + id)
-	}
-
 	// Convert to GraphQL model
 	teamDescription := ""
 	if team.Description != nil {

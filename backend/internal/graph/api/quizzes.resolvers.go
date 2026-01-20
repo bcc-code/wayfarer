@@ -140,9 +140,6 @@ func (r *mutationResolver) UpdateQuiz(ctx context.Context, id string, input mode
 	r.Cache.InvalidateQuiz(id)
 	r.Cache.InvalidateProject(existingQuiz.ProjectID)
 
-	// Delete translations cache
-	_ = r.DB.Queries.DeleteQuizTranslations(ctx, id)
-
 	// Convert to GraphQL model
 	return convertUpdateQuizRowToQuiz(row), nil
 }

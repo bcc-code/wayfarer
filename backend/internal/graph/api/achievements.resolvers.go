@@ -407,12 +407,6 @@ func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, inp
 	r.Cache.InvalidateAchievement(id)
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
 
-	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil {
-		_ = r.DB.Queries.DeleteAchievementTranslations(ctx, id)
-		r.Cache.DeletePrefix(cache.PrefixTranslation + "achievement:" + id)
-	}
-
 	// If eventID is being changed, invalidate both old and new events
 	if input.EventID != nil {
 		// Invalidate old event if it exists
@@ -546,12 +540,6 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 	r.Cache.Delete(cache.ContentItemsByAchievementKey(id))
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
 	r.Loaders.ContentItemsByAchievementLoader.Clear(ctx, id)
-
-	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil {
-		_ = r.DB.Queries.DeleteAchievementTranslations(ctx, id)
-		r.Cache.DeletePrefix(cache.PrefixTranslation + "achievement:" + id)
-	}
 
 	// If eventID is being changed, invalidate both old and new events
 	if input.EventID != nil {
@@ -690,12 +678,6 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 	r.Cache.InvalidateProject(streakAch.ProjectID)
 	r.Cache.InvalidateAchievement(id)
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
-
-	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil {
-		_ = r.DB.Queries.DeleteAchievementTranslations(ctx, id)
-		r.Cache.DeletePrefix(cache.PrefixTranslation + "achievement:" + id)
-	}
 
 	// If eventID is being changed, invalidate both old and new events
 	if input.EventID != nil {

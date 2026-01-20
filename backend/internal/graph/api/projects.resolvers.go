@@ -292,12 +292,6 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 	// Invalidate cache
 	r.Cache.InvalidateProject(id)
 
-	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.Description != nil || input.Rules != nil {
-		_ = r.DB.Queries.DeleteProjectTranslations(ctx, id)
-		r.Cache.DeletePrefix(cache.PrefixTranslation + "project:" + id)
-	}
-
 	// Convert to GraphQL model
 	var logo *string
 	if row.LogoUrl != nil {
