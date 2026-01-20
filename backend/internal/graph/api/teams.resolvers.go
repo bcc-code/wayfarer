@@ -119,7 +119,7 @@ func (r *mutationResolver) CreateTeam(ctx context.Context, projectID string, inp
 	}
 
 	// Check authorization
-	if !r.RoleService.CanManageProject(ctx, userID, projectID) {
+	if !r.RoleService.CanCreateTeamInProject(ctx, userID, projectID) {
 		return nil, fmt.Errorf("unauthorized to create teams in this project")
 	}
 
@@ -288,9 +288,9 @@ func (r *mutationResolver) DeleteTeam(ctx context.Context, id string) (bool, err
 		return false, fmt.Errorf("user not authenticated")
 	}
 
-	// Check authorization - only admins and superadmins can delete teams
-	if !r.RoleService.CanDeleteTeam(ctx, userID) {
-		return false, fmt.Errorf("unauthorized to delete teams")
+	// Check authorization - admins, superadmins, and church admins (for teams created by their church members)
+	if !r.RoleService.CanDeleteTeamByID(ctx, userID, id) {
+		return false, fmt.Errorf("unauthorized to delete this team")
 	}
 
 	// Load the team to verify it exists and get its details

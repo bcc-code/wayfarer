@@ -217,6 +217,20 @@ func (q *Queries) GetTeamByJoinCode(ctx context.Context, joincode string) (*GetT
 	return &i, err
 }
 
+const GetTeamCreatorChurchID = `-- name: GetTeamCreatorChurchID :one
+SELECT u.church_id
+FROM teams t
+INNER JOIN users u ON t.created_by_user_id = u.id
+WHERE t.id = $1::text
+`
+
+func (q *Queries) GetTeamCreatorChurchID(ctx context.Context, teamid string) (string, error) {
+	row := q.db.QueryRow(ctx, GetTeamCreatorChurchID, teamid)
+	var church_id string
+	err := row.Scan(&church_id)
+	return church_id, err
+}
+
 const GetTeamLeadUserID = `-- name: GetTeamLeadUserID :one
 SELECT user_id
 FROM user_roles

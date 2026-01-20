@@ -13,13 +13,13 @@ extend type Mutation {
     joinTeam(code: ID!): Team!
 
     # Team management
-    createTeam(projectId: ID!, input: CreateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin"])
-    updateTeam(id: ID!, input: UpdateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin"])
-    deleteTeam(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-    addTeamMembers(teamId: ID!, userIds: [ID!]!, force: Boolean): Team! @requireRole(roles: ["admin", "superadmin"])
-    removeTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin"])
-    regenerateJoinCode(teamId: ID!): Team! @requireRole(roles: ["admin", "superadmin"])
-    assignTeamLead(teamId: ID!, userId: ID!): Team! @requireRole(roles: ["admin", "superadmin"])
+    createTeam(projectId: ID!, input: CreateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    updateTeam(id: ID!, input: UpdateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    deleteTeam(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    addTeamMembers(teamId: ID!, userIds: [ID!]!, force: Boolean): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    removeTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    regenerateJoinCode(teamId: ID!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    assignTeamLead(teamId: ID!, userId: ID!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
 
     # SuperTeam management
     createSuperTeam(projectId: ID!, input: CreateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
