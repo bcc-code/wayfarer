@@ -255,3 +255,9 @@ SET
     updated_at = now()
 WHERE id = @id::text
 RETURNING id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at;
+
+-- name: GetTeamCreatorChurchID :one
+SELECT u.church_id
+FROM teams t
+INNER JOIN users u ON t.created_by_user_id = u.id
+WHERE t.id = @teamid::text;

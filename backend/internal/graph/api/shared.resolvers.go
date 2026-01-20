@@ -1731,11 +1731,9 @@ func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.Te
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// Check permissions - only admins, project admins, and team leads can access team members
-	allowed := r.RoleService.IsAdmin(ctx, currentUserID) ||
-		r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) ||
-		r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, obj.ProjectID) ||
-		r.RoleService.HasRoleInTeam(ctx, currentUserID, services.RoleTeamLead, obj.ID)
+	// Check permissions - admins, M2M, project admins, team leads, and church admins can access team members
+	allowed := r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) ||
+		r.RoleService.CanManageTeam(ctx, currentUserID, obj.ID)
 
 	if !allowed {
 		return nil, fmt.Errorf("permission denied: you do not have access to this team's members")

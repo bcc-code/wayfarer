@@ -81,10 +81,6 @@ const hasLoadedOnce = ref(false)
 watch(data, (newData) => {
   if (!newData) return
   hasLoadedOnce.value = true
-
-  if (newData.myCurrentProject.myChurchTeams.length > 10) {
-    expandAll.value = false
-  }
 })
 
 const { executeMutation: addTeamMembers } = useAddTeamMembersMutation()
