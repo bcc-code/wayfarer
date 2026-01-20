@@ -164,7 +164,9 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 		return
 	}
 
-	slog.Info("maintenance: syncing single user", "user_id", userID)
+	processPending := c.Query("process_pending") == "true"
+
+	slog.Info("maintenance: syncing single user", "user_id", userID, "process_pending", processPending)
 
 	// Get user
 	user, err := h.DB.Queries.GetUserByID(ctx, userID)
@@ -203,21 +205,15 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 		newGender = normalizeGender(member.Gender)
 	}
 
-	// Always attempt to update church from member affiliation
+	// Attempt to update church from member affiliation
 	church, err := h.AuthHandler.findChurchFromAffiliations(ctx, member.Affiliations)
 	if err != nil {
-		slog.Info("maintenance: no valid church from affiliations, using default",
+		slog.Debug("maintenance: no valid church from affiliations, keeping existing",
 			"user_id", userID,
 			"affiliations", member.Affiliations,
 			"error", err,
 		)
-		// Use default church when no valid affiliation is found
-		defaultChurch, defaultErr := h.AuthHandler.GetOrCreateDefaultChurch(ctx)
-		if defaultErr != nil {
-			slog.Error("maintenance: failed to get default church", "error", defaultErr)
-		} else {
-			newChurchID = defaultChurch.ID
-		}
+		// Keep existing church - don't update to default
 	} else {
 		newChurchID = church.ID
 	}
@@ -235,7 +231,6 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 	}
 
 	// Always update person_uuid from member data
-	onboardingProcessed := false
 	if member.Uid != uuid.Nil {
 		err = h.DB.Queries.UpdateUserPersonUUID(ctx, sqlc.UpdateUserPersonUUIDParams{
 			ID:         userID,
@@ -244,8 +239,11 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 		if err != nil {
 			slog.Warn("maintenance: failed to update person_uuid", "user_id", userID, "error", err)
 		}
+	}
 
-		// Process onboarding events (pending consent and content events)
+	// Process pending data only when explicitly requested
+	onboardingProcessed := false
+	if processPending && member.Uid != uuid.Nil {
 		personUUIDStr := member.Uid.String()
 		personUUID := pgtype.UUID{Bytes: member.Uid, Valid: true}
 

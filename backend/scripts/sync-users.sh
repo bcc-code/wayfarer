@@ -10,6 +10,7 @@ set -euo pipefail
 # Defaults
 BASE_URL="http://localhost:8080"
 DRY_RUN=false
+PROCESS_PENDING=false
 API_KEY=""
 INPUT_FILE=""
 
@@ -25,6 +26,7 @@ Required:
 
 Options:
   -u, --url <url>        Base URL (default: http://localhost:8080)
+  -p, --process-pending  Process pending consent and content events
   -d, --dry-run          Print requests without executing
   -h, --help             Show this help message
 
@@ -49,6 +51,10 @@ while [[ $# -gt 0 ]]; do
         -u|--url)
             BASE_URL="$2"
             shift 2
+            ;;
+        -p|--process-pending)
+            PROCESS_PENDING=true
+            shift
             ;;
         -d|--dry-run)
             DRY_RUN=true
@@ -85,10 +91,19 @@ RESULT_FILE=$(mktemp)
 trap 'rm -f "$RESULT_FILE"' EXIT
 echo "0 0" > "$RESULT_FILE"
 
+# Build query string
+QUERY_STRING=""
+if $PROCESS_PENDING; then
+    QUERY_STRING="?process_pending=true"
+fi
+
 echo "Syncing users from: $INPUT_FILE"
-echo "Target endpoint: ${BASE_URL}/api/maintenance/sync-user/:user_id"
+echo "Target endpoint: ${BASE_URL}/api/maintenance/sync-user/:user_id${QUERY_STRING}"
 if $DRY_RUN; then
     echo "Mode: DRY RUN (no requests will be made)"
+fi
+if $PROCESS_PENDING; then
+    echo "Mode: Processing pending consent and content events"
 fi
 echo ""
 
@@ -114,11 +129,11 @@ while IFS= read -r user_id || [[ -n "$user_id" ]]; do
 
     if $DRY_RUN; then
         echo "DRY RUN"
-        echo "  POST ${BASE_URL}/api/maintenance/sync-user/$user_id"
+        echo "  POST ${BASE_URL}/api/maintenance/sync-user/${user_id}${QUERY_STRING}"
     else
         # Make the request
         http_code=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST "${BASE_URL}/api/maintenance/sync-user/$user_id" \
+            -X POST "${BASE_URL}/api/maintenance/sync-user/${user_id}${QUERY_STRING}" \
             -H "Authorization: Bearer $API_KEY")
 
         # Read current counts
