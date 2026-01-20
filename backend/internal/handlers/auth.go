@@ -660,53 +660,15 @@ func normalizeGender(gender string) string {
 	return "UNKNOWN"
 }
 
-// getActiveChurchAffiliationOrgUIDs returns all OrgUids of active Church affiliations.
-// Active is determined by: Active=true AND Type="Church" AND ValidFrom < now AND (ValidTo > now OR ValidTo == nil)
-// Returns empty slice if no active Church affiliation is found.
-func getActiveChurchAffiliationOrgUIDs(affiliations []members.Affiliation) []uuid.UUID {
-	now := time.Now()
-	var result []uuid.UUID
-	for _, aff := range affiliations {
-		// Skip if not active
-		if !aff.Active {
-			continue
-		}
-		// Skip if not a Church affiliation
-		if aff.Type != "Church" {
-			continue
-		}
-		// Skip if not yet valid
-		if aff.ValidFrom != nil && now.Before(*aff.ValidFrom) {
-			continue
-		}
-		// Skip if expired
-		if aff.ValidTo != nil && now.After(*aff.ValidTo) {
-			continue
-		}
-		result = append(result, aff.OrgUid)
-	}
-	return result
-}
-
-// getActiveAffiliationOrgUID returns the OrgUid of the first active Church affiliation.
-// Deprecated: Use getActiveChurchAffiliationOrgUIDs for better exclusion handling.
-func getActiveAffiliationOrgUID(affiliations []members.Affiliation) *uuid.UUID {
-	orgUIDs := getActiveChurchAffiliationOrgUIDs(affiliations)
-	if len(orgUIDs) == 0 {
-		return nil
-	}
-	return &orgUIDs[0]
-}
-
 // ExcludedChurchNames contains organization names that should not be used for church assignment
 var ExcludedChurchNames = []string{"BCC Norge"}
 
 // findChurchFromAffiliations finds the first valid non-excluded church from member affiliations.
-// It iterates through all active Church affiliations and returns the first one that is not excluded.
+// It iterates through all active affiliations and returns the first one that is not excluded.
 func (h *AuthHandler) findChurchFromAffiliations(ctx context.Context, affiliations []members.Affiliation) (*sqlc.GetChurchByExternalIDRow, error) {
-	orgUIDs := getActiveChurchAffiliationOrgUIDs(affiliations)
+	orgUIDs := members.GetActiveAffiliationOrgUIDs(affiliations)
 	if len(orgUIDs) == 0 {
-		return nil, fmt.Errorf("no active church affiliations found")
+		return nil, fmt.Errorf("no active affiliations found")
 	}
 
 	for _, orgUID := range orgUIDs {

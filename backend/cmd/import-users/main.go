@@ -167,33 +167,8 @@ func getExistingMembersIDs(ctx context.Context, db *database.DB) (map[string]boo
 	return result, rows.Err()
 }
 
-func hasActiveAffiliation(affiliations []members.Affiliation) bool {
-	now := time.Now()
-	for _, aff := range affiliations {
-		if aff.ValidFrom != nil && now.Before(*aff.ValidFrom) {
-			continue
-		}
-		if aff.ValidTo != nil && now.After(*aff.ValidTo) {
-			continue
-		}
-		return true
-	}
-	return false
-}
-
 func resolveChurchID(affiliations []members.Affiliation, maps *churchMaps) string {
-	now := time.Now()
-	for _, aff := range affiliations {
-		if aff.Type != "Church" {
-			continue
-		}
-		if aff.ValidFrom != nil && now.Before(*aff.ValidFrom) {
-			continue
-		}
-		if aff.ValidTo != nil && now.After(*aff.ValidTo) {
-			continue
-		}
-
+	for _, aff := range members.FilterActiveAffiliations(affiliations) {
 		orgID, ok := maps.orgUidToOrgID[aff.OrgUid]
 		if !ok {
 			continue
@@ -281,7 +256,7 @@ func importUsers(ctx context.Context, membersClient *members.Client, db *databas
 
 		var batch []userRow
 		for _, member := range fetchedMembers {
-			if !hasActiveAffiliation(member.Affiliations) {
+			if !members.HasActiveAffiliation(member.Affiliations) {
 				totalSkipped++
 				continue
 			}
