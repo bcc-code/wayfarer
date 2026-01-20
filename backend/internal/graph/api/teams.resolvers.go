@@ -106,8 +106,7 @@ func (r *mutationResolver) JoinTeam(ctx context.Context, code string) (*model.Te
 		JoinCode:    team.JoinCode,
 	}
 
-	// Apply translations to the returned team
-	return r.ApplyTranslationToTeam(ctx, teamModel), nil
+	return teamModel, nil
 }
 
 // CreateTeam is the resolver for the createTeam field.
@@ -892,8 +891,7 @@ func (r *mutationResolver) RevokeSuperTeamAchievement(ctx context.Context, super
 
 // Team is the resolver for the team field.
 func (r *queryResolver) Team(ctx context.Context, id string) (*model.Team, error) {
-	// Use translation-aware wrapper to fetch team
-	return r.LoadTeamWithTranslation(ctx, id)
+	return r.Loaders.TeamByIDLoader.Load(ctx, id)()
 }
 
 // Teams is the resolver for the teams field.

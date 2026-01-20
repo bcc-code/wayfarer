@@ -351,34 +351,3 @@ func (q *Queries) GetSuperTeamsForTranslation(ctx context.Context) ([]*GetSuperT
 	}
 	return items, nil
 }
-
-const GetTeamsForTranslation = `-- name: GetTeamsForTranslation :many
-SELECT id, name, description
-FROM teams
-`
-
-type GetTeamsForTranslationRow struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Description *string `json:"description"`
-}
-
-func (q *Queries) GetTeamsForTranslation(ctx context.Context) ([]*GetTeamsForTranslationRow, error) {
-	rows, err := q.db.Query(ctx, GetTeamsForTranslation)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetTeamsForTranslationRow{}
-	for rows.Next() {
-		var i GetTeamsForTranslationRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}

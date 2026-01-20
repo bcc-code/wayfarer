@@ -59,30 +59,6 @@ func (s *Service) updateEvents(ctx context.Context, data []common.TranslationDat
 	return errs
 }
 
-func (s *Service) updateTeams(ctx context.Context, data []common.TranslationData) []error {
-	errs := make([]error, 0)
-	for _, d := range data {
-		value := &NameDescriptionTranslation{}
-		err := json.Unmarshal(d.Value, value)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		err = s.queries.UpsertTeamTranslation(ctx, sqlc.UpsertTeamTranslationParams{
-			TeamID:       d.ID,
-			LanguageCode: d.Language,
-			Name:         value.Name,
-			Description:  value.Description.String,
-		})
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	return errs
-}
-
 func (s *Service) updateSuperTeams(ctx context.Context, data []common.TranslationData) []error {
 	errs := make([]error, 0)
 	for _, d := range data {

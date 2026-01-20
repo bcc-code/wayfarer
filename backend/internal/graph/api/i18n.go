@@ -85,34 +85,6 @@ func (r *Resolver) LoadEventWithTranslation(ctx context.Context, id string) (*mo
 	return &translated, nil
 }
 
-// LoadTeamWithTranslation loads a team and applies translation for the requested language
-func (r *Resolver) LoadTeamWithTranslation(ctx context.Context, id string) (*model.Team, error) {
-	team, err := r.Loaders.TeamByIDLoader.Load(ctx, id)()
-	if err != nil {
-		return nil, err
-	}
-
-	lang := middleware.GetLanguage(ctx)
-	if lang == middleware.DefaultLanguage {
-		return team, nil
-	}
-
-	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
-		EntityType: "team",
-		EntityID:   id,
-		LangCode:   lang,
-	})()
-
-	if trans == nil {
-		return team, nil
-	}
-
-	translated := *team
-	translated.Name = applyStringTranslation(trans.Name, team.Name)
-	translated.Description = applyStringTranslation(trans.Description, team.Description)
-	return &translated, nil
-}
-
 // LoadSuperTeamWithTranslation loads a super team and applies translation for the requested language
 func (r *Resolver) LoadSuperTeamWithTranslation(ctx context.Context, id string) (*model.SuperTeam, error) {
 	superTeam, err := r.Loaders.SuperTeamByIDLoader.Load(ctx, id)()
@@ -271,33 +243,6 @@ func (r *Resolver) ApplyTranslationToEvent(ctx context.Context, event *model.Eve
 	translated := *event
 	translated.Name = applyStringTranslation(trans.Name, event.Name)
 	translated.Description = applyStringTranslation(trans.Description, event.Description)
-	return &translated
-}
-
-// ApplyTranslationToTeam applies translation to an already-loaded team
-func (r *Resolver) ApplyTranslationToTeam(ctx context.Context, team *model.Team) *model.Team {
-	if team == nil {
-		return nil
-	}
-
-	lang := middleware.GetLanguage(ctx)
-	if lang == middleware.DefaultLanguage {
-		return team
-	}
-
-	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
-		EntityType: "team",
-		EntityID:   team.ID,
-		LangCode:   lang,
-	})()
-
-	if trans == nil {
-		return team
-	}
-
-	translated := *team
-	translated.Name = applyStringTranslation(trans.Name, team.Name)
-	translated.Description = applyStringTranslation(trans.Description, team.Description)
 	return &translated
 }
 

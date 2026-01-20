@@ -618,8 +618,7 @@ func (r *projectResolver) Teams(ctx context.Context, obj *model.Project) ([]mode
 
 	result := make([]model.Team, len(teams))
 	for i, t := range teams {
-		translated := r.ApplyTranslationToTeam(ctx, t)
-		result[i] = *translated
+		result[i] = *t
 	}
 
 	return result, nil
@@ -657,7 +656,7 @@ func (r *projectResolver) MyChurchTeams(ctx context.Context, obj *model.Project)
 			description = *row.Description
 		}
 
-		team := &model.Team{
+		result[i] = model.Team{
 			ID:                  row.ID,
 			ProjectID:           row.ProjectID,
 			Name:                row.Name,
@@ -665,8 +664,6 @@ func (r *projectResolver) MyChurchTeams(ctx context.Context, obj *model.Project)
 			SuperTeamID:         row.SuperTeamID,
 			LeaderboardExcluded: row.LeaderboardExcluded,
 		}
-		translated := r.ApplyTranslationToTeam(ctx, team)
-		result[i] = *translated
 	}
 
 	return result, nil
@@ -703,15 +700,13 @@ func (r *projectResolver) MyTeam(ctx context.Context, obj *model.Project) (*mode
 		superTeamID = row.SuperTeamID
 	}
 
-	team := &model.Team{
+	return &model.Team{
 		ID:          row.ID,
 		ProjectID:   row.ProjectID,
 		Name:        row.Name,
 		Description: description,
 		SuperTeamID: superTeamID,
-	}
-
-	return r.ApplyTranslationToTeam(ctx, team), nil
+	}, nil
 }
 
 // Achievements is the resolver for the achievements field.
@@ -1186,8 +1181,7 @@ func (r *roleScopeResolver) Team(ctx context.Context, obj *model.RoleScope) (*mo
 		return nil, nil
 	}
 
-	// Use translation-aware wrapper to fetch team
-	return r.LoadTeamWithTranslation(ctx, obj.ID)
+	return r.Loaders.TeamByIDLoader.Load(ctx, obj.ID)()
 }
 
 // Project is the resolver for the project field.
@@ -1704,11 +1698,9 @@ func (r *superTeamResolver) Teams(ctx context.Context, obj *model.SuperTeam) ([]
 		return nil, fmt.Errorf("failed to load teams: %w", err)
 	}
 
-	// Convert []*model.Team to []model.Team and apply translations
 	result := make([]model.Team, len(teams))
 	for i, team := range teams {
-		translated := r.ApplyTranslationToTeam(ctx, team)
-		result[i] = *translated
+		result[i] = *team
 	}
 
 	return result, nil
@@ -1900,11 +1892,9 @@ func (r *userResolver) Teams(ctx context.Context, obj *model.User) ([]model.Team
 		return nil, fmt.Errorf("failed to load teams: %w", err)
 	}
 
-	// Convert []*model.Team to []model.Team and apply translations
 	result := make([]model.Team, len(teams))
 	for i, t := range teams {
-		translated := r.ApplyTranslationToTeam(ctx, t)
-		result[i] = *translated
+		result[i] = *t
 	}
 
 	return result, nil

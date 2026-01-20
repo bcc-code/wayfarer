@@ -13,12 +13,6 @@ FROM event_translations
 WHERE event_id = ANY(@entity_ids::text[])
   AND language_code = @language_code::text;
 
--- name: GetTeamTranslationsByIDs :many
-SELECT team_id, language_code, name, description
-FROM team_translations
-WHERE team_id = ANY(@entity_ids::text[])
-  AND language_code = @language_code::text;
-
 -- name: GetSuperTeamTranslationsByIDs :many
 SELECT super_team_id, language_code, name, description
 FROM super_team_translations
@@ -68,9 +62,6 @@ DELETE FROM project_translations WHERE project_id = @project_id::text;
 
 -- name: DeleteEventTranslations :exec
 DELETE FROM event_translations WHERE event_id = @event_id::text;
-
--- name: DeleteTeamTranslations :exec
-DELETE FROM team_translations WHERE team_id = @team_id::text;
 
 -- name: DeleteSuperTeamTranslations :exec
 DELETE FROM super_team_translations WHERE super_team_id = @super_team_id::text;

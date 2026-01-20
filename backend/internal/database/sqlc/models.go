@@ -606,15 +606,6 @@ type TeamMember struct {
 	JoinedAt pgtype.Timestamptz `json:"joined_at"`
 }
 
-type TeamTranslation struct {
-	TeamID       string             `json:"team_id"`
-	LanguageCode string             `json:"language_code"`
-	Name         *string            `json:"name"`
-	Description  *string            `json:"description"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-}
-
 type TranslationHash struct {
 	Collection string             `json:"collection"`
 	Hash       []byte             `json:"hash"`
