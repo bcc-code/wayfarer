@@ -578,15 +578,6 @@ type SuperTeam struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
-type SuperTeamTranslation struct {
-	SuperTeamID  string             `json:"super_team_id"`
-	LanguageCode string             `json:"language_code"`
-	Name         *string            `json:"name"`
-	Description  *string            `json:"description"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-}
-
 type Team struct {
 	ID                  string             `json:"id"`
 	ProjectID           string             `json:"project_id"`

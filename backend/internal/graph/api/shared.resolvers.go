@@ -1771,8 +1771,7 @@ func (r *teamResolver) SuperTeam(ctx context.Context, obj *model.Team) (*model.S
 		return nil, nil
 	}
 
-	// Use translation-aware wrapper to fetch super team
-	return r.LoadSuperTeamWithTranslation(ctx, *obj.SuperTeamID)
+	return r.Loaders.SuperTeamByIDLoader.Load(ctx, *obj.SuperTeamID)()
 }
 
 // Church is the resolver for the church field.
@@ -1909,11 +1908,9 @@ func (r *userResolver) SuperTeams(ctx context.Context, obj *model.User) ([]model
 		return nil, fmt.Errorf("failed to load super teams: %w", err)
 	}
 
-	// Convert []*model.SuperTeam to []model.SuperTeam and apply translations
 	result := make([]model.SuperTeam, len(superTeams))
 	for i, st := range superTeams {
-		translated := r.ApplyTranslationToSuperTeam(ctx, st)
-		result[i] = *translated
+		result[i] = *st
 	}
 
 	return result, nil

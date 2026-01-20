@@ -9,10 +9,6 @@ WHERE archived = false;
 SELECT id, name, description
 FROM events;
 
--- name: GetSuperTeamsForTranslation :many
-SELECT id, name, description
-FROM super_teams;
-
 -- name: GetStreaksForTranslation :many
 SELECT id, name, description
 FROM streaks;

@@ -260,30 +260,3 @@ func (q *Queries) UpsertStreakTranslation(ctx context.Context, arg UpsertStreakT
 	)
 	return err
 }
-
-const UpsertSuperTeamTranslation = `-- name: UpsertSuperTeamTranslation :exec
-INSERT INTO super_team_translations (super_team_id, language_code, name, description, updated_at)
-VALUES ($1::text, $2::text, $3::text, $4::text, now())
-ON CONFLICT (super_team_id, language_code)
-DO UPDATE SET
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    updated_at = now()
-`
-
-type UpsertSuperTeamTranslationParams struct {
-	SuperTeamID  string `json:"super_team_id"`
-	LanguageCode string `json:"language_code"`
-	Name         string `json:"name"`
-	Description  string `json:"description"`
-}
-
-func (q *Queries) UpsertSuperTeamTranslation(ctx context.Context, arg UpsertSuperTeamTranslationParams) error {
-	_, err := q.db.Exec(ctx, UpsertSuperTeamTranslation,
-		arg.SuperTeamID,
-		arg.LanguageCode,
-		arg.Name,
-		arg.Description,
-	)
-	return err
-}

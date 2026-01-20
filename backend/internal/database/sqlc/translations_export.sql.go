@@ -320,34 +320,3 @@ func (q *Queries) GetStreaksForTranslation(ctx context.Context) ([]*GetStreaksFo
 	}
 	return items, nil
 }
-
-const GetSuperTeamsForTranslation = `-- name: GetSuperTeamsForTranslation :many
-SELECT id, name, description
-FROM super_teams
-`
-
-type GetSuperTeamsForTranslationRow struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Description *string `json:"description"`
-}
-
-func (q *Queries) GetSuperTeamsForTranslation(ctx context.Context) ([]*GetSuperTeamsForTranslationRow, error) {
-	rows, err := q.db.Query(ctx, GetSuperTeamsForTranslation)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetSuperTeamsForTranslationRow{}
-	for rows.Next() {
-		var i GetSuperTeamsForTranslationRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}

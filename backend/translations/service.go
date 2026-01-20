@@ -30,7 +30,6 @@ type TranslatableCollection enum.Member[string]
 var (
 	CollectionProjects     = TranslatableCollection{"projects"}
 	CollectionEvents       = TranslatableCollection{"events"}
-	CollectionSuperTeams   = TranslatableCollection{"superteams"}
 	CollectionStreaks      = TranslatableCollection{"streaks"}
 	CollectionChallenges   = TranslatableCollection{"challenges"}
 	CollectionAchievements = TranslatableCollection{"achievements"}
@@ -40,7 +39,6 @@ var (
 	TranslatableCollections = enum.New(
 		CollectionProjects,
 		CollectionEvents,
-		CollectionSuperTeams,
 		CollectionStreaks,
 		CollectionChallenges,
 		CollectionAchievements,
@@ -78,8 +76,6 @@ func (s *Service) SendCollectionToTranslation(ctx context.Context, collection Tr
 		data, err = s.getDataForProjects(ctx)
 	case CollectionEvents:
 		data, err = s.getDataForEvents(ctx)
-	case CollectionSuperTeams:
-		data, err = s.getDataForSuperTeams(ctx)
 	case CollectionStreaks:
 		data, err = s.getDataForStreaks(ctx)
 	case CollectionChallenges:
@@ -148,8 +144,6 @@ func (s *Service) UpdateTranslations(ctx context.Context, collection *Translatab
 		return s.updateProjects(ctx, data)
 	case CollectionEvents:
 		return s.updateEvents(ctx, data)
-	case CollectionSuperTeams:
-		return s.updateSuperTeams(ctx, data)
 	case CollectionStreaks:
 		return s.updateStreaks(ctx, data)
 	case CollectionChallenges:

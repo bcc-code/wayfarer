@@ -85,34 +85,6 @@ func (r *Resolver) LoadEventWithTranslation(ctx context.Context, id string) (*mo
 	return &translated, nil
 }
 
-// LoadSuperTeamWithTranslation loads a super team and applies translation for the requested language
-func (r *Resolver) LoadSuperTeamWithTranslation(ctx context.Context, id string) (*model.SuperTeam, error) {
-	superTeam, err := r.Loaders.SuperTeamByIDLoader.Load(ctx, id)()
-	if err != nil {
-		return nil, err
-	}
-
-	lang := middleware.GetLanguage(ctx)
-	if lang == middleware.DefaultLanguage {
-		return superTeam, nil
-	}
-
-	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
-		EntityType: "superteam",
-		EntityID:   id,
-		LangCode:   lang,
-	})()
-
-	if trans == nil {
-		return superTeam, nil
-	}
-
-	translated := *superTeam
-	translated.Name = applyStringTranslation(trans.Name, superTeam.Name)
-	translated.Description = applyStringTranslation(trans.Description, superTeam.Description)
-	return &translated, nil
-}
-
 // LoadStreakWithTranslation loads a streak and applies translation for the requested language
 func (r *Resolver) LoadStreakWithTranslation(ctx context.Context, id string) (*model.Streak, error) {
 	streak, err := r.Loaders.StreakByIDLoader.Load(ctx, id)()
@@ -243,33 +215,6 @@ func (r *Resolver) ApplyTranslationToEvent(ctx context.Context, event *model.Eve
 	translated := *event
 	translated.Name = applyStringTranslation(trans.Name, event.Name)
 	translated.Description = applyStringTranslation(trans.Description, event.Description)
-	return &translated
-}
-
-// ApplyTranslationToSuperTeam applies translation to an already-loaded super team
-func (r *Resolver) ApplyTranslationToSuperTeam(ctx context.Context, superTeam *model.SuperTeam) *model.SuperTeam {
-	if superTeam == nil {
-		return nil
-	}
-
-	lang := middleware.GetLanguage(ctx)
-	if lang == middleware.DefaultLanguage {
-		return superTeam
-	}
-
-	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
-		EntityType: "superteam",
-		EntityID:   superTeam.ID,
-		LangCode:   lang,
-	})()
-
-	if trans == nil {
-		return superTeam
-	}
-
-	translated := *superTeam
-	translated.Name = applyStringTranslation(trans.Name, superTeam.Name)
-	translated.Description = applyStringTranslation(trans.Description, superTeam.Description)
 	return &translated
 }
 

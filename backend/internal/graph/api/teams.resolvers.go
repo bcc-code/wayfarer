@@ -1022,8 +1022,7 @@ func (r *queryResolver) Teams(ctx context.Context, filter *model.TeamFilter, fir
 
 // Superteam is the resolver for the superteam field.
 func (r *queryResolver) Superteam(ctx context.Context, id string) (*model.SuperTeam, error) {
-	// Use translation-aware wrapper to fetch super team
-	return r.LoadSuperTeamWithTranslation(ctx, id)
+	return r.Loaders.SuperTeamByIDLoader.Load(ctx, id)()
 }
 
 // Superteams is the resolver for the superteams field.
