@@ -1,10 +1,15 @@
 <template>
   <DesignCard>
+    <!-- Banner -->
+    <DesignSkeleton
+      class="w-full h-50 rounded-b-none rounded-t-card border border-border-default"
+    />
+
     <div class="p-default gap-medium flex flex-col">
       <!-- Project name -->
-      <div class="flex justify-center">
+      <!-- <div class="flex justify-center">
         <DesignSkeleton class="h-5 w-32 rounded" />
-      </div>
+      </div> -->
 
       <!-- Score/rank stats -->
       <div class="divide-border-default grid grid-cols-2 divide-x py-2">
