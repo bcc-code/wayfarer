@@ -6,6 +6,12 @@ import '~/assets/styles/admin.css'
 const { setLocale } = useI18n()
 setLocale('nb')
 
+// Initialize Firestore sync for realtime updates
+const { initialize: initFirestoreSync } = useFirestoreSync()
+onMounted(() => {
+  initFirestoreSync()
+})
+
 // PWA update notification
 const { $pwa } = useNuxtApp()
 const toast = useToast()

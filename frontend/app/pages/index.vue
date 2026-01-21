@@ -145,6 +145,11 @@ watch(isWindowFocused, (focused) => {
   }
 })
 
+// Listen for Firestore realtime updates
+useFirestoreRefresh(['ProfilePageDocument', 'CurrentProjectDocument'], () => {
+  refresh({ requestPolicy: 'network-only' })
+})
+
 // Hidden Treasures link based on locale
 const { locale } = useI18n()
 const hiddenTreasuresLink = computed(() => {

@@ -2,11 +2,16 @@
 const route = useRoute('challenges-challengeId')
 
 const { isAuthReady } = useAuthReady()
-const { data, fetching, error } = useChallengePageQuery({
+const { data, fetching, error, executeQuery: refresh } = useChallengePageQuery({
   variables: {
     challengeId: route.params.challengeId,
   },
   pause: computed(() => !isAuthReady.value),
+})
+
+// Listen for Firestore realtime updates
+useFirestoreRefresh(['ChallengePageDocument'], () => {
+  refresh({ requestPolicy: 'network-only' })
 })
 
 const isInitialLoading = computed(() => fetching.value && !data.value)
