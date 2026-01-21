@@ -441,6 +441,7 @@ type ComplexityRoot struct {
 		CreateStreakAchievement                     func(childComplexity int, input model.CreateStreakAchievementInput) int
 		CreateSuperTeam                             func(childComplexity int, projectID string, input model.CreateSuperTeamInput) int
 		CreateTeam                                  func(childComplexity int, projectID string, input model.CreateTeamInput) int
+		CreateTeamScoreAdjustment                   func(childComplexity int, input model.CreateTeamScoreAdjustmentInput) int
 		CreateWebhook                               func(childComplexity int, input model.CreateWebhookInput) int
 		DeleteAchievement                           func(childComplexity int, id string) int
 		DeleteChallenge                             func(childComplexity int, id string) int
@@ -1223,6 +1224,7 @@ type MutationResolver interface {
 	RevokeRole(ctx context.Context, input model.RevokeRoleInput) (bool, error)
 	UpdateChurch(ctx context.Context, id string, input model.UpdateChurchInput) (*model.Church, error)
 	CreateScoreAdjustment(ctx context.Context, input model.CreateScoreAdjustmentInput) (*model.ScoreJournal, error)
+	CreateTeamScoreAdjustment(ctx context.Context, input model.CreateTeamScoreAdjustmentInput) ([]model.ScoreJournal, error)
 	DeleteScoreJournalEntry(ctx context.Context, id string) (bool, error)
 	AcceptConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
 	RejectConsent(ctx context.Context, consentID string) (*model.UserConsent, error)
@@ -3190,6 +3192,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.CreateTeam(childComplexity, args["projectId"].(string), args["input"].(model.CreateTeamInput)), true
+	case "Mutation.createTeamScoreAdjustment":
+		if e.complexity.Mutation.CreateTeamScoreAdjustment == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createTeamScoreAdjustment_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateTeamScoreAdjustment(childComplexity, args["input"].(model.CreateTeamScoreAdjustmentInput)), true
 	case "Mutation.createWebhook":
 		if e.complexity.Mutation.CreateWebhook == nil {
 			break
@@ -6839,6 +6852,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateStreakInput,
 		ec.unmarshalInputCreateSuperTeamInput,
 		ec.unmarshalInputCreateTeamInput,
+		ec.unmarshalInputCreateTeamScoreAdjustmentInput,
 		ec.unmarshalInputCreateUserInput,
 		ec.unmarshalInputCreateWebhookInput,
 		ec.unmarshalInputDateRangeInput,
@@ -8564,8 +8578,23 @@ extend type Query {
     adminScoreJournal(filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection! @requireRole(roles: ["admin", "superadmin"])
 }
 
+enum TeamScoreDistributionMode {
+    SPLIT  # Total points divided equally among members
+    EACH   # Each member receives the full point amount
+}
+
+input CreateTeamScoreAdjustmentInput {
+    teamId: ID!
+    projectId: ID!
+    eventId: ID
+    points: Int!
+    distributionMode: TeamScoreDistributionMode!
+    reason: String
+}
+
 extend type Mutation {
     createScoreAdjustment(input: CreateScoreAdjustmentInput!): ScoreJournal! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    createTeamScoreAdjustment(input: CreateTeamScoreAdjustmentInput!): [ScoreJournal!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
     deleteScoreJournalEntry(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
 }
 `, BuiltIn: false},
@@ -9791,6 +9820,17 @@ func (ec *executionContext) field_Mutation_createSuperTeam_args(ctx context.Cont
 		return nil, err
 	}
 	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createTeamScoreAdjustment_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateTeamScoreAdjustmentInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateTeamScoreAdjustmentInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -23518,6 +23558,89 @@ func (ec *executionContext) fieldContext_Mutation_createScoreAdjustment(ctx cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createScoreAdjustment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createTeamScoreAdjustment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_createTeamScoreAdjustment,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().CreateTeamScoreAdjustment(ctx, fc.Args["input"].(model.CreateTeamScoreAdjustmentInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"m2m", "admin", "superadmin"})
+				if err != nil {
+					var zeroVal []model.ScoreJournal
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal []model.ScoreJournal
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNScoreJournal2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournalᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createTeamScoreAdjustment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ScoreJournal_id(ctx, field)
+			case "project":
+				return ec.fieldContext_ScoreJournal_project(ctx, field)
+			case "user":
+				return ec.fieldContext_ScoreJournal_user(ctx, field)
+			case "event":
+				return ec.fieldContext_ScoreJournal_event(ctx, field)
+			case "challenge":
+				return ec.fieldContext_ScoreJournal_challenge(ctx, field)
+			case "points":
+				return ec.fieldContext_ScoreJournal_points(ctx, field)
+			case "sourceType":
+				return ec.fieldContext_ScoreJournal_sourceType(ctx, field)
+			case "source":
+				return ec.fieldContext_ScoreJournal_source(ctx, field)
+			case "reason":
+				return ec.fieldContext_ScoreJournal_reason(ctx, field)
+			case "awardedBy":
+				return ec.fieldContext_ScoreJournal_awardedBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ScoreJournal_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ScoreJournal", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createTeamScoreAdjustment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -45923,6 +46046,68 @@ func (ec *executionContext) unmarshalInputCreateTeamInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateTeamScoreAdjustmentInput(ctx context.Context, obj any) (model.CreateTeamScoreAdjustmentInput, error) {
+	var it model.CreateTeamScoreAdjustmentInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"teamId", "projectId", "eventId", "points", "distributionMode", "reason"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "teamId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("teamId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TeamID = data
+		case "projectId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectID = data
+		case "eventId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("eventId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EventID = data
+		case "points":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("points"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Points = data
+		case "distributionMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("distributionMode"))
+			data, err := ec.unmarshalNTeamScoreDistributionMode2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamScoreDistributionMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DistributionMode = data
+		case "reason":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reason"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Reason = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, obj any) (model.CreateUserInput, error) {
 	var it model.CreateUserInput
 	asMap := map[string]any{}
@@ -52159,6 +52344,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createScoreAdjustment":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createScoreAdjustment(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createTeamScoreAdjustment":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createTeamScoreAdjustment(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -61347,6 +61539,11 @@ func (ec *executionContext) unmarshalNCreateTeamInput2githubᚗcomᚋbccᚑmedia
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNCreateTeamScoreAdjustmentInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateTeamScoreAdjustmentInput(ctx context.Context, v any) (model.CreateTeamScoreAdjustmentInput, error) {
+	res, err := ec.unmarshalInputCreateTeamScoreAdjustmentInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNCreateWebhookInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateWebhookInput(ctx context.Context, v any) (model.CreateWebhookInput, error) {
 	res, err := ec.unmarshalInputCreateWebhookInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -62821,6 +63018,50 @@ func (ec *executionContext) marshalNScoreJournal2githubᚗcomᚋbccᚑmediaᚋwa
 	return ec._ScoreJournal(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNScoreJournal2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournalᚄ(ctx context.Context, sel ast.SelectionSet, v []model.ScoreJournal) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNScoreJournal2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournal(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNScoreJournal2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐScoreJournal(ctx context.Context, sel ast.SelectionSet, v *model.ScoreJournal) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -63494,6 +63735,16 @@ func (ec *executionContext) marshalNTeamMember2ᚕgithubᚗcomᚋbccᚑmediaᚋw
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNTeamScoreDistributionMode2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamScoreDistributionMode(ctx context.Context, v any) (model.TeamScoreDistributionMode, error) {
+	var res model.TeamScoreDistributionMode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTeamScoreDistributionMode2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeamScoreDistributionMode(ctx context.Context, sel ast.SelectionSet, v model.TeamScoreDistributionMode) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNUpdateAchievementInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateAchievementInput(ctx context.Context, v any) (model.UpdateAchievementInput, error) {

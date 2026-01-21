@@ -97,6 +97,14 @@ debug: ## Run debug TUI tool
 	@echo "Starting debug tool..."
 	@go run ./cmd/debug
 
+## Token Generation Commands
+
+m2m-token: ## Generate an M2M token (default: 1 year validity)
+	@go run ./cmd/m2mtoken
+
+m2m-token-%: ## Generate an M2M token valid for N years (e.g., m2m-token-2)
+	@go run ./cmd/m2mtoken $*
+
 ## Observability Commands
 
 jaeger-up: ## Start Jaeger tracing

@@ -62,6 +62,116 @@ func (r *mutationResolver) CreateScoreAdjustment(ctx context.Context, input mode
 	}, nil
 }
 
+// CreateTeamScoreAdjustment is the resolver for the createTeamScoreAdjustment field.
+func (r *mutationResolver) CreateTeamScoreAdjustment(ctx context.Context, input model.CreateTeamScoreAdjustmentInput) ([]model.ScoreJournal, error) {
+	// Get authenticated user
+	awardedByUserID, ok := middleware.GetUserID(ctx)
+	if !ok || awardedByUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Verify the team exists
+	teams, err := r.DB.Queries.GetTeamsByIDs(ctx, []string{input.TeamID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch team: %w", err)
+	}
+	if len(teams) == 0 {
+		return nil, fmt.Errorf("team not found: %s", input.TeamID)
+	}
+	team := teams[0]
+
+	// Verify the team belongs to the specified project
+	if team.ProjectID != input.ProjectID {
+		return nil, fmt.Errorf("team does not belong to specified project")
+	}
+
+	// Get all team member user IDs
+	memberUserIDs, err := r.DB.Queries.GetUserIDsInTeams(ctx, []string{input.TeamID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch team members: %w", err)
+	}
+	if len(memberUserIDs) == 0 {
+		return nil, fmt.Errorf("team has no members")
+	}
+
+	// Calculate points per member based on distribution mode
+	pointsArray := make([]int32, len(memberUserIDs))
+	switch input.DistributionMode {
+	case model.TeamScoreDistributionModeSplit:
+		basePoints := int32(input.Points / len(memberUserIDs))
+		remainder := input.Points % len(memberUserIDs)
+		for i := range pointsArray {
+			pointsArray[i] = basePoints
+			if i < remainder {
+				pointsArray[i]++
+			}
+		}
+	case model.TeamScoreDistributionModeEach:
+		for i := range pointsArray {
+			pointsArray[i] = int32(input.Points)
+		}
+	default:
+		return nil, fmt.Errorf("invalid distribution mode: %s", input.DistributionMode)
+	}
+
+	// Generate IDs for each entry
+	ids := make([]string, len(memberUserIDs))
+	for i := range ids {
+		ids[i] = ulid.NewScoreJournalID()
+	}
+
+	// Build reason with distribution mode info
+	var reason *string
+	if input.Reason != nil {
+		reasonWithMode := fmt.Sprintf("%s (team: %s, mode: %s)", *input.Reason, input.TeamID, input.DistributionMode)
+		reason = &reasonWithMode
+	} else {
+		reasonWithMode := fmt.Sprintf("Team score adjustment (team: %s, mode: %s)", input.TeamID, input.DistributionMode)
+		reason = &reasonWithMode
+	}
+
+	// Create batch params
+	params := sqlc.CreateTeamScoreAdjustmentBatchParams{
+		Ids:       ids,
+		ProjectID: input.ProjectID,
+		UserIds:   memberUserIDs,
+		EventID:   input.EventID,
+		Points:    pointsArray,
+		Reason:    reason,
+		AwardedBy: &awardedByUserID,
+	}
+
+	// Create entries
+	entries, err := r.DB.Queries.CreateTeamScoreAdjustmentBatch(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create team score adjustment: %w", err)
+	}
+
+	// Invalidate caches
+	for _, userID := range memberUserIDs {
+		r.Cache.InvalidateUser(userID)
+	}
+	r.Cache.InvalidateProject(input.ProjectID)
+	r.Cache.InvalidateTeam(input.TeamID)
+	if input.EventID != nil {
+		r.Cache.InvalidateEvent(*input.EventID)
+	}
+
+	// Convert to GraphQL model
+	result := make([]model.ScoreJournal, len(entries))
+	for i, entry := range entries {
+		result[i] = model.ScoreJournal{
+			ID:         entry.ID,
+			Points:     int(entry.Points),
+			SourceType: model.ScoreSourceTypeManual,
+			Reason:     entry.Reason,
+			CreatedAt:  scalars.DateTime{Time: entry.CreatedAt.Time},
+		}
+	}
+
+	return result, nil
+}
+
 // DeleteScoreJournalEntry is the resolver for the deleteScoreJournalEntry field.
 func (r *mutationResolver) DeleteScoreJournalEntry(ctx context.Context, id string) (bool, error) {
 	err := r.DB.Queries.DeleteScoreJournalEntry(ctx, id)

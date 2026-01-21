@@ -487,6 +487,15 @@ type CreateTeamInput struct {
 	Description string `json:"description"`
 }
 
+type CreateTeamScoreAdjustmentInput struct {
+	TeamID           string                    `json:"teamId"`
+	ProjectID        string                    `json:"projectId"`
+	EventID          *string                   `json:"eventId,omitempty"`
+	Points           int                       `json:"points"`
+	DistributionMode TeamScoreDistributionMode `json:"distributionMode"`
+	Reason           *string                   `json:"reason,omitempty"`
+}
+
 type CreateUserInput struct {
 	MembersID string `json:"membersId"`
 	Email     string `json:"email"`
@@ -2757,6 +2766,61 @@ func (e *ScoreSourceType) UnmarshalJSON(b []byte) error {
 }
 
 func (e ScoreSourceType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TeamScoreDistributionMode string
+
+const (
+	TeamScoreDistributionModeSplit TeamScoreDistributionMode = "SPLIT"
+	TeamScoreDistributionModeEach  TeamScoreDistributionMode = "EACH"
+)
+
+var AllTeamScoreDistributionMode = []TeamScoreDistributionMode{
+	TeamScoreDistributionModeSplit,
+	TeamScoreDistributionModeEach,
+}
+
+func (e TeamScoreDistributionMode) IsValid() bool {
+	switch e {
+	case TeamScoreDistributionModeSplit, TeamScoreDistributionModeEach:
+		return true
+	}
+	return false
+}
+
+func (e TeamScoreDistributionMode) String() string {
+	return string(e)
+}
+
+func (e *TeamScoreDistributionMode) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TeamScoreDistributionMode(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TeamScoreDistributionMode", str)
+	}
+	return nil
+}
+
+func (e TeamScoreDistributionMode) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TeamScoreDistributionMode) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TeamScoreDistributionMode) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

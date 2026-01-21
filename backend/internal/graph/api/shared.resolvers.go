@@ -1574,8 +1574,19 @@ func (r *superTeamResolver) Members(ctx context.Context, obj *model.SuperTeam, f
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
+	// Check for M2M role from JWT token (M2M users don't exist in the database)
+	userRoles := middleware.GetUserRoles(ctx)
+	isM2MFromToken := false
+	for _, role := range userRoles {
+		if role == "m2m" {
+			isM2MFromToken = true
+			break
+		}
+	}
+
 	// Check permissions - only admins, project admins can access super team members
-	allowed := r.RoleService.IsAdmin(ctx, currentUserID) ||
+	allowed := isM2MFromToken ||
+		r.RoleService.IsAdmin(ctx, currentUserID) ||
 		r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) ||
 		r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, obj.ProjectID)
 
@@ -1723,8 +1734,19 @@ func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.Te
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
+	// Check for M2M role from JWT token (M2M users don't exist in the database)
+	userRoles := middleware.GetUserRoles(ctx)
+	isM2MFromToken := false
+	for _, role := range userRoles {
+		if role == "m2m" {
+			isM2MFromToken = true
+			break
+		}
+	}
+
 	// Check permissions - admins, M2M, project admins, team leads, and church admins can access team members
-	allowed := r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) ||
+	allowed := isM2MFromToken ||
+		r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) ||
 		r.RoleService.CanManageTeam(ctx, currentUserID, obj.ID)
 
 	if !allowed {

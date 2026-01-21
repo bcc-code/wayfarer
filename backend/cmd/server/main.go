@@ -629,8 +629,10 @@ func graphqlHandler(h *handler.Server, languageService *services.LanguageService
 		}
 
 		// Transfer user_roles if present
-		if userRoles, exists := c.Get("user_roles"); exists {
-			ctx = context.WithValue(ctx, middleware.UserRolesKey, userRoles)
+		var userRoles []string
+		if roles, exists := c.Get("user_roles"); exists {
+			userRoles = roles.([]string)
+			ctx = context.WithValue(ctx, middleware.UserRolesKey, roles)
 		}
 
 		// Transfer language if present
@@ -645,7 +647,15 @@ func graphqlHandler(h *handler.Server, languageService *services.LanguageService
 		ctx = context.WithValue(ctx, middleware.UserAgentKey, userAgent)
 
 		// Sync language preference asynchronously (fire-and-forget)
-		if userID != "" && requestedLang != "" && languageService != nil {
+		// Skip M2M users as they don't exist in the database
+		isM2MUser := false
+		for _, role := range userRoles {
+			if role == "m2m" {
+				isM2MUser = true
+				break
+			}
+		}
+		if userID != "" && requestedLang != "" && languageService != nil && !isM2MUser {
 			go languageService.SyncUserLanguage(context.Background(), userID, requestedLang)
 		}
 

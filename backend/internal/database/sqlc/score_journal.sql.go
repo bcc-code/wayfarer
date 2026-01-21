@@ -139,6 +139,83 @@ func (q *Queries) CreateScoreJournalEntry(ctx context.Context, arg CreateScoreJo
 	return &i, err
 }
 
+const CreateTeamScoreAdjustmentBatch = `-- name: CreateTeamScoreAdjustmentBatch :many
+INSERT INTO score_journal (
+    id,
+    project_id,
+    user_id,
+    event_id,
+    points,
+    source_type,
+    reason,
+    awarded_by,
+    created_at
+)
+SELECT
+    unnest($1::text[]),
+    $2::text,
+    unnest($3::text[]),
+    $4::text,
+    unnest($5::int[]),
+    'MANUAL',
+    $6::text,
+    $7::text,
+    now()
+RETURNING id, project_id, user_id, event_id, challenge_id, points, source_type, source_id, reason, awarded_by, created_at
+`
+
+type CreateTeamScoreAdjustmentBatchParams struct {
+	Ids       []string `json:"ids"`
+	ProjectID string   `json:"project_id"`
+	UserIds   []string `json:"user_ids"`
+	EventID   *string  `json:"event_id"`
+	Points    []int32  `json:"points"`
+	Reason    *string  `json:"reason"`
+	AwardedBy *string  `json:"awarded_by"`
+}
+
+// Creates score journal entries for multiple team members at once
+// Points array must have the same length as user_ids array
+func (q *Queries) CreateTeamScoreAdjustmentBatch(ctx context.Context, arg CreateTeamScoreAdjustmentBatchParams) ([]*ScoreJournal, error) {
+	rows, err := q.db.Query(ctx, CreateTeamScoreAdjustmentBatch,
+		arg.Ids,
+		arg.ProjectID,
+		arg.UserIds,
+		arg.EventID,
+		arg.Points,
+		arg.Reason,
+		arg.AwardedBy,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*ScoreJournal{}
+	for rows.Next() {
+		var i ScoreJournal
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.UserID,
+			&i.EventID,
+			&i.ChallengeID,
+			&i.Points,
+			&i.SourceType,
+			&i.SourceID,
+			&i.Reason,
+			&i.AwardedBy,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const DeleteScoreJournalByAchievement = `-- name: DeleteScoreJournalByAchievement :exec
 DELETE FROM score_journal
 WHERE user_id = $1::text

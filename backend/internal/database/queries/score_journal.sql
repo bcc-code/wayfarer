@@ -104,3 +104,29 @@ SELECT EXISTS(
       AND source_type = @source_type::text
       AND source_id = @source_id::text
 ) AS exists;
+
+-- name: CreateTeamScoreAdjustmentBatch :many
+-- Creates score journal entries for multiple team members at once
+-- Points array must have the same length as user_ids array
+INSERT INTO score_journal (
+    id,
+    project_id,
+    user_id,
+    event_id,
+    points,
+    source_type,
+    reason,
+    awarded_by,
+    created_at
+)
+SELECT
+    unnest(@ids::text[]),
+    @project_id::text,
+    unnest(@user_ids::text[]),
+    sqlc.narg('event_id')::text,
+    unnest(@points::int[]),
+    'MANUAL',
+    sqlc.narg('reason')::text,
+    sqlc.narg('awarded_by')::text,
+    now()
+RETURNING *;
