@@ -14,7 +14,10 @@ type UserFeedback {
     locale: String
     projectId: ID
     timezone: String
+    contextUrl: String
+    tags: [String!]!
     createdAt: DateTime!
+    handledAt: DateTime
 }
 
 input DeviceMetadata {
@@ -25,6 +28,7 @@ input DeviceMetadata {
     appVersion: String
     locale: String
     timezone: String
+    contextUrl: String
 }
 
 input SubmitFeedbackInput {
@@ -32,6 +36,7 @@ input SubmitFeedbackInput {
     canContactMe: Boolean!
     device: DeviceMetadata!
     projectId: ID
+    tags: [String!]
 }
 
 type FeedbackConnection {
@@ -47,6 +52,7 @@ type FeedbackEdge {
 
 input FeedbackFilter {
     userId: ID
+    tags: [String!]
 }
 
 extend type Query {
@@ -56,4 +62,7 @@ extend type Query {
 extend type Mutation {
     submitFeedback(input: SubmitFeedbackInput!): UserFeedback!
     deleteFeedback(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    forwardFeedbackToDesk(feedbackId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    markFeedbackHandled(feedbackId: ID!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
+    updateFeedbackTags(feedbackId: ID!, tags: [String!]!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
 }

@@ -12,10 +12,9 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
-	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services/email"
 	"github.com/bcc-media/wayfarer/internal/ulid"
-	"github.com/bcc-media/wayfarer/internal/utils"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -61,9 +60,17 @@ func (r *mutationResolver) SubmitFeedback(ctx context.Context, input model.Submi
 	if input.Device.Timezone != nil {
 		timezone = *input.Device.Timezone
 	}
+	contextUrl := ""
+	if input.Device.ContextURL != nil {
+		contextUrl = *input.Device.ContextURL
+	}
 	projectID := ""
 	if input.ProjectID != nil {
 		projectID = *input.ProjectID
+	}
+	tags := []string{}
+	if input.Tags != nil {
+		tags = input.Tags
 	}
 
 	// Create feedback entry
@@ -80,6 +87,8 @@ func (r *mutationResolver) SubmitFeedback(ctx context.Context, input model.Submi
 		Locale:       locale,
 		Projectid:    projectID,
 		Timezone:     timezone,
+		Contexturl:   contextUrl,
+		Tags:         tags,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create feedback: %w", err)
@@ -88,22 +97,7 @@ func (r *mutationResolver) SubmitFeedback(ctx context.Context, input model.Submi
 	// Notify Firestore listeners about new feedback
 	go r.FirebaseService.NotifyAdminFeedback(context.Background())
 
-	// Convert to GraphQL model
-	return &model.UserFeedback{
-		ID:           feedback.ID,
-		UserID:       feedback.UserID,
-		Message:      feedback.Message,
-		CanContactMe: feedback.CanContactMe,
-		UserAgent:    feedback.UserAgent,
-		Platform:     feedback.Platform,
-		ScreenWidth:  utils.Int32PtrToIntPtr(feedback.ScreenWidth),
-		ScreenHeight: utils.Int32PtrToIntPtr(feedback.ScreenHeight),
-		AppVersion:   feedback.AppVersion,
-		Locale:       feedback.Locale,
-		ProjectID:    feedback.ProjectID,
-		Timezone:     feedback.Timezone,
-		CreatedAt:    scalars.DateTime{Time: feedback.CreatedAt.Time},
-	}, nil
+	return feedbackRowToModel(feedback), nil
 }
 
 // DeleteFeedback is the resolver for the deleteFeedback field.
@@ -113,6 +107,129 @@ func (r *mutationResolver) DeleteFeedback(ctx context.Context, id string) (bool,
 		return false, fmt.Errorf("failed to delete feedback: %w", err)
 	}
 	return true, nil
+}
+
+// ForwardFeedbackToDesk is the resolver for the forwardFeedbackToDesk field.
+func (r *mutationResolver) ForwardFeedbackToDesk(ctx context.Context, feedbackID string) (bool, error) {
+	if r.EmailService == nil {
+		return false, fmt.Errorf("email service not configured")
+	}
+
+	// Get feedback by ID
+	feedback, err := r.DB.Queries.GetFeedbackByID(ctx, feedbackID)
+	if err != nil {
+		return false, fmt.Errorf("failed to get feedback: %w", err)
+	}
+
+	// Load user
+	userThunk := r.Loaders.UserByIDLoader.Load(ctx, feedback.UserID)
+	user, err := userThunk()
+	if err != nil {
+		return false, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	// Load church
+	churchThunk := r.Loaders.ChurchLoader.Load(ctx, user.ChurchID)
+	church, err := churchThunk()
+	if err != nil {
+		return false, fmt.Errorf("failed to load church: %w", err)
+	}
+
+	// Get total points for project (if available)
+	var totalPoints int64
+	var projectName string
+	if feedback.ProjectID != nil && *feedback.ProjectID != "" {
+		projectThunk := r.Loaders.ProjectByIDLoader.Load(ctx, *feedback.ProjectID)
+		project, err := projectThunk()
+		if err == nil && project != nil {
+			projectName = project.Name
+			score, err := r.DB.Queries.GetUserScore(ctx, sqlc.GetUserScoreParams{
+				UserID:    feedback.UserID,
+				ProjectID: *feedback.ProjectID,
+				EventID:   "",
+			})
+			if err == nil {
+				totalPoints = score
+			}
+		}
+	}
+
+	// Get consent history with titles
+	consentHistory, err := r.DB.Queries.GetUserConsentHistoryWithTitles(ctx, feedback.UserID)
+	if err != nil {
+		return false, fmt.Errorf("failed to get consent history: %w", err)
+	}
+
+	// Convert consent history to email format
+	consents := make([]email.ConsentEntry, len(consentHistory))
+	for i, ch := range consentHistory {
+		action := "Accepted"
+		if ch.Action == "REJECTED" {
+			action = "Rejected"
+		}
+		title := ch.ConsentKey
+		if ch.ConsentTitle != nil {
+			title = *ch.ConsentTitle
+		}
+		consents[i] = email.ConsentEntry{
+			Title:  title,
+			Action: action,
+			Date:   ch.OccurredAt.Time,
+		}
+	}
+
+	// Send email
+	err = r.EmailService.SendFeedbackToDesk(ctx, email.FeedbackEmailParams{
+		UserID:      feedback.UserID,
+		UserName:    user.Name,
+		UserEmail:   user.Email,
+		ChurchName:  church.Name,
+		TotalPoints: totalPoints,
+		ProjectName: projectName,
+		UserCreated: user.CreatedAt.Time,
+		Consents:    consents,
+		Message:     feedback.Message,
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to send email: %w", err)
+	}
+
+	// Mark feedback as handled
+	_, err = r.DB.Queries.SetFeedbackHandledAt(ctx, sqlc.SetFeedbackHandledAtParams{
+		ID:        feedbackID,
+		HandledAt: pgtype.Timestamptz{Time: time.Now(), Valid: true},
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to mark feedback as handled: %w", err)
+	}
+
+	return true, nil
+}
+
+// MarkFeedbackHandled is the resolver for the markFeedbackHandled field.
+func (r *mutationResolver) MarkFeedbackHandled(ctx context.Context, feedbackID string) (*model.UserFeedback, error) {
+	feedback, err := r.DB.Queries.SetFeedbackHandledAt(ctx, sqlc.SetFeedbackHandledAtParams{
+		ID:        feedbackID,
+		HandledAt: pgtype.Timestamptz{Time: time.Now(), Valid: true},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to mark feedback as handled: %w", err)
+	}
+
+	return feedbackRowToModel(feedback), nil
+}
+
+// UpdateFeedbackTags is the resolver for the updateFeedbackTags field.
+func (r *mutationResolver) UpdateFeedbackTags(ctx context.Context, feedbackID string, tags []string) (*model.UserFeedback, error) {
+	feedback, err := r.DB.Queries.UpdateFeedbackTags(ctx, sqlc.UpdateFeedbackTagsParams{
+		ID:   feedbackID,
+		Tags: tags,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update feedback tags: %w", err)
+	}
+
+	return feedbackRowToModel(feedback), nil
 }
 
 // Feedback is the resolver for the feedback field.
@@ -153,6 +270,10 @@ func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilt
 	if filter != nil && filter.UserID != nil {
 		filterUserID = *filter.UserID
 	}
+	filterTags := []string{}
+	if filter != nil && filter.Tags != nil {
+		filterTags = filter.Tags
+	}
 
 	// Fetch one more than requested to determine if there are more results
 	rows, err := r.DB.Queries.GetFeedbackCursor(ctx, sqlc.GetFeedbackCursorParams{
@@ -161,6 +282,7 @@ func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilt
 		Isbackward:   isBackward,
 		Querylimit:   int32(limit + 1),
 		Filteruserid: filterUserID,
+		Filtertags:   filterTags,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch feedback: %w", err)
@@ -180,7 +302,10 @@ func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilt
 	}
 
 	// Get total count
-	totalCount, err := r.DB.Queries.CountAllFeedback(ctx, filterUserID)
+	totalCount, err := r.DB.Queries.CountAllFeedback(ctx, sqlc.CountAllFeedbackParams{
+		Filteruserid: filterUserID,
+		Filtertags:   filterTags,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to count feedback: %w", err)
 	}
@@ -188,21 +313,7 @@ func (r *queryResolver) Feedback(ctx context.Context, filter *model.FeedbackFilt
 	// Convert to GraphQL models
 	feedbacks := make([]*model.UserFeedback, len(rows))
 	for i, row := range rows {
-		feedbacks[i] = &model.UserFeedback{
-			ID:           row.ID,
-			UserID:       row.UserID,
-			Message:      row.Message,
-			CanContactMe: row.CanContactMe,
-			UserAgent:    row.UserAgent,
-			Platform:     row.Platform,
-			ScreenWidth:  utils.Int32PtrToIntPtr(row.ScreenWidth),
-			ScreenHeight: utils.Int32PtrToIntPtr(row.ScreenHeight),
-			AppVersion:   row.AppVersion,
-			Locale:       row.Locale,
-			ProjectID:    row.ProjectID,
-			Timezone:     row.Timezone,
-			CreatedAt:    scalars.DateTime{Time: row.CreatedAt.Time},
-		}
+		feedbacks[i] = feedbackRowToModel(row)
 	}
 
 	return pagination.BuildFeedbackConnection(pagination.BuildFeedbackConnectionParams{

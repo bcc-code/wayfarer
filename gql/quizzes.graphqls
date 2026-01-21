@@ -27,7 +27,6 @@ extend type Mutation {
     createQuiz(input: CreateQuizInput!): Quiz! @requireRole(roles: ["admin", "superadmin"])
     updateQuiz(id: ID!, input: UpdateQuizInput!): Quiz! @requireRole(roles: ["admin", "superadmin"])
     deleteQuiz(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-    publishQuiz(id: ID!, publishedAt: DateTime!): Quiz! @requireRole(roles: ["admin", "superadmin"])
 
     # Admin: Question management
     addQuizQuestion(quizId: ID!, input: CreateQuizQuestionInput!): QuizQuestion! @requireRole(roles: ["admin", "superadmin"])
@@ -38,8 +37,7 @@ extend type Mutation {
     # Admin: Achievement integration
     createQuizAchievement(input: CreateQuizAchievementInput!): QuizAchievement! @requireRole(roles: ["admin", "superadmin"])
 
-    # User: Taking quizzes
-    startQuiz(quizId: ID!): QuizSubmission!
+    # User: Taking quizzes (via sessions - use startQuizSession)
     submitQuizAnswer(submissionId: ID!, input: SubmitQuizAnswerInput!): QuizResponse!
     finalizeQuiz(submissionId: ID!): QuizSubmission!
 

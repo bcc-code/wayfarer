@@ -1,0 +1,98 @@
+type: http_request
+model: http_request
+id: rq_TY9vXUDd2y
+createdAt: 2026-01-21T08:01:37.204356
+updatedAt: 2026-01-21T08:05:23.438805
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_JDaaFQsGYo
+authentication: {}
+authenticationType: null
+body:
+  query: "query StandingsLocalPage($filter: LeaderboardFilter, $first: Int) {\n  me {\n    church {\n      id\n      name\n      __typename\n    }\n    __typename\n  }\n  myCurrentProject {\n    id\n    personLeaderboard: leaderboard(\n      entityType: PERSONS\n      filter: $filter\n      first: $first\n    ) {\n      totalCount\n      edges {\n        node {\n          id\n  name\n  score\n  rank\n  tags\n  __typename\n          __typename\n        }\n        __typename\n      }\n      me {\n        id\n  name\n  score\n  rank\n  tags\n  __typename\n        __typename\n      }\n      __typename\n    }\n    unitLeaderboard: leaderboard(entityType: TEAMS, filter: $filter, first: $first) {\n      totalCount\n      edges {\n        node {\nid\n  name\n  score\n  rank\n  tags\n  __typename\n          __typename\n        }\n        __typename\n      }\n      me {\nid\n  name\n  score\n  rank\n  tags\n  __typename      \n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}"
+  variables: |-
+    {
+      "filter": {
+        "ageRange": {
+          "max": 37,
+          "min": 13
+        },
+        "churchId": "CH01KB2BV18W6YT9GRB79M5TZXAW"
+      },
+      "first": 20
+    }
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: User-Agent
+  value: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:147.0) Gecko/20100101 Firefox/147.0
+  id: null
+- enabled: true
+  name: Accept
+  value: application/graphql-response+json, application/graphql+json, application/json, text/event-stream, multipart/mixed
+  id: null
+- enabled: true
+  name: Accept-Language
+  value: nb
+  id: null
+- enabled: true
+  name: Accept-Encoding
+  value: gzip, deflate, br, zstd
+  id: null
+- enabled: true
+  name: Referer
+  value: http://localhost:3000/
+  id: null
+- enabled: true
+  name: authorization
+  value: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVMwMUtFSE5LMUFRNjlZSldIWVdKMVNZUjVCMSIsInVzZXJfcm9sZXMiOlsic3VwZXJhZG1pbiJdLCJpc3MiOiJ3YXlmYXJlciIsImV4cCI6MTc2OTA2ODE5MywiaWF0IjoxNzY4OTgxNzkzfQ.ZfFBZkQhn9CRcc2VARVjjDl0VVoS4DAcXe3jM5QM_uc
+  id: null
+- enabled: true
+  name: Origin
+  value: http://localhost:3000
+  id: null
+- enabled: true
+  name: DNT
+  value: '1'
+  id: null
+- enabled: true
+  name: Sec-GPC
+  value: '1'
+  id: null
+- enabled: true
+  name: Connection
+  value: keep-alive
+  id: null
+- enabled: true
+  name: Sec-Fetch-Dest
+  value: empty
+  id: null
+- enabled: true
+  name: Sec-Fetch-Mode
+  value: cors
+  id: null
+- enabled: true
+  name: Sec-Fetch-Site
+  value: same-site
+  id: null
+- enabled: true
+  name: Priority
+  value: u=4
+  id: null
+- enabled: true
+  name: Pragma
+  value: no-cache
+  id: null
+- enabled: true
+  name: Cache-Control
+  value: no-cache
+  id: null
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: ED0r4FsIUz
+method: POST
+name: Leaderboard Debug 1
+sortPriority: 0.0
+url: http://localhost:8080/graphql
+urlParameters: []

@@ -80,6 +80,13 @@ enum ConsentManagementType {
 
 # ==================== Supporting Types ====================
 
+type Image {
+    url: String!
+    width: Int
+    height: Int
+    blurhash: String
+}
+
 type MarkdownText {
     markdown: String!
     html: String! @goField(forceResolver: true)
@@ -97,7 +104,10 @@ type ContentItem {
 }
 
 type Branding {
-    logo: String
+    logo: String @deprecated(reason: "Use logoImage instead")
+    logoImage: Image @goField(forceResolver: true)
+    banner: String @deprecated(reason: "Use bannerImage instead")
+    bannerImage: Image @goField(forceResolver: true)
     colors: Colors!
     rounding: Int! # border-radius in pixels
 }
@@ -129,7 +139,9 @@ type LeaderboardEntry {
     score: Int!
     rank: Int
     tags: [LeaderboardEntryTag!]!
-    image: String
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
+    lastScoreAt: DateTime
 }
 
 type LeaderboardEdge {
@@ -169,7 +181,8 @@ type User {
     age: Int @goField(forceResolver: true)
     email: String!
     name: String!
-    image: String
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
     projects: [Project!]! @goField(forceResolver: true)
     events: [Event!]! @goField(forceResolver: true)
     teams: [Team!]! @goField(forceResolver: true)
@@ -192,6 +205,9 @@ type Project {
     name: String!
     description: String!
     rules: MarkdownText @goField(forceResolver: true)
+    infoMessage: MarkdownText @goField(forceResolver: true)
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
     challenges: [Challenge!]! @goField(forceResolver: true)
     leaderboard(
         entityType: LeaderboardEntityType!
@@ -206,6 +222,7 @@ type Project {
     endDate: DateTime!
     branding: Branding!
     teams: [Team!]! @goField(forceResolver: true)
+    myChurchTeams: [Team!]! @goField(forceResolver: true)
     myTeam: Team @goField(forceResolver: true)
     achievements: [Achievement!]! @goField(forceResolver: true)
     streaks: [Streak!]! @goField(forceResolver: true)
@@ -262,6 +279,8 @@ type Team {
     name: String!
     description: String!
     joinCode: String!
+    leaderboardExcluded: Boolean!
+    averageAge: Float @goField(forceResolver: true)
     members: [TeamMember!]! @goField(forceResolver: true)
     memberLeaderboard: [LeaderboardEntry!]! @goField(forceResolver: true)
     parentProject: Project! @goField(forceResolver: true)
@@ -292,7 +311,8 @@ interface Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
@@ -318,7 +338,8 @@ type SimpleChallenge implements Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
@@ -338,7 +359,8 @@ type QuizChallenge implements Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
@@ -358,7 +380,8 @@ type ExternalChallenge implements Challenge {
     id: ID!
     name: String!
     description: HTML!
-    image: String
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
@@ -380,14 +403,17 @@ interface Achievement {
     descriptionPending: String!
     descriptionCompleted: String!
     notificationText: String!
-    imagePending: String!
-    imageCompleted: String!
+    imagePending: String! @deprecated(reason: "Use imagePendingObject instead")
+    imagePendingObject: Image!
+    imageCompleted: String! @deprecated(reason: "Use imageCompletedObject instead")
+    imageCompletedObject: Image!
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
 }
 
 # ==================== Achievement Implementations ====================
@@ -398,14 +424,17 @@ type SimpleAchievement implements Achievement {
     descriptionPending: String!
     descriptionCompleted: String!
     notificationText: String!
-    imagePending: String!
-    imageCompleted: String!
+    imagePending: String! @deprecated(reason: "Use imagePendingObject instead")
+    imagePendingObject: Image! @goField(forceResolver: true)
+    imageCompleted: String! @deprecated(reason: "Use imageCompletedObject instead")
+    imageCompletedObject: Image! @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
 }
 
 type ContentAchievement implements Achievement {
@@ -414,14 +443,17 @@ type ContentAchievement implements Achievement {
     descriptionPending: String!
     descriptionCompleted: String!
     notificationText: String!
-    imagePending: String!
-    imageCompleted: String!
+    imagePending: String! @deprecated(reason: "Use imagePendingObject instead")
+    imagePendingObject: Image! @goField(forceResolver: true)
+    imageCompleted: String! @deprecated(reason: "Use imageCompletedObject instead")
+    imageCompletedObject: Image! @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     # Content-specific fields
     items: [ContentItem!]! @goField(forceResolver: true)
     userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
@@ -436,8 +468,10 @@ type StreakAchievement implements Achievement {
     descriptionPending: String!
     descriptionCompleted: String!
     notificationText: String!
-    imagePending: String!
-    imageCompleted: String!
+    imagePending: String! @deprecated(reason: "Use imagePendingObject instead")
+    imagePendingObject: Image! @goField(forceResolver: true)
+    imageCompleted: String! @deprecated(reason: "Use imageCompletedObject instead")
+    imageCompletedObject: Image! @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
@@ -445,6 +479,7 @@ type StreakAchievement implements Achievement {
     neededStreak: Int!
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     streak: Streak! @goField(forceResolver: true)
 }
 
@@ -454,14 +489,17 @@ type QuizAchievement implements Achievement {
     descriptionPending: String!
     descriptionCompleted: String!
     notificationText: String!
-    imagePending: String!
-    imageCompleted: String!
+    imagePending: String! @deprecated(reason: "Use imagePendingObject instead")
+    imagePendingObject: Image! @goField(forceResolver: true)
+    imageCompleted: String! @deprecated(reason: "Use imageCompletedObject instead")
+    imageCompletedObject: Image! @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     quiz: Quiz! @goField(forceResolver: true)
     minScorePercentage: Int
     requireCompletion: Boolean!
@@ -480,7 +518,8 @@ type Quiz {
     id: ID!
     name: String!
     description: String!
-    image: String
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
     project: Project! @goField(forceResolver: true)
     challenge: Challenge! @goField(forceResolver: true)
 
@@ -492,13 +531,17 @@ type Quiz {
 
     questions: [QuizQuestion!]! @goField(forceResolver: true)
 
-    publishedAt: DateTime
     endTime: DateTime
 
-    # User-specific fields
+    # User-specific fields (legacy - prefer session-based access)
     userSubmissions: [QuizSubmission!]! @goField(forceResolver: true)
     userCanStart: Boolean! @goField(forceResolver: true)
     userActiveSubmission: QuizSubmission @goField(forceResolver: true)
+
+    # Session-based access (new)
+    sessions(state: QuizSessionState): [QuizSession!]! @goField(forceResolver: true)
+    userSessions: [QuizSession!]! @goField(forceResolver: true)
+    userActiveSession: QuizSession @goField(forceResolver: true)
 }
 
 # ==================== Quiz Question Interface ====================
@@ -564,12 +607,14 @@ type QuizPredefinedAnswer {
 type QuizSubmission {
     id: ID!
     quiz: Quiz! @goField(forceResolver: true)
+    session: QuizSession @goField(forceResolver: true)
     user: User! @goField(forceResolver: true)
 
     startedAt: DateTime!
     completedAt: DateTime
     expiresAt: DateTime
     isExpired: Boolean! @goField(forceResolver: true)
+    autoSubmitted: Boolean!
 
     questionOrder: [ID!]!
     orderedQuestions: [QuizQuestion!]! @goField(forceResolver: true)
@@ -646,6 +691,7 @@ input AgeRangeInput {
 
 input BrandingInput {
     logo: String
+    banner: String
     colors: ColorsInput!
     rounding: Int!
 }
@@ -678,6 +724,9 @@ input CreateProjectInput {
     name: String!
     description: String
     rules: String
+    infoMessage: String
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
     startDate: DateTime!
     endDate: DateTime!
     branding: BrandingInput!
@@ -687,6 +736,9 @@ input UpdateProjectInput {
     name: String
     description: String
     rules: String
+    infoMessage: String
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
     startDate: DateTime
     endDate: DateTime
     branding: BrandingInput
@@ -751,6 +803,7 @@ input CreateSimpleAchievementInput {
     challengeId: ID
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
 }
 
 input CreateContentAchievementInput {
@@ -765,6 +818,7 @@ input CreateContentAchievementInput {
     challengeId: ID
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     items: [ContentItemInput!]!
 }
 
@@ -780,6 +834,7 @@ input CreateStreakAchievementInput {
     challengeId: ID
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     neededStreak: Int!
     streakId: ID!
 }
@@ -814,7 +869,6 @@ input CreateQuizInput {
     allowRetakes: Boolean!
     completionPoints: Int!
 
-    publishedAt: DateTime
     endTime: DateTime
 }
 
@@ -830,7 +884,6 @@ input UpdateQuizInput {
     allowRetakes: Boolean
     completionPoints: Int
 
-    publishedAt: DateTime
     endTime: DateTime
 }
 
@@ -884,8 +937,6 @@ input QuizFilter {
     projectId: ID
     challengeId: ID
     ids: [ID!]
-    publishedAfter: DateTime
-    publishedBefore: DateTime
 }
 
 input UpdateAchievementInput {
@@ -899,6 +950,7 @@ input UpdateAchievementInput {
     challengeId: ID
     points: Int
     hidden: Boolean
+    awardableFrom: DateTime
 }
 
 input UpdateContentAchievementInput {
@@ -912,6 +964,7 @@ input UpdateContentAchievementInput {
     challengeId: ID
     points: Int
     hidden: Boolean
+    awardableFrom: DateTime
     items: [ContentItemInput!]
 }
 
@@ -926,6 +979,7 @@ input UpdateStreakAchievementInput {
     challengeId: ID
     points: Int
     hidden: Boolean
+    awardableFrom: DateTime
     neededStreak: Int
     streakId: ID
 }
@@ -938,6 +992,7 @@ input CreateTeamInput {
 input UpdateTeamInput {
     name: String
     description: String
+    leaderboardExcluded: Boolean
 }
 
 input CreateSuperTeamInput {
@@ -993,6 +1048,7 @@ input UpdateStreakInput {
 
 # Query Filter Inputs
 input UserFilter {
+    query: String
     churchId: ID
     gender: Gender
     minAge: Int

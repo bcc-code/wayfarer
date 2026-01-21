@@ -20,18 +20,30 @@ body:
         pointsAwarded
         responses {
           id
+          answeredAt
+          timeSpentSeconds
           question {
             id
             questionText
           }
-          selectedAnswers {
-            id
-            answerText
+          ... on PredefinedResponse {
+            selectedAnswerIds
+            selectedAnswers {
+              id
+              answerText
+              isCorrect
+            }
             isCorrect
+            pointsEarned
           }
-          textResponse
-          numberResponse
-          isCorrect
+          ... on FreeTextResponse {
+            textResponse
+            pointsEarned
+          }
+          ... on NumberResponse {
+            numberResponse
+            pointsEarned
+          }
         }
       }
     }

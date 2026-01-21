@@ -97,10 +97,10 @@ func TestExtractPrefixes_EventKey(t *testing.T) {
 
 func TestExtractProjectTag(t *testing.T) {
 	tests := []struct {
-		name     string
-		key      string
-		wantID   string
-		wantOK   bool
+		name   string
+		key    string
+		wantID string
+		wantOK bool
 	}{
 		{
 			name:   "challenge with project",
@@ -139,10 +139,10 @@ func TestExtractProjectTag(t *testing.T) {
 
 func TestExtractEventTag(t *testing.T) {
 	tests := []struct {
-		name     string
-		key      string
-		wantID   string
-		wantOK   bool
+		name   string
+		key    string
+		wantID string
+		wantOK bool
 	}{
 		{
 			name:   "challenge with event",

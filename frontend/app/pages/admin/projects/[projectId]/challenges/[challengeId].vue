@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import type { ChallengeFormData } from '~/components/admin/challenge/AdminChallengeForm.vue'
-import type { QuizFormData, QuizQuestionFormData } from '~/components/admin/quiz/AdminQuizForm.vue'
+import type {
+  QuizFormData,
+  QuizQuestionFormData,
+} from '~/components/admin/quiz/AdminQuizForm.vue'
 
 definePageMeta({
   layout: 'admin',
@@ -107,9 +110,9 @@ const initialData = computed(() => {
     image: c.image ?? undefined,
     url: c.__typename === 'ExternalChallenge' ? c.url : undefined,
     buttonText: c.buttonText,
-    endTime: c.endTime?.slice(0, 16) ?? undefined,
-    visibleAt: c.visibleAt?.slice(0, 16) ?? undefined,
-    startedAt: c.startedAt?.slice(0, 16) ?? undefined,
+    endTime: toLocalDatetimeLocal(c.endTime),
+    visibleAt: toLocalDatetimeLocal(c.visibleAt),
+    startedAt: toLocalDatetimeLocal(c.startedAt),
     allowSelfCompletion:
       c.__typename === 'SimpleChallenge' ? c.allowSelfCompletion : undefined,
   }
@@ -150,9 +153,18 @@ const quizData = computed<QuizFormData | undefined>(() => {
               answerOrder: a.answerOrder,
             }))
           : undefined,
-      minValue: q.__typename === 'NumberQuestion' ? q.minValue ?? undefined : undefined,
-      maxValue: q.__typename === 'NumberQuestion' ? q.maxValue ?? undefined : undefined,
-      stepValue: q.__typename === 'NumberQuestion' ? q.stepValue ?? undefined : undefined,
+      minValue:
+        q.__typename === 'NumberQuestion'
+          ? (q.minValue ?? undefined)
+          : undefined,
+      maxValue:
+        q.__typename === 'NumberQuestion'
+          ? (q.maxValue ?? undefined)
+          : undefined,
+      stepValue:
+        q.__typename === 'NumberQuestion'
+          ? (q.stepValue ?? undefined)
+          : undefined,
     })),
   }
 })
@@ -286,11 +298,23 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
 }
 
 async function handleSubmit(formData: ChallengeFormData) {
-  const { type, allowSelfCompletion, url, quiz, ...rest } = formData
+  const {
+    type,
+    allowSelfCompletion,
+    url,
+    quiz,
+    endTime,
+    visibleAt,
+    startedAt,
+    ...rest
+  } = formData
 
   // Only include type-specific fields
   const input = {
     ...rest,
+    endTime: toISOString(endTime),
+    visibleAt: toISOString(visibleAt),
+    startedAt: toISOString(startedAt),
     ...(type === ChallengeType.Simple && { allowSelfCompletion }),
     ...(type === ChallengeType.External && { url }),
   }
@@ -316,7 +340,8 @@ async function handleSubmit(formData: ChallengeFormData) {
     } catch (err) {
       toast.add({
         title: 'Feil',
-        description: err instanceof Error ? err.message : 'Kunne ikke lagre quiz',
+        description:
+          err instanceof Error ? err.message : 'Kunne ikke lagre quiz',
         color: 'error',
       })
       return

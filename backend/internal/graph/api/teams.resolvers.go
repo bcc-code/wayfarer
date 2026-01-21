@@ -106,8 +106,7 @@ func (r *mutationResolver) JoinTeam(ctx context.Context, code string) (*model.Te
 		JoinCode:    team.JoinCode,
 	}
 
-	// Apply translations to the returned team
-	return r.ApplyTranslationToTeam(ctx, teamModel), nil
+	return teamModel, nil
 }
 
 // CreateTeam is the resolver for the createTeam field.
@@ -119,7 +118,7 @@ func (r *mutationResolver) CreateTeam(ctx context.Context, projectID string, inp
 	}
 
 	// Check authorization
-	if !r.RoleService.CanManageProject(ctx, userID, projectID) {
+	if !r.RoleService.CanCreateTeamInProject(ctx, userID, projectID) {
 		return nil, fmt.Errorf("unauthorized to create teams in this project")
 	}
 
@@ -164,11 +163,12 @@ func (r *mutationResolver) CreateTeam(ctx context.Context, projectID string, inp
 
 	// Create the team
 	team, err := r.DB.Queries.CreateTeam(ctx, sqlc.CreateTeamParams{
-		ID:          teamID,
-		Projectid:   projectID,
-		Name:        input.Name,
-		Description: input.Description,
-		Joincode:    joinCode,
+		ID:              teamID,
+		Projectid:       projectID,
+		Name:            input.Name,
+		Description:     input.Description,
+		Joincode:        joinCode,
+		Createdbyuserid: userID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create team: %w", err)
@@ -235,16 +235,28 @@ func (r *mutationResolver) UpdateTeam(ctx context.Context, id string, input mode
 		return nil, fmt.Errorf("failed to update team: %w", err)
 	}
 
+	// Handle leaderboardExcluded field update
+	if input.LeaderboardExcluded != nil {
+		excludedTeam, err := r.DB.Queries.UpdateTeamLeaderboardExcluded(ctx, sqlc.UpdateTeamLeaderboardExcludedParams{
+			ID:                  id,
+			Leaderboardexcluded: *input.LeaderboardExcluded,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to update team leaderboard exclusion: %w", err)
+		}
+		// Update team reference with new exclusion status
+		team.LeaderboardExcluded = excludedTeam.LeaderboardExcluded
+		// Invalidate leaderboard cache when exclusion status changes
+		r.Cache.DeletePrefix(cache.PrefixLeaderboard)
+		// Also invalidate the team cache
+		r.Cache.InvalidateTeam(id)
+	}
+
 	// Invalidate caches
 	r.Cache.InvalidateTeam(id)
+	r.Cache.Delete(cache.TeamsByProjectKey(existingTeam.ProjectID))
 	r.Cache.DeletePrefix(cache.PrefixTeamsFilter)
 	r.Cache.DeletePrefix(cache.PrefixTeamsCount)
-
-	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.Description != nil {
-		_ = r.DB.Queries.DeleteTeamTranslations(ctx, id)
-		r.Cache.DeletePrefix(cache.PrefixTranslation + "team:" + id)
-	}
 
 	// Convert to GraphQL model
 	teamDescription := ""
@@ -253,10 +265,11 @@ func (r *mutationResolver) UpdateTeam(ctx context.Context, id string, input mode
 	}
 
 	return &model.Team{
-		ID:          team.ID,
-		Name:        team.Name,
-		Description: teamDescription,
-		JoinCode:    team.JoinCode,
+		ID:                  team.ID,
+		Name:                team.Name,
+		Description:         teamDescription,
+		JoinCode:            team.JoinCode,
+		LeaderboardExcluded: team.LeaderboardExcluded,
 	}, nil
 }
 
@@ -268,9 +281,9 @@ func (r *mutationResolver) DeleteTeam(ctx context.Context, id string) (bool, err
 		return false, fmt.Errorf("user not authenticated")
 	}
 
-	// Check authorization - only admins and superadmins can delete teams
-	if !r.RoleService.CanDeleteTeam(ctx, userID) {
-		return false, fmt.Errorf("unauthorized to delete teams")
+	// Check authorization - admins, superadmins, and church admins (for teams created by their church members)
+	if !r.RoleService.CanDeleteTeamByID(ctx, userID, id) {
+		return false, fmt.Errorf("unauthorized to delete this team")
 	}
 
 	// Load the team to verify it exists and get its details
@@ -391,12 +404,27 @@ func (r *mutationResolver) AddTeamMembers(ctx context.Context, teamID string, us
 
 		// If forcing, remove user from all teams in this project first
 		if shouldForce {
+			// Get the user's current team before removing (for cache invalidation)
+			oldTeam, err := r.DB.Queries.GetUserTeamByProjectID(ctx, sqlc.GetUserTeamByProjectIDParams{
+				Userid:    uid,
+				Projectid: projectID,
+			})
+			var oldTeamID string
+			if err == nil {
+				oldTeamID = oldTeam.ID
+			}
+
 			err = r.DB.Queries.RemoveUserFromTeamsInProject(ctx, sqlc.RemoveUserFromTeamsInProjectParams{
 				Userid:    uid,
 				Projectid: projectID,
 			})
 			if err != nil {
 				return nil, fmt.Errorf("failed to remove user %s from existing teams: %w", uid, err)
+			}
+
+			// Invalidate old team cache so UI reflects the removal
+			if oldTeamID != "" {
+				r.Cache.InvalidateTeam(oldTeamID)
 			}
 		}
 
@@ -411,6 +439,8 @@ func (r *mutationResolver) AddTeamMembers(ctx context.Context, teamID string, us
 
 		// Invalidate user cache
 		r.Cache.InvalidateUser(uid)
+		// Invalidate user's teams cache (used by TeamsByUserLoader)
+		r.Cache.Delete(cache.TeamsByUserKey(uid))
 	}
 
 	// Invalidate team cache
@@ -429,12 +459,38 @@ func (r *mutationResolver) AddTeamMembers(ctx context.Context, teamID string, us
 	r.Cache.DeletePrefix(cache.PrefixSuperTeamsFilter)
 	r.Cache.DeletePrefix(cache.PrefixSuperTeamsCount)
 
+	// Invalidate users filter queries (user.teams changes)
+	r.Cache.DeletePrefix(cache.PrefixUsersFilter)
+	r.Cache.DeletePrefix(cache.PrefixUsersCount)
+
+	// Recalculate leaderboard exclusion based on average age
+	avgAge, err := r.DB.Queries.GetTeamAverageAge(ctx, teamID)
+	if err == nil {
+		shouldExclude := avgAge >= 36.0
+		_, _ = r.DB.Queries.UpdateTeamLeaderboardExcluded(ctx, sqlc.UpdateTeamLeaderboardExcludedParams{
+			ID:                  teamID,
+			Leaderboardexcluded: shouldExclude,
+		})
+		// Invalidate caches after updating exclusion status
+		r.Cache.InvalidateTeam(teamID)
+		r.Cache.Delete(cache.TeamsByProjectKey(team.ProjectID))
+		r.Cache.DeletePrefix(cache.PrefixLeaderboard)
+	}
+
+	// Reload team to get updated leaderboard_excluded status
+	updatedTeam, err := r.DB.Queries.GetTeamsByIDs(ctx, []string{teamID})
+	leaderboardExcluded := false
+	if err == nil && len(updatedTeam) > 0 {
+		leaderboardExcluded = updatedTeam[0].LeaderboardExcluded
+	}
+
 	// Return the team (loaders already returns model.Team)
 	return &model.Team{
-		ID:          team.ID,
-		Name:        team.Name,
-		Description: team.Description,
-		JoinCode:    team.JoinCode,
+		ID:                  team.ID,
+		Name:                team.Name,
+		Description:         team.Description,
+		JoinCode:            team.JoinCode,
+		LeaderboardExcluded: leaderboardExcluded,
 	}, nil
 }
 
@@ -470,6 +526,8 @@ func (r *mutationResolver) RemoveTeamMembers(ctx context.Context, teamID string,
 
 		// Invalidate user cache
 		r.Cache.InvalidateUser(uid)
+		// Invalidate user's teams cache (used by TeamsByUserLoader)
+		r.Cache.Delete(cache.TeamsByUserKey(uid))
 	}
 
 	// Invalidate team cache
@@ -488,12 +546,38 @@ func (r *mutationResolver) RemoveTeamMembers(ctx context.Context, teamID string,
 	r.Cache.DeletePrefix(cache.PrefixSuperTeamsFilter)
 	r.Cache.DeletePrefix(cache.PrefixSuperTeamsCount)
 
+	// Invalidate users filter queries (user.teams changes)
+	r.Cache.DeletePrefix(cache.PrefixUsersFilter)
+	r.Cache.DeletePrefix(cache.PrefixUsersCount)
+
+	// Recalculate leaderboard exclusion based on average age
+	avgAge, err := r.DB.Queries.GetTeamAverageAge(ctx, teamID)
+	if err == nil {
+		shouldExclude := avgAge >= 36.0
+		_, _ = r.DB.Queries.UpdateTeamLeaderboardExcluded(ctx, sqlc.UpdateTeamLeaderboardExcludedParams{
+			ID:                  teamID,
+			Leaderboardexcluded: shouldExclude,
+		})
+		// Invalidate caches after updating exclusion status
+		r.Cache.InvalidateTeam(teamID)
+		r.Cache.Delete(cache.TeamsByProjectKey(team.ProjectID))
+		r.Cache.DeletePrefix(cache.PrefixLeaderboard)
+	}
+
+	// Reload team to get updated leaderboard_excluded status
+	updatedTeam, err := r.DB.Queries.GetTeamsByIDs(ctx, []string{teamID})
+	leaderboardExcluded := false
+	if err == nil && len(updatedTeam) > 0 {
+		leaderboardExcluded = updatedTeam[0].LeaderboardExcluded
+	}
+
 	// Return the team (loaders already returns model.Team)
 	return &model.Team{
-		ID:          team.ID,
-		Name:        team.Name,
-		Description: team.Description,
-		JoinCode:    team.JoinCode,
+		ID:                  team.ID,
+		Name:                team.Name,
+		Description:         team.Description,
+		JoinCode:            team.JoinCode,
+		LeaderboardExcluded: leaderboardExcluded,
 	}, nil
 }
 
@@ -669,6 +753,18 @@ func (r *mutationResolver) AssignTeamsToSuperTeam(ctx context.Context, superTeam
 
 // AwardTeamAchievement is the resolver for the awardTeamAchievement field.
 func (r *mutationResolver) AwardTeamAchievement(ctx context.Context, teamID string, achievementID string) (model.Achievement, error) {
+	// Load achievement via caching loader to check awardable_from
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
+	achievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	// Check if achievement is awardable based on awardable_from timestamp
+	if err := isAchievementAwardable(getAchievementAwardableFrom(achievement)); err != nil {
+		return nil, err
+	}
+
 	// Award achievement to all team members in a single query
 	if err := r.DB.Queries.AwardTeamAchievementBatch(ctx, sqlc.AwardTeamAchievementBatchParams{
 		TeamID:        teamID,
@@ -726,6 +822,18 @@ func (r *mutationResolver) RevokeTeamAchievement(ctx context.Context, teamID str
 
 // AwardSuperTeamAchievement is the resolver for the awardSuperTeamAchievement field.
 func (r *mutationResolver) AwardSuperTeamAchievement(ctx context.Context, superTeamID string, achievementID string) (model.Achievement, error) {
+	// Load achievement via caching loader to check awardable_from
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
+	achievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	// Check if achievement is awardable based on awardable_from timestamp
+	if err := isAchievementAwardable(getAchievementAwardableFrom(achievement)); err != nil {
+		return nil, err
+	}
+
 	// Award achievement to all superteam members in a single query
 	if err := r.DB.Queries.AwardSuperTeamAchievementBatch(ctx, sqlc.AwardSuperTeamAchievementBatchParams{
 		SuperTeamID:   superTeamID,
@@ -783,8 +891,7 @@ func (r *mutationResolver) RevokeSuperTeamAchievement(ctx context.Context, super
 
 // Team is the resolver for the team field.
 func (r *queryResolver) Team(ctx context.Context, id string) (*model.Team, error) {
-	// Use translation-aware wrapper to fetch team
-	return r.LoadTeamWithTranslation(ctx, id)
+	return r.Loaders.TeamByIDLoader.Load(ctx, id)()
 }
 
 // Teams is the resolver for the teams field.
@@ -915,8 +1022,7 @@ func (r *queryResolver) Teams(ctx context.Context, filter *model.TeamFilter, fir
 
 // Superteam is the resolver for the superteam field.
 func (r *queryResolver) Superteam(ctx context.Context, id string) (*model.SuperTeam, error) {
-	// Use translation-aware wrapper to fetch super team
-	return r.LoadSuperTeamWithTranslation(ctx, id)
+	return r.Loaders.SuperTeamByIDLoader.Load(ctx, id)()
 }
 
 // Superteams is the resolver for the superteams field.

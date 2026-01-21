@@ -30,23 +30,25 @@ const CountUsersFiltered = `-- name: CountUsersFiltered :one
 SELECT COUNT(u.id)
 FROM users u
 WHERE
-    ($1::text = '' OR u.church_id = $1::text)
-    AND ($2::text = '' OR u.gender = $2::text)
-    AND ($3::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $3::int)
-    AND ($4::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $4::int)
-    AND ($5::text = '' OR EXISTS (
-        SELECT 1 FROM user_projects up WHERE up.user_id = u.id AND up.project_id = $5::text
-    ))
+    ($1::text = '' OR (u.name ILIKE '%' || $1::text || '%' OR u.email ILIKE '%' || $1::text || '%'))
+    AND ($2::text = '' OR u.church_id = $2::text)
+    AND ($3::text = '' OR u.gender = $3::text)
+    AND ($4::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $4::int)
+    AND ($5::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $5::int)
     AND ($6::text = '' OR EXISTS (
-        SELECT 1 FROM user_events ue WHERE ue.user_id = u.id AND ue.event_id = $6::text
+        SELECT 1 FROM user_projects up WHERE up.user_id = u.id AND up.project_id = $6::text
     ))
     AND ($7::text = '' OR EXISTS (
-        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $7::text
+        SELECT 1 FROM user_events ue WHERE ue.user_id = u.id AND ue.event_id = $7::text
     ))
-    AND ($8::text[] IS NULL OR u.id = ANY($8::text[]))
+    AND ($8::text = '' OR EXISTS (
+        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $8::text
+    ))
+    AND ($9::text[] IS NULL OR u.id = ANY($9::text[]))
 `
 
 type CountUsersFilteredParams struct {
+	Query     string   `json:"query"`
 	Churchid  string   `json:"churchid"`
 	Gender    string   `json:"gender"`
 	Minage    int32    `json:"minage"`
@@ -59,6 +61,7 @@ type CountUsersFilteredParams struct {
 
 func (q *Queries) CountUsersFiltered(ctx context.Context, arg CountUsersFilteredParams) (int64, error) {
 	row := q.db.QueryRow(ctx, CountUsersFiltered,
+		arg.Query,
 		arg.Churchid,
 		arg.Gender,
 		arg.Minage,
@@ -697,29 +700,31 @@ const GetUsersFilteredCursor = `-- name: GetUsersFilteredCursor :many
 SELECT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url, u.language, u.created_at
 FROM users u
 WHERE
-    ($1::text = '' OR u.church_id = $1::text)
-    AND ($2::text = '' OR u.gender = $2::text)
-    AND ($3::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $3::int)
-    AND ($4::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $4::int)
-    AND ($5::text = '' OR EXISTS (
-        SELECT 1 FROM user_projects up WHERE up.user_id = u.id AND up.project_id = $5::text
-    ))
+    ($1::text = '' OR (u.name ILIKE '%' || $1::text || '%' OR u.email ILIKE '%' || $1::text || '%'))
+    AND ($2::text = '' OR u.church_id = $2::text)
+    AND ($3::text = '' OR u.gender = $3::text)
+    AND ($4::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $4::int)
+    AND ($5::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $5::int)
     AND ($6::text = '' OR EXISTS (
-        SELECT 1 FROM user_events ue WHERE ue.user_id = u.id AND ue.event_id = $6::text
+        SELECT 1 FROM user_projects up WHERE up.user_id = u.id AND up.project_id = $6::text
     ))
     AND ($7::text = '' OR EXISTS (
-        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $7::text
+        SELECT 1 FROM user_events ue WHERE ue.user_id = u.id AND ue.event_id = $7::text
     ))
-    AND ($8::text[] IS NULL OR u.id = ANY($8::text[]))
-    AND ($9::text = '' OR u.id > $9::text)
-    AND ($10::text = '' OR u.id < $10::text)
+    AND ($8::text = '' OR EXISTS (
+        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $8::text
+    ))
+    AND ($9::text[] IS NULL OR u.id = ANY($9::text[]))
+    AND ($10::text = '' OR u.id > $10::text)
+    AND ($11::text = '' OR u.id < $11::text)
 ORDER BY
-    CASE WHEN $11::bool = true THEN u.id END DESC,
-    CASE WHEN $11::bool = false OR $11::bool IS NULL THEN u.id END ASC
-LIMIT CASE WHEN $12::int IS NULL THEN NULL ELSE $12::int END
+    CASE WHEN $12::bool = true THEN u.id END DESC,
+    CASE WHEN $12::bool = false OR $12::bool IS NULL THEN u.id END ASC
+LIMIT CASE WHEN $13::int IS NULL THEN NULL ELSE $13::int END
 `
 
 type GetUsersFilteredCursorParams struct {
+	Query        string   `json:"query"`
 	Churchid     string   `json:"churchid"`
 	Gender       string   `json:"gender"`
 	Minage       int32    `json:"minage"`
@@ -754,6 +759,7 @@ type GetUsersFilteredCursorRow struct {
 
 func (q *Queries) GetUsersFilteredCursor(ctx context.Context, arg GetUsersFilteredCursorParams) ([]*GetUsersFilteredCursorRow, error) {
 	rows, err := q.db.Query(ctx, GetUsersFilteredCursor,
+		arg.Query,
 		arg.Churchid,
 		arg.Gender,
 		arg.Minage,

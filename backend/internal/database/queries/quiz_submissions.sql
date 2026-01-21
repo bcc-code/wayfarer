@@ -1,47 +1,47 @@
 -- name: GetQuizSubmissionByID :one
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE id = @id::text;
 
 -- name: GetQuizSubmissionByIDForUpdate :one
 -- Acquires a row-level lock to prevent concurrent finalization
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE id = @id::text
 FOR UPDATE;
 
 -- name: GetQuizSubmissionsByIDs :many
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE id = ANY(@ids::text[]);
 
 -- name: GetQuizSubmissionsByQuizID :many
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE quiz_id = @quizid::text
 ORDER BY started_at DESC;
 
 -- name: GetQuizSubmissionsByUserID :many
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE user_id = @userid::text
 ORDER BY started_at DESC;
 
 -- name: GetQuizSubmissionsByUserAndQuiz :many
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE user_id = @userid::text
     AND quiz_id = @quizid::text
 ORDER BY started_at DESC;
 
 -- name: GetQuizSubmissionsByUserIDs :many
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE user_id = ANY(@user_ids::text[])
 ORDER BY user_id, started_at DESC;
 
 -- name: GetActiveSubmissionByUserAndQuiz :one
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE user_id = @userid::text
     AND quiz_id = @quizid::text
@@ -51,7 +51,7 @@ ORDER BY started_at DESC
 LIMIT 1;
 
 -- name: GetCompletedSubmissionsByUserAndQuiz :many
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE user_id = @userid::text
     AND quiz_id = @quizid::text
@@ -59,7 +59,7 @@ WHERE user_id = @userid::text
 ORDER BY completed_at DESC;
 
 -- name: GetQuizSubmissionsFilteredCursor :many
-SELECT id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at
+SELECT id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at
 FROM quiz_submissions
 WHERE
     (@quizid::text = '' OR quiz_id = @quizid::text)
@@ -83,6 +83,7 @@ INSERT INTO quiz_submissions (
     id,
     quiz_id,
     user_id,
+    session_id,
     expires_at,
     question_order,
     max_score
@@ -91,11 +92,12 @@ VALUES (
     @id::text,
     @quizid::text,
     @userid::text,
+    sqlc.narg('sessionid')::text,
     sqlc.narg('expiresat')::timestamptz,
     @questionorder::jsonb,
     @maxscore::int
 )
-RETURNING id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at;
+RETURNING id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at;
 
 -- name: UpdateQuizSubmission :one
 UPDATE quiz_submissions
@@ -104,4 +106,4 @@ SET
     score = COALESCE(sqlc.narg('score')::int, score),
     points_awarded = COALESCE(sqlc.narg('pointsawarded')::int, points_awarded)
 WHERE id = @id::text
-RETURNING id, quiz_id, user_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, created_at;
+RETURNING id, quiz_id, user_id, session_id, started_at, completed_at, expires_at, question_order, score, max_score, points_awarded, auto_submitted, created_at;

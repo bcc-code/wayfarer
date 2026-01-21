@@ -10,8 +10,9 @@ import (
 type EventType string
 
 const (
-	EventTypeExternalContent EventType = "external_content_event"
-	EventTypePointsAwarded   EventType = "points_awarded"
+	EventTypeExternalContent     EventType = "external_content_event"
+	EventTypePointsAwarded       EventType = "points_awarded"
+	EventTypeQuizSessionFinished EventType = "quiz_session_finished"
 )
 
 // WebhookPayload is the base structure sent to webhook endpoints
@@ -88,4 +89,27 @@ type PointsAwardedData struct {
 // TestEventData for test webhook calls
 type TestEventData struct {
 	Message string `json:"message"`
+}
+
+// QuizSessionFinishedData for quiz_session_finished webhooks
+type QuizSessionFinishedData struct {
+	SessionID   string           `json:"session_id"`
+	SessionName string           `json:"session_name,omitempty"`
+	QuizID      string           `json:"quiz_id"`
+	QuizName    string           `json:"quiz_name"`
+	ChallengeID string           `json:"challenge_id"`
+	FinishedAt  time.Time        `json:"finished_at"`
+	Results     []QuizUserResult `json:"results"`
+}
+
+// QuizUserResult contains a single user's quiz result
+type QuizUserResult struct {
+	UserID        string   `json:"user_id"`
+	MembersID     string   `json:"members_id"`
+	ChurchID      string   `json:"church_id"`
+	Score         *int32   `json:"score"`
+	MaxScore      *int32   `json:"max_score"`
+	ScorePercent  *float64 `json:"score_percentage"`
+	Completed     bool     `json:"completed"`
+	AutoSubmitted bool     `json:"auto_submitted"`
 }

@@ -211,6 +211,7 @@ export function usePushNotifications() {
     permission,
     subscription: readonly(subscription),
     isSubscribed,
+    isInitialized: readonly(isInitialized),
     isLoading: readonly(isLoading),
     error: readonly(error),
     requestPermission,

@@ -30,7 +30,10 @@ gql(`
           locale
           projectId
           timezone
+          contextUrl
+          tags
           createdAt
+          handledAt
           user {
             id
             name
@@ -42,14 +45,40 @@ gql(`
   }
 `)
 
+gql(`
+  mutation UpdateFeedbackTags($feedbackId: ID!, $tags: [String!]!) {
+    updateFeedbackTags(feedbackId: $feedbackId, tags: $tags) {
+      id
+      tags
+    }
+  }
+`)
+
 const pagination = usePagination({
   defaultPageSize: 15,
 })
 
+// Tag filter
+const selectedTags = ref<string[]>([])
+
+const filter = computed(() => ({
+  tags: selectedTags.value.length > 0 ? selectedTags.value : undefined,
+}))
+
+const queryVariables = computed(() => ({
+  ...pagination.variables.value,
+  filter: filter.value,
+}))
+
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error, executeQuery } = useAdminFeedbackPageQuery({
-  variables: pagination.variables,
+  variables: queryVariables,
   pause: computed(() => !isAuthReady.value),
+})
+
+// Reset pagination when filter changes
+watch(selectedTags, () => {
+  pagination.reset()
 })
 
 watch(
@@ -63,11 +92,19 @@ const feedbacks = computed(() =>
   data.value?.feedback.edges.map((edge) => edge.node),
 )
 
+// Collect all unique tags from current feedbacks for filter suggestions
+const allUniqueTags = computed(() => {
+  const tags = new Set<string>()
+  feedbacks.value?.forEach((f) => f.tags.forEach((t) => tags.add(t)))
+  return Array.from(tags).sort()
+})
+
 type FeedbackNode = NonNullable<typeof feedbacks.value>[number]
 
 const columns: TableColumn<FeedbackNode>[] = [
   { accessorKey: 'user.name', id: 'user', header: 'Bruker' },
   { accessorKey: 'message', header: 'Melding' },
+  { accessorKey: 'tags', id: 'tags', header: 'Tags' },
   { accessorKey: 'createdAt', header: 'Dato' },
   { id: 'actions', header: '' },
 ]
@@ -117,7 +154,67 @@ async function handleDelete() {
   feedbackToDelete.value = null
 }
 
-const { canDeleteFeedback } = usePermissions()
+// Forward to support functionality
+const { executeMutation: forwardFeedback } = useForwardFeedbackToDeskMutation()
+
+async function handleForward(id: string) {
+  const result = await forwardFeedback({ feedbackId: id })
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke videresende',
+      description: result.error.message,
+      color: 'error',
+    })
+  } else {
+    toast.add({
+      title: 'Videresendt til support',
+      color: 'success',
+    })
+    executeQuery({ requestPolicy: 'network-only' })
+  }
+}
+
+// Mark as handled functionality
+const { executeMutation: markHandled } = useMarkFeedbackHandledMutation()
+
+async function handleMarkHandled(id: string) {
+  const result = await markHandled({ feedbackId: id })
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke markere som behandlet',
+      description: result.error.message,
+      color: 'error',
+    })
+  } else {
+    toast.add({
+      title: 'Markert som behandlet',
+      color: 'success',
+    })
+    executeQuery({ requestPolicy: 'network-only' })
+  }
+}
+
+const { canDeleteFeedback, canForwardFeedback } = usePermissions()
+
+// Update tags functionality
+const { executeMutation: updateFeedbackTags } = useUpdateFeedbackTagsMutation()
+
+async function handleUpdateTags(feedbackId: string, tags: string[]) {
+  const result = await updateFeedbackTags({
+    feedbackId,
+    tags,
+  })
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke oppdatere tags',
+      description: result.error.message,
+      color: 'error',
+    })
+  }
+}
 </script>
 
 <template>
@@ -128,31 +225,64 @@ const { canDeleteFeedback } = usePermissions()
     <ErrorState v-if="error" :error />
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-dimmed text-sm">Filtrer:</span>
+          <UButton
+            v-for="tag in allUniqueTags"
+            :key="tag"
+            :variant="selectedTags.includes(tag) ? 'solid' : 'outline'"
+            size="sm"
+            :label="tag"
+            @click="
+              selectedTags.includes(tag)
+                ? (selectedTags = selectedTags.filter((t) => t !== tag))
+                : (selectedTags = [...selectedTags, tag])
+            "
+          />
+          <UButton
+            v-if="selectedTags.length > 0"
+            variant="ghost"
+            size="sm"
+            color="neutral"
+            label="Nullstill"
+            @click="selectedTags = []"
+          />
+        </div>
         <RelayPagination v-model:pagination="pagination" />
       </div>
       <UTable :data="feedbacks" :loading="fetching" :columns>
         <template #user-cell="{ row }">
-          <div class="flex flex-col">
-            <NuxtLink
-              :to="{
-                name: 'admin-users-userId',
-                params: { userId: row.original.user.id },
-              }"
-              class="hover:underline"
-            >
+          <NuxtLink
+            :to="{
+              name: 'admin-users-userId',
+              params: { userId: row.original.user.id },
+            }"
+            class="flex flex-col group"
+          >
+            <span class="group-hover:underline">
               {{ row.original.user.name }}
-            </NuxtLink>
-            <span class="text-dimmed text-xs">{{
-              row.original.user.email
-            }}</span>
-          </div>
+            </span>
+            <span class="text-dimmed text-xs">
+              {{ row.original.user.email }}
+            </span>
+          </NuxtLink>
+        </template>
+        <template #tags-cell="{ row }">
+          <UInputTags
+            :model-value="row.original.tags"
+            placeholder="Legg til..."
+            size="xs"
+            color="neutral"
+            class="w-full"
+            @update:model-value="handleUpdateTags(row.original.id, $event)"
+          />
         </template>
         <template #message-cell="{ row }">
           <div class="max-w-lg">
             <p
               :class="[
                 'text-sm whitespace-pre-wrap',
-                expandedMessages.has(row.original.id) ? '' : 'line-clamp-3',
+                expandedMessages.has(row.original.id) ? '' : 'line-clamp-4',
               ]"
             >
               {{ row.original.message }}
@@ -170,11 +300,35 @@ const { canDeleteFeedback } = usePermissions()
         </template>
         <template #createdAt-cell="{ row }">
           <span class="text-dimmed text-sm">
-            {{ formatDate(row.original.createdAt) }}
+            {{ formatDateTime(row.original.createdAt) }}
           </span>
         </template>
         <template #actions-cell="{ row }">
-          <div class="flex justify-end gap-1">
+          <div class="flex justify-end items-center gap-1">
+            <UButton
+              v-if="canForwardFeedback && !row.original.handledAt"
+              variant="soft"
+              color="neutral"
+              size="sm"
+              icon="lucide:send-horizontal"
+              label="Videresend til support"
+              @click="handleForward(row.original.id)"
+            />
+            <UButton
+              v-if="canForwardFeedback && !row.original.handledAt"
+              variant="soft"
+              color="neutral"
+              size="sm"
+              label="Behandle"
+              icon="lucide:check"
+              @click="handleMarkHandled(row.original.id)"
+            />
+            <UBadge
+              v-else-if="canForwardFeedback && row.original.handledAt"
+              variant="soft"
+              color="success"
+              label="Behandlet"
+            />
             <UPopover>
               <UButton
                 variant="ghost"
@@ -222,6 +376,10 @@ const { canDeleteFeedback } = usePermissions()
                     <span class="text-dimmed">Versjon:</span>
                     <code>{{ row.original.appVersion }}</code>
                   </template>
+                  <template v-if="row.original.contextUrl">
+                    <span class="text-dimmed">Side:</span>
+                    <code class="text-xs">{{ row.original.contextUrl }}</code>
+                  </template>
                 </div>
               </template>
             </UPopover>
@@ -246,7 +404,8 @@ const { canDeleteFeedback } = usePermissions()
     <UModal v-model:open="deleteModal">
       <template #content>
         <div class="p-6">
-          <h3 class="mb-4 text-lg font-semibold">Slett tilbakemelding</h3>
+          <Icon name="lucide:triangle-alert" class="text-error size-8" />
+          <h3 class="my-2 text-lg font-semibold">Slett tilbakemelding</h3>
           <p class="text-dimmed mb-6">
             Er du sikker på at du vil slette denne tilbakemeldingen? Denne
             handlingen kan ikke angres.

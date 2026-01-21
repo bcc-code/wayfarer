@@ -1,10 +1,10 @@
 -- name: GetTeamsByIDs :many
-SELECT id, project_id, name, description, join_code, super_team_id, created_at, updated_at
+SELECT id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at
 FROM teams
 WHERE id = ANY(@ids::text[]);
 
 -- name: GetTeamsFilteredCursor :many
-SELECT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.created_at, t.updated_at
+SELECT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.leaderboard_excluded, t.created_at, t.updated_at
 FROM teams t
 LEFT JOIN (
     SELECT team_id, COUNT(*) as member_count
@@ -42,26 +42,42 @@ WHERE
     AND (@maxmembers::int <= 0 OR COALESCE(tm.member_count, 0) <= @maxmembers::int);
 
 -- name: GetTeamsByUserIDs :many
-SELECT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.created_at, t.updated_at, tm.user_id
+SELECT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.leaderboard_excluded, t.created_at, t.updated_at, tm.user_id
 FROM teams t
 INNER JOIN team_members tm ON t.id = tm.team_id
 WHERE tm.user_id = ANY(@userids::text[])
 ORDER BY t.name ASC;
 
 -- name: GetTeamsBySuperTeamIDs :many
-SELECT id, project_id, name, description, join_code, super_team_id, created_at, updated_at
+SELECT id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at
 FROM teams
 WHERE super_team_id = ANY(@superteamids::text[])
 ORDER BY name ASC;
 
 -- name: GetTeamsByProjectIDs :many
-SELECT id, project_id, name, description, join_code, super_team_id, created_at, updated_at
+SELECT id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at
 FROM teams
 WHERE project_id = ANY(@project_ids::text[])
 ORDER BY project_id, created_at DESC;
 
+-- name: GetTeamsByProjectIDAndChurchID :many
+SELECT DISTINCT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.leaderboard_excluded, t.created_at, t.updated_at
+FROM teams t
+LEFT JOIN team_members tm ON t.id = tm.team_id
+LEFT JOIN users member_user ON tm.user_id = member_user.id
+LEFT JOIN users creator_user ON t.created_by_user_id = creator_user.id
+WHERE t.project_id = @projectid::text
+  AND (
+    -- If team has members: match by member's church
+    member_user.church_id = @churchid::text
+    OR
+    -- If team is empty: fall back to creator's church
+    (NOT EXISTS (SELECT 1 FROM team_members WHERE team_id = t.id) AND creator_user.church_id = @churchid::text)
+  )
+ORDER BY t.created_at DESC;
+
 -- name: GetUserTeamByProjectID :one
-SELECT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.created_at, t.updated_at
+SELECT t.id, t.project_id, t.name, t.description, t.join_code, t.super_team_id, t.leaderboard_excluded, t.created_at, t.updated_at
 FROM teams t
 INNER JOIN team_members tm ON t.id = tm.team_id
 WHERE tm.user_id = @userid::text
@@ -69,9 +85,9 @@ WHERE tm.user_id = @userid::text
 LIMIT 1;
 
 -- name: CreateTeam :one
-INSERT INTO teams (id, project_id, name, description, join_code)
-VALUES (@id::text, @projectid::text, @name::text, @description::text, @joincode::text)
-RETURNING id, project_id, name, description, join_code, super_team_id, created_at, updated_at;
+INSERT INTO teams (id, project_id, name, description, join_code, created_by_user_id)
+VALUES (@id::text, @projectid::text, @name::text, @description::text, @joincode::text, @createdbyuserid::text)
+RETURNING id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at;
 
 -- name: UpdateTeam :one
 UPDATE teams
@@ -80,14 +96,14 @@ SET
     description = COALESCE(@description::text, description),
     updated_at = now()
 WHERE id = @id::text
-RETURNING id, project_id, name, description, join_code, super_team_id, created_at, updated_at;
+RETURNING id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at;
 
 -- name: DeleteTeam :exec
 DELETE FROM teams
 WHERE id = @id::text;
 
 -- name: GetTeamByJoinCode :one
-SELECT id, project_id, name, description, join_code, super_team_id, created_at, updated_at
+SELECT id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at
 FROM teams
 WHERE join_code = @joincode::text;
 
@@ -95,7 +111,7 @@ WHERE join_code = @joincode::text;
 UPDATE teams
 SET join_code = @joincode::text, updated_at = now()
 WHERE id = @id::text
-RETURNING id, project_id, name, description, join_code, super_team_id, created_at, updated_at;
+RETURNING id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at;
 
 -- name: AddTeamMember :exec
 INSERT INTO team_members (team_id, user_id)
@@ -221,3 +237,27 @@ SELECT DISTINCT tm.user_id
 FROM team_members tm
 JOIN teams t ON t.id = tm.team_id
 WHERE t.super_team_id = ANY(@superteamids::text[]);
+
+-- name: GetTeamAverageAge :one
+SELECT COALESCE(
+    AVG(EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)),
+    0
+)::float AS average_age
+FROM team_members tm
+INNER JOIN users u ON tm.user_id = u.id
+WHERE tm.team_id = @teamid::text
+  AND u.birthdate IS NOT NULL;
+
+-- name: UpdateTeamLeaderboardExcluded :one
+UPDATE teams
+SET
+    leaderboard_excluded = @leaderboardexcluded::bool,
+    updated_at = now()
+WHERE id = @id::text
+RETURNING id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at;
+
+-- name: GetTeamCreatorChurchID :one
+SELECT u.church_id
+FROM teams t
+INNER JOIN users u ON t.created_by_user_id = u.id
+WHERE t.id = @teamid::text;

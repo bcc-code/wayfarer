@@ -6,7 +6,16 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+// ToDateTimePointer converts a pgtype.Timestamptz to *DateTime
+func ToDateTimePointer(ts pgtype.Timestamptz) *DateTime {
+	if !ts.Valid {
+		return nil
+	}
+	return &DateTime{Time: ts.Time}
+}
 
 // DateTime scalar representing RFC3339 datetime
 type DateTime struct {

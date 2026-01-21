@@ -70,15 +70,28 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.Create
 		description = *input.Description
 	}
 
+	// Build info message visibility params
+	var infoMessageStart, infoMessageEnd pgtype.Timestamptz
+	if input.InfoMessageStart != nil {
+		infoMessageStart = pgtype.Timestamptz{Time: input.InfoMessageStart.Time, Valid: true}
+	}
+	if input.InfoMessageEnd != nil {
+		infoMessageEnd = pgtype.Timestamptz{Time: input.InfoMessageEnd.Time, Valid: true}
+	}
+
 	// Create project in database
 	row, err := r.DB.Queries.CreateProject(ctx, sqlc.CreateProjectParams{
 		ID:                          projectID,
 		Name:                        input.Name,
 		Description:                 description,
 		Rules:                       input.Rules,
+		Infomessage:                 input.InfoMessage,
+		Infomessagestart:            infoMessageStart,
+		Infomessageend:              infoMessageEnd,
 		Startdate:                   pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true},
 		Enddate:                     pgtype.Timestamptz{Time: input.EndDate.Time, Valid: true},
 		Logourl:                     input.Branding.Logo,
+		Bannerurl:                   input.Branding.Banner,
 		Colorlightaccent:            input.Branding.Colors.Light.Accent,
 		Colorlightaccentcontrast:    input.Branding.Colors.Light.AccentContrast,
 		Colorlightonaccent:          input.Branding.Colors.Light.OnAccent,
@@ -114,16 +127,24 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.Create
 	if row.LogoUrl != nil {
 		logo = row.LogoUrl
 	}
+	var banner *string
+	if row.BannerUrl != nil {
+		banner = row.BannerUrl
+	}
 
 	project := &model.Project{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: row.Description,
-		RulesRaw:    row.Rules,
-		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
-		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+		ID:               row.ID,
+		Name:             row.Name,
+		Description:      row.Description,
+		RulesRaw:         row.Rules,
+		InfoMessageRaw:   row.InfoMessage,
+		InfoMessageStart: scalars.ToDateTimePointer(row.InfoMessageStart),
+		InfoMessageEnd:   scalars.ToDateTimePointer(row.InfoMessageEnd),
+		StartDate:        scalars.DateTime{Time: row.StartDate.Time},
+		EndDate:          scalars.DateTime{Time: row.EndDate.Time},
 		Branding: &model.Branding{
-			Logo: logo,
+			Logo:   logo,
+			Banner: banner,
 			Colors: &model.Colors{
 				Light: &model.ColorSet{
 					Accent:            row.ColorLightAccent,
@@ -204,6 +225,15 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 	if input.Rules != nil {
 		params.Rules = input.Rules
 	}
+	if input.InfoMessage != nil {
+		params.Infomessage = input.InfoMessage
+	}
+	if input.InfoMessageStart != nil {
+		params.Infomessagestart = pgtype.Timestamptz{Time: input.InfoMessageStart.Time, Valid: true}
+	}
+	if input.InfoMessageEnd != nil {
+		params.Infomessageend = pgtype.Timestamptz{Time: input.InfoMessageEnd.Time, Valid: true}
+	}
 	if input.StartDate != nil {
 		params.Startdate = pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true}
 	}
@@ -213,6 +243,9 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 	if input.Branding != nil {
 		if input.Branding.Logo != nil {
 			params.Logourl = input.Branding.Logo
+		}
+		if input.Branding.Banner != nil {
+			params.Bannerurl = input.Branding.Banner
 		}
 		if input.Branding.Colors != nil {
 			if input.Branding.Colors.Light != nil {
@@ -259,27 +292,29 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 	// Invalidate cache
 	r.Cache.InvalidateProject(id)
 
-	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.Description != nil || input.Rules != nil {
-		_ = r.DB.Queries.DeleteProjectTranslations(ctx, id)
-		r.Cache.DeletePrefix(cache.PrefixTranslation + "project:" + id)
-	}
-
 	// Convert to GraphQL model
 	var logo *string
 	if row.LogoUrl != nil {
 		logo = row.LogoUrl
 	}
+	var banner *string
+	if row.BannerUrl != nil {
+		banner = row.BannerUrl
+	}
 
 	project := &model.Project{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: row.Description,
-		RulesRaw:    row.Rules,
-		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
-		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+		ID:               row.ID,
+		Name:             row.Name,
+		Description:      row.Description,
+		RulesRaw:         row.Rules,
+		InfoMessageRaw:   row.InfoMessage,
+		InfoMessageStart: scalars.ToDateTimePointer(row.InfoMessageStart),
+		InfoMessageEnd:   scalars.ToDateTimePointer(row.InfoMessageEnd),
+		StartDate:        scalars.DateTime{Time: row.StartDate.Time},
+		EndDate:          scalars.DateTime{Time: row.EndDate.Time},
 		Branding: &model.Branding{
-			Logo: logo,
+			Logo:   logo,
+			Banner: banner,
 			Colors: &model.Colors{
 				Light: &model.ColorSet{
 					Accent:            row.ColorLightAccent,
@@ -443,12 +478,15 @@ func (r *queryResolver) Projects(ctx context.Context, filter *model.ProjectFilte
 	modelProjects := make([]model.Project, len(projects))
 	for i, row := range projects {
 		modelProjects[i] = model.Project{
-			ID:          row.ID,
-			Name:        row.Name,
-			Description: row.Description,
-			RulesRaw:    row.Rules,
-			StartDate:   scalars.DateTime{Time: row.StartDate.Time},
-			EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+			ID:               row.ID,
+			Name:             row.Name,
+			Description:      row.Description,
+			RulesRaw:         row.Rules,
+			InfoMessageRaw:   row.InfoMessage,
+			InfoMessageStart: scalars.ToDateTimePointer(row.InfoMessageStart),
+			InfoMessageEnd:   scalars.ToDateTimePointer(row.InfoMessageEnd),
+			StartDate:        scalars.DateTime{Time: row.StartDate.Time},
+			EndDate:          scalars.DateTime{Time: row.EndDate.Time},
 			Branding: &model.Branding{
 				Logo: row.LogoUrl,
 				Colors: &model.Colors{

@@ -572,7 +572,7 @@ func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVCl
 			"user_id", newUser.ID,
 			"person_uuid", personUUIDStr,
 		)
-		h.processPendingConsentEvents(ctx, newUser.ID, personUUIDStr)
+		h.ProcessPendingConsentEvents(ctx, newUser.ID, personUUIDStr)
 		if h.ContentAchievementService != nil {
 			slog.Debug("auth: processing pending content events",
 				"user_id", newUser.ID,
@@ -660,45 +660,15 @@ func normalizeGender(gender string) string {
 	return "UNKNOWN"
 }
 
-// getActiveChurchAffiliationOrgUIDs returns all OrgUids of active affiliations.
-// Active is determined by time: ValidFrom < now AND (ValidTo > now OR ValidTo == nil)
-// Returns empty slice if no active affiliation is found.
-func getActiveChurchAffiliationOrgUIDs(affiliations []members.Affiliation) []uuid.UUID {
-	now := time.Now()
-	var result []uuid.UUID
-	for _, aff := range affiliations {
-		// Skip if not yet valid
-		if aff.ValidFrom != nil && now.Before(*aff.ValidFrom) {
-			continue
-		}
-		// Skip if expired
-		if aff.ValidTo != nil && now.After(*aff.ValidTo) {
-			continue
-		}
-		result = append(result, aff.OrgUid)
-	}
-	return result
-}
-
-// getActiveAffiliationOrgUID returns the OrgUid of the first active Church affiliation.
-// Deprecated: Use getActiveChurchAffiliationOrgUIDs for better exclusion handling.
-func getActiveAffiliationOrgUID(affiliations []members.Affiliation) *uuid.UUID {
-	orgUIDs := getActiveChurchAffiliationOrgUIDs(affiliations)
-	if len(orgUIDs) == 0 {
-		return nil
-	}
-	return &orgUIDs[0]
-}
-
 // ExcludedChurchNames contains organization names that should not be used for church assignment
 var ExcludedChurchNames = []string{"BCC Norge"}
 
 // findChurchFromAffiliations finds the first valid non-excluded church from member affiliations.
-// It iterates through all active Church affiliations and returns the first one that is not excluded.
+// It iterates through all active affiliations and returns the first one that is not excluded.
 func (h *AuthHandler) findChurchFromAffiliations(ctx context.Context, affiliations []members.Affiliation) (*sqlc.GetChurchByExternalIDRow, error) {
-	orgUIDs := getActiveChurchAffiliationOrgUIDs(affiliations)
+	orgUIDs := members.GetActiveAffiliationOrgUIDs(affiliations)
 	if len(orgUIDs) == 0 {
-		return nil, fmt.Errorf("no active church affiliations found")
+		return nil, fmt.Errorf("no active affiliations found")
 	}
 
 	for _, orgUID := range orgUIDs {
@@ -719,7 +689,7 @@ func (h *AuthHandler) findChurchFromAffiliations(ctx context.Context, affiliatio
 // findChurchByOrgUID finds a church by looking up the org UUID in Members API first
 func (h *AuthHandler) findChurchByOrgUID(ctx context.Context, orgUID uuid.UUID) (*sqlc.GetChurchByExternalIDRow, error) {
 	if h.MembersClient == nil {
-		return nil, fmt.Errorf("Members API not configured")
+		return nil, fmt.Errorf("members API not configured")
 	}
 
 	org, err := h.MembersClient.GetOrganizationByUID(ctx, orgUID)
@@ -790,9 +760,9 @@ func generateDisplayName(firstName, lastName, fallbackName string) string {
 	return fallbackName
 }
 
-// processPendingConsentEvents processes any pending consent events for a newly registered user
+// ProcessPendingConsentEvents processes any pending consent events for a newly registered user
 // personUUID is the person's UUID string used to match pending events
-func (h *AuthHandler) processPendingConsentEvents(ctx context.Context, userID, personUUID string) {
+func (h *AuthHandler) ProcessPendingConsentEvents(ctx context.Context, userID, personUUID string) {
 	// Get all pending consent events for this person_uuid (stored in members_id field of pending_consent_events)
 	pendingEvents, err := h.DB.Queries.GetPendingConsentEventsByMembersID(ctx, personUUID)
 	if err != nil {
@@ -871,4 +841,3 @@ func (h *AuthHandler) processPendingConsentEvents(ctx context.Context, userID, p
 		)
 	}
 }
-

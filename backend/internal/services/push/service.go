@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"net/http"
 
 	webpush "github.com/SherClockHolmes/webpush-go"
 	"github.com/bcc-media/wayfarer/internal/config"
@@ -445,14 +444,4 @@ func (s *Service) SetPreference(ctx context.Context, userID string, notification
 // GetVAPIDPublicKey returns the VAPID public key for client-side subscription
 func (s *Service) GetVAPIDPublicKey() string {
 	return s.vapidConfig.PublicKey
-}
-
-// httpStatusFromError extracts HTTP status code from webpush error
-func httpStatusFromError(err error) int {
-	// webpush-go returns errors that contain the status code
-	// This is a simple check - in production you might want more robust parsing
-	if err == nil {
-		return http.StatusOK
-	}
-	return 0
 }

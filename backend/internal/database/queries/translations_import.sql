@@ -19,24 +19,6 @@ DO UPDATE SET
     description = EXCLUDED.description,
     updated_at = now();
 
--- name: UpsertTeamTranslation :exec
-INSERT INTO team_translations (team_id, language_code, name, description, updated_at)
-VALUES (@team_id::text, @language_code::text, @name::text, @description::text, now())
-ON CONFLICT (team_id, language_code)
-DO UPDATE SET
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    updated_at = now();
-
--- name: UpsertSuperTeamTranslation :exec
-INSERT INTO super_team_translations (super_team_id, language_code, name, description, updated_at)
-VALUES (@super_team_id::text, @language_code::text, @name::text, @description::text, now())
-ON CONFLICT (super_team_id, language_code)
-DO UPDATE SET
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    updated_at = now();
-
 -- name: UpsertStreakTranslation :exec
 INSERT INTO streak_translations (streak_id, language_code, name, description, updated_at)
 VALUES (@streak_id::text, @language_code::text, @name::text, @description::text, now())

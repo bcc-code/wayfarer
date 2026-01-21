@@ -56,24 +56,6 @@ func (q *Queries) DeleteStreakTranslations(ctx context.Context, streakID string)
 	return err
 }
 
-const DeleteSuperTeamTranslations = `-- name: DeleteSuperTeamTranslations :exec
-DELETE FROM super_team_translations WHERE super_team_id = $1::text
-`
-
-func (q *Queries) DeleteSuperTeamTranslations(ctx context.Context, superTeamID string) error {
-	_, err := q.db.Exec(ctx, DeleteSuperTeamTranslations, superTeamID)
-	return err
-}
-
-const DeleteTeamTranslations = `-- name: DeleteTeamTranslations :exec
-DELETE FROM team_translations WHERE team_id = $1::text
-`
-
-func (q *Queries) DeleteTeamTranslations(ctx context.Context, teamID string) error {
-	_, err := q.db.Exec(ctx, DeleteTeamTranslations, teamID)
-	return err
-}
-
 const GetAchievementTranslationsByIDs = `-- name: GetAchievementTranslationsByIDs :many
 SELECT achievement_id, language_code, name, description_pending, description_completed, notification_text
 FROM achievement_translations
@@ -411,94 +393,6 @@ func (q *Queries) GetStreakTranslationsByIDs(ctx context.Context, arg GetStreakT
 		var i GetStreakTranslationsByIDsRow
 		if err := rows.Scan(
 			&i.StreakID,
-			&i.LanguageCode,
-			&i.Name,
-			&i.Description,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const GetSuperTeamTranslationsByIDs = `-- name: GetSuperTeamTranslationsByIDs :many
-SELECT super_team_id, language_code, name, description
-FROM super_team_translations
-WHERE super_team_id = ANY($1::text[])
-  AND language_code = $2::text
-`
-
-type GetSuperTeamTranslationsByIDsParams struct {
-	EntityIds    []string `json:"entity_ids"`
-	LanguageCode string   `json:"language_code"`
-}
-
-type GetSuperTeamTranslationsByIDsRow struct {
-	SuperTeamID  string  `json:"super_team_id"`
-	LanguageCode string  `json:"language_code"`
-	Name         *string `json:"name"`
-	Description  *string `json:"description"`
-}
-
-func (q *Queries) GetSuperTeamTranslationsByIDs(ctx context.Context, arg GetSuperTeamTranslationsByIDsParams) ([]*GetSuperTeamTranslationsByIDsRow, error) {
-	rows, err := q.db.Query(ctx, GetSuperTeamTranslationsByIDs, arg.EntityIds, arg.LanguageCode)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetSuperTeamTranslationsByIDsRow{}
-	for rows.Next() {
-		var i GetSuperTeamTranslationsByIDsRow
-		if err := rows.Scan(
-			&i.SuperTeamID,
-			&i.LanguageCode,
-			&i.Name,
-			&i.Description,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const GetTeamTranslationsByIDs = `-- name: GetTeamTranslationsByIDs :many
-SELECT team_id, language_code, name, description
-FROM team_translations
-WHERE team_id = ANY($1::text[])
-  AND language_code = $2::text
-`
-
-type GetTeamTranslationsByIDsParams struct {
-	EntityIds    []string `json:"entity_ids"`
-	LanguageCode string   `json:"language_code"`
-}
-
-type GetTeamTranslationsByIDsRow struct {
-	TeamID       string  `json:"team_id"`
-	LanguageCode string  `json:"language_code"`
-	Name         *string `json:"name"`
-	Description  *string `json:"description"`
-}
-
-func (q *Queries) GetTeamTranslationsByIDs(ctx context.Context, arg GetTeamTranslationsByIDsParams) ([]*GetTeamTranslationsByIDsRow, error) {
-	rows, err := q.db.Query(ctx, GetTeamTranslationsByIDs, arg.EntityIds, arg.LanguageCode)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetTeamTranslationsByIDsRow{}
-	for rows.Next() {
-		var i GetTeamTranslationsByIDsRow
-		if err := rows.Scan(
-			&i.TeamID,
 			&i.LanguageCode,
 			&i.Name,
 			&i.Description,

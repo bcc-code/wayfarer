@@ -20,7 +20,9 @@ gql(`
       startDate
       endDate
       branding {
-        logo
+        logoImage {
+          ...ImageFields
+        }
         rounding
         colors {
           light {
@@ -39,8 +41,12 @@ gql(`
           name
           descriptionPending
           descriptionCompleted
-          imagePending
-          imageCompleted
+          imagePendingObject {
+            ...ImageFields
+          }
+          imageCompletedObject {
+            ...ImageFields
+          }
           points
           hidden
         }
@@ -53,7 +59,9 @@ gql(`
           id
           name
           description
-          image
+          imageObject {
+            ...ImageFields
+          }
         }
       }
     }
@@ -81,7 +89,7 @@ const state = reactive<State>({
   startDate: '',
   endDate: '',
   branding: {
-    logo: '',
+    logoImage: null,
     colors: {
       dark: {
         accent: '',
@@ -197,8 +205,8 @@ async function handleReorder() {
         <header class="my-12">
           <div class="space-y-2">
             <img
-              v-if="state.branding.logo"
-              :src="state.branding.logo"
+              v-if="state.branding.logoImage?.url"
+              :src="state.branding.logoImage.url"
               width="64"
               class="mb-4 rounded"
             />
@@ -249,17 +257,17 @@ async function handleReorder() {
             <UTable
               :data="data.challenges.edges.map((e) => e.node)"
               :columns="[
-                { accessorKey: 'image' },
+                { accessorKey: 'imageObject' },
                 { accessorKey: 'name' },
                 { accessorKey: 'description' },
                 { accessorKey: 'type', header: 'Type' },
                 { id: 'actions' },
               ]"
             >
-              <template #image-cell="{ row }">
+              <template #imageObject-cell="{ row }">
                 <img
-                  v-if="row.original.image"
-                  :src="row.original.image"
+                  v-if="row.original.imageObject?.url"
+                  :src="row.original.imageObject.url"
                   height="32"
                   width="32"
                   class="bg-muted size-8 rounded"
@@ -324,8 +332,8 @@ async function handleReorder() {
                     <UIcon name="lucide:grip-vertical" class="size-5" />
                   </div>
                   <img
-                    v-if="achievement.imageCompleted"
-                    :src="achievement.imageCompleted"
+                    v-if="achievement.imageCompletedObject?.url"
+                    :src="achievement.imageCompletedObject.url"
                     height="32"
                     width="32"
                     class="size-8 shrink-0 rounded"

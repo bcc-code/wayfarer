@@ -164,6 +164,52 @@ func SetupTestServer(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, fu
 	return router, cleanup, nil
 }
 
+// SetupTestServerWithCache creates a complete test environment and returns the cache for testing
+// Returns the router, cache, cleanup function, and error
+func SetupTestServerWithCache(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, *cache.CacheWithRegistry, func(), error) {
+	// Create cache
+	testCache, err := NewTestCache()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Create loaders
+	dataLoaders := loaders.NewLoaders(dbMgr.DB, testCache)
+
+	// Create logger for test (discard output)
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
+
+	// Create services
+	roleService := services.NewRoleService(dbMgr.DB.Queries, testCache)
+	leaderboardService := services.NewLeaderboardService(dbMgr.DB.Queries, testCache.Cache, dataLoaders)
+	languageService := services.NewLanguageService(dbMgr.DB.Queries, testCache, dataLoaders.UserByIDLoader, logger)
+
+	// Create settings service
+	settingsService, err := services.NewSettingsService(ctx, dbMgr.DB.Queries, logger)
+	if err != nil {
+		testCache.Close()
+		return nil, nil, nil, err
+	}
+
+	// Create router
+	router := NewTestRouter(TestServerConfig{
+		DB:                 dbMgr.DB,
+		Cache:              testCache,
+		RoleService:        roleService,
+		LeaderboardService: leaderboardService,
+		SettingsService:    settingsService,
+		LanguageService:    languageService,
+		Loaders:            dataLoaders,
+	})
+
+	cleanup := func() {
+		settingsService.Stop()
+		testCache.Close()
+	}
+
+	return router, testCache, cleanup, nil
+}
+
 // NewTestContentAchievementService creates a ContentAchievementService for testing
 // without push notifications or webhook dispatching
 func NewTestContentAchievementService(dbMgr *TestDBManager) (*services.ContentAchievementService, func(), error) {

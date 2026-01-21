@@ -80,6 +80,7 @@ CREATE TABLE projects (
     start_date TIMESTAMPTZ NOT NULL,
     end_date TIMESTAMPTZ NOT NULL,
     logo_url VARCHAR(500),
+    banner_url VARCHAR(500),
     -- Light mode colors
     color_light_accent VARCHAR(50) NOT NULL,
     color_light_accent_contrast VARCHAR(50) NOT NULL,
@@ -108,6 +109,10 @@ CREATE TABLE projects (
     color_dark_border_default VARCHAR(50) NOT NULL,
     rounding INT NOT NULL DEFAULT 0,
     archived BOOLEAN DEFAULT false,
+    rules TEXT,
+    info_message TEXT,
+    info_message_start TIMESTAMPTZ,
+    info_message_end TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     CHECK (end_date > start_date)
@@ -143,11 +148,13 @@ CREATE TABLE teams (
     description TEXT,
     join_code VARCHAR(50) UNIQUE NOT NULL,
     super_team_id CHAR(28) REFERENCES super_teams(id) ON DELETE SET NULL,
+    leaderboard_excluded BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     INDEX idx_teams_project (project_id),
     INDEX idx_teams_super_team (super_team_id),
-    INDEX idx_teams_join_code (join_code)
+    INDEX idx_teams_join_code (join_code),
+    INDEX idx_teams_leaderboard_excluded (leaderboard_excluded) WHERE leaderboard_excluded = true
 );
 
 CREATE TABLE streaks (
@@ -362,6 +369,8 @@ CREATE TABLE project_translations (
     language_code VARCHAR(10) NOT NULL,
     name VARCHAR(255),
     description TEXT,
+    rules TEXT,
+    info_message TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     PRIMARY KEY (project_id, language_code)
@@ -375,26 +384,6 @@ CREATE TABLE event_translations (
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     PRIMARY KEY (event_id, language_code)
-);
-
-CREATE TABLE team_translations (
-    team_id CHAR(28) NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-    language_code VARCHAR(10) NOT NULL,
-    name VARCHAR(255),
-    description TEXT,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    PRIMARY KEY (team_id, language_code)
-);
-
-CREATE TABLE super_team_translations (
-    super_team_id CHAR(28) NOT NULL REFERENCES super_teams(id) ON DELETE CASCADE,
-    language_code VARCHAR(10) NOT NULL,
-    name VARCHAR(255),
-    description TEXT,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    PRIMARY KEY (super_team_id, language_code)
 );
 
 CREATE TABLE streak_translations (

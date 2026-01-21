@@ -1,11 +1,22 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
 
+type ProjectCardAchievement =
+  ProfilePageQuery['myCurrentProject']['achievements'][number]
+
+interface BannerImage {
+  url: string
+  width?: number | null
+  height?: number | null
+  blurhash?: string | null
+}
+
 const props = defineProps<{
   projectName: string
+  banner?: BannerImage | null
   score?: number
   rank?: number | null
-  achievements?: Partial<Achievement>[]
+  achievements?: ProjectCardAchievement[]
 }>()
 
 // Animated values for counting effect
@@ -50,9 +61,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <DesignCard>
+  <DesignCard class="overflow-clip">
+    <DesignImage v-if="banner" :image="banner" class="w-full h-50" />
     <div class="p-default gap-medium flex flex-col">
-      <p class="text-label text-center">{{ projectName }}</p>
+      <p v-if="!banner" class="text-label text-center">{{ projectName }}</p>
       <div class="divide-border-default grid grid-cols-2 divide-x py-2">
         <div class="flex flex-col items-center">
           <p class="title-text tabular-nums">

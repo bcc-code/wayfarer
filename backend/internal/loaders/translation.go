@@ -154,44 +154,6 @@ func queryTranslations(ctx context.Context, db *database.DB, entityType string, 
 		}
 		return translations, nil
 
-	case "team":
-		rows, err := db.Queries.GetTeamTranslationsByIDs(ctx, sqlc.GetTeamTranslationsByIDsParams{
-			EntityIds:    entityIDs,
-			LanguageCode: langCode,
-		})
-		if err != nil {
-			return nil, err
-		}
-		translations := make([]*Translation, len(rows))
-		for i, row := range rows {
-			translations[i] = &Translation{
-				EntityID:    row.TeamID,
-				LangCode:    row.LanguageCode,
-				Name:        row.Name,
-				Description: row.Description,
-			}
-		}
-		return translations, nil
-
-	case "superteam":
-		rows, err := db.Queries.GetSuperTeamTranslationsByIDs(ctx, sqlc.GetSuperTeamTranslationsByIDsParams{
-			EntityIds:    entityIDs,
-			LanguageCode: langCode,
-		})
-		if err != nil {
-			return nil, err
-		}
-		translations := make([]*Translation, len(rows))
-		for i, row := range rows {
-			translations[i] = &Translation{
-				EntityID:    row.SuperTeamID,
-				LangCode:    row.LanguageCode,
-				Name:        row.Name,
-				Description: row.Description,
-			}
-		}
-		return translations, nil
-
 	case "streak":
 		rows, err := db.Queries.GetStreakTranslationsByIDs(ctx, sqlc.GetStreakTranslationsByIDsParams{
 			EntityIds:    entityIDs,

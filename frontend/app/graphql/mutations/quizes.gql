@@ -30,8 +30,8 @@ mutation DeleteQuizQuestion($id: ID!) {
 }
 
 # User mutations
-mutation StartQuiz($quizId: ID!) {
-  startQuiz(quizId: $quizId) {
+mutation StartQuizSession($sessionId: ID!) {
+  startQuizSession(sessionId: $sessionId) {
     id
     startedAt
     expiresAt

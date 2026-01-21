@@ -1,12 +1,26 @@
 <script setup lang="ts">
+type ProjectCardAchievement =
+  ProfilePageQuery['myCurrentProject']['achievements'][number]
+
 const props = defineProps<{
-  achievement: Partial<Achievement>
+  achievement: ProjectCardAchievement
 }>()
 
 const { track } = useAnalytics()
 const { openAchievementId, clearOpenAchievementId } = useAchievementSheet()
 
 const open = ref(false)
+
+// Determine which image to show based on achievement state
+const currentImage = computed(() => {
+  if (
+    props.achievement.achievedAt &&
+    props.achievement.imageCompletedObject?.url
+  ) {
+    return props.achievement.imageCompletedObject
+  }
+  return props.achievement.imagePendingObject
+})
 
 watch(open, (isOpen) => {
   if (isOpen) {
@@ -30,7 +44,7 @@ watch(
   { immediate: true },
 )
 
-function descriptionFor(achievement: typeof props.achievement) {
+function descriptionFor(achievement: ProjectCardAchievement) {
   if (achievement.achievedAt) {
     return achievement.descriptionCompleted
   } else {
@@ -52,20 +66,11 @@ function descriptionFor(achievement: typeof props.achievement) {
       <button
         class="grid aspect-square size-full place-items-center overflow-hidden rounded-full outline-none"
       >
-        <img
-          v-if="achievement.imageCompleted && achievement.achievedAt != null"
-          :src="achievement.imageCompleted"
-          class="size-full object-cover"
-        />
-        <img
-          v-else-if="achievement.imagePending"
-          :src="achievement.imagePending"
-          class="size-full object-cover"
-        />
-        <img
-          v-else
-          src="/images/achievement-placeholder.png"
-          class="size-full object-cover"
+        <DesignImage
+          :image="currentImage"
+          :alt="achievement.name"
+          fallback="/images/achievement-placeholder.png"
+          class="size-full"
         />
       </button>
       <template #content>
@@ -76,22 +81,11 @@ function descriptionFor(achievement: typeof props.achievement) {
               { 'shadow-large': achievement.achievedAt },
             ]"
           >
-            <img
-              v-if="
-                achievement.imageCompleted && achievement.achievedAt != null
-              "
-              :src="achievement.imageCompleted"
-              class="size-full object-cover"
-            />
-            <img
-              v-else-if="achievement.imagePending"
-              :src="achievement.imagePending"
-              class="size-full object-cover"
-            />
-            <img
-              v-else
-              src="/images/achievement-placeholder.png"
-              class="size-full object-cover"
+            <DesignImage
+              :image="currentImage"
+              :alt="achievement.name"
+              fallback="/images/achievement-placeholder.png"
+              class="size-full"
             />
           </div>
           <div
@@ -116,6 +110,26 @@ function descriptionFor(achievement: typeof props.achievement) {
               })
             }}
           </div>
+
+          <!-- <template v-if="achievement.__typename === 'ContentAchievement'">
+            <div
+              v-if="achievement.nextItem"
+              class="w-full mt-auto flex flex-col p-default text-center"
+            >
+              <p class="text-label text-text-default">
+                {{ achievement.nextItem.externalContent.title }}
+              </p>
+              <NuxtLink
+                v-if="achievement.nextItem.externalContent.url"
+                :to="achievement.nextItem.externalContent.url"
+                class="contents"
+              >
+                <DesignButton size="large" variant="primary">
+                  {{ $t('achievement.nextStep') }}
+                </DesignButton>
+              </NuxtLink>
+            </div>
+          </template> -->
         </div>
       </template>
     </DesignDrawer>

@@ -128,6 +128,13 @@ export function usePermissions() {
     return isSuperAdmin.value || isAdmin.value
   })
 
+  /**
+   * Can forward feedback to support desk
+   */
+  const canForwardFeedback = computed(() => {
+    return isSuperAdmin.value || isAdmin.value
+  })
+
   // ============================================
   // Action Permissions
   // ============================================
@@ -230,6 +237,20 @@ export function usePermissions() {
     return isSuperAdmin.value || isAdmin.value
   })
 
+  /**
+   * Can toggle team leaderboard exclusion (admins and superadmins only, not church admins)
+   */
+  const canToggleLeaderboardExclusion = computed(() => {
+    return isSuperAdmin.value || isAdmin.value
+  })
+
+  /**
+   * Can manage church admins
+   */
+  const canManageChurchAdmins = computed(() => {
+    return isSuperAdmin.value || isAdmin.value || isChurchAdmin.value
+  })
+
   return {
     // Scoped helpers
     hasProjectAdminFor,
@@ -248,6 +269,7 @@ export function usePermissions() {
     canAccessConsents,
     canAccessFeedback,
     canDeleteFeedback,
+    canForwardFeedback,
 
     // Actions
     canManageScores,
@@ -263,5 +285,7 @@ export function usePermissions() {
     canManageTeam,
     canViewUser,
     canManageConsents,
+    canToggleLeaderboardExclusion,
+    canManageChurchAdmins,
   }
 }

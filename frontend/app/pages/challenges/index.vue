@@ -12,17 +12,14 @@ useFirestoreRefresh(['ChallengesPageDocument'], () => {
 
 const isInitialLoading = computed(() => fetching.value && !data.value)
 
-// Filter out completed quiz challenges that can't be retaken
+// Filter out quiz challenges without active sessions
 const visibleChallenges = computed(() => {
   if (!data.value?.myCurrentProject.challenges) return []
 
   return data.value.myCurrentProject.challenges.filter((challenge) => {
-    // Hide completed quiz challenges that don't allow retakes
     if (challenge.__typename === 'QuizChallenge') {
-      const isCompleted = !!challenge.userCompletedAt
-      const canStart = challenge.quiz.userCanStart
-      // Hide if completed and can't start again
-      if (isCompleted && !canStart) {
+      // Hide quiz challenges without an active session
+      if (!challenge.quiz.userActiveSession?.id) {
         return false
       }
     }

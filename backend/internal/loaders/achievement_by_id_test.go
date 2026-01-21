@@ -92,69 +92,6 @@ func TestAchievementCacheExpiry(t *testing.T) {
 	assert.False(t, ok, "achievement should not be in cache after deletion")
 }
 
-func TestSimpleAchievementModel(t *testing.T) {
-	achievement := &model.SimpleAchievement{
-		ID:                   "AC01K8XV6VK9ED2GBZSQ2VDTAT8T",
-		Name:                 "First Achievement",
-		DescriptionPending:   "Complete your first challenge",
-		DescriptionCompleted: "You completed your first challenge!",
-		ImagePending:         "https://example.com/achievement-pending.png",
-		ImageCompleted:       "https://example.com/achievement-completed.png",
-		Points:               50,
-		Hidden:               false,
-		ProjectID:            "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-	}
-
-	assert.Equal(t, "AC01K8XV6VK9ED2GBZSQ2VDTAT8T", achievement.ID)
-	assert.Equal(t, "First Achievement", achievement.Name)
-	assert.Equal(t, "Complete your first challenge", achievement.DescriptionPending)
-	assert.Equal(t, "You completed your first challenge!", achievement.DescriptionCompleted)
-	assert.Equal(t, 50, achievement.Points)
-	assert.False(t, achievement.Hidden)
-}
-
-func TestContentAchievementModel(t *testing.T) {
-	achievement := &model.ContentAchievement{
-		ID:                   "AC01K8XV6VK9ED2GBZSQ2VDTAT8T",
-		Name:                 "Content Achievement",
-		DescriptionPending:   "Complete all required content",
-		DescriptionCompleted: "You completed all required content!",
-		ImagePending:         "https://example.com/content-pending.png",
-		ImageCompleted:       "https://example.com/content-completed.png",
-		Points:               100,
-		Hidden:               false,
-		ProjectID:            "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-		TotalItems:           2,
-		// Items will be populated by resolver
-	}
-
-	assert.Equal(t, "AC01K8XV6VK9ED2GBZSQ2VDTAT8T", achievement.ID)
-	assert.Equal(t, "Content Achievement", achievement.Name)
-	assert.Equal(t, 2, achievement.TotalItems)
-}
-
-func TestStreakAchievementModel(t *testing.T) {
-	achievement := &model.StreakAchievement{
-		ID:                   "AC01K8XV6VK9ED2GBZSQ2VDTAT8T",
-		Name:                 "Streak Achievement",
-		DescriptionPending:   "Maintain a 7-day streak",
-		DescriptionCompleted: "You maintained a 7-day streak!",
-		ImagePending:         "https://example.com/streak-pending.png",
-		ImageCompleted:       "https://example.com/streak-completed.png",
-		Points:               200,
-		Hidden:               false,
-		ProjectID:            "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-		StreakID:             "SK01K8XV6VK9ED2GBZSQ2VDTAT8T",
-		NeededStreak:         7,
-	}
-
-	assert.Equal(t, "AC01K8XV6VK9ED2GBZSQ2VDTAT8T", achievement.ID)
-	assert.Equal(t, "Streak Achievement", achievement.Name)
-	assert.Equal(t, 7, achievement.NeededStreak)
-	assert.Equal(t, "SK01K8XV6VK9ED2GBZSQ2VDTAT8T", achievement.StreakID)
-	assert.Equal(t, 200, achievement.Points)
-}
-
 func TestMultipleAchievementsInCache(t *testing.T) {
 	c, err := cache.NewCacheWithRegistry(cache.DefaultConfig())
 	require.NoError(t, err)
@@ -215,21 +152,4 @@ func TestMultipleAchievementsInCache(t *testing.T) {
 		assert.Equal(t, expectedAchievement.GetID(), cachedAchievement.GetID())
 		assert.Equal(t, expectedAchievement.GetName(), cachedAchievement.GetName())
 	}
-}
-
-func TestHiddenAchievement(t *testing.T) {
-	achievement := &model.SimpleAchievement{
-		ID:                   "AC01K8XV6VK9ED2GBZSQ2VDTAT8T",
-		Name:                 "Secret Achievement",
-		DescriptionPending:   "Hidden achievement pending",
-		DescriptionCompleted: "Hidden achievement completed",
-		ImagePending:         "https://example.com/secret-pending.png",
-		ImageCompleted:       "https://example.com/secret-completed.png",
-		Points:               500,
-		Hidden:               true,
-		ProjectID:            "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-	}
-
-	assert.True(t, achievement.Hidden)
-	assert.Equal(t, 500, achievement.Points)
 }

@@ -1,6 +1,11 @@
 {
   "error": {
-    "title": "Oeps! Er is iets misgegaan"
+    "title": "Oeps! Er is iets misgegaan",
+    "hint": "Probeer het nog eens. Als het probleem zich blijft voordoen, probeer dan de pagina te vernieuwen.",
+    "networkHint": "Het lijkt erop dat je verbindingsproblemen hebt. Controleer je internetverbinding en probeer het opnieuw.",
+    "retry": "Probeer het opnieuw",
+    "showDetails": "Technische details weergeven",
+    "hideDetails": "Technische details verbergen"
   },
   "emptyStates": {
     "standings": "Nog geen toplijst",
@@ -124,5 +129,117 @@
     "updateAvailableTitle": "Er een update beschikbaar",
     "updateAvailableButton": "Nu bijwerken"
   },
-  "goToHiddenTreasures": "Ga naar bijbelstudie"
+  "notifications": {
+    "promptTitle": "Blijf op de hoogte van je medailles, zet notificaties aan",
+    "promptDescription": "Dan krijg je een notificatie wanneer je een nieuwe medaille of uitdaging ontvangt.",
+    "turnOn": "Schakel notificaties in",
+    "notNow": "Niet nu"
+  },
+  "goToHiddenTreasures": "Ga naar bijbelstudie",
+  "admin": {
+    "common": {
+      "back": "Terug",
+      "cancel": "Annuleren",
+      "save": "Opslaan",
+      "create": "Aanmaken",
+      "delete": "Verwijder",
+      "deleteAll": "Alles verwijderen",
+      "copyLink": "Kopieer link naar admin-pagina",
+      "linkCopied": "Link gekopieerd"
+    },
+    "breadcrumb": {
+      "home": "Voorpagina"
+    },
+    "churchHome": {
+      "administrators": "Beheerders",
+      "unitsAndPeople": "Units en personen",
+      "gameNights": "Game Nights",
+      "comingSoon": "Binnenkort"
+    },
+    "admins": {
+      "searchPlaceholder": "Zoeken naar beheerders",
+      "addPlaceholder": "Beheerder toevoegen...",
+      "you": "Jij",
+      "noAdminsFound": "Geen beheerders gevonden",
+      "confirmRemove": {
+        "title": "Beheerder verwijderen?",
+        "message": "Weet u zeker dat u {name} als beheerder wilt verwijderen?",
+        "confirm": "Verwijderen"
+      },
+      "success": {
+        "added": "Beheerder toegevoegd",
+        "removed": "Beheerder verwijderd"
+      },
+      "errors": {
+        "addFailed": "Kon geen beheerder toevoegen",
+        "removeFailed": "Kon beheerder niet verwijderen"
+      },
+      "copyLinkDescription": "Deel de link met andere beheerders"
+    },
+    "units": {
+      "title": "Units",
+      "people": "Personen",
+      "filter": {
+        "title": "Filteren",
+        "all": "Alle",
+        "notInUnit": "Niet in een unit",
+        "inUnit": "In een unit",
+        "showO36": "Toon personen ouder dan 36 jaar",
+        "showO36Description": "Personen ouder dan 36 jaar worden niet weergegeven in de toplijsten en nemen niet deel aan de jeugdcompetitie."
+      },
+      "searchPlaceholder": "Zoeken op units of personen...",
+      "searchPeoplePlaceholder": "Zoeken naar personen...",
+      "expandAll": "Alle units uitvouwen",
+      "createOneUnit": "Maak één unit aan",
+      "createMultipleUnits": "Maak meerdere units aan",
+      "namePlaceholder": "Naam van de unit (optioneel)",
+      "selectAll": "Alles selecteren",
+      "noActiveProject": "Geen actieve wedstrijd ",
+      "noUnitsFound": "Geen units gevonden",
+      "noPeopleFound": "Geen personen gevonden",
+      "years": "{years} jaar",
+      "selectedCount": "{count} unit gekozen | {count} units gekozen",
+      "deleteSelected": "Geselecteerde verwijderen",
+      "bulkCreate": {
+        "countLabel": "Aantal units",
+        "autoGenerateInfo": "De namen worden automatisch gegenereerd."
+      },
+      "confirmDelete": {
+        "title": "Unit verwijderen?",
+        "message": "Weet je zeker dat je {name} wilt verwijderen? Alle leden worden uit de unit verwijderd."
+      },
+      "confirmBulkDelete": {
+        "title": "Meerdere units verwijderen?",
+        "message": "Weet je zeker dat je {count} units wilt verwijderen? Alle leden worden uit deze units verwijderd."
+      },
+      "success": {
+        "created": "Unit aangemaakt",
+        "bulkCreated": "{count} units aangemaakt",
+        "deleted": "Unit verwijderd",
+        "bulkDeleted": "{count} units verwijderd"
+      },
+      "errors": {
+        "createFailed": "Kon geen unit aanmaken",
+        "bulkCreateFailed": "Kon geen units aanmaken",
+        "addMemberFailed": "Kon geen lid toevoegen",
+        "removeMemberFailed": "Kon lid niet verwijderen",
+        "assignLeaderFailed": "Kon geen leider instellen",
+        "deleteFailed": "Kon unit niet verwijderen",
+        "bulkDeleteFailed": "Kon units niet verwijderen",
+        "renameFailed": "Kon de naam van de unit niet wijzigen",
+        "exclusionToggleFailed": "Kon de zichtbaarheid van de rankinglijst  niet wijzigen"
+      },
+      "ageWarning": "De gemiddelde leeftijd van deze unit is meer dan 36 jaar, en daarom zal deze niet in de rankingen verschijnen of meedoen aan wedstrijden voor jongeren. Als dit onjuist is en deze wel moet deelnemen aan de wedstrijd voor jongeren, laat het ons dan weten via {email}"
+    },
+    "unit": {
+      "noLeaderSelected": "Geen leider gekozen",
+      "members": "{count} persoon | {count} personen",
+      "makeLead": "Maak leider aan",
+      "dragPeopleHere": "Geen leden - sleep een persoon hierheen",
+      "addPersonPlaceholder": "Persoon toevoegen...",
+      "excludeFromLeaderboard": "Uitsluiten van rankings",
+      "excludeFromLeaderboardTooltip": "Wanneer geactiveerd, wordt deze unit niet weergegeven in rankinglijsten",
+      "excludedFromLeaderboard": "Uitgesloten van rankings"
+    }
+  }
 }

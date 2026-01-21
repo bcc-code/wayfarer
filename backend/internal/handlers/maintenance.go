@@ -9,6 +9,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/members"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -16,9 +17,10 @@ import (
 
 // MaintenanceHandler handles maintenance tasks like syncing user data
 type MaintenanceHandler struct {
-	DB            *database.DB
-	MembersClient *members.Client
-	AuthHandler   *AuthHandler
+	DB                        *database.DB
+	MembersClient             *members.Client
+	AuthHandler               *AuthHandler
+	ContentAchievementService *services.ContentAchievementService
 }
 
 // SyncUserDataResponse contains the results of a user data sync operation
@@ -162,7 +164,9 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 		return
 	}
 
-	slog.Info("maintenance: syncing single user", "user_id", userID)
+	processPending := c.Query("process_pending") == "true"
+
+	slog.Info("maintenance: syncing single user", "user_id", userID, "process_pending", processPending)
 
 	// Get user
 	user, err := h.DB.Queries.GetUserByID(ctx, userID)
@@ -201,21 +205,15 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 		newGender = normalizeGender(member.Gender)
 	}
 
-	// Always attempt to update church from member affiliation
+	// Attempt to update church from member affiliation
 	church, err := h.AuthHandler.findChurchFromAffiliations(ctx, member.Affiliations)
 	if err != nil {
-		slog.Info("maintenance: no valid church from affiliations, using default",
+		slog.Debug("maintenance: no valid church from affiliations, keeping existing",
 			"user_id", userID,
 			"affiliations", member.Affiliations,
 			"error", err,
 		)
-		// Use default church when no valid affiliation is found
-		defaultChurch, defaultErr := h.AuthHandler.GetOrCreateDefaultChurch(ctx)
-		if defaultErr != nil {
-			slog.Error("maintenance: failed to get default church", "error", defaultErr)
-		} else {
-			newChurchID = defaultChurch.ID
-		}
+		// Keep existing church - don't update to default
 	} else {
 		newChurchID = church.ID
 	}
@@ -243,17 +241,35 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 		}
 	}
 
+	// Process pending data only when explicitly requested
+	onboardingProcessed := false
+	if processPending && member.Uid != uuid.Nil {
+		personUUIDStr := member.Uid.String()
+		personUUID := pgtype.UUID{Bytes: member.Uid, Valid: true}
+
+		h.AuthHandler.ProcessPendingConsentEvents(ctx, userID, personUUIDStr)
+
+		if h.ContentAchievementService != nil {
+			h.ContentAchievementService.ProcessPendingContentEvents(ctx, userID, personUUID)
+		}
+
+		onboardingProcessed = true
+		slog.Info("maintenance: processed onboarding events", "user_id", userID, "person_uuid", personUUIDStr)
+	}
+
 	slog.Info("maintenance: updated user data",
 		"user_id", userID,
 		"new_gender", newGender,
 		"new_church_id", newChurchID,
+		"onboarding_processed", onboardingProcessed,
 	)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":       "user updated",
-		"user_id":       userID,
-		"new_gender":    newGender,
-		"new_church_id": newChurchID,
+		"message":              "user updated",
+		"user_id":              userID,
+		"new_gender":           newGender,
+		"new_church_id":        newChurchID,
+		"onboarding_processed": onboardingProcessed,
 	})
 }
 

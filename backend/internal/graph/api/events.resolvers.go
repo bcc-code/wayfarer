@@ -165,12 +165,6 @@ func (r *mutationResolver) UpdateEvent(ctx context.Context, id string, input mod
 	// Invalidate cache
 	r.Cache.InvalidateEvent(id)
 
-	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.Description != nil {
-		_ = r.DB.Queries.DeleteEventTranslations(ctx, id)
-		r.Cache.DeletePrefix(cache.PrefixTranslation + "event:" + id)
-	}
-
 	// Convert to GraphQL model
 	event := &model.Event{
 		ID:          row.ID,

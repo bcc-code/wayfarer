@@ -124,5 +124,111 @@
     "updateAvailableTitle": "An update is available",
     "updateAvailableButton": "Update now"
   },
-  "goToHiddenTreasures": "Go to Bible study"
+  "goToHiddenTreasures": "Go to Bible study",
+  "admin": {
+    "common": {
+      "back": "Back",
+      "cancel": "Cancel",
+      "save": "Save",
+      "create": "Create",
+      "delete": "Delete",
+      "deleteAll": "Delete all",
+      "copyLink": "Copy link to admin page",
+      "linkCopied": "Link copied"
+    },
+    "breadcrumb": {
+      "home": "Home"
+    },
+    "churchHome": {
+      "administrators": "Administrators",
+      "unitsAndPeople": "Units and people",
+      "gameNights": "Game Nights",
+      "comingSoon": "Coming soon"
+    },
+    "admins": {
+      "searchPlaceholder": "Search for administrators ...",
+      "addPlaceholder": "Add administrator ...",
+      "you": "You",
+      "noAdminsFound": "No administrators found",
+      "confirmRemove": {
+        "title": "Remove administrator",
+        "message": "Are you sure you want to remove {name} as administrator?",
+        "confirm": "Remove"
+      },
+      "success": {
+        "added": "Administrator added",
+        "removed": "Administrator removed"
+      },
+      "errors": {
+        "addFailed": "Could not add administrator",
+        "removeFailed": "Could not remove administrator"
+      },
+      "copyLinkDescription": "Share the link with other administrators"
+    },
+    "units": {
+      "title": "Units",
+      "people": "People",
+      "filter": {
+        "title": "Filter",
+        "all": "All",
+        "notInUnit": "Not in a unit",
+        "inUnit": "In a unit",
+        "showO36": "Show people over 36 years",
+        "showO36Description": "Individuals over the age of 36 do not appear in leaderboards, and do not participate in the youth competition"
+      },
+      "searchPlaceholder": "Search for units or people ...",
+      "searchPeoplePlaceholder": "Search for people ...",
+      "expandAll": "Expand all units",
+      "createOneUnit": "Create one unit",
+      "createMultipleUnits": "Create multiple units",
+      "namePlaceholder": "Name of unit (optional)",
+      "selectAll": "Select all",
+      "noActiveProject": "No active competition",
+      "noUnitsFound": "No units found",
+      "noPeopleFound": "No people found",
+      "years": "{years} years old",
+      "selectedCount": "{count} unit selected | {count} units selected",
+      "deleteSelected": "Delete selected",
+      "bulkCreate": {
+        "countLabel": "Number of units",
+        "autoGenerateInfo": "Names are generated automatically"
+      },
+      "confirmDelete": {
+        "title": "Delete unit?",
+        "message": "Are you sure you want to delete {name}? All members will be removed from the unit."
+      },
+      "confirmBulkDelete": {
+        "title": "Delete multiple units?",
+        "message": "Are you sure you want to delete {count} units? All members will be removed from these units."
+      },
+      "success": {
+        "created": "Unit created",
+        "bulkCreated": "{count} units created",
+        "deleted": "Unit deleted",
+        "bulkDeleted": "{count} units deleted"
+      },
+      "errors": {
+        "createFailed": "Unable to create unit",
+        "bulkCreateFailed": "Unable to create units",
+        "addMemberFailed": "Unable to add member",
+        "removeMemberFailed": "Unable to remove member",
+        "assignLeaderFailed": "Unable to assign leader",
+        "deleteFailed": "Unable to delete unit",
+        "bulkDeleteFailed": "Unable to delete units",
+        "renameFailed": "Unable to rename unit",
+        "exclusionToggleFailed": "Unable to change visibility on leaderboard"
+      },
+      "ageWarning": "The average age of this unit is over 36 years old, so it will not appear on leaderboards or be included in the youth competition. If this is incorrect, and it should participate in the youth competition, please let us know at {email}"
+    },
+    "unit": {
+      "noLeaderSelected": "No leader selected",
+      "members": "{count} person | {count} persons",
+      "makeLead": "Make leader",
+      "dragPeopleHere": "No members – drag a person here",
+      "addPersonPlaceholder": "Add person ...",
+      "excludeFromLeaderboard": "Exclude from leaderboard",
+      "excludeFromLeaderboardTooltip": "When activated, this unit will not appear in the leaderboard",
+      "excludedFromLeaderboard": "Hidden from leaderboards"
+    }
+  }
 }

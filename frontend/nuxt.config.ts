@@ -132,6 +132,7 @@ export default defineNuxtConfig({
         'gsap',
         '@auth0/auth0-vue',
         'vue-draggable-plus',
+        'dayjs',
       ],
     },
   },

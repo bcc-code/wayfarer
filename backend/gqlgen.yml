@@ -14,11 +14,13 @@ schema:
   - ../gql/scoring.graphqls
   - ../gql/consents.graphqls
   - ../gql/quizzes.graphqls
+  - ../gql/quiz_sessions.graphqls
   - ../gql/external_content.graphqls
   - ../gql/admin.graphqls
   - ../gql/push_notifications.graphqls
   - ../gql/feedback.graphqls
   - ../gql/webhooks.graphqls
+  - ../gql/file_uploads.graphqls
 
 # Generated code locations
 exec:
@@ -67,8 +69,12 @@ models:
     fields:
       rules:
         resolver: true
+      infoMessage:
+        resolver: true
     extraFields:
       RulesRaw:
+        type: "*string"
+      InfoMessageRaw:
         type: "*string"
 
   # Add ProjectID field to types that have project relationships
@@ -356,9 +362,29 @@ models:
       IsCorrectValue:
         type: bool
 
+  QuizSession:
+    fields:
+      quiz:
+        resolver: true
+      createdBy:
+        resolver: true
+      accessCount:
+        resolver: true
+      userHasAccess:
+        resolver: true
+      userSubmission:
+        resolver: true
+    extraFields:
+      QuizID:
+        type: string
+      CreatedByID:
+        type: string
+
   QuizSubmission:
     fields:
       quiz:
+        resolver: true
+      session:
         resolver: true
       user:
         resolver: true
@@ -375,6 +401,8 @@ models:
         type: string
       UserID:
         type: string
+      SessionID:
+        type: "*string"
 
   # QuizResponse implementations
   PredefinedResponse:

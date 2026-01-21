@@ -1,5 +1,68 @@
 <script setup lang="ts">
+// Age group filter for leaderboard rank
+function getAgeRangeFilter(age: number | null | undefined) {
+  if (age == null) return undefined
+  if (age >= 13 && age <= 19) return { min: 13, max: 19 } // U18
+  if (age >= 20 && age <= 37) return { min: 20, max: 37 } // O18
+  return undefined // Outside defined age groups
+}
+
 const { isAuthReady } = useAuthReady()
+const { me } = useAuth()
+const { $pwa } = useNuxtApp()
+const { track } = useAnalytics()
+
+// Push notification prompt
+const {
+  isSupported: isPushSupported,
+  isSubscribed,
+  isInitialized: isPushInitialized,
+  permission: pushPermission,
+} = usePushNotifications()
+
+const notificationPromptDismissed = useLocalStorage(
+  'notificationPromptDismissed',
+  false,
+)
+
+const notificationPromptOpen = ref(false)
+
+const shouldShowNotificationPrompt = computed(() => {
+  // Only show when:
+  // 1. Push state is initialized (prevents flash on load)
+  // 2. PWA is installed (standalone mode)
+  // 3. User hasn't subscribed to notifications
+  // 4. User hasn't permanently dismissed the prompt
+  // 5. Notification permission isn't denied
+  // 6. Push notifications are supported
+  return (
+    isPushInitialized.value &&
+    $pwa?.isPWAInstalled &&
+    isPushSupported.value &&
+    !isSubscribed.value &&
+    !notificationPromptDismissed.value &&
+    pushPermission.value !== 'denied'
+  )
+})
+
+// Auto-open/close the prompt based on conditions
+watch(
+  shouldShowNotificationPrompt,
+  (shouldShow) => {
+    if (shouldShow && !notificationPromptOpen.value) {
+      notificationPromptOpen.value = true
+      track(AnalyticsEvent.NotificationPromptShown)
+    } else if (!shouldShow && notificationPromptOpen.value) {
+      notificationPromptOpen.value = false
+    }
+  },
+  { immediate: true },
+)
+
+function handleNotificationPromptDismiss() {
+  notificationPromptDismissed.value = true
+}
+
 const {
   data,
   error,
@@ -7,6 +70,11 @@ const {
   stale,
   executeQuery: refresh,
 } = useProfilePageQuery({
+  variables: computed(() => {
+    const ageRange = getAgeRangeFilter(me.value?.age)
+    if (!ageRange) return {}
+    return { ageFilter: { ageRange } }
+  }),
   pause: computed(() => !isAuthReady.value),
 })
 
@@ -102,10 +170,31 @@ const hiddenTreasuresLink = computed(() => {
       <ProfileProjectCardSkeleton />
     </div>
     <ErrorState v-else-if="error" :error />
-    <div v-else-if="data" class="space-y-default p-list-outside">
+    <TransitionGroup
+      v-else-if="data"
+      tag="div"
+      class="space-y-list-section-gap p-list-outside"
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="scale-95 opacity-0"
+      enter-to-class="scale-100 opacity-100"
+      leave-active-class="transition duration-300 ease-out absolute left-0 right-0"
+      leave-from-class="scale-100 opacity-100"
+      leave-to-class="scale-95 opacity-0"
+      move-class="transition duration-300 ease-out"
+    >
+      <ProjectInfoBanner
+        v-if="data.myCurrentProject.infoMessage"
+        key="info-message"
+        :project-id="data.myCurrentProject.id"
+        :info-message="data.myCurrentProject.infoMessage"
+        :info-message-start="data.myCurrentProject.infoMessageStart"
+        :info-message-end="data.myCurrentProject.infoMessageEnd"
+      />
       <ProfileProjectCard
         v-if="data.myCurrentProject"
+        key="current-project"
         :project-name="data.myCurrentProject.name"
+        :banner="data.myCurrentProject.branding.bannerImage"
         :score="data.myCurrentProject.leaderboard.me?.score"
         :rank="data.myCurrentProject.leaderboard.me?.rank"
         :achievements="data.myCurrentProject.achievements"
@@ -127,7 +216,15 @@ const hiddenTreasuresLink = computed(() => {
           </NuxtLink>
         </div>
       </ProfileProjectCard>
-      <UserFeedback :project-id="data.myCurrentProject?.id" />
-    </div>
+      <div key="user-feedback" class="pt-small">
+        <UserFeedback :project-id="data.myCurrentProject?.id" />
+      </div>
+    </TransitionGroup>
+
+    <!-- Notification prompt for PWA users -->
+    <PwaNotificationPrompt
+      v-model:open="notificationPromptOpen"
+      @dismiss="handleNotificationPromptDismiss"
+    />
   </PageLayout>
 </template>

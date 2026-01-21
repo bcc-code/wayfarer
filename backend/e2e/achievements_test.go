@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/bcc-media/wayfarer/e2e/testutil"
 	"github.com/stretchr/testify/assert"
@@ -641,5 +642,199 @@ func TestAchievements(t *testing.T) {
 		}
 		require.NoError(t, resp.UnmarshalData(&result))
 		assert.Len(t, result.ReorderAchievements, len(achievementIDs))
+	})
+
+	// Tests for awardableFrom functionality
+	t.Run("admin can create achievement with future awardableFrom", func(t *testing.T) {
+		futureTime := time.Now().Add(24 * time.Hour).Format(time.RFC3339)
+
+		resp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation CreateSimpleAchievement($input: CreateSimpleAchievementInput!) {
+				createSimpleAchievement(input: $input) {
+					id
+					name
+					awardableFrom
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"name":                 "Future Awardable Achievement",
+				"descriptionPending":   "Not yet awardable",
+				"descriptionCompleted": "Awarded!",
+				"notificationText":     "You got it!",
+				"imagePending":         "https://example.com/pending.png",
+				"imageCompleted":       "https://example.com/completed.png",
+				"projectId":            projectID,
+				"points":               100,
+				"hidden":               false,
+				"awardableFrom":        futureTime,
+			},
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result struct {
+			CreateSimpleAchievement struct {
+				ID            string  `json:"id"`
+				Name          string  `json:"name"`
+				AwardableFrom *string `json:"awardableFrom"`
+			} `json:"createSimpleAchievement"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		assert.NotEmpty(t, result.CreateSimpleAchievement.ID)
+		assert.Equal(t, "Future Awardable Achievement", result.CreateSimpleAchievement.Name)
+		assert.NotNil(t, result.CreateSimpleAchievement.AwardableFrom)
+	})
+
+	t.Run("awarding achievement with future awardableFrom fails", func(t *testing.T) {
+		// Create an achievement with awardableFrom in the future
+		futureTime := time.Now().Add(24 * time.Hour).Format(time.RFC3339)
+
+		createResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation CreateSimpleAchievement($input: CreateSimpleAchievementInput!) {
+				createSimpleAchievement(input: $input) {
+					id
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"name":                 "Cannot Award Yet",
+				"descriptionPending":   "Not yet awardable",
+				"descriptionCompleted": "Awarded!",
+				"notificationText":     "You got it!",
+				"imagePending":         "https://example.com/pending.png",
+				"imageCompleted":       "https://example.com/completed.png",
+				"projectId":            projectID,
+				"points":               50,
+				"hidden":               false,
+				"awardableFrom":        futureTime,
+			},
+		})
+		require.False(t, createResp.HasErrors())
+
+		var createResult struct {
+			CreateSimpleAchievement struct {
+				ID string `json:"id"`
+			} `json:"createSimpleAchievement"`
+		}
+		require.NoError(t, createResp.UnmarshalData(&createResult))
+		futureAchievementID := createResult.CreateSimpleAchievement.ID
+
+		// Try to award - should fail
+		awardResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation AwardAchievement($userId: ID!, $achievementId: ID!) {
+				awardAchievement(userId: $userId, achievementId: $achievementId) {
+					... on SimpleAchievement {
+						id
+					}
+				}
+			}
+		`, map[string]any{
+			"userId":        userID,
+			"achievementId": futureAchievementID,
+		})
+
+		require.True(t, awardResp.HasErrors(), "expected error when awarding future achievement")
+		assert.Contains(t, awardResp.ErrorMessage(), "not yet available")
+	})
+
+	t.Run("awarding achievement with past awardableFrom succeeds", func(t *testing.T) {
+		// Create an achievement with awardableFrom in the past
+		pastTime := time.Now().Add(-24 * time.Hour).Format(time.RFC3339)
+
+		createResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation CreateSimpleAchievement($input: CreateSimpleAchievementInput!) {
+				createSimpleAchievement(input: $input) {
+					id
+					awardableFrom
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"name":                 "Past Awardable Achievement",
+				"descriptionPending":   "Already awardable",
+				"descriptionCompleted": "Awarded!",
+				"notificationText":     "You got it!",
+				"imagePending":         "https://example.com/pending.png",
+				"imageCompleted":       "https://example.com/completed.png",
+				"projectId":            projectID,
+				"points":               75,
+				"hidden":               false,
+				"awardableFrom":        pastTime,
+			},
+		})
+		require.False(t, createResp.HasErrors(), "unexpected error: %s", createResp.ErrorMessage())
+
+		var createResult struct {
+			CreateSimpleAchievement struct {
+				ID            string  `json:"id"`
+				AwardableFrom *string `json:"awardableFrom"`
+			} `json:"createSimpleAchievement"`
+		}
+		require.NoError(t, createResp.UnmarshalData(&createResult))
+		pastAchievementID := createResult.CreateSimpleAchievement.ID
+		assert.NotNil(t, createResult.CreateSimpleAchievement.AwardableFrom)
+
+		// Award should succeed
+		awardResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation AwardAchievement($userId: ID!, $achievementId: ID!) {
+				awardAchievement(userId: $userId, achievementId: $achievementId) {
+					... on SimpleAchievement {
+						id
+						name
+					}
+				}
+			}
+		`, map[string]any{
+			"userId":        userID,
+			"achievementId": pastAchievementID,
+		})
+
+		require.False(t, awardResp.HasErrors(), "unexpected error: %s", awardResp.ErrorMessage())
+
+		var awardResult struct {
+			AwardAchievement struct {
+				ID   string `json:"id"`
+				Name string `json:"name"`
+			} `json:"awardAchievement"`
+		}
+		require.NoError(t, awardResp.UnmarshalData(&awardResult))
+		assert.Equal(t, pastAchievementID, awardResult.AwardAchievement.ID)
+	})
+
+	t.Run("admin can update achievement awardableFrom", func(t *testing.T) {
+		if simpleAchievementID == "" {
+			t.Skip("No simple achievement created")
+		}
+
+		futureTime := time.Now().Add(48 * time.Hour).Format(time.RFC3339)
+
+		resp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation UpdateAchievement($id: ID!, $input: UpdateAchievementInput!) {
+				updateAchievement(id: $id, input: $input) {
+					... on SimpleAchievement {
+						id
+						awardableFrom
+					}
+				}
+			}
+		`, map[string]any{
+			"id": simpleAchievementID,
+			"input": map[string]any{
+				"awardableFrom": futureTime,
+			},
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result struct {
+			UpdateAchievement struct {
+				ID            string  `json:"id"`
+				AwardableFrom *string `json:"awardableFrom"`
+			} `json:"updateAchievement"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+		assert.NotNil(t, result.UpdateAchievement.AwardableFrom)
 	})
 }

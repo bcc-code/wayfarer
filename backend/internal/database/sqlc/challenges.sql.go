@@ -353,7 +353,7 @@ RETURNING id, project_id, event_id, challenge_type, name, description, image_url
 type CreateChallengeParams struct {
 	ID                          string             `json:"id"`
 	Projectid                   string             `json:"projectid"`
-	Eventid                     string             `json:"eventid"`
+	Eventid                     *string            `json:"eventid"`
 	Challengetype               string             `json:"challengetype"`
 	Name                        string             `json:"name"`
 	Description                 string             `json:"description"`
@@ -748,7 +748,7 @@ func (q *Queries) GetChallengesFilteredCursor(ctx context.Context, arg GetChalle
 }
 
 const GetQuizByChallengeID = `-- name: GetQuizByChallengeID :one
-SELECT id, project_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at, challenge_id FROM quizzes WHERE challenge_id = $1::text
+SELECT id, project_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at, challenge_id FROM quizzes WHERE challenge_id = $1::text
 `
 
 func (q *Queries) GetQuizByChallengeID(ctx context.Context, challengeid string) (*Quiz, error) {
@@ -765,7 +765,6 @@ func (q *Queries) GetQuizByChallengeID(ctx context.Context, challengeid string) 
 		&i.RevealCorrectAnswers,
 		&i.AllowRetakes,
 		&i.CompletionPoints,
-		&i.PublishedAt,
 		&i.EndTime,
 		&i.CreatedAt,
 		&i.UpdatedAt,

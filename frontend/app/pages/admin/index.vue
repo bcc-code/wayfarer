@@ -48,18 +48,6 @@ gql(`
               }
             }
           }
-          leaderboard(entityType: PERSONS, first: 5) {
-            totalCount
-            edges {
-              node {
-                id
-                name
-                score
-                rank
-                image
-              }
-            }
-          }
         }
       }
     }
@@ -77,12 +65,6 @@ const { currentProjects } = useGroupedProjects(() =>
 
 const feedbackEntries = computed(
   () => data.value?.feedback.edges.map((edge) => edge.node) ?? [],
-)
-
-const topProject = computed(() => currentProjects.value[0])
-
-const leaderboardEntries = computed(
-  () => topProject.value?.leaderboard.edges.map((edge) => edge.node) ?? [],
 )
 
 const greeting = computed(() => {
@@ -108,15 +90,6 @@ const greeting = computed(() => {
       <div class="grid gap-6 lg:grid-cols-3">
         <div class="lg:col-span-2">
           <AdminRecentActivity :feedback-entries="feedbackEntries" />
-        </div>
-
-        <div v-if="topProject">
-          <AdminTopPerformers
-            :project-id="topProject.id"
-            :project-name="topProject.name"
-            :entries="leaderboardEntries"
-            :total-count="topProject.leaderboard.totalCount"
-          />
         </div>
       </div>
 

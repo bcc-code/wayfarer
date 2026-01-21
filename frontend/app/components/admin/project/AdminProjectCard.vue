@@ -6,7 +6,7 @@ interface ProjectCardProps {
   startDate: string
   endDate: string
   branding: {
-    logo?: string | null
+    logoImage?: { url: string } | null
     colors: {
       light: { accent: string }
       dark: { accent: string }
@@ -54,8 +54,8 @@ const accentColor = computed(() => {
     </div>
     <div class="flex shrink-0 flex-col items-end justify-between">
       <img
-        v-if="project.branding.logo"
-        :src="project.branding.logo"
+        v-if="project.branding.logoImage?.url"
+        :src="project.branding.logoImage.url"
         height="32"
         width="32"
         class="rounded"

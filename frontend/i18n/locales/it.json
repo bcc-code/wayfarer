@@ -1,6 +1,11 @@
 {
   "error": {
-    "title": "Oops! Qualcosa è andato storto"
+    "title": "Oops! Qualcosa è andato storto",
+    "hint": "Riprova, per favore. Se il problema persiste, prova ad aggiornare la pagina.",
+    "networkHint": "Sembra che tu abbia dei problemi di connessione. Controlla la tua connessione Internet e riprova.",
+    "retry": "Riprova",
+    "showDetails": "Mostra dettagli tecnici",
+    "hideDetails": "Nascondi dettagli tecnici"
   },
   "emptyStates": {
     "standings": "Nessuna classifica ancora",
@@ -21,6 +26,7 @@
     "continue": "Continua",
     "nextQuestion": "Ok, prossima domanda.",
     "done": "Fine",
+    "unavailable": "Questo quiz non è disponibile al momento.",
     "result": {
       "receivedNoPoints": "Non hai ottenuto alcun punto.",
       "receivedPoints": "Hai totalizzato {points} punti.",
@@ -117,11 +123,123 @@
     "thankYouDescription": "I tuoi commenti saranno utilizzati per migliorare ulteriormente il servizio.",
     "close": "È stato un piacere.",
     "canContactMe": "Sì, acconsento a essere contattato in merito al mio feedback.",
-    "regards": "Saluti {name}"
+    "disclosure": "Il feedback verrà associato al tuo account utente."
   },
   "pwa": {
     "updateAvailableTitle": "È disponibile un aggiornamento",
     "updateAvailableButton": "Aggiorna ora"
   },
-  "goToHiddenTreasures": "Vai allo studio biblico"
+  "notifications": {
+    "promptTitle": "Aggiungi tutti i tuoi riconoscimenti, attiva le notifiche",
+    "promptDescription": "Riceverai una notifica ogni volta che riceverai un nuovo riconoscimento o una nuova sfida.",
+    "turnOn": "Attiva avvisi",
+    "notNow": "Non ora"
+  },
+  "goToHiddenTreasures": "Vai allo studio biblico",
+  "admin": {
+    "common": {
+      "back": "Indietro",
+      "cancel": "Annulla",
+      "save": "Salva",
+      "create": "Crea",
+      "delete": "Cancella",
+      "deleteAll": "Elimina tutto",
+      "copyLink": "Copia il link alla pagina di amministrazione",
+      "linkCopied": "Link copiato"
+    },
+    "breadcrumb": {
+      "home": "Home"
+    },
+    "churchHome": {
+      "administrators": "Amministratori",
+      "unitsAndPeople": "Unità e persone",
+      "gameNights": "Game Nights",
+      "comingSoon": "Prossimamente"
+    },
+    "admins": {
+      "searchPlaceholder": "Cerca amministratori...",
+      "addPlaceholder": "Aggiungi amministratore...",
+      "you": "Tu",
+      "noAdminsFound": "Nessun amministratore trovato",
+      "confirmRemove": {
+        "title": "Rimuovi amministratore?",
+        "message": "Sei sicuro di voler rimuovere te {name} come amministratore?",
+        "confirm": "Rimuovi"
+      },
+      "success": {
+        "added": "Amministratore aggiunto",
+        "removed": "Amministratore rimosso"
+      },
+      "errors": {
+        "addFailed": "Impossibile aggiungere amministratore",
+        "removeFailed": "Impossibile rimuovere l'amministratore"
+      },
+      "copyLinkDescription": "Condividi il link con altri amministratori"
+    },
+    "units": {
+      "title": "Unità",
+      "people": "Persone",
+      "filter": {
+        "title": "Filtra",
+        "all": "Tutti",
+        "notInUnit": "Non in un'unità",
+        "inUnit": "In un'unità",
+        "showO36": "Mostra persone di età superiore ai 36 anni",
+        "showO36Description": "Le persone di età superiore ai 36 anni non compaiono nelle classifiche e non partecipano al concorso giovanile."
+      },
+      "searchPlaceholder": "Cerca unità o persone...",
+      "searchPeoplePlaceholder": "Cerca persone...",
+      "expandAll": "Espandi tutte le unità",
+      "createOneUnit": "Crea un'unità",
+      "createMultipleUnits": "Crea più unità",
+      "namePlaceholder": "Nome dell'unità (facoltativo)",
+      "selectAll": "Seleziona tutto",
+      "noActiveProject": "Nessuna concorrenza attiva",
+      "noUnitsFound": "Nessuna unità trovata",
+      "noPeopleFound": "Nessuna persona trovata",
+      "years": "{years} anno",
+      "selectedCount": "{count} unità selezionata | {count} unità selezionate",
+      "deleteSelected": "Cancella selezione",
+      "bulkCreate": {
+        "countLabel": "Numero di unità",
+        "autoGenerateInfo": "I nomi vengono generati automaticamente"
+      },
+      "confirmDelete": {
+        "title": "Eliminare l’unità?",
+        "message": "Sei sicuro di voler eliminare questa unità? Tutti i membri saranno rimossi dall'unità."
+      },
+      "confirmBulkDelete": {
+        "title": "Eliminare più unità?",
+        "message": "Sei sicuro di voler eliminare le unità \" {count} \"? Tutti i membri saranno rimossi da queste unità."
+      },
+      "success": {
+        "created": "Unità creata",
+        "bulkCreated": "{count} unità create",
+        "deleted": "Unità cancellata",
+        "bulkDeleted": "{count} unità cancellate"
+      },
+      "errors": {
+        "createFailed": "Impossibile creare un’unità",
+        "bulkCreateFailed": "Impossibile creare delle unità",
+        "addMemberFailed": "Impossibile aggiungere un membro",
+        "removeMemberFailed": "Impossibile rimuovere un membro",
+        "assignLeaderFailed": "Non è stato possibile impostare il leader",
+        "deleteFailed": "Impossibile eliminare l'unità",
+        "bulkDeleteFailed": "Impossibile eliminare le unità",
+        "renameFailed": "Impossibile modificare il nome dell'unità",
+        "exclusionToggleFailed": "Impossibile modificare la visibilità nella lista dei preferiti"
+      },
+      "ageWarning": "L'età media di questa unità è superiore ai 36 anni, quindi non apparirà nelle classifiche né parteciperà alla competizione per i giovani. Se questo dato è errato e desideri partecipare alla competizione per giovani, ti preghiamo di comunicarcelo all'indirizzo {email}"
+    },
+    "unit": {
+      "noLeaderSelected": "Nessun leader selezionato",
+      "members": "{count} persona | {count} persone",
+      "makeLead": "Diventa un leader",
+      "dragPeopleHere": "Nessun membro - trascina una persona qui",
+      "addPersonPlaceholder": "Aggiungi persona...",
+      "excludeFromLeaderboard": "Escludi dalla lista dei migliori",
+      "excludeFromLeaderboardTooltip": "Una volta attivata, questa unità non apparirà nella classifica.",
+      "excludedFromLeaderboard": "Nascosta dalle classifiche"
+    }
+  }
 }

@@ -49,11 +49,6 @@ func quizByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 
 			// Convert to GraphQL model and populate cache
 			for _, row := range rows {
-				var publishedAt *scalars.DateTime
-				if row.PublishedAt.Valid {
-					publishedAt = &scalars.DateTime{Time: row.PublishedAt.Time}
-				}
-
 				var endTime *scalars.DateTime
 				if row.EndTime.Valid {
 					endTime = &scalars.DateTime{Time: row.EndTime.Time}
@@ -75,7 +70,6 @@ func quizByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 					RevealCorrectAnswers: row.RevealCorrectAnswers,
 					AllowRetakes:         row.AllowRetakes,
 					CompletionPoints:     int(row.CompletionPoints),
-					PublishedAt:          publishedAt,
 					EndTime:              endTime,
 					// Fields for resolvers
 					ProjectID:   row.ProjectID,

@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_UploadFile
 createdAt: 2025-01-07T12:00:00
-updatedAt: 2026-01-09T14:39:58.765844
+updatedAt: 2026-01-13T11:01:44.296790
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -10,11 +10,11 @@ authenticationType: null
 body:
   form:
   - enabled: true
-    file: /Users/matjaz/Downloads/humi.png
+    file: /Users/matjaz/Downloads/Achieved-13.png
     id: cq82umDwEb
     name: file
   - enabled: true
-    id: YT4nEJ4iCN
+    id: rDIRSJUcYK
     name: ''
     value: ''
 bodyType: multipart/form-data

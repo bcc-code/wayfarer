@@ -20,7 +20,7 @@ import (
 )
 
 // CreateChallenge is the resolver for the createChallenge field.
-func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string, eventID string, input model.CreateChallengeInput) (model.Challenge, error) {
+func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string, eventID *string, input model.CreateChallengeInput) (model.Challenge, error) {
 	// Get authenticated user ID from context
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
@@ -93,8 +93,8 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 
 	// Invalidate cache
 	r.Cache.InvalidateProject(projectID)
-	if eventID != "" {
-		r.Cache.InvalidateEvent(eventID)
+	if eventID != nil && *eventID != "" {
+		r.Cache.InvalidateEvent(*eventID)
 	}
 
 	// Convert to GraphQL model

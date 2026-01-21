@@ -22,10 +22,12 @@ query ChallengePage($challengeId: ID!) {
         revealCorrectAnswers
         allowRetakes
         completionPoints
-        publishedAt
         endTime
         userCanStart
         userActiveSubmission {
+          id
+        }
+        userActiveSession {
           id
         }
         userSubmissions {

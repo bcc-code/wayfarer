@@ -56,6 +56,7 @@ gql(`
 
 const pagination = usePagination({
   defaultPageSize: 15,
+  direction: 'backward',
 })
 
 const { isAuthReady } = useAuthReady()
@@ -194,7 +195,8 @@ const { canDeleteScoreEntry, canManageScores } = usePermissions()
     <UModal v-model:open="deleteModal">
       <template #content>
         <div class="p-6">
-          <h3 class="mb-4 text-lg font-semibold">Slett poengoppføring</h3>
+          <Icon name="lucide:triangle-alert" class="text-error size-8" />
+          <h3 class="my-2 text-lg font-semibold">Slett poengoppføring</h3>
           <p class="text-dimmed mb-6">
             Er du sikker på at du vil slette denne poengoppføringen? Denne
             handlingen kan ikke angres.

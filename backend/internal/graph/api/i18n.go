@@ -28,14 +28,6 @@ func applyHTMLTranslation(translated *string, base scalars.HTML) scalars.HTML {
 	return base
 }
 
-// applyMarkdownTranslation returns the translated value as Markdown if non-nil and non-empty, otherwise the base value
-func applyMarkdownTranslation(translated *string, base scalars.Markdown) scalars.Markdown {
-	if translated != nil && *translated != "" {
-		return scalars.Markdown(*translated)
-	}
-	return base
-}
-
 // LoadProjectWithTranslation loads a project and applies translation for the requested language
 func (r *Resolver) LoadProjectWithTranslation(ctx context.Context, id string) (*model.Project, error) {
 	project, err := r.Loaders.ProjectByIDLoader.Load(ctx, id)()
@@ -90,62 +82,6 @@ func (r *Resolver) LoadEventWithTranslation(ctx context.Context, id string) (*mo
 	translated := *event
 	translated.Name = applyStringTranslation(trans.Name, event.Name)
 	translated.Description = applyStringTranslation(trans.Description, event.Description)
-	return &translated, nil
-}
-
-// LoadTeamWithTranslation loads a team and applies translation for the requested language
-func (r *Resolver) LoadTeamWithTranslation(ctx context.Context, id string) (*model.Team, error) {
-	team, err := r.Loaders.TeamByIDLoader.Load(ctx, id)()
-	if err != nil {
-		return nil, err
-	}
-
-	lang := middleware.GetLanguage(ctx)
-	if lang == middleware.DefaultLanguage {
-		return team, nil
-	}
-
-	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
-		EntityType: "team",
-		EntityID:   id,
-		LangCode:   lang,
-	})()
-
-	if trans == nil {
-		return team, nil
-	}
-
-	translated := *team
-	translated.Name = applyStringTranslation(trans.Name, team.Name)
-	translated.Description = applyStringTranslation(trans.Description, team.Description)
-	return &translated, nil
-}
-
-// LoadSuperTeamWithTranslation loads a super team and applies translation for the requested language
-func (r *Resolver) LoadSuperTeamWithTranslation(ctx context.Context, id string) (*model.SuperTeam, error) {
-	superTeam, err := r.Loaders.SuperTeamByIDLoader.Load(ctx, id)()
-	if err != nil {
-		return nil, err
-	}
-
-	lang := middleware.GetLanguage(ctx)
-	if lang == middleware.DefaultLanguage {
-		return superTeam, nil
-	}
-
-	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
-		EntityType: "superteam",
-		EntityID:   id,
-		LangCode:   lang,
-	})()
-
-	if trans == nil {
-		return superTeam, nil
-	}
-
-	translated := *superTeam
-	translated.Name = applyStringTranslation(trans.Name, superTeam.Name)
-	translated.Description = applyStringTranslation(trans.Description, superTeam.Description)
 	return &translated, nil
 }
 
@@ -279,60 +215,6 @@ func (r *Resolver) ApplyTranslationToEvent(ctx context.Context, event *model.Eve
 	translated := *event
 	translated.Name = applyStringTranslation(trans.Name, event.Name)
 	translated.Description = applyStringTranslation(trans.Description, event.Description)
-	return &translated
-}
-
-// ApplyTranslationToTeam applies translation to an already-loaded team
-func (r *Resolver) ApplyTranslationToTeam(ctx context.Context, team *model.Team) *model.Team {
-	if team == nil {
-		return nil
-	}
-
-	lang := middleware.GetLanguage(ctx)
-	if lang == middleware.DefaultLanguage {
-		return team
-	}
-
-	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
-		EntityType: "team",
-		EntityID:   team.ID,
-		LangCode:   lang,
-	})()
-
-	if trans == nil {
-		return team
-	}
-
-	translated := *team
-	translated.Name = applyStringTranslation(trans.Name, team.Name)
-	translated.Description = applyStringTranslation(trans.Description, team.Description)
-	return &translated
-}
-
-// ApplyTranslationToSuperTeam applies translation to an already-loaded super team
-func (r *Resolver) ApplyTranslationToSuperTeam(ctx context.Context, superTeam *model.SuperTeam) *model.SuperTeam {
-	if superTeam == nil {
-		return nil
-	}
-
-	lang := middleware.GetLanguage(ctx)
-	if lang == middleware.DefaultLanguage {
-		return superTeam
-	}
-
-	trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
-		EntityType: "superteam",
-		EntityID:   superTeam.ID,
-		LangCode:   lang,
-	})()
-
-	if trans == nil {
-		return superTeam
-	}
-
-	translated := *superTeam
-	translated.Name = applyStringTranslation(trans.Name, superTeam.Name)
-	translated.Description = applyStringTranslation(trans.Description, superTeam.Description)
 	return &translated
 }
 

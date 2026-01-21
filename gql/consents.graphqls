@@ -81,4 +81,12 @@ extend type Mutation {
         publishedAt: DateTime
         managedBy: String
     ): Consent! @requireRole(roles: ["admin", "superadmin"])
+
+    # Manually set a user's consent action (admin action)
+    # Only works for local consents. The admin's user ID is recorded in the source field.
+    adminSetUserConsent(
+        userId: ID!
+        consentId: ID!
+        action: ConsentAction!
+    ): UserConsentHistoryEntry! @requireRole(roles: ["admin", "superadmin"])
 }

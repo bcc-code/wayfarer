@@ -18,26 +18,16 @@ WHERE
     ($1::text[] IS NULL OR id = ANY($1::text[]))
     AND ($2::text = '' OR project_id = $2::text)
     AND ($3::text = '' OR challenge_id = $3::text)
-    AND ($4::timestamptz IS NULL OR published_at >= $4::timestamptz)
-    AND ($5::timestamptz IS NULL OR published_at <= $5::timestamptz)
 `
 
 type CountQuizzesFilteredParams struct {
-	Ids             []string           `json:"ids"`
-	Projectid       string             `json:"projectid"`
-	Challengeid     string             `json:"challengeid"`
-	Publishedafter  pgtype.Timestamptz `json:"publishedafter"`
-	Publishedbefore pgtype.Timestamptz `json:"publishedbefore"`
+	Ids         []string `json:"ids"`
+	Projectid   string   `json:"projectid"`
+	Challengeid string   `json:"challengeid"`
 }
 
 func (q *Queries) CountQuizzesFiltered(ctx context.Context, arg CountQuizzesFilteredParams) (int64, error) {
-	row := q.db.QueryRow(ctx, CountQuizzesFiltered,
-		arg.Ids,
-		arg.Projectid,
-		arg.Challengeid,
-		arg.Publishedafter,
-		arg.Publishedbefore,
-	)
+	row := q.db.QueryRow(ctx, CountQuizzesFiltered, arg.Ids, arg.Projectid, arg.Challengeid)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -56,7 +46,6 @@ INSERT INTO quizzes (
     reveal_correct_answers,
     allow_retakes,
     completion_points,
-    published_at,
     end_time
 )
 VALUES (
@@ -71,10 +60,9 @@ VALUES (
     $9::bool,
     $10::bool,
     $11::int,
-    $12::timestamptz,
-    $13::timestamptz
+    $12::timestamptz
 )
-RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 `
 
 type CreateQuizParams struct {
@@ -89,7 +77,6 @@ type CreateQuizParams struct {
 	Revealcorrectanswers bool               `json:"revealcorrectanswers"`
 	Allowretakes         bool               `json:"allowretakes"`
 	Completionpoints     int32              `json:"completionpoints"`
-	Publishedat          pgtype.Timestamptz `json:"publishedat"`
 	Endtime              pgtype.Timestamptz `json:"endtime"`
 }
 
@@ -105,7 +92,6 @@ type CreateQuizRow struct {
 	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
 	AllowRetakes         bool               `json:"allow_retakes"`
 	CompletionPoints     int32              `json:"completion_points"`
-	PublishedAt          pgtype.Timestamptz `json:"published_at"`
 	EndTime              pgtype.Timestamptz `json:"end_time"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
@@ -124,7 +110,6 @@ func (q *Queries) CreateQuiz(ctx context.Context, arg CreateQuizParams) (*Create
 		arg.Revealcorrectanswers,
 		arg.Allowretakes,
 		arg.Completionpoints,
-		arg.Publishedat,
 		arg.Endtime,
 	)
 	var i CreateQuizRow
@@ -140,7 +125,6 @@ func (q *Queries) CreateQuiz(ctx context.Context, arg CreateQuizParams) (*Create
 		&i.RevealCorrectAnswers,
 		&i.AllowRetakes,
 		&i.CompletionPoints,
-		&i.PublishedAt,
 		&i.EndTime,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -169,7 +153,7 @@ func (q *Queries) DeleteQuizTranslations(ctx context.Context, quizid string) err
 }
 
 const GetQuizByID = `-- name: GetQuizByID :one
-SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 FROM quizzes
 WHERE id = $1::text
 `
@@ -186,7 +170,6 @@ type GetQuizByIDRow struct {
 	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
 	AllowRetakes         bool               `json:"allow_retakes"`
 	CompletionPoints     int32              `json:"completion_points"`
-	PublishedAt          pgtype.Timestamptz `json:"published_at"`
 	EndTime              pgtype.Timestamptz `json:"end_time"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
@@ -207,7 +190,6 @@ func (q *Queries) GetQuizByID(ctx context.Context, id string) (*GetQuizByIDRow, 
 		&i.RevealCorrectAnswers,
 		&i.AllowRetakes,
 		&i.CompletionPoints,
-		&i.PublishedAt,
 		&i.EndTime,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -216,7 +198,7 @@ func (q *Queries) GetQuizByID(ctx context.Context, id string) (*GetQuizByIDRow, 
 }
 
 const GetQuizzesByChallengeIDs = `-- name: GetQuizzesByChallengeIDs :many
-SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 FROM quizzes
 WHERE challenge_id = ANY($1::text[])
 ORDER BY challenge_id
@@ -234,7 +216,6 @@ type GetQuizzesByChallengeIDsRow struct {
 	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
 	AllowRetakes         bool               `json:"allow_retakes"`
 	CompletionPoints     int32              `json:"completion_points"`
-	PublishedAt          pgtype.Timestamptz `json:"published_at"`
 	EndTime              pgtype.Timestamptz `json:"end_time"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
@@ -262,7 +243,6 @@ func (q *Queries) GetQuizzesByChallengeIDs(ctx context.Context, challengeIds []s
 			&i.RevealCorrectAnswers,
 			&i.AllowRetakes,
 			&i.CompletionPoints,
-			&i.PublishedAt,
 			&i.EndTime,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -278,7 +258,7 @@ func (q *Queries) GetQuizzesByChallengeIDs(ctx context.Context, challengeIds []s
 }
 
 const GetQuizzesByIDs = `-- name: GetQuizzesByIDs :many
-SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 FROM quizzes
 WHERE id = ANY($1::text[])
 `
@@ -295,7 +275,6 @@ type GetQuizzesByIDsRow struct {
 	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
 	AllowRetakes         bool               `json:"allow_retakes"`
 	CompletionPoints     int32              `json:"completion_points"`
-	PublishedAt          pgtype.Timestamptz `json:"published_at"`
 	EndTime              pgtype.Timestamptz `json:"end_time"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
@@ -322,7 +301,6 @@ func (q *Queries) GetQuizzesByIDs(ctx context.Context, ids []string) ([]*GetQuiz
 			&i.RevealCorrectAnswers,
 			&i.AllowRetakes,
 			&i.CompletionPoints,
-			&i.PublishedAt,
 			&i.EndTime,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -338,12 +316,10 @@ func (q *Queries) GetQuizzesByIDs(ctx context.Context, ids []string) ([]*GetQuiz
 }
 
 const GetQuizzesByProjectIDs = `-- name: GetQuizzesByProjectIDs :many
-SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 FROM quizzes
 WHERE project_id = ANY($1::text[])
-    AND published_at IS NOT NULL
-    AND published_at <= NOW()
-ORDER BY project_id, published_at DESC
+ORDER BY project_id, created_at DESC
 `
 
 type GetQuizzesByProjectIDsRow struct {
@@ -358,7 +334,6 @@ type GetQuizzesByProjectIDsRow struct {
 	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
 	AllowRetakes         bool               `json:"allow_retakes"`
 	CompletionPoints     int32              `json:"completion_points"`
-	PublishedAt          pgtype.Timestamptz `json:"published_at"`
 	EndTime              pgtype.Timestamptz `json:"end_time"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
@@ -385,7 +360,6 @@ func (q *Queries) GetQuizzesByProjectIDs(ctx context.Context, projectIds []strin
 			&i.RevealCorrectAnswers,
 			&i.AllowRetakes,
 			&i.CompletionPoints,
-			&i.PublishedAt,
 			&i.EndTime,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -401,32 +375,28 @@ func (q *Queries) GetQuizzesByProjectIDs(ctx context.Context, projectIds []strin
 }
 
 const GetQuizzesFilteredCursor = `-- name: GetQuizzesFilteredCursor :many
-SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 FROM quizzes
 WHERE
     ($1::text[] IS NULL OR id = ANY($1::text[]))
     AND ($2::text = '' OR project_id = $2::text)
     AND ($3::text = '' OR challenge_id = $3::text)
-    AND ($4::timestamptz IS NULL OR published_at >= $4::timestamptz)
-    AND ($5::timestamptz IS NULL OR published_at <= $5::timestamptz)
-    AND ($6::text = '' OR id > $6::text)
-    AND ($7::text = '' OR id < $7::text)
+    AND ($4::text = '' OR id > $4::text)
+    AND ($5::text = '' OR id < $5::text)
 ORDER BY
-    CASE WHEN $8::bool = true THEN id END DESC,
-    CASE WHEN $8::bool = false OR $8::bool IS NULL THEN id END ASC
-LIMIT CASE WHEN $9::int IS NULL THEN NULL ELSE $9::int END
+    CASE WHEN $6::bool = true THEN id END DESC,
+    CASE WHEN $6::bool = false OR $6::bool IS NULL THEN id END ASC
+LIMIT CASE WHEN $7::int IS NULL THEN NULL ELSE $7::int END
 `
 
 type GetQuizzesFilteredCursorParams struct {
-	Ids             []string           `json:"ids"`
-	Projectid       string             `json:"projectid"`
-	Challengeid     string             `json:"challengeid"`
-	Publishedafter  pgtype.Timestamptz `json:"publishedafter"`
-	Publishedbefore pgtype.Timestamptz `json:"publishedbefore"`
-	Aftercursor     string             `json:"aftercursor"`
-	Beforecursor    string             `json:"beforecursor"`
-	Isbackward      bool               `json:"isbackward"`
-	Querylimit      int32              `json:"querylimit"`
+	Ids          []string `json:"ids"`
+	Projectid    string   `json:"projectid"`
+	Challengeid  string   `json:"challengeid"`
+	Aftercursor  string   `json:"aftercursor"`
+	Beforecursor string   `json:"beforecursor"`
+	Isbackward   bool     `json:"isbackward"`
+	Querylimit   int32    `json:"querylimit"`
 }
 
 type GetQuizzesFilteredCursorRow struct {
@@ -441,7 +411,6 @@ type GetQuizzesFilteredCursorRow struct {
 	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
 	AllowRetakes         bool               `json:"allow_retakes"`
 	CompletionPoints     int32              `json:"completion_points"`
-	PublishedAt          pgtype.Timestamptz `json:"published_at"`
 	EndTime              pgtype.Timestamptz `json:"end_time"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
@@ -452,8 +421,6 @@ func (q *Queries) GetQuizzesFilteredCursor(ctx context.Context, arg GetQuizzesFi
 		arg.Ids,
 		arg.Projectid,
 		arg.Challengeid,
-		arg.Publishedafter,
-		arg.Publishedbefore,
 		arg.Aftercursor,
 		arg.Beforecursor,
 		arg.Isbackward,
@@ -478,7 +445,6 @@ func (q *Queries) GetQuizzesFilteredCursor(ctx context.Context, arg GetQuizzesFi
 			&i.RevealCorrectAnswers,
 			&i.AllowRetakes,
 			&i.CompletionPoints,
-			&i.PublishedAt,
 			&i.EndTime,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -491,61 +457,6 @@ func (q *Queries) GetQuizzesFilteredCursor(ctx context.Context, arg GetQuizzesFi
 		return nil, err
 	}
 	return items, nil
-}
-
-const PublishQuiz = `-- name: PublishQuiz :one
-UPDATE quizzes
-SET
-    published_at = $1::timestamptz,
-    updated_at = now()
-WHERE id = $2::text
-RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
-`
-
-type PublishQuizParams struct {
-	Publishedat pgtype.Timestamptz `json:"publishedat"`
-	ID          string             `json:"id"`
-}
-
-type PublishQuizRow struct {
-	ID                   string             `json:"id"`
-	ProjectID            string             `json:"project_id"`
-	ChallengeID          string             `json:"challenge_id"`
-	Name                 string             `json:"name"`
-	Description          string             `json:"description"`
-	ImageUrl             *string            `json:"image_url"`
-	TimeoutSeconds       *int32             `json:"timeout_seconds"`
-	RandomizeQuestions   bool               `json:"randomize_questions"`
-	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
-	AllowRetakes         bool               `json:"allow_retakes"`
-	CompletionPoints     int32              `json:"completion_points"`
-	PublishedAt          pgtype.Timestamptz `json:"published_at"`
-	EndTime              pgtype.Timestamptz `json:"end_time"`
-	CreatedAt            pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
-}
-
-func (q *Queries) PublishQuiz(ctx context.Context, arg PublishQuizParams) (*PublishQuizRow, error) {
-	row := q.db.QueryRow(ctx, PublishQuiz, arg.Publishedat, arg.ID)
-	var i PublishQuizRow
-	err := row.Scan(
-		&i.ID,
-		&i.ProjectID,
-		&i.ChallengeID,
-		&i.Name,
-		&i.Description,
-		&i.ImageUrl,
-		&i.TimeoutSeconds,
-		&i.RandomizeQuestions,
-		&i.RevealCorrectAnswers,
-		&i.AllowRetakes,
-		&i.CompletionPoints,
-		&i.PublishedAt,
-		&i.EndTime,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return &i, err
 }
 
 const UpdateQuiz = `-- name: UpdateQuiz :one
@@ -562,7 +473,7 @@ SET
     end_time = COALESCE($9::timestamptz, end_time),
     updated_at = now()
 WHERE id = $10::text
-RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 `
 
 type UpdateQuizParams struct {
@@ -590,7 +501,6 @@ type UpdateQuizRow struct {
 	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
 	AllowRetakes         bool               `json:"allow_retakes"`
 	CompletionPoints     int32              `json:"completion_points"`
-	PublishedAt          pgtype.Timestamptz `json:"published_at"`
 	EndTime              pgtype.Timestamptz `json:"end_time"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
@@ -622,7 +532,6 @@ func (q *Queries) UpdateQuiz(ctx context.Context, arg UpdateQuizParams) (*Update
 		&i.RevealCorrectAnswers,
 		&i.AllowRetakes,
 		&i.CompletionPoints,
-		&i.PublishedAt,
 		&i.EndTime,
 		&i.CreatedAt,
 		&i.UpdatedAt,

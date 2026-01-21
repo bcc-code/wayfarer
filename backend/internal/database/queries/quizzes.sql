@@ -1,37 +1,33 @@
 -- name: GetQuizByID :one
-SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 FROM quizzes
 WHERE id = @id::text;
 
 -- name: GetQuizzesByIDs :many
-SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 FROM quizzes
 WHERE id = ANY(@ids::text[]);
 
 -- name: GetQuizzesByProjectIDs :many
-SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 FROM quizzes
 WHERE project_id = ANY(@project_ids::text[])
-    AND published_at IS NOT NULL
-    AND published_at <= NOW()
-ORDER BY project_id, published_at DESC;
+ORDER BY project_id, created_at DESC;
 
 -- name: GetQuizzesByChallengeIDs :many
 -- Batch version of GetQuizByChallengeID for dataloader
-SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 FROM quizzes
 WHERE challenge_id = ANY(@challenge_ids::text[])
 ORDER BY challenge_id;
 
 -- name: GetQuizzesFilteredCursor :many
-SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at
+SELECT id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at
 FROM quizzes
 WHERE
     (@ids::text[] IS NULL OR id = ANY(@ids::text[]))
     AND (@projectid::text = '' OR project_id = @projectid::text)
     AND (@challengeid::text = '' OR challenge_id = @challengeid::text)
-    AND (@publishedafter::timestamptz IS NULL OR published_at >= @publishedafter::timestamptz)
-    AND (@publishedbefore::timestamptz IS NULL OR published_at <= @publishedbefore::timestamptz)
     AND (@aftercursor::text = '' OR id > @aftercursor::text)
     AND (@beforecursor::text = '' OR id < @beforecursor::text)
 ORDER BY
@@ -45,9 +41,7 @@ FROM quizzes
 WHERE
     (@ids::text[] IS NULL OR id = ANY(@ids::text[]))
     AND (@projectid::text = '' OR project_id = @projectid::text)
-    AND (@challengeid::text = '' OR challenge_id = @challengeid::text)
-    AND (@publishedafter::timestamptz IS NULL OR published_at >= @publishedafter::timestamptz)
-    AND (@publishedbefore::timestamptz IS NULL OR published_at <= @publishedbefore::timestamptz);
+    AND (@challengeid::text = '' OR challenge_id = @challengeid::text);
 
 -- name: CreateQuiz :one
 INSERT INTO quizzes (
@@ -62,7 +56,6 @@ INSERT INTO quizzes (
     reveal_correct_answers,
     allow_retakes,
     completion_points,
-    published_at,
     end_time
 )
 VALUES (
@@ -77,10 +70,9 @@ VALUES (
     @revealcorrectanswers::bool,
     @allowretakes::bool,
     @completionpoints::int,
-    sqlc.narg('publishedat')::timestamptz,
     sqlc.narg('endtime')::timestamptz
 )
-RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at;
+RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at;
 
 -- name: UpdateQuiz :one
 UPDATE quizzes
@@ -96,19 +88,11 @@ SET
     end_time = COALESCE(sqlc.narg('endtime')::timestamptz, end_time),
     updated_at = now()
 WHERE id = @id::text
-RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at;
+RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, end_time, created_at, updated_at;
 
 -- name: DeleteQuiz :exec
 DELETE FROM quizzes
 WHERE id = @id::text;
-
--- name: PublishQuiz :one
-UPDATE quizzes
-SET
-    published_at = @publishedat::timestamptz,
-    updated_at = now()
-WHERE id = @id::text
-RETURNING id, project_id, challenge_id, name, description, image_url, timeout_seconds, randomize_questions, reveal_correct_answers, allow_retakes, completion_points, published_at, end_time, created_at, updated_at;
 
 -- name: DeleteQuizTranslations :exec
 DELETE FROM quiz_translations

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
@@ -10,6 +11,14 @@ import (
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
 )
+
+// timeToDateTime converts a *time.Time to *scalars.DateTime
+func timeToDateTime(t *time.Time) *scalars.DateTime {
+	if t == nil {
+		return nil
+	}
+	return &scalars.DateTime{Time: *t}
+}
 
 // resolveProjectByID is a helper function to load a project by ID using the dataloader
 // and applies translations for the requested language
@@ -205,6 +214,7 @@ func buildLeaderboardConnection(
 				Rank:        &rank,
 				Tags:        tags,
 				Image:       entry.Image,
+				LastScoreAt: timeToDateTime(entry.LastScoreAt),
 			},
 		}
 	}
@@ -239,6 +249,7 @@ func buildLeaderboardConnection(
 			Rank:        &meRank,
 			Tags:        meTags,
 			Image:       meEntry.Image,
+			LastScoreAt: timeToDateTime(meEntry.LastScoreAt),
 		}
 	}
 
@@ -329,3 +340,39 @@ func parseRankCursor(cursor string) (int64, error) {
 	_, err := fmt.Sscanf(cursor, "%d", &rank)
 	return rank, err
 }
+
+// resolveImageByURL loads image metadata by URL using the dataloader.
+// If the URL is empty or nil, returns nil. If no metadata is found in file_uploads,
+// returns an Image object with just the URL.
+func resolveImageByURL(ctx context.Context, ldrs *loaders.Loaders, url *string) (*model.Image, error) {
+	if url == nil || *url == "" {
+		return nil, nil
+	}
+
+	thunk := ldrs.ImageMetadataByURLLoader.Load(ctx, *url)
+	image, err := thunk()
+	if err != nil {
+		// On error, return image with just the URL
+		return &model.Image{URL: *url}, nil
+	}
+
+	return image, nil
+}
+
+// resolveImageByURLNonNullable is like resolveImageByURL but for non-nullable fields.
+// It returns an Image with just the URL even if the URL is empty.
+func resolveImageByURLNonNullable(ctx context.Context, ldrs *loaders.Loaders, url string) (*model.Image, error) {
+	if url == "" {
+		return &model.Image{URL: ""}, nil
+	}
+
+	thunk := ldrs.ImageMetadataByURLLoader.Load(ctx, url)
+	image, err := thunk()
+	if err != nil {
+		// On error, return image with just the URL
+		return &model.Image{URL: url}, nil
+	}
+
+	return image, nil
+}
+

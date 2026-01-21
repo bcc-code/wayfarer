@@ -1,0 +1,33 @@
+type: http_request
+model: http_request
+id: rq_GrantQuizSessionAccess
+createdAt: 2026-01-15T12:00:00
+updatedAt: 2026-01-15T09:52:43.712256
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation GrantQuizSessionAccess($input: GrantQuizSessionAccessInput!) {
+      grantQuizSessionAccess(input: $input)
+    }
+  variables: |
+    {
+      "input": {
+        "sessionId": "QN01KF0H3CDXXWSWFZ7GJMSQQCNK",
+        "allProjectUsers": true
+      }
+    }
+bodyType: graphql
+description: Grant access to a quiz session (returns count of users granted access)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_GrantQuizSessionAccess
+method: POST
+name: Grant Quiz Session Access
+sortPriority: 4200.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

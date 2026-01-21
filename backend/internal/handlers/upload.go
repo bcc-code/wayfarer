@@ -39,14 +39,17 @@ type UploadHandler struct {
 }
 
 type uploadResponse struct {
-	ID             string `json:"id"`
-	Filename       string `json:"filename"`
-	StoredFilename string `json:"storedFilename"`
-	FileSize       int    `json:"fileSize"`
-	MimeType       string `json:"mimeType"`
-	PublicURL      string `json:"publicUrl"`
-	UploadedBy     string `json:"uploadedBy"`
-	CreatedAt      string `json:"createdAt"`
+	ID             string  `json:"id"`
+	Filename       string  `json:"filename"`
+	StoredFilename string  `json:"storedFilename"`
+	FileSize       int     `json:"fileSize"`
+	MimeType       string  `json:"mimeType"`
+	PublicURL      string  `json:"publicUrl"`
+	UploadedBy     string  `json:"uploadedBy"`
+	CreatedAt      string  `json:"createdAt"`
+	Width          *int32  `json:"width,omitempty"`
+	Height         *int32  `json:"height,omitempty"`
+	Blurhash       *string `json:"blurhash,omitempty"`
 }
 
 // HandleFileUpload handles the file upload endpoint
@@ -153,6 +156,23 @@ func (h *UploadHandler) HandleFileUpload(c *gin.Context) {
 		return
 	}
 
+	// Process image metadata if this is an image
+	var width, height *int32
+	var blurhash *string
+	if services.IsImageMimeType(mimeType) {
+		imgMeta, err := services.ProcessImage(buffer.Bytes(), mimeType)
+		if err != nil {
+			slog.Warn("Failed to process image metadata", "error", err, "filename", storedFilename)
+			// Continue without image metadata - not a fatal error
+		} else {
+			w := int32(imgMeta.Width)
+			h := int32(imgMeta.Height)
+			width = &w
+			height = &h
+			blurhash = &imgMeta.Blurhash
+		}
+	}
+
 	// Insert record to database
 	uploadRecord, err := h.DB.Queries.CreateFileUpload(ctx, sqlc.CreateFileUploadParams{
 		ID:             fileID,
@@ -162,6 +182,9 @@ func (h *UploadHandler) HandleFileUpload(c *gin.Context) {
 		MimeType:       mimeType,
 		PublicUrl:      publicURL,
 		UploadedBy:     userID,
+		Width:          width,
+		Height:         height,
+		Blurhash:       blurhash,
 	})
 	if err != nil {
 		slog.Error("Failed to save file record to database", "error", err, "fileID", fileID)
@@ -179,5 +202,8 @@ func (h *UploadHandler) HandleFileUpload(c *gin.Context) {
 		PublicURL:      uploadRecord.PublicUrl,
 		UploadedBy:     uploadRecord.UploadedBy,
 		CreatedAt:      uploadRecord.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
+		Width:          uploadRecord.Width,
+		Height:         uploadRecord.Height,
+		Blurhash:       uploadRecord.Blurhash,
 	})
 }

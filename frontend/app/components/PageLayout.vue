@@ -27,7 +27,7 @@ withDefaults(
         </template>
       </TitleBar>
     </div>
-    <div :class="['flex grow flex-col', { 'pb-28': bottomPadding }]">
+    <div :class="['flex relative grow flex-col', { 'pb-28': bottomPadding }]">
       <slot />
     </div>
   </div>

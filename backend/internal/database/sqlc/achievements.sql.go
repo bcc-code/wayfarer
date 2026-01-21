@@ -172,7 +172,8 @@ INSERT INTO achievements (
     image_pending,
     image_completed,
     points,
-    hidden
+    hidden,
+    awardable_from
 ) VALUES (
     $1::text,
     $2::text,
@@ -186,24 +187,26 @@ INSERT INTO achievements (
     $10::text,
     $11::text,
     $12::int,
-    $13::bool
-) RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed, notification_text, sort_order
+    $13::bool,
+    $14::timestamptz
+) RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed, notification_text, sort_order, awardable_from
 `
 
 type CreateAchievementParams struct {
-	ID                   string `json:"id"`
-	AchievementType      string `json:"achievement_type"`
-	ProjectID            string `json:"project_id"`
-	EventID              string `json:"event_id"`
-	ChallengeID          string `json:"challenge_id"`
-	Name                 string `json:"name"`
-	DescriptionPending   string `json:"description_pending"`
-	DescriptionCompleted string `json:"description_completed"`
-	NotificationText     string `json:"notification_text"`
-	ImagePending         string `json:"image_pending"`
-	ImageCompleted       string `json:"image_completed"`
-	Points               int32  `json:"points"`
-	Hidden               bool   `json:"hidden"`
+	ID                   string             `json:"id"`
+	AchievementType      string             `json:"achievement_type"`
+	ProjectID            string             `json:"project_id"`
+	EventID              string             `json:"event_id"`
+	ChallengeID          string             `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	DescriptionPending   string             `json:"description_pending"`
+	DescriptionCompleted string             `json:"description_completed"`
+	NotificationText     string             `json:"notification_text"`
+	ImagePending         string             `json:"image_pending"`
+	ImageCompleted       string             `json:"image_completed"`
+	Points               int32              `json:"points"`
+	Hidden               bool               `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
 }
 
 // ==================== Create Operations ====================
@@ -222,6 +225,7 @@ func (q *Queries) CreateAchievement(ctx context.Context, arg CreateAchievementPa
 		arg.ImageCompleted,
 		arg.Points,
 		arg.Hidden,
+		arg.AwardableFrom,
 	)
 	var i Achievement
 	err := row.Scan(
@@ -241,6 +245,7 @@ func (q *Queries) CreateAchievement(ctx context.Context, arg CreateAchievementPa
 		&i.ImageCompleted,
 		&i.NotificationText,
 		&i.SortOrder,
+		&i.AwardableFrom,
 	)
 	return &i, err
 }
@@ -353,6 +358,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.sort_order,
     a.created_at,
     a.updated_at
@@ -374,6 +380,7 @@ type GetAchievementByIDRow struct {
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
 	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
 	SortOrder            int32              `json:"sort_order"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
@@ -397,6 +404,7 @@ func (q *Queries) GetAchievementByID(ctx context.Context, id string) (*GetAchiev
 		&i.ImageCompleted,
 		&i.Points,
 		&i.Hidden,
+		&i.AwardableFrom,
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -419,6 +427,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.created_at,
     a.updated_at,
     -- Content achievement data
@@ -458,6 +467,7 @@ type GetAchievementsByIDsRow struct {
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
 	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	ContentAchievementID *string            `json:"content_achievement_id"`
@@ -489,6 +499,7 @@ func (q *Queries) GetAchievementsByIDs(ctx context.Context, ids []string) ([]*Ge
 			&i.ImageCompleted,
 			&i.Points,
 			&i.Hidden,
+			&i.AwardableFrom,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ContentAchievementID,
@@ -521,6 +532,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.created_at,
     a.updated_at,
     -- Type-specific fields needed for model construction
@@ -549,6 +561,7 @@ type GetAchievementsByProjectIDsRow struct {
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
 	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	ContentAchievementID *string            `json:"content_achievement_id"`
@@ -579,6 +592,7 @@ func (q *Queries) GetAchievementsByProjectIDs(ctx context.Context, projectIds []
 			&i.ImageCompleted,
 			&i.Points,
 			&i.Hidden,
+			&i.AwardableFrom,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ContentAchievementID,
@@ -610,6 +624,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.sort_order,
     a.created_at,
     a.updated_at,
@@ -671,6 +686,7 @@ type GetAchievementsFilteredCursorRow struct {
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
 	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
 	SortOrder            int32              `json:"sort_order"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
@@ -711,6 +727,7 @@ func (q *Queries) GetAchievementsFilteredCursor(ctx context.Context, arg GetAchi
 			&i.ImageCompleted,
 			&i.Points,
 			&i.Hidden,
+			&i.AwardableFrom,
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -744,6 +761,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.sort_order,
     a.created_at,
     a.updated_at,
@@ -771,6 +789,7 @@ type GetAllAchievementsByProjectIDRow struct {
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
 	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
 	SortOrder            int32              `json:"sort_order"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
@@ -803,6 +822,7 @@ func (q *Queries) GetAllAchievementsByProjectID(ctx context.Context, projectID s
 			&i.ImageCompleted,
 			&i.Points,
 			&i.Hidden,
+			&i.AwardableFrom,
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -963,6 +983,7 @@ SELECT DISTINCT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.created_at,
     a.updated_at,
     COALESCE(
@@ -997,6 +1018,7 @@ type GetPublishedContentAchievementsByExternalContentRow struct {
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
 	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	ContentItems         interface{}        `json:"content_items"`
@@ -1026,6 +1048,7 @@ func (q *Queries) GetPublishedContentAchievementsByExternalContent(ctx context.C
 			&i.ImageCompleted,
 			&i.Points,
 			&i.Hidden,
+			&i.AwardableFrom,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ContentItems,
@@ -1305,23 +1328,25 @@ SET
     challenge_id = CASE WHEN $8::text IS NOT NULL THEN $8::text ELSE challenge_id END,
     points = CASE WHEN $9::int IS NOT NULL THEN $9::int ELSE points END,
     hidden = CASE WHEN $10::bool IS NOT NULL THEN $10::bool ELSE hidden END,
+    awardable_from = CASE WHEN $11::timestamptz IS NOT NULL THEN $11::timestamptz ELSE awardable_from END,
     updated_at = now()
-WHERE id = $11::text
-RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed, notification_text, sort_order
+WHERE id = $12::text
+RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed, notification_text, sort_order, awardable_from
 `
 
 type UpdateAchievementParams struct {
-	Name                 *string `json:"name"`
-	DescriptionPending   *string `json:"description_pending"`
-	DescriptionCompleted *string `json:"description_completed"`
-	NotificationText     *string `json:"notification_text"`
-	ImagePending         *string `json:"image_pending"`
-	ImageCompleted       *string `json:"image_completed"`
-	EventID              *string `json:"event_id"`
-	ChallengeID          *string `json:"challenge_id"`
-	Points               *int32  `json:"points"`
-	Hidden               *bool   `json:"hidden"`
-	ID                   string  `json:"id"`
+	Name                 *string            `json:"name"`
+	DescriptionPending   *string            `json:"description_pending"`
+	DescriptionCompleted *string            `json:"description_completed"`
+	NotificationText     *string            `json:"notification_text"`
+	ImagePending         *string            `json:"image_pending"`
+	ImageCompleted       *string            `json:"image_completed"`
+	EventID              *string            `json:"event_id"`
+	ChallengeID          *string            `json:"challenge_id"`
+	Points               *int32             `json:"points"`
+	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
+	ID                   string             `json:"id"`
 }
 
 // ==================== Update Operations ====================
@@ -1337,6 +1362,7 @@ func (q *Queries) UpdateAchievement(ctx context.Context, arg UpdateAchievementPa
 		arg.ChallengeID,
 		arg.Points,
 		arg.Hidden,
+		arg.AwardableFrom,
 		arg.ID,
 	)
 	var i Achievement
@@ -1357,6 +1383,7 @@ func (q *Queries) UpdateAchievement(ctx context.Context, arg UpdateAchievementPa
 		&i.ImageCompleted,
 		&i.NotificationText,
 		&i.SortOrder,
+		&i.AwardableFrom,
 	)
 	return &i, err
 }
