@@ -6,6 +6,18 @@ definePageMeta({
   middleware: 'admin',
 })
 
+// Subscribe to admin feedback notifications
+const { subscribeAdmin, isAuthenticated } = useFirestoreSync()
+watch(
+  isAuthenticated,
+  (authenticated) => {
+    if (authenticated) {
+      subscribeAdmin('feedback')
+    }
+  },
+  { immediate: true },
+)
+
 gql(`
   query AdminFeedbackPage($filter: FeedbackFilter, $first: Int, $after: String, $last: Int, $before: String) {
     feedback(filter: $filter, first: $first, after: $after, last: $last, before: $before) {
@@ -74,6 +86,11 @@ const { isAuthReady } = useAuthReady()
 const { data, fetching, error, executeQuery } = useAdminFeedbackPageQuery({
   variables: queryVariables,
   pause: computed(() => !isAuthReady.value),
+})
+
+// Refresh when Firestore notifies of updates
+useFirestoreRefresh(['AdminFeedbackPageDocument'], () => {
+  executeQuery({ requestPolicy: 'network-only' })
 })
 
 // Reset pagination when filter changes

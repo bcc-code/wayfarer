@@ -16,7 +16,12 @@ const NOTIFICATION_QUERY_MAP = {
   projects: ['ProfilePageDocument', 'CurrentProjectDocument'],
 } as const
 
+const ADMIN_NOTIFICATION_QUERY_MAP = {
+  feedback: ['AdminFeedbackPageDocument'],
+} as const
+
 type NotificationCategory = keyof typeof NOTIFICATION_QUERY_MAP
+type AdminNotificationCategory = keyof typeof ADMIN_NOTIFICATION_QUERY_MAP
 
 // Shared state - singleton pattern for app-wide listeners
 const isInitialized = ref(false)
@@ -123,6 +128,63 @@ export function useFirestoreSync() {
     )
   }
 
+  function subscribeToAdminCategory(
+    category: AdminNotificationCategory,
+  ): Unsubscribe {
+    const firestore = $firestore as Firestore | null
+    if (!firestore) return () => {}
+    const path = `admin/${category}`
+    const docRef = doc(firestore, path)
+    let isInitialSnapshot = true
+
+    return onSnapshot(
+      docRef,
+      (snapshot: DocumentSnapshot) => {
+        if (isInitialSnapshot) {
+          isInitialSnapshot = false
+          return
+        }
+
+        if (!snapshot.exists()) return
+
+        const queries = ADMIN_NOTIFICATION_QUERY_MAP[category]
+        for (const queryName of queries) {
+          window.dispatchEvent(
+            new CustomEvent('firestore-update', {
+              detail: { query: queryName },
+            }),
+          )
+        }
+      },
+      (err: Error) => {
+        console.error(`Firestore admin listener error for ${category}:`, err)
+      },
+    )
+  }
+
+  function subscribeAdmin(category: AdminNotificationCategory): () => void {
+    if (!isAuthenticated.value) {
+      console.warn('Cannot subscribe to admin notifications: not authenticated')
+      return () => {}
+    }
+
+    const key = `admin/${category}`
+    if (listeners.has(key)) {
+      return () => {}
+    }
+
+    const unsubscribe = subscribeToAdminCategory(category)
+    listeners.set(key, unsubscribe)
+
+    return () => {
+      const unsub = listeners.get(key)
+      if (unsub) {
+        unsub()
+        listeners.delete(key)
+      }
+    }
+  }
+
   async function initialize() {
     if (isInitialized.value) return
     if (!$firestore || !$firebaseAuth) return
@@ -196,5 +258,6 @@ export function useFirestoreSync() {
     error: readonly(error),
     initialize,
     cleanup,
+    subscribeAdmin,
   }
 }
