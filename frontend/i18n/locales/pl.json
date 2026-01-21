@@ -129,6 +129,12 @@
     "updateAvailableTitle": "Dostępna jest aktualizacja",
     "updateAvailableButton": "Zaktualizuj teraz"
   },
+  "notifications": {
+    "promptTitle": "Nie przegap swoich osiągnięć - włącz powiadomienia",
+    "promptDescription": "Przyjdzie do ciebie powiadomienie za każdym razem, kiedy dostaniesz nowe osiągnięcie lub wyzwanie.",
+    "turnOn": "Włącz powiadomienia",
+    "notNow": "Nie teraz"
+  },
   "goToHiddenTreasures": "Przejdź do projektu biblijnego",
   "admin": {
     "common": {

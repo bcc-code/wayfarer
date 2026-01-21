@@ -1,6 +1,11 @@
 {
   "error": {
-    "title": "Ups! Etwas ist schiefgelaufen"
+    "title": "Ups! Etwas ist schiefgelaufen",
+    "hint": "Bitte versuch es noch einmal. Wenn das Problem weiterhin besteht, versuche, die Seite zu aktualisieren.",
+    "networkHint": "Es sieht so aus, als hättest du Verbindungsprobleme. Überprüfe deine Internetverbindung und versuch es noch einmal.",
+    "retry": "Versuch es nochmal",
+    "showDetails": "Technische Details anzeigen",
+    "hideDetails": "Technische Details ausblenden"
   },
   "emptyStates": {
     "standings": "Noch keine Bestenliste",
@@ -124,6 +129,12 @@
     "updateAvailableTitle": "Ein Update ist verfügbar",
     "updateAvailableButton": "Jetzt aktualisieren"
   },
+  "notifications": {
+    "promptTitle": "Verpasse keines deiner Abzeichen – aktiviere Benachrichtigungen",
+    "promptDescription": "Dann bekommst du jedes Mal eine Benachrichtigung, wenn du ein neues Abzeichen oder eine neue Herausforderung erhältst",
+    "turnOn": "Benachrichtigungen aktivieren",
+    "notNow": "Nicht jetzt"
+  },
   "goToHiddenTreasures": "Zum Bibelstudium",
   "admin": {
     "common": {
@@ -162,7 +173,8 @@
       "errors": {
         "addFailed": "Konnte den Admin nicht hinzufügen",
         "removeFailed": "Konnte den Administrator nicht entfernen"
-      }
+      },
+      "copyLinkDescription": "Teile den Link mit anderen Administratoren"
     },
     "units": {
       "title": "Units",

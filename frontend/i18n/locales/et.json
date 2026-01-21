@@ -129,6 +129,12 @@
     "updateAvailableTitle": "Uuendus on saadaval",
     "updateAvailableButton": "Uuenda kohe"
   },
+  "notifications": {
+    "promptTitle": "Hoia end oma autasudega kursis, lülita teated sisse",
+    "promptDescription": "Siis sulle tuleb teade iga kord, kui saad uue autasu või väljakutse.",
+    "turnOn": "Lülita teated sisse",
+    "notNow": "Mitte praegu"
+  },
   "goToHiddenTreasures": "Mine piibliõppe juurde",
   "admin": {
     "common": {
