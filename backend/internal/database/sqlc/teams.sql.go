@@ -217,6 +217,47 @@ func (q *Queries) GetTeamByJoinCode(ctx context.Context, joincode string) (*GetT
 	return &i, err
 }
 
+const GetTeamByJoinCodeAndProject = `-- name: GetTeamByJoinCodeAndProject :one
+SELECT id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at
+FROM teams
+WHERE join_code = $1::text
+  AND project_id = $2::text
+`
+
+type GetTeamByJoinCodeAndProjectParams struct {
+	Joincode  string `json:"joincode"`
+	Projectid string `json:"projectid"`
+}
+
+type GetTeamByJoinCodeAndProjectRow struct {
+	ID                  string             `json:"id"`
+	ProjectID           string             `json:"project_id"`
+	Name                string             `json:"name"`
+	Description         *string            `json:"description"`
+	JoinCode            string             `json:"join_code"`
+	SuperTeamID         *string            `json:"super_team_id"`
+	LeaderboardExcluded bool               `json:"leaderboard_excluded"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetTeamByJoinCodeAndProject(ctx context.Context, arg GetTeamByJoinCodeAndProjectParams) (*GetTeamByJoinCodeAndProjectRow, error) {
+	row := q.db.QueryRow(ctx, GetTeamByJoinCodeAndProject, arg.Joincode, arg.Projectid)
+	var i GetTeamByJoinCodeAndProjectRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.JoinCode,
+		&i.SuperTeamID,
+		&i.LeaderboardExcluded,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
 const GetTeamCreatorChurchID = `-- name: GetTeamCreatorChurchID :one
 SELECT u.church_id
 FROM teams t

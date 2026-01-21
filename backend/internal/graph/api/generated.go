@@ -661,6 +661,7 @@ type ComplexityRoot struct {
 		Superteam                     func(childComplexity int, id string) int
 		Superteams                    func(childComplexity int, filter *model.SuperTeamFilter, first *int, after *string, last *int, before *string) int
 		Team                          func(childComplexity int, id string) int
+		TeamByJoinCode                func(childComplexity int, code string, projectID string) int
 		Teams                         func(childComplexity int, filter *model.TeamFilter, first *int, after *string, last *int, before *string) int
 		User                          func(childComplexity int, id string) int
 		UserRoles                     func(childComplexity int, userID string) int
@@ -1315,6 +1316,7 @@ type QueryResolver interface {
 	MyCurrentEvent(ctx context.Context) (*model.Event, error)
 	CurrentEvent(ctx context.Context) (*model.Event, error)
 	Team(ctx context.Context, id string) (*model.Team, error)
+	TeamByJoinCode(ctx context.Context, code string, projectID string) (*model.Team, error)
 	Teams(ctx context.Context, filter *model.TeamFilter, first *int, after *string, last *int, before *string) (*model.TeamConnection, error)
 	Superteam(ctx context.Context, id string) (*model.SuperTeam, error)
 	Superteams(ctx context.Context, filter *model.SuperTeamFilter, first *int, after *string, last *int, before *string) (*model.SuperTeamConnection, error)
@@ -4861,6 +4863,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Team(childComplexity, args["id"].(string)), true
+	case "Query.teamByJoinCode":
+		if e.complexity.Query.TeamByJoinCode == nil {
+			break
+		}
+
+		args, err := ec.field_Query_teamByJoinCode_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.TeamByJoinCode(childComplexity, args["code"].(string), args["projectId"].(string)), true
 	case "Query.teams":
 		if e.complexity.Query.Teams == nil {
 			break
@@ -8363,6 +8376,7 @@ extend type Mutation {
 
 extend type Query {
     team(id: ID!): Team!
+    teamByJoinCode(code: String!, projectId: ID!): Team
     teams(filter: TeamFilter, first: Int, after: String, last: Int, before: String): TeamConnection!
 
     superteam(id: ID!): SuperTeam!
@@ -11531,6 +11545,22 @@ func (ec *executionContext) field_Query_superteams_args(ctx context.Context, raw
 		return nil, err
 	}
 	args["before"] = arg4
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_teamByJoinCode_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "code", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["code"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "projectId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["projectId"] = arg1
 	return args, nil
 }
 
@@ -29627,6 +29657,69 @@ func (ec *executionContext) fieldContext_Query_team(ctx context.Context, field g
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_team_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_teamByJoinCode(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_teamByJoinCode,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().TeamByJoinCode(ctx, fc.Args["code"].(string), fc.Args["projectId"].(string))
+		},
+		nil,
+		ec.marshalOTeam2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeam,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_teamByJoinCode(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Team_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Team_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Team_description(ctx, field)
+			case "joinCode":
+				return ec.fieldContext_Team_joinCode(ctx, field)
+			case "leaderboardExcluded":
+				return ec.fieldContext_Team_leaderboardExcluded(ctx, field)
+			case "averageAge":
+				return ec.fieldContext_Team_averageAge(ctx, field)
+			case "members":
+				return ec.fieldContext_Team_members(ctx, field)
+			case "memberLeaderboard":
+				return ec.fieldContext_Team_memberLeaderboard(ctx, field)
+			case "parentProject":
+				return ec.fieldContext_Team_parentProject(ctx, field)
+			case "superTeam":
+				return ec.fieldContext_Team_superTeam(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Team", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_teamByJoinCode_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -53917,6 +54010,25 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "teamByJoinCode":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_teamByJoinCode(ctx, field)
 				return res
 			}
 

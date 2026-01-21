@@ -317,3 +317,197 @@ func TestTeams(t *testing.T) {
 		assert.True(t, found, "user should be in team members")
 	})
 }
+
+func TestTeamByJoinCode(t *testing.T) {
+	ctx := context.Background()
+	dbMgr, _ := GetTestEnv()
+
+	// Clean and seed with deterministic data
+	require.NoError(t, dbMgr.Clean(ctx))
+	data, err := dbMgr.Seed(ctx, 42, testutil.DefaultSeedConfig())
+	require.NoError(t, err)
+
+	// Setup user IDs
+	userID := data.UserIDs[0]
+	adminUserID := data.UserIDs[1]
+
+	// Assign database roles
+	require.NoError(t, dbMgr.AssignRole(ctx, adminUserID, testutil.RoleAdmin))
+
+	// Setup test server
+	router, cleanup, err := testutil.SetupTestServer(ctx, dbMgr)
+	require.NoError(t, err)
+	defer cleanup()
+
+	client := testutil.NewGraphQLClient(router)
+	defer client.Close()
+
+	userToken, err := testutil.GenerateUserToken(userID)
+	require.NoError(t, err)
+
+	adminToken, err := testutil.GenerateAdminToken(adminUserID)
+	require.NoError(t, err)
+
+	m2mToken, err := testutil.GenerateM2MToken()
+	require.NoError(t, err)
+
+	// Get first project's team
+	projectID := data.ProjectIDs[0]
+	teamIDs := data.TeamIDs[projectID]
+	require.NotEmpty(t, teamIDs, "should have seeded teams")
+	teamID := teamIDs[0]
+
+	// Get the team's join code by querying the team first
+	teamResp := client.WithAuth(adminToken).MustExecute(t, `
+		query GetTeam($id: ID!) {
+			team(id: $id) {
+				id
+				name
+				joinCode
+			}
+		}
+	`, map[string]any{"id": teamID})
+	require.False(t, teamResp.HasErrors(), "unexpected error: %s", teamResp.ErrorMessage())
+
+	var teamResult struct {
+		Team struct {
+			ID       string `json:"id"`
+			Name     string `json:"name"`
+			JoinCode string `json:"joinCode"`
+		} `json:"team"`
+	}
+	require.NoError(t, teamResp.UnmarshalData(&teamResult))
+	joinCode := teamResult.Team.JoinCode
+	require.NotEmpty(t, joinCode, "team should have a join code")
+
+	t.Run("user cannot access teamByJoinCode", func(t *testing.T) {
+		resp := client.WithAuth(userToken).MustExecute(t, `
+			query TeamByJoinCode($code: String!, $projectId: ID!) {
+				teamByJoinCode(code: $code, projectId: $projectId) {
+					id
+					name
+				}
+			}
+		`, map[string]any{
+			"code":      joinCode,
+			"projectId": projectID,
+		})
+
+		require.True(t, resp.HasErrors())
+		assert.Contains(t, resp.ErrorMessage(), "unauthorized")
+	})
+
+	t.Run("admin can query teamByJoinCode", func(t *testing.T) {
+		resp := client.WithAuth(adminToken).MustExecute(t, `
+			query TeamByJoinCode($code: String!, $projectId: ID!) {
+				teamByJoinCode(code: $code, projectId: $projectId) {
+					id
+					name
+					joinCode
+				}
+			}
+		`, map[string]any{
+			"code":      joinCode,
+			"projectId": projectID,
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result struct {
+			TeamByJoinCode struct {
+				ID       string `json:"id"`
+				Name     string `json:"name"`
+				JoinCode string `json:"joinCode"`
+			} `json:"teamByJoinCode"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		assert.Equal(t, teamID, result.TeamByJoinCode.ID)
+		assert.Equal(t, joinCode, result.TeamByJoinCode.JoinCode)
+	})
+
+	t.Run("m2m can query teamByJoinCode", func(t *testing.T) {
+		resp := client.WithAuth(m2mToken).MustExecute(t, `
+			query TeamByJoinCode($code: String!, $projectId: ID!) {
+				teamByJoinCode(code: $code, projectId: $projectId) {
+					id
+					name
+					joinCode
+				}
+			}
+		`, map[string]any{
+			"code":      joinCode,
+			"projectId": projectID,
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result struct {
+			TeamByJoinCode struct {
+				ID       string `json:"id"`
+				Name     string `json:"name"`
+				JoinCode string `json:"joinCode"`
+			} `json:"teamByJoinCode"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		assert.Equal(t, teamID, result.TeamByJoinCode.ID)
+		assert.Equal(t, joinCode, result.TeamByJoinCode.JoinCode)
+	})
+
+	t.Run("returns nil for non-existent code", func(t *testing.T) {
+		resp := client.WithAuth(adminToken).MustExecute(t, `
+			query TeamByJoinCode($code: String!, $projectId: ID!) {
+				teamByJoinCode(code: $code, projectId: $projectId) {
+					id
+					name
+				}
+			}
+		`, map[string]any{
+			"code":      "NONEXISTENT",
+			"projectId": projectID,
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result struct {
+			TeamByJoinCode *struct {
+				ID   string `json:"id"`
+				Name string `json:"name"`
+			} `json:"teamByJoinCode"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		assert.Nil(t, result.TeamByJoinCode, "should return nil for non-existent code")
+	})
+
+	t.Run("returns nil when code exists but wrong project", func(t *testing.T) {
+		// Get a different project ID
+		require.Greater(t, len(data.ProjectIDs), 1, "need at least 2 projects for this test")
+		otherProjectID := data.ProjectIDs[1]
+
+		resp := client.WithAuth(adminToken).MustExecute(t, `
+			query TeamByJoinCode($code: String!, $projectId: ID!) {
+				teamByJoinCode(code: $code, projectId: $projectId) {
+					id
+					name
+				}
+			}
+		`, map[string]any{
+			"code":      joinCode,
+			"projectId": otherProjectID,
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result struct {
+			TeamByJoinCode *struct {
+				ID   string `json:"id"`
+				Name string `json:"name"`
+			} `json:"teamByJoinCode"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		assert.Nil(t, result.TeamByJoinCode, "should return nil when code exists but wrong project")
+	})
+}

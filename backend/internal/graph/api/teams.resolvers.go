@@ -894,6 +894,45 @@ func (r *queryResolver) Team(ctx context.Context, id string) (*model.Team, error
 	return r.Loaders.TeamByIDLoader.Load(ctx, id)()
 }
 
+// TeamByJoinCode is the resolver for the teamByJoinCode field.
+func (r *queryResolver) TeamByJoinCode(ctx context.Context, code string, projectID string) (*model.Team, error) {
+	// Check authorization - only m2m, admin, superadmin allowed
+	userRoles := middleware.GetUserRoles(ctx)
+	allowed := false
+	for _, role := range userRoles {
+		if role == "m2m" || role == "admin" || role == "superadmin" {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		return nil, fmt.Errorf("unauthorized: requires m2m, admin, or superadmin role")
+	}
+
+	team, err := r.DB.Queries.GetTeamByJoinCodeAndProject(ctx, sqlc.GetTeamByJoinCodeAndProjectParams{
+		Joincode:  code,
+		Projectid: projectID,
+	})
+	if err != nil {
+		return nil, nil // Not found returns nil, not error
+	}
+
+	description := ""
+	if team.Description != nil {
+		description = *team.Description
+	}
+
+	return &model.Team{
+		ID:                  team.ID,
+		ProjectID:           team.ProjectID,
+		Name:                team.Name,
+		Description:         description,
+		JoinCode:            team.JoinCode,
+		SuperTeamID:         team.SuperTeamID,
+		LeaderboardExcluded: team.LeaderboardExcluded,
+	}, nil
+}
+
 // Teams is the resolver for the teams field.
 func (r *queryResolver) Teams(ctx context.Context, filter *model.TeamFilter, first *int, after *string, last *int, before *string) (*model.TeamConnection, error) {
 	// Build cache key from filter and pagination parameters

@@ -107,6 +107,12 @@ SELECT id, project_id, name, description, join_code, super_team_id, leaderboard_
 FROM teams
 WHERE join_code = @joincode::text;
 
+-- name: GetTeamByJoinCodeAndProject :one
+SELECT id, project_id, name, description, join_code, super_team_id, leaderboard_excluded, created_at, updated_at
+FROM teams
+WHERE join_code = @joincode::text
+  AND project_id = @projectid::text;
+
 -- name: RegenerateJoinCode :one
 UPDATE teams
 SET join_code = @joincode::text, updated_at = now()
