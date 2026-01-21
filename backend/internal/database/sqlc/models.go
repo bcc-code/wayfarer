@@ -215,6 +215,8 @@ type LeaderboardEventChurch struct {
 	Score       int64              `json:"score"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+	TotalPoints int64              `json:"total_points"`
+	MemberCount int32              `json:"member_count"`
 }
 
 type LeaderboardEventPerson struct {
@@ -231,6 +233,8 @@ type LeaderboardEventSuperteam struct {
 	Score       int64              `json:"score"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+	TotalPoints int64              `json:"total_points"`
+	MemberCount int32              `json:"member_count"`
 }
 
 type LeaderboardEventTeam struct {
@@ -239,6 +243,8 @@ type LeaderboardEventTeam struct {
 	Score       int64              `json:"score"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+	TotalPoints int64              `json:"total_points"`
+	MemberCount int32              `json:"member_count"`
 }
 
 type LeaderboardProjectChurch struct {
@@ -247,6 +253,8 @@ type LeaderboardProjectChurch struct {
 	Score       int64              `json:"score"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+	TotalPoints int64              `json:"total_points"`
+	MemberCount int32              `json:"member_count"`
 }
 
 type LeaderboardProjectPerson struct {
@@ -263,6 +271,8 @@ type LeaderboardProjectSuperteam struct {
 	Score       int64              `json:"score"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+	TotalPoints int64              `json:"total_points"`
+	MemberCount int32              `json:"member_count"`
 }
 
 type LeaderboardProjectTeam struct {
@@ -271,6 +281,8 @@ type LeaderboardProjectTeam struct {
 	Score       int64              `json:"score"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+	TotalPoints int64              `json:"total_points"`
+	MemberCount int32              `json:"member_count"`
 }
 
 // Stores consent events for users not yet registered in Wayfarer
