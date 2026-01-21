@@ -64,6 +64,11 @@ func GenerateProjectAdminToken(userID string) (string, error) {
 	return GenerateToken(userID, []string{toLowerRole(services.RoleProjectAdmin)})
 }
 
+// GenerateChurchAdminToken creates a token with church_admin role
+func GenerateChurchAdminToken(userID string) (string, error) {
+	return GenerateToken(userID, []string{toLowerRole(services.RoleChurchAdmin)})
+}
+
 // GenerateM2MToken creates a token for machine-to-machine access
 func GenerateM2MToken() (string, error) {
 	return GenerateToken("M2M_SERVICE", []string{toLowerRole(services.RoleM2M)})

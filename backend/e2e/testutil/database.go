@@ -598,3 +598,185 @@ func (m *TestDBManager) GetLatestUserConsentAction(ctx context.Context, userID, 
 	}
 	return action, source, nil
 }
+
+// RemoveUserFromTeam removes a user from a team
+func (m *TestDBManager) RemoveUserFromTeam(ctx context.Context, userID, teamID string) error {
+	query := `DELETE FROM team_members WHERE user_id = $1 AND team_id = $2`
+	_, err := m.DB.Pool.Exec(ctx, query, userID, teamID)
+	if err != nil {
+		return fmt.Errorf("failed to remove user %s from team %s: %w", userID, teamID, err)
+	}
+	return nil
+}
+
+// CreateTestEvent creates a test event for a project
+func (m *TestDBManager) CreateTestEvent(ctx context.Context, id, name, projectID string) error {
+	query := `
+		INSERT INTO events (id, project_id, name, description, start_date, end_date)
+		VALUES ($1, $2, $3, 'Test event description', now(), now() + interval '1 month')
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, id, projectID, name)
+	if err != nil {
+		return fmt.Errorf("failed to create test event %s: %w", id, err)
+	}
+	return nil
+}
+
+// EnrollUserInEvent adds a user to an event
+func (m *TestDBManager) EnrollUserInEvent(ctx context.Context, userID, eventID string) error {
+	query := `
+		INSERT INTO user_events (user_id, event_id)
+		VALUES ($1, $2)
+		ON CONFLICT DO NOTHING
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, userID, eventID)
+	if err != nil {
+		return fmt.Errorf("failed to enroll user %s in event %s: %w", userID, eventID, err)
+	}
+	return nil
+}
+
+// RemoveUserFromEvent removes a user from an event
+func (m *TestDBManager) RemoveUserFromEvent(ctx context.Context, userID, eventID string) error {
+	query := `DELETE FROM user_events WHERE user_id = $1 AND event_id = $2`
+	_, err := m.DB.Pool.Exec(ctx, query, userID, eventID)
+	if err != nil {
+		return fmt.Errorf("failed to remove user %s from event %s: %w", userID, eventID, err)
+	}
+	return nil
+}
+
+// AddScoreForUserEvent adds a score journal entry for a user in an event
+func (m *TestDBManager) AddScoreForUserEvent(ctx context.Context, userID, projectID, eventID string, points int) error {
+	scoreID := ulid.NewScoreJournalID()
+	query := `
+		INSERT INTO score_journal (id, project_id, event_id, user_id, points, source_type, reason)
+		VALUES ($1, $2, $3, $4, $5, 'MANUAL', 'Test event score')
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, scoreID, projectID, eventID, userID, points)
+	if err != nil {
+		return fmt.Errorf("failed to add event score for user %s: %w", userID, err)
+	}
+	return nil
+}
+
+// RemoveUserFromProject removes a user from a project
+func (m *TestDBManager) RemoveUserFromProject(ctx context.Context, userID, projectID string) error {
+	query := `DELETE FROM user_projects WHERE user_id = $1 AND project_id = $2`
+	_, err := m.DB.Pool.Exec(ctx, query, userID, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to remove user %s from project %s: %w", userID, projectID, err)
+	}
+	return nil
+}
+
+// CreateTestSuperTeam creates a test superteam
+func (m *TestDBManager) CreateTestSuperTeam(ctx context.Context, id, name, projectID string) error {
+	query := `
+		INSERT INTO super_teams (id, project_id, name)
+		VALUES ($1, $2, $3)
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, id, projectID, name)
+	if err != nil {
+		return fmt.Errorf("failed to create test superteam %s: %w", id, err)
+	}
+	return nil
+}
+
+// CreateTestTeamWithSuperTeam creates a team with a superteam association
+func (m *TestDBManager) CreateTestTeamWithSuperTeam(ctx context.Context, id, name, projectID, superTeamID string) error {
+	joinCode := "TEST-" + id
+	query := `
+		INSERT INTO teams (id, project_id, name, join_code, super_team_id)
+		VALUES ($1, $2, $3, $4, $5)
+	`
+	_, err := m.DB.Pool.Exec(ctx, query, id, projectID, name, joinCode, superTeamID)
+	if err != nil {
+		return fmt.Errorf("failed to create test team %s with superteam: %w", id, err)
+	}
+	return nil
+}
+
+// GetLeaderboardProjectTeamPoints returns total_points for a team in project leaderboard
+func (m *TestDBManager) GetLeaderboardProjectTeamPoints(ctx context.Context, projectID, teamID string) (int64, error) {
+	var points int64
+	query := `SELECT COALESCE(total_points, 0) FROM leaderboard_project_teams WHERE project_id = $1 AND team_id = $2`
+	err := m.DB.Pool.QueryRow(ctx, query, projectID, teamID).Scan(&points)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("failed to get leaderboard project team points: %w", err)
+	}
+	return points, nil
+}
+
+// GetLeaderboardProjectSuperTeamPoints returns total_points for a superteam in project leaderboard
+func (m *TestDBManager) GetLeaderboardProjectSuperTeamPoints(ctx context.Context, projectID, superTeamID string) (int64, error) {
+	var points int64
+	query := `SELECT COALESCE(total_points, 0) FROM leaderboard_project_superteams WHERE project_id = $1 AND super_team_id = $2`
+	err := m.DB.Pool.QueryRow(ctx, query, projectID, superTeamID).Scan(&points)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("failed to get leaderboard project superteam points: %w", err)
+	}
+	return points, nil
+}
+
+// GetLeaderboardProjectChurchPoints returns total_points for a church in project leaderboard
+func (m *TestDBManager) GetLeaderboardProjectChurchPoints(ctx context.Context, projectID, churchID string) (int64, error) {
+	var points int64
+	query := `SELECT COALESCE(total_points, 0) FROM leaderboard_project_churches WHERE project_id = $1 AND church_id = $2`
+	err := m.DB.Pool.QueryRow(ctx, query, projectID, churchID).Scan(&points)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("failed to get leaderboard project church points: %w", err)
+	}
+	return points, nil
+}
+
+// GetLeaderboardEventTeamPoints returns total_points for a team in event leaderboard
+func (m *TestDBManager) GetLeaderboardEventTeamPoints(ctx context.Context, eventID, teamID string) (int64, error) {
+	var points int64
+	query := `SELECT COALESCE(total_points, 0) FROM leaderboard_event_teams WHERE event_id = $1 AND team_id = $2`
+	err := m.DB.Pool.QueryRow(ctx, query, eventID, teamID).Scan(&points)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("failed to get leaderboard event team points: %w", err)
+	}
+	return points, nil
+}
+
+// GetLeaderboardEventSuperTeamPoints returns total_points for a superteam in event leaderboard
+func (m *TestDBManager) GetLeaderboardEventSuperTeamPoints(ctx context.Context, eventID, superTeamID string) (int64, error) {
+	var points int64
+	query := `SELECT COALESCE(total_points, 0) FROM leaderboard_event_superteams WHERE event_id = $1 AND super_team_id = $2`
+	err := m.DB.Pool.QueryRow(ctx, query, eventID, superTeamID).Scan(&points)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("failed to get leaderboard event superteam points: %w", err)
+	}
+	return points, nil
+}
+
+// GetLeaderboardEventChurchPoints returns total_points for a church in event leaderboard
+func (m *TestDBManager) GetLeaderboardEventChurchPoints(ctx context.Context, eventID, churchID string) (int64, error) {
+	var points int64
+	query := `SELECT COALESCE(total_points, 0) FROM leaderboard_event_churches WHERE event_id = $1 AND church_id = $2`
+	err := m.DB.Pool.QueryRow(ctx, query, eventID, churchID).Scan(&points)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("failed to get leaderboard event church points: %w", err)
+	}
+	return points, nil
+}

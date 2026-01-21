@@ -132,6 +132,80 @@ func TestRoles(t *testing.T) {
 		assert.NotNil(t, result.AssignRole.Scope.Church)
 	})
 
+	t.Run("church admin can assign church admin role to user in same church", func(t *testing.T) {
+		// Setup: Get two users from the same church
+		churchAdminUserID := data.UserIDs[6]
+		targetUserInSameChurch := data.UserIDs[7]
+
+		// Get the church admin user's church ID via GraphQL
+		tempToken, err := testutil.GenerateUserToken(churchAdminUserID)
+		require.NoError(t, err)
+
+		meResp := client.WithAuth(tempToken).MustExecute(t, `query { me { church { id } } }`, nil)
+		require.False(t, meResp.HasErrors())
+
+		var meResult struct {
+			Me struct {
+				Church struct{ ID string } `json:"church"`
+			} `json:"me"`
+		}
+		require.NoError(t, meResp.UnmarshalData(&meResult))
+		churchAdminChurchID := meResult.Me.Church.ID
+
+		// Assign church admin role to the first user
+		require.NoError(t, dbMgr.AssignRoleWithScope(ctx, churchAdminUserID, testutil.RoleChurchAdmin, &churchAdminChurchID, nil, nil))
+
+		// Generate token for church admin
+		churchAdminToken, err := testutil.GenerateChurchAdminToken(churchAdminUserID)
+		require.NoError(t, err)
+
+		// Church admin assigns church admin role to another user in the same church
+		resp := client.WithAuth(churchAdminToken).MustExecute(t, `
+			mutation AssignRole($input: AssignRoleInput!) {
+				assignRole(input: $input) {
+					id
+					role
+					scope {
+						type
+						id
+						church {
+							id
+						}
+					}
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"userId":    targetUserInSameChurch,
+				"role":      "CHURCH_ADMIN",
+				"scopeType": "CHURCH",
+				"scopeId":   churchAdminChurchID,
+			},
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result struct {
+			AssignRole struct {
+				ID    string `json:"id"`
+				Role  string `json:"role"`
+				Scope struct {
+					Type   string `json:"type"`
+					ID     string `json:"id"`
+					Church *struct {
+						ID string `json:"id"`
+					} `json:"church"`
+				} `json:"scope"`
+			} `json:"assignRole"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		assert.Equal(t, "CHURCH_ADMIN", result.AssignRole.Role)
+		assert.Equal(t, "CHURCH", result.AssignRole.Scope.Type)
+		assert.NotNil(t, result.AssignRole.Scope.Church)
+		assert.Equal(t, churchAdminChurchID, result.AssignRole.Scope.Church.ID)
+	})
+
 	t.Run("admin can assign project admin role", func(t *testing.T) {
 		resp := client.WithAuth(adminToken).MustExecute(t, `
 			mutation AssignRole($input: AssignRoleInput!) {
