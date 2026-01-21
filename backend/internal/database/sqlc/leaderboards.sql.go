@@ -97,17 +97,28 @@ func (q *Queries) CountEventSuperTeamLeaderboard(ctx context.Context, eventid st
 
 const CountEventTeamLeaderboard = `-- name: CountEventTeamLeaderboard :one
 WITH event_project AS (
-    SELECT project_id FROM events WHERE id = $1::text
+    SELECT project_id FROM events WHERE id = $2::text
 )
 SELECT COUNT(DISTINCT t.id)::bigint AS total
 FROM teams t
 CROSS JOIN event_project ep
 WHERE t.project_id = ep.project_id
   AND t.leaderboard_excluded = false
+  -- Church filter: team has ANY member from specified church
+  AND ($1::text = '' OR EXISTS (
+      SELECT 1 FROM team_members tm
+      INNER JOIN users u ON tm.user_id = u.id
+      WHERE tm.team_id = t.id AND u.church_id = $1::text
+  ))
 `
 
-func (q *Queries) CountEventTeamLeaderboard(ctx context.Context, eventid string) (int64, error) {
-	row := q.db.QueryRow(ctx, CountEventTeamLeaderboard, eventid)
+type CountEventTeamLeaderboardParams struct {
+	Churchid string `json:"churchid"`
+	Eventid  string `json:"eventid"`
+}
+
+func (q *Queries) CountEventTeamLeaderboard(ctx context.Context, arg CountEventTeamLeaderboardParams) (int64, error) {
+	row := q.db.QueryRow(ctx, CountEventTeamLeaderboard, arg.Churchid, arg.Eventid)
 	var total int64
 	err := row.Scan(&total)
 	return total, err
@@ -219,15 +230,22 @@ WHERE
     t.project_id = $1::text
     AND t.leaderboard_excluded = false
     AND ($2::text = '' OR t.super_team_id = $2::text)
+    -- Church filter: team has ANY member from specified church
+    AND ($3::text = '' OR EXISTS (
+        SELECT 1 FROM team_members tm
+        INNER JOIN users u ON tm.user_id = u.id
+        WHERE tm.team_id = t.id AND u.church_id = $3::text
+    ))
 `
 
 type CountProjectTeamLeaderboardParams struct {
 	Projectid   string `json:"projectid"`
 	Superteamid string `json:"superteamid"`
+	Churchid    string `json:"churchid"`
 }
 
 func (q *Queries) CountProjectTeamLeaderboard(ctx context.Context, arg CountProjectTeamLeaderboardParams) (int64, error) {
-	row := q.db.QueryRow(ctx, CountProjectTeamLeaderboard, arg.Projectid, arg.Superteamid)
+	row := q.db.QueryRow(ctx, CountProjectTeamLeaderboard, arg.Projectid, arg.Superteamid, arg.Churchid)
 	var total int64
 	err := row.Scan(&total)
 	return total, err
@@ -434,13 +452,19 @@ WITH ranked_scores AS (
       AND t.leaderboard_excluded = false
       AND let.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR let.score <= $3::int)
+      -- Church filter: team has ANY member from specified church
+      AND ($4::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN users u ON tm.user_id = u.id
+          WHERE tm.team_id = t.id AND u.church_id = $4::text
+      ))
 ),
 user_team AS (
     SELECT tm.team_id
     FROM team_members tm
     INNER JOIN teams t ON tm.team_id = t.id
     INNER JOIN events e ON t.project_id = e.project_id AND e.id = $1::text
-    WHERE tm.user_id = $4::text
+    WHERE tm.user_id = $5::text
     LIMIT 1
 )
 SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank, rs.last_score_at
@@ -452,6 +476,7 @@ type FindMyEventTeamPositionParams struct {
 	Eventid  string `json:"eventid"`
 	Minscore int32  `json:"minscore"`
 	Maxscore int32  `json:"maxscore"`
+	Churchid string `json:"churchid"`
 	Userid   string `json:"userid"`
 }
 
@@ -469,6 +494,7 @@ func (q *Queries) FindMyEventTeamPosition(ctx context.Context, arg FindMyEventTe
 		arg.Eventid,
 		arg.Minscore,
 		arg.Maxscore,
+		arg.Churchid,
 		arg.Userid,
 	)
 	var i FindMyEventTeamPositionRow
@@ -684,11 +710,17 @@ WITH ranked_scores AS (
       AND t.leaderboard_excluded = false
       AND lpt.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpt.score <= $3::int)
+      -- Church filter: team has ANY member from specified church
+      AND ($4::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN users u ON tm.user_id = u.id
+          WHERE tm.team_id = t.id AND u.church_id = $4::text
+      ))
 ),
 user_team AS (
     SELECT team_id
     FROM team_members
-    WHERE user_id = $4::text
+    WHERE user_id = $5::text
       AND team_id IN (SELECT id FROM teams WHERE project_id = $1::text)
     LIMIT 1
 )
@@ -701,6 +733,7 @@ type FindMyProjectTeamPositionParams struct {
 	Projectid string `json:"projectid"`
 	Minscore  int32  `json:"minscore"`
 	Maxscore  int32  `json:"maxscore"`
+	Churchid  string `json:"churchid"`
 	Userid    string `json:"userid"`
 }
 
@@ -718,6 +751,7 @@ func (q *Queries) FindMyProjectTeamPosition(ctx context.Context, arg FindMyProje
 		arg.Projectid,
 		arg.Minscore,
 		arg.Maxscore,
+		arg.Churchid,
 		arg.Userid,
 	)
 	var i FindMyProjectTeamPositionRow
@@ -1067,6 +1101,12 @@ team_scores AS (
     WHERE
         t.project_id = ep.project_id
         AND t.leaderboard_excluded = false
+        -- Church filter: team has ANY member from specified church
+        AND ($7::text = '' OR EXISTS (
+            SELECT 1 FROM team_members tm2
+            INNER JOIN users u2 ON tm2.user_id = u2.id
+            WHERE tm2.team_id = t.id AND u2.church_id = $7::text
+        ))
     GROUP BY t.id, t.name
 ),
 ranked_scores AS (
@@ -1098,6 +1138,7 @@ type GetEventTeamLeaderboardParams struct {
 	Beforerank *int64 `json:"beforerank"`
 	Querylimit int32  `json:"querylimit"`
 	Eventid    string `json:"eventid"`
+	Churchid   string `json:"churchid"`
 }
 
 type GetEventTeamLeaderboardRow struct {
@@ -1118,6 +1159,7 @@ func (q *Queries) GetEventTeamLeaderboard(ctx context.Context, arg GetEventTeamL
 		arg.Beforerank,
 		arg.Querylimit,
 		arg.Eventid,
+		arg.Churchid,
 	)
 	if err != nil {
 		return nil, err
@@ -1392,6 +1434,12 @@ WITH ranked_scores AS (
       AND t.leaderboard_excluded = false
       AND let.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR let.score <= $3::int)
+      -- Church filter: team has ANY member from specified church
+      AND ($4::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN users u ON tm.user_id = u.id
+          WHERE tm.team_id = t.id AND u.church_id = $4::text
+      ))
 )
 SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
@@ -1402,6 +1450,7 @@ type GetFullEventTeamLeaderboardParams struct {
 	Eventid  string `json:"eventid"`
 	Minscore int32  `json:"minscore"`
 	Maxscore int32  `json:"maxscore"`
+	Churchid string `json:"churchid"`
 }
 
 type GetFullEventTeamLeaderboardRow struct {
@@ -1414,7 +1463,12 @@ type GetFullEventTeamLeaderboardRow struct {
 }
 
 func (q *Queries) GetFullEventTeamLeaderboard(ctx context.Context, arg GetFullEventTeamLeaderboardParams) ([]*GetFullEventTeamLeaderboardRow, error) {
-	rows, err := q.db.Query(ctx, GetFullEventTeamLeaderboard, arg.Eventid, arg.Minscore, arg.Maxscore)
+	rows, err := q.db.Query(ctx, GetFullEventTeamLeaderboard,
+		arg.Eventid,
+		arg.Minscore,
+		arg.Maxscore,
+		arg.Churchid,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1688,6 +1742,12 @@ WITH ranked_scores AS (
       AND t.leaderboard_excluded = false
       AND lpt.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpt.score <= $3::int)
+      -- Church filter: team has ANY member from specified church
+      AND ($4::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN users u ON tm.user_id = u.id
+          WHERE tm.team_id = t.id AND u.church_id = $4::text
+      ))
 )
 SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
@@ -1698,6 +1758,7 @@ type GetFullProjectTeamLeaderboardParams struct {
 	Projectid string `json:"projectid"`
 	Minscore  int32  `json:"minscore"`
 	Maxscore  int32  `json:"maxscore"`
+	Churchid  string `json:"churchid"`
 }
 
 type GetFullProjectTeamLeaderboardRow struct {
@@ -1710,7 +1771,12 @@ type GetFullProjectTeamLeaderboardRow struct {
 }
 
 func (q *Queries) GetFullProjectTeamLeaderboard(ctx context.Context, arg GetFullProjectTeamLeaderboardParams) ([]*GetFullProjectTeamLeaderboardRow, error) {
-	rows, err := q.db.Query(ctx, GetFullProjectTeamLeaderboard, arg.Projectid, arg.Minscore, arg.Maxscore)
+	rows, err := q.db.Query(ctx, GetFullProjectTeamLeaderboard,
+		arg.Projectid,
+		arg.Minscore,
+		arg.Maxscore,
+		arg.Churchid,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -2094,6 +2160,12 @@ WITH team_scores AS (
         t.project_id = $6::text
         AND t.leaderboard_excluded = false
         AND ($7::text = '' OR t.super_team_id = $7::text)
+        -- Church filter: team has ANY member from specified church
+        AND ($8::text = '' OR EXISTS (
+            SELECT 1 FROM team_members tm2
+            INNER JOIN users u2 ON tm2.user_id = u2.id
+            WHERE tm2.team_id = t.id AND u2.church_id = $8::text
+        ))
     GROUP BY t.id, t.name
 ),
 ranked_scores AS (
@@ -2126,6 +2198,7 @@ type GetProjectTeamLeaderboardParams struct {
 	Querylimit  int32  `json:"querylimit"`
 	Projectid   string `json:"projectid"`
 	Superteamid string `json:"superteamid"`
+	Churchid    string `json:"churchid"`
 }
 
 type GetProjectTeamLeaderboardRow struct {
@@ -2147,6 +2220,7 @@ func (q *Queries) GetProjectTeamLeaderboard(ctx context.Context, arg GetProjectT
 		arg.Querylimit,
 		arg.Projectid,
 		arg.Superteamid,
+		arg.Churchid,
 	)
 	if err != nil {
 		return nil, err

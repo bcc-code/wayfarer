@@ -402,3 +402,8 @@ func (c *CacheWithRegistry) InvalidateQuizSubmission(submissionID string) {
 func (c *CacheWithRegistry) InvalidateTeamMemberLeaderboardTags() {
 	c.DeletePrefix(PrefixTeamLeaderboardTags)
 }
+
+// Hits returns the total number of cache hits
+func (c *CacheWithRegistry) Hits() uint64 {
+	return c.Cache.Metrics().Hits()
+}

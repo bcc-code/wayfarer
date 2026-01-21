@@ -199,6 +199,12 @@ WITH team_scores AS (
         t.project_id = @projectid::text
         AND t.leaderboard_excluded = false
         AND (@superteamid::text = '' OR t.super_team_id = @superteamid::text)
+        -- Church filter: team has ANY member from specified church
+        AND (@churchid::text = '' OR EXISTS (
+            SELECT 1 FROM team_members tm2
+            INNER JOIN users u2 ON tm2.user_id = u2.id
+            WHERE tm2.team_id = t.id AND u2.church_id = @churchid::text
+        ))
     GROUP BY t.id, t.name
 ),
 ranked_scores AS (
@@ -237,6 +243,12 @@ WITH ranked_scores AS (
       AND t.leaderboard_excluded = false
       AND lpt.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR lpt.score <= @maxscore::int)
+      -- Church filter: team has ANY member from specified church
+      AND (@churchid::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN users u ON tm.user_id = u.id
+          WHERE tm.team_id = t.id AND u.church_id = @churchid::text
+      ))
 ),
 user_team AS (
     SELECT team_id
@@ -264,6 +276,12 @@ WITH ranked_scores AS (
       AND t.leaderboard_excluded = false
       AND lpt.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR lpt.score <= @maxscore::int)
+      -- Church filter: team has ANY member from specified church
+      AND (@churchid::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN users u ON tm.user_id = u.id
+          WHERE tm.team_id = t.id AND u.church_id = @churchid::text
+      ))
 )
 SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
@@ -275,7 +293,13 @@ FROM teams t
 WHERE
     t.project_id = @projectid::text
     AND t.leaderboard_excluded = false
-    AND (@superteamid::text = '' OR t.super_team_id = @superteamid::text);
+    AND (@superteamid::text = '' OR t.super_team_id = @superteamid::text)
+    -- Church filter: team has ANY member from specified church
+    AND (@churchid::text = '' OR EXISTS (
+        SELECT 1 FROM team_members tm
+        INNER JOIN users u ON tm.user_id = u.id
+        WHERE tm.team_id = t.id AND u.church_id = @churchid::text
+    ));
 
 -- ==================== Project SuperTeam Leaderboard ====================
 
@@ -625,6 +649,12 @@ team_scores AS (
     WHERE
         t.project_id = ep.project_id
         AND t.leaderboard_excluded = false
+        -- Church filter: team has ANY member from specified church
+        AND (@churchid::text = '' OR EXISTS (
+            SELECT 1 FROM team_members tm2
+            INNER JOIN users u2 ON tm2.user_id = u2.id
+            WHERE tm2.team_id = t.id AND u2.church_id = @churchid::text
+        ))
     GROUP BY t.id, t.name
 ),
 ranked_scores AS (
@@ -663,6 +693,12 @@ WITH ranked_scores AS (
       AND t.leaderboard_excluded = false
       AND let.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR let.score <= @maxscore::int)
+      -- Church filter: team has ANY member from specified church
+      AND (@churchid::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN users u ON tm.user_id = u.id
+          WHERE tm.team_id = t.id AND u.church_id = @churchid::text
+      ))
 ),
 user_team AS (
     SELECT tm.team_id
@@ -691,6 +727,12 @@ WITH ranked_scores AS (
       AND t.leaderboard_excluded = false
       AND let.score >= COALESCE(@minscore::int, 1)
       AND (@maxscore::int IS NULL OR let.score <= @maxscore::int)
+      -- Church filter: team has ANY member from specified church
+      AND (@churchid::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN users u ON tm.user_id = u.id
+          WHERE tm.team_id = t.id AND u.church_id = @churchid::text
+      ))
 )
 SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
@@ -704,7 +746,13 @@ SELECT COUNT(DISTINCT t.id)::bigint AS total
 FROM teams t
 CROSS JOIN event_project ep
 WHERE t.project_id = ep.project_id
-  AND t.leaderboard_excluded = false;
+  AND t.leaderboard_excluded = false
+  -- Church filter: team has ANY member from specified church
+  AND (@churchid::text = '' OR EXISTS (
+      SELECT 1 FROM team_members tm
+      INNER JOIN users u ON tm.user_id = u.id
+      WHERE tm.team_id = t.id AND u.church_id = @churchid::text
+  ));
 
 -- ==================== Event SuperTeam Leaderboard ====================
 

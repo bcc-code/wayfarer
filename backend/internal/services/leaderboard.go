@@ -25,7 +25,7 @@ type LeaderboardQuerier interface {
 
 	GetProjectTeamLeaderboard(ctx context.Context, params sqlc.GetProjectTeamLeaderboardParams) ([]*sqlc.GetProjectTeamLeaderboardRow, error)
 	FindMyProjectTeamPosition(ctx context.Context, params sqlc.FindMyProjectTeamPositionParams) (*sqlc.FindMyProjectTeamPositionRow, error)
-	CountProjectTeamLeaderboard(ctx context.Context, params sqlc.CountProjectTeamLeaderboardParams) (int64, error)
+	CountProjectTeamLeaderboard(ctx context.Context, arg sqlc.CountProjectTeamLeaderboardParams) (int64, error)
 	GetFullProjectTeamLeaderboard(ctx context.Context, params sqlc.GetFullProjectTeamLeaderboardParams) ([]*sqlc.GetFullProjectTeamLeaderboardRow, error)
 
 	GetProjectSuperTeamLeaderboard(ctx context.Context, params sqlc.GetProjectSuperTeamLeaderboardParams) ([]*sqlc.GetProjectSuperTeamLeaderboardRow, error)
@@ -46,7 +46,7 @@ type LeaderboardQuerier interface {
 
 	GetEventTeamLeaderboard(ctx context.Context, params sqlc.GetEventTeamLeaderboardParams) ([]*sqlc.GetEventTeamLeaderboardRow, error)
 	FindMyEventTeamPosition(ctx context.Context, params sqlc.FindMyEventTeamPositionParams) (*sqlc.FindMyEventTeamPositionRow, error)
-	CountEventTeamLeaderboard(ctx context.Context, eventid string) (int64, error)
+	CountEventTeamLeaderboard(ctx context.Context, arg sqlc.CountEventTeamLeaderboardParams) (int64, error)
 	GetFullEventTeamLeaderboard(ctx context.Context, params sqlc.GetFullEventTeamLeaderboardParams) ([]*sqlc.GetFullEventTeamLeaderboardRow, error)
 
 	GetEventSuperTeamLeaderboard(ctx context.Context, params sqlc.GetEventSuperTeamLeaderboardParams) ([]*sqlc.GetEventSuperTeamLeaderboardRow, error)
@@ -841,6 +841,7 @@ func (s *LeaderboardService) buildFullProjectTeamParams(params LeaderboardParams
 		Projectid: params.ContextID,
 		Minscore:  getFilterInt(params.Filter, "minScore"),
 		Maxscore:  getFilterInt(params.Filter, "maxScore"),
+		Churchid:  getFilterString(params.Filter, "churchId"),
 	}
 }
 
@@ -880,6 +881,7 @@ func (s *LeaderboardService) buildFullEventTeamParams(params LeaderboardParams) 
 		Eventid:  params.ContextID,
 		Minscore: getFilterInt(params.Filter, "minScore"),
 		Maxscore: getFilterInt(params.Filter, "maxScore"),
+		Churchid: getFilterString(params.Filter, "churchId"),
 	}
 }
 

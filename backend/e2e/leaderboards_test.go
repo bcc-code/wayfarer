@@ -862,3 +862,789 @@ func setupLeaderboardTestData(t *testing.T, ctx context.Context, dbMgr *testutil
 		}
 	}
 }
+
+// ==================== TEAMS Leaderboard Church Filtering Tests ====================
+
+// Test entity IDs for church filtering tests (must be exactly 28 chars: 2-char prefix + 26-char ULID)
+const (
+	testChurch2ID      = "CH01TEST00000000000000000002"
+	teamChurch1OnlyID  = "TM01TEST000000000000CHURCH1A"
+	teamChurch2OnlyID  = "TM01TEST000000000000CHURCH2A"
+	teamMixedID        = "TM01TEST000000000000000MIXED"
+	userChurch1AID     = "US01TEST000000000000CHURCH1A"
+	userChurch1BID     = "US01TEST000000000000CHURCH1B"
+	userChurch2AID     = "US01TEST000000000000CHURCH2A"
+	userChurch2BID     = "US01TEST000000000000CHURCH2B"
+	userMixedChurch1ID = "US01TEST00000000000MIXEDCH1A"
+	userMixedChurch2ID = "US01TEST00000000000MIXEDCH2A"
+)
+
+// teamLeaderboardResult is the response type for team leaderboard queries
+type teamLeaderboardResult struct {
+	Project struct {
+		Leaderboard struct {
+			Edges []struct {
+				Node struct {
+					ID    string `json:"id"`
+					Name  string `json:"name"`
+					Score int    `json:"score"`
+					Rank  *int   `json:"rank"`
+				} `json:"node"`
+			} `json:"edges"`
+			TotalCount int `json:"totalCount"`
+			Me         *struct {
+				ID    string `json:"id"`
+				Name  string `json:"name"`
+				Score int    `json:"score"`
+				Rank  *int   `json:"rank"`
+			} `json:"me"`
+		} `json:"leaderboard"`
+	} `json:"project"`
+}
+
+// getTeamIDs extracts team IDs from team leaderboard result
+func (r *teamLeaderboardResult) getTeamIDs() []string {
+	ids := make([]string, len(r.Project.Leaderboard.Edges))
+	for i, e := range r.Project.Leaderboard.Edges {
+		ids[i] = e.Node.ID
+	}
+	return ids
+}
+
+// TestTeamLeaderboardChurchFiltering tests that team leaderboards can be filtered by church
+// Filter logic: include team if ANY member is from the specified church
+func TestTeamLeaderboardChurchFiltering(t *testing.T) {
+	ctx := context.Background()
+	dbMgr, _ := GetTestEnv()
+
+	// Clean database for fresh test data
+	require.NoError(t, dbMgr.Clean(ctx))
+
+	// Setup test data with multiple churches and teams
+	setupTeamChurchFilterTestData(t, ctx, dbMgr)
+
+	// Setup test server
+	router, cleanup, err := testutil.SetupTestServer(ctx, dbMgr)
+	require.NoError(t, err)
+	defer cleanup()
+
+	client := testutil.NewGraphQLClient(router)
+	defer client.Close()
+
+	// Generate admin token for queries
+	adminToken, err := testutil.GenerateAdminToken(userChurch1AID)
+	require.NoError(t, err)
+
+	const teamLeaderboardQuery = `
+		query GetTeamLeaderboard($projectId: ID!, $filter: LeaderboardFilter) {
+			project(id: $projectId) {
+				leaderboard(entityType: TEAMS, filter: $filter, first: 100) {
+					edges {
+						node {
+							id
+							name
+							score
+							rank
+						}
+					}
+					totalCount
+					me {
+						id
+						name
+						score
+						rank
+					}
+				}
+			}
+		}
+	`
+
+	t.Run("filter by church 1 returns only teams with church 1 members", func(t *testing.T) {
+		resp := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+			"filter": map[string]any{
+				"churchId": testChurchID,
+			},
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result teamLeaderboardResult
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		// Should include teamChurch1Only (all members from church 1) and teamMixed (has member from church 1)
+		teamIDs := result.getTeamIDs()
+		assert.Equal(t, 2, result.Project.Leaderboard.TotalCount)
+		assert.Contains(t, teamIDs, teamChurch1OnlyID)
+		assert.Contains(t, teamIDs, teamMixedID)
+		assert.NotContains(t, teamIDs, teamChurch2OnlyID)
+	})
+
+	t.Run("filter by church 2 returns only teams with church 2 members", func(t *testing.T) {
+		resp := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+			"filter": map[string]any{
+				"churchId": testChurch2ID,
+			},
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result teamLeaderboardResult
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		// Should include teamChurch2Only (all members from church 2) and teamMixed (has member from church 2)
+		teamIDs := result.getTeamIDs()
+		assert.Equal(t, 2, result.Project.Leaderboard.TotalCount)
+		assert.Contains(t, teamIDs, teamChurch2OnlyID)
+		assert.Contains(t, teamIDs, teamMixedID)
+		assert.NotContains(t, teamIDs, teamChurch1OnlyID)
+	})
+
+	t.Run("team with members from both churches appears in both filters", func(t *testing.T) {
+		// Filter by church 1
+		resp1 := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+			"filter": map[string]any{
+				"churchId": testChurchID,
+			},
+		})
+		require.False(t, resp1.HasErrors(), "unexpected error: %s", resp1.ErrorMessage())
+
+		var result1 teamLeaderboardResult
+		require.NoError(t, resp1.UnmarshalData(&result1))
+		teamIDs1 := result1.getTeamIDs()
+		assert.Contains(t, teamIDs1, teamMixedID, "mixed team should appear in church 1 filter")
+
+		// Filter by church 2
+		resp2 := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+			"filter": map[string]any{
+				"churchId": testChurch2ID,
+			},
+		})
+		require.False(t, resp2.HasErrors(), "unexpected error: %s", resp2.ErrorMessage())
+
+		var result2 teamLeaderboardResult
+		require.NoError(t, resp2.UnmarshalData(&result2))
+		teamIDs2 := result2.getTeamIDs()
+		assert.Contains(t, teamIDs2, teamMixedID, "mixed team should appear in church 2 filter")
+	})
+
+	t.Run("filter with non-existent church returns empty", func(t *testing.T) {
+		resp := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+			"filter": map[string]any{
+				"churchId": "CH01NONEXISTENT000000000000",
+			},
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result teamLeaderboardResult
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		assert.Equal(t, 0, result.Project.Leaderboard.TotalCount)
+		assert.Empty(t, result.Project.Leaderboard.Edges)
+	})
+
+	t.Run("me field populated when user's team has member from filtered church", func(t *testing.T) {
+		// Query as user from church 1 who is on teamChurch1Only
+		userToken, err := testutil.GenerateUserToken(userChurch1AID)
+		require.NoError(t, err)
+
+		resp := client.WithAuth(userToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+			"filter": map[string]any{
+				"churchId": testChurchID,
+			},
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result teamLeaderboardResult
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		require.NotNil(t, result.Project.Leaderboard.Me, "me should be populated")
+		assert.Equal(t, teamChurch1OnlyID, result.Project.Leaderboard.Me.ID)
+	})
+
+	t.Run("me field nil when user's team excluded by church filter", func(t *testing.T) {
+		// Query as user from church 1 who is on teamChurch1Only, but filter by church 2
+		userToken, err := testutil.GenerateUserToken(userChurch1AID)
+		require.NoError(t, err)
+
+		resp := client.WithAuth(userToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+			"filter": map[string]any{
+				"churchId": testChurch2ID,
+			},
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result teamLeaderboardResult
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		// me should be nil because user's team (teamChurch1Only) has no members from church 2
+		assert.Nil(t, result.Project.Leaderboard.Me, "me should be nil when user's team is excluded by filter")
+		// But leaderboard should still have results
+		assert.Greater(t, result.Project.Leaderboard.TotalCount, 0)
+	})
+
+	t.Run("no filter returns all teams", func(t *testing.T) {
+		resp := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+		})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result teamLeaderboardResult
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		// Should include all 3 teams
+		teamIDs := result.getTeamIDs()
+		assert.Equal(t, 3, result.Project.Leaderboard.TotalCount)
+		assert.Contains(t, teamIDs, teamChurch1OnlyID)
+		assert.Contains(t, teamIDs, teamChurch2OnlyID)
+		assert.Contains(t, teamIDs, teamMixedID)
+	})
+}
+
+// TestTeamLeaderboardCaching tests cache behavior for team leaderboards
+func TestTeamLeaderboardCaching(t *testing.T) {
+	ctx := context.Background()
+	dbMgr, _ := GetTestEnv()
+
+	// Clean database for fresh test data
+	require.NoError(t, dbMgr.Clean(ctx))
+
+	// Setup test data with multiple churches and teams
+	setupTeamChurchFilterTestData(t, ctx, dbMgr)
+
+	// Setup test server with cache access
+	router, testCache, cleanup, err := testutil.SetupTestServerWithCache(ctx, dbMgr)
+	require.NoError(t, err)
+	defer cleanup()
+
+	client := testutil.NewGraphQLClient(router)
+	defer client.Close()
+
+	// Generate admin token for queries
+	adminToken, err := testutil.GenerateAdminToken(userChurch1AID)
+	require.NoError(t, err)
+
+	const teamLeaderboardQuery = `
+		query GetTeamLeaderboard($projectId: ID!, $filter: LeaderboardFilter) {
+			project(id: $projectId) {
+				leaderboard(entityType: TEAMS, filter: $filter, first: 100) {
+					edges {
+						node {
+							id
+							name
+							score
+						}
+					}
+					totalCount
+				}
+			}
+		}
+	`
+
+	t.Run("repeated query hits cache", func(t *testing.T) {
+		// Clear cache before test
+		testCache.Clear()
+
+		initialHits := testCache.Hits()
+
+		// First query - should miss cache
+		resp1 := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+			"filter": map[string]any{
+				"churchId": testChurchID,
+			},
+		})
+		require.False(t, resp1.HasErrors(), "unexpected error: %s", resp1.ErrorMessage())
+
+		// Second query - should hit cache
+		resp2 := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+			"filter": map[string]any{
+				"churchId": testChurchID,
+			},
+		})
+		require.False(t, resp2.HasErrors(), "unexpected error: %s", resp2.ErrorMessage())
+
+		hitsAfter := testCache.Hits()
+		assert.Greater(t, hitsAfter, initialHits, "cache hits should increase after repeated query")
+	})
+
+	t.Run("different church filters create separate cache entries", func(t *testing.T) {
+		// Clear cache before test
+		testCache.Clear()
+
+		// Query with church 1 filter
+		resp1 := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+			"filter": map[string]any{
+				"churchId": testChurchID,
+			},
+		})
+		require.False(t, resp1.HasErrors(), "unexpected error: %s", resp1.ErrorMessage())
+
+		var result1 teamLeaderboardResult
+		require.NoError(t, resp1.UnmarshalData(&result1))
+
+		// Query with church 2 filter
+		resp2 := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+			"filter": map[string]any{
+				"churchId": testChurch2ID,
+			},
+		})
+		require.False(t, resp2.HasErrors(), "unexpected error: %s", resp2.ErrorMessage())
+
+		var result2 teamLeaderboardResult
+		require.NoError(t, resp2.UnmarshalData(&result2))
+
+		// Results should be different (different teams)
+		teamIDs1 := result1.getTeamIDs()
+		teamIDs2 := result2.getTeamIDs()
+
+		// Church 1 filter should include teamChurch1Only but not teamChurch2Only
+		assert.Contains(t, teamIDs1, teamChurch1OnlyID)
+		assert.NotContains(t, teamIDs1, teamChurch2OnlyID)
+
+		// Church 2 filter should include teamChurch2Only but not teamChurch1Only
+		assert.Contains(t, teamIDs2, teamChurch2OnlyID)
+		assert.NotContains(t, teamIDs2, teamChurch1OnlyID)
+	})
+
+	t.Run("cache serves correct data per filter", func(t *testing.T) {
+		// Clear cache before test
+		testCache.Clear()
+
+		// Pre-populate cache with both queries
+		client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+			"filter": map[string]any{
+				"churchId": testChurchID,
+			},
+		})
+		client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+			"filter": map[string]any{
+				"churchId": testChurch2ID,
+			},
+		})
+
+		// Query church 1 again (should hit cache)
+		resp := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+			"filter": map[string]any{
+				"churchId": testChurchID,
+			},
+		})
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result teamLeaderboardResult
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		// Verify we got the correct cached data for church 1
+		teamIDs := result.getTeamIDs()
+		assert.Contains(t, teamIDs, teamChurch1OnlyID, "cache should serve church 1 data")
+		assert.NotContains(t, teamIDs, teamChurch2OnlyID, "cache should not serve church 2 data")
+	})
+
+	t.Run("cache cleared returns fresh data", func(t *testing.T) {
+		// First query to populate cache
+		resp1 := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+		})
+		require.False(t, resp1.HasErrors(), "unexpected error: %s", resp1.ErrorMessage())
+
+		// Clear cache
+		testCache.Clear()
+
+		hitsAfterClear := testCache.Hits()
+
+		// Query again - should not hit cache (since we cleared it)
+		resp2 := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+		})
+		require.False(t, resp2.HasErrors(), "unexpected error: %s", resp2.ErrorMessage())
+
+		var result teamLeaderboardResult
+		require.NoError(t, resp2.UnmarshalData(&result))
+
+		// Should still get correct data
+		assert.Equal(t, 3, result.Project.Leaderboard.TotalCount)
+
+		// The next query should hit cache
+		resp3 := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+		})
+		require.False(t, resp3.HasErrors(), "unexpected error: %s", resp3.ErrorMessage())
+
+		hitsAfterThird := testCache.Hits()
+		assert.Greater(t, hitsAfterThird, hitsAfterClear, "third query should hit cache")
+	})
+}
+
+// setupTeamChurchFilterTestData creates test data for team church filtering tests
+func setupTeamChurchFilterTestData(t *testing.T, ctx context.Context, dbMgr *testutil.TestDBManager) {
+	t.Helper()
+
+	now := time.Now()
+	birthdate := now.AddDate(-25, 0, 0)
+
+	// Create 2 churches
+	require.NoError(t, dbMgr.CreateTestChurch(ctx, testChurchID, "Test Church 1", "NO", "S"))
+	require.NoError(t, dbMgr.CreateTestChurch(ctx, testChurch2ID, "Test Church 2", "NO", "S"))
+
+	// Create test project
+	require.NoError(t, dbMgr.CreateTestProject(ctx, testProjectID, "Test Project"))
+
+	// Update settings to point to our test project
+	_, err := dbMgr.DB.Pool.Exec(ctx, `UPDATE settings SET value_text = $1 WHERE key = 'current_project_id'`, testProjectID)
+	require.NoError(t, err)
+
+	// Create 3 teams:
+	// - teamChurch1Only: All members from church 1
+	// - teamChurch2Only: All members from church 2
+	// - teamMixed: Members from both churches
+	require.NoError(t, dbMgr.CreateTestTeam(ctx, teamChurch1OnlyID, "Team Church1 Only", testProjectID))
+	require.NoError(t, dbMgr.CreateTestTeam(ctx, teamChurch2OnlyID, "Team Church2 Only", testProjectID))
+	require.NoError(t, dbMgr.CreateTestTeam(ctx, teamMixedID, "Team Mixed", testProjectID))
+
+	// Create users and assign to teams
+	// Team Church1 Only: 2 users from church 1
+	require.NoError(t, dbMgr.CreateTestUser(ctx, userChurch1AID, "Church1A", "MALE", birthdate, testChurchID))
+	require.NoError(t, dbMgr.EnrollUserInProject(ctx, userChurch1AID, testProjectID))
+	require.NoError(t, dbMgr.AddUserToTeam(ctx, userChurch1AID, teamChurch1OnlyID))
+	require.NoError(t, dbMgr.AddScoreForUser(ctx, userChurch1AID, testProjectID, 100))
+
+	require.NoError(t, dbMgr.CreateTestUser(ctx, userChurch1BID, "Church1B", "FEMALE", birthdate, testChurchID))
+	require.NoError(t, dbMgr.EnrollUserInProject(ctx, userChurch1BID, testProjectID))
+	require.NoError(t, dbMgr.AddUserToTeam(ctx, userChurch1BID, teamChurch1OnlyID))
+	require.NoError(t, dbMgr.AddScoreForUser(ctx, userChurch1BID, testProjectID, 50))
+
+	// Team Church2 Only: 2 users from church 2
+	require.NoError(t, dbMgr.CreateTestUser(ctx, userChurch2AID, "Church2A", "MALE", birthdate, testChurch2ID))
+	require.NoError(t, dbMgr.EnrollUserInProject(ctx, userChurch2AID, testProjectID))
+	require.NoError(t, dbMgr.AddUserToTeam(ctx, userChurch2AID, teamChurch2OnlyID))
+	require.NoError(t, dbMgr.AddScoreForUser(ctx, userChurch2AID, testProjectID, 75))
+
+	require.NoError(t, dbMgr.CreateTestUser(ctx, userChurch2BID, "Church2B", "FEMALE", birthdate, testChurch2ID))
+	require.NoError(t, dbMgr.EnrollUserInProject(ctx, userChurch2BID, testProjectID))
+	require.NoError(t, dbMgr.AddUserToTeam(ctx, userChurch2BID, teamChurch2OnlyID))
+	require.NoError(t, dbMgr.AddScoreForUser(ctx, userChurch2BID, testProjectID, 25))
+
+	// Team Mixed: 1 user from church 1, 1 user from church 2
+	require.NoError(t, dbMgr.CreateTestUser(ctx, userMixedChurch1ID, "MixedChurch1", "MALE", birthdate, testChurchID))
+	require.NoError(t, dbMgr.EnrollUserInProject(ctx, userMixedChurch1ID, testProjectID))
+	require.NoError(t, dbMgr.AddUserToTeam(ctx, userMixedChurch1ID, teamMixedID))
+	require.NoError(t, dbMgr.AddScoreForUser(ctx, userMixedChurch1ID, testProjectID, 60))
+
+	require.NoError(t, dbMgr.CreateTestUser(ctx, userMixedChurch2ID, "MixedChurch2", "FEMALE", birthdate, testChurch2ID))
+	require.NoError(t, dbMgr.EnrollUserInProject(ctx, userMixedChurch2ID, testProjectID))
+	require.NoError(t, dbMgr.AddUserToTeam(ctx, userMixedChurch2ID, teamMixedID))
+	require.NoError(t, dbMgr.AddScoreForUser(ctx, userMixedChurch2ID, testProjectID, 40))
+}
+
+// ==================== Multi-Team User Scoring Tests ====================
+
+// Test entity IDs for multi-team tests (must be exactly 28 chars: 2-char prefix + 26-char ULID)
+const (
+	multiTeamUserID  = "US01TEST00000000000MULTITEAM"
+	multiTeamTeam1ID = "TM01TEST0000000000MULTITEAM1"
+	multiTeamTeam2ID = "TM01TEST0000000000MULTITEAM2"
+)
+
+// TestLeaderboardMultiTeamUserScoring tests that when a user is a member of multiple teams
+// in the same project, adding a score for that user updates ALL team leaderboards correctly.
+// This tests the fix for the bug where the trigger only updated one random team.
+func TestLeaderboardMultiTeamUserScoring(t *testing.T) {
+	ctx := context.Background()
+	dbMgr, _ := GetTestEnv()
+
+	// Clean database for fresh test data
+	require.NoError(t, dbMgr.Clean(ctx))
+
+	now := time.Now()
+	birthdate := now.AddDate(-25, 0, 0)
+
+	// Create test church
+	require.NoError(t, dbMgr.CreateTestChurch(ctx, testChurchID, "Test Church", "NO", "S"))
+
+	// Create test project
+	require.NoError(t, dbMgr.CreateTestProject(ctx, testProjectID, "Test Project"))
+
+	// Update settings to point to our test project
+	_, err := dbMgr.DB.Pool.Exec(ctx, `UPDATE settings SET value_text = $1 WHERE key = 'current_project_id'`, testProjectID)
+	require.NoError(t, err)
+
+	// Create 2 teams in the same project
+	require.NoError(t, dbMgr.CreateTestTeam(ctx, multiTeamTeam1ID, "Multi Team 1", testProjectID))
+	require.NoError(t, dbMgr.CreateTestTeam(ctx, multiTeamTeam2ID, "Multi Team 2", testProjectID))
+
+	// Create user who will be a member of BOTH teams
+	require.NoError(t, dbMgr.CreateTestUser(ctx, multiTeamUserID, "MultiTeamUser", "MALE", birthdate, testChurchID))
+	require.NoError(t, dbMgr.EnrollUserInProject(ctx, multiTeamUserID, testProjectID))
+
+	// Add user to BOTH teams
+	require.NoError(t, dbMgr.AddUserToTeam(ctx, multiTeamUserID, multiTeamTeam1ID))
+	require.NoError(t, dbMgr.AddUserToTeam(ctx, multiTeamUserID, multiTeamTeam2ID))
+
+	// Add score for the user - this should update BOTH team leaderboards via the trigger
+	require.NoError(t, dbMgr.AddScoreForUser(ctx, multiTeamUserID, testProjectID, 100))
+
+	// Setup test server with cache access
+	router, testCache, cleanup, err := testutil.SetupTestServerWithCache(ctx, dbMgr)
+	require.NoError(t, err)
+	defer cleanup()
+
+	client := testutil.NewGraphQLClient(router)
+	defer client.Close()
+
+	adminToken, err := testutil.GenerateAdminToken(multiTeamUserID)
+	require.NoError(t, err)
+
+	const teamLeaderboardQuery = `
+		query GetTeamLeaderboard($projectId: ID!) {
+			project(id: $projectId) {
+				leaderboard(entityType: TEAMS, first: 100) {
+					edges {
+						node {
+							id
+							name
+							score
+						}
+					}
+					totalCount
+				}
+			}
+		}
+	`
+
+	t.Run("trigger updates both teams when user is in multiple teams", func(t *testing.T) {
+		resp := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+		})
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result teamLeaderboardResult
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		// Both teams should appear in the leaderboard with the same score
+		require.Equal(t, 2, result.Project.Leaderboard.TotalCount, "Both teams should appear in leaderboard")
+		require.Len(t, result.Project.Leaderboard.Edges, 2)
+
+		// Build a map of team scores for easier verification
+		teamScores := make(map[string]int)
+		for _, edge := range result.Project.Leaderboard.Edges {
+			teamScores[edge.Node.ID] = edge.Node.Score
+		}
+
+		// Both teams should have score 100 from the user's score
+		assert.Equal(t, 100, teamScores[multiTeamTeam1ID], "Team 1 should have score of 100")
+		assert.Equal(t, 100, teamScores[multiTeamTeam2ID], "Team 2 should have score of 100")
+	})
+
+	t.Run("adding more scores updates both teams", func(t *testing.T) {
+		// Add another score
+		require.NoError(t, dbMgr.AddScoreForUser(ctx, multiTeamUserID, testProjectID, 50))
+
+		// Clear cache to see fresh data
+		testCache.Clear()
+
+		resp := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+		})
+		require.False(t, resp.HasErrors())
+
+		var result teamLeaderboardResult
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		// Build a map of team scores
+		teamScores := make(map[string]int)
+		for _, edge := range result.Project.Leaderboard.Edges {
+			teamScores[edge.Node.ID] = edge.Node.Score
+		}
+
+		// Both teams should have cumulative score 150
+		assert.Equal(t, 150, teamScores[multiTeamTeam1ID], "Team 1 should have cumulative score of 150")
+		assert.Equal(t, 150, teamScores[multiTeamTeam2ID], "Team 2 should have cumulative score of 150")
+	})
+
+	t.Run("regenerate_leaderboards produces same results as trigger", func(t *testing.T) {
+		// Clear cache to ensure we get fresh data
+		testCache.Clear()
+
+		// Get current scores from trigger-updated leaderboards
+		resp := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+		})
+		require.False(t, resp.HasErrors())
+
+		var beforeRegen teamLeaderboardResult
+		require.NoError(t, resp.UnmarshalData(&beforeRegen))
+
+		// Build map of scores before regeneration
+		scoresBefore := make(map[string]int)
+		for _, edge := range beforeRegen.Project.Leaderboard.Edges {
+			scoresBefore[edge.Node.ID] = edge.Node.Score
+		}
+
+		// Call regenerate_leaderboards
+		_, err := dbMgr.DB.Pool.Exec(ctx, `SELECT * FROM regenerate_leaderboards()`)
+		require.NoError(t, err)
+
+		// Clear cache after regeneration
+		testCache.Clear()
+
+		// Query again after regeneration
+		respAfter := client.WithAuth(adminToken).MustExecute(t, teamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+		})
+		require.False(t, respAfter.HasErrors())
+
+		var afterRegen teamLeaderboardResult
+		require.NoError(t, respAfter.UnmarshalData(&afterRegen))
+
+		// Build map of scores after regeneration
+		scoresAfter := make(map[string]int)
+		for _, edge := range afterRegen.Project.Leaderboard.Edges {
+			scoresAfter[edge.Node.ID] = edge.Node.Score
+		}
+
+		// Scores should match before and after regeneration
+		assert.Equal(t, scoresBefore[multiTeamTeam1ID], scoresAfter[multiTeamTeam1ID],
+			"Team 1 score should match before and after regeneration")
+		assert.Equal(t, scoresBefore[multiTeamTeam2ID], scoresAfter[multiTeamTeam2ID],
+			"Team 2 score should match before and after regeneration")
+	})
+}
+
+// TestLeaderboardMultiTeamWithSuperTeam tests that when a user is in multiple teams
+// that belong to the same super_team, the super_team score is only updated once per score entry.
+func TestLeaderboardMultiTeamWithSuperTeam(t *testing.T) {
+	ctx := context.Background()
+	dbMgr, _ := GetTestEnv()
+
+	// Clean database for fresh test data
+	require.NoError(t, dbMgr.Clean(ctx))
+
+	now := time.Now()
+	birthdate := now.AddDate(-25, 0, 0)
+
+	// Test IDs (must be exactly 28 chars: 2-char prefix + 26-char ULID)
+	const (
+		superTeamID        = "ST01TEST0000000000000SUPER01"
+		teamInSuperTeam1ID = "TM01TEST0000000000SUPERTEAM1"
+		teamInSuperTeam2ID = "TM01TEST0000000000SUPERTEAM2"
+		userInBothTeamsID  = "US01TEST000000000INBOTHTEAMS"
+	)
+
+	// Create test church
+	require.NoError(t, dbMgr.CreateTestChurch(ctx, testChurchID, "Test Church", "NO", "S"))
+
+	// Create test project
+	require.NoError(t, dbMgr.CreateTestProject(ctx, testProjectID, "Test Project"))
+
+	// Update settings
+	_, err := dbMgr.DB.Pool.Exec(ctx, `UPDATE settings SET value_text = $1 WHERE key = 'current_project_id'`, testProjectID)
+	require.NoError(t, err)
+
+	// Create super team
+	_, err = dbMgr.DB.Pool.Exec(ctx, `
+		INSERT INTO super_teams (id, project_id, name)
+		VALUES ($1, $2, 'Test Super Team')
+	`, superTeamID, testProjectID)
+	require.NoError(t, err)
+
+	// Create 2 teams that both belong to the same super_team
+	_, err = dbMgr.DB.Pool.Exec(ctx, `
+		INSERT INTO teams (id, project_id, name, join_code, super_team_id)
+		VALUES ($1, $2, 'Team In Super 1', 'TIST1', $3)
+	`, teamInSuperTeam1ID, testProjectID, superTeamID)
+	require.NoError(t, err)
+
+	_, err = dbMgr.DB.Pool.Exec(ctx, `
+		INSERT INTO teams (id, project_id, name, join_code, super_team_id)
+		VALUES ($1, $2, 'Team In Super 2', 'TIST2', $3)
+	`, teamInSuperTeam2ID, testProjectID, superTeamID)
+	require.NoError(t, err)
+
+	// Create user in both teams
+	require.NoError(t, dbMgr.CreateTestUser(ctx, userInBothTeamsID, "UserInBothTeams", "MALE", birthdate, testChurchID))
+	require.NoError(t, dbMgr.EnrollUserInProject(ctx, userInBothTeamsID, testProjectID))
+	require.NoError(t, dbMgr.AddUserToTeam(ctx, userInBothTeamsID, teamInSuperTeam1ID))
+	require.NoError(t, dbMgr.AddUserToTeam(ctx, userInBothTeamsID, teamInSuperTeam2ID))
+
+	// Add score for the user
+	require.NoError(t, dbMgr.AddScoreForUser(ctx, userInBothTeamsID, testProjectID, 100))
+
+	// Setup test server
+	router, cleanup, err := testutil.SetupTestServer(ctx, dbMgr)
+	require.NoError(t, err)
+	defer cleanup()
+
+	client := testutil.NewGraphQLClient(router)
+	defer client.Close()
+
+	adminToken, err := testutil.GenerateAdminToken(userInBothTeamsID)
+	require.NoError(t, err)
+
+	const superTeamLeaderboardQuery = `
+		query GetSuperTeamLeaderboard($projectId: ID!) {
+			project(id: $projectId) {
+				leaderboard(entityType: SUPERTEAMS, first: 100) {
+					edges {
+						node {
+							id
+							name
+							score
+						}
+					}
+					totalCount
+				}
+			}
+		}
+	`
+
+	t.Run("super_team score is only counted once when user is in multiple teams of same super_team", func(t *testing.T) {
+		resp := client.WithAuth(adminToken).MustExecute(t, superTeamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+		})
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result teamLeaderboardResult
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		require.Equal(t, 1, result.Project.Leaderboard.TotalCount, "Should have exactly 1 super_team")
+		require.Len(t, result.Project.Leaderboard.Edges, 1)
+		assert.Equal(t, superTeamID, result.Project.Leaderboard.Edges[0].Node.ID)
+		// Score should be 100, NOT 200 (which would happen if super_team was updated twice)
+		assert.Equal(t, 100, result.Project.Leaderboard.Edges[0].Node.Score,
+			"Super team score should be 100, not 200 (should only count once)")
+	})
+
+	t.Run("regenerate produces same super_team score", func(t *testing.T) {
+		// Call regenerate_leaderboards
+		_, err := dbMgr.DB.Pool.Exec(ctx, `SELECT * FROM regenerate_leaderboards()`)
+		require.NoError(t, err)
+
+		resp := client.WithAuth(adminToken).MustExecute(t, superTeamLeaderboardQuery, map[string]any{
+			"projectId": testProjectID,
+		})
+		require.False(t, resp.HasErrors())
+
+		var result teamLeaderboardResult
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		require.Len(t, result.Project.Leaderboard.Edges, 1)
+		assert.Equal(t, 100, result.Project.Leaderboard.Edges[0].Node.Score,
+			"Super team score after regeneration should still be 100")
+	})
+}
