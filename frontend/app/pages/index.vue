@@ -211,11 +211,8 @@ const hiddenTreasuresLink = computed(() => {
           </NuxtLink>
         </div>
       </ProfileProjectCard>
-      <div class="pt-small">
-        <UserFeedback
-          key="user-feedback"
-          :project-id="data.myCurrentProject?.id"
-        />
+      <div key="user-feedback" class="pt-small">
+        <UserFeedback :project-id="data.myCurrentProject?.id" />
       </div>
     </TransitionGroup>
 
