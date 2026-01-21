@@ -7,7 +7,7 @@ const { me } = useAuth()
 const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useStandingsLocalPageQuery({
   variables: computed(() => ({
-    first: 20,
+    first: entityType.value === LeaderboardEntityType.Persons ? 20 : 500,
     filter: {
       churchId: me.value?.church.id,
       ageRange: { min: 13, max: 37 },
