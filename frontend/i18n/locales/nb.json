@@ -202,7 +202,7 @@
       "deleteSelected": "Slett valgte",
       "bulkCreate": {
         "countLabel": "Antall units",
-        "autoGenerateInfo": "Navnene genereres automatisk"
+        "autoGenerateInfo": "Navnene på units genereres automatisk, og kan endres i etterkant."
       },
       "confirmDelete": {
         "title": "Slett unit?",
