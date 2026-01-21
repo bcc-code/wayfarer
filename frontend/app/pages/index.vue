@@ -211,11 +211,12 @@ const hiddenTreasuresLink = computed(() => {
           </NuxtLink>
         </div>
       </ProfileProjectCard>
-      <UserFeedback
-        key="user-feedback"
-        :project-id="data.myCurrentProject?.id"
-        class="mt-default"
-      />
+      <div class="pt-small">
+        <UserFeedback
+          key="user-feedback"
+          :project-id="data.myCurrentProject?.id"
+        />
+      </div>
     </TransitionGroup>
 
     <!-- Notification prompt for PWA users -->
