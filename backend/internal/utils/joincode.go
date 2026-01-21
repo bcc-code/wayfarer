@@ -11,7 +11,7 @@ const (
 	// JoinCodeLength is the length of generated join codes
 	JoinCodeLength = 6
 	// JoinCodeChars are the allowed characters in join codes
-	JoinCodeChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	JoinCodeChars = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789"
 	// MaxRetries is the maximum number of retries for generating unique codes
 	MaxRetries = 10
 )
