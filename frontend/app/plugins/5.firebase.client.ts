@@ -7,6 +7,7 @@ export default defineNuxtPlugin(() => {
 
   // Skip initialization if Firebase config is not provided
   if (
+    !config.public.firebaseDatabase ||
     !config.public.firebaseApiKey ||
     !config.public.firebaseProjectId ||
     !config.public.firebaseAuthDomain
@@ -33,7 +34,9 @@ export default defineNuxtPlugin(() => {
   }
 
   const auth: Auth = getAuth(app)
-  const firestore: Firestore = getFirestore(app)
+  const firestore: Firestore = config.public.firebaseDatabase
+    ? getFirestore(app, config.public.firebaseDatabase)
+    : getFirestore(app)
 
   return {
     provide: {

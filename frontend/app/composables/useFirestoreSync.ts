@@ -94,10 +94,17 @@ export function useFirestoreSync() {
     if (!firestore) return () => {}
     const path = `users/${userId}/notifications/${category}`
     const docRef = doc(firestore, path)
+    let isInitialSnapshot = true
 
     return onSnapshot(
       docRef,
       (snapshot: DocumentSnapshot) => {
+        // Skip the initial snapshot that fires on subscribe
+        if (isInitialSnapshot) {
+          isInitialSnapshot = false
+          return
+        }
+
         if (!snapshot.exists()) return
 
         // Dispatch custom event for pages to handle
