@@ -457,6 +457,148 @@ func (q *Queries) DeleteChallenge(ctx context.Context, id string) error {
 	return err
 }
 
+const GetAllChallengesByEventIDs = `-- name: GetAllChallengesByEventIDs :many
+SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+FROM challenges
+WHERE event_id = ANY($1::text[])
+ORDER BY event_id, COALESCE(published_at, created_at) DESC
+`
+
+type GetAllChallengesByEventIDsRow struct {
+	ID                          string             `json:"id"`
+	ProjectID                   string             `json:"project_id"`
+	EventID                     *string            `json:"event_id"`
+	ChallengeType               string             `json:"challenge_type"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	ImageUrl                    *string            `json:"image_url"`
+	Url                         *string            `json:"url"`
+	ButtonText                  string             `json:"button_text"`
+	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
+	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
+	StartedAt                   pgtype.Timestamptz `json:"started_at"`
+	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
+	RequiresTeamMembership      bool               `json:"requires_team_membership"`
+	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	PluginChallengeID           *string            `json:"plugin_challenge_id"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+// Returns ALL challenges for given event IDs, including unpublished.
+// Visibility filtering must be done at the application layer.
+func (q *Queries) GetAllChallengesByEventIDs(ctx context.Context, eventIds []string) ([]*GetAllChallengesByEventIDsRow, error) {
+	rows, err := q.db.Query(ctx, GetAllChallengesByEventIDs, eventIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetAllChallengesByEventIDsRow{}
+	for rows.Next() {
+		var i GetAllChallengesByEventIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.EventID,
+			&i.ChallengeType,
+			&i.Name,
+			&i.Description,
+			&i.ImageUrl,
+			&i.Url,
+			&i.ButtonText,
+			&i.PublishedAt,
+			&i.VisibleAt,
+			&i.StartedAt,
+			&i.EndTime,
+			&i.AllowSelfCompletion,
+			&i.RequiresTeamMembership,
+			&i.RequiresSuperTeamMembership,
+			&i.PluginChallengeID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetAllChallengesByProjectIDs = `-- name: GetAllChallengesByProjectIDs :many
+SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+FROM challenges
+WHERE project_id = ANY($1::text[])
+ORDER BY project_id, COALESCE(published_at, created_at) DESC
+`
+
+type GetAllChallengesByProjectIDsRow struct {
+	ID                          string             `json:"id"`
+	ProjectID                   string             `json:"project_id"`
+	EventID                     *string            `json:"event_id"`
+	ChallengeType               string             `json:"challenge_type"`
+	Name                        string             `json:"name"`
+	Description                 string             `json:"description"`
+	ImageUrl                    *string            `json:"image_url"`
+	Url                         *string            `json:"url"`
+	ButtonText                  string             `json:"button_text"`
+	PublishedAt                 pgtype.Timestamptz `json:"published_at"`
+	VisibleAt                   pgtype.Timestamptz `json:"visible_at"`
+	StartedAt                   pgtype.Timestamptz `json:"started_at"`
+	EndTime                     pgtype.Timestamptz `json:"end_time"`
+	AllowSelfCompletion         bool               `json:"allow_self_completion"`
+	RequiresTeamMembership      bool               `json:"requires_team_membership"`
+	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
+	PluginChallengeID           *string            `json:"plugin_challenge_id"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+// Returns ALL challenges for given project IDs, including unpublished.
+// Visibility filtering must be done at the application layer.
+func (q *Queries) GetAllChallengesByProjectIDs(ctx context.Context, projectIds []string) ([]*GetAllChallengesByProjectIDsRow, error) {
+	rows, err := q.db.Query(ctx, GetAllChallengesByProjectIDs, projectIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetAllChallengesByProjectIDsRow{}
+	for rows.Next() {
+		var i GetAllChallengesByProjectIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.EventID,
+			&i.ChallengeType,
+			&i.Name,
+			&i.Description,
+			&i.ImageUrl,
+			&i.Url,
+			&i.ButtonText,
+			&i.PublishedAt,
+			&i.VisibleAt,
+			&i.StartedAt,
+			&i.EndTime,
+			&i.AllowSelfCompletion,
+			&i.RequiresTeamMembership,
+			&i.RequiresSuperTeamMembership,
+			&i.PluginChallengeID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetChallengeByPluginChallengeID = `-- name: GetChallengeByPluginChallengeID :one
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges

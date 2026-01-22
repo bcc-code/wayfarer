@@ -31,7 +31,7 @@ func challengesByEventBatchFunc(db *database.DB, c *cache.CacheWithRegistry) fun
 
 		// Query database only for cache misses
 		if len(missingEventIDs) > 0 {
-			rows, err := db.Queries.GetChallengesByEventIDs(ctx, missingEventIDs)
+			rows, err := db.Queries.GetAllChallengesByEventIDs(ctx, missingEventIDs)
 			if err != nil {
 				results := make([]*dataloader.Result[[]model.Challenge], len(eventIDs))
 				for i := range results {
@@ -70,8 +70,8 @@ func challengesByEventBatchFunc(db *database.DB, c *cache.CacheWithRegistry) fun
 	}
 }
 
-// convertEventChallengeRow converts a GetChallengesByEventIDsRow to the appropriate Challenge implementation
-func convertEventChallengeRow(row *sqlc.GetChallengesByEventIDsRow) model.Challenge {
+// convertEventChallengeRow converts a GetAllChallengesByEventIDsRow to the appropriate Challenge implementation
+func convertEventChallengeRow(row *sqlc.GetAllChallengesByEventIDsRow) model.Challenge {
 	var publishedAt, visibleAt, startedAt, endTime *scalars.DateTime
 	if row.PublishedAt.Valid {
 		dt := scalars.DateTime{Time: row.PublishedAt.Time}

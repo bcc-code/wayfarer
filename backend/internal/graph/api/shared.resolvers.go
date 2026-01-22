@@ -207,28 +207,55 @@ func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]mod
 	}
 
 	userID, _ := middleware.GetUserID(ctx)
+	isAdmin := userID != "" && r.RoleService.CanManageProject(ctx, userID, obj.ProjectID)
 
-	// Filter by visibility (enrolled OR visible_at in past) - applies to ALL users including admins
-	challenges = r.filterChallengesByVisibility(ctx, challenges, userID, obj.ProjectID, false)
-
-	// Filter out quiz challenges without session access (applies to ALL users including admins)
 	result := make([]model.Challenge, 0, len(challenges))
 	for _, ch := range challenges {
+		// For quiz challenges, check session access first
 		if _, ok := ch.(*model.QuizChallenge); ok && userID != "" {
-			// Load quiz by challenge ID to get quiz ID
 			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
 			quiz, err := quizThunk()
-			if err != nil || quiz == nil {
-				continue // Skip this challenge
+			if err == nil && quiz != nil {
+				hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
+					Quizid: quiz.ID,
+					Userid: userID,
+				})
+				if err == nil && hasAccess {
+					// Session access grants visibility regardless of publishedAt
+					result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
+					continue
+				}
 			}
+			// Quiz without session access: skip this challenge entirely
+			continue
+		}
 
-			hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
-				Quizid: quiz.ID,
-				Userid: userID,
+		// Admins can see all non-quiz challenges
+		if isAdmin {
+			result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
+			continue
+		}
+
+		// Non-admins: check publishedAt
+		publishedAt := getChallengePublishedAt(ch)
+		if publishedAt == nil || publishedAt.Time.After(time.Now()) {
+			continue // Skip unpublished
+		}
+
+		// Check visibility (enrolled OR visible_at in past)
+		visibleAt := getChallengeVisibleAt(ch)
+		isVisible := visibleAt != nil && !visibleAt.Time.After(time.Now())
+
+		if !isVisible && userID != "" {
+			enrolled, err := r.DB.Queries.IsUserEnrolledInChallenge(ctx, sqlc.IsUserEnrolledInChallengeParams{
+				Userid:      userID,
+				Challengeid: ch.GetID(),
 			})
-			if err != nil || !hasAccess {
-				continue // Skip this challenge
+			if err != nil || !enrolled {
+				continue // Skip not enrolled
 			}
+		} else if !isVisible {
+			continue // Skip not visible
 		}
 
 		result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
@@ -546,28 +573,55 @@ func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([
 	}
 
 	userID, _ := middleware.GetUserID(ctx)
+	isAdmin := userID != "" && r.RoleService.CanManageProject(ctx, userID, obj.ID)
 
-	// Filter by visibility (enrolled OR visible_at in past) - applies to ALL users including admins
-	challenges = r.filterChallengesByVisibility(ctx, challenges, userID, obj.ID, false)
-
-	// Filter out quiz challenges without session access (applies to ALL users including admins)
 	result := make([]model.Challenge, 0, len(challenges))
 	for _, ch := range challenges {
+		// For quiz challenges, check session access first
 		if _, ok := ch.(*model.QuizChallenge); ok && userID != "" {
-			// Load quiz by challenge ID to get quiz ID
 			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
 			quiz, err := quizThunk()
-			if err != nil || quiz == nil {
-				continue // Skip this challenge
+			if err == nil && quiz != nil {
+				hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
+					Quizid: quiz.ID,
+					Userid: userID,
+				})
+				if err == nil && hasAccess {
+					// Session access grants visibility regardless of publishedAt
+					result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
+					continue
+				}
 			}
+			// Quiz without session access: skip this challenge entirely
+			continue
+		}
 
-			hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
-				Quizid: quiz.ID,
-				Userid: userID,
+		// Admins can see all non-quiz challenges
+		if isAdmin {
+			result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
+			continue
+		}
+
+		// Non-admins: check publishedAt
+		publishedAt := getChallengePublishedAt(ch)
+		if publishedAt == nil || publishedAt.Time.After(time.Now()) {
+			continue // Skip unpublished
+		}
+
+		// Check visibility (enrolled OR visible_at in past)
+		visibleAt := getChallengeVisibleAt(ch)
+		isVisible := visibleAt != nil && !visibleAt.Time.After(time.Now())
+
+		if !isVisible && userID != "" {
+			enrolled, err := r.DB.Queries.IsUserEnrolledInChallenge(ctx, sqlc.IsUserEnrolledInChallengeParams{
+				Userid:      userID,
+				Challengeid: ch.GetID(),
 			})
-			if err != nil || !hasAccess {
-				continue // Skip this challenge
+			if err != nil || !enrolled {
+				continue // Skip not enrolled
 			}
+		} else if !isVisible {
+			continue // Skip not visible
 		}
 
 		result = append(result, r.ApplyTranslationToChallenge(ctx, ch))

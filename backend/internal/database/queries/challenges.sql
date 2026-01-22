@@ -11,6 +11,14 @@ WHERE project_id = ANY(@project_ids::text[])
     AND published_at <= NOW()
 ORDER BY project_id, published_at DESC;
 
+-- name: GetAllChallengesByProjectIDs :many
+-- Returns ALL challenges for given project IDs, including unpublished.
+-- Visibility filtering must be done at the application layer.
+SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+FROM challenges
+WHERE project_id = ANY(@project_ids::text[])
+ORDER BY project_id, COALESCE(published_at, created_at) DESC;
+
 -- name: GetChallengesByEventIDs :many
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 FROM challenges
@@ -18,6 +26,14 @@ WHERE event_id = ANY(@event_ids::text[])
     AND published_at IS NOT NULL
     AND published_at <= NOW()
 ORDER BY event_id, published_at DESC;
+
+-- name: GetAllChallengesByEventIDs :many
+-- Returns ALL challenges for given event IDs, including unpublished.
+-- Visibility filtering must be done at the application layer.
+SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
+FROM challenges
+WHERE event_id = ANY(@event_ids::text[])
+ORDER BY event_id, COALESCE(published_at, created_at) DESC;
 
 -- name: GetChallengesFilteredCursor :many
 SELECT id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at

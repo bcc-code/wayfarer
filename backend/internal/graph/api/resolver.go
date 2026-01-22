@@ -91,7 +91,7 @@ func (r *Resolver) LoadQuizByID(ctx context.Context, quizID string) (*model.Quiz
 
 // LoadChallengeWithVisibility loads a challenge and enforces visibility rules for non-admins.
 // Admins can see all challenges, non-admins can only see published challenges.
-// For quiz challenges, non-admins also need access to an open session.
+// For quiz challenges, session access grants visibility regardless of publish status.
 func (r *Resolver) LoadChallengeWithVisibility(ctx context.Context, challengeID string) (model.Challenge, error) {
 	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
 	challenge, err := thunk()
@@ -99,14 +99,30 @@ func (r *Resolver) LoadChallengeWithVisibility(ctx context.Context, challengeID 
 		return nil, err
 	}
 
-	// Admins can see all challenges
 	userID, _ := middleware.GetUserID(ctx)
 	projectID := getChallengeProjectID(challenge)
+
+	// Admins can see all challenges
 	if userID != "" && r.RoleService.CanManageProject(ctx, userID, projectID) {
 		return challenge, nil
 	}
 
-	// Non-admins can only see published challenges
+	// For quiz challenges, check session access first - session access grants visibility
+	if _, ok := challenge.(*model.QuizChallenge); ok && userID != "" {
+		quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, challengeID)
+		quiz, err := quizThunk()
+		if err == nil && quiz != nil {
+			hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
+				Quizid: quiz.ID,
+				Userid: userID,
+			})
+			if err == nil && hasAccess {
+				return challenge, nil // Session access grants visibility
+			}
+		}
+	}
+
+	// Non-admins without session access can only see published challenges
 	publishedAt := getChallengePublishedAt(challenge)
 	if publishedAt == nil || publishedAt.Time.After(time.Now()) {
 		return nil, fmt.Errorf("challenge not found")
@@ -128,24 +144,6 @@ func (r *Resolver) LoadChallengeWithVisibility(ctx context.Context, challengeID 
 	} else if !isVisible {
 		// No user ID and not visible = not found
 		return nil, fmt.Errorf("challenge not found")
-	}
-
-	// For quiz challenges, check session access
-	if _, ok := challenge.(*model.QuizChallenge); ok && userID != "" {
-		// Load quiz by challenge ID to get quiz ID
-		quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, challengeID)
-		quiz, err := quizThunk()
-		if err != nil || quiz == nil {
-			return nil, fmt.Errorf("challenge not found")
-		}
-
-		hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
-			Quizid: quiz.ID,
-			Userid: userID,
-		})
-		if err != nil || !hasAccess {
-			return nil, fmt.Errorf("challenge not found")
-		}
 	}
 
 	return challenge, nil
