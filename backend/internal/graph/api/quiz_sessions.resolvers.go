@@ -43,6 +43,9 @@ func (r *mutationResolver) CreateQuizSession(ctx context.Context, input model.Cr
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
 	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
+	}
 
 	// Check if user can manage sessions (admin, superadmin, project_admin, or church_admin)
 	if !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
@@ -103,6 +106,9 @@ func (r *mutationResolver) UpdateQuizSession(ctx context.Context, id string, inp
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
 	}
 
 	// Check if user can manage this session
@@ -168,6 +174,9 @@ func (r *mutationResolver) DeleteQuizSession(ctx context.Context, id string) (bo
 		otel.RecordError(span, err)
 		return false, fmt.Errorf("failed to load quiz: %w", err)
 	}
+	if quiz == nil {
+		return false, fmt.Errorf("quiz not found")
+	}
 
 	// Check if user can manage this session
 	if session.CreatedBy != userID && !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
@@ -213,6 +222,9 @@ func (r *mutationResolver) OpenQuizSession(ctx context.Context, id string) (*mod
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
 	}
 
 	// Check if user can manage this session
@@ -267,6 +279,9 @@ func (r *mutationResolver) LockQuizSession(ctx context.Context, id string) (*mod
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
 	}
 
 	// Check if user can manage this session
@@ -328,6 +343,9 @@ func (r *mutationResolver) FinishQuizSession(ctx context.Context, id string) (*m
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
 	}
 
 	// Check if user can manage this session
@@ -429,6 +447,9 @@ func (r *mutationResolver) ReopenQuizSession(ctx context.Context, id string) (*m
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
 	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
+	}
 
 	// Only admin/superadmin can reopen
 	if !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
@@ -482,6 +503,9 @@ func (r *mutationResolver) GrantQuizSessionAccess(ctx context.Context, input mod
 	if err != nil {
 		otel.RecordError(span, err)
 		return 0, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return 0, fmt.Errorf("quiz not found")
 	}
 
 	// Check if user can grant access
@@ -612,6 +636,9 @@ func (r *mutationResolver) RevokeQuizSessionAccess(ctx context.Context, sessionI
 		otel.RecordError(span, err)
 		return false, fmt.Errorf("failed to load quiz: %w", err)
 	}
+	if quiz == nil {
+		return false, fmt.Errorf("quiz not found")
+	}
 
 	// Check if user can revoke access
 	if !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
@@ -655,6 +682,9 @@ func (r *mutationResolver) RevokeAllQuizSessionAccess(ctx context.Context, sessi
 	if err != nil {
 		otel.RecordError(span, err)
 		return false, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return false, fmt.Errorf("quiz not found")
 	}
 
 	// Check if user can revoke access
@@ -725,6 +755,9 @@ func (r *mutationResolver) StartQuizSession(ctx context.Context, sessionID strin
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
 	}
 
 	// Get quiz questions
@@ -878,6 +911,9 @@ func (r *quizSessionResolver) Quiz(ctx context.Context, obj *model.QuizSession) 
 	quiz, err := thunk()
 	if err != nil {
 		return nil, err
+	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
 	}
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }
