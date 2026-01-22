@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_jeNj4qwcQN
 createdAt: 2025-12-08T08:28:18.920390
-updatedAt: 2025-12-14T20:39:54.430088
+updatedAt: 2026-01-22T11:06:41.079081
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_U4FqjQ2Ma5
 authentication: {}
@@ -13,12 +13,15 @@ body:
       me {
         id
       }
-      challenge(id: "CL01KCF90HEY2RAT3D333NNCGGA7") {
+      challenge(id: "CL01KFJP3VKRCQ5RJJN5J80WASPW") {
         __typename
         id
         name
         description
         publishedAt
+        ... on PluginChallenge {
+          startedAt
+        }
         ... on SimpleChallenge {
           allowSelfCompletion
         }
@@ -35,7 +38,6 @@ body:
             revealCorrectAnswers
             allowRetakes
             completionPoints
-            publishedAt
             endTime
             userCanStart
             userSubmissions {

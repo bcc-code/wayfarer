@@ -112,6 +112,24 @@ func (r *Resolver) LoadChallengeWithVisibility(ctx context.Context, challengeID 
 		return nil, fmt.Errorf("challenge not found")
 	}
 
+	// Check visibility: enrolled OR visible_at in past
+	visibleAt := getChallengeVisibleAt(challenge)
+	isVisible := visibleAt != nil && !visibleAt.Time.After(time.Now())
+
+	if !isVisible && userID != "" {
+		// Check if user is enrolled
+		enrolled, err := r.DB.Queries.IsUserEnrolledInChallenge(ctx, sqlc.IsUserEnrolledInChallengeParams{
+			Userid:      userID,
+			Challengeid: getChallengeID(challenge),
+		})
+		if err != nil || !enrolled {
+			return nil, fmt.Errorf("challenge not found")
+		}
+	} else if !isVisible {
+		// No user ID and not visible = not found
+		return nil, fmt.Errorf("challenge not found")
+	}
+
 	// For quiz challenges, check session access
 	if _, ok := challenge.(*model.QuizChallenge); ok && userID != "" {
 		// Load quiz by challenge ID to get quiz ID

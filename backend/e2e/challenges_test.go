@@ -718,3 +718,378 @@ func TestChallenges(t *testing.T) {
 		assert.Greater(t, result.Challenges.TotalCount, 0)
 	})
 }
+
+func TestChallengeVisibility(t *testing.T) {
+	ctx := context.Background()
+	dbMgr, _ := GetTestEnv()
+
+	// Clean and seed with deterministic data
+	require.NoError(t, dbMgr.Clean(ctx))
+	data, err := dbMgr.Seed(ctx, 42, testutil.DefaultSeedConfig())
+	require.NoError(t, err)
+
+	// Setup user IDs
+	userID := data.UserIDs[0]
+	adminUserID := data.UserIDs[1]
+	otherUserID := data.UserIDs[2]
+
+	// Assign admin role
+	require.NoError(t, dbMgr.AssignRole(ctx, adminUserID, testutil.RoleAdmin))
+
+	// Setup test server
+	router, cleanup, err := testutil.SetupTestServer(ctx, dbMgr)
+	require.NoError(t, err)
+	defer cleanup()
+
+	client := testutil.NewGraphQLClient(router)
+	defer client.Close()
+
+	userToken, err := testutil.GenerateUserToken(userID)
+	require.NoError(t, err)
+
+	otherUserToken, err := testutil.GenerateUserToken(otherUserID)
+	require.NoError(t, err)
+
+	adminToken, err := testutil.GenerateAdminToken(adminUserID)
+	require.NoError(t, err)
+
+	projectID := data.ProjectIDs[0]
+	eventID := data.EventIDs[projectID][0]
+
+	// Helper to create a challenge with specific visibility settings
+	createChallenge := func(t *testing.T, name string) string {
+		createResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation CreateChallenge($projectId: ID!, $eventId: ID, $input: CreateChallengeInput!) {
+				createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
+					... on SimpleChallenge { id }
+				}
+			}
+		`, map[string]any{
+			"projectId": projectID,
+			"eventId":   eventID,
+			"input": map[string]any{
+				"type":       "SIMPLE",
+				"name":       name,
+				"buttonText": "Complete",
+			},
+		})
+		require.False(t, createResp.HasErrors())
+
+		var result struct {
+			CreateChallenge struct{ ID string } `json:"createChallenge"`
+		}
+		require.NoError(t, createResp.UnmarshalData(&result))
+		return result.CreateChallenge.ID
+	}
+
+	// Helper to publish a challenge
+	publishChallenge := func(t *testing.T, challengeID string) {
+		publishTime := time.Now().Add(-1 * time.Hour).Format(time.RFC3339)
+		publishResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation PublishChallenge($id: ID!, $publishedAt: DateTime!) {
+				publishChallenge(id: $id, publishedAt: $publishedAt) {
+					... on SimpleChallenge { id }
+				}
+			}
+		`, map[string]any{
+			"id":          challengeID,
+			"publishedAt": publishTime,
+		})
+		require.False(t, publishResp.HasErrors())
+	}
+
+	// Helper to set visibility
+	setVisibility := func(t *testing.T, challengeID string, visibleAt *string) {
+		if visibleAt == nil {
+			return
+		}
+		visibilityResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation SetChallengeVisibility($id: ID!, $visibleAt: DateTime!) {
+				setChallengeVisibility(id: $id, visibleAt: $visibleAt) {
+					... on SimpleChallenge { id visibleAt }
+				}
+			}
+		`, map[string]any{
+			"id":        challengeID,
+			"visibleAt": *visibleAt,
+		})
+		require.False(t, visibilityResp.HasErrors(), "unexpected error: %s", visibilityResp.ErrorMessage())
+	}
+
+	t.Run("unenrolled user cannot see challenge with future visible_at", func(t *testing.T) {
+		// Create and publish a challenge with future visible_at
+		challengeID := createChallenge(t, "Future Visibility Challenge")
+		publishChallenge(t, challengeID)
+
+		futureTime := time.Now().Add(24 * time.Hour).Format(time.RFC3339)
+		setVisibility(t, challengeID, &futureTime)
+
+		// Query challenge directly - should fail
+		resp := client.WithAuth(userToken).MustExecute(t, `
+			query GetChallenge($id: ID!) {
+				challenge(id: $id) {
+					... on SimpleChallenge { id name }
+				}
+			}
+		`, map[string]any{"id": challengeID})
+
+		require.True(t, resp.HasErrors(), "expected error for unenrolled user accessing future visible_at challenge")
+		assert.Contains(t, resp.ErrorMessage(), "not found")
+	})
+
+	t.Run("unenrolled user cannot see challenge with NULL visible_at", func(t *testing.T) {
+		// Create and publish a challenge (without setting visible_at, it stays NULL)
+		challengeID := createChallenge(t, "NULL Visibility Challenge")
+		publishChallenge(t, challengeID)
+		// No setVisibility call - visible_at remains NULL
+
+		// Query challenge directly - should fail
+		resp := client.WithAuth(userToken).MustExecute(t, `
+			query GetChallenge($id: ID!) {
+				challenge(id: $id) {
+					... on SimpleChallenge { id name }
+				}
+			}
+		`, map[string]any{"id": challengeID})
+
+		require.True(t, resp.HasErrors(), "expected error for unenrolled user accessing NULL visible_at challenge")
+		assert.Contains(t, resp.ErrorMessage(), "not found")
+	})
+
+	t.Run("enrolled user CAN see challenge with future visible_at", func(t *testing.T) {
+		// Create and publish a challenge with future visible_at
+		challengeID := createChallenge(t, "Enrolled Future Visibility")
+		publishChallenge(t, challengeID)
+
+		futureTime := time.Now().Add(24 * time.Hour).Format(time.RFC3339)
+		setVisibility(t, challengeID, &futureTime)
+
+		// Enroll the user (admin can bulk enroll)
+		enrollResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation BulkEnrollUsersInChallenge($target: EnrollmentTargetInput!, $challengeId: ID!) {
+				bulkEnrollUsersInChallenge(target: $target, challengeId: $challengeId) {
+					... on SimpleChallenge { id }
+				}
+			}
+		`, map[string]any{
+			"target":      map[string]any{"userIds": []string{userID}},
+			"challengeId": challengeID,
+		})
+		require.False(t, enrollResp.HasErrors())
+
+		// Now user should be able to see it
+		resp := client.WithAuth(userToken).MustExecute(t, `
+			query GetChallenge($id: ID!) {
+				challenge(id: $id) {
+					... on SimpleChallenge { id name }
+				}
+			}
+		`, map[string]any{"id": challengeID})
+
+		require.False(t, resp.HasErrors(), "enrolled user should see future visible_at challenge: %s", resp.ErrorMessage())
+
+		var result struct {
+			Challenge struct {
+				ID   string `json:"id"`
+				Name string `json:"name"`
+			} `json:"challenge"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+		assert.Equal(t, challengeID, result.Challenge.ID)
+		assert.Equal(t, "Enrolled Future Visibility", result.Challenge.Name)
+	})
+
+	t.Run("enrolled user CAN see challenge with NULL visible_at", func(t *testing.T) {
+		// Create and publish a challenge (without setting visible_at)
+		challengeID := createChallenge(t, "Enrolled NULL Visibility")
+		publishChallenge(t, challengeID)
+		// No setVisibility call - visible_at remains NULL
+
+		// Enroll the user
+		enrollResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation BulkEnrollUsersInChallenge($target: EnrollmentTargetInput!, $challengeId: ID!) {
+				bulkEnrollUsersInChallenge(target: $target, challengeId: $challengeId) {
+					... on SimpleChallenge { id }
+				}
+			}
+		`, map[string]any{
+			"target":      map[string]any{"userIds": []string{userID}},
+			"challengeId": challengeID,
+		})
+		require.False(t, enrollResp.HasErrors())
+
+		// Now user should be able to see it
+		resp := client.WithAuth(userToken).MustExecute(t, `
+			query GetChallenge($id: ID!) {
+				challenge(id: $id) {
+					... on SimpleChallenge { id name }
+				}
+			}
+		`, map[string]any{"id": challengeID})
+
+		require.False(t, resp.HasErrors(), "enrolled user should see NULL visible_at challenge: %s", resp.ErrorMessage())
+
+		var result struct {
+			Challenge struct {
+				ID   string `json:"id"`
+				Name string `json:"name"`
+			} `json:"challenge"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+		assert.Equal(t, challengeID, result.Challenge.ID)
+		assert.Equal(t, "Enrolled NULL Visibility", result.Challenge.Name)
+	})
+
+	t.Run("user CAN see challenge with past visible_at regardless of enrollment", func(t *testing.T) {
+		// Create and publish a challenge with past visible_at
+		challengeID := createChallenge(t, "Past Visibility Challenge")
+		publishChallenge(t, challengeID)
+
+		pastTime := time.Now().Add(-24 * time.Hour).Format(time.RFC3339)
+		setVisibility(t, challengeID, &pastTime)
+
+		// User (not enrolled) should be able to see it
+		resp := client.WithAuth(otherUserToken).MustExecute(t, `
+			query GetChallenge($id: ID!) {
+				challenge(id: $id) {
+					... on SimpleChallenge { id name }
+				}
+			}
+		`, map[string]any{"id": challengeID})
+
+		require.False(t, resp.HasErrors(), "user should see past visible_at challenge: %s", resp.ErrorMessage())
+
+		var result struct {
+			Challenge struct {
+				ID   string `json:"id"`
+				Name string `json:"name"`
+			} `json:"challenge"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+		assert.Equal(t, challengeID, result.Challenge.ID)
+		assert.Equal(t, "Past Visibility Challenge", result.Challenge.Name)
+	})
+
+	t.Run("admin can see ALL challenges regardless of visibility", func(t *testing.T) {
+		// Create challenges with various visibility states
+		futureChallengeID := createChallenge(t, "Admin Test Future")
+		publishChallenge(t, futureChallengeID)
+		futureTime := time.Now().Add(24 * time.Hour).Format(time.RFC3339)
+		setVisibility(t, futureChallengeID, &futureTime)
+
+		nullChallengeID := createChallenge(t, "Admin Test NULL")
+		publishChallenge(t, nullChallengeID)
+		// No visibility set - stays NULL
+
+		// Admin should see both
+		resp := client.WithAuth(adminToken).MustExecute(t, `
+			query GetChallenge($id: ID!) {
+				challenge(id: $id) {
+					... on SimpleChallenge { id name }
+				}
+			}
+		`, map[string]any{"id": futureChallengeID})
+		require.False(t, resp.HasErrors(), "admin should see future visible_at challenge: %s", resp.ErrorMessage())
+
+		resp = client.WithAuth(adminToken).MustExecute(t, `
+			query GetChallenge($id: ID!) {
+				challenge(id: $id) {
+					... on SimpleChallenge { id name }
+				}
+			}
+		`, map[string]any{"id": nullChallengeID})
+		require.False(t, resp.HasErrors(), "admin should see NULL visible_at challenge: %s", resp.ErrorMessage())
+	})
+
+	t.Run("challenge list includes enrolled-but-not-visible challenges", func(t *testing.T) {
+		// Create a challenge with NULL visible_at (not visible to unenrolled)
+		challengeID := createChallenge(t, "List Test Enrolled")
+		publishChallenge(t, challengeID)
+		// No visibility set - stays NULL
+
+		// Enroll user
+		enrollResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation BulkEnrollUsersInChallenge($target: EnrollmentTargetInput!, $challengeId: ID!) {
+				bulkEnrollUsersInChallenge(target: $target, challengeId: $challengeId) {
+					... on SimpleChallenge { id }
+				}
+			}
+		`, map[string]any{
+			"target":      map[string]any{"userIds": []string{userID}},
+			"challengeId": challengeID,
+		})
+		require.False(t, enrollResp.HasErrors())
+
+		// Query project challenges - enrolled user should see it
+		resp := client.WithAuth(userToken).MustExecute(t, `
+			query GetProject($id: ID!) {
+				project(id: $id) {
+					challenges {
+						... on SimpleChallenge { id name }
+					}
+				}
+			}
+		`, map[string]any{"id": projectID})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result struct {
+			Project struct {
+				Challenges []struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				} `json:"challenges"`
+			} `json:"project"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		// Find our challenge in the list
+		found := false
+		for _, ch := range result.Project.Challenges {
+			if ch.ID == challengeID {
+				found = true
+				assert.Equal(t, "List Test Enrolled", ch.Name)
+				break
+			}
+		}
+		assert.True(t, found, "enrolled user should see enrolled challenge in project challenges list")
+	})
+
+	t.Run("challenge list excludes non-visible challenges for unenrolled user", func(t *testing.T) {
+		// Create a challenge with NULL visible_at
+		challengeID := createChallenge(t, "List Test Not Visible")
+		publishChallenge(t, challengeID)
+		// No visibility set - stays NULL
+		// No enrollment for otherUser
+
+		// Query project challenges - other user should NOT see it
+		resp := client.WithAuth(otherUserToken).MustExecute(t, `
+			query GetProject($id: ID!) {
+				project(id: $id) {
+					challenges {
+						... on SimpleChallenge { id name }
+					}
+				}
+			}
+		`, map[string]any{"id": projectID})
+
+		require.False(t, resp.HasErrors(), "unexpected error: %s", resp.ErrorMessage())
+
+		var result struct {
+			Project struct {
+				Challenges []struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				} `json:"challenges"`
+			} `json:"project"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+
+		// Should NOT find the challenge (it has NULL visible_at and user is not enrolled)
+		for _, ch := range result.Project.Challenges {
+			if ch.ID == challengeID {
+				t.Errorf("unenrolled user should NOT see challenge with NULL visible_at in list")
+			}
+		}
+	})
+}

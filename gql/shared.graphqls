@@ -315,7 +315,7 @@ interface Challenge {
     imageObject: Image
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
-    buttonText: String!
+    buttonText: String
     publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
@@ -332,6 +332,7 @@ enum ChallengeType {
     SIMPLE
     QUIZ
     EXTERNAL
+    PLUGIN
 }
 
 type SimpleChallenge implements Challenge {
@@ -395,6 +396,27 @@ type ExternalChallenge implements Challenge {
     userEnrolledAt: DateTime @goField(forceResolver: true)
     # ExternalChallenge-specific fields - url is required
     url: String!
+}
+
+type PluginChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # PluginChallenge-specific fields - pluginChallengeId is required, plugin_data is internal-only
+    pluginChallengeId: String!
 }
 
 interface Achievement {
@@ -765,7 +787,7 @@ input CreateChallengeInput {
     name: String!
     description: HTML
     image: String
-    buttonText: String!
+    buttonText: String            # Required for all types except PLUGIN
     visibleAt: DateTime
     endTime: DateTime
     requiresTeamMembership: Boolean
@@ -773,6 +795,7 @@ input CreateChallengeInput {
     # Type-specific fields (validated based on type):
     allowSelfCompletion: Boolean  # SIMPLE only, defaults true
     url: String                   # EXTERNAL only, required
+    pluginChallengeId: String     # PLUGIN only, required
 }
 
 input UpdateChallengeInput {
@@ -789,6 +812,7 @@ input UpdateChallengeInput {
     # Type-specific fields (validated based on existing challenge type):
     allowSelfCompletion: Boolean  # SIMPLE only
     url: String                   # EXTERNAL only
+    pluginChallengeId: String     # PLUGIN only
 }
 
 input CreateSimpleAchievementInput {
@@ -1164,7 +1188,7 @@ input RevokeRoleInput {
 
 # ==================== Score Journal ====================
 
-union ScoreSource = SimpleAchievement | ContentAchievement | StreakAchievement | QuizAchievement | SimpleChallenge | QuizChallenge | ExternalChallenge | Event
+union ScoreSource = SimpleAchievement | ContentAchievement | StreakAchievement | QuizAchievement | SimpleChallenge | QuizChallenge | ExternalChallenge | PluginChallenge | Event
 
 type ScoreJournal {
     id: ID!

@@ -207,13 +207,14 @@ func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]mod
 	}
 
 	userID, _ := middleware.GetUserID(ctx)
-	isAdmin := userID != "" && r.RoleService.CanManageProject(ctx, userID, obj.ProjectID)
 
-	// Filter out quiz challenges without session access (for non-admins)
+	// Filter by visibility (enrolled OR visible_at in past) - applies to ALL users including admins
+	challenges = r.filterChallengesByVisibility(ctx, challenges, userID, obj.ProjectID, false)
+
+	// Filter out quiz challenges without session access (applies to ALL users including admins)
 	result := make([]model.Challenge, 0, len(challenges))
 	for _, ch := range challenges {
-		// For quiz challenges, non-admins need session access
-		if _, ok := ch.(*model.QuizChallenge); ok && !isAdmin && userID != "" {
+		if _, ok := ch.(*model.QuizChallenge); ok && userID != "" {
 			// Load quiz by challenge ID to get quiz ID
 			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
 			quiz, err := quizThunk()
@@ -402,6 +403,31 @@ func (r *numberResponseResolver) Question(ctx context.Context, obj *model.Number
 	return convertGetQuizQuestionByIDRowToInterface(row), nil
 }
 
+// ImageObject is the resolver for the imageObject field.
+func (r *pluginChallengeResolver) ImageObject(ctx context.Context, obj *model.PluginChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
+// Project is the resolver for the project field.
+func (r *pluginChallengeResolver) Project(ctx context.Context, obj *model.PluginChallenge) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *pluginChallengeResolver) Event(ctx context.Context, obj *model.PluginChallenge) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *pluginChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.PluginChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *pluginChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.PluginChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
+}
+
 // Quiz is the resolver for the quiz field.
 func (r *predefinedQuestionResolver) Quiz(ctx context.Context, obj *model.PredefinedQuestion) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
@@ -520,13 +546,14 @@ func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([
 	}
 
 	userID, _ := middleware.GetUserID(ctx)
-	isAdmin := userID != "" && r.RoleService.CanManageProject(ctx, userID, obj.ID)
 
-	// Filter out quiz challenges without session access (for non-admins)
+	// Filter by visibility (enrolled OR visible_at in past) - applies to ALL users including admins
+	challenges = r.filterChallengesByVisibility(ctx, challenges, userID, obj.ID, false)
+
+	// Filter out quiz challenges without session access (applies to ALL users including admins)
 	result := make([]model.Challenge, 0, len(challenges))
 	for _, ch := range challenges {
-		// For quiz challenges, non-admins need session access
-		if _, ok := ch.(*model.QuizChallenge); ok && !isAdmin && userID != "" {
+		if _, ok := ch.(*model.QuizChallenge); ok && userID != "" {
 			// Load quiz by challenge ID to get quiz ID
 			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
 			quiz, err := quizThunk()
@@ -2034,6 +2061,9 @@ func (r *Resolver) NumberQuestion() NumberQuestionResolver { return &numberQuest
 // NumberResponse returns NumberResponseResolver implementation.
 func (r *Resolver) NumberResponse() NumberResponseResolver { return &numberResponseResolver{r} }
 
+// PluginChallenge returns PluginChallengeResolver implementation.
+func (r *Resolver) PluginChallenge() PluginChallengeResolver { return &pluginChallengeResolver{r} }
+
 // PredefinedQuestion returns PredefinedQuestionResolver implementation.
 func (r *Resolver) PredefinedQuestion() PredefinedQuestionResolver {
 	return &predefinedQuestionResolver{r}
@@ -2114,6 +2144,7 @@ type leaderboardEntryResolver struct{ *Resolver }
 type markdownTextResolver struct{ *Resolver }
 type numberQuestionResolver struct{ *Resolver }
 type numberResponseResolver struct{ *Resolver }
+type pluginChallengeResolver struct{ *Resolver }
 type predefinedQuestionResolver struct{ *Resolver }
 type predefinedResponseResolver struct{ *Resolver }
 type projectResolver struct{ *Resolver }

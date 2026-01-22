@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -15,6 +16,7 @@ const (
 	ChallengeTypeSimple   = "SIMPLE"
 	ChallengeTypeQuiz     = "QUIZ"
 	ChallengeTypeExternal = "EXTERNAL"
+	ChallengeTypePlugin   = "PLUGIN"
 )
 
 // buildChallengeFilterParamsCursor converts GraphQL filter and cursor pagination params to database query parameters
@@ -222,6 +224,31 @@ func convertRowToChallenge(row *sqlc.Challenge) model.Challenge {
 			Image:                       row.ImageUrl,
 			URL:                         url,
 			ButtonText:                  row.ButtonText,
+			ProjectID:                   row.ProjectID,
+			EventID:                     row.EventID,
+			PublishedAt:                 publishedAt,
+			VisibleAt:                   visibleAt,
+			StartedAt:                   startedAt,
+			EndTime:                     endTime,
+			RequiresTeamMembership:      row.RequiresTeamMembership,
+			RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		}
+	case ChallengeTypePlugin:
+		pluginChallengeID := ""
+		if row.PluginChallengeID != nil {
+			pluginChallengeID = *row.PluginChallengeID
+		}
+		var buttonText *string
+		if row.ButtonText != "" {
+			buttonText = &row.ButtonText
+		}
+		return &model.PluginChallenge{
+			ID:                          row.ID,
+			Name:                        row.Name,
+			Description:                 scalars.HTML(row.Description),
+			Image:                       row.ImageUrl,
+			PluginChallengeID:           pluginChallengeID,
+			ButtonText:                  buttonText,
 			ProjectID:                   row.ProjectID,
 			EventID:                     row.EventID,
 			PublishedAt:                 publishedAt,
@@ -446,6 +473,8 @@ func getChallengeProjectID(c model.Challenge) string {
 		return v.ProjectID
 	case *model.ExternalChallenge:
 		return v.ProjectID
+	case *model.PluginChallenge:
+		return v.ProjectID
 	default:
 		return ""
 	}
@@ -459,6 +488,8 @@ func getChallengeEventID(c model.Challenge) *string {
 	case *model.QuizChallenge:
 		return v.EventID
 	case *model.ExternalChallenge:
+		return v.EventID
+	case *model.PluginChallenge:
 		return v.EventID
 	default:
 		return nil
@@ -474,6 +505,8 @@ func getChallengeID(c model.Challenge) string {
 		return v.ID
 	case *model.ExternalChallenge:
 		return v.ID
+	case *model.PluginChallenge:
+		return v.ID
 	default:
 		return ""
 	}
@@ -487,6 +520,8 @@ func getChallengePublishedAt(c model.Challenge) *scalars.DateTime {
 	case *model.QuizChallenge:
 		return v.PublishedAt
 	case *model.ExternalChallenge:
+		return v.PublishedAt
+	case *model.PluginChallenge:
 		return v.PublishedAt
 	default:
 		return nil
@@ -502,9 +537,68 @@ func getChallengeEndTime(c model.Challenge) *scalars.DateTime {
 		return v.EndTime
 	case *model.ExternalChallenge:
 		return v.EndTime
+	case *model.PluginChallenge:
+		return v.EndTime
 	default:
 		return nil
 	}
+}
+
+// Helper to get VisibleAt from any Challenge implementation
+func getChallengeVisibleAt(c model.Challenge) *scalars.DateTime {
+	switch v := c.(type) {
+	case *model.SimpleChallenge:
+		return v.VisibleAt
+	case *model.QuizChallenge:
+		return v.VisibleAt
+	case *model.ExternalChallenge:
+		return v.VisibleAt
+	case *model.PluginChallenge:
+		return v.VisibleAt
+	default:
+		return nil
+	}
+}
+
+// filterChallengesByVisibility filters challenges based on visibility rules.
+// For non-admins: challenge must have visible_at in past OR user must be enrolled.
+// Admins see all challenges (pass isAdmin=true to skip filtering).
+func (r *Resolver) filterChallengesByVisibility(
+	ctx context.Context,
+	challenges []model.Challenge,
+	userID string,
+	projectID string,
+	isAdmin bool,
+) []model.Challenge {
+	if isAdmin {
+		return challenges
+	}
+
+	// Get user's enrolled challenge IDs
+	enrolledIDs := make(map[string]bool)
+	if userID != "" {
+		enrolled, err := r.DB.Queries.GetUserEnrolledChallengeIDsInProject(ctx, sqlc.GetUserEnrolledChallengeIDsInProjectParams{
+			Userid:    userID,
+			Projectid: projectID,
+		})
+		if err == nil {
+			for _, id := range enrolled {
+				enrolledIDs[id] = true
+			}
+		}
+	}
+
+	// Filter: visible_at in past OR enrolled
+	now := time.Now()
+	result := make([]model.Challenge, 0, len(challenges))
+	for _, ch := range challenges {
+		visibleAt := getChallengeVisibleAt(ch)
+		isVisible := visibleAt != nil && !visibleAt.Time.After(now)
+		if isVisible || enrolledIDs[getChallengeID(ch)] {
+			result = append(result, ch)
+		}
+	}
+	return result
 }
 
 // Helper to get RequiresTeamMembership from any Challenge implementation
@@ -515,6 +609,8 @@ func getChallengeRequiresTeamMembership(c model.Challenge) bool {
 	case *model.QuizChallenge:
 		return v.RequiresTeamMembership
 	case *model.ExternalChallenge:
+		return v.RequiresTeamMembership
+	case *model.PluginChallenge:
 		return v.RequiresTeamMembership
 	default:
 		return false
@@ -530,6 +626,8 @@ func getChallengeRequiresSuperTeamMembership(c model.Challenge) bool {
 		return v.RequiresSuperTeamMembership
 	case *model.ExternalChallenge:
 		return v.RequiresSuperTeamMembership
+	case *model.PluginChallenge:
+		return v.RequiresSuperTeamMembership
 	default:
 		return false
 	}
@@ -544,6 +642,8 @@ func getChallengeType(c model.Challenge) model.ChallengeType {
 		return model.ChallengeTypeQuiz
 	case *model.ExternalChallenge:
 		return model.ChallengeTypeExternal
+	case *model.PluginChallenge:
+		return model.ChallengeTypePlugin
 	default:
 		return model.ChallengeTypeSimple
 	}
@@ -553,23 +653,55 @@ func getChallengeType(c model.Challenge) model.ChallengeType {
 func validateCreateChallengeInput(input model.CreateChallengeInput) error {
 	switch input.Type {
 	case model.ChallengeTypeSimple:
+		// buttonText is required for SIMPLE challenges
+		if input.ButtonText == nil || *input.ButtonText == "" {
+			return fmt.Errorf("buttonText is required for SIMPLE challenges")
+		}
 		// allowSelfCompletion is valid (optional, defaults true)
 		if input.URL != nil {
 			return fmt.Errorf("url is not allowed for SIMPLE challenges")
 		}
+		if input.PluginChallengeID != nil {
+			return fmt.Errorf("pluginChallengeId is not allowed for SIMPLE challenges")
+		}
 	case model.ChallengeTypeQuiz:
+		// buttonText is required for QUIZ challenges
+		if input.ButtonText == nil || *input.ButtonText == "" {
+			return fmt.Errorf("buttonText is required for QUIZ challenges")
+		}
 		if input.AllowSelfCompletion != nil {
 			return fmt.Errorf("allowSelfCompletion is not valid for QUIZ challenges")
 		}
 		if input.URL != nil {
 			return fmt.Errorf("url is not valid for QUIZ challenges")
 		}
+		if input.PluginChallengeID != nil {
+			return fmt.Errorf("pluginChallengeId is not valid for QUIZ challenges")
+		}
 	case model.ChallengeTypeExternal:
+		// buttonText is required for EXTERNAL challenges
+		if input.ButtonText == nil || *input.ButtonText == "" {
+			return fmt.Errorf("buttonText is required for EXTERNAL challenges")
+		}
 		if input.URL == nil || *input.URL == "" {
 			return fmt.Errorf("url is required for EXTERNAL challenges")
 		}
 		if input.AllowSelfCompletion != nil {
 			return fmt.Errorf("allowSelfCompletion is not valid for EXTERNAL challenges")
+		}
+		if input.PluginChallengeID != nil {
+			return fmt.Errorf("pluginChallengeId is not valid for EXTERNAL challenges")
+		}
+	case model.ChallengeTypePlugin:
+		// buttonText is optional for PLUGIN challenges
+		if input.PluginChallengeID == nil || *input.PluginChallengeID == "" {
+			return fmt.Errorf("pluginChallengeId is required for PLUGIN challenges")
+		}
+		if input.AllowSelfCompletion != nil {
+			return fmt.Errorf("allowSelfCompletion is not valid for PLUGIN challenges")
+		}
+		if input.URL != nil {
+			return fmt.Errorf("url is not valid for PLUGIN challenges")
 		}
 	}
 	return nil
@@ -583,12 +715,18 @@ func validateUpdateChallengeInput(input model.UpdateChallengeInput, challengeTyp
 		if input.URL != nil {
 			return fmt.Errorf("url is not allowed for SIMPLE challenges")
 		}
+		if input.PluginChallengeID != nil {
+			return fmt.Errorf("pluginChallengeId is not allowed for SIMPLE challenges")
+		}
 	case model.ChallengeTypeQuiz:
 		if input.AllowSelfCompletion != nil {
 			return fmt.Errorf("allowSelfCompletion is not valid for QUIZ challenges")
 		}
 		if input.URL != nil {
 			return fmt.Errorf("url is not valid for QUIZ challenges")
+		}
+		if input.PluginChallengeID != nil {
+			return fmt.Errorf("pluginChallengeId is not valid for QUIZ challenges")
 		}
 	case model.ChallengeTypeExternal:
 		// url is valid (but must be non-empty if provided)
@@ -597,6 +735,20 @@ func validateUpdateChallengeInput(input model.UpdateChallengeInput, challengeTyp
 		}
 		if input.AllowSelfCompletion != nil {
 			return fmt.Errorf("allowSelfCompletion is not valid for EXTERNAL challenges")
+		}
+		if input.PluginChallengeID != nil {
+			return fmt.Errorf("pluginChallengeId is not valid for EXTERNAL challenges")
+		}
+	case model.ChallengeTypePlugin:
+		// pluginChallengeId is valid (but must be non-empty if provided)
+		if input.PluginChallengeID != nil && *input.PluginChallengeID == "" {
+			return fmt.Errorf("pluginChallengeId cannot be empty for PLUGIN challenges")
+		}
+		if input.AllowSelfCompletion != nil {
+			return fmt.Errorf("allowSelfCompletion is not valid for PLUGIN challenges")
+		}
+		if input.URL != nil {
+			return fmt.Errorf("url is not valid for PLUGIN challenges")
 		}
 	}
 	return nil

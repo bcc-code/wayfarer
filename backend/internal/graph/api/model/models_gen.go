@@ -40,7 +40,7 @@ type Challenge interface {
 	GetImageObject() *Image
 	GetProject() *Project
 	GetEvent() *Event
-	GetButtonText() string
+	GetButtonText() *string
 	GetPublishedAt() *scalars.DateTime
 	GetVisibleAt() *scalars.DateTime
 	GetStartedAt() *scalars.DateTime
@@ -307,13 +307,14 @@ type CreateChallengeInput struct {
 	Name                        string            `json:"name"`
 	Description                 *scalars.HTML     `json:"description,omitempty"`
 	Image                       *string           `json:"image,omitempty"`
-	ButtonText                  string            `json:"buttonText"`
+	ButtonText                  *string           `json:"buttonText,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
 	RequiresTeamMembership      *bool             `json:"requiresTeamMembership,omitempty"`
 	RequiresSuperTeamMembership *bool             `json:"requiresSuperTeamMembership,omitempty"`
 	AllowSelfCompletion         *bool             `json:"allowSelfCompletion,omitempty"`
 	URL                         *string           `json:"url,omitempty"`
+	PluginChallengeID           *string           `json:"pluginChallengeId,omitempty"`
 }
 
 type CreateChurchInput struct {
@@ -608,7 +609,7 @@ func (this ExternalChallenge) GetImage() *string                 { return this.I
 func (this ExternalChallenge) GetImageObject() *Image            { return this.ImageObject }
 func (this ExternalChallenge) GetProject() *Project              { return this.Project }
 func (this ExternalChallenge) GetEvent() *Event                  { return this.Event }
-func (this ExternalChallenge) GetButtonText() string             { return this.ButtonText }
+func (this ExternalChallenge) GetButtonText() *string            { return &this.ButtonText }
 func (this ExternalChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
 func (this ExternalChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
 func (this ExternalChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
@@ -879,6 +880,50 @@ type PageInfo struct {
 	EndCursor       *string `json:"endCursor,omitempty"`
 }
 
+type PluginChallenge struct {
+	ID                          string            `json:"id"`
+	Name                        string            `json:"name"`
+	Description                 scalars.HTML      `json:"description"`
+	Image                       *string           `json:"image,omitempty"`
+	ImageObject                 *Image            `json:"imageObject,omitempty"`
+	Project                     *Project          `json:"project"`
+	Event                       *Event            `json:"event,omitempty"`
+	ButtonText                  *string           `json:"buttonText,omitempty"`
+	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
+	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
+	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
+	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
+	RequiresTeamMembership      bool              `json:"requiresTeamMembership"`
+	RequiresSuperTeamMembership bool              `json:"requiresSuperTeamMembership"`
+	UserCompletedAt             *scalars.DateTime `json:"userCompletedAt,omitempty"`
+	UserEnrolledAt              *scalars.DateTime `json:"userEnrolledAt,omitempty"`
+	PluginChallengeID           string            `json:"pluginChallengeId"`
+	EventID                     *string           `json:"-"`
+	ProjectID                   string            `json:"-"`
+}
+
+func (PluginChallenge) IsChallenge()                           {}
+func (this PluginChallenge) GetID() string                     { return this.ID }
+func (this PluginChallenge) GetName() string                   { return this.Name }
+func (this PluginChallenge) GetDescription() scalars.HTML      { return this.Description }
+func (this PluginChallenge) GetImage() *string                 { return this.Image }
+func (this PluginChallenge) GetImageObject() *Image            { return this.ImageObject }
+func (this PluginChallenge) GetProject() *Project              { return this.Project }
+func (this PluginChallenge) GetEvent() *Event                  { return this.Event }
+func (this PluginChallenge) GetButtonText() *string            { return this.ButtonText }
+func (this PluginChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
+func (this PluginChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
+func (this PluginChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
+func (this PluginChallenge) GetEndTime() *scalars.DateTime     { return this.EndTime }
+func (this PluginChallenge) GetRequiresTeamMembership() bool   { return this.RequiresTeamMembership }
+func (this PluginChallenge) GetRequiresSuperTeamMembership() bool {
+	return this.RequiresSuperTeamMembership
+}
+func (this PluginChallenge) GetUserCompletedAt() *scalars.DateTime { return this.UserCompletedAt }
+func (this PluginChallenge) GetUserEnrolledAt() *scalars.DateTime  { return this.UserEnrolledAt }
+
+func (PluginChallenge) IsScoreSource() {}
+
 type PredefinedQuestion struct {
 	ID                     string                 `json:"id"`
 	Quiz                   *Quiz                  `json:"quiz"`
@@ -1081,7 +1126,7 @@ func (this QuizChallenge) GetImage() *string                 { return this.Image
 func (this QuizChallenge) GetImageObject() *Image            { return this.ImageObject }
 func (this QuizChallenge) GetProject() *Project              { return this.Project }
 func (this QuizChallenge) GetEvent() *Event                  { return this.Event }
-func (this QuizChallenge) GetButtonText() string             { return this.ButtonText }
+func (this QuizChallenge) GetButtonText() *string            { return &this.ButtonText }
 func (this QuizChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
 func (this QuizChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
 func (this QuizChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
@@ -1330,7 +1375,7 @@ func (this SimpleChallenge) GetImage() *string                 { return this.Ima
 func (this SimpleChallenge) GetImageObject() *Image            { return this.ImageObject }
 func (this SimpleChallenge) GetProject() *Project              { return this.Project }
 func (this SimpleChallenge) GetEvent() *Event                  { return this.Event }
-func (this SimpleChallenge) GetButtonText() string             { return this.ButtonText }
+func (this SimpleChallenge) GetButtonText() *string            { return &this.ButtonText }
 func (this SimpleChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
 func (this SimpleChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
 func (this SimpleChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
@@ -1541,6 +1586,7 @@ type UpdateChallengeInput struct {
 	RequiresSuperTeamMembership *bool             `json:"requiresSuperTeamMembership,omitempty"`
 	AllowSelfCompletion         *bool             `json:"allowSelfCompletion,omitempty"`
 	URL                         *string           `json:"url,omitempty"`
+	PluginChallengeID           *string           `json:"pluginChallengeId,omitempty"`
 }
 
 type UpdateChurchInput struct {
@@ -1782,17 +1828,19 @@ const (
 	ChallengeTypeSimple   ChallengeType = "SIMPLE"
 	ChallengeTypeQuiz     ChallengeType = "QUIZ"
 	ChallengeTypeExternal ChallengeType = "EXTERNAL"
+	ChallengeTypePlugin   ChallengeType = "PLUGIN"
 )
 
 var AllChallengeType = []ChallengeType{
 	ChallengeTypeSimple,
 	ChallengeTypeQuiz,
 	ChallengeTypeExternal,
+	ChallengeTypePlugin,
 }
 
 func (e ChallengeType) IsValid() bool {
 	switch e {
-	case ChallengeTypeSimple, ChallengeTypeQuiz, ChallengeTypeExternal:
+	case ChallengeTypeSimple, ChallengeTypeQuiz, ChallengeTypeExternal, ChallengeTypePlugin:
 		return true
 	}
 	return false

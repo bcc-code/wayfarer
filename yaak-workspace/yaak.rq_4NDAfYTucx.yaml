@@ -1,16 +1,21 @@
 type: http_request
 model: http_request
-id: rq_BxRkhuc7g2
-createdAt: 2025-12-14T20:43:18.654056
-updatedAt: 2026-01-22T11:15:53.509179
+id: rq_4NDAfYTucx
+createdAt: 2026-01-22T11:08:31.396917
+updatedAt: 2026-01-22T12:02:14.294953
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_U4FqjQ2Ma5
 authentication: {}
 authenticationType: null
 body:
-  query: |
+  query: |-
     mutation {
-      publishChallenge(id: "CL01KFJP3VKRCQ5RJJN5J80WASPW", publishedAt: "2025-01-10T00:00:00"){
+      bulkEnrollUsersInChallenge(
+        target: {
+          userIds: ["US01KEHNK1AQ69YJWHYWJ1SYR5B1"]
+        },
+        challengeId: "CL01KFJP3VKRCQ5RJJN5J80WASPW"
+      ){
         id
       }
     }
@@ -23,7 +28,7 @@ headers:
   value: application/json
   id: xraigN0HxK
 method: POST
-name: Publish Challenge
-sortPriority: 1000.0029
+name: Enroll users to challenge
+sortPriority: 1000.0019
 url: ${[ HOST ]}/graphql
 urlParameters: []
