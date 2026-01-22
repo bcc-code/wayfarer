@@ -15,6 +15,10 @@ func webhookEventTypeToDBString(eventType model.WebhookEventType) string {
 		return "external_content_event"
 	case model.WebhookEventTypePointsAwarded:
 		return "points_awarded"
+	case model.WebhookEventTypeQuizSessionFinished:
+		return "quiz_session_finished"
+	case model.WebhookEventTypeTeamNameChanged:
+		return "team_name_changed"
 	default:
 		return string(eventType)
 	}
@@ -26,6 +30,10 @@ func dbStringToWebhookEventType(eventType string) model.WebhookEventType {
 		return model.WebhookEventTypeExternalContentEvent
 	case "points_awarded":
 		return model.WebhookEventTypePointsAwarded
+	case "quiz_session_finished":
+		return model.WebhookEventTypeQuizSessionFinished
+	case "team_name_changed":
+		return model.WebhookEventTypeTeamNameChanged
 	default:
 		return model.WebhookEventType(eventType)
 	}

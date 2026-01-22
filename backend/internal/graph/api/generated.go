@@ -9282,6 +9282,8 @@ extend type Mutation {
 enum WebhookEventType {
     EXTERNAL_CONTENT_EVENT
     POINTS_AWARDED
+    QUIZ_SESSION_FINISHED
+    TEAM_NAME_CHANGED
 }
 
 type Webhook {

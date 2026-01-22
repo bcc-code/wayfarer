@@ -13,6 +13,7 @@ const (
 	EventTypeExternalContent     EventType = "external_content_event"
 	EventTypePointsAwarded       EventType = "points_awarded"
 	EventTypeQuizSessionFinished EventType = "quiz_session_finished"
+	EventTypeTeamNameChanged     EventType = "team_name_changed"
 )
 
 // WebhookPayload is the base structure sent to webhook endpoints
@@ -112,4 +113,11 @@ type QuizUserResult struct {
 	ScorePercent  *float64 `json:"score_percentage"`
 	Completed     bool     `json:"completed"`
 	AutoSubmitted bool     `json:"auto_submitted"`
+}
+
+// TeamNameChangedData contains data for team name change webhook
+type TeamNameChangedData struct {
+	TeamID  string `json:"team_id"`
+	OldName string `json:"old_name"`
+	NewName string `json:"new_name"`
 }

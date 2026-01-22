@@ -2879,16 +2879,20 @@ type WebhookEventType string
 const (
 	WebhookEventTypeExternalContentEvent WebhookEventType = "EXTERNAL_CONTENT_EVENT"
 	WebhookEventTypePointsAwarded        WebhookEventType = "POINTS_AWARDED"
+	WebhookEventTypeQuizSessionFinished  WebhookEventType = "QUIZ_SESSION_FINISHED"
+	WebhookEventTypeTeamNameChanged      WebhookEventType = "TEAM_NAME_CHANGED"
 )
 
 var AllWebhookEventType = []WebhookEventType{
 	WebhookEventTypeExternalContentEvent,
 	WebhookEventTypePointsAwarded,
+	WebhookEventTypeQuizSessionFinished,
+	WebhookEventTypeTeamNameChanged,
 }
 
 func (e WebhookEventType) IsValid() bool {
 	switch e {
-	case WebhookEventTypeExternalContentEvent, WebhookEventTypePointsAwarded:
+	case WebhookEventTypeExternalContentEvent, WebhookEventTypePointsAwarded, WebhookEventTypeQuizSessionFinished, WebhookEventTypeTeamNameChanged:
 		return true
 	}
 	return false
