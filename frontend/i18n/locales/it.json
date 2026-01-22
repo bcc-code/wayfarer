@@ -202,7 +202,7 @@
       "deleteSelected": "Cancella selezione",
       "bulkCreate": {
         "countLabel": "Numero di unità",
-        "autoGenerateInfo": "I nomi vengono generati automaticamente"
+        "autoGenerateInfo": "I nomi delle unità vengono generati automaticamente e possono essere modificati in un secondo momento."
       },
       "confirmDelete": {
         "title": "Eliminare l’unità?",
