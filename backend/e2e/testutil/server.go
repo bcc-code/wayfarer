@@ -59,7 +59,7 @@ func NewTestRouter(cfg TestServerConfig) *gin.Engine {
 	gqlConfig := api.Config{
 		Resolvers: resolver,
 		Directives: api.DirectiveRoot{
-			RequireRole: directives.RequireRole,
+			RequireRole: directives.NewRequireRole(cfg.Loaders.RolesByUserLoader),
 		},
 	}
 

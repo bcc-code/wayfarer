@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/graph-gophers/dataloader/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -259,4 +261,263 @@ func TestRequireRole_NextResolverMultipleErrors(t *testing.T) {
 			}
 		})
 	}
+}
+
+// createMockRolesLoader creates a mock dataloader for testing NewRequireRole
+func createMockRolesLoader(batchFunc func(context.Context, []string) []*dataloader.Result[[]*model.UserRole]) *dataloader.Loader[string, []*model.UserRole] {
+	return dataloader.NewBatchedLoader(
+		batchFunc,
+		dataloader.WithBatchCapacity[string, []*model.UserRole](100),
+		dataloader.WithCache[string, []*model.UserRole](&dataloader.NoCache[string, []*model.UserRole]{}),
+	)
+}
+
+func TestNewRequireRole_M2MUsesTokenRoles(t *testing.T) {
+	// M2M users should use token roles, dataloader should not be called
+	loaderCalled := false
+	mockLoader := createMockRolesLoader(func(ctx context.Context, userIDs []string) []*dataloader.Result[[]*model.UserRole] {
+		loaderCalled = true
+		t.Error("dataloader should not be called for M2M users")
+		return nil
+	})
+
+	requireRole := NewRequireRole(mockLoader)
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, middleware.UserIDKey, "US12345")
+	ctx = context.WithValue(ctx, middleware.UserRolesKey, []string{"m2m", "admin"})
+
+	nextCalled := false
+	mockNext := func(ctx context.Context) (interface{}, error) {
+		nextCalled = true
+		return "result", nil
+	}
+
+	result, err := requireRole(ctx, nil, mockNext, []string{"admin"})
+
+	require.NoError(t, err)
+	assert.True(t, nextCalled, "next resolver should be called")
+	assert.Equal(t, "result", result)
+	assert.False(t, loaderCalled, "dataloader should not be called for M2M users")
+}
+
+func TestNewRequireRole_M2MWithMismatchedRoles(t *testing.T) {
+	mockLoader := createMockRolesLoader(func(ctx context.Context, userIDs []string) []*dataloader.Result[[]*model.UserRole] {
+		t.Error("dataloader should not be called for M2M users")
+		return nil
+	})
+
+	requireRole := NewRequireRole(mockLoader)
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, middleware.UserIDKey, "US12345")
+	ctx = context.WithValue(ctx, middleware.UserRolesKey, []string{"m2m", "user"})
+
+	mockNext := func(ctx context.Context) (interface{}, error) {
+		return "result", nil
+	}
+
+	_, err := requireRole(ctx, nil, mockNext, []string{"admin"})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unauthorized: M2M roles")
+}
+
+func TestNewRequireRole_NonM2MUsesDBRoles(t *testing.T) {
+	// Non-M2M users should lookup roles from dataloader
+	loaderCalled := false
+	mockLoader := createMockRolesLoader(func(ctx context.Context, userIDs []string) []*dataloader.Result[[]*model.UserRole] {
+		loaderCalled = true
+		results := make([]*dataloader.Result[[]*model.UserRole], len(userIDs))
+		for i := range userIDs {
+			results[i] = &dataloader.Result[[]*model.UserRole]{
+				Data: []*model.UserRole{{Role: model.RoleTypeAdmin}},
+			}
+		}
+		return results
+	})
+
+	requireRole := NewRequireRole(mockLoader)
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, middleware.UserIDKey, "US12345")
+	ctx = context.WithValue(ctx, middleware.UserRolesKey, []string{"user"}) // Token has user, DB has admin
+
+	nextCalled := false
+	mockNext := func(ctx context.Context) (interface{}, error) {
+		nextCalled = true
+		return "result", nil
+	}
+
+	result, err := requireRole(ctx, nil, mockNext, []string{"admin"})
+
+	require.NoError(t, err)
+	assert.True(t, nextCalled)
+	assert.Equal(t, "result", result)
+	assert.True(t, loaderCalled, "dataloader should be called for non-M2M users")
+}
+
+func TestNewRequireRole_NonM2MWithNoDBRoles_DeniedForAdmin(t *testing.T) {
+	// User with no roles in database should be denied admin access
+	// but they still have implicit "user" role
+	mockLoader := createMockRolesLoader(func(ctx context.Context, userIDs []string) []*dataloader.Result[[]*model.UserRole] {
+		results := make([]*dataloader.Result[[]*model.UserRole], len(userIDs))
+		for i := range userIDs {
+			results[i] = &dataloader.Result[[]*model.UserRole]{
+				Data: []*model.UserRole{}, // Empty roles
+			}
+		}
+		return results
+	})
+
+	requireRole := NewRequireRole(mockLoader)
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, middleware.UserIDKey, "US12345")
+	ctx = context.WithValue(ctx, middleware.UserRolesKey, []string{"user"})
+
+	mockNext := func(ctx context.Context) (interface{}, error) {
+		return "result", nil
+	}
+
+	_, err := requireRole(ctx, nil, mockNext, []string{"admin"})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unauthorized: user roles")
+}
+
+func TestNewRequireRole_NonM2MWithNoDBRoles_AllowedForUser(t *testing.T) {
+	// User with no roles in database should still have implicit "user" role
+	// and be allowed to access user-level endpoints
+	mockLoader := createMockRolesLoader(func(ctx context.Context, userIDs []string) []*dataloader.Result[[]*model.UserRole] {
+		results := make([]*dataloader.Result[[]*model.UserRole], len(userIDs))
+		for i := range userIDs {
+			results[i] = &dataloader.Result[[]*model.UserRole]{
+				Data: []*model.UserRole{}, // Empty roles
+			}
+		}
+		return results
+	})
+
+	requireRole := NewRequireRole(mockLoader)
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, middleware.UserIDKey, "US12345")
+	ctx = context.WithValue(ctx, middleware.UserRolesKey, []string{"user"})
+
+	nextCalled := false
+	mockNext := func(ctx context.Context) (interface{}, error) {
+		nextCalled = true
+		return "result", nil
+	}
+
+	result, err := requireRole(ctx, nil, mockNext, []string{"user"})
+
+	require.NoError(t, err)
+	assert.True(t, nextCalled)
+	assert.Equal(t, "result", result)
+}
+
+func TestNewRequireRole_DataloaderError(t *testing.T) {
+	expectedErr := fmt.Errorf("database connection failed")
+	mockLoader := createMockRolesLoader(func(ctx context.Context, userIDs []string) []*dataloader.Result[[]*model.UserRole] {
+		results := make([]*dataloader.Result[[]*model.UserRole], len(userIDs))
+		for i := range userIDs {
+			results[i] = &dataloader.Result[[]*model.UserRole]{
+				Error: expectedErr,
+			}
+		}
+		return results
+	})
+
+	requireRole := NewRequireRole(mockLoader)
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, middleware.UserIDKey, "US12345")
+	ctx = context.WithValue(ctx, middleware.UserRolesKey, []string{"user"})
+
+	mockNext := func(ctx context.Context) (interface{}, error) {
+		return "result", nil
+	}
+
+	_, err := requireRole(ctx, nil, mockNext, []string{"admin"})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unauthorized: failed to load user roles")
+	assert.Contains(t, err.Error(), "database connection failed")
+}
+
+func TestNewRequireRole_NoUserID(t *testing.T) {
+	mockLoader := createMockRolesLoader(func(ctx context.Context, userIDs []string) []*dataloader.Result[[]*model.UserRole] {
+		return nil
+	})
+
+	requireRole := NewRequireRole(mockLoader)
+
+	ctx := context.Background()
+	// No user ID in context
+	ctx = context.WithValue(ctx, middleware.UserRolesKey, []string{"user"})
+
+	mockNext := func(ctx context.Context) (interface{}, error) {
+		return "result", nil
+	}
+
+	_, err := requireRole(ctx, nil, mockNext, []string{"admin"})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unauthorized: user ID not found in context")
+}
+
+func TestNewRequireRole_NoTokenRoles(t *testing.T) {
+	mockLoader := createMockRolesLoader(func(ctx context.Context, userIDs []string) []*dataloader.Result[[]*model.UserRole] {
+		return nil
+	})
+
+	requireRole := NewRequireRole(mockLoader)
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, middleware.UserIDKey, "US12345")
+	// No roles in context
+
+	mockNext := func(ctx context.Context) (interface{}, error) {
+		return "result", nil
+	}
+
+	_, err := requireRole(ctx, nil, mockNext, []string{"admin"})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unauthorized: no roles found in context")
+}
+
+func TestNewRequireRole_CaseInsensitiveRoleMatching(t *testing.T) {
+	// DB roles are stored as UPPERCASE (e.g., RoleTypeAdmin = "ADMIN")
+	// but allowedRoles in directive are lowercase (e.g., "admin")
+	// The directive should convert DB roles to lowercase for comparison
+	mockLoader := createMockRolesLoader(func(ctx context.Context, userIDs []string) []*dataloader.Result[[]*model.UserRole] {
+		results := make([]*dataloader.Result[[]*model.UserRole], len(userIDs))
+		for i := range userIDs {
+			results[i] = &dataloader.Result[[]*model.UserRole]{
+				Data: []*model.UserRole{{Role: model.RoleTypeAdmin}}, // This is "ADMIN"
+			}
+		}
+		return results
+	})
+
+	requireRole := NewRequireRole(mockLoader)
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, middleware.UserIDKey, "US12345")
+	ctx = context.WithValue(ctx, middleware.UserRolesKey, []string{"user"})
+
+	nextCalled := false
+	mockNext := func(ctx context.Context) (interface{}, error) {
+		nextCalled = true
+		return "result", nil
+	}
+
+	result, err := requireRole(ctx, nil, mockNext, []string{"admin"}) // lowercase "admin"
+
+	require.NoError(t, err)
+	assert.True(t, nextCalled)
+	assert.Equal(t, "result", result)
 }

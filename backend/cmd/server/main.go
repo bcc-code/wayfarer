@@ -314,7 +314,7 @@ func main() {
 	apiHandler := handler.New(api.NewExecutableSchema(api.Config{
 		Resolvers: apiResolver,
 		Directives: api.DirectiveRoot{
-			RequireRole: directives.RequireRole,
+			RequireRole: directives.NewRequireRole(dataLoaders.RolesByUserLoader),
 		},
 	}))
 
