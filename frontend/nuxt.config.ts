@@ -155,6 +155,8 @@ export default defineNuxtConfig({
   i18n: {
     defaultLocale: 'nb',
     locales: [
+      // The commented ones are not actively translated.
+      // Verified by Milenko
       {
         name: 'Norsk',
         code: 'nb',
@@ -205,16 +207,16 @@ export default defineNuxtConfig({
         code: 'hu',
         file: 'hu.json',
       },
-      {
-        name: 'മലയാളം',
-        code: 'ml',
-        file: 'ml.json',
-      },
-      {
-        name: 'Papiamentu',
-        code: 'pap',
-        file: 'pap.json',
-      },
+      // {
+      //   name: 'മലയാളം',
+      //   code: 'ml',
+      //   file: 'ml.json',
+      // },
+      // {
+      //   name: 'Papiamentu',
+      //   code: 'pap',
+      //   file: 'pap.json',
+      // },
       {
         name: 'Polski',
         code: 'pl',
@@ -235,16 +237,16 @@ export default defineNuxtConfig({
         code: 'ru',
         file: 'ru.json',
       },
-      {
-        name: 'Slovenščina',
-        code: 'sl',
-        file: 'sl.json',
-      },
-      {
-        name: 'தமிழ்',
-        code: 'ta',
-        file: 'ta.json',
-      },
+      // {
+      //   name: 'Slovenščina',
+      //   code: 'sl',
+      //   file: 'sl.json',
+      // },
+      // {
+      //   name: 'தமிழ்',
+      //   code: 'ta',
+      //   file: 'ta.json',
+      // },
       {
         name: 'Türkçe',
         code: 'tr',
@@ -255,11 +257,11 @@ export default defineNuxtConfig({
         code: 'zh-CN',
         file: 'zn_cn.json',
       },
-      {
-        name: '中文(香港)',
-        code: 'zh-HK',
-        file: 'zh_hk.json',
-      },
+      // {
+      //   name: '中文(香港)',
+      //   code: 'zh-HK',
+      //   file: 'zh_hk.json',
+      // },
     ],
     strategy: 'no_prefix',
   },
