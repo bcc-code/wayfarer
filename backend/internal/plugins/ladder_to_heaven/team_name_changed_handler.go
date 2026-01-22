@@ -42,7 +42,7 @@ const (
 	// Points awarded to each team member when the team renames
 	pointsTeamRename = 300
 	// Source type for team rename entries in score_journal
-	sourceTypeTeamRename = "PLUGIN"
+	sourceTypeTeamRename = "TEAM_RENAME"
 )
 
 // handle processes incoming team name changed webhook requests
