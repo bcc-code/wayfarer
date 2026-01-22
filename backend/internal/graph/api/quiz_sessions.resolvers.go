@@ -19,7 +19,6 @@ import (
 	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	pgx "github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -580,34 +579,74 @@ func (r *mutationResolver) GrantQuizSessionAccess(ctx context.Context, input mod
 		}
 	}
 
-	// Create access records
-	granted := 0
+	// Create access records using batch insert (max 500 per batch)
+	if len(userIdsToGrant) == 0 {
+		return 0, nil
+	}
+
+	const batchSize = 500
+	ids := make([]string, 0, min(len(userIdsToGrant), batchSize))
+	sessionIds := make([]string, 0, min(len(userIdsToGrant), batchSize))
+	userIds := make([]string, 0, min(len(userIdsToGrant), batchSize))
+	grantedBys := make([]string, 0, min(len(userIdsToGrant), batchSize))
+	sourceTypes := make([]string, 0, min(len(userIdsToGrant), batchSize))
+	sourceIds := make([]string, 0, min(len(userIdsToGrant), batchSize))
+
+	var totalGranted int64
 	for uid, sourceType := range userIdsToGrant {
-		_, err := r.DB.Queries.CreateQuizSessionAccess(ctx, sqlc.CreateQuizSessionAccessParams{
-			ID:         ulid.NewQuizSessionAccessID(),
-			Sessionid:  input.SessionID,
-			Userid:     uid,
-			Grantedby:  userID,
-			Sourcetype: sourceType,
+		ids = append(ids, ulid.NewQuizSessionAccessID())
+		sessionIds = append(sessionIds, input.SessionID)
+		userIds = append(userIds, uid)
+		grantedBys = append(grantedBys, userID)
+		sourceTypes = append(sourceTypes, sourceType)
+		sourceIds = append(sourceIds, "")
+
+		if len(ids) >= batchSize {
+			granted, err := r.DB.Queries.BulkCreateQuizSessionAccess(ctx, sqlc.BulkCreateQuizSessionAccessParams{
+				Ids:         ids,
+				Sessionids:  sessionIds,
+				Userids:     userIds,
+				Grantedbys:  grantedBys,
+				Sourcetypes: sourceTypes,
+				Sourceids:   sourceIds,
+			})
+			if err != nil {
+				otel.RecordError(span, err)
+				return 0, fmt.Errorf("failed to create quiz session access: %w", err)
+			}
+			totalGranted += granted
+			ids = ids[:0]
+			sessionIds = sessionIds[:0]
+			userIds = userIds[:0]
+			grantedBys = grantedBys[:0]
+			sourceTypes = sourceTypes[:0]
+			sourceIds = sourceIds[:0]
+		}
+	}
+
+	// Insert remaining records
+	if len(ids) > 0 {
+		granted, err := r.DB.Queries.BulkCreateQuizSessionAccess(ctx, sqlc.BulkCreateQuizSessionAccessParams{
+			Ids:         ids,
+			Sessionids:  sessionIds,
+			Userids:     userIds,
+			Grantedbys:  grantedBys,
+			Sourcetypes: sourceTypes,
+			Sourceids:   sourceIds,
 		})
 		if err != nil {
-			// Ignore duplicate errors (ON CONFLICT DO NOTHING)
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-				continue
-			}
-			// For non-duplicate errors, log but continue
-			continue
+			otel.RecordError(span, err)
+			return 0, fmt.Errorf("failed to create quiz session access: %w", err)
 		}
-		granted++
+		totalGranted += granted
 	}
 
 	// Notify clients via Firestore
-	if r.FirebaseService != nil && granted > 0 {
+	if r.FirebaseService != nil && totalGranted > 0 {
 		go r.FirebaseService.NotifyProjectQuizSessions(context.Background(), quiz.ProjectID)
 	}
 
-	return granted, nil
+	return int(totalGranted), nil
 }
 
 // RevokeQuizSessionAccess is the resolver for the revokeQuizSessionAccess field.

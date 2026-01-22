@@ -114,6 +114,17 @@ VALUES (
 ON CONFLICT (session_id, user_id) DO NOTHING
 RETURNING *;
 
+-- name: BulkCreateQuizSessionAccess :execrows
+INSERT INTO quiz_session_access (id, session_id, user_id, granted_by, source_type, source_id)
+SELECT
+    UNNEST(@ids::text[]),
+    UNNEST(@sessionids::text[]),
+    UNNEST(@userids::text[]),
+    UNNEST(@grantedbys::text[]),
+    UNNEST(@sourcetypes::text[]),
+    NULLIF(UNNEST(@sourceids::text[]), '')
+ON CONFLICT (session_id, user_id) DO NOTHING;
+
 -- name: HasQuizSessionAccess :one
 SELECT EXISTS(
     SELECT 1

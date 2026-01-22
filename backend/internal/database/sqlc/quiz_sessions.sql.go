@@ -25,6 +25,42 @@ func (q *Queries) AutoSubmitSessionSubmissions(ctx context.Context, sessionid st
 	return err
 }
 
+const BulkCreateQuizSessionAccess = `-- name: BulkCreateQuizSessionAccess :execrows
+INSERT INTO quiz_session_access (id, session_id, user_id, granted_by, source_type, source_id)
+SELECT
+    UNNEST($1::text[]),
+    UNNEST($2::text[]),
+    UNNEST($3::text[]),
+    UNNEST($4::text[]),
+    UNNEST($5::text[]),
+    NULLIF(UNNEST($6::text[]), '')
+ON CONFLICT (session_id, user_id) DO NOTHING
+`
+
+type BulkCreateQuizSessionAccessParams struct {
+	Ids         []string `json:"ids"`
+	Sessionids  []string `json:"sessionids"`
+	Userids     []string `json:"userids"`
+	Grantedbys  []string `json:"grantedbys"`
+	Sourcetypes []string `json:"sourcetypes"`
+	Sourceids   []string `json:"sourceids"`
+}
+
+func (q *Queries) BulkCreateQuizSessionAccess(ctx context.Context, arg BulkCreateQuizSessionAccessParams) (int64, error) {
+	result, err := q.db.Exec(ctx, BulkCreateQuizSessionAccess,
+		arg.Ids,
+		arg.Sessionids,
+		arg.Userids,
+		arg.Grantedbys,
+		arg.Sourcetypes,
+		arg.Sourceids,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const CreateQuizSession = `-- name: CreateQuizSession :one
 
 INSERT INTO quiz_sessions (
