@@ -1,0 +1,33 @@
+type: http_request
+model: http_request
+id: rq_TeamNameChangedWebhook
+createdAt: 2026-01-22T12:00:00
+updatedAt: 2026-01-22T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Teams
+authentication: {}
+authenticationType: null
+body:
+  text: |
+    {
+      "event_type": "team_name_changed",
+      "timestamp": "2026-01-22T12:00:00Z",
+      "project_id": "PR01KAHRZY6PCQVGYVMTPZR2VT01",
+      "data": {
+        "team_id": "TM01KFFSQA2GJVS4BBNZ8CMK1FRC",
+        "old_name": "Old Team Name",
+        "new_name": "New Team Name"
+      }
+    }
+bodyType: text/plain
+description: Trigger team name changed webhook for ladder_to_heaven plugin
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_TeamNameChangedWebhook
+method: POST
+name: Team Name Changed Webhook
+sortPriority: 0.0
+url: ${[ HOST ]}/plugins/ladder-to-heaven/team-name-changed
+urlParameters: []
