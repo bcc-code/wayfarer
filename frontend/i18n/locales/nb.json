@@ -25,8 +25,11 @@
     "questionNumber": "{current} av {total}",
     "continue": "Fortsett",
     "nextQuestion": "Neste spørsmål",
+    "previousQuestion": "Forrige",
     "done": "Ferdig",
     "unavailable": "Denne quizen er ikke tilgjengelig for øyeblikket.",
+    "reviewAnswers": "Se svar",
+    "finishReview": "Avslutt gjennomgang",
     "result": {
       "receivedNoPoints": "Du samlet ingen poeng.",
       "receivedPoints": "Du samlet {points} poeng.",

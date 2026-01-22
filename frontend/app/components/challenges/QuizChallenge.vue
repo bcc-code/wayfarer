@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import type { QuizChallengeData, QuestionResult } from './quiz/types'
+import type {
+  QuizChallengeData,
+  QuestionResult,
+  PredefinedQuestionData,
+  PredefinedResponseData,
+} from './quiz/types'
 import type { FinalizeQuizMutation, StartQuizSessionMutation } from '~/api/generated'
 
 const props = defineProps<{
@@ -20,6 +25,7 @@ const questionResults = ref<QuestionResult[]>([])
 const quizCompleted = ref(false)
 const finalResult = ref<FinalizeQuizMutation['finalizeQuiz'] | null>(null)
 const startedSubmission = ref<StartQuizSessionMutation['startQuizSession'] | null>(null)
+const isReviewMode = ref(false)
 
 // Start with loading true if we need to start a quiz (no active submission and have session)
 const needsToStartQuiz = computed(() => {
@@ -47,6 +53,38 @@ const completedSubmissionResults = computed<QuestionResult[]>(() => {
         : null,
   }))
 })
+
+// Check if user can review their answers (has PredefinedResponse answers)
+const canReview = computed(() => {
+  if (!completedSubmission.value) return false
+  return completedSubmission.value.responses.some(
+    (r) => r.__typename === 'PredefinedResponse',
+  )
+})
+
+// Get questions for review mode (only PredefinedQuestion types)
+const reviewQuestions = computed<PredefinedQuestionData[]>(() => {
+  if (!completedSubmission.value) return []
+  return completedSubmission.value.orderedQuestions.filter(
+    (q): q is PredefinedQuestionData => q.__typename === 'PredefinedQuestion',
+  )
+})
+
+// Get responses for review mode (only PredefinedResponse types)
+const reviewResponses = computed<PredefinedResponseData[]>(() => {
+  if (!completedSubmission.value) return []
+  return completedSubmission.value.responses.filter(
+    (r): r is PredefinedResponseData => r.__typename === 'PredefinedResponse',
+  )
+})
+
+function handleStartReview() {
+  isReviewMode.value = true
+}
+
+function handleFinishReview() {
+  isReviewMode.value = false
+}
 
 // Check if we can start a new quiz
 const canStartQuiz = computed(() => {
@@ -182,11 +220,21 @@ function handleQuizAbandoned() {
     </template>
 
     <template v-else-if="completedSubmission && !canStartQuiz">
+      <QuizReviewMode
+        v-if="isReviewMode"
+        :questions="reviewQuestions"
+        :responses="reviewResponses"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
+        @finish="handleFinishReview"
+      />
       <QuizResult
+        v-else
         :score="completedSubmission.score ?? 0"
         :max-score="completedSubmission.maxScore ?? 0"
         :points-awarded="completedSubmission.pointsAwarded ?? 0"
         :results="completedSubmissionResults"
+        :can-review="canReview"
+        @start-review="handleStartReview"
       />
     </template>
 
@@ -216,11 +264,21 @@ function handleQuizAbandoned() {
 
     <!-- Fallback: show completed submission result even if retakes are allowed -->
     <template v-else-if="completedSubmission">
+      <QuizReviewMode
+        v-if="isReviewMode"
+        :questions="reviewQuestions"
+        :responses="reviewResponses"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
+        @finish="handleFinishReview"
+      />
       <QuizResult
+        v-else
         :score="completedSubmission.score ?? 0"
         :max-score="completedSubmission.maxScore ?? 0"
         :points-awarded="completedSubmission.pointsAwarded ?? 0"
         :results="completedSubmissionResults"
+        :can-review="canReview"
+        @start-review="handleStartReview"
       />
     </template>
 

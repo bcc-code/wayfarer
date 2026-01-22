@@ -7,6 +7,11 @@ const props = defineProps<{
   maxScore: number
   pointsAwarded: number
   results: QuestionResult[]
+  canReview?: boolean
+}>()
+
+const emit = defineEmits<{
+  startReview: []
 }>()
 
 const { t } = useI18n()
@@ -91,10 +96,22 @@ onMounted(() => {
       </h1>
     </div>
 
-    <NuxtLink :to="{ name: 'challenges' }">
-      <DesignButton size="large" class="w-full">
-        {{ $t('quiz.done') }}
+    <div class="flex flex-col gap-small">
+      <DesignButton
+        v-if="canReview"
+        size="large"
+        variant="secondary"
+        class="w-full"
+        @click="emit('startReview')"
+      >
+        {{ $t('quiz.reviewAnswers') }}
       </DesignButton>
-    </NuxtLink>
+
+      <NuxtLink :to="{ name: 'challenges' }">
+        <DesignButton size="large" class="w-full">
+          {{ $t('quiz.done') }}
+        </DesignButton>
+      </NuxtLink>
+    </div>
   </div>
 </template>
