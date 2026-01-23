@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const open = defineModel<boolean>('open')
+const open = defineModel<boolean>('open', { default: false })
 
 const emit = defineEmits<{
   subscribe: []

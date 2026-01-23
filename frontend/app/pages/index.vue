@@ -59,7 +59,7 @@ watch(
   { immediate: true },
 )
 
-function handleNotificationPromptDismiss() {
+function handleNotificationPromptClose() {
   notificationPromptDismissed.value = true
 }
 
@@ -224,7 +224,8 @@ const hiddenTreasuresLink = computed(() => {
     <!-- Notification prompt for PWA users -->
     <PwaNotificationPrompt
       v-model:open="notificationPromptOpen"
-      @dismiss="handleNotificationPromptDismiss"
+      @dismiss="handleNotificationPromptClose"
+      @subscribe="handleNotificationPromptClose"
     />
   </PageLayout>
 </template>
