@@ -20,8 +20,11 @@
     "questionNumber": "{current} of {total}",
     "continue": "Continue",
     "nextQuestion": "Next question",
+    "previousQuestion": "Previous",
     "done": "Done",
     "unavailable": "This quiz is not available at the moment.",
+    "reviewAnswers": "Review answers",
+    "finishReview": "Finish review",
     "result": {
       "receivedNoPoints": "You did not receive any points.",
       "receivedPoints": "You received {points} points.",

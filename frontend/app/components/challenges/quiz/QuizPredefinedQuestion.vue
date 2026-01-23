@@ -6,17 +6,26 @@ const props = defineProps<{
   totalQuestions: number
   currentIndex: number
   submissionId: string
+  // Review mode props
+  readonly?: boolean
+  preSelectedAnswerIds?: string[]
+  showCorrectAnswers?: boolean
+  showPreviousButton?: boolean
+  isLastQuestion?: boolean
 }>()
 
 const emit = defineEmits<{
   answerSubmitted: [result: QuestionResult]
+  previous: []
+  next: []
 }>()
 
 const { track } = useAnalytics()
 const { executeMutation: submitAnswer } = useSubmitQuizAnswerMutation()
 
-const selectedAnswer = ref<string>()
-const isAnswerConfirmed = ref(false)
+// In readonly mode, pre-populate selected answer from props
+const selectedAnswer = ref<string | undefined>(props.preSelectedAnswerIds?.[0])
+const isAnswerConfirmed = ref(props.readonly ?? false)
 const isSubmitting = ref(false)
 const submittedResult = ref<{ isCorrect: boolean | null } | null>(null)
 
@@ -68,6 +77,44 @@ const continueText = computed(() => {
   }
   return t('quiz.nextQuestion')
 })
+
+// In readonly mode, we use isLastQuestion prop to determine the next button text
+const nextButtonText = computed(() => {
+  if (props.readonly) {
+    return props.isLastQuestion
+      ? t('quiz.finishReview')
+      : t('quiz.nextQuestion')
+  }
+  return continueText.value
+})
+
+function handlePrevious() {
+  emit('previous')
+}
+
+function handleNext() {
+  emit('next')
+}
+
+// Determine if we should show correct/wrong highlighting
+// In normal mode: always show after confirmation
+// In readonly mode: only show if showCorrectAnswers is true
+function shouldShowCorrect(alternative: { isCorrect: boolean | null }) {
+  if (!isAnswerConfirmed.value) return false
+  if (props.readonly && !props.showCorrectAnswers) return false
+  return alternative.isCorrect === true
+}
+
+function shouldShowWrong(alternative: {
+  id: string
+  isCorrect: boolean | null
+}) {
+  if (!isAnswerConfirmed.value) return false
+  if (props.readonly && !props.showCorrectAnswers) return false
+  return (
+    selectedAnswer.value === alternative.id && alternative.isCorrect === false
+  )
+}
 </script>
 
 <template>
@@ -94,31 +141,52 @@ const continueText = computed(() => {
         :text="alternative.answerText"
         :highlighted="selectedAnswer === alternative.id"
         :confirmed="isAnswerConfirmed"
-        :correct="isAnswerConfirmed && alternative.isCorrect === true"
-        :wrong="
-          isAnswerConfirmed &&
-          selectedAnswer === alternative.id &&
-          alternative.isCorrect === false
-        "
+        :correct="shouldShowCorrect(alternative)"
+        :wrong="shouldShowWrong(alternative)"
         :selected="selectedAnswer === alternative.id"
         :disabled="isAnswerConfirmed"
         @click="!isAnswerConfirmed && (selectedAnswer = alternative.id)"
       />
     </template>
 
-    <DesignButton
-      v-if="!isAnswerConfirmed"
-      size="large"
-      class="grow-0"
-      :disabled="selectedAnswer === undefined || isSubmitting"
-      :loading="isSubmitting"
-      @click="handleLockAnswer"
-    >
-      {{ $t('quiz.lockAnswer') }}
-    </DesignButton>
+    <!-- Normal mode: Lock answer / Continue buttons -->
+    <template v-if="!readonly">
+      <DesignButton
+        v-if="!isAnswerConfirmed"
+        size="large"
+        class="grow-0"
+        :disabled="selectedAnswer === undefined || isSubmitting"
+        :loading="isSubmitting"
+        @click="handleLockAnswer"
+      >
+        {{ $t('quiz.lockAnswer') }}
+      </DesignButton>
 
-    <DesignButton v-else size="large" class="grow-0" @click="handleContinue">
-      {{ continueText }}
-    </DesignButton>
+      <DesignButton v-else size="large" class="grow-0" @click="handleContinue">
+        {{ continueText }}
+      </DesignButton>
+    </template>
+
+    <!-- Readonly/review mode: Previous / Next navigation -->
+    <template v-else>
+      <div class="flex gap-small grow-0">
+        <DesignButton
+          v-if="showPreviousButton"
+          size="large"
+          variant="secondary"
+          class="flex-1"
+          @click="handlePrevious"
+        >
+          {{ $t('quiz.previousQuestion') }}
+        </DesignButton>
+        <DesignButton
+          size="large"
+          :class="showPreviousButton ? 'flex-1' : 'w-full'"
+          @click="handleNext"
+        >
+          {{ nextButtonText }}
+        </DesignButton>
+      </div>
+    </template>
   </div>
 </template>
