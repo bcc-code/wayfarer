@@ -19,7 +19,7 @@
   },
   "quiz": {
     "wrongAnswer": "Helytelen válasz",
-    "correctAnswer": "Helyes válasz:",
+    "correctAnswer": "Helyes válasz",
     "yourAnswer": "Válaszod",
     "lockAnswer": "Válasz zárolása",
     "questionNumber": "{current} ból {total}",
@@ -202,7 +202,7 @@
       "deleteSelected": "Kiválasztottak törlése",
       "bulkCreate": {
         "countLabel": "Unitok száma",
-        "autoGenerateInfo": "A nevek automatikusan generálódnak."
+        "autoGenerateInfo": "A unitok nevei automatikusan generálódnak, és utólag módosíthatók."
       },
       "confirmDelete": {
         "title": "Unit törlése?",

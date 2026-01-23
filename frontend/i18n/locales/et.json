@@ -202,7 +202,7 @@
       "deleteSelected": "Kustuta valitud",
       "bulkCreate": {
         "countLabel": "Üksuste arv",
-        "autoGenerateInfo": "Nimed luuakse automaatselt"
+        "autoGenerateInfo": "Üksuste nimed luuakse automaatselt ja neid saab hiljem muuta."
       },
       "confirmDelete": {
         "title": "Kas kustutada üksus?",
