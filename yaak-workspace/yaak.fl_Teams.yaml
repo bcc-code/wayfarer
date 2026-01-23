@@ -1,0 +1,13 @@
+type: folder
+model: folder
+id: fl_Teams
+createdAt: 2026-01-22T12:00:00
+updatedAt: 2026-01-22T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: null
+authentication: {}
+authenticationType: null
+description: ''
+headers: []
+name: Teams
+sortPriority: 0.0

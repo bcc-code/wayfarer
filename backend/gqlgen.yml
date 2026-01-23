@@ -129,6 +129,22 @@ models:
       EventID:
         type: "*string"
 
+  PluginChallenge:
+    fields:
+      project:
+        resolver: true
+      event:
+        resolver: true
+      userCompletedAt:
+        resolver: true
+      userEnrolledAt:
+        resolver: true
+    extraFields:
+      ProjectID:
+        type: string
+      EventID:
+        type: "*string"
+
   Event:
     fields:
       parentProject:

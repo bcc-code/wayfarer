@@ -180,7 +180,7 @@ CREATE TABLE challenges (
     id CHAR(28) PRIMARY KEY CHECK (id ~ '^CL[0-9A-Z]{26}$'),
     project_id CHAR(28) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     event_id CHAR(28) REFERENCES events(id) ON DELETE SET NULL,
-    challenge_type VARCHAR(50) NOT NULL DEFAULT 'SIMPLE' CHECK (challenge_type IN ('SIMPLE', 'QUIZ', 'EXTERNAL')),
+    challenge_type VARCHAR(50) NOT NULL DEFAULT 'SIMPLE' CHECK (challenge_type IN ('SIMPLE', 'QUIZ', 'EXTERNAL', 'PLUGIN')),
     name VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     image_url VARCHAR(500),
@@ -193,19 +193,23 @@ CREATE TABLE challenges (
     allow_self_completion BOOLEAN DEFAULT true NOT NULL,
     requires_team_membership BOOLEAN DEFAULT false NOT NULL,
     requires_super_team_membership BOOLEAN DEFAULT false NOT NULL,
+    plugin_challenge_id VARCHAR(100),
+    plugin_data JSONB,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
-    -- Type constraints: EXTERNAL requires url, QUIZ must not have url
+    -- Type constraints: EXTERNAL requires url, QUIZ must not have url, PLUGIN requires plugin_challenge_id
     CONSTRAINT challenge_type_url_constraint CHECK (
         (challenge_type = 'EXTERNAL' AND url IS NOT NULL AND url != '') OR
         (challenge_type = 'QUIZ' AND (url IS NULL OR url = '')) OR
-        (challenge_type = 'SIMPLE')
+        (challenge_type = 'SIMPLE') OR
+        (challenge_type = 'PLUGIN' AND plugin_challenge_id IS NOT NULL AND plugin_challenge_id != '')
     ),
     INDEX idx_challenges_project (project_id),
     INDEX idx_challenges_event (event_id),
     INDEX idx_challenges_published (published_at),
     INDEX idx_challenges_visible (visible_at),
-    INDEX idx_challenges_type (challenge_type)
+    INDEX idx_challenges_type (challenge_type),
+    UNIQUE INDEX idx_challenges_plugin_challenge_id (plugin_challenge_id) WHERE plugin_challenge_id IS NOT NULL
 );
 
 CREATE TABLE achievements (

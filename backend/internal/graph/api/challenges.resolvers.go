@@ -41,6 +41,10 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 	challengeID := ulid.NewChallengeID()
 
 	// Build database params
+	buttonText := ""
+	if input.ButtonText != nil {
+		buttonText = *input.ButtonText
+	}
 	params := sqlc.CreateChallengeParams{
 		ID:            challengeID,
 		Projectid:     projectID,
@@ -49,7 +53,7 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 		Name:          input.Name,
 		Description:   "", // Will be set below
 		Imageurl:      input.Image,
-		Buttontext:    input.ButtonText,
+		Buttontext:    buttonText,
 	}
 
 	// Set description
@@ -83,6 +87,8 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 		params.Url = input.URL
 	case model.ChallengeTypeQuiz:
 		// No type-specific fields for quiz challenges
+	case model.ChallengeTypePlugin:
+		params.Pluginchallengeid = input.PluginChallengeID
 	}
 
 	// Create challenge in database
@@ -166,6 +172,8 @@ func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input
 		params.Url = input.URL
 	case model.ChallengeTypeQuiz:
 		// No type-specific fields for quiz challenges
+	case model.ChallengeTypePlugin:
+		params.Pluginchallengeid = input.PluginChallengeID
 	}
 
 	// Update challenge in database

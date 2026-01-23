@@ -14,6 +14,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/bcc-media/wayfarer/internal/utils"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -214,6 +215,9 @@ func (r *mutationResolver) UpdateTeam(ctx context.Context, id string, input mode
 		return nil, fmt.Errorf("failed to load team: %w", err)
 	}
 
+	// Capture old name for webhook notification
+	oldName := existingTeam.Name
+
 	// Prepare update parameters using existing values as defaults
 	name := existingTeam.Name
 	if input.Name != nil {
@@ -233,6 +237,15 @@ func (r *mutationResolver) UpdateTeam(ctx context.Context, id string, input mode
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update team: %w", err)
+	}
+
+	// Dispatch webhook if name changed
+	if input.Name != nil && oldName != *input.Name && r.WebhookService != nil {
+		go r.WebhookService.DispatchTeamNameChanged(context.Background(), existingTeam.ProjectID, webhooks.TeamNameChangedData{
+			TeamID:  id,
+			OldName: oldName,
+			NewName: *input.Name,
+		})
 	}
 
 	// Handle leaderboardExcluded field update

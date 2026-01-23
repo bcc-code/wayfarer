@@ -34,6 +34,27 @@ func (q *Queries) CheckScoreJournalEntryExists(ctx context.Context, arg CheckSco
 	return exists, err
 }
 
+const CheckScoreJournalEntryExistsBySource = `-- name: CheckScoreJournalEntryExistsBySource :one
+SELECT EXISTS(
+    SELECT 1 FROM score_journal
+    WHERE source_type = $1::text
+      AND source_id = $2::text
+) AS exists
+`
+
+type CheckScoreJournalEntryExistsBySourceParams struct {
+	SourceType string `json:"source_type"`
+	SourceID   string `json:"source_id"`
+}
+
+// Check if any score journal entry exists for a specific source (without user constraint)
+func (q *Queries) CheckScoreJournalEntryExistsBySource(ctx context.Context, arg CheckScoreJournalEntryExistsBySourceParams) (bool, error) {
+	row := q.db.QueryRow(ctx, CheckScoreJournalEntryExistsBySource, arg.SourceType, arg.SourceID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const CountScoreJournalFiltered = `-- name: CountScoreJournalFiltered :one
 SELECT COUNT(*)
 FROM score_journal

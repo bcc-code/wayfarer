@@ -131,6 +131,39 @@ func (q *Queries) GetEnrolledUsersForChallenge(ctx context.Context, challengeid 
 	return items, nil
 }
 
+const GetUserEnrolledChallengeIDsInProject = `-- name: GetUserEnrolledChallengeIDsInProject :many
+SELECT uce.challenge_id
+FROM user_challenge_enrollments uce
+JOIN challenges c ON c.id = uce.challenge_id
+WHERE uce.user_id = $1::text
+  AND c.project_id = $2::text
+`
+
+type GetUserEnrolledChallengeIDsInProjectParams struct {
+	Userid    string `json:"userid"`
+	Projectid string `json:"projectid"`
+}
+
+func (q *Queries) GetUserEnrolledChallengeIDsInProject(ctx context.Context, arg GetUserEnrolledChallengeIDsInProjectParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetUserEnrolledChallengeIDsInProject, arg.Userid, arg.Projectid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var challenge_id string
+		if err := rows.Scan(&challenge_id); err != nil {
+			return nil, err
+		}
+		items = append(items, challenge_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUserEnrollmentTimestamp = `-- name: GetUserEnrollmentTimestamp :one
 SELECT enrolled_at
 FROM user_challenge_enrollments

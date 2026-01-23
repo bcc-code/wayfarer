@@ -3,7 +3,7 @@ model: environment
 id: ev_GPdZ4AbXG6
 workspaceId: wk_XKsmbMdFg7
 createdAt: 2025-11-25T12:37:04.349121
-updatedAt: 2025-12-04T12:47:40.563453
+updatedAt: 2026-01-22T11:21:02.426721
 name: Local
 public: true
 base: false
@@ -14,7 +14,7 @@ variables:
   name: HOST
   value: http://localhost:8080
   id: PR8gW4seez
-- enabled: true
+- enabled: false
   name: TOKEN
   value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVMwMUs5VzFZNE0xUjE5WUNEWDRZU0FDVDBCSyIsInVzZXJfcm9sZXMiOlsidXNlciIsImFkbWluIiwic3VwZXJhZG1pbiJdLCJpc3MiOiJ3YXlmYXJlciIsImV4cCI6MTc5MDI1ODQzMCwiaWF0IjoxNzY0MzM4NDMwfQ.QQx4rpLMv159nUNRPGRV38OFNppo28Qt5bF5ArZTCKE
   id: IrVp557pTp
@@ -26,5 +26,9 @@ variables:
   name: HT_TOKEN
   value: REPLACE
   id: Syd8Dp8ybI
+- enabled: true
+  name: TOKEN
+  value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVMwMUtFSE5LMUFRNjlZSldIWVdKMVNZUjVCMSIsInVzZXJfcm9sZXMiOlsic3VwZXJhZG1pbiJdLCJpc3MiOiJ3YXlmYXJlciIsImV4cCI6MTc2OTE2NjMyNCwiaWF0IjoxNzY5MDc5OTI0fQ.xA_r4eTzDQJUfSpA2-X-OSc3N1GPiI-ZqmtnAkZs_3w
+  id: P7shiD2IdR
 color: var(--success)
 sortPriority: 0.0

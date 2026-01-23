@@ -12,6 +12,9 @@ type Config struct {
 	AchievementID string
 	// SecretKey is used to verify webhook signatures.
 	SecretKey string
+	// TeamRenameChallengeID is the challenge to mark as completed when a team renames.
+	// Awards 300 points to each team member (once per team).
+	TeamRenameChallengeID string
 }
 
 // LadderToHeavenPlugin implements the plugins.Plugin interface.
@@ -38,14 +41,23 @@ func (p *LadderToHeavenPlugin) Enabled() bool {
 
 // Register sets up the plugin's routes.
 func (p *LadderToHeavenPlugin) Register(router gin.IRouter, deps plugins.Dependencies, apiKeyAuth gin.HandlerFunc) error {
-	handler := &contentEventHandler{
+	contentHandler := &contentEventHandler{
 		db:            deps.DB,
 		cache:         deps.Cache,
 		achievementID: p.config.AchievementID,
 		secretKey:     p.config.SecretKey,
 	}
 
-	router.POST("/plugins/ladder-to-heaven/content-event", handler.handle)
+	router.POST("/plugins/ladder-to-heaven/content-event", contentHandler.handle)
+
+	teamRenameHandler := &teamNameChangedHandler{
+		db:          deps.DB,
+		cache:       deps.Cache,
+		challengeID: p.config.TeamRenameChallengeID,
+		secretKey:   p.config.SecretKey,
+	}
+
+	router.POST("/plugins/ladder-to-heaven/team-name-changed", teamRenameHandler.handle)
 
 	return nil
 }

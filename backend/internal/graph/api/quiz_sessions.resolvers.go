@@ -19,7 +19,6 @@ import (
 	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	pgx "github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -42,6 +41,9 @@ func (r *mutationResolver) CreateQuizSession(ctx context.Context, input model.Cr
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
 	}
 
 	// Check if user can manage sessions (admin, superadmin, project_admin, or church_admin)
@@ -103,6 +105,9 @@ func (r *mutationResolver) UpdateQuizSession(ctx context.Context, id string, inp
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
 	}
 
 	// Check if user can manage this session
@@ -168,6 +173,9 @@ func (r *mutationResolver) DeleteQuizSession(ctx context.Context, id string) (bo
 		otel.RecordError(span, err)
 		return false, fmt.Errorf("failed to load quiz: %w", err)
 	}
+	if quiz == nil {
+		return false, fmt.Errorf("quiz not found")
+	}
 
 	// Check if user can manage this session
 	if session.CreatedBy != userID && !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
@@ -213,6 +221,9 @@ func (r *mutationResolver) OpenQuizSession(ctx context.Context, id string) (*mod
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
 	}
 
 	// Check if user can manage this session
@@ -267,6 +278,9 @@ func (r *mutationResolver) LockQuizSession(ctx context.Context, id string) (*mod
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
 	}
 
 	// Check if user can manage this session
@@ -328,6 +342,9 @@ func (r *mutationResolver) FinishQuizSession(ctx context.Context, id string) (*m
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
 	}
 
 	// Check if user can manage this session
@@ -429,6 +446,9 @@ func (r *mutationResolver) ReopenQuizSession(ctx context.Context, id string) (*m
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
 	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
+	}
 
 	// Only admin/superadmin can reopen
 	if !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
@@ -482,6 +502,9 @@ func (r *mutationResolver) GrantQuizSessionAccess(ctx context.Context, input mod
 	if err != nil {
 		otel.RecordError(span, err)
 		return 0, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return 0, fmt.Errorf("quiz not found")
 	}
 
 	// Check if user can grant access
@@ -556,34 +579,74 @@ func (r *mutationResolver) GrantQuizSessionAccess(ctx context.Context, input mod
 		}
 	}
 
-	// Create access records
-	granted := 0
+	// Create access records using batch insert (max 500 per batch)
+	if len(userIdsToGrant) == 0 {
+		return 0, nil
+	}
+
+	const batchSize = 500
+	ids := make([]string, 0, min(len(userIdsToGrant), batchSize))
+	sessionIds := make([]string, 0, min(len(userIdsToGrant), batchSize))
+	userIds := make([]string, 0, min(len(userIdsToGrant), batchSize))
+	grantedBys := make([]string, 0, min(len(userIdsToGrant), batchSize))
+	sourceTypes := make([]string, 0, min(len(userIdsToGrant), batchSize))
+	sourceIds := make([]string, 0, min(len(userIdsToGrant), batchSize))
+
+	var totalGranted int64
 	for uid, sourceType := range userIdsToGrant {
-		_, err := r.DB.Queries.CreateQuizSessionAccess(ctx, sqlc.CreateQuizSessionAccessParams{
-			ID:         ulid.NewQuizSessionAccessID(),
-			Sessionid:  input.SessionID,
-			Userid:     uid,
-			Grantedby:  userID,
-			Sourcetype: sourceType,
+		ids = append(ids, ulid.NewQuizSessionAccessID())
+		sessionIds = append(sessionIds, input.SessionID)
+		userIds = append(userIds, uid)
+		grantedBys = append(grantedBys, userID)
+		sourceTypes = append(sourceTypes, sourceType)
+		sourceIds = append(sourceIds, "")
+
+		if len(ids) >= batchSize {
+			granted, err := r.DB.Queries.BulkCreateQuizSessionAccess(ctx, sqlc.BulkCreateQuizSessionAccessParams{
+				Ids:         ids,
+				Sessionids:  sessionIds,
+				Userids:     userIds,
+				Grantedbys:  grantedBys,
+				Sourcetypes: sourceTypes,
+				Sourceids:   sourceIds,
+			})
+			if err != nil {
+				otel.RecordError(span, err)
+				return 0, fmt.Errorf("failed to create quiz session access: %w", err)
+			}
+			totalGranted += granted
+			ids = ids[:0]
+			sessionIds = sessionIds[:0]
+			userIds = userIds[:0]
+			grantedBys = grantedBys[:0]
+			sourceTypes = sourceTypes[:0]
+			sourceIds = sourceIds[:0]
+		}
+	}
+
+	// Insert remaining records
+	if len(ids) > 0 {
+		granted, err := r.DB.Queries.BulkCreateQuizSessionAccess(ctx, sqlc.BulkCreateQuizSessionAccessParams{
+			Ids:         ids,
+			Sessionids:  sessionIds,
+			Userids:     userIds,
+			Grantedbys:  grantedBys,
+			Sourcetypes: sourceTypes,
+			Sourceids:   sourceIds,
 		})
 		if err != nil {
-			// Ignore duplicate errors (ON CONFLICT DO NOTHING)
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-				continue
-			}
-			// For non-duplicate errors, log but continue
-			continue
+			otel.RecordError(span, err)
+			return 0, fmt.Errorf("failed to create quiz session access: %w", err)
 		}
-		granted++
+		totalGranted += granted
 	}
 
 	// Notify clients via Firestore
-	if r.FirebaseService != nil && granted > 0 {
+	if r.FirebaseService != nil && totalGranted > 0 {
 		go r.FirebaseService.NotifyProjectQuizSessions(context.Background(), quiz.ProjectID)
 	}
 
-	return granted, nil
+	return int(totalGranted), nil
 }
 
 // RevokeQuizSessionAccess is the resolver for the revokeQuizSessionAccess field.
@@ -611,6 +674,9 @@ func (r *mutationResolver) RevokeQuizSessionAccess(ctx context.Context, sessionI
 	if err != nil {
 		otel.RecordError(span, err)
 		return false, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return false, fmt.Errorf("quiz not found")
 	}
 
 	// Check if user can revoke access
@@ -655,6 +721,9 @@ func (r *mutationResolver) RevokeAllQuizSessionAccess(ctx context.Context, sessi
 	if err != nil {
 		otel.RecordError(span, err)
 		return false, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return false, fmt.Errorf("quiz not found")
 	}
 
 	// Check if user can revoke access
@@ -725,6 +794,9 @@ func (r *mutationResolver) StartQuizSession(ctx context.Context, sessionID strin
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
 	}
 
 	// Get quiz questions
@@ -878,6 +950,9 @@ func (r *quizSessionResolver) Quiz(ctx context.Context, obj *model.QuizSession) 
 	quiz, err := thunk()
 	if err != nil {
 		return nil, err
+	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found")
 	}
 	return r.ApplyTranslationToQuiz(ctx, quiz), nil
 }

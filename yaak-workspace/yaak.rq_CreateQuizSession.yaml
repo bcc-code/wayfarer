@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_CreateQuizSession
 createdAt: 2026-01-15T12:00:00
-updatedAt: 2026-01-15T09:51:55.607462
+updatedAt: 2026-01-22T19:17:28.289281
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Quizzes
 authentication: {}
@@ -27,9 +27,9 @@ body:
   variables: |
     {
       "input": {
-        "quizId": "QZ01KCF91CSRSGJWA3JKYHR587GS",
-        "name": "Test 123",
-        "openAt": null,
+        "quizId": "QZ01KFJJTY1WETEW597FSEZBP1GX",
+        "name": "Polykarp Test 1",
+        "openAt": "2025-01-21T00:00:00",
         "lockAt": null,
         "finishAt": null
       }

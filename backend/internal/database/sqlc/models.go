@@ -59,6 +59,8 @@ type Challenge struct {
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
 	ChallengeType               string             `json:"challenge_type"`
 	AllowSelfCompletion         bool               `json:"allow_self_completion"`
+	PluginChallengeID           *string            `json:"plugin_challenge_id"`
+	PluginData                  []byte             `json:"plugin_data"`
 }
 
 type ChallengeTranslation struct {

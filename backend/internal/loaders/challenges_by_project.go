@@ -31,7 +31,7 @@ func challengesByProjectBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 
 		// Query database only for cache misses
 		if len(missingProjectIDs) > 0 {
-			rows, err := db.Queries.GetChallengesByProjectIDs(ctx, missingProjectIDs)
+			rows, err := db.Queries.GetAllChallengesByProjectIDs(ctx, missingProjectIDs)
 			if err != nil {
 				results := make([]*dataloader.Result[[]model.Challenge], len(projectIDs))
 				for i := range results {
@@ -70,8 +70,8 @@ func challengesByProjectBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 	}
 }
 
-// convertProjectChallengeRow converts a GetChallengesByProjectIDsRow to the appropriate Challenge implementation
-func convertProjectChallengeRow(row *sqlc.GetChallengesByProjectIDsRow) model.Challenge {
+// convertProjectChallengeRow converts a GetAllChallengesByProjectIDsRow to the appropriate Challenge implementation
+func convertProjectChallengeRow(row *sqlc.GetAllChallengesByProjectIDsRow) model.Challenge {
 	var publishedAt, visibleAt, startedAt, endTime *scalars.DateTime
 	if row.PublishedAt.Valid {
 		dt := scalars.DateTime{Time: row.PublishedAt.Time}

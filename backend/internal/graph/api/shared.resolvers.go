@@ -209,25 +209,53 @@ func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]mod
 	userID, _ := middleware.GetUserID(ctx)
 	isAdmin := userID != "" && r.RoleService.CanManageProject(ctx, userID, obj.ProjectID)
 
-	// Filter out quiz challenges without session access (for non-admins)
 	result := make([]model.Challenge, 0, len(challenges))
 	for _, ch := range challenges {
-		// For quiz challenges, non-admins need session access
-		if _, ok := ch.(*model.QuizChallenge); ok && !isAdmin && userID != "" {
-			// Load quiz by challenge ID to get quiz ID
+		// For quiz challenges, check session access first
+		if _, ok := ch.(*model.QuizChallenge); ok && userID != "" {
 			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
 			quiz, err := quizThunk()
-			if err != nil || quiz == nil {
-				continue // Skip this challenge
+			if err == nil && quiz != nil {
+				hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
+					Quizid: quiz.ID,
+					Userid: userID,
+				})
+				if err == nil && hasAccess {
+					// Session access grants visibility regardless of publishedAt
+					result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
+					continue
+				}
 			}
+			// Quiz without session access: skip this challenge entirely
+			continue
+		}
 
-			hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
-				Quizid: quiz.ID,
-				Userid: userID,
+		// Admins can see all non-quiz challenges
+		if isAdmin {
+			result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
+			continue
+		}
+
+		// Non-admins: check publishedAt
+		publishedAt := getChallengePublishedAt(ch)
+		if publishedAt == nil || publishedAt.Time.After(time.Now()) {
+			continue // Skip unpublished
+		}
+
+		// Check visibility (enrolled OR visible_at in past)
+		visibleAt := getChallengeVisibleAt(ch)
+		isVisible := visibleAt != nil && !visibleAt.Time.After(time.Now())
+
+		if !isVisible && userID != "" {
+			enrolled, err := r.DB.Queries.IsUserEnrolledInChallenge(ctx, sqlc.IsUserEnrolledInChallengeParams{
+				Userid:      userID,
+				Challengeid: ch.GetID(),
 			})
-			if err != nil || !hasAccess {
-				continue // Skip this challenge
+			if err != nil || !enrolled {
+				continue // Skip not enrolled
 			}
+		} else if !isVisible {
+			continue // Skip not visible
 		}
 
 		result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
@@ -402,6 +430,31 @@ func (r *numberResponseResolver) Question(ctx context.Context, obj *model.Number
 	return convertGetQuizQuestionByIDRowToInterface(row), nil
 }
 
+// ImageObject is the resolver for the imageObject field.
+func (r *pluginChallengeResolver) ImageObject(ctx context.Context, obj *model.PluginChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
+// Project is the resolver for the project field.
+func (r *pluginChallengeResolver) Project(ctx context.Context, obj *model.PluginChallenge) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *pluginChallengeResolver) Event(ctx context.Context, obj *model.PluginChallenge) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *pluginChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.PluginChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *pluginChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.PluginChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
+}
+
 // Quiz is the resolver for the quiz field.
 func (r *predefinedQuestionResolver) Quiz(ctx context.Context, obj *model.PredefinedQuestion) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
@@ -522,25 +575,53 @@ func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([
 	userID, _ := middleware.GetUserID(ctx)
 	isAdmin := userID != "" && r.RoleService.CanManageProject(ctx, userID, obj.ID)
 
-	// Filter out quiz challenges without session access (for non-admins)
 	result := make([]model.Challenge, 0, len(challenges))
 	for _, ch := range challenges {
-		// For quiz challenges, non-admins need session access
-		if _, ok := ch.(*model.QuizChallenge); ok && !isAdmin && userID != "" {
-			// Load quiz by challenge ID to get quiz ID
+		// For quiz challenges, check session access first
+		if _, ok := ch.(*model.QuizChallenge); ok && userID != "" {
 			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
 			quiz, err := quizThunk()
-			if err != nil || quiz == nil {
-				continue // Skip this challenge
+			if err == nil && quiz != nil {
+				hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
+					Quizid: quiz.ID,
+					Userid: userID,
+				})
+				if err == nil && hasAccess {
+					// Session access grants visibility regardless of publishedAt
+					result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
+					continue
+				}
 			}
+			// Quiz without session access: skip this challenge entirely
+			continue
+		}
 
-			hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
-				Quizid: quiz.ID,
-				Userid: userID,
+		// Admins can see all non-quiz challenges
+		if isAdmin {
+			result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
+			continue
+		}
+
+		// Non-admins: check publishedAt
+		publishedAt := getChallengePublishedAt(ch)
+		if publishedAt == nil || publishedAt.Time.After(time.Now()) {
+			continue // Skip unpublished
+		}
+
+		// Check visibility (enrolled OR visible_at in past)
+		visibleAt := getChallengeVisibleAt(ch)
+		isVisible := visibleAt != nil && !visibleAt.Time.After(time.Now())
+
+		if !isVisible && userID != "" {
+			enrolled, err := r.DB.Queries.IsUserEnrolledInChallenge(ctx, sqlc.IsUserEnrolledInChallengeParams{
+				Userid:      userID,
+				Challengeid: ch.GetID(),
 			})
-			if err != nil || !hasAccess {
-				continue // Skip this challenge
+			if err != nil || !enrolled {
+				continue // Skip not enrolled
 			}
+		} else if !isVisible {
+			continue // Skip not visible
 		}
 
 		result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
@@ -2034,6 +2115,9 @@ func (r *Resolver) NumberQuestion() NumberQuestionResolver { return &numberQuest
 // NumberResponse returns NumberResponseResolver implementation.
 func (r *Resolver) NumberResponse() NumberResponseResolver { return &numberResponseResolver{r} }
 
+// PluginChallenge returns PluginChallengeResolver implementation.
+func (r *Resolver) PluginChallenge() PluginChallengeResolver { return &pluginChallengeResolver{r} }
+
 // PredefinedQuestion returns PredefinedQuestionResolver implementation.
 func (r *Resolver) PredefinedQuestion() PredefinedQuestionResolver {
 	return &predefinedQuestionResolver{r}
@@ -2114,6 +2198,7 @@ type leaderboardEntryResolver struct{ *Resolver }
 type markdownTextResolver struct{ *Resolver }
 type numberQuestionResolver struct{ *Resolver }
 type numberResponseResolver struct{ *Resolver }
+type pluginChallengeResolver struct{ *Resolver }
 type predefinedQuestionResolver struct{ *Resolver }
 type predefinedResponseResolver struct{ *Resolver }
 type projectResolver struct{ *Resolver }

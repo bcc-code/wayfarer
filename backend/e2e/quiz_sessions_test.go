@@ -118,6 +118,22 @@ func TestQuizSessions(t *testing.T) {
 		require.False(t, resp.HasErrors(), "failed to publish challenge: %s", resp.ErrorMessage())
 	}
 
+	// Helper to make a challenge visible (sets visibleAt)
+	makeChallengeVisible := func(t *testing.T, challengeID string) {
+		visibleTime := time.Now().Add(-1 * time.Hour).Format(time.RFC3339)
+		resp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation SetChallengeVisibility($id: ID!, $visibleAt: DateTime!) {
+				setChallengeVisibility(id: $id, visibleAt: $visibleAt) {
+					id
+				}
+			}
+		`, map[string]any{
+			"id":        challengeID,
+			"visibleAt": visibleTime,
+		})
+		require.False(t, resp.HasErrors(), "failed to set challenge visibility: %s", resp.ErrorMessage())
+	}
+
 	// Helper to add a question to quiz
 	addQuestion := func(t *testing.T, quizID string, questionText string) string {
 		resp := client.WithAuth(adminToken).MustExecute(t, `
@@ -1775,6 +1791,7 @@ func TestQuizSessions(t *testing.T) {
 	t.Run("non-admin user can see quiz challenge with session access", func(t *testing.T) {
 		challengeID := createChallenge(t, "Visibility With Access Challenge")
 		publishChallenge(t, challengeID)
+		makeChallengeVisible(t, challengeID)
 		quizID := createQuiz(t, "Visibility With Access Quiz", challengeID)
 		addQuestion(t, quizID, "Question?")
 
@@ -1851,9 +1868,10 @@ func TestQuizSessions(t *testing.T) {
 		assert.True(t, found, "quiz challenge should be visible with session access")
 	})
 
-	t.Run("admin user can see quiz challenge without session access", func(t *testing.T) {
+	t.Run("admin user also needs session access to see quiz challenge", func(t *testing.T) {
 		challengeID := createChallenge(t, "Visibility Admin Challenge")
 		publishChallenge(t, challengeID)
+		makeChallengeVisible(t, challengeID)
 		quizID := createQuiz(t, "Visibility Admin Quiz", challengeID)
 		addQuestion(t, quizID, "Question?")
 
@@ -1884,7 +1902,7 @@ func TestQuizSessions(t *testing.T) {
 			}
 		`, map[string]any{"id": sessionID})
 
-		// Query event.challenges as admin user
+		// Query event.challenges as admin user (without session access)
 		queryResp := client.WithAuth(adminToken).MustExecute(t, `
 			query GetEventChallenges($id: ID!) {
 				event(id: $id) {
@@ -1907,20 +1925,16 @@ func TestQuizSessions(t *testing.T) {
 		}
 		require.NoError(t, queryResp.UnmarshalData(&queryResult))
 
-		// Challenge SHOULD be in the list for admin
-		found := false
+		// Quiz challenge should NOT be visible without session access (even for admin)
 		for _, ch := range queryResult.Event.Challenges {
-			if ch.ID == challengeID {
-				found = true
-				break
-			}
+			assert.NotEqual(t, challengeID, ch.ID, "quiz challenge should not be visible without session access, even for admin")
 		}
-		assert.True(t, found, "admin should see quiz challenge without session access")
 	})
 
 	t.Run("project challenges filters quiz challenges by session access", func(t *testing.T) {
 		challengeID := createChallenge(t, "Project Visibility Challenge")
 		publishChallenge(t, challengeID)
+		makeChallengeVisible(t, challengeID)
 		quizID := createQuiz(t, "Project Visibility Quiz", challengeID)
 		addQuestion(t, quizID, "Question?")
 
@@ -2080,6 +2094,7 @@ func TestQuizSessions(t *testing.T) {
 	t.Run("can load quiz challenge directly with session access", func(t *testing.T) {
 		challengeID := createChallenge(t, "Direct Query With Access Challenge")
 		publishChallenge(t, challengeID)
+		makeChallengeVisible(t, challengeID)
 		quizID := createQuiz(t, "Direct Query With Access Quiz", challengeID)
 		addQuestion(t, quizID, "Question?")
 

@@ -34,7 +34,7 @@ function onChallengeClick() {
         <h3 class="text-heading">{{ challenge.name }}</h3>
         <div class="text-label" v-html="challenge.description" />
       </div>
-      <div class="mt-auto grid">
+      <div v-if="challenge.buttonText" class="mt-auto grid">
         <NuxtLink
           :to="
             externalUrl || {

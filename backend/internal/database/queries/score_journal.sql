@@ -105,6 +105,14 @@ SELECT EXISTS(
       AND source_id = @source_id::text
 ) AS exists;
 
+-- name: CheckScoreJournalEntryExistsBySource :one
+-- Check if any score journal entry exists for a specific source (without user constraint)
+SELECT EXISTS(
+    SELECT 1 FROM score_journal
+    WHERE source_type = @source_type::text
+      AND source_id = @source_id::text
+) AS exists;
+
 -- name: CreateTeamScoreAdjustmentBatch :many
 -- Creates score journal entries for multiple team members at once
 -- Points array must have the same length as user_ids array
