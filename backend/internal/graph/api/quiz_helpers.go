@@ -30,17 +30,17 @@ type createQuizRowAdapter struct {
 	*sqlc.CreateQuizRow
 }
 
-func (r createQuizRowAdapter) GetID() string                      { return r.ID }
-func (r createQuizRowAdapter) GetProjectID() string               { return r.ProjectID }
-func (r createQuizRowAdapter) GetChallengeID() string             { return r.ChallengeID }
-func (r createQuizRowAdapter) GetName() string                    { return r.Name }
-func (r createQuizRowAdapter) GetDescription() string             { return r.Description }
-func (r createQuizRowAdapter) GetImageUrl() *string               { return r.ImageUrl }
-func (r createQuizRowAdapter) GetTimeoutSeconds() *int32          { return r.TimeoutSeconds }
-func (r createQuizRowAdapter) GetRandomizeQuestions() bool        { return r.RandomizeQuestions }
-func (r createQuizRowAdapter) GetRevealCorrectAnswers() bool      { return r.RevealCorrectAnswers }
-func (r createQuizRowAdapter) GetAllowRetakes() bool      { return r.AllowRetakes }
-func (r createQuizRowAdapter) GetCompletionPoints() int32 { return r.CompletionPoints }
+func (r createQuizRowAdapter) GetID() string                  { return r.ID }
+func (r createQuizRowAdapter) GetProjectID() string           { return r.ProjectID }
+func (r createQuizRowAdapter) GetChallengeID() string         { return r.ChallengeID }
+func (r createQuizRowAdapter) GetName() string                { return r.Name }
+func (r createQuizRowAdapter) GetDescription() string         { return r.Description }
+func (r createQuizRowAdapter) GetImageUrl() *string           { return r.ImageUrl }
+func (r createQuizRowAdapter) GetTimeoutSeconds() *int32      { return r.TimeoutSeconds }
+func (r createQuizRowAdapter) GetRandomizeQuestions() bool    { return r.RandomizeQuestions }
+func (r createQuizRowAdapter) GetRevealCorrectAnswers() bool  { return r.RevealCorrectAnswers }
+func (r createQuizRowAdapter) GetAllowRetakes() bool          { return r.AllowRetakes }
+func (r createQuizRowAdapter) GetCompletionPoints() int32     { return r.CompletionPoints }
 func (r createQuizRowAdapter) GetEndTime() pgtype.Timestamptz { return r.EndTime }
 
 // Adapter for sqlc.UpdateQuizRow
@@ -48,15 +48,15 @@ type updateQuizRowAdapter struct {
 	*sqlc.UpdateQuizRow
 }
 
-func (r updateQuizRowAdapter) GetID() string                      { return r.ID }
-func (r updateQuizRowAdapter) GetProjectID() string               { return r.ProjectID }
-func (r updateQuizRowAdapter) GetChallengeID() string             { return r.ChallengeID }
-func (r updateQuizRowAdapter) GetName() string                    { return r.Name }
-func (r updateQuizRowAdapter) GetDescription() string             { return r.Description }
-func (r updateQuizRowAdapter) GetImageUrl() *string               { return r.ImageUrl }
-func (r updateQuizRowAdapter) GetTimeoutSeconds() *int32          { return r.TimeoutSeconds }
-func (r updateQuizRowAdapter) GetRandomizeQuestions() bool        { return r.RandomizeQuestions }
-func (r updateQuizRowAdapter) GetRevealCorrectAnswers() bool      { return r.RevealCorrectAnswers }
+func (r updateQuizRowAdapter) GetID() string                  { return r.ID }
+func (r updateQuizRowAdapter) GetProjectID() string           { return r.ProjectID }
+func (r updateQuizRowAdapter) GetChallengeID() string         { return r.ChallengeID }
+func (r updateQuizRowAdapter) GetName() string                { return r.Name }
+func (r updateQuizRowAdapter) GetDescription() string         { return r.Description }
+func (r updateQuizRowAdapter) GetImageUrl() *string           { return r.ImageUrl }
+func (r updateQuizRowAdapter) GetTimeoutSeconds() *int32      { return r.TimeoutSeconds }
+func (r updateQuizRowAdapter) GetRandomizeQuestions() bool    { return r.RandomizeQuestions }
+func (r updateQuizRowAdapter) GetRevealCorrectAnswers() bool  { return r.RevealCorrectAnswers }
 func (r updateQuizRowAdapter) GetAllowRetakes() bool          { return r.AllowRetakes }
 func (r updateQuizRowAdapter) GetCompletionPoints() int32     { return r.CompletionPoints }
 func (r updateQuizRowAdapter) GetEndTime() pgtype.Timestamptz { return r.EndTime }
@@ -66,15 +66,15 @@ type filteredCursorQuizRowAdapter struct {
 	*sqlc.GetQuizzesFilteredCursorRow
 }
 
-func (r filteredCursorQuizRowAdapter) GetID() string                      { return r.ID }
-func (r filteredCursorQuizRowAdapter) GetProjectID() string               { return r.ProjectID }
-func (r filteredCursorQuizRowAdapter) GetChallengeID() string             { return r.ChallengeID }
-func (r filteredCursorQuizRowAdapter) GetName() string                    { return r.Name }
-func (r filteredCursorQuizRowAdapter) GetDescription() string             { return r.Description }
-func (r filteredCursorQuizRowAdapter) GetImageUrl() *string               { return r.ImageUrl }
-func (r filteredCursorQuizRowAdapter) GetTimeoutSeconds() *int32          { return r.TimeoutSeconds }
-func (r filteredCursorQuizRowAdapter) GetRandomizeQuestions() bool        { return r.RandomizeQuestions }
-func (r filteredCursorQuizRowAdapter) GetRevealCorrectAnswers() bool      { return r.RevealCorrectAnswers }
+func (r filteredCursorQuizRowAdapter) GetID() string                  { return r.ID }
+func (r filteredCursorQuizRowAdapter) GetProjectID() string           { return r.ProjectID }
+func (r filteredCursorQuizRowAdapter) GetChallengeID() string         { return r.ChallengeID }
+func (r filteredCursorQuizRowAdapter) GetName() string                { return r.Name }
+func (r filteredCursorQuizRowAdapter) GetDescription() string         { return r.Description }
+func (r filteredCursorQuizRowAdapter) GetImageUrl() *string           { return r.ImageUrl }
+func (r filteredCursorQuizRowAdapter) GetTimeoutSeconds() *int32      { return r.TimeoutSeconds }
+func (r filteredCursorQuizRowAdapter) GetRandomizeQuestions() bool    { return r.RandomizeQuestions }
+func (r filteredCursorQuizRowAdapter) GetRevealCorrectAnswers() bool  { return r.RevealCorrectAnswers }
 func (r filteredCursorQuizRowAdapter) GetAllowRetakes() bool          { return r.AllowRetakes }
 func (r filteredCursorQuizRowAdapter) GetCompletionPoints() int32     { return r.CompletionPoints }
 func (r filteredCursorQuizRowAdapter) GetEndTime() pgtype.Timestamptz { return r.EndTime }

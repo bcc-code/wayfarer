@@ -375,4 +375,3 @@ func resolveImageByURLNonNullable(ctx context.Context, ldrs *loaders.Loaders, ur
 
 	return image, nil
 }
-

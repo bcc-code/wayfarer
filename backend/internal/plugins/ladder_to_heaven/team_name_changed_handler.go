@@ -25,10 +25,10 @@ type teamNameChangedHandler struct {
 
 // teamNameChangedRequest matches the outbound WebhookPayload format for team_name_changed events
 type teamNameChangedRequest struct {
-	EventType string                 `json:"event_type" binding:"required"`
-	Timestamp time.Time              `json:"timestamp" binding:"required"`
-	ProjectID string                 `json:"project_id" binding:"required"`
-	Data      teamNameChangedData    `json:"data" binding:"required"`
+	EventType string              `json:"event_type" binding:"required"`
+	Timestamp time.Time           `json:"timestamp" binding:"required"`
+	ProjectID string              `json:"project_id" binding:"required"`
+	Data      teamNameChangedData `json:"data" binding:"required"`
 }
 
 // teamNameChangedData contains the team name change data
@@ -179,8 +179,8 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 		"points_per_member", pointsTeamRename)
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message":          "team rename processed",
-		"members_awarded":  len(teamMembers),
+		"message":           "team rename processed",
+		"members_awarded":   len(teamMembers),
 		"points_per_member": pointsTeamRename,
 	})
 }

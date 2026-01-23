@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	defaultSecret  = "your-secret-key-for-signing-wayfarer-jwts"
-	defaultYears   = 1
-	m2mUserID      = "M2M_SERVICE"
-	issuer         = "wayfarer"
+	defaultSecret = "your-secret-key-for-signing-wayfarer-jwts"
+	defaultYears  = 1
+	m2mUserID     = "M2M_SERVICE"
+	issuer        = "wayfarer"
 )
 
 type WayfarerClaims struct {
