@@ -1,6 +1,7 @@
 package ladder_to_heaven
 
 import (
+	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/plugins"
 	"github.com/gin-gonic/gin"
 )
@@ -15,6 +16,9 @@ type Config struct {
 	// TeamRenameChallengeID is the challenge to mark as completed when a team renames.
 	// Awards 300 points to each team member (once per team).
 	TeamRenameChallengeID string
+	// CryptexSecretKey is used to sign Cryptex JWT tokens.
+	// If empty, the cryptex token endpoint is disabled.
+	CryptexSecretKey string
 }
 
 // LadderToHeavenPlugin implements the plugins.Plugin interface.
@@ -58,6 +62,16 @@ func (p *LadderToHeavenPlugin) Register(router gin.IRouter, deps plugins.Depende
 	}
 
 	router.POST("/plugins/ladder-to-heaven/team-name-changed", teamRenameHandler.handle)
+
+	// Cryptex token endpoint (requires JWT authentication)
+	cryptexHandler := &cryptexTokenHandler{
+		db:              deps.DB,
+		settingsService: deps.SettingsService,
+		secretKey:       p.config.CryptexSecretKey,
+		jwtConfig:       deps.JWTConfig,
+	}
+
+	router.GET("/plugins/ladder-to-heaven/cryptex-token", middleware.JWTAuth(deps.JWTConfig), cryptexHandler.handle)
 
 	return nil
 }

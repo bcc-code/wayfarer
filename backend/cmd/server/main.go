@@ -446,8 +446,10 @@ func main() {
 
 	// Register plugins
 	pluginDeps := plugins.Dependencies{
-		DB:    db,
-		Cache: cacheInstance,
+		DB:              db,
+		Cache:           cacheInstance,
+		SettingsService: settingsService,
+		JWTConfig:       cfg.JWT,
 	}
 	apiKeyAuth := middleware.APIKeyAuth(cfg.APIKey)
 
@@ -456,6 +458,7 @@ func main() {
 			AchievementID:         cfg.Plugin.LadderToHeavenAchievementID,
 			SecretKey:             cfg.Plugin.LadderToHeavenSecretKey,
 			TeamRenameChallengeID: cfg.Plugin.LadderToHeavenTeamRenameChallengeID,
+			CryptexSecretKey:      cfg.Plugin.LadderToHeavenCryptexSecretKey,
 		}),
 	)
 

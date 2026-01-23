@@ -1,0 +1,70 @@
+type: http_request
+model: http_request
+id: rq_ListTeams
+createdAt: 2026-01-23T12:00:00
+updatedAt: 2026-01-23T12:50:33.078563
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Teams
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    query ListTeams($filter: TeamFilter, $first: Int, $after: String) {
+      teams(filter: $filter, first: $first, after: $after) {
+        edges {
+          cursor
+          node {
+            id
+            name
+            description
+            joinCode
+            leaderboardExcluded
+            averageAge
+            members {
+              id
+              name
+              isTeamLead
+              joinedAt
+              church {
+                name
+                id
+              }
+            }
+            parentProject {
+              id
+              name
+            }
+            superTeam {
+              id
+              name
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
+        totalCount
+      }
+    }
+  variables: |
+    {
+      "filter": {
+        "projectId": "PR01K9VZ8684DP9R4W3ZEV526E5X"
+      },
+      "first": 10
+    }
+bodyType: graphql
+description: List teams with pagination and filtering
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_ListTeams
+method: POST
+name: List Teams
+sortPriority: 1000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

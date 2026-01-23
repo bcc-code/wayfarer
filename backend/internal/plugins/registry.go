@@ -4,15 +4,19 @@ import (
 	"log/slog"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
+	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/gin-gonic/gin"
 )
 
 // Dependencies contains all dependencies that plugins may need.
 // Not all plugins will use all dependencies.
 type Dependencies struct {
-	DB    *database.DB
-	Cache *cache.CacheWithRegistry
+	DB              *database.DB
+	Cache           *cache.CacheWithRegistry
+	SettingsService *services.SettingsService
+	JWTConfig       config.JWTConfig
 }
 
 // Plugin defines the interface that all plugins must implement.

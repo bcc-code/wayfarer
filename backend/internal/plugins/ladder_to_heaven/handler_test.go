@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
+	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/plugins"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -309,8 +310,10 @@ func TestPlugin_Register(t *testing.T) {
 	err := plugin.Register(
 		router,
 		plugins.Dependencies{
-			DB:    nil,
-			Cache: cacheInstance,
+			DB:              nil,
+			Cache:           cacheInstance,
+			SettingsService: nil,
+			JWTConfig:       config.JWTConfig{},
 		},
 		func(c *gin.Context) { c.Next() },
 	)

@@ -138,6 +138,7 @@ type PluginConfig struct {
 	LadderToHeavenAchievementID         string // Achievement ID for Ladder to Heaven plugin (empty = disabled)
 	LadderToHeavenSecretKey             string // Secret key for webhook signature verification
 	LadderToHeavenTeamRenameChallengeID string // Challenge ID to complete when team renames (empty = disabled)
+	LadderToHeavenCryptexSecretKey      string // Secret key for Cryptex JWT token signing (empty = endpoint disabled)
 }
 
 // FirebaseConfig holds Firebase Admin SDK configuration
@@ -242,6 +243,7 @@ func Load() (*Config, error) {
 			LadderToHeavenAchievementID:         getEnv("PLUGIN_LADDER_TO_HEAVEN_ACHIEVEMENT_ID", ""),
 			LadderToHeavenSecretKey:             getEnv("PLUGIN_LADDER_TO_HEAVEN_SECRET_KEY", ""),
 			LadderToHeavenTeamRenameChallengeID: getEnv("PLUGIN_LADDER_TO_HEAVEN_TEAM_RENAME_CHALLENGE_ID", ""),
+			LadderToHeavenCryptexSecretKey:      getEnv("PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_SECRET_KEY", ""),
 		},
 		Firebase: FirebaseConfig{
 			ServiceAccountJSON: getEnv("FIREBASE_SERVICE_ACCOUNT", ""),
