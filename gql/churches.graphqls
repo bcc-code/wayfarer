@@ -1,9 +1,55 @@
 # Church queries
 
+# ==================== Church Types ====================
+
+type Church {
+    id: ID!
+    name: String!
+    country: String!
+    category: ChurchCategory!
+}
+
+# ==================== Church Input Types ====================
+
+input CreateChurchInput {
+    name: String!
+    country: String!
+    category: ChurchCategory!
+}
+
+input UpdateChurchInput {
+    name: String
+    country: String
+    category: ChurchCategory
+}
+
+input ChurchFilter {
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    country: String  # Filter by country
+    category: ChurchCategory  # Filter by church category (S, L, XL)
+}
+
+# ==================== Church Pagination ====================
+
+type ChurchEdge {
+    cursor: String!
+    node: Church!
+}
+
+type ChurchConnection {
+    edges: [ChurchEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
 extend type Query {
     church(id: ID!): Church!
     churches(filter: ChurchFilter, first: Int, after: String, last: Int, before: String): ChurchConnection!
 }
+
+# ==================== Mutations ====================
 
 extend type Mutation {
     updateChurch(id: ID!, input: UpdateChurchInput!): Church! @requireRole(roles: ["superadmin"])

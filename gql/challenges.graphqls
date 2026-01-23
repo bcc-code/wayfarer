@@ -1,5 +1,178 @@
 # Challenge queries and mutations
 
+# ==================== Challenge Types ====================
+
+enum ChallengeType {
+    SIMPLE
+    QUIZ
+    EXTERNAL
+    PLUGIN
+}
+
+interface Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+}
+
+# ==================== Challenge Implementations ====================
+
+type SimpleChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # SimpleChallenge-specific fields
+    allowSelfCompletion: Boolean!
+}
+
+type QuizChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # QuizChallenge-specific fields - no url, linked to quiz
+    quiz: Quiz! @goField(forceResolver: true)
+}
+
+type ExternalChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # ExternalChallenge-specific fields - url is required
+    url: String!
+}
+
+type PluginChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # PluginChallenge-specific fields - pluginChallengeId is required, plugin_data is internal-only
+    pluginChallengeId: String!
+}
+
+# ==================== Challenge Input Types ====================
+
+input CreateChallengeInput {
+    type: ChallengeType!
+    name: String!
+    description: HTML
+    image: String
+    buttonText: String            # Required for all types except PLUGIN
+    visibleAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean
+    requiresSuperTeamMembership: Boolean
+    # Type-specific fields (validated based on type):
+    allowSelfCompletion: Boolean  # SIMPLE only, defaults true
+    url: String                   # EXTERNAL only, required
+    pluginChallengeId: String     # PLUGIN only, required
+}
+
+input UpdateChallengeInput {
+    name: String
+    description: HTML
+    image: String
+    eventId: ID
+    buttonText: String
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean
+    requiresSuperTeamMembership: Boolean
+    # Type-specific fields (validated based on existing challenge type):
+    allowSelfCompletion: Boolean  # SIMPLE only
+    url: String                   # EXTERNAL only
+    pluginChallengeId: String     # PLUGIN only
+}
+
+input ChallengeFilter {
+    projectId: ID
+    eventId: ID
+    challengeType: ChallengeType
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    publishedAfter: DateTime
+    publishedBefore: DateTime
+}
+
+# ==================== Challenge Pagination ====================
+
+type ChallengeEdge {
+    cursor: String!
+    node: Challenge!
+}
+
+type ChallengeConnection {
+    edges: [ChallengeEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Enrollment Types ====================
+
 # Enrollment target selector - specify ONE of these
 input EnrollmentTargetInput {
     userIds: [ID!]
@@ -14,10 +187,14 @@ input ChurchInProjectInput {
     projectId: ID!
 }
 
+# ==================== Queries ====================
+
 extend type Query {
     challenge(id: ID!): Challenge!
     challenges(filter: ChallengeFilter, first: Int, after: String, last: Int, before: String): ChallengeConnection!
 }
+
+# ==================== Mutations ====================
 
 extend type Mutation {
     # Admin management - Create and update (type determined by input.type for create, existing type for update)

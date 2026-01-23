@@ -7119,7 +7119,11 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "../../../../gql/shared.graphqls", Input: `directive @goField(
+	{Name: "../../../../gql/shared.graphqls", Input: `# Shared types used across multiple domain files
+
+# ==================== Directives ====================
+
+directive @goField(
     forceResolver: Boolean
     name: String
 ) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
@@ -7133,8 +7137,9 @@ scalar Markdown
 scalar DateTime
 scalar Date
 scalar Upload
+scalar JSON
 
-# ==================== Enums ====================
+# ==================== Common Enums ====================
 
 enum Gender {
     MALE
@@ -7253,6 +7258,8 @@ type Colors {
     light: ColorSet!
 }
 
+# ==================== Leaderboard Types ====================
+
 type LeaderboardEntry {
     id: ID!
     name: String!
@@ -7289,37 +7296,81 @@ input LeaderboardFilter {
     superTeamId: ID
 }
 
-# ==================== Core Entities ====================
+# ==================== Common Input Types ====================
 
-type User {
-    id: ID!
-    membersId: ID!
-    personUuid: ID
-    gender: Gender!
-    churchId: ID!
-    church: Church! @goField(forceResolver: true)
-    birthdate: String!
-    age: Int @goField(forceResolver: true)
-    email: String!
-    name: String!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
-    projects: [Project!]! @goField(forceResolver: true)
-    events: [Event!]! @goField(forceResolver: true)
-    teams: [Team!]! @goField(forceResolver: true)
-    superTeams: [SuperTeam!]! @goField(forceResolver: true)
-    roles: [UserRole!]! @goField(forceResolver: true)
-    consentStatus: ConsentStatus!
-    language: String!
-    createdAt: DateTime!
+input AgeRangeInput {
+    min: Int!
+    max: Int!
 }
 
-type Church {
-    id: ID!
-    name: String!
-    country: String!
-    category: ChurchCategory!
+input BrandingInput {
+    logo: String
+    banner: String
+    colors: ColorsInput!
+    rounding: Int!
 }
+
+input ColorSetInput {
+    accent: String!
+    accentContrast: String!
+    onAccent: String!
+    backgroundDefault: String!
+    backgroundRaised: String!
+    backgroundIndent: String!
+    textDefault: String!
+    textMuted: String!
+    textHint: String!
+    shadowDefault: String!
+    shadowBlank: String!
+    borderDefault: String!
+}
+
+input ColorsInput {
+    dark: ColorSetInput!
+    light: ColorSetInput!
+}
+
+input ContentItemInput {
+    externalContentId: ID!
+}
+
+# ==================== Relay Pagination ====================
+
+type PageInfo {
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: String
+    endCursor: String
+}
+
+# ==================== Firebase Types ====================
+
+type FirebaseTokenResponse {
+    token: String!
+    expiresIn: Int!
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/schema.graphqls", Input: `# GraphQL Schema
+# Root type definitions - extended by domain-specific files
+
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+type Query {
+    me: User!
+    instanceID: String!
+    firebaseToken: FirebaseTokenResponse!
+}
+
+type Mutation {
+    _empty: Boolean
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/projects.graphqls", Input: `# Project-related queries and mutations
+
+# ==================== Project Types ====================
 
 type Project {
     id: ID!
@@ -7357,25 +7408,80 @@ type Project {
     archivedAt: Boolean
 }
 
-type Streak {
-    id: ID!
+# ==================== Project Input Types ====================
+
+input CreateProjectInput {
     name: String!
-    description: String!
-    status: Int! @goField(forceResolver: true)
-    relevantDays: [DateRange!]! @goField(forceResolver: true)
-    listenedDays(last: Int!): [StreakDay!]! @goField(forceResolver: true)
-    project: Project! @goField(forceResolver: true)
+    description: String
+    rules: String
+    infoMessage: String
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
+    startDate: DateTime!
+    endDate: DateTime!
+    branding: BrandingInput!
 }
 
-type StreakDay {
-    date: Date!
-    active: Boolean!
+input UpdateProjectInput {
+    name: String
+    description: String
+    rules: String
+    infoMessage: String
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
+    startDate: DateTime
+    endDate: DateTime
+    branding: BrandingInput
 }
 
-type DateRange {
-    start: Date!
-    end: Date!
+input ProjectFilter {
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    archived: Boolean  # Filter by archived status
+    startDateAfter: DateTime  # Filter projects starting after this date
+    startDateBefore: DateTime  # Filter projects starting before this date
+    endDateAfter: DateTime  # Filter projects ending after this date
+    endDateBefore: DateTime  # Filter projects ending before this date
 }
+
+# ==================== Project Pagination ====================
+
+type ProjectEdge {
+    cursor: String!
+    node: Project!
+}
+
+type ProjectConnection {
+    edges: [ProjectEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
+extend type Query {
+    project(id: ID!): Project!
+    projects(filter: ProjectFilter, first: Int, after: String, last: Int, before: String): ProjectConnection!
+    myProjects: [Project!]!
+    myCurrentProject: Project!
+    currentProject: Project!
+}
+
+# ==================== Mutations ====================
+
+extend type Mutation {
+    # User participation
+    joinProject(projectId: ID!): Project!
+
+    # Admin management
+    createProject(input: CreateProjectInput!): Project! @requireRole(roles: ["admin", "superadmin"])
+    updateProject(id: ID!, input: UpdateProjectInput!): Project! @requireRole(roles: ["admin", "superadmin", "project_admin"])
+    deleteProject(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    archiveProject(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/events.graphqls", Input: `# Event-related queries and mutations
+
+# ==================== Event Types ====================
 
 type Event {
     id: ID!
@@ -7394,6 +7500,71 @@ type Event {
     endDate: DateTime!
     parentProject: Project! @goField(forceResolver: true)
 }
+
+# ==================== Event Input Types ====================
+
+input CreateEventInput {
+    name: String!
+    description: String!
+    startDate: DateTime!
+    endDate: DateTime!
+}
+
+input UpdateEventInput {
+    name: String
+    description: String
+    startDate: DateTime
+    endDate: DateTime
+}
+
+input EventFilter {
+    projectId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    startDateAfter: DateTime  # Filter events starting after this date
+    startDateBefore: DateTime  # Filter events starting before this date
+    endDateAfter: DateTime  # Filter events ending after this date
+    endDateBefore: DateTime  # Filter events ending before this date
+}
+
+# ==================== Event Pagination ====================
+
+type EventEdge {
+    cursor: String!
+    node: Event!
+}
+
+type EventConnection {
+    edges: [EventEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
+extend type Query {
+    event(id: ID!): Event!
+    events(filter: EventFilter, first: Int, after: String, last: Int, before: String): EventConnection!
+    myEvents(project: ID): [Event!]!
+    myCurrentEvent: Event!
+    currentEvent: Event!
+}
+
+# ==================== Mutations ====================
+
+extend type Mutation {
+    # User participation
+    joinEvent(eventId: ID!): Event!
+
+    # Admin management
+    createEvent(projectId: ID!, input: CreateEventInput!): Event! @requireRole(roles: ["admin", "superadmin"])
+    updateEvent(id: ID!, input: UpdateEventInput!): Event! @requireRole(roles: ["admin", "superadmin"])
+    deleteEvent(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    moveEvent(id: ID!, newProjectId: ID!): Event! @requireRole(roles: ["admin", "superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/teams.graphqls", Input: `# Team and SuperTeam queries and mutations
+
+# ==================== Team Types ====================
 
 type Team {
     id: ID!
@@ -7426,119 +7597,116 @@ type SuperTeam {
     teams: [Team!]! @goField(forceResolver: true)
 }
 
-# ==================== Interfaces ====================
+# ==================== Team Input Types ====================
 
-interface Challenge {
-    id: ID!
+input CreateTeamInput {
     name: String!
-    description: HTML!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image
-    project: Project! @goField(forceResolver: true)
-    event: Event @goField(forceResolver: true)
-    buttonText: String
-    publishedAt: DateTime
-    visibleAt: DateTime
-    startedAt: DateTime
-    endTime: DateTime
-    requiresTeamMembership: Boolean!
-    requiresSuperTeamMembership: Boolean!
-    userCompletedAt: DateTime @goField(forceResolver: true)
-    userEnrolledAt: DateTime @goField(forceResolver: true)
+    description: String!
 }
 
-# ==================== Challenge Implementations ====================
-
-enum ChallengeType {
-    SIMPLE
-    QUIZ
-    EXTERNAL
-    PLUGIN
+input UpdateTeamInput {
+    name: String
+    description: String
+    leaderboardExcluded: Boolean
 }
 
-type SimpleChallenge implements Challenge {
-    id: ID!
+input CreateSuperTeamInput {
     name: String!
-    description: HTML!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
-    project: Project! @goField(forceResolver: true)
-    event: Event @goField(forceResolver: true)
-    buttonText: String!
-    publishedAt: DateTime
-    visibleAt: DateTime
-    startedAt: DateTime
-    endTime: DateTime
-    requiresTeamMembership: Boolean!
-    requiresSuperTeamMembership: Boolean!
-    userCompletedAt: DateTime @goField(forceResolver: true)
-    userEnrolledAt: DateTime @goField(forceResolver: true)
-    # SimpleChallenge-specific fields
-    allowSelfCompletion: Boolean!
+    description: String!
+    teamIds: [ID!]
 }
 
-type QuizChallenge implements Challenge {
-    id: ID!
-    name: String!
-    description: HTML!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
-    project: Project! @goField(forceResolver: true)
-    event: Event @goField(forceResolver: true)
-    buttonText: String!
-    publishedAt: DateTime
-    visibleAt: DateTime
-    startedAt: DateTime
-    endTime: DateTime
-    requiresTeamMembership: Boolean!
-    requiresSuperTeamMembership: Boolean!
-    userCompletedAt: DateTime @goField(forceResolver: true)
-    userEnrolledAt: DateTime @goField(forceResolver: true)
-    # QuizChallenge-specific fields - no url, linked to quiz
-    quiz: Quiz! @goField(forceResolver: true)
+input UpdateSuperTeamInput {
+    name: String
+    description: String
 }
 
-type ExternalChallenge implements Challenge {
-    id: ID!
-    name: String!
-    description: HTML!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
-    project: Project! @goField(forceResolver: true)
-    event: Event @goField(forceResolver: true)
-    buttonText: String!
-    publishedAt: DateTime
-    visibleAt: DateTime
-    startedAt: DateTime
-    endTime: DateTime
-    requiresTeamMembership: Boolean!
-    requiresSuperTeamMembership: Boolean!
-    userCompletedAt: DateTime @goField(forceResolver: true)
-    userEnrolledAt: DateTime @goField(forceResolver: true)
-    # ExternalChallenge-specific fields - url is required
-    url: String!
+input TeamFilter {
+    projectId: ID
+    superTeamId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    noSuperTeam: Boolean  # Filter teams without a super team
+    minMembers: Int  # Minimum number of members
+    maxMembers: Int  # Maximum number of members
 }
 
-type PluginChallenge implements Challenge {
-    id: ID!
-    name: String!
-    description: HTML!
-    image: String @deprecated(reason: "Use imageObject instead")
-    imageObject: Image @goField(forceResolver: true)
-    project: Project! @goField(forceResolver: true)
-    event: Event @goField(forceResolver: true)
-    buttonText: String
-    publishedAt: DateTime
-    visibleAt: DateTime
-    startedAt: DateTime
-    endTime: DateTime
-    requiresTeamMembership: Boolean!
-    requiresSuperTeamMembership: Boolean!
-    userCompletedAt: DateTime @goField(forceResolver: true)
-    userEnrolledAt: DateTime @goField(forceResolver: true)
-    # PluginChallenge-specific fields - pluginChallengeId is required, plugin_data is internal-only
-    pluginChallengeId: String!
+input SuperTeamFilter {
+    projectId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    minTeams: Int  # Minimum number of teams
+    maxTeams: Int  # Maximum number of teams
+    minMembers: Int  # Minimum number of members (across all teams)
+    maxMembers: Int  # Maximum number of members (across all teams)
 }
+
+# ==================== Team Pagination ====================
+
+type TeamEdge {
+    cursor: String!
+    node: Team!
+}
+
+type TeamConnection {
+    edges: [TeamEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type SuperTeamEdge {
+    cursor: String!
+    node: SuperTeam!
+}
+
+type SuperTeamConnection {
+    edges: [SuperTeamEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
+extend type Query {
+    team(id: ID!): Team!
+    teamByJoinCode(code: String!, projectId: ID!): Team
+    teams(filter: TeamFilter, first: Int, after: String, last: Int, before: String): TeamConnection!
+
+    superteam(id: ID!): SuperTeam!
+    superteams(filter: SuperTeamFilter, first: Int, after: String, last: Int, before: String): SuperTeamConnection!
+}
+
+# ==================== Mutations ====================
+
+extend type Mutation {
+    # User participation
+    joinTeam(code: ID!): Team!
+
+    # Team management
+    createTeam(projectId: ID!, input: CreateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    updateTeam(id: ID!, input: UpdateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    deleteTeam(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    addTeamMembers(teamId: ID!, userIds: [ID!]!, force: Boolean): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    removeTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    regenerateJoinCode(teamId: ID!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    assignTeamLead(teamId: ID!, userId: ID!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+
+    # SuperTeam management
+    createSuperTeam(projectId: ID!, input: CreateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
+    updateSuperTeam(id: ID!, input: UpdateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
+    deleteSuperTeam(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    assignTeamsToSuperTeam(superTeamId: ID!, teamIds: [ID!]!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
+
+    # Team achievements (M2M)
+    awardTeamAchievement(teamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    revokeTeamAchievement(teamId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
+
+    # SuperTeam achievements (M2M)
+    awardSuperTeamAchievement(superTeamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    revokeSuperTeamAchievement(superTeamId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/achievements.graphqls", Input: `# Achievement queries and mutations
+
+# ==================== Achievement Interface ====================
 
 interface Achievement {
     id: ID!
@@ -7647,6 +7815,851 @@ type QuizAchievement implements Achievement {
     minScorePercentage: Int
     requireCompletion: Boolean!
 }
+
+# ==================== Achievement Input Types ====================
+
+input CreateSimpleAchievementInput {
+    name: String!
+    descriptionPending: String!
+    descriptionCompleted: String!
+    notificationText: String!
+    imagePending: String!
+    imageCompleted: String!
+    projectId: ID!
+    eventId: ID
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+    awardableFrom: DateTime
+}
+
+input CreateContentAchievementInput {
+    name: String!
+    descriptionPending: String!
+    descriptionCompleted: String!
+    notificationText: String!
+    imagePending: String!
+    imageCompleted: String!
+    projectId: ID!
+    eventId: ID
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+    awardableFrom: DateTime
+    items: [ContentItemInput!]!
+}
+
+input CreateStreakAchievementInput {
+    name: String!
+    descriptionPending: String!
+    descriptionCompleted: String!
+    notificationText: String!
+    imagePending: String!
+    imageCompleted: String!
+    projectId: ID!
+    eventId: ID
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+    awardableFrom: DateTime
+    neededStreak: Int!
+    streakId: ID!
+}
+
+input CreateQuizAchievementInput {
+    name: String!
+    descriptionPending: String!
+    descriptionCompleted: String!
+    notificationText: String!
+    imagePending: String!
+    imageCompleted: String!
+    projectId: ID!
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+    quizId: ID!
+    minScorePercentage: Int
+    requireCompletion: Boolean!
+}
+
+input UpdateAchievementInput {
+    name: String
+    descriptionPending: String
+    descriptionCompleted: String
+    notificationText: String
+    imagePending: String
+    imageCompleted: String
+    eventId: ID
+    challengeId: ID
+    points: Int
+    hidden: Boolean
+    awardableFrom: DateTime
+}
+
+input UpdateContentAchievementInput {
+    name: String
+    descriptionPending: String
+    descriptionCompleted: String
+    notificationText: String
+    imagePending: String
+    imageCompleted: String
+    eventId: ID
+    challengeId: ID
+    points: Int
+    hidden: Boolean
+    awardableFrom: DateTime
+    items: [ContentItemInput!]
+}
+
+input UpdateStreakAchievementInput {
+    name: String
+    descriptionPending: String
+    descriptionCompleted: String
+    notificationText: String
+    imagePending: String
+    imageCompleted: String
+    eventId: ID
+    challengeId: ID
+    points: Int
+    hidden: Boolean
+    awardableFrom: DateTime
+    neededStreak: Int
+    streakId: ID
+}
+
+input AchievementFilter {
+    projectId: ID
+    eventId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+}
+
+# ==================== Achievement Pagination ====================
+
+type AchievementEdge {
+    cursor: String!
+    node: Achievement!
+}
+
+type AchievementConnection {
+    edges: [AchievementEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
+extend type Query {
+    achievement(id: ID!): Achievement!
+    achievements(filter: AchievementFilter!, first: Int, after: String, last: Int, before: String): AchievementConnection!
+}
+
+# ==================== Mutations ====================
+
+extend type Mutation {
+    # Create achievements
+    createSimpleAchievement(input: CreateSimpleAchievementInput!): SimpleAchievement! @requireRole(roles: ["admin", "superadmin"])
+    createContentAchievement(input: CreateContentAchievementInput!): ContentAchievement! @requireRole(roles: ["admin", "superadmin"])
+    createStreakAchievement(input: CreateStreakAchievementInput!): StreakAchievement! @requireRole(roles: ["admin", "superadmin"])
+
+    # Update achievements
+    updateAchievement(id: ID!, input: UpdateAchievementInput!): Achievement! @requireRole(roles: ["admin", "superadmin"])
+    updateContentAchievement(id: ID!, input: UpdateContentAchievementInput!): ContentAchievement! @requireRole(roles: ["admin", "superadmin"])
+    updateStreakAchievement(id: ID!, input: UpdateStreakAchievementInput!): StreakAchievement! @requireRole(roles: ["admin", "superadmin"])
+
+    # Delete achievement
+    deleteAchievement(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    linkAchievementToChallenge(achievementId: ID!, challengeId: ID!): Achievement! @requireRole(roles: ["admin", "superadmin"])
+
+    # Reorder achievements - accepts array of achievement IDs in the desired order
+    reorderAchievements(projectId: ID!, achievementIds: [ID!]!): [Achievement!]! @requireRole(roles: ["admin", "superadmin"])
+
+    # Award/revoke (M2M)
+    awardAchievement(userId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    revokeAchievement(userId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    bulkAwardAchievements(userIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+
+    # Content progress (M2M) - marks content completed across ALL published achievements containing this content
+    markContentItemCompleted(userId: ID!, externalContentId: ID!): [ContentAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    unmarkContentItemCompleted(userId: ID!, externalContentId: ID!): [ContentAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+
+    # Streak tracking (M2M)
+    recordStreakActivity(userId: ID!, achievementId: ID!, currentStreak: Int!): StreakAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/challenges.graphqls", Input: `# Challenge queries and mutations
+
+# ==================== Challenge Types ====================
+
+enum ChallengeType {
+    SIMPLE
+    QUIZ
+    EXTERNAL
+    PLUGIN
+}
+
+interface Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+}
+
+# ==================== Challenge Implementations ====================
+
+type SimpleChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # SimpleChallenge-specific fields
+    allowSelfCompletion: Boolean!
+}
+
+type QuizChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # QuizChallenge-specific fields - no url, linked to quiz
+    quiz: Quiz! @goField(forceResolver: true)
+}
+
+type ExternalChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String!
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # ExternalChallenge-specific fields - url is required
+    url: String!
+}
+
+type PluginChallenge implements Challenge {
+    id: ID!
+    name: String!
+    description: HTML!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    buttonText: String
+    publishedAt: DateTime
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean!
+    requiresSuperTeamMembership: Boolean!
+    userCompletedAt: DateTime @goField(forceResolver: true)
+    userEnrolledAt: DateTime @goField(forceResolver: true)
+    # PluginChallenge-specific fields - pluginChallengeId is required, plugin_data is internal-only
+    pluginChallengeId: String!
+}
+
+# ==================== Challenge Input Types ====================
+
+input CreateChallengeInput {
+    type: ChallengeType!
+    name: String!
+    description: HTML
+    image: String
+    buttonText: String            # Required for all types except PLUGIN
+    visibleAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean
+    requiresSuperTeamMembership: Boolean
+    # Type-specific fields (validated based on type):
+    allowSelfCompletion: Boolean  # SIMPLE only, defaults true
+    url: String                   # EXTERNAL only, required
+    pluginChallengeId: String     # PLUGIN only, required
+}
+
+input UpdateChallengeInput {
+    name: String
+    description: HTML
+    image: String
+    eventId: ID
+    buttonText: String
+    visibleAt: DateTime
+    startedAt: DateTime
+    endTime: DateTime
+    requiresTeamMembership: Boolean
+    requiresSuperTeamMembership: Boolean
+    # Type-specific fields (validated based on existing challenge type):
+    allowSelfCompletion: Boolean  # SIMPLE only
+    url: String                   # EXTERNAL only
+    pluginChallengeId: String     # PLUGIN only
+}
+
+input ChallengeFilter {
+    projectId: ID
+    eventId: ID
+    challengeType: ChallengeType
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    publishedAfter: DateTime
+    publishedBefore: DateTime
+}
+
+# ==================== Challenge Pagination ====================
+
+type ChallengeEdge {
+    cursor: String!
+    node: Challenge!
+}
+
+type ChallengeConnection {
+    edges: [ChallengeEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Enrollment Types ====================
+
+# Enrollment target selector - specify ONE of these
+input EnrollmentTargetInput {
+    userIds: [ID!]
+    churchInProject: ChurchInProjectInput
+    teamIds: [ID!]
+    superTeamIds: [ID!]
+    allProjectMembers: ID
+}
+
+input ChurchInProjectInput {
+    churchId: ID!
+    projectId: ID!
+}
+
+# ==================== Queries ====================
+
+extend type Query {
+    challenge(id: ID!): Challenge!
+    challenges(filter: ChallengeFilter, first: Int, after: String, last: Int, before: String): ChallengeConnection!
+}
+
+# ==================== Mutations ====================
+
+extend type Mutation {
+    # Admin management - Create and update (type determined by input.type for create, existing type for update)
+    createChallenge(projectId: ID!, eventId: ID, input: CreateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
+    updateChallenge(id: ID!, input: UpdateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
+
+    # Admin management - Common operations
+    deleteChallenge(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    publishChallenge(id: ID!, publishedAt: DateTime!): Challenge! @requireRole(roles: ["admin", "superadmin"])
+    assignChallengeToEvent(challengeId: ID!, eventId: ID!): Challenge! @requireRole(roles: ["admin", "superadmin"])
+    bulkPublishChallenges(ids: [ID!]!, publishedAt: DateTime!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
+    setChallengeVisibility(id: ID!, visibleAt: DateTime!, startedAt: DateTime): Challenge! @requireRole(roles: ["admin", "superadmin"])
+    setChallengeRequirements(id: ID!, requiresTeamMembership: Boolean, requiresSuperTeamMembership: Boolean): Challenge! @requireRole(roles: ["admin", "superadmin"])
+
+    # User self-completion (SimpleChallenge only, when allowSelfCompletion=true)
+    selfCompleteChallenge(challengeId: ID!): SimpleChallenge!
+
+    # User self-enrollment
+    enrollInChallenge(challengeId: ID!): Challenge!
+    unenrollFromChallenge(challengeId: ID!): Boolean!
+
+    # Admin enrollment
+    enrollUserInChallenge(userId: ID!, challengeId: ID!): Challenge! @requireRole(roles: ["admin", "superadmin", "m2m"])
+    unenrollUserFromChallenge(userId: ID!, challengeId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "m2m"])
+
+    # Bulk enrollment
+    bulkEnrollUsersInChallenge(target: EnrollmentTargetInput!, challengeId: ID!): [Challenge!]! @requireRole(roles: ["admin", "superadmin", "m2m"])
+    bulkUnenrollUsersFromChallenge(target: EnrollmentTargetInput!, challengeId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "m2m"])
+
+    # Completion tracking (M2M / Admin) - Works for ExternalChallenge and SimpleChallenge
+    completeChallenge(userId: ID!, challengeId: ID!, completedAt: DateTime): Challenge! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    uncompleteChallenge(userId: ID!, challengeId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    bulkCompleteChallenges(target: EnrollmentTargetInput!, challengeId: ID!, completedAt: DateTime): [Challenge!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/streaks.graphqls", Input: `# Streak queries and mutations
+
+# ==================== Streak Types ====================
+
+type Streak {
+    id: ID!
+    name: String!
+    description: String!
+    status: Int! @goField(forceResolver: true)
+    relevantDays: [DateRange!]! @goField(forceResolver: true)
+    listenedDays(last: Int!): [StreakDay!]! @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+}
+
+type StreakDay {
+    date: Date!
+    active: Boolean!
+}
+
+type DateRange {
+    start: Date!
+    end: Date!
+}
+
+# ==================== Streak Input Types ====================
+
+input DateRangeInput {
+    start: Date!
+    end: Date!
+}
+
+input CreateStreakInput {
+    name: String!
+    description: String!
+    projectId: ID!
+    relevantDays: [DateRangeInput!]!
+}
+
+input UpdateStreakInput {
+    name: String
+    description: String
+    relevantDays: [DateRangeInput!]
+}
+
+input StreakFilter {
+    projectId: ID  # Filter by project
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+}
+
+# ==================== Streak Pagination ====================
+
+type StreakEdge {
+    cursor: String!
+    node: Streak!
+}
+
+type StreakConnection {
+    edges: [StreakEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
+extend type Query {
+    streak(id: ID!): Streak!
+    streaks(filter: StreakFilter, first: Int, after: String, last: Int, before: String): StreakConnection!
+}
+
+# ==================== Mutations ====================
+
+extend type Mutation {
+    createStreak(input: CreateStreakInput!): Streak! @requireRole(roles: ["admin", "superadmin"])
+    updateStreak(id: ID!, input: UpdateStreakInput!): Streak! @requireRole(roles: ["admin", "superadmin"])
+    deleteStreak(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/users.graphqls", Input: `# User queries and mutations
+
+# ==================== User Types ====================
+
+type User {
+    id: ID!
+    membersId: ID!
+    personUuid: ID
+    gender: Gender!
+    churchId: ID!
+    church: Church! @goField(forceResolver: true)
+    birthdate: String!
+    age: Int @goField(forceResolver: true)
+    email: String!
+    name: String!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
+    projects: [Project!]! @goField(forceResolver: true)
+    events: [Event!]! @goField(forceResolver: true)
+    teams: [Team!]! @goField(forceResolver: true)
+    superTeams: [SuperTeam!]! @goField(forceResolver: true)
+    roles: [UserRole!]! @goField(forceResolver: true)
+    consentStatus: ConsentStatus!
+    language: String!
+    createdAt: DateTime!
+}
+
+# ==================== User Input Types ====================
+
+input CreateUserInput {
+    membersId: ID!
+    email: String!
+    name: String!
+    gender: Gender!
+    churchId: ID!
+    age: Int!
+}
+
+input UserFilter {
+    query: String
+    churchId: ID
+    gender: Gender
+    minAge: Int
+    maxAge: Int
+    projectId: ID
+    eventId: ID
+    teamId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+}
+
+# ==================== User Pagination ====================
+
+type UserEdge {
+    cursor: String!
+    node: User!
+}
+
+type UserConnection {
+    edges: [UserEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
+extend type Query {
+    user(id: ID!): User!
+    users(filter: UserFilter, first: Int, after: String, last: Int, before: String): UserConnection!
+}
+
+# ==================== Mutations ====================
+
+extend type Mutation {
+    # Profile management
+    updateAvatar(file: Upload!): User!
+
+    # Admin user management
+    assignUserToProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
+    removeUserFromProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
+    assignUserToEvent(userId: ID!, eventId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/roles.graphqls", Input: `# Role management queries and mutations
+
+# ==================== Role Types ====================
+
+type RoleScope {
+    type: ScopeType!
+    id: ID!
+    # Resolved fields for convenience
+    church: Church @goField(forceResolver: true)
+    project: Project @goField(forceResolver: true)
+    team: Team @goField(forceResolver: true)
+}
+
+type UserRole {
+    id: ID!
+    user: User! @goField(forceResolver: true)
+    role: RoleType!
+    scope: RoleScope @goField(forceResolver: true)
+}
+
+# ==================== Role Input Types ====================
+
+input AssignRoleInput {
+    userId: ID!
+    role: RoleType!
+    scopeType: ScopeType
+    scopeId: ID
+}
+
+input RevokeRoleInput {
+    userId: ID!
+    role: RoleType!
+    scopeType: ScopeType
+    scopeId: ID
+}
+
+# ==================== Queries ====================
+
+extend type Query {
+    userRoles(userId: ID!): [UserRole!]!
+    usersWithRole(role: RoleType!, scopeType: ScopeType, scopeId: ID): [User!]!
+}
+
+# ==================== Mutations ====================
+
+extend type Mutation {
+    assignRole(input: AssignRoleInput!): UserRole! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    revokeRole(input: RevokeRoleInput!): Boolean! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/churches.graphqls", Input: `# Church queries
+
+# ==================== Church Types ====================
+
+type Church {
+    id: ID!
+    name: String!
+    country: String!
+    category: ChurchCategory!
+}
+
+# ==================== Church Input Types ====================
+
+input CreateChurchInput {
+    name: String!
+    country: String!
+    category: ChurchCategory!
+}
+
+input UpdateChurchInput {
+    name: String
+    country: String
+    category: ChurchCategory
+}
+
+input ChurchFilter {
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    country: String  # Filter by country
+    category: ChurchCategory  # Filter by church category (S, L, XL)
+}
+
+# ==================== Church Pagination ====================
+
+type ChurchEdge {
+    cursor: String!
+    node: Church!
+}
+
+type ChurchConnection {
+    edges: [ChurchEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
+extend type Query {
+    church(id: ID!): Church!
+    churches(filter: ChurchFilter, first: Int, after: String, last: Int, before: String): ChurchConnection!
+}
+
+# ==================== Mutations ====================
+
+extend type Mutation {
+    updateChurch(id: ID!, input: UpdateChurchInput!): Church! @requireRole(roles: ["superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/scoring.graphqls", Input: `# Score journal queries and mutations
+
+# ==================== Score Types ====================
+
+union ScoreSource = SimpleAchievement | ContentAchievement | StreakAchievement | QuizAchievement | SimpleChallenge | QuizChallenge | ExternalChallenge | PluginChallenge | Event
+
+type ScoreJournal {
+    id: ID!
+    project: Project! @goField(forceResolver: true)
+    user: User! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
+    points: Int!
+    sourceType: ScoreSourceType!
+    source: ScoreSource @goField(forceResolver: true)
+    reason: String
+    awardedBy: User @goField(forceResolver: true)
+    createdAt: DateTime!
+}
+
+# ==================== Score Input Types ====================
+
+input CreateScoreAdjustmentInput {
+    projectId: ID!
+    userId: ID!
+    eventId: ID
+    challengeId: ID
+    points: Int!
+    reason: String
+}
+
+input ScoreJournalFilter {
+    projectId: ID  # Optional: filter by project (for admin queries)
+    userId: ID  # Optional: filter by user (for admin queries)
+    eventId: ID  # Optional: filter by event
+    challengeId: ID  # Optional: filter by challenge
+    sourceType: ScoreSourceType  # Optional: filter by source type
+    ids: [ID!]  # Support bulk ID lookup
+}
+
+enum TeamScoreDistributionMode {
+    SPLIT  # Total points divided equally among members
+    EACH   # Each member receives the full point amount
+}
+
+input CreateTeamScoreAdjustmentInput {
+    teamId: ID!
+    projectId: ID!
+    eventId: ID
+    points: Int!
+    distributionMode: TeamScoreDistributionMode!
+    reason: String
+}
+
+# ==================== Score Pagination ====================
+
+type ScoreJournalEdge {
+    cursor: String!
+    node: ScoreJournal!
+}
+
+type ScoreJournalConnection {
+    edges: [ScoreJournalEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
+extend type Query {
+    scoreJournal(projectId: ID!, userId: ID!, filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection!
+    adminScoreJournal(filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection! @requireRole(roles: ["admin", "superadmin"])
+}
+
+# ==================== Mutations ====================
+
+extend type Mutation {
+    createScoreAdjustment(input: CreateScoreAdjustmentInput!): ScoreJournal! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    createTeamScoreAdjustment(input: CreateTeamScoreAdjustmentInput!): [ScoreJournal!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
+    deleteScoreJournalEntry(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/consents.graphqls", Input: `# ==================== Consent Types ====================
+
+type Consent {
+    id: ID!
+    key: String!
+    version: Int!
+    title: String!
+    shortText: String!
+    body: MarkdownText!
+    url: String
+    publishedAt: DateTime
+    managementType: ConsentManagementType!
+    managedBy: String
+    userHistory: [UserConsentHistoryEntry!]! @goField(forceResolver: true)
+}
+
+type UserConsent {
+    id: ID!
+    consent: Consent! @goField(forceResolver: true)
+    action: ConsentAction!
+    actionDate: DateTime!
+}
+
+type UserConsentHistoryEntry {
+    id: ID!
+    consent: Consent! @goField(forceResolver: true)
+    action: ConsentAction!
+    occurredAt: DateTime!
+    source: String
+    externalConsentId: String
+    externalTimestamp: DateTime
+}
+
+type ConsentStatus {
+    pendingConsents: [Consent!]!
+    acceptedConsents: [UserConsent!]!
+    rejectedConsents: [UserConsent!]!
+}
+
+# ==================== Consent Queries ====================
+
+extend type Query {
+    # Get all latest published consents
+    consents: [Consent!]!
+
+    # Get a specific consent by ID
+    consent(id: ID!): Consent!
+
+    # Get pending consents for the current user
+    pendingConsents: [Consent!]!
+}
+
+# ==================== Consent Mutations ====================
+
+extend type Mutation {
+    # Accept a consent (user action)
+    acceptConsent(consentId: ID!): UserConsent!
+
+    # Reject a consent (user action)
+    rejectConsent(consentId: ID!): UserConsent!
+
+    # Create a new consent or new version of existing consent (admin action)
+    createConsent(
+        key: String!
+        title: String!
+        shortText: String
+        body: String!
+        url: String
+        publishedAt: DateTime
+        isRemote: Boolean
+        managedBy: String
+    ): Consent! @requireRole(roles: ["admin", "superadmin"])
+
+    # Update an existing consent (admin action)
+    updateConsent(
+        id: ID!
+        title: String
+        shortText: String
+        body: String
+        url: String
+        publishedAt: DateTime
+        managedBy: String
+    ): Consent! @requireRole(roles: ["admin", "superadmin"])
+
+    # Manually set a user's consent action (admin action)
+    # Only works for local consents. The admin's user ID is recorded in the source field.
+    adminSetUserConsent(
+        userId: ID!
+        consentId: ID!
+        action: ConsentAction!
+    ): UserConsentHistoryEntry! @requireRole(roles: ["admin", "superadmin"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/quizzes.graphqls", Input: `# Quiz queries and mutations
 
 # ==================== Quiz Types ====================
 
@@ -7823,182 +8836,7 @@ type JsonResponse implements QuizResponse {
     jsonResponse: JSON!
 }
 
-scalar JSON
-
-# ==================== Input Types ====================
-
-input AgeRangeInput {
-    min: Int!
-    max: Int!
-}
-
-input BrandingInput {
-    logo: String
-    banner: String
-    colors: ColorsInput!
-    rounding: Int!
-}
-
-input ColorSetInput {
-    accent: String!
-    accentContrast: String!
-    onAccent: String!
-    backgroundDefault: String!
-    backgroundRaised: String!
-    backgroundIndent: String!
-    textDefault: String!
-    textMuted: String!
-    textHint: String!
-    shadowDefault: String!
-    shadowBlank: String!
-    borderDefault: String!
-}
-
-input ColorsInput {
-    dark: ColorSetInput!
-    light: ColorSetInput!
-}
-
-input ContentItemInput {
-    externalContentId: ID!
-}
-
-input CreateProjectInput {
-    name: String!
-    description: String
-    rules: String
-    infoMessage: String
-    infoMessageStart: DateTime
-    infoMessageEnd: DateTime
-    startDate: DateTime!
-    endDate: DateTime!
-    branding: BrandingInput!
-}
-
-input UpdateProjectInput {
-    name: String
-    description: String
-    rules: String
-    infoMessage: String
-    infoMessageStart: DateTime
-    infoMessageEnd: DateTime
-    startDate: DateTime
-    endDate: DateTime
-    branding: BrandingInput
-}
-
-input CreateEventInput {
-    name: String!
-    description: String!
-    startDate: DateTime!
-    endDate: DateTime!
-}
-
-input UpdateEventInput {
-    name: String
-    description: String
-    startDate: DateTime
-    endDate: DateTime
-}
-
-# ==================== Challenge Input Types ====================
-
-input CreateChallengeInput {
-    type: ChallengeType!
-    name: String!
-    description: HTML
-    image: String
-    buttonText: String            # Required for all types except PLUGIN
-    visibleAt: DateTime
-    endTime: DateTime
-    requiresTeamMembership: Boolean
-    requiresSuperTeamMembership: Boolean
-    # Type-specific fields (validated based on type):
-    allowSelfCompletion: Boolean  # SIMPLE only, defaults true
-    url: String                   # EXTERNAL only, required
-    pluginChallengeId: String     # PLUGIN only, required
-}
-
-input UpdateChallengeInput {
-    name: String
-    description: HTML
-    image: String
-    eventId: ID
-    buttonText: String
-    visibleAt: DateTime
-    startedAt: DateTime
-    endTime: DateTime
-    requiresTeamMembership: Boolean
-    requiresSuperTeamMembership: Boolean
-    # Type-specific fields (validated based on existing challenge type):
-    allowSelfCompletion: Boolean  # SIMPLE only
-    url: String                   # EXTERNAL only
-    pluginChallengeId: String     # PLUGIN only
-}
-
-input CreateSimpleAchievementInput {
-    name: String!
-    descriptionPending: String!
-    descriptionCompleted: String!
-    notificationText: String!
-    imagePending: String!
-    imageCompleted: String!
-    projectId: ID!
-    eventId: ID
-    challengeId: ID
-    points: Int!
-    hidden: Boolean!
-    awardableFrom: DateTime
-}
-
-input CreateContentAchievementInput {
-    name: String!
-    descriptionPending: String!
-    descriptionCompleted: String!
-    notificationText: String!
-    imagePending: String!
-    imageCompleted: String!
-    projectId: ID!
-    eventId: ID
-    challengeId: ID
-    points: Int!
-    hidden: Boolean!
-    awardableFrom: DateTime
-    items: [ContentItemInput!]!
-}
-
-input CreateStreakAchievementInput {
-    name: String!
-    descriptionPending: String!
-    descriptionCompleted: String!
-    notificationText: String!
-    imagePending: String!
-    imageCompleted: String!
-    projectId: ID!
-    eventId: ID
-    challengeId: ID
-    points: Int!
-    hidden: Boolean!
-    awardableFrom: DateTime
-    neededStreak: Int!
-    streakId: ID!
-}
-
-input CreateQuizAchievementInput {
-    name: String!
-    descriptionPending: String!
-    descriptionCompleted: String!
-    notificationText: String!
-    imagePending: String!
-    imageCompleted: String!
-    projectId: ID!
-    challengeId: ID
-    points: Int!
-    hidden: Boolean!
-    quizId: ID!
-    minScorePercentage: Int
-    requireCompletion: Boolean!
-}
+# ==================== Quiz Input Types ====================
 
 input CreateQuizInput {
     name: String!
@@ -8084,374 +8922,7 @@ input QuizFilter {
     ids: [ID!]
 }
 
-input UpdateAchievementInput {
-    name: String
-    descriptionPending: String
-    descriptionCompleted: String
-    notificationText: String
-    imagePending: String
-    imageCompleted: String
-    eventId: ID
-    challengeId: ID
-    points: Int
-    hidden: Boolean
-    awardableFrom: DateTime
-}
-
-input UpdateContentAchievementInput {
-    name: String
-    descriptionPending: String
-    descriptionCompleted: String
-    notificationText: String
-    imagePending: String
-    imageCompleted: String
-    eventId: ID
-    challengeId: ID
-    points: Int
-    hidden: Boolean
-    awardableFrom: DateTime
-    items: [ContentItemInput!]
-}
-
-input UpdateStreakAchievementInput {
-    name: String
-    descriptionPending: String
-    descriptionCompleted: String
-    notificationText: String
-    imagePending: String
-    imageCompleted: String
-    eventId: ID
-    challengeId: ID
-    points: Int
-    hidden: Boolean
-    awardableFrom: DateTime
-    neededStreak: Int
-    streakId: ID
-}
-
-input CreateTeamInput {
-    name: String!
-    description: String!
-}
-
-input UpdateTeamInput {
-    name: String
-    description: String
-    leaderboardExcluded: Boolean
-}
-
-input CreateSuperTeamInput {
-    name: String!
-    description: String!
-    teamIds: [ID!]
-}
-
-input UpdateSuperTeamInput {
-    name: String
-    description: String
-}
-
-input CreateUserInput {
-    membersId: ID!
-    email: String!
-    name: String!
-    gender: Gender!
-    churchId: ID!
-    age: Int!
-}
-
-input CreateChurchInput {
-    name: String!
-    country: String!
-    category: ChurchCategory!
-}
-
-input UpdateChurchInput {
-    name: String
-    country: String
-    category: ChurchCategory
-}
-
-# Streak Inputs
-input DateRangeInput {
-    start: Date!
-    end: Date!
-}
-
-input CreateStreakInput {
-    name: String!
-    description: String!
-    projectId: ID!
-    relevantDays: [DateRangeInput!]!
-}
-
-input UpdateStreakInput {
-    name: String
-    description: String
-    relevantDays: [DateRangeInput!]
-}
-
-# Query Filter Inputs
-input UserFilter {
-    query: String
-    churchId: ID
-    gender: Gender
-    minAge: Int
-    maxAge: Int
-    projectId: ID
-    eventId: ID
-    teamId: ID
-    ids: [ID!]  # Support bulk ID lookup for M2M API
-}
-
-input ProjectFilter {
-    ids: [ID!]  # Support bulk ID lookup for M2M API
-    archived: Boolean  # Filter by archived status
-    startDateAfter: DateTime  # Filter projects starting after this date
-    startDateBefore: DateTime  # Filter projects starting before this date
-    endDateAfter: DateTime  # Filter projects ending after this date
-    endDateBefore: DateTime  # Filter projects ending before this date
-}
-
-input ChallengeFilter {
-    projectId: ID
-    eventId: ID
-    challengeType: ChallengeType
-    ids: [ID!]  # Support bulk ID lookup for M2M API
-    publishedAfter: DateTime
-    publishedBefore: DateTime
-}
-
-input EventFilter {
-    projectId: ID
-    ids: [ID!]  # Support bulk ID lookup for M2M API
-    startDateAfter: DateTime  # Filter events starting after this date
-    startDateBefore: DateTime  # Filter events starting before this date
-    endDateAfter: DateTime  # Filter events ending after this date
-    endDateBefore: DateTime  # Filter events ending before this date
-}
-
-input AchievementFilter {
-    projectId: ID
-    eventId: ID
-    ids: [ID!]  # Support bulk ID lookup for M2M API
-}
-
-input TeamFilter {
-    projectId: ID
-    superTeamId: ID
-    ids: [ID!]  # Support bulk ID lookup for M2M API
-    noSuperTeam: Boolean  # Filter teams without a super team
-    minMembers: Int  # Minimum number of members
-    maxMembers: Int  # Maximum number of members
-}
-
-input SuperTeamFilter {
-    projectId: ID
-    ids: [ID!]  # Support bulk ID lookup for M2M API
-    minTeams: Int  # Minimum number of teams
-    maxTeams: Int  # Maximum number of teams
-    minMembers: Int  # Minimum number of members (across all teams)
-    maxMembers: Int  # Maximum number of members (across all teams)
-}
-
-input ChurchFilter {
-    ids: [ID!]  # Support bulk ID lookup for M2M API
-    country: String  # Filter by country
-    category: ChurchCategory  # Filter by church category (S, L, XL)
-}
-
-input StreakFilter {
-    projectId: ID  # Filter by project
-    ids: [ID!]  # Support bulk ID lookup for M2M API
-}
-
-input ScoreJournalFilter {
-    projectId: ID  # Optional: filter by project (for admin queries)
-    userId: ID  # Optional: filter by user (for admin queries)
-    eventId: ID  # Optional: filter by event
-    challengeId: ID  # Optional: filter by challenge
-    sourceType: ScoreSourceType  # Optional: filter by source type
-    ids: [ID!]  # Support bulk ID lookup
-}
-
-# ==================== Role Management Types ====================
-
-type RoleScope {
-    type: ScopeType!
-    id: ID!
-    # Resolved fields for convenience
-    church: Church @goField(forceResolver: true)
-    project: Project @goField(forceResolver: true)
-    team: Team @goField(forceResolver: true)
-}
-
-type UserRole {
-    id: ID!
-    user: User! @goField(forceResolver: true)
-    role: RoleType!
-    scope: RoleScope @goField(forceResolver: true)
-}
-
-input AssignRoleInput {
-    userId: ID!
-    role: RoleType!
-    scopeType: ScopeType
-    scopeId: ID
-}
-
-input RevokeRoleInput {
-    userId: ID!
-    role: RoleType!
-    scopeType: ScopeType
-    scopeId: ID
-}
-
-# ==================== Score Journal ====================
-
-union ScoreSource = SimpleAchievement | ContentAchievement | StreakAchievement | QuizAchievement | SimpleChallenge | QuizChallenge | ExternalChallenge | PluginChallenge | Event
-
-type ScoreJournal {
-    id: ID!
-    project: Project! @goField(forceResolver: true)
-    user: User! @goField(forceResolver: true)
-    event: Event @goField(forceResolver: true)
-    challenge: Challenge @goField(forceResolver: true)
-    points: Int!
-    sourceType: ScoreSourceType!
-    source: ScoreSource @goField(forceResolver: true)
-    reason: String
-    awardedBy: User @goField(forceResolver: true)
-    createdAt: DateTime!
-}
-
-type ScoreJournalEdge {
-    cursor: String!
-    node: ScoreJournal!
-}
-
-type ScoreJournalConnection {
-    edges: [ScoreJournalEdge!]!
-    pageInfo: PageInfo!
-    totalCount: Int!
-}
-
-input CreateScoreAdjustmentInput {
-    projectId: ID!
-    userId: ID!
-    eventId: ID
-    challengeId: ID
-    points: Int!
-    reason: String
-}
-
-# ==================== Relay Pagination ====================
-
-type PageInfo {
-    hasNextPage: Boolean!
-    hasPreviousPage: Boolean!
-    startCursor: String
-    endCursor: String
-}
-
-type UserEdge {
-    cursor: String!
-    node: User!
-}
-
-type UserConnection {
-    edges: [UserEdge!]!
-    pageInfo: PageInfo!
-    totalCount: Int!
-}
-
-type ProjectEdge {
-    cursor: String!
-    node: Project!
-}
-
-type ProjectConnection {
-    edges: [ProjectEdge!]!
-    pageInfo: PageInfo!
-    totalCount: Int!
-}
-
-type EventEdge {
-    cursor: String!
-    node: Event!
-}
-
-type EventConnection {
-    edges: [EventEdge!]!
-    pageInfo: PageInfo!
-    totalCount: Int!
-}
-
-type TeamEdge {
-    cursor: String!
-    node: Team!
-}
-
-type TeamConnection {
-    edges: [TeamEdge!]!
-    pageInfo: PageInfo!
-    totalCount: Int!
-}
-
-type SuperTeamEdge {
-    cursor: String!
-    node: SuperTeam!
-}
-
-type SuperTeamConnection {
-    edges: [SuperTeamEdge!]!
-    pageInfo: PageInfo!
-    totalCount: Int!
-}
-
-type AchievementEdge {
-    cursor: String!
-    node: Achievement!
-}
-
-type AchievementConnection {
-    edges: [AchievementEdge!]!
-    pageInfo: PageInfo!
-    totalCount: Int!
-}
-
-type ChallengeEdge {
-    cursor: String!
-    node: Challenge!
-}
-
-type ChallengeConnection {
-    edges: [ChallengeEdge!]!
-    pageInfo: PageInfo!
-    totalCount: Int!
-}
-
-type ChurchEdge {
-    cursor: String!
-    node: Church!
-}
-
-type ChurchConnection {
-    edges: [ChurchEdge!]!
-    pageInfo: PageInfo!
-    totalCount: Int!
-}
-
-type StreakEdge {
-    cursor: String!
-    node: Streak!
-}
-
-type StreakConnection {
-    edges: [StreakEdge!]!
-    pageInfo: PageInfo!
-    totalCount: Int!
-}
+# ==================== Quiz Pagination ====================
 
 type QuizEdge {
     cursor: String!
@@ -8475,379 +8946,7 @@ type QuizSubmissionConnection {
     totalCount: Int!
 }
 
-# ==================== Firebase Types ====================
-
-type FirebaseTokenResponse {
-    token: String!
-    expiresIn: Int!
-}
-`, BuiltIn: false},
-	{Name: "../../../../gql/schema.graphqls", Input: `# GraphQL Schema
-# Root type definitions - extended by domain-specific files
-
-schema {
-    query: Query
-    mutation: Mutation
-}
-
-type Query {
-    me: User!
-    instanceID: String!
-    firebaseToken: FirebaseTokenResponse!
-}
-
-type Mutation {
-    _empty: Boolean
-}
-`, BuiltIn: false},
-	{Name: "../../../../gql/projects.graphqls", Input: `# Project-related queries and mutations
-
-extend type Query {
-    project(id: ID!): Project!
-    projects(filter: ProjectFilter, first: Int, after: String, last: Int, before: String): ProjectConnection!
-    myProjects: [Project!]!
-    myCurrentProject: Project!
-    currentProject: Project!
-}
-
-extend type Mutation {
-    # User participation
-    joinProject(projectId: ID!): Project!
-
-    # Admin management
-    createProject(input: CreateProjectInput!): Project! @requireRole(roles: ["admin", "superadmin"])
-    updateProject(id: ID!, input: UpdateProjectInput!): Project! @requireRole(roles: ["admin", "superadmin", "project_admin"])
-    deleteProject(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-    archiveProject(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-}
-`, BuiltIn: false},
-	{Name: "../../../../gql/events.graphqls", Input: `# Event-related queries and mutations
-
-extend type Query {
-    event(id: ID!): Event!
-    events(filter: EventFilter, first: Int, after: String, last: Int, before: String): EventConnection!
-    myEvents(project: ID): [Event!]!
-    myCurrentEvent: Event!
-    currentEvent: Event!
-}
-
-extend type Mutation {
-    # User participation
-    joinEvent(eventId: ID!): Event!
-
-    # Admin management
-    createEvent(projectId: ID!, input: CreateEventInput!): Event! @requireRole(roles: ["admin", "superadmin"])
-    updateEvent(id: ID!, input: UpdateEventInput!): Event! @requireRole(roles: ["admin", "superadmin"])
-    deleteEvent(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-    moveEvent(id: ID!, newProjectId: ID!): Event! @requireRole(roles: ["admin", "superadmin"])
-}
-`, BuiltIn: false},
-	{Name: "../../../../gql/teams.graphqls", Input: `# Team and SuperTeam queries and mutations
-
-extend type Query {
-    team(id: ID!): Team!
-    teamByJoinCode(code: String!, projectId: ID!): Team
-    teams(filter: TeamFilter, first: Int, after: String, last: Int, before: String): TeamConnection!
-
-    superteam(id: ID!): SuperTeam!
-    superteams(filter: SuperTeamFilter, first: Int, after: String, last: Int, before: String): SuperTeamConnection!
-}
-
-extend type Mutation {
-    # User participation
-    joinTeam(code: ID!): Team!
-
-    # Team management
-    createTeam(projectId: ID!, input: CreateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
-    updateTeam(id: ID!, input: UpdateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
-    deleteTeam(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "church_admin"])
-    addTeamMembers(teamId: ID!, userIds: [ID!]!, force: Boolean): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
-    removeTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
-    regenerateJoinCode(teamId: ID!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
-    assignTeamLead(teamId: ID!, userId: ID!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
-
-    # SuperTeam management
-    createSuperTeam(projectId: ID!, input: CreateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
-    updateSuperTeam(id: ID!, input: UpdateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
-    deleteSuperTeam(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-    assignTeamsToSuperTeam(superTeamId: ID!, teamIds: [ID!]!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
-
-    # Team achievements (M2M)
-    awardTeamAchievement(teamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    revokeTeamAchievement(teamId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
-
-    # SuperTeam achievements (M2M)
-    awardSuperTeamAchievement(superTeamId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    revokeSuperTeamAchievement(superTeamId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
-}
-`, BuiltIn: false},
-	{Name: "../../../../gql/achievements.graphqls", Input: `# Achievement queries and mutations
-
-extend type Query {
-    achievement(id: ID!): Achievement!
-    achievements(filter: AchievementFilter!, first: Int, after: String, last: Int, before: String): AchievementConnection!
-}
-
-extend type Mutation {
-    # Create achievements
-    createSimpleAchievement(input: CreateSimpleAchievementInput!): SimpleAchievement! @requireRole(roles: ["admin", "superadmin"])
-    createContentAchievement(input: CreateContentAchievementInput!): ContentAchievement! @requireRole(roles: ["admin", "superadmin"])
-    createStreakAchievement(input: CreateStreakAchievementInput!): StreakAchievement! @requireRole(roles: ["admin", "superadmin"])
-
-    # Update achievements
-    updateAchievement(id: ID!, input: UpdateAchievementInput!): Achievement! @requireRole(roles: ["admin", "superadmin"])
-    updateContentAchievement(id: ID!, input: UpdateContentAchievementInput!): ContentAchievement! @requireRole(roles: ["admin", "superadmin"])
-    updateStreakAchievement(id: ID!, input: UpdateStreakAchievementInput!): StreakAchievement! @requireRole(roles: ["admin", "superadmin"])
-
-    # Delete achievement
-    deleteAchievement(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-    linkAchievementToChallenge(achievementId: ID!, challengeId: ID!): Achievement! @requireRole(roles: ["admin", "superadmin"])
-
-    # Reorder achievements - accepts array of achievement IDs in the desired order
-    reorderAchievements(projectId: ID!, achievementIds: [ID!]!): [Achievement!]! @requireRole(roles: ["admin", "superadmin"])
-
-    # Award/revoke (M2M)
-    awardAchievement(userId: ID!, achievementId: ID!): Achievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    revokeAchievement(userId: ID!, achievementId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    bulkAwardAchievements(userIds: [ID!]!, achievementId: ID!): [Achievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
-
-    # Content progress (M2M) - marks content completed across ALL published achievements containing this content
-    markContentItemCompleted(userId: ID!, externalContentId: ID!): [ContentAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    unmarkContentItemCompleted(userId: ID!, externalContentId: ID!): [ContentAchievement!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
-
-    # Streak tracking (M2M)
-    recordStreakActivity(userId: ID!, achievementId: ID!, currentStreak: Int!): StreakAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
-}
-`, BuiltIn: false},
-	{Name: "../../../../gql/challenges.graphqls", Input: `# Challenge queries and mutations
-
-# Enrollment target selector - specify ONE of these
-input EnrollmentTargetInput {
-    userIds: [ID!]
-    churchInProject: ChurchInProjectInput
-    teamIds: [ID!]
-    superTeamIds: [ID!]
-    allProjectMembers: ID
-}
-
-input ChurchInProjectInput {
-    churchId: ID!
-    projectId: ID!
-}
-
-extend type Query {
-    challenge(id: ID!): Challenge!
-    challenges(filter: ChallengeFilter, first: Int, after: String, last: Int, before: String): ChallengeConnection!
-}
-
-extend type Mutation {
-    # Admin management - Create and update (type determined by input.type for create, existing type for update)
-    createChallenge(projectId: ID!, eventId: ID, input: CreateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
-    updateChallenge(id: ID!, input: UpdateChallengeInput!): Challenge! @requireRole(roles: ["admin", "superadmin"])
-
-    # Admin management - Common operations
-    deleteChallenge(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-    publishChallenge(id: ID!, publishedAt: DateTime!): Challenge! @requireRole(roles: ["admin", "superadmin"])
-    assignChallengeToEvent(challengeId: ID!, eventId: ID!): Challenge! @requireRole(roles: ["admin", "superadmin"])
-    bulkPublishChallenges(ids: [ID!]!, publishedAt: DateTime!): [Challenge!]! @requireRole(roles: ["admin", "superadmin"])
-    setChallengeVisibility(id: ID!, visibleAt: DateTime!, startedAt: DateTime): Challenge! @requireRole(roles: ["admin", "superadmin"])
-    setChallengeRequirements(id: ID!, requiresTeamMembership: Boolean, requiresSuperTeamMembership: Boolean): Challenge! @requireRole(roles: ["admin", "superadmin"])
-
-    # User self-completion (SimpleChallenge only, when allowSelfCompletion=true)
-    selfCompleteChallenge(challengeId: ID!): SimpleChallenge!
-
-    # User self-enrollment
-    enrollInChallenge(challengeId: ID!): Challenge!
-    unenrollFromChallenge(challengeId: ID!): Boolean!
-
-    # Admin enrollment
-    enrollUserInChallenge(userId: ID!, challengeId: ID!): Challenge! @requireRole(roles: ["admin", "superadmin", "m2m"])
-    unenrollUserFromChallenge(userId: ID!, challengeId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "m2m"])
-
-    # Bulk enrollment
-    bulkEnrollUsersInChallenge(target: EnrollmentTargetInput!, challengeId: ID!): [Challenge!]! @requireRole(roles: ["admin", "superadmin", "m2m"])
-    bulkUnenrollUsersFromChallenge(target: EnrollmentTargetInput!, challengeId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "m2m"])
-
-    # Completion tracking (M2M / Admin) - Works for ExternalChallenge and SimpleChallenge
-    completeChallenge(userId: ID!, challengeId: ID!, completedAt: DateTime): Challenge! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    uncompleteChallenge(userId: ID!, challengeId: ID!): Boolean! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    bulkCompleteChallenges(target: EnrollmentTargetInput!, challengeId: ID!, completedAt: DateTime): [Challenge!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
-}
-`, BuiltIn: false},
-	{Name: "../../../../gql/streaks.graphqls", Input: `# Streak queries and mutations
-
-extend type Query {
-    streak(id: ID!): Streak!
-    streaks(filter: StreakFilter, first: Int, after: String, last: Int, before: String): StreakConnection!
-}
-
-extend type Mutation {
-    createStreak(input: CreateStreakInput!): Streak! @requireRole(roles: ["admin", "superadmin"])
-    updateStreak(id: ID!, input: UpdateStreakInput!): Streak! @requireRole(roles: ["admin", "superadmin"])
-    deleteStreak(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-}
-`, BuiltIn: false},
-	{Name: "../../../../gql/users.graphqls", Input: `# User queries and mutations
-
-extend type Query {
-    user(id: ID!): User!
-    users(filter: UserFilter, first: Int, after: String, last: Int, before: String): UserConnection!
-}
-
-extend type Mutation {
-    # Profile management
-    updateAvatar(file: Upload!): User!
-
-    # Admin user management
-    assignUserToProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
-    removeUserFromProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
-    assignUserToEvent(userId: ID!, eventId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
-}
-`, BuiltIn: false},
-	{Name: "../../../../gql/roles.graphqls", Input: `# Role management queries and mutations
-
-extend type Query {
-    userRoles(userId: ID!): [UserRole!]!
-    usersWithRole(role: RoleType!, scopeType: ScopeType, scopeId: ID): [User!]!
-}
-
-extend type Mutation {
-    assignRole(input: AssignRoleInput!): UserRole! @requireRole(roles: ["admin", "superadmin", "church_admin"])
-    revokeRole(input: RevokeRoleInput!): Boolean! @requireRole(roles: ["admin", "superadmin", "church_admin"])
-}
-`, BuiltIn: false},
-	{Name: "../../../../gql/churches.graphqls", Input: `# Church queries
-
-extend type Query {
-    church(id: ID!): Church!
-    churches(filter: ChurchFilter, first: Int, after: String, last: Int, before: String): ChurchConnection!
-}
-
-extend type Mutation {
-    updateChurch(id: ID!, input: UpdateChurchInput!): Church! @requireRole(roles: ["superadmin"])
-}
-`, BuiltIn: false},
-	{Name: "../../../../gql/scoring.graphqls", Input: `# Score journal queries and mutations
-
-extend type Query {
-    scoreJournal(projectId: ID!, userId: ID!, filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection!
-    adminScoreJournal(filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection! @requireRole(roles: ["admin", "superadmin"])
-}
-
-enum TeamScoreDistributionMode {
-    SPLIT  # Total points divided equally among members
-    EACH   # Each member receives the full point amount
-}
-
-input CreateTeamScoreAdjustmentInput {
-    teamId: ID!
-    projectId: ID!
-    eventId: ID
-    points: Int!
-    distributionMode: TeamScoreDistributionMode!
-    reason: String
-}
-
-extend type Mutation {
-    createScoreAdjustment(input: CreateScoreAdjustmentInput!): ScoreJournal! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    createTeamScoreAdjustment(input: CreateTeamScoreAdjustmentInput!): [ScoreJournal!]! @requireRole(roles: ["m2m", "admin", "superadmin"])
-    deleteScoreJournalEntry(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-}
-`, BuiltIn: false},
-	{Name: "../../../../gql/consents.graphqls", Input: `# ==================== Consent Types ====================
-
-type Consent {
-    id: ID!
-    key: String!
-    version: Int!
-    title: String!
-    shortText: String!
-    body: MarkdownText!
-    url: String
-    publishedAt: DateTime
-    managementType: ConsentManagementType!
-    managedBy: String
-    userHistory: [UserConsentHistoryEntry!]! @goField(forceResolver: true)
-}
-
-type UserConsent {
-    id: ID!
-    consent: Consent! @goField(forceResolver: true)
-    action: ConsentAction!
-    actionDate: DateTime!
-}
-
-type UserConsentHistoryEntry {
-    id: ID!
-    consent: Consent! @goField(forceResolver: true)
-    action: ConsentAction!
-    occurredAt: DateTime!
-    source: String
-    externalConsentId: String
-    externalTimestamp: DateTime
-}
-
-type ConsentStatus {
-    pendingConsents: [Consent!]!
-    acceptedConsents: [UserConsent!]!
-    rejectedConsents: [UserConsent!]!
-}
-
-# ==================== Consent Queries ====================
-
-extend type Query {
-    # Get all latest published consents
-    consents: [Consent!]!
-
-    # Get a specific consent by ID
-    consent(id: ID!): Consent!
-
-    # Get pending consents for the current user
-    pendingConsents: [Consent!]!
-}
-
-# ==================== Consent Mutations ====================
-
-extend type Mutation {
-    # Accept a consent (user action)
-    acceptConsent(consentId: ID!): UserConsent!
-
-    # Reject a consent (user action)
-    rejectConsent(consentId: ID!): UserConsent!
-
-    # Create a new consent or new version of existing consent (admin action)
-    createConsent(
-        key: String!
-        title: String!
-        shortText: String
-        body: String!
-        url: String
-        publishedAt: DateTime
-        isRemote: Boolean
-        managedBy: String
-    ): Consent! @requireRole(roles: ["admin", "superadmin"])
-
-    # Update an existing consent (admin action)
-    updateConsent(
-        id: ID!
-        title: String
-        shortText: String
-        body: String
-        url: String
-        publishedAt: DateTime
-        managedBy: String
-    ): Consent! @requireRole(roles: ["admin", "superadmin"])
-
-    # Manually set a user's consent action (admin action)
-    # Only works for local consents. The admin's user ID is recorded in the source field.
-    adminSetUserConsent(
-        userId: ID!
-        consentId: ID!
-        action: ConsentAction!
-    ): UserConsentHistoryEntry! @requireRole(roles: ["admin", "superadmin"])
-}
-`, BuiltIn: false},
-	{Name: "../../../../gql/quizzes.graphqls", Input: `# Quiz queries and mutations
+# ==================== Queries ====================
 
 extend type Query {
     quiz(id: ID!): Quiz! @requireRole(roles: ["user", "admin", "superadmin"])
@@ -8870,6 +8969,8 @@ extend type Query {
         before: String
     ): QuizSubmissionConnection! @requireRole(roles: ["admin", "superadmin"])
 }
+
+# ==================== Mutations ====================
 
 extend type Mutation {
     # Admin: Quiz management

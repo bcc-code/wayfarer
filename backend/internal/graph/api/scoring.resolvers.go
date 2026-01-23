@@ -191,3 +191,133 @@ func (r *queryResolver) AdminScoreJournal(ctx context.Context, filter *model.Sco
 	// Pass empty strings for projectID and userID - they will be read from filter if provided
 	return r.getScoreJournal(ctx, "", "", filter, first, after, last, before)
 }
+
+// Project is the resolver for the project field.
+func (r *scoreJournalResolver) Project(ctx context.Context, obj *model.ScoreJournal) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// User is the resolver for the user field.
+func (r *scoreJournalResolver) User(ctx context.Context, obj *model.ScoreJournal) (*model.User, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load user first to get churchId for authorization
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	// Check authorization with user's church
+	if !r.RoleService.CanAccessUser(ctx, currentUserID, obj.UserID, user.ChurchID) {
+		return nil, fmt.Errorf("permission denied")
+	}
+
+	return user, nil
+}
+
+// Event is the resolver for the event field.
+func (r *scoreJournalResolver) Event(ctx context.Context, obj *model.ScoreJournal) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *scoreJournalResolver) Challenge(ctx context.Context, obj *model.ScoreJournal) (model.Challenge, error) {
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// Source is the resolver for the source field.
+func (r *scoreJournalResolver) Source(ctx context.Context, obj *model.ScoreJournal) (model.ScoreSource, error) {
+	// Return nil if no source ID
+	if obj.SourceID == nil {
+		return nil, nil
+	}
+
+	// Load appropriate source based on sourceType
+	switch obj.SourceType {
+	case model.ScoreSourceTypeAchievement:
+		achievement, err := r.LoadAchievementWithTranslation(ctx, *obj.SourceID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load achievement: %w", err)
+		}
+		// Type switch to return the concrete achievement type
+		switch ach := achievement.(type) {
+		case *model.SimpleAchievement:
+			return ach, nil
+		case *model.ContentAchievement:
+			return ach, nil
+		case *model.StreakAchievement:
+			return ach, nil
+		default:
+			return nil, fmt.Errorf("unexpected achievement type: %T", achievement)
+		}
+
+	case model.ScoreSourceTypeChallenge:
+		challenge, err := r.LoadChallengeWithTranslation(ctx, *obj.SourceID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load challenge: %w", err)
+		}
+		// Type switch to return the concrete challenge type that implements ScoreSource
+		switch ch := challenge.(type) {
+		case *model.SimpleChallenge:
+			return ch, nil
+		case *model.QuizChallenge:
+			return ch, nil
+		case *model.ExternalChallenge:
+			return ch, nil
+		default:
+			return nil, fmt.Errorf("unexpected challenge type: %T", challenge)
+		}
+
+	case model.ScoreSourceTypeEvent:
+		event, err := r.LoadEventWithTranslation(ctx, *obj.SourceID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load event: %w", err)
+		}
+		return event, nil
+
+	case model.ScoreSourceTypeManual:
+		// Manual adjustments don't have a source entity
+		return nil, nil
+
+	default:
+		return nil, fmt.Errorf("unknown source type: %s", obj.SourceType)
+	}
+}
+
+// AwardedBy is the resolver for the awardedBy field.
+func (r *scoreJournalResolver) AwardedBy(ctx context.Context, obj *model.ScoreJournal) (*model.User, error) {
+	// Only return user if source_type is MANUAL
+	if obj.SourceType != model.ScoreSourceTypeManual || obj.AwardedByID == nil {
+		return nil, nil
+	}
+
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load user first to get churchId for authorization
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, *obj.AwardedByID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	// Check authorization with user's church
+	if !r.RoleService.CanAccessUser(ctx, currentUserID, *obj.AwardedByID, user.ChurchID) {
+		return nil, fmt.Errorf("permission denied")
+	}
+
+	return user, nil
+}
+
+// ScoreJournal returns ScoreJournalResolver implementation.
+func (r *Resolver) ScoreJournal() ScoreJournalResolver { return &scoreJournalResolver{r} }
+
+type scoreJournalResolver struct{ *Resolver }

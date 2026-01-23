@@ -19,6 +19,31 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// ImageObject is the resolver for the imageObject field.
+func (r *externalChallengeResolver) ImageObject(ctx context.Context, obj *model.ExternalChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
+// Project is the resolver for the project field.
+func (r *externalChallengeResolver) Project(ctx context.Context, obj *model.ExternalChallenge) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *externalChallengeResolver) Event(ctx context.Context, obj *model.ExternalChallenge) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *externalChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *externalChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
+}
+
 // CreateChallenge is the resolver for the createChallenge field.
 func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string, eventID *string, input model.CreateChallengeInput) (model.Challenge, error) {
 	// Get authenticated user ID from context
@@ -906,6 +931,31 @@ func (r *mutationResolver) BulkCompleteChallenges(ctx context.Context, target mo
 	return result, nil
 }
 
+// ImageObject is the resolver for the imageObject field.
+func (r *pluginChallengeResolver) ImageObject(ctx context.Context, obj *model.PluginChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
+// Project is the resolver for the project field.
+func (r *pluginChallengeResolver) Project(ctx context.Context, obj *model.PluginChallenge) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *pluginChallengeResolver) Event(ctx context.Context, obj *model.PluginChallenge) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *pluginChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.PluginChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *pluginChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.PluginChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
+}
+
 // Challenge is the resolver for the challenge field.
 func (r *queryResolver) Challenge(ctx context.Context, id string) (model.Challenge, error) {
 	// Load challenge with visibility check
@@ -1026,3 +1076,83 @@ func (r *queryResolver) Challenges(ctx context.Context, filter *model.ChallengeF
 
 	return connection, nil
 }
+
+// ImageObject is the resolver for the imageObject field.
+func (r *quizChallengeResolver) ImageObject(ctx context.Context, obj *model.QuizChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
+// Project is the resolver for the project field.
+func (r *quizChallengeResolver) Project(ctx context.Context, obj *model.QuizChallenge) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *quizChallengeResolver) Event(ctx context.Context, obj *model.QuizChallenge) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *quizChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *quizChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
+}
+
+// Quiz is the resolver for the quiz field.
+// Visibility is controlled by the challenge's publishedAt and session access.
+func (r *quizChallengeResolver) Quiz(ctx context.Context, obj *model.QuizChallenge) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, obj.ID)
+	quiz, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return quiz, nil
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *simpleChallengeResolver) ImageObject(ctx context.Context, obj *model.SimpleChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
+// Project is the resolver for the project field.
+func (r *simpleChallengeResolver) Project(ctx context.Context, obj *model.SimpleChallenge) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *simpleChallengeResolver) Event(ctx context.Context, obj *model.SimpleChallenge) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *simpleChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *simpleChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
+}
+
+// ExternalChallenge returns ExternalChallengeResolver implementation.
+func (r *Resolver) ExternalChallenge() ExternalChallengeResolver {
+	return &externalChallengeResolver{r}
+}
+
+// PluginChallenge returns PluginChallengeResolver implementation.
+func (r *Resolver) PluginChallenge() PluginChallengeResolver { return &pluginChallengeResolver{r} }
+
+// QuizChallenge returns QuizChallengeResolver implementation.
+func (r *Resolver) QuizChallenge() QuizChallengeResolver { return &quizChallengeResolver{r} }
+
+// SimpleChallenge returns SimpleChallengeResolver implementation.
+func (r *Resolver) SimpleChallenge() SimpleChallengeResolver { return &simpleChallengeResolver{r} }
+
+type externalChallengeResolver struct{ *Resolver }
+type pluginChallengeResolver struct{ *Resolver }
+type quizChallengeResolver struct{ *Resolver }
+type simpleChallengeResolver struct{ *Resolver }

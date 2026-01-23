@@ -14,6 +14,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/bcc-media/wayfarer/internal/utils"
@@ -1196,3 +1197,280 @@ func (r *queryResolver) Superteams(ctx context.Context, filter *model.SuperTeamF
 
 	return connection, nil
 }
+
+// Members is the resolver for the members field.
+func (r *superTeamResolver) Members(ctx context.Context, obj *model.SuperTeam, first *int, after *string, last *int, before *string) (*model.UserConnection, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check for M2M role from JWT token (M2M users don't exist in the database)
+	userRoles := middleware.GetUserRoles(ctx)
+	isM2MFromToken := false
+	for _, role := range userRoles {
+		if role == "m2m" {
+			isM2MFromToken = true
+			break
+		}
+	}
+
+	// Check permissions - only admins, project admins can access super team members
+	allowed := isM2MFromToken ||
+		r.RoleService.IsAdmin(ctx, currentUserID) ||
+		r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) ||
+		r.RoleService.HasRoleInProject(ctx, currentUserID, services.RoleProjectAdmin, obj.ProjectID)
+
+	if !allowed {
+		return nil, fmt.Errorf("permission denied: you do not have access to this super team's members")
+	}
+
+	// Decode cursors if provided
+	var afterCursor, beforeCursor *string
+	if after != nil && *after != "" {
+		decoded, err := pagination.DecodeCursor(*after)
+		if err != nil {
+			return nil, fmt.Errorf("invalid after cursor: %w", err)
+		}
+		afterCursor = &decoded
+	}
+	if before != nil && *before != "" {
+		decoded, err := pagination.DecodeCursor(*before)
+		if err != nil {
+			return nil, fmt.Errorf("invalid before cursor: %w", err)
+		}
+		beforeCursor = &decoded
+	}
+
+	// Determine requested limit
+	requestedLimit := 10 // default
+	isBackward := false
+	if first != nil {
+		requestedLimit = *first
+	} else if last != nil {
+		requestedLimit = *last
+		isBackward = true
+	}
+
+	// Fetch one extra record to determine if there are more results
+	queryLimit := requestedLimit + 1
+
+	// Build query parameters
+	params := sqlc.GetUsersBySuperTeamIDCursorParams{
+		Superteamid:  obj.ID,
+		Aftercursor:  "",
+		Beforecursor: "",
+		Isbackward:   isBackward,
+		Querylimit:   int32(queryLimit),
+	}
+
+	if afterCursor != nil {
+		params.Aftercursor = *afterCursor
+	}
+	if beforeCursor != nil {
+		params.Beforecursor = *beforeCursor
+	}
+
+	// Query database
+	rows, err := r.DB.Queries.GetUsersBySuperTeamIDCursor(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query super team members: %w", err)
+	}
+
+	// Get total count
+	totalCount, err := r.DB.Queries.CountUsersBySuperTeamID(ctx, obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count super team members: %w", err)
+	}
+
+	// Check if there are more results
+	hasMore := len(rows) > requestedLimit
+	users := rows
+	if hasMore {
+		users = rows[:requestedLimit]
+	}
+
+	// If backward pagination, reverse the results
+	if last != nil {
+		for i, j := 0, len(users)-1; i < j; i, j = i+1, j-1 {
+			users[i], users[j] = users[j], users[i]
+		}
+	}
+
+	// Convert to GraphQL model
+	modelUsers := make([]model.User, len(users))
+	for i, row := range users {
+		birthdateStr := row.Birthdate.Time.Format("2006-01-02")
+		modelUsers[i] = model.User{
+			ID:        row.ID,
+			MembersID: row.MembersID,
+			Email:     row.Email,
+			Name:      row.Name,
+			Gender:    model.Gender(row.Gender),
+			Birthdate: birthdateStr,
+			ChurchID:  row.ChurchID,
+			Image:     row.AvatarUrl,
+		}
+	}
+
+	// Build the connection
+	connection := pagination.BuildUserConnection(pagination.BuildUserConnectionParams{
+		Users:           modelUsers,
+		RequestedFirst:  first,
+		RequestedLast:   last,
+		RequestedAfter:  after,
+		RequestedBefore: before,
+		TotalCount:      int(totalCount),
+		HasMore:         hasMore,
+	})
+
+	return connection, nil
+}
+
+// ParentProject is the resolver for the parentProject field.
+func (r *superTeamResolver) ParentProject(ctx context.Context, obj *model.SuperTeam) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Teams is the resolver for the teams field.
+func (r *superTeamResolver) Teams(ctx context.Context, obj *model.SuperTeam) ([]model.Team, error) {
+	thunk := r.Loaders.TeamsBySuperTeamLoader.Load(ctx, obj.ID)
+	teams, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load teams: %w", err)
+	}
+
+	result := make([]model.Team, len(teams))
+	for i, team := range teams {
+		result[i] = *team
+	}
+
+	return result, nil
+}
+
+// AverageAge is the resolver for the averageAge field.
+func (r *teamResolver) AverageAge(ctx context.Context, obj *model.Team) (*float64, error) {
+	avgAge, err := r.DB.Queries.GetTeamAverageAge(ctx, obj.ID)
+	if err != nil {
+		return nil, nil // Return nil on error (empty team or no members with birthdate)
+	}
+	return &avgAge, nil
+}
+
+// Members is the resolver for the members field.
+func (r *teamResolver) Members(ctx context.Context, obj *model.Team) ([]model.TeamMember, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Check for M2M role from JWT token (M2M users don't exist in the database)
+	userRoles := middleware.GetUserRoles(ctx)
+	isM2MFromToken := false
+	for _, role := range userRoles {
+		if role == "m2m" {
+			isM2MFromToken = true
+			break
+		}
+	}
+
+	// Check permissions - admins, M2M, project admins, team leads, and church admins can access team members
+	allowed := isM2MFromToken ||
+		r.RoleService.HasRole(ctx, currentUserID, services.RoleM2M) ||
+		r.RoleService.CanManageTeam(ctx, currentUserID, obj.ID)
+
+	if !allowed {
+		return nil, fmt.Errorf("permission denied: you do not have access to this team's members")
+	}
+
+	// Use dataloader to fetch team members
+	thunk := r.Loaders.UsersByTeamLoader.Load(ctx, obj.ID)
+	members, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load team members: %w", err)
+	}
+
+	// Convert []*model.TeamMember to []model.TeamMember
+	result := make([]model.TeamMember, len(members))
+	for i, m := range members {
+		result[i] = *m
+	}
+
+	return result, nil
+}
+
+// MemberLeaderboard is the resolver for the memberLeaderboard field.
+func (r *teamResolver) MemberLeaderboard(ctx context.Context, obj *model.Team) ([]model.LeaderboardEntry, error) {
+	// Use dataloader to fetch team member leaderboard (with caching)
+	thunk := r.Loaders.TeamMemberLeaderboardLoader.Load(ctx, obj.ID)
+	entries, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load team member leaderboard: %w", err)
+	}
+
+	return entries, nil
+}
+
+// ParentProject is the resolver for the parentProject field.
+func (r *teamResolver) ParentProject(ctx context.Context, obj *model.Team) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// SuperTeam is the resolver for the superTeam field.
+func (r *teamResolver) SuperTeam(ctx context.Context, obj *model.Team) (*model.SuperTeam, error) {
+	// If team doesn't belong to a super team, return nil
+	if obj.SuperTeamID == nil {
+		return nil, nil
+	}
+
+	return r.Loaders.SuperTeamByIDLoader.Load(ctx, *obj.SuperTeamID)()
+}
+
+// Church is the resolver for the church field.
+func (r *teamMemberResolver) Church(ctx context.Context, obj *model.TeamMember) (*model.Church, error) {
+	// Use dataloader to fetch church
+	thunk := r.Loaders.ChurchLoader.Load(ctx, obj.ChurchID)
+	church, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load church: %w", err)
+	}
+	return church, nil
+}
+
+// User is the resolver for the user field.
+func (r *teamMemberResolver) User(ctx context.Context, obj *model.TeamMember) (*model.User, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load user first to get churchId for authorization
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	// Check authorization with user's church
+	if !r.RoleService.CanAccessUser(ctx, currentUserID, obj.UserID, user.ChurchID) {
+		return nil, fmt.Errorf("permission denied")
+	}
+
+	return user, nil
+}
+
+// SuperTeam returns SuperTeamResolver implementation.
+func (r *Resolver) SuperTeam() SuperTeamResolver { return &superTeamResolver{r} }
+
+// Team returns TeamResolver implementation.
+func (r *Resolver) Team() TeamResolver { return &teamResolver{r} }
+
+// TeamMember returns TeamMemberResolver implementation.
+func (r *Resolver) TeamMember() TeamMemberResolver { return &teamMemberResolver{r} }
+
+type superTeamResolver struct{ *Resolver }
+type teamResolver struct{ *Resolver }
+type teamMemberResolver struct{ *Resolver }

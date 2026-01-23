@@ -1,9 +1,47 @@
 # Role management queries and mutations
 
+# ==================== Role Types ====================
+
+type RoleScope {
+    type: ScopeType!
+    id: ID!
+    # Resolved fields for convenience
+    church: Church @goField(forceResolver: true)
+    project: Project @goField(forceResolver: true)
+    team: Team @goField(forceResolver: true)
+}
+
+type UserRole {
+    id: ID!
+    user: User! @goField(forceResolver: true)
+    role: RoleType!
+    scope: RoleScope @goField(forceResolver: true)
+}
+
+# ==================== Role Input Types ====================
+
+input AssignRoleInput {
+    userId: ID!
+    role: RoleType!
+    scopeType: ScopeType
+    scopeId: ID
+}
+
+input RevokeRoleInput {
+    userId: ID!
+    role: RoleType!
+    scopeType: ScopeType
+    scopeId: ID
+}
+
+# ==================== Queries ====================
+
 extend type Query {
     userRoles(userId: ID!): [UserRole!]!
     usersWithRole(role: RoleType!, scopeType: ScopeType, scopeId: ID): [User!]!
 }
+
+# ==================== Mutations ====================
 
 extend type Mutation {
     assignRole(input: AssignRoleInput!): UserRole! @requireRole(roles: ["admin", "superadmin", "church_admin"])

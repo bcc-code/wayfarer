@@ -1,5 +1,65 @@
 # Event-related queries and mutations
 
+# ==================== Event Types ====================
+
+type Event {
+    id: ID!
+    name: String!
+    description: String!
+    challenges: [Challenge!]! @goField(forceResolver: true)
+    leaderboard(
+        entityType: LeaderboardEntityType!
+        filter: LeaderboardFilter
+        first: Int
+        after: String
+        last: Int
+        before: String
+    ): LeaderboardConnection! @goField(forceResolver: true)
+    startDate: DateTime!
+    endDate: DateTime!
+    parentProject: Project! @goField(forceResolver: true)
+}
+
+# ==================== Event Input Types ====================
+
+input CreateEventInput {
+    name: String!
+    description: String!
+    startDate: DateTime!
+    endDate: DateTime!
+}
+
+input UpdateEventInput {
+    name: String
+    description: String
+    startDate: DateTime
+    endDate: DateTime
+}
+
+input EventFilter {
+    projectId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    startDateAfter: DateTime  # Filter events starting after this date
+    startDateBefore: DateTime  # Filter events starting before this date
+    endDateAfter: DateTime  # Filter events ending after this date
+    endDateBefore: DateTime  # Filter events ending before this date
+}
+
+# ==================== Event Pagination ====================
+
+type EventEdge {
+    cursor: String!
+    node: Event!
+}
+
+type EventConnection {
+    edges: [EventEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
 extend type Query {
     event(id: ID!): Event!
     events(filter: EventFilter, first: Int, after: String, last: Int, before: String): EventConnection!
@@ -7,6 +67,8 @@ extend type Query {
     myCurrentEvent: Event!
     currentEvent: Event!
 }
+
+# ==================== Mutations ====================
 
 extend type Mutation {
     # User participation

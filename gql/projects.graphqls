@@ -1,5 +1,93 @@
 # Project-related queries and mutations
 
+# ==================== Project Types ====================
+
+type Project {
+    id: ID!
+    name: String!
+    description: String!
+    rules: MarkdownText @goField(forceResolver: true)
+    infoMessage: MarkdownText @goField(forceResolver: true)
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
+    challenges: [Challenge!]! @goField(forceResolver: true)
+    leaderboard(
+        entityType: LeaderboardEntityType!
+        filter: LeaderboardFilter
+        first: Int
+        after: String
+        last: Int
+        before: String
+    ): LeaderboardConnection! @goField(forceResolver: true)
+    events: [Event!]! @goField(forceResolver: true)
+    startDate: DateTime!
+    endDate: DateTime!
+    branding: Branding!
+    teams: [Team!]! @goField(forceResolver: true)
+    myChurchTeams: [Team!]! @goField(forceResolver: true)
+    myTeam: Team @goField(forceResolver: true)
+    achievements: [Achievement!]! @goField(forceResolver: true)
+    streaks: [Streak!]! @goField(forceResolver: true)
+    journal(
+        filter: ScoreJournalFilter
+        first: Int
+        after: String
+        last: Int
+        before: String
+    ): ScoreJournalConnection! @goField(forceResolver: true)
+    archivedAt: Boolean
+}
+
+# ==================== Project Input Types ====================
+
+input CreateProjectInput {
+    name: String!
+    description: String
+    rules: String
+    infoMessage: String
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
+    startDate: DateTime!
+    endDate: DateTime!
+    branding: BrandingInput!
+}
+
+input UpdateProjectInput {
+    name: String
+    description: String
+    rules: String
+    infoMessage: String
+    infoMessageStart: DateTime
+    infoMessageEnd: DateTime
+    startDate: DateTime
+    endDate: DateTime
+    branding: BrandingInput
+}
+
+input ProjectFilter {
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    archived: Boolean  # Filter by archived status
+    startDateAfter: DateTime  # Filter projects starting after this date
+    startDateBefore: DateTime  # Filter projects starting before this date
+    endDateAfter: DateTime  # Filter projects ending after this date
+    endDateBefore: DateTime  # Filter projects ending before this date
+}
+
+# ==================== Project Pagination ====================
+
+type ProjectEdge {
+    cursor: String!
+    node: Project!
+}
+
+type ProjectConnection {
+    edges: [ProjectEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
 extend type Query {
     project(id: ID!): Project!
     projects(filter: ProjectFilter, first: Int, after: String, last: Int, before: String): ProjectConnection!
@@ -7,6 +95,8 @@ extend type Query {
     myCurrentProject: Project!
     currentProject: Project!
 }
+
+# ==================== Mutations ====================
 
 extend type Mutation {
     # User participation

@@ -20,6 +20,163 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *contentAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.ContentAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *contentAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.ContentAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
+}
+
+// Project is the resolver for the project field.
+func (r *contentAchievementResolver) Project(ctx context.Context, obj *model.ContentAchievement) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *contentAchievementResolver) Event(ctx context.Context, obj *model.ContentAchievement) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *contentAchievementResolver) Challenge(ctx context.Context, obj *model.ContentAchievement) (model.Challenge, error) {
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// AchievedAt is the resolver for the achievedAt field.
+func (r *contentAchievementResolver) AchievedAt(ctx context.Context, obj *model.ContentAchievement) (*scalars.DateTime, error) {
+	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// Items is the resolver for the items field.
+func (r *contentAchievementResolver) Items(ctx context.Context, obj *model.ContentAchievement) ([]model.ContentItem, error) {
+	thunk := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)
+	items, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load content items: %w", err)
+	}
+
+	// Convert []*model.ContentItem to []model.ContentItem
+	result := make([]model.ContentItem, len(items))
+	for i, item := range items {
+		result[i] = *item
+	}
+	return result, nil
+}
+
+// UserCompletedItems is the resolver for the userCompletedItems field.
+func (r *contentAchievementResolver) UserCompletedItems(ctx context.Context, obj *model.ContentAchievement) ([]model.ContentItem, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return []model.ContentItem{}, nil
+	}
+
+	// Get all items for this achievement
+	thunk := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)
+	items, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load content items: %w", err)
+	}
+
+	// Get user's completed items
+	progress, err := r.DB.Queries.GetUserContentProgressForAchievement(ctx, sqlc.GetUserContentProgressForAchievementParams{
+		UserID:        userID,
+		AchievementID: obj.ID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user progress: %w", err)
+	}
+
+	// Create a set of completed external content IDs
+	completedSet := make(map[string]bool)
+	for _, p := range progress {
+		completedSet[p.ExternalContentID] = true
+	}
+
+	// Filter items to only those the user has completed
+	var completedItems []model.ContentItem
+	for _, item := range items {
+		if completedSet[item.ExternalContentID] {
+			completedItems = append(completedItems, *item)
+		}
+	}
+	if completedItems == nil {
+		completedItems = []model.ContentItem{}
+	}
+	return completedItems, nil
+}
+
+// NextItem is the resolver for the nextItem field.
+func (r *contentAchievementResolver) NextItem(ctx context.Context, obj *model.ContentAchievement) (*model.ContentItem, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		// No user, return first item
+		thunk := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)
+		items, err := thunk()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load content items: %w", err)
+		}
+		if len(items) == 0 {
+			return nil, nil
+		}
+		return items[0], nil
+	}
+
+	// Get all items for this achievement
+	thunk := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)
+	items, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load content items: %w", err)
+	}
+	if len(items) == 0 {
+		return nil, nil
+	}
+
+	// Get user's completed items
+	progress, err := r.DB.Queries.GetUserContentProgressForAchievement(ctx, sqlc.GetUserContentProgressForAchievementParams{
+		UserID:        userID,
+		AchievementID: obj.ID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user progress: %w", err)
+	}
+
+	// Create a set of completed external content IDs
+	completedSet := make(map[string]bool)
+	for _, p := range progress {
+		completedSet[p.ExternalContentID] = true
+	}
+
+	// Find the first incomplete item
+	for _, item := range items {
+		if !completedSet[item.ExternalContentID] {
+			return item, nil
+		}
+	}
+
+	// All items completed
+	return nil, nil
+}
+
+// CompletedItemCount is the resolver for the completedItemCount field.
+func (r *contentAchievementResolver) CompletedItemCount(ctx context.Context, obj *model.ContentAchievement) (int, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return 0, nil
+	}
+
+	progress, err := r.DB.Queries.GetUserContentProgressForAchievement(ctx, sqlc.GetUserContentProgressForAchievementParams{
+		UserID:        userID,
+		AchievementID: obj.ID,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to load user progress: %w", err)
+	}
+	return len(progress), nil
+}
+
 // CreateSimpleAchievement is the resolver for the createSimpleAchievement field.
 func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input model.CreateSimpleAchievementInput) (*model.SimpleAchievement, error) {
 	// Get authenticated user ID from context
@@ -1141,3 +1298,127 @@ func (r *queryResolver) Achievements(ctx context.Context, filter model.Achieveme
 
 	return connection, nil
 }
+
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *quizAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.QuizAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *quizAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.QuizAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
+}
+
+// Project is the resolver for the project field.
+func (r *quizAchievementResolver) Project(ctx context.Context, obj *model.QuizAchievement) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *quizAchievementResolver) Event(ctx context.Context, obj *model.QuizAchievement) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *quizAchievementResolver) Challenge(ctx context.Context, obj *model.QuizAchievement) (model.Challenge, error) {
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// AchievedAt is the resolver for the achievedAt field.
+func (r *quizAchievementResolver) AchievedAt(ctx context.Context, obj *model.QuizAchievement) (*scalars.DateTime, error) {
+	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// Quiz is the resolver for the quiz field.
+func (r *quizAchievementResolver) Quiz(ctx context.Context, obj *model.QuizAchievement) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	return thunk()
+}
+
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *simpleAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.SimpleAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *simpleAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.SimpleAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
+}
+
+// Project is the resolver for the project field.
+func (r *simpleAchievementResolver) Project(ctx context.Context, obj *model.SimpleAchievement) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *simpleAchievementResolver) Event(ctx context.Context, obj *model.SimpleAchievement) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *simpleAchievementResolver) Challenge(ctx context.Context, obj *model.SimpleAchievement) (model.Challenge, error) {
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// AchievedAt is the resolver for the achievedAt field.
+func (r *simpleAchievementResolver) AchievedAt(ctx context.Context, obj *model.SimpleAchievement) (*scalars.DateTime, error) {
+	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *streakAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.StreakAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *streakAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.StreakAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
+}
+
+// Project is the resolver for the project field.
+func (r *streakAchievementResolver) Project(ctx context.Context, obj *model.StreakAchievement) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *streakAchievementResolver) Event(ctx context.Context, obj *model.StreakAchievement) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *streakAchievementResolver) Challenge(ctx context.Context, obj *model.StreakAchievement) (model.Challenge, error) {
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// AchievedAt is the resolver for the achievedAt field.
+func (r *streakAchievementResolver) AchievedAt(ctx context.Context, obj *model.StreakAchievement) (*scalars.DateTime, error) {
+	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// Streak is the resolver for the streak field.
+func (r *streakAchievementResolver) Streak(ctx context.Context, obj *model.StreakAchievement) (*model.Streak, error) {
+	return r.LoadStreakWithTranslation(ctx, obj.StreakID)
+}
+
+// ContentAchievement returns ContentAchievementResolver implementation.
+func (r *Resolver) ContentAchievement() ContentAchievementResolver {
+	return &contentAchievementResolver{r}
+}
+
+// QuizAchievement returns QuizAchievementResolver implementation.
+func (r *Resolver) QuizAchievement() QuizAchievementResolver { return &quizAchievementResolver{r} }
+
+// SimpleAchievement returns SimpleAchievementResolver implementation.
+func (r *Resolver) SimpleAchievement() SimpleAchievementResolver {
+	return &simpleAchievementResolver{r}
+}
+
+// StreakAchievement returns StreakAchievementResolver implementation.
+func (r *Resolver) StreakAchievement() StreakAchievementResolver {
+	return &streakAchievementResolver{r}
+}
+
+type contentAchievementResolver struct{ *Resolver }
+type quizAchievementResolver struct{ *Resolver }
+type simpleAchievementResolver struct{ *Resolver }
+type streakAchievementResolver struct{ *Resolver }

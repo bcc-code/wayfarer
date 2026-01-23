@@ -1,9 +1,74 @@
 # User queries and mutations
 
+# ==================== User Types ====================
+
+type User {
+    id: ID!
+    membersId: ID!
+    personUuid: ID
+    gender: Gender!
+    churchId: ID!
+    church: Church! @goField(forceResolver: true)
+    birthdate: String!
+    age: Int @goField(forceResolver: true)
+    email: String!
+    name: String!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
+    projects: [Project!]! @goField(forceResolver: true)
+    events: [Event!]! @goField(forceResolver: true)
+    teams: [Team!]! @goField(forceResolver: true)
+    superTeams: [SuperTeam!]! @goField(forceResolver: true)
+    roles: [UserRole!]! @goField(forceResolver: true)
+    consentStatus: ConsentStatus!
+    language: String!
+    createdAt: DateTime!
+}
+
+# ==================== User Input Types ====================
+
+input CreateUserInput {
+    membersId: ID!
+    email: String!
+    name: String!
+    gender: Gender!
+    churchId: ID!
+    age: Int!
+}
+
+input UserFilter {
+    query: String
+    churchId: ID
+    gender: Gender
+    minAge: Int
+    maxAge: Int
+    projectId: ID
+    eventId: ID
+    teamId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+}
+
+# ==================== User Pagination ====================
+
+type UserEdge {
+    cursor: String!
+    node: User!
+}
+
+type UserConnection {
+    edges: [UserEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
 extend type Query {
     user(id: ID!): User!
     users(filter: UserFilter, first: Int, after: String, last: Int, before: String): UserConnection!
 }
+
+# ==================== Mutations ====================
 
 extend type Mutation {
     # Profile management

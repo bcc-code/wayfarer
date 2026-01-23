@@ -7,6 +7,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/bcc-media/wayfarer/internal/cache"
@@ -212,3 +213,134 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, fir
 
 	return connection, nil
 }
+
+// Church is the resolver for the church field.
+func (r *userResolver) Church(ctx context.Context, obj *model.User) (*model.Church, error) {
+	// Use dataloader to fetch church (Load returns a Thunk that must be called)
+	thunk := r.Loaders.ChurchLoader.Load(ctx, obj.ChurchID)
+	church, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load church: %w", err)
+	}
+
+	return church, nil
+}
+
+// Age is the resolver for the age field.
+func (r *userResolver) Age(ctx context.Context, obj *model.User) (*int, error) {
+	// If birthdate is empty, return nil (shouldn't happen since birthdate is required)
+	if obj.Birthdate == "" {
+		return nil, nil
+	}
+
+	// Parse birthdate (format: YYYY-MM-DD)
+	birthdate, err := time.Parse("2006-01-02", obj.Birthdate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid birthdate format: %w", err)
+	}
+
+	// Calculate age (year difference)
+	age := time.Now().Year() - birthdate.Year()
+
+	return &age, nil
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *userResolver) ImageObject(ctx context.Context, obj *model.User) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
+// Projects is the resolver for the projects field.
+func (r *userResolver) Projects(ctx context.Context, obj *model.User) ([]model.Project, error) {
+	// Use dataloader to fetch projects for this user (Load returns a Thunk that must be called)
+	thunk := r.Loaders.ProjectsByUserLoader.Load(ctx, obj.ID)
+	projects, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load projects: %w", err)
+	}
+
+	// Convert []*model.Project to []model.Project and apply translations
+	result := make([]model.Project, len(projects))
+	for i, p := range projects {
+		translated := r.ApplyTranslationToProject(ctx, p)
+		result[i] = *translated
+	}
+
+	return result, nil
+}
+
+// Events is the resolver for the events field.
+func (r *userResolver) Events(ctx context.Context, obj *model.User) ([]model.Event, error) {
+	// Use dataloader to fetch events for this user
+	thunk := r.Loaders.EventsByUserLoader.Load(ctx, obj.ID)
+	events, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load events: %w", err)
+	}
+
+	// Convert []*model.Event to []model.Event and apply translations
+	result := make([]model.Event, len(events))
+	for i, e := range events {
+		translated := r.ApplyTranslationToEvent(ctx, e)
+		result[i] = *translated
+	}
+
+	return result, nil
+}
+
+// Teams is the resolver for the teams field.
+func (r *userResolver) Teams(ctx context.Context, obj *model.User) ([]model.Team, error) {
+	// Use dataloader to fetch teams for this user
+	thunk := r.Loaders.TeamsByUserLoader.Load(ctx, obj.ID)
+	teams, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load teams: %w", err)
+	}
+
+	result := make([]model.Team, len(teams))
+	for i, t := range teams {
+		result[i] = *t
+	}
+
+	return result, nil
+}
+
+// SuperTeams is the resolver for the superTeams field.
+func (r *userResolver) SuperTeams(ctx context.Context, obj *model.User) ([]model.SuperTeam, error) {
+	// Use dataloader to fetch super teams for this user
+	thunk := r.Loaders.SuperTeamsByUserLoader.Load(ctx, obj.ID)
+	superTeams, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load super teams: %w", err)
+	}
+
+	result := make([]model.SuperTeam, len(superTeams))
+	for i, st := range superTeams {
+		result[i] = *st
+	}
+
+	return result, nil
+}
+
+// Roles is the resolver for the roles field.
+func (r *userResolver) Roles(ctx context.Context, obj *model.User) ([]model.UserRole, error) {
+	// Use dataloader to fetch roles for this user
+	thunk := r.Loaders.RolesByUserLoader.Load(ctx, obj.ID)
+	roles, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load roles: %w", err)
+	}
+
+	// Convert []*model.UserRole to []model.UserRole
+	result := make([]model.UserRole, len(roles))
+	for i, role := range roles {
+		result[i] = *role
+	}
+
+	return result, nil
+}
+
+// User returns UserResolver implementation.
+func (r *Resolver) User() UserResolver { return &userResolver{r} }
+
+type userResolver struct{ *Resolver }

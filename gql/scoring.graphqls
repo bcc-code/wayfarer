@@ -1,8 +1,41 @@
 # Score journal queries and mutations
 
-extend type Query {
-    scoreJournal(projectId: ID!, userId: ID!, filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection!
-    adminScoreJournal(filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection! @requireRole(roles: ["admin", "superadmin"])
+# ==================== Score Types ====================
+
+union ScoreSource = SimpleAchievement | ContentAchievement | StreakAchievement | QuizAchievement | SimpleChallenge | QuizChallenge | ExternalChallenge | PluginChallenge | Event
+
+type ScoreJournal {
+    id: ID!
+    project: Project! @goField(forceResolver: true)
+    user: User! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
+    points: Int!
+    sourceType: ScoreSourceType!
+    source: ScoreSource @goField(forceResolver: true)
+    reason: String
+    awardedBy: User @goField(forceResolver: true)
+    createdAt: DateTime!
+}
+
+# ==================== Score Input Types ====================
+
+input CreateScoreAdjustmentInput {
+    projectId: ID!
+    userId: ID!
+    eventId: ID
+    challengeId: ID
+    points: Int!
+    reason: String
+}
+
+input ScoreJournalFilter {
+    projectId: ID  # Optional: filter by project (for admin queries)
+    userId: ID  # Optional: filter by user (for admin queries)
+    eventId: ID  # Optional: filter by event
+    challengeId: ID  # Optional: filter by challenge
+    sourceType: ScoreSourceType  # Optional: filter by source type
+    ids: [ID!]  # Support bulk ID lookup
 }
 
 enum TeamScoreDistributionMode {
@@ -18,6 +51,28 @@ input CreateTeamScoreAdjustmentInput {
     distributionMode: TeamScoreDistributionMode!
     reason: String
 }
+
+# ==================== Score Pagination ====================
+
+type ScoreJournalEdge {
+    cursor: String!
+    node: ScoreJournal!
+}
+
+type ScoreJournalConnection {
+    edges: [ScoreJournalEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
+extend type Query {
+    scoreJournal(projectId: ID!, userId: ID!, filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection!
+    adminScoreJournal(filter: ScoreJournalFilter, first: Int, after: String, last: Int, before: String): ScoreJournalConnection! @requireRole(roles: ["admin", "superadmin"])
+}
+
+# ==================== Mutations ====================
 
 extend type Mutation {
     createScoreAdjustment(input: CreateScoreAdjustmentInput!): ScoreJournal! @requireRole(roles: ["m2m", "admin", "superadmin"])

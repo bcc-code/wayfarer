@@ -1,5 +1,106 @@
 # Team and SuperTeam queries and mutations
 
+# ==================== Team Types ====================
+
+type Team {
+    id: ID!
+    name: String!
+    description: String!
+    joinCode: String!
+    leaderboardExcluded: Boolean!
+    averageAge: Float @goField(forceResolver: true)
+    members: [TeamMember!]! @goField(forceResolver: true)
+    memberLeaderboard: [LeaderboardEntry!]! @goField(forceResolver: true)
+    parentProject: Project! @goField(forceResolver: true)
+    superTeam: SuperTeam @goField(forceResolver: true)
+}
+
+type TeamMember {
+    id: ID!
+    name: String!
+    church: Church! @goField(forceResolver: true)
+    isTeamLead: Boolean!
+    joinedAt: String!
+    user: User! @goField(forceResolver: true)
+}
+
+type SuperTeam {
+    id: ID!
+    name: String!
+    description: String!
+    members(first: Int, after: String, last: Int, before: String): UserConnection! @goField(forceResolver: true)
+    parentProject: Project! @goField(forceResolver: true)
+    teams: [Team!]! @goField(forceResolver: true)
+}
+
+# ==================== Team Input Types ====================
+
+input CreateTeamInput {
+    name: String!
+    description: String!
+}
+
+input UpdateTeamInput {
+    name: String
+    description: String
+    leaderboardExcluded: Boolean
+}
+
+input CreateSuperTeamInput {
+    name: String!
+    description: String!
+    teamIds: [ID!]
+}
+
+input UpdateSuperTeamInput {
+    name: String
+    description: String
+}
+
+input TeamFilter {
+    projectId: ID
+    superTeamId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    noSuperTeam: Boolean  # Filter teams without a super team
+    minMembers: Int  # Minimum number of members
+    maxMembers: Int  # Maximum number of members
+}
+
+input SuperTeamFilter {
+    projectId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+    minTeams: Int  # Minimum number of teams
+    maxTeams: Int  # Maximum number of teams
+    minMembers: Int  # Minimum number of members (across all teams)
+    maxMembers: Int  # Maximum number of members (across all teams)
+}
+
+# ==================== Team Pagination ====================
+
+type TeamEdge {
+    cursor: String!
+    node: Team!
+}
+
+type TeamConnection {
+    edges: [TeamEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type SuperTeamEdge {
+    cursor: String!
+    node: SuperTeam!
+}
+
+type SuperTeamConnection {
+    edges: [SuperTeamEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
 extend type Query {
     team(id: ID!): Team!
     teamByJoinCode(code: String!, projectId: ID!): Team
@@ -8,6 +109,8 @@ extend type Query {
     superteam(id: ID!): SuperTeam!
     superteams(filter: SuperTeamFilter, first: Int, after: String, last: Int, before: String): SuperTeamConnection!
 }
+
+# ==================== Mutations ====================
 
 extend type Mutation {
     # User participation

@@ -7,6 +7,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
@@ -14,9 +15,123 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+// Challenges is the resolver for the challenges field.
+func (r *eventResolver) Challenges(ctx context.Context, obj *model.Event) ([]model.Challenge, error) {
+	thunk := r.Loaders.ChallengesByEventLoader.Load(ctx, obj.ID)
+	challenges, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+
+	userID, _ := middleware.GetUserID(ctx)
+	isAdmin := userID != "" && r.RoleService.CanManageProject(ctx, userID, obj.ProjectID)
+
+	result := make([]model.Challenge, 0, len(challenges))
+	for _, ch := range challenges {
+		// For quiz challenges, check session access first
+		if _, ok := ch.(*model.QuizChallenge); ok && userID != "" {
+			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
+			quiz, err := quizThunk()
+			if err == nil && quiz != nil {
+				hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
+					Quizid: quiz.ID,
+					Userid: userID,
+				})
+				if err == nil && hasAccess {
+					// Session access grants visibility regardless of publishedAt
+					result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
+					continue
+				}
+			}
+			// Quiz without session access: skip this challenge entirely
+			continue
+		}
+
+		// Admins can see all non-quiz challenges
+		if isAdmin {
+			result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
+			continue
+		}
+
+		// Non-admins: check publishedAt
+		publishedAt := getChallengePublishedAt(ch)
+		if publishedAt == nil || publishedAt.Time.After(time.Now()) {
+			continue // Skip unpublished
+		}
+
+		// Check visibility (enrolled OR visible_at in past)
+		visibleAt := getChallengeVisibleAt(ch)
+		isVisible := visibleAt != nil && !visibleAt.Time.After(time.Now())
+
+		if !isVisible && userID != "" {
+			enrolled, err := r.DB.Queries.IsUserEnrolledInChallenge(ctx, sqlc.IsUserEnrolledInChallengeParams{
+				Userid:      userID,
+				Challengeid: ch.GetID(),
+			})
+			if err != nil || !enrolled {
+				continue // Skip not enrolled
+			}
+		} else if !isVisible {
+			continue // Skip not visible
+		}
+
+		result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
+	}
+
+	return result, nil
+}
+
+// Leaderboard is the resolver for the leaderboard field.
+func (r *eventResolver) Leaderboard(ctx context.Context, obj *model.Event, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) (*model.LeaderboardConnection, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Build params for leaderboard service
+	params := services.LeaderboardParams{
+		ContextID:  obj.ID,
+		EntityType: entityType,
+		Filter:     filter,
+		First:      first,
+		After:      after,
+		Last:       last,
+		Before:     before,
+		UserID:     currentUserID,
+	}
+
+	// Get leaderboard from service
+	entries, meEntry, totalCount, err := r.LeaderboardService.GetEventLeaderboard(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get event leaderboard: %w", err)
+	}
+
+	// Apply PERSONS leaderboard restrictions - dynamic limit based on totalCount
+	if entityType == model.LeaderboardEntityTypePersons {
+		result := FilterPersonLeaderboardEntries(entries, totalCount, first, after)
+		entries = result.Entries
+		first = result.AdjustedFirst
+	}
+
+	// Build connection
+	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, entityType, obj.ProjectID, r.Loaders, first, last, after, before)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build leaderboard connection: %w", err)
+	}
+
+	return connection, nil
+}
+
+// ParentProject is the resolver for the parentProject field.
+func (r *eventResolver) ParentProject(ctx context.Context, obj *model.Event) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
 
 // JoinEvent is the resolver for the joinEvent field.
 func (r *mutationResolver) JoinEvent(ctx context.Context, eventID string) (*model.Event, error) {
@@ -456,3 +571,8 @@ func (r *queryResolver) CurrentEvent(ctx context.Context) (*model.Event, error) 
 	// Use translation-aware wrapper to fetch event
 	return r.LoadEventWithTranslation(ctx, eventID)
 }
+
+// Event returns EventResolver implementation.
+func (r *Resolver) Event() EventResolver { return &eventResolver{r} }
+
+type eventResolver struct{ *Resolver }
