@@ -65,7 +65,7 @@ steps:
       - -c
       - |
         if [ -n "$_STATIC_BUCKET" ]; then
-          gsutil -m rsync -r -d /workspace/static-files $_STATIC_BUCKET
+          gsutil -m rsync -r /workspace/static-files $_STATIC_BUCKET
           echo "Synced static files to $_STATIC_BUCKET"
         else
           echo "Skipping bucket sync: _STATIC_BUCKET not configured"
