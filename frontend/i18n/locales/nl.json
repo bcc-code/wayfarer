@@ -25,8 +25,11 @@
     "questionNumber": "{current} van {total}",
     "continue": "Doorgaan",
     "nextQuestion": "Volgende vraag.",
+    "previousQuestion": "Vorige",
     "done": "Klaar",
     "unavailable": "Deze quiz is momenteel niet beschikbaar.",
+    "reviewAnswers": "Zie antwoord",
+    "finishReview": "Sluit beoordeling af",
     "result": {
       "receivedNoPoints": "Je hebt geen punten verzameld.",
       "receivedPoints": "Je hebt {points} punten verzameld.",
@@ -202,7 +205,7 @@
       "deleteSelected": "Geselecteerde verwijderen",
       "bulkCreate": {
         "countLabel": "Aantal units",
-        "autoGenerateInfo": "De namen worden automatisch gegenereerd."
+        "autoGenerateInfo": "De namen van de units worden automatisch gegenereerd en kunnen achteraf worden gewijzigd."
       },
       "confirmDelete": {
         "title": "Unit verwijderen?",
