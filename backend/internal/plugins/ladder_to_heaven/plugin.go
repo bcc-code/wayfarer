@@ -43,7 +43,7 @@ func (p *LadderToHeavenPlugin) Name() string {
 
 // Enabled returns true if the plugin should be registered.
 func (p *LadderToHeavenPlugin) Enabled() bool {
-	return p.config.AchievementID != ""
+	return true
 }
 
 // Register sets up the plugin's routes.
