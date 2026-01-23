@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/bcc-media/wayfarer/internal/config"
@@ -18,22 +20,24 @@ import (
 
 const (
 	testSecretKey = "test-secret-key-for-cryptex-token"
+	testBaseURL   = "https://cryptex.example.com"
 	testUserID    = "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
 	testChurchID  = "CH01ARZ3NDEKTSV4RRFFQ69G5FAV"
 	testProjectID = "PR01ARZ3NDEKTSV4RRFFQ69G5FAV"
 )
 
-func TestCryptexTokenHandler_FeatureDisabled(t *testing.T) {
+func TestCryptexAdminURLHandler_FeatureDisabled_MissingSecretKey(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	handler := &cryptexTokenHandler{
+	handler := &cryptexAdminURLHandler{
 		db:              nil,
 		settingsService: nil,
 		secretKey:       "", // Feature disabled
+		baseURL:         testBaseURL,
 		jwtConfig:       config.JWTConfig{Issuer: "wayfarer"},
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/cryptex-token", nil)
+	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/cryptex-admin-url", nil)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = req
@@ -47,17 +51,43 @@ func TestCryptexTokenHandler_FeatureDisabled(t *testing.T) {
 	assert.Equal(t, "feature disabled", response["error"])
 }
 
-func TestCryptexTokenHandler_NotAuthenticated(t *testing.T) {
+func TestCryptexAdminURLHandler_FeatureDisabled_MissingBaseURL(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	handler := &cryptexTokenHandler{
+	handler := &cryptexAdminURLHandler{
 		db:              nil,
 		settingsService: nil,
 		secretKey:       testSecretKey,
+		baseURL:         "", // Feature disabled - missing base URL
 		jwtConfig:       config.JWTConfig{Issuer: "wayfarer"},
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/cryptex-token", nil)
+	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/cryptex-admin-url", nil)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	handler.handle(c)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Equal(t, "feature disabled", response["error"])
+}
+
+func TestCryptexAdminURLHandler_NotAuthenticated(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	handler := &cryptexAdminURLHandler{
+		db:              nil,
+		settingsService: nil,
+		secretKey:       testSecretKey,
+		baseURL:         testBaseURL,
+		jwtConfig:       config.JWTConfig{Issuer: "wayfarer"},
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/cryptex-admin-url", nil)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = req
@@ -72,17 +102,18 @@ func TestCryptexTokenHandler_NotAuthenticated(t *testing.T) {
 	assert.Equal(t, "authentication required", response["error"])
 }
 
-func TestCryptexTokenHandler_MissingRoles(t *testing.T) {
+func TestCryptexAdminURLHandler_MissingRoles(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	handler := &cryptexTokenHandler{
+	handler := &cryptexAdminURLHandler{
 		db:              nil,
 		settingsService: nil,
 		secretKey:       testSecretKey,
+		baseURL:         testBaseURL,
 		jwtConfig:       config.JWTConfig{Issuer: "wayfarer"},
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/cryptex-token", nil)
+	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/cryptex-admin-url", nil)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = req
@@ -98,17 +129,18 @@ func TestCryptexTokenHandler_MissingRoles(t *testing.T) {
 	assert.Equal(t, "insufficient permissions", response["error"])
 }
 
-func TestCryptexTokenHandler_InsufficientRole(t *testing.T) {
+func TestCryptexAdminURLHandler_InsufficientRole(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	handler := &cryptexTokenHandler{
+	handler := &cryptexAdminURLHandler{
 		db:              nil,
 		settingsService: nil,
 		secretKey:       testSecretKey,
+		baseURL:         testBaseURL,
 		jwtConfig:       config.JWTConfig{Issuer: "wayfarer"},
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/cryptex-token", nil)
+	req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/cryptex-admin-url", nil)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = req
@@ -124,7 +156,7 @@ func TestCryptexTokenHandler_InsufficientRole(t *testing.T) {
 	assert.Equal(t, "insufficient permissions", response["error"])
 }
 
-func TestCryptexTokenHandler_SuccessWithAllowedRoles(t *testing.T) {
+func TestCryptexAdminURLHandler_SuccessWithAllowedRoles(t *testing.T) {
 	roles := []string{"church_admin", "admin", "superadmin"}
 
 	for _, role := range roles {
@@ -156,16 +188,17 @@ func TestCryptexTokenHandler_SuccessWithAllowedRoles(t *testing.T) {
 				projectID: testProjectID,
 			}
 
-			handler := &cryptexTokenHandler{
+			handler := &cryptexAdminURLHandler{
 				db:              nil,
 				settingsService: nil,
 				secretKey:       testSecretKey,
+				baseURL:         testBaseURL,
 				jwtConfig:       config.JWTConfig{Issuer: "wayfarer"},
 				testQuerier:     mockQuerier,
 				testSettings:    mockSettings,
 			}
 
-			req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/cryptex-token", nil)
+			req := httptest.NewRequest(http.MethodGet, "/plugins/ladder-to-heaven/cryptex-admin-url", nil)
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
 			c.Request = req
@@ -180,9 +213,20 @@ func TestCryptexTokenHandler_SuccessWithAllowedRoles(t *testing.T) {
 			err := json.Unmarshal(w.Body.Bytes(), &response)
 			require.NoError(t, err)
 
-			tokenString, ok := response["token"].(string)
-			require.True(t, ok, "Response should contain token")
-			require.NotEmpty(t, tokenString, "Token should not be empty")
+			// Response should contain "url" field
+			adminURL, ok := response["url"].(string)
+			require.True(t, ok, "Response should contain url")
+			require.NotEmpty(t, adminURL, "URL should not be empty")
+
+			// URL should have the correct format
+			assert.True(t, strings.HasPrefix(adminURL, testBaseURL+"/callback?token="),
+				"URL should start with base URL + /callback?token=")
+
+			// Extract and parse the token from the URL
+			parsedURL, err := url.Parse(adminURL)
+			require.NoError(t, err)
+			tokenString := parsedURL.Query().Get("token")
+			require.NotEmpty(t, tokenString, "Token should be present in URL")
 
 			// Parse and verify the token
 			token, err := jwt.ParseWithClaims(tokenString, &CryptexClaims{}, func(token *jwt.Token) (interface{}, error) {

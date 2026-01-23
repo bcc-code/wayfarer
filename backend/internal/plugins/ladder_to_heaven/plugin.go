@@ -17,8 +17,11 @@ type Config struct {
 	// Awards 300 points to each team member (once per team).
 	TeamRenameChallengeID string
 	// CryptexSecretKey is used to sign Cryptex JWT tokens.
-	// If empty, the cryptex token endpoint is disabled.
+	// If empty, the cryptex admin URL endpoint is disabled.
 	CryptexSecretKey string
+	// CryptexBaseURL is the base URL for Cryptex admin login.
+	// Example: https://cryptex.example.com
+	CryptexBaseURL string
 }
 
 // LadderToHeavenPlugin implements the plugins.Plugin interface.
@@ -63,15 +66,16 @@ func (p *LadderToHeavenPlugin) Register(router gin.IRouter, deps plugins.Depende
 
 	router.POST("/plugins/ladder-to-heaven/team-name-changed", teamRenameHandler.handle)
 
-	// Cryptex token endpoint (requires JWT authentication)
-	cryptexHandler := &cryptexTokenHandler{
+	// Cryptex admin URL endpoint (requires JWT authentication)
+	cryptexHandler := &cryptexAdminURLHandler{
 		db:              deps.DB,
 		settingsService: deps.SettingsService,
 		secretKey:       p.config.CryptexSecretKey,
+		baseURL:         p.config.CryptexBaseURL,
 		jwtConfig:       deps.JWTConfig,
 	}
 
-	router.GET("/plugins/ladder-to-heaven/cryptex-token", middleware.JWTAuth(deps.JWTConfig), cryptexHandler.handle)
+	router.GET("/plugins/ladder-to-heaven/cryptex-admin-url", middleware.JWTAuth(deps.JWTConfig), cryptexHandler.handle)
 
 	return nil
 }

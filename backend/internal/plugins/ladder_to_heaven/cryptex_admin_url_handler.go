@@ -2,8 +2,10 @@ package ladder_to_heaven
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/config"
@@ -14,22 +16,23 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// cryptexQuerier defines the database operations needed by the cryptex token handler.
+// cryptexQuerier defines the database operations needed by the cryptex admin URL handler.
 type cryptexQuerier interface {
 	GetUserByID(ctx context.Context, id string) (*sqlc.GetUserByIDRow, error)
 	GetChurchByID(ctx context.Context, id string) (*sqlc.GetChurchByIDRow, error)
 }
 
-// cryptexSettingsProvider defines the settings operations needed by the cryptex token handler.
+// cryptexSettingsProvider defines the settings operations needed by the cryptex admin URL handler.
 type cryptexSettingsProvider interface {
 	GetCurrentProjectID(ctx context.Context) (string, error)
 }
 
-// cryptexTokenHandler handles requests for Cryptex JWT tokens.
-type cryptexTokenHandler struct {
+// cryptexAdminURLHandler handles requests for Cryptex admin login URLs.
+type cryptexAdminURLHandler struct {
 	db              *database.DB
 	settingsService *services.SettingsService
 	secretKey       string
+	baseURL         string
 	jwtConfig       config.JWTConfig
 
 	// For testing - when set, these override the default implementations
@@ -47,16 +50,22 @@ type CryptexClaims struct {
 	jwt.RegisteredClaims
 }
 
-// allowedRoles are the roles that can request a Cryptex token.
+// allowedRoles are the roles that can request a Cryptex admin URL.
 var allowedRoles = []string{"church_admin", "admin", "superadmin"}
 
-// handle generates a JWT token for Cryptex integration.
-func (h *cryptexTokenHandler) handle(c *gin.Context) {
+// handle generates a Cryptex admin login URL with a JWT token.
+func (h *cryptexAdminURLHandler) handle(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	// Check if feature is enabled
 	if h.secretKey == "" {
-		slog.Warn("cryptex_token: feature disabled, PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_SECRET_KEY not set")
+		slog.Warn("cryptex_admin_url: feature disabled, PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_SECRET_KEY not set")
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "feature disabled"})
+		return
+	}
+
+	if h.baseURL == "" {
+		slog.Warn("cryptex_admin_url: feature disabled, PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_BASE_URL not set")
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "feature disabled"})
 		return
 	}
@@ -64,13 +73,13 @@ func (h *cryptexTokenHandler) handle(c *gin.Context) {
 	// Get user ID from JWT middleware context
 	userIDValue, exists := c.Get("user_id")
 	if !exists || userIDValue == nil {
-		slog.Warn("cryptex_token: user not authenticated")
+		slog.Warn("cryptex_admin_url: user not authenticated")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
 		return
 	}
 	userID, ok := userIDValue.(string)
 	if !ok || userID == "" {
-		slog.Warn("cryptex_token: invalid user_id in context")
+		slog.Warn("cryptex_admin_url: invalid user_id in context")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
 		return
 	}
@@ -78,20 +87,20 @@ func (h *cryptexTokenHandler) handle(c *gin.Context) {
 	// Get user roles from JWT middleware context
 	userRolesValue, exists := c.Get("user_roles")
 	if !exists || userRolesValue == nil {
-		slog.Warn("cryptex_token: no roles found for user", "user_id", userID)
+		slog.Warn("cryptex_admin_url: no roles found for user", "user_id", userID)
 		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
 		return
 	}
 	userRoles, ok := userRolesValue.([]string)
 	if !ok {
-		slog.Warn("cryptex_token: invalid user_roles in context", "user_id", userID)
+		slog.Warn("cryptex_admin_url: invalid user_roles in context", "user_id", userID)
 		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
 		return
 	}
 
 	// Check if user has at least one of the allowed roles
 	if !hasAllowedRole(userRoles) {
-		slog.Warn("cryptex_token: user lacks required role",
+		slog.Warn("cryptex_admin_url: user lacks required role",
 			"user_id", userID,
 			"user_roles", userRoles,
 			"required_any", allowedRoles,
@@ -107,7 +116,7 @@ func (h *cryptexTokenHandler) handle(c *gin.Context) {
 	// Fetch user data from database
 	user, err := querier.GetUserByID(ctx, userID)
 	if err != nil {
-		slog.Error("cryptex_token: failed to get user",
+		slog.Error("cryptex_admin_url: failed to get user",
 			"error", err,
 			"user_id", userID,
 		)
@@ -118,7 +127,7 @@ func (h *cryptexTokenHandler) handle(c *gin.Context) {
 	// Fetch church data from database
 	church, err := querier.GetChurchByID(ctx, user.ChurchID)
 	if err != nil {
-		slog.Error("cryptex_token: failed to get church",
+		slog.Error("cryptex_admin_url: failed to get church",
 			"error", err,
 			"church_id", user.ChurchID,
 		)
@@ -129,7 +138,7 @@ func (h *cryptexTokenHandler) handle(c *gin.Context) {
 	// Get current project ID from settings
 	projectID, err := settings.GetCurrentProjectID(ctx)
 	if err != nil {
-		slog.Error("cryptex_token: failed to get current project ID",
+		slog.Error("cryptex_admin_url: failed to get current project ID",
 			"error", err,
 		)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve project configuration"})
@@ -158,7 +167,7 @@ func (h *cryptexTokenHandler) handle(c *gin.Context) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(h.secretKey))
 	if err != nil {
-		slog.Error("cryptex_token: failed to sign token",
+		slog.Error("cryptex_admin_url: failed to sign token",
 			"error", err,
 			"user_id", userID,
 		)
@@ -166,17 +175,20 @@ func (h *cryptexTokenHandler) handle(c *gin.Context) {
 		return
 	}
 
-	slog.Info("cryptex_token: token generated successfully",
+	// Build the admin login URL
+	adminURL := fmt.Sprintf("%s/callback?token=%s", h.baseURL, url.QueryEscape(tokenString))
+
+	slog.Info("cryptex_admin_url: URL generated successfully",
 		"user_id", userID,
 		"church_id", user.ChurchID,
 		"project_id", projectID,
 	)
 
-	c.JSON(http.StatusOK, gin.H{"token": tokenString})
+	c.JSON(http.StatusOK, gin.H{"url": adminURL})
 }
 
 // getQuerier returns the querier to use (test mock or real implementation).
-func (h *cryptexTokenHandler) getQuerier() cryptexQuerier {
+func (h *cryptexAdminURLHandler) getQuerier() cryptexQuerier {
 	if h.testQuerier != nil {
 		return h.testQuerier
 	}
@@ -184,7 +196,7 @@ func (h *cryptexTokenHandler) getQuerier() cryptexQuerier {
 }
 
 // getSettings returns the settings provider to use (test mock or real implementation).
-func (h *cryptexTokenHandler) getSettings() cryptexSettingsProvider {
+func (h *cryptexAdminURLHandler) getSettings() cryptexSettingsProvider {
 	if h.testSettings != nil {
 		return h.testSettings
 	}
