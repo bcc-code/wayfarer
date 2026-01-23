@@ -485,13 +485,13 @@ func (r *mutationResolver) EnrollInChallenge(ctx context.Context, challengeID st
 
 	// Validation 1: Challenge must be published
 	publishedAt := getChallengePublishedAt(challenge)
-	if publishedAt == nil || publishedAt.Time.After(time.Now()) {
+	if publishedAt == nil || publishedAt.After(time.Now()) {
 		return nil, fmt.Errorf("challenge is not yet available for enrollment")
 	}
 
 	// Validation 2: Challenge must not be ended
 	endTime := getChallengeEndTime(challenge)
-	if endTime != nil && endTime.Time.Before(time.Now()) {
+	if endTime != nil && endTime.Before(time.Now()) {
 		return nil, fmt.Errorf("challenge enrollment has ended")
 	}
 

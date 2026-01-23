@@ -831,7 +831,7 @@ func (r *projectResolver) Journal(ctx context.Context, obj *model.Project, filte
 	if !ok || userID == "" {
 		return nil, fmt.Errorf("user not authenticated")
 	}
-	return r.Resolver.getScoreJournal(ctx, obj.ID, userID, filter, first, after, last, before)
+	return r.getScoreJournal(ctx, obj.ID, userID, filter, first, after, last, before)
 }
 
 // ImageObject is the resolver for the imageObject field.

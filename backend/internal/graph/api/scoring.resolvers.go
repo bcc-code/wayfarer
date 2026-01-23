@@ -183,11 +183,11 @@ func (r *mutationResolver) DeleteScoreJournalEntry(ctx context.Context, id strin
 
 // ScoreJournal is the resolver for the scoreJournal field.
 func (r *queryResolver) ScoreJournal(ctx context.Context, projectID string, userID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
-	return r.Resolver.getScoreJournal(ctx, projectID, userID, filter, first, after, last, before)
+	return r.getScoreJournal(ctx, projectID, userID, filter, first, after, last, before)
 }
 
 // AdminScoreJournal is the resolver for the adminScoreJournal field.
 func (r *queryResolver) AdminScoreJournal(ctx context.Context, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
 	// Pass empty strings for projectID and userID - they will be read from filter if provided
-	return r.Resolver.getScoreJournal(ctx, "", "", filter, first, after, last, before)
+	return r.getScoreJournal(ctx, "", "", filter, first, after, last, before)
 }

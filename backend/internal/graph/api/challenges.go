@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -558,47 +557,6 @@ func getChallengeVisibleAt(c model.Challenge) *scalars.DateTime {
 	default:
 		return nil
 	}
-}
-
-// filterChallengesByVisibility filters challenges based on visibility rules.
-// For non-admins: challenge must have visible_at in past OR user must be enrolled.
-// Admins see all challenges (pass isAdmin=true to skip filtering).
-func (r *Resolver) filterChallengesByVisibility(
-	ctx context.Context,
-	challenges []model.Challenge,
-	userID string,
-	projectID string,
-	isAdmin bool,
-) []model.Challenge {
-	if isAdmin {
-		return challenges
-	}
-
-	// Get user's enrolled challenge IDs
-	enrolledIDs := make(map[string]bool)
-	if userID != "" {
-		enrolled, err := r.DB.Queries.GetUserEnrolledChallengeIDsInProject(ctx, sqlc.GetUserEnrolledChallengeIDsInProjectParams{
-			Userid:    userID,
-			Projectid: projectID,
-		})
-		if err == nil {
-			for _, id := range enrolled {
-				enrolledIDs[id] = true
-			}
-		}
-	}
-
-	// Filter: visible_at in past OR enrolled
-	now := time.Now()
-	result := make([]model.Challenge, 0, len(challenges))
-	for _, ch := range challenges {
-		visibleAt := getChallengeVisibleAt(ch)
-		isVisible := visibleAt != nil && !visibleAt.Time.After(now)
-		if isVisible || enrolledIDs[getChallengeID(ch)] {
-			result = append(result, ch)
-		}
-	}
-	return result
 }
 
 // Helper to get RequiresTeamMembership from any Challenge implementation

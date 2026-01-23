@@ -191,63 +191,6 @@ func (r getQuizQuestionByIDRowAdapter) GetStepValue() pgtype.Numeric { return r.
 func (r getQuizQuestionByIDRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
 func (r getQuizQuestionByIDRowAdapter) GetPoints() *int32            { return r.Points }
 
-// Adapter for sqlc.GetQuizQuestionsByIDsRow
-type getQuizQuestionsByIDsRowAdapter struct {
-	*sqlc.GetQuizQuestionsByIDsRow
-}
-
-func (r getQuizQuestionsByIDsRowAdapter) GetID() string           { return r.ID }
-func (r getQuizQuestionsByIDsRowAdapter) GetQuizID() string       { return r.QuizID }
-func (r getQuizQuestionsByIDsRowAdapter) GetQuestionType() string { return r.QuestionType }
-func (r getQuizQuestionsByIDsRowAdapter) GetQuestionText() string { return r.QuestionText }
-func (r getQuizQuestionsByIDsRowAdapter) GetQuestionOrder() int32 { return r.QuestionOrder }
-func (r getQuizQuestionsByIDsRowAdapter) GetAllowMultipleSelection() *bool {
-	return r.AllowMultipleSelection
-}
-func (r getQuizQuestionsByIDsRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
-func (r getQuizQuestionsByIDsRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
-func (r getQuizQuestionsByIDsRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
-func (r getQuizQuestionsByIDsRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
-func (r getQuizQuestionsByIDsRowAdapter) GetPoints() *int32            { return r.Points }
-
-// Adapter for sqlc.GetQuizQuestionsByQuizIDRow
-type getQuizQuestionsByQuizIDRowAdapter struct {
-	*sqlc.GetQuizQuestionsByQuizIDRow
-}
-
-func (r getQuizQuestionsByQuizIDRowAdapter) GetID() string           { return r.ID }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetQuizID() string       { return r.QuizID }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetQuestionType() string { return r.QuestionType }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetQuestionText() string { return r.QuestionText }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetQuestionOrder() int32 { return r.QuestionOrder }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetAllowMultipleSelection() *bool {
-	return r.AllowMultipleSelection
-}
-func (r getQuizQuestionsByQuizIDRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetPoints() *int32            { return r.Points }
-
-// Adapter for sqlc.GetQuizQuestionsByQuizIDsRow
-type getQuizQuestionsByQuizIDsRowAdapter struct {
-	*sqlc.GetQuizQuestionsByQuizIDsRow
-}
-
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetID() string           { return r.ID }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuizID() string       { return r.QuizID }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuestionType() string { return r.QuestionType }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuestionText() string { return r.QuestionText }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuestionOrder() int32 { return r.QuestionOrder }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetAllowMultipleSelection() *bool {
-	return r.AllowMultipleSelection
-}
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetPoints() *int32            { return r.Points }
-
 // convertQuizQuestionRowToInterface converts a database row to the appropriate QuizQuestion implementation
 func convertQuizQuestionRowToInterface(row quizQuestionRow) model.QuizQuestion {
 	switch row.GetQuestionType() {
@@ -362,18 +305,6 @@ func convertGetQuizQuestionByIDRowToInterface(row *sqlc.GetQuizQuestionByIDRow) 
 	return convertQuizQuestionRowToInterface(getQuizQuestionByIDRowAdapter{row})
 }
 
-func convertGetQuizQuestionsByIDsRowToInterface(row *sqlc.GetQuizQuestionsByIDsRow) model.QuizQuestion {
-	return convertQuizQuestionRowToInterface(getQuizQuestionsByIDsRowAdapter{row})
-}
-
-func convertGetQuizQuestionsByQuizIDRowToInterface(row *sqlc.GetQuizQuestionsByQuizIDRow) model.QuizQuestion {
-	return convertQuizQuestionRowToInterface(getQuizQuestionsByQuizIDRowAdapter{row})
-}
-
-func convertGetQuizQuestionsByQuizIDsRowToInterface(row *sqlc.GetQuizQuestionsByQuizIDsRow) model.QuizQuestion {
-	return convertQuizQuestionRowToInterface(getQuizQuestionsByQuizIDsRowAdapter{row})
-}
-
 // quizSubmissionRow defines the common fields for quiz submission row types
 type quizSubmissionRow struct {
 	ID            string
@@ -467,79 +398,7 @@ func convertGetQuizSubmissionByIDRow(row *sqlc.GetQuizSubmissionByIDRow) *model.
 	})
 }
 
-func convertGetQuizSubmissionByIDForUpdateRow(row *sqlc.GetQuizSubmissionByIDForUpdateRow) *model.QuizSubmission {
-	return convertSubmissionRowToModel(quizSubmissionRow{
-		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
-		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
-		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
-		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
-	})
-}
-
-func convertGetActiveSubmissionByUserAndQuizRow(row *sqlc.GetActiveSubmissionByUserAndQuizRow) *model.QuizSubmission {
-	return convertSubmissionRowToModel(quizSubmissionRow{
-		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
-		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
-		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
-		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
-	})
-}
-
-func convertGetQuizSubmissionsByIDsRow(row *sqlc.GetQuizSubmissionsByIDsRow) *model.QuizSubmission {
-	return convertSubmissionRowToModel(quizSubmissionRow{
-		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
-		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
-		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
-		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
-	})
-}
-
-func convertGetQuizSubmissionsByQuizIDRow(row *sqlc.GetQuizSubmissionsByQuizIDRow) *model.QuizSubmission {
-	return convertSubmissionRowToModel(quizSubmissionRow{
-		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
-		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
-		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
-		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
-	})
-}
-
-func convertGetQuizSubmissionsByUserAndQuizRow(row *sqlc.GetQuizSubmissionsByUserAndQuizRow) *model.QuizSubmission {
-	return convertSubmissionRowToModel(quizSubmissionRow{
-		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
-		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
-		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
-		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
-	})
-}
-
-func convertGetQuizSubmissionsByUserIDRow(row *sqlc.GetQuizSubmissionsByUserIDRow) *model.QuizSubmission {
-	return convertSubmissionRowToModel(quizSubmissionRow{
-		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
-		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
-		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
-		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
-	})
-}
-
-func convertGetQuizSubmissionsByUserIDsRow(row *sqlc.GetQuizSubmissionsByUserIDsRow) *model.QuizSubmission {
-	return convertSubmissionRowToModel(quizSubmissionRow{
-		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
-		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
-		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
-		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
-	})
-}
-
 func convertGetQuizSubmissionsFilteredCursorRow(row *sqlc.GetQuizSubmissionsFilteredCursorRow) *model.QuizSubmission {
-	return convertSubmissionRowToModel(quizSubmissionRow{
-		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
-		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
-		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
-		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
-	})
-}
-
-func convertGetCompletedSubmissionsByUserAndQuizRow(row *sqlc.GetCompletedSubmissionsByUserAndQuizRow) *model.QuizSubmission {
 	return convertSubmissionRowToModel(quizSubmissionRow{
 		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
 		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
@@ -650,24 +509,6 @@ func convertToJsonResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime,
 }
 
 func convertGetSubmissionByUserAndSessionRow(row *sqlc.GetSubmissionByUserAndSessionRow) *model.QuizSubmission {
-	return convertSubmissionRowToModel(quizSubmissionRow{
-		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
-		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
-		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
-		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
-	})
-}
-
-func convertGetActiveSubmissionsBySessionIDRow(row *sqlc.GetActiveSubmissionsBySessionIDRow) *model.QuizSubmission {
-	return convertSubmissionRowToModel(quizSubmissionRow{
-		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
-		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
-		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
-		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
-	})
-}
-
-func convertGetSubmissionsBySessionIDRow(row *sqlc.GetSubmissionsBySessionIDRow) *model.QuizSubmission {
 	return convertSubmissionRowToModel(quizSubmissionRow{
 		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
 		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,

@@ -11,7 +11,7 @@ import (
 
 // isAchievementAwardable checks if an achievement can be awarded based on awardable_from timestamp.
 func isAchievementAwardable(awardableFrom *scalars.DateTime) error {
-	if awardableFrom != nil && awardableFrom.Time.After(time.Now()) {
+	if awardableFrom != nil && awardableFrom.After(time.Now()) {
 		return fmt.Errorf("achievement is not yet available for awarding")
 	}
 	return nil

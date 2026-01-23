@@ -188,7 +188,7 @@ func TestCacheWithRegistry_LeaderboardInvalidation(t *testing.T) {
 	cache.Set(key3, []byte("data3"))
 
 	// Wait for cache to process
-	cache.Cache.cache.Wait()
+	cache.cache.Wait()
 
 	// Verify all keys are set
 	_, found1 := cache.Get(key1)
@@ -200,7 +200,7 @@ func TestCacheWithRegistry_LeaderboardInvalidation(t *testing.T) {
 
 	// Invalidate only PROJ123 leaderboards using the prefix pattern
 	cache.DeletePrefix("leaderboard:full:project:PROJ123")
-	cache.Cache.cache.Wait()
+	cache.cache.Wait()
 
 	// Verify PROJ123 keys are deleted, but PROJ456 remains
 	_, found1 = cache.Get(key1)
