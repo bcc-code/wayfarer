@@ -25,8 +25,11 @@
     "questionNumber": "{current} {total}-st",
     "continue": "Jätka",
     "nextQuestion": "Järgmine küsimus",
+    "previousQuestion": "Eelmine",
     "done": "Valmis",
     "unavailable": "See küsimustik pole hetkel saadaval.",
+    "reviewAnswers": "Vaata vastust",
+    "finishReview": "Lõpetada läbivaatamine",
     "result": {
       "receivedNoPoints": "Sa ei saanud ühtegi punkti.",
       "receivedPoints": "Sa kogusid {points} punkti.",
