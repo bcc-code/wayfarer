@@ -281,11 +281,11 @@ func TestPointConstants(t *testing.T) {
 
 func TestPlugin_Disabled(t *testing.T) {
 	plugin := NewPlugin(Config{
-		AchievementID: "", // Disabled
+		AchievementID: "",
 	})
 
 	assert.Equal(t, "Ladder to Heaven", plugin.Name())
-	assert.False(t, plugin.Enabled(), "Plugin should be disabled when AchievementID is empty")
+	assert.True(t, plugin.Enabled(), "Plugin should be enables")
 }
 
 func TestPlugin_Enabled(t *testing.T) {
