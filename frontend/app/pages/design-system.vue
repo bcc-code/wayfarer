@@ -47,13 +47,13 @@ function simulateLoading() {
   <div class="min-h-screen bg-background-default text-text-default">
     <div class="max-w-2xl mx-auto p-6 space-y-8">
       <header class="space-y-2">
-        <h1 class="text-heading-1">Design System</h1>
+        <h1 class="text-hero">Design System</h1>
         <p class="text-text-muted">Component library showcase</p>
       </header>
 
       <!-- Form Controls -->
-      <section class="space-y-6">
-        <h2 class="text-heading-2 border-b border-border-default pb-2">
+      <section class="space-y-12">
+        <h2 class="text-heading border-b border-border-default pb-2">
           Form Controls
         </h2>
 
@@ -176,8 +176,8 @@ function simulateLoading() {
       </section>
 
       <!-- Layout/Container -->
-      <section class="space-y-6">
-        <h2 class="text-heading-2 border-b border-border-default pb-2">
+      <section class="space-y-12">
+        <h2 class="text-heading border-b border-border-default pb-2">
           Layout / Container
         </h2>
 
