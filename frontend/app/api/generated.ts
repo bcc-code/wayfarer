@@ -3592,7 +3592,7 @@ export type MyChurchUnitsPageQueryVariables = Exact<{
 }>;
 
 
-export type MyChurchUnitsPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, name: string, age?: number | null, gender: Gender, teams: Array<{ __typename?: 'Team', id: string, name: string }> } }> }, myCurrentProject: { __typename?: 'Project', id: string, name: string, myChurchTeams: Array<{ __typename?: 'Team', id: string, name: string, leaderboardExcluded: boolean, averageAge?: number | null, members: Array<{ __typename?: 'TeamMember', id: string, name: string, isTeamLead: boolean, user: { __typename?: 'User', id: string, age?: number | null, gender: Gender } }> }> } };
+export type MyChurchUnitsPageQuery = { __typename?: 'Query', users: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, name: string, age?: number | null, gender: Gender, teams: Array<{ __typename?: 'Team', id: string, name: string }> } }> }, myCurrentProject: { __typename?: 'Project', id: string, name: string, myChurchTeams: Array<{ __typename?: 'Team', id: string, name: string, leaderboardExcluded: boolean, averageAge?: number | null, joinCode: string, members: Array<{ __typename?: 'TeamMember', id: string, name: string, isTeamLead: boolean, user: { __typename?: 'User', id: string, age?: number | null, gender: Gender } }> }> } };
 
 export type AdminProjectAchievementPageQueryVariables = Exact<{
   achievementId: Scalars['ID']['input'];
@@ -5231,6 +5231,7 @@ export const MyChurchUnitsPageDocument = gql`
       name
       leaderboardExcluded
       averageAge
+      joinCode
       members {
         id
         name

@@ -1048,11 +1048,13 @@ func (r *queryResolver) Teams(ctx context.Context, filter *model.TeamFilter, fir
 		}
 
 		modelTeams[i] = model.Team{
-			ID:          row.ID,
-			ProjectID:   row.ProjectID,
-			Name:        row.Name,
-			Description: description,
-			SuperTeamID: superTeamID,
+			ID:                  row.ID,
+			ProjectID:           row.ProjectID,
+			Name:                row.Name,
+			Description:         description,
+			SuperTeamID:         superTeamID,
+			JoinCode:            row.JoinCode,
+			LeaderboardExcluded: row.LeaderboardExcluded,
 		}
 	}
 

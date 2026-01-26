@@ -598,6 +598,7 @@ func (r *projectResolver) MyChurchTeams(ctx context.Context, obj *model.Project)
 			ProjectID:           row.ProjectID,
 			Name:                row.Name,
 			Description:         description,
+			JoinCode:            row.JoinCode,
 			SuperTeamID:         row.SuperTeamID,
 			LeaderboardExcluded: row.LeaderboardExcluded,
 		}

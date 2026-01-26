@@ -41,6 +41,7 @@ const props = defineProps<{
     name: string
     leaderboardExcluded?: boolean
     averageAge?: number | null
+    joinCode?: string
     members: {
       id: string
       name: string
@@ -214,6 +215,9 @@ function handleDrop(event: SortableEvent) {
               unit.members.length,
             )
           }}
+        </UBadge>
+        <UBadge v-if="unit.joinCode" variant="subtle" color="neutral">
+          {{ unit.joinCode }}
         </UBadge>
         <UButton
           icon="lucide:trash-2"

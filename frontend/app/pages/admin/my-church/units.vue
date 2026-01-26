@@ -32,6 +32,7 @@ gql(`
         name
         leaderboardExcluded
         averageAge
+        joinCode
         members {
           id
           name
