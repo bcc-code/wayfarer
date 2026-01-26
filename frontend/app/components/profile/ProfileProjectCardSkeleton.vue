@@ -26,7 +26,7 @@
           <DesignSkeleton class="h-12 w-full rounded-button-medium!" />
           <DesignSkeleton class="h-12 w-full rounded-button-medium!" />
         </div>
-        <DesignSkeleton class="h-12 w-full rounded-button-medium!" />
+        <DesignSkeleton class="h-13 w-full rounded-button-medium!" />
       </div>
       <!-- Achievement badges -->
       <div class="p-medium gap-medium grid grid-cols-4">
