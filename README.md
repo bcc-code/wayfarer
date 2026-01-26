@@ -3,4 +3,6 @@
 	<img alt="Interact logo" width="200" src="./frontend/public/images/logo/logo.svg" style="margin-bottom: 1rem">
 </picture>
 
+# Interact
+
 Initially created for the "Ladder to Heaven" biblestudy project leading up to Easter Camp 2026.
