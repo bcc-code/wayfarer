@@ -138,6 +138,8 @@ export default defineNuxtConfig({
         'firebase/app',
         'firebase/auth',
         'firebase/firestore',
+        '@zag-js/vue',
+        '@zag-js/slider',
       ],
     },
   },
