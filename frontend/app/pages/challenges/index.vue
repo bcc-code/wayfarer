@@ -1,7 +1,12 @@
 <script setup lang="ts">
 const { isAuthReady } = useAuthReady()
 
-const { data, fetching, error, executeQuery: refresh } = useChallengesPageQuery({
+const {
+  data,
+  fetching,
+  error,
+  executeQuery: refresh,
+} = useChallengesPageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 

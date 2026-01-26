@@ -297,6 +297,7 @@ func convertCreateChallengeRowToChallenge(row *sqlc.CreateChallengeRow) model.Ch
 		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		PluginChallengeID:           row.PluginChallengeID,
 		CreatedAt:                   row.CreatedAt,
 		UpdatedAt:                   row.UpdatedAt,
 	})
@@ -320,6 +321,7 @@ func convertUpdateChallengeRowToChallenge(row *sqlc.UpdateChallengeRow) model.Ch
 		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		PluginChallengeID:           row.PluginChallengeID,
 		CreatedAt:                   row.CreatedAt,
 		UpdatedAt:                   row.UpdatedAt,
 	})
@@ -343,6 +345,7 @@ func convertPublishChallengeRowToChallenge(row *sqlc.PublishChallengeRow) model.
 		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		PluginChallengeID:           row.PluginChallengeID,
 		CreatedAt:                   row.CreatedAt,
 		UpdatedAt:                   row.UpdatedAt,
 	})
@@ -366,6 +369,7 @@ func convertAssignChallengeToEventRowToChallenge(row *sqlc.AssignChallengeToEven
 		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		PluginChallengeID:           row.PluginChallengeID,
 		CreatedAt:                   row.CreatedAt,
 		UpdatedAt:                   row.UpdatedAt,
 	})
@@ -389,6 +393,7 @@ func convertBulkPublishChallengesRowToChallenge(row *sqlc.BulkPublishChallengesR
 		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		PluginChallengeID:           row.PluginChallengeID,
 		CreatedAt:                   row.CreatedAt,
 		UpdatedAt:                   row.UpdatedAt,
 	})
@@ -412,6 +417,7 @@ func convertGetChallengesFilteredCursorRowToChallenge(row *sqlc.GetChallengesFil
 		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		PluginChallengeID:           row.PluginChallengeID,
 		CreatedAt:                   row.CreatedAt,
 		UpdatedAt:                   row.UpdatedAt,
 	})
@@ -435,6 +441,7 @@ func convertUpdateChallengeTimestampsRowToChallenge(row *sqlc.UpdateChallengeTim
 		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		PluginChallengeID:           row.PluginChallengeID,
 		CreatedAt:                   row.CreatedAt,
 		UpdatedAt:                   row.UpdatedAt,
 	})
@@ -458,6 +465,7 @@ func convertUpdateChallengeRequirementsRowToChallenge(row *sqlc.UpdateChallengeR
 		AllowSelfCompletion:         row.AllowSelfCompletion,
 		RequiresTeamMembership:      row.RequiresTeamMembership,
 		RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		PluginChallengeID:           row.PluginChallengeID,
 		CreatedAt:                   row.CreatedAt,
 		UpdatedAt:                   row.UpdatedAt,
 	})

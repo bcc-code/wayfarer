@@ -279,7 +279,9 @@ async function handleReorder() {
                     ? 'Ekstern'
                     : row.original.__typename === 'QuizChallenge'
                       ? 'Quiz'
-                      : 'Enkel'
+                      : row.original.__typename === 'PluginChallenge'
+                        ? 'Plugin'
+                        : 'Enkel'
                 }}
               </template>
               <template #actions-cell="{ row }">

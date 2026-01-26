@@ -25,8 +25,11 @@
     "questionNumber": "{current} von {total}",
     "continue": "Weiter",
     "nextQuestion": "Nächste Frage",
+    "previousQuestion": "Vorherige",
     "done": "Fertig",
     "unavailable": "Dieses Quiz ist im Moment nicht verfügbar.",
+    "reviewAnswers": "Antwort anzeigen",
+    "finishReview": "Überprüfung beenden",
     "result": {
       "receivedNoPoints": "Du hast keine Punkte gesammelt.",
       "receivedPoints": "Du hast {points} Punkte gesammelt.",

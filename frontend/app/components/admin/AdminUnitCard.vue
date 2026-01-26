@@ -41,6 +41,7 @@ const props = defineProps<{
     name: string
     leaderboardExcluded?: boolean
     averageAge?: number | null
+    joinCode?: string
     members: {
       id: string
       name: string
@@ -65,21 +66,20 @@ const emit = defineEmits<{
   dropMember: [user: DraggableUser, teamId: string, teamName: string]
   assignLeader: [userId: string, teamId: string]
   renameUnit: [unitId: string, newName: string]
+  'update:expanded': [expanded: boolean]
 }>()
 
-const isOpen = ref(false)
+const isOpen = ref(props.expandAll)
 
-// When expandAll changes to false, collapse this card
+// When expandAll changes, sync the local state
 watch(
   () => props.expandAll,
   (newValue) => {
-    if (!newValue) {
-      isOpen.value = false
-    }
+    isOpen.value = newValue
   },
 )
 
-const isExpanded = computed(() => props.expandAll || isOpen.value)
+const isExpanded = computed(() => isOpen.value)
 
 const searchValue = ref<UserItem | undefined>()
 
@@ -91,6 +91,7 @@ const nameInputRef = ref<HTMLInputElement | null>(null)
 function toggle() {
   if (isEditing.value) return
   isOpen.value = !isOpen.value
+  emit('update:expanded', isOpen.value)
 }
 
 function startEditing() {
@@ -214,6 +215,9 @@ function handleDrop(event: SortableEvent) {
               unit.members.length,
             )
           }}
+        </UBadge>
+        <UBadge v-if="unit.joinCode" variant="subtle" color="neutral">
+          {{ unit.joinCode }}
         </UBadge>
         <UButton
           icon="lucide:trash-2"

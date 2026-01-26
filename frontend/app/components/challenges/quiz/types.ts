@@ -1,4 +1,7 @@
-import type { ChallengePageQuery, SubmitQuizAnswerMutation } from '~/api/generated'
+import type {
+  ChallengePageQuery,
+  SubmitQuizAnswerMutation,
+} from '~/api/generated'
 
 export type QuizChallengeData = Extract<
   ChallengePageQuery['challenge'],

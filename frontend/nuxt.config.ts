@@ -138,6 +138,8 @@ export default defineNuxtConfig({
         'firebase/app',
         'firebase/auth',
         'firebase/firestore',
+        '@zag-js/vue',
+        '@zag-js/slider',
       ],
     },
   },
@@ -255,7 +257,7 @@ export default defineNuxtConfig({
       {
         name: '中文(简体)',
         code: 'zh-CN',
-        file: 'zn_cn.json',
+        file: 'zh_cn.json',
       },
       // {
       //   name: '中文(香港)',

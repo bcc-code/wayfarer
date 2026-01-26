@@ -15,6 +15,7 @@ const props = defineProps<{
     visibleAt?: string
     startedAt?: string
     allowSelfCompletion?: boolean
+    pluginChallengeId?: string
   }
   quizData?: QuizFormData
   projectId?: string
@@ -34,26 +35,47 @@ export interface ChallengeFormData {
   description?: string
   image?: string
   url?: string
-  buttonText: string
+  buttonText?: string
   endTime?: string
   visibleAt?: string
   startedAt?: string
   allowSelfCompletion?: boolean
+  pluginChallengeId?: string
   quiz?: QuizFormData
 }
 
-const schema = z.object({
-  type: z.nativeEnum(ChallengeType),
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().optional(),
-  image: z.string().optional(),
-  url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  buttonText: z.string().min(1, 'Button text is required'),
-  endTime: z.string().optional(),
-  visibleAt: z.string().optional(),
-  startedAt: z.string().optional(),
-  allowSelfCompletion: z.boolean().optional(),
-})
+const schema = z
+  .object({
+    type: z.nativeEnum(ChallengeType),
+    name: z.string().min(1, 'Name is required'),
+    description: z.string().optional(),
+    image: z.string().optional(),
+    url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+    buttonText: z.string().optional(),
+    endTime: z.string().optional(),
+    visibleAt: z.string().optional(),
+    startedAt: z.string().optional(),
+    allowSelfCompletion: z.boolean().optional(),
+    pluginChallengeId: z.string().optional(),
+  })
+  .refine(
+    (data) =>
+      data.type === ChallengeType.Plugin ||
+      (data.buttonText && data.buttonText.length > 0),
+    {
+      message: 'Button text is required',
+      path: ['buttonText'],
+    },
+  )
+  .refine(
+    (data) =>
+      data.type !== ChallengeType.Plugin ||
+      (data.pluginChallengeId && data.pluginChallengeId.length > 0),
+    {
+      message: 'Plugin Challenge ID is required',
+      path: ['pluginChallengeId'],
+    },
+  )
 
 type Schema = z.infer<typeof schema>
 
@@ -68,6 +90,7 @@ const state = reactive<Schema>({
   visibleAt: props.initialData?.visibleAt,
   startedAt: props.initialData?.startedAt,
   allowSelfCompletion: props.initialData?.allowSelfCompletion ?? false,
+  pluginChallengeId: props.initialData?.pluginChallengeId,
 })
 
 const quizFormData = ref<QuizFormData | undefined>(props.quizData)
@@ -87,6 +110,7 @@ watch(
       state.visibleAt = data.visibleAt
       state.startedAt = data.startedAt
       state.allowSelfCompletion = data.allowSelfCompletion ?? false
+      state.pluginChallengeId = data.pluginChallengeId
     }
   },
   { once: true },
@@ -106,6 +130,7 @@ const challengeTypeOptions = [
   { value: ChallengeType.Simple, label: 'Enkel' },
   { value: ChallengeType.External, label: 'Ekstern' },
   { value: ChallengeType.Quiz, label: 'Quiz' },
+  { value: ChallengeType.Plugin, label: 'Plugin' },
 ]
 
 function handleQuizSave(data: QuizFormData) {
@@ -173,11 +198,30 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             label="Tillat brukere å markere denne utfordringen som fullført"
           />
         </UFormField>
-        <UFormField name="buttonText" label="Knappetekst">
+        <UFormField
+          v-if="state.type === ChallengeType.Plugin"
+          name="pluginChallengeId"
+          label="Plugin Challenge ID"
+          help="Unik identifikator for plugin-utfordringen"
+        >
+          <UInput
+            v-model="state.pluginChallengeId"
+            size="xl"
+            required
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField
+          name="buttonText"
+          label="Knappetekst"
+          :hint="
+            state.type === ChallengeType.Plugin ? '(valgfritt)' : undefined
+          "
+        >
           <UInput
             v-model="state.buttonText"
             size="xl"
-            required
+            :required="state.type !== ChallengeType.Plugin"
             class="w-full"
           />
         </UFormField>
