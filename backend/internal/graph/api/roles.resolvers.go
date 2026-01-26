@@ -154,14 +154,22 @@ func (r *queryResolver) UserRoles(ctx context.Context, userID string) ([]model.U
 
 // UsersWithRole is the resolver for the usersWithRole field.
 func (r *queryResolver) UsersWithRole(ctx context.Context, role model.RoleType, scopeType *model.ScopeType, scopeID *string) ([]model.User, error) {
-	// Check admin authorization
+	// Check authorization
 	currentUserID, ok := middleware.GetUserID(ctx)
 	if !ok || currentUserID == "" {
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
+	// Admin/superadmin can query any scope
 	if !r.RoleService.IsAdmin(ctx, currentUserID) {
-		return nil, fmt.Errorf("permission denied: admin role required")
+		// Church admins can query users with roles in their own church
+		if scopeType != nil && *scopeType == model.ScopeTypeChurch && scopeID != nil {
+			if !r.RoleService.CanManageChurch(ctx, currentUserID, *scopeID) {
+				return nil, fmt.Errorf("permission denied: admin role required")
+			}
+		} else {
+			return nil, fmt.Errorf("permission denied: admin role required")
+		}
 	}
 
 	var users []model.User
