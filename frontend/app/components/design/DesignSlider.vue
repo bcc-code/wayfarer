@@ -20,7 +20,7 @@ const service = useMachine(slider.machine, {
   step: props.step,
   onValueChange({ value }) {
     const v = value[0]
-    if (v) {
+    if (v !== undefined) {
       modelValue.value = v
     }
   },
