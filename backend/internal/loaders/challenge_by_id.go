@@ -17,6 +17,7 @@ const (
 	ChallengeTypeSimple   = "SIMPLE"
 	ChallengeTypeQuiz     = "QUIZ"
 	ChallengeTypeExternal = "EXTERNAL"
+	ChallengeTypePlugin   = "PLUGIN"
 )
 
 // challengeByIDBatchFunc batches loading challenges by IDs
@@ -122,6 +123,31 @@ func convertRowToChallenge(row *sqlc.GetChallengesByIDsRow) model.Challenge {
 			Image:                       row.ImageUrl,
 			URL:                         url,
 			ButtonText:                  row.ButtonText,
+			ProjectID:                   row.ProjectID,
+			EventID:                     row.EventID,
+			PublishedAt:                 publishedAt,
+			VisibleAt:                   visibleAt,
+			StartedAt:                   startedAt,
+			EndTime:                     endTime,
+			RequiresTeamMembership:      row.RequiresTeamMembership,
+			RequiresSuperTeamMembership: row.RequiresSuperTeamMembership,
+		}
+	case ChallengeTypePlugin:
+		pluginChallengeID := ""
+		if row.PluginChallengeID != nil {
+			pluginChallengeID = *row.PluginChallengeID
+		}
+		var buttonText *string
+		if row.ButtonText != "" {
+			buttonText = &row.ButtonText
+		}
+		return &model.PluginChallenge{
+			ID:                          row.ID,
+			Name:                        row.Name,
+			Description:                 scalars.HTML(row.Description),
+			Image:                       row.ImageUrl,
+			PluginChallengeID:           pluginChallengeID,
+			ButtonText:                  buttonText,
 			ProjectID:                   row.ProjectID,
 			EventID:                     row.EventID,
 			PublishedAt:                 publishedAt,

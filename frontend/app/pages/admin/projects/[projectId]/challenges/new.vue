@@ -105,7 +105,8 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
 }
 
 async function handleSubmit(formData: ChallengeFormData) {
-  const { type, allowSelfCompletion, url, quiz, ...rest } = formData
+  const { type, allowSelfCompletion, url, quiz, pluginChallengeId, ...rest } =
+    formData
 
   // Only include type-specific fields
   const input = {
@@ -113,6 +114,7 @@ async function handleSubmit(formData: ChallengeFormData) {
     type,
     ...(type === ChallengeType.Simple && { allowSelfCompletion }),
     ...(type === ChallengeType.External && { url }),
+    ...(type === ChallengeType.Plugin && { pluginChallengeId }),
   }
 
   const response = await executeMutation({

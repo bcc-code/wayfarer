@@ -53,6 +53,9 @@ gql(`
           }
         }
       }
+      ... on PluginChallenge {
+        pluginChallengeId
+      }
     }
   }
 `)
@@ -82,6 +85,8 @@ function getChallengeType(typename: string): ChallengeType {
       return ChallengeType.External
     case 'QuizChallenge':
       return ChallengeType.Quiz
+    case 'PluginChallenge':
+      return ChallengeType.Plugin
     default:
       return ChallengeType.Simple
   }
@@ -115,6 +120,8 @@ const initialData = computed(() => {
     startedAt: toLocalDatetimeLocal(c.startedAt),
     allowSelfCompletion:
       c.__typename === 'SimpleChallenge' ? c.allowSelfCompletion : undefined,
+    pluginChallengeId:
+      c.__typename === 'PluginChallenge' ? c.pluginChallengeId : undefined,
   }
 })
 
@@ -306,6 +313,7 @@ async function handleSubmit(formData: ChallengeFormData) {
     endTime,
     visibleAt,
     startedAt,
+    pluginChallengeId,
     ...rest
   } = formData
 
@@ -317,6 +325,7 @@ async function handleSubmit(formData: ChallengeFormData) {
     startedAt: toISOString(startedAt),
     ...(type === ChallengeType.Simple && { allowSelfCompletion }),
     ...(type === ChallengeType.External && { url }),
+    ...(type === ChallengeType.Plugin && { pluginChallengeId }),
   }
 
   const response = await executeMutation({
