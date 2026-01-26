@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_jeNj4qwcQN
 createdAt: 2025-12-08T08:28:18.920390
-updatedAt: 2026-01-22T19:36:02.313781
+updatedAt: 2026-01-26T14:24:00.818977
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_U4FqjQ2Ma5
 authentication: {}
@@ -40,6 +40,10 @@ body:
             completionPoints
             endTime
             userCanStart
+            sessions{
+              id
+              state
+            }
             userSubmissions {
               id
               startedAt

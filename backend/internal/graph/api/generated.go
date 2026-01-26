@@ -55,6 +55,8 @@ type ResolverRoot interface {
 	Mutation() MutationResolver
 	NumberQuestion() NumberQuestionResolver
 	NumberResponse() NumberResponseResolver
+	OrderingQuestion() OrderingQuestionResolver
+	OrderingResponse() OrderingResponseResolver
 	PluginChallenge() PluginChallengeResolver
 	PredefinedQuestion() PredefinedQuestionResolver
 	PredefinedResponse() PredefinedResponseResolver
@@ -63,6 +65,7 @@ type ResolverRoot interface {
 	Quiz() QuizResolver
 	QuizAchievement() QuizAchievementResolver
 	QuizChallenge() QuizChallengeResolver
+	QuizOrderingItem() QuizOrderingItemResolver
 	QuizPredefinedAnswer() QuizPredefinedAnswerResolver
 	QuizSession() QuizSessionResolver
 	QuizSubmission() QuizSubmissionResolver
@@ -545,6 +548,27 @@ type ComplexityRoot struct {
 		TimeSpentSeconds func(childComplexity int) int
 	}
 
+	OrderingQuestion struct {
+		ID             func(childComplexity int) int
+		OrderingItems  func(childComplexity int) int
+		Points         func(childComplexity int) int
+		QuestionOrder  func(childComplexity int) int
+		QuestionText   func(childComplexity int) int
+		Quiz           func(childComplexity int) int
+		TimeoutSeconds func(childComplexity int) int
+	}
+
+	OrderingResponse struct {
+		AnsweredAt       func(childComplexity int) int
+		ID               func(childComplexity int) int
+		IsCorrect        func(childComplexity int) int
+		PointsEarned     func(childComplexity int) int
+		Question         func(childComplexity int) int
+		Submission       func(childComplexity int) int
+		SubmittedOrder   func(childComplexity int) int
+		TimeSpentSeconds func(childComplexity int) int
+	}
+
 	PageInfo struct {
 		EndCursor       func(childComplexity int) int
 		HasNextPage     func(childComplexity int) int
@@ -768,6 +792,12 @@ type ComplexityRoot struct {
 	QuizEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
+	}
+
+	QuizOrderingItem struct {
+		ID       func(childComplexity int) int
+		ItemText func(childComplexity int) int
+		Question func(childComplexity int) int
 	}
 
 	QuizPredefinedAnswer struct {
@@ -1298,6 +1328,15 @@ type NumberResponseResolver interface {
 	Submission(ctx context.Context, obj *model.NumberResponse) (*model.QuizSubmission, error)
 	Question(ctx context.Context, obj *model.NumberResponse) (model.QuizQuestion, error)
 }
+type OrderingQuestionResolver interface {
+	Quiz(ctx context.Context, obj *model.OrderingQuestion) (*model.Quiz, error)
+
+	OrderingItems(ctx context.Context, obj *model.OrderingQuestion) ([]model.QuizOrderingItem, error)
+}
+type OrderingResponseResolver interface {
+	Submission(ctx context.Context, obj *model.OrderingResponse) (*model.QuizSubmission, error)
+	Question(ctx context.Context, obj *model.OrderingResponse) (model.QuizQuestion, error)
+}
 type PluginChallengeResolver interface {
 	ImageObject(ctx context.Context, obj *model.PluginChallenge) (*model.Image, error)
 	Project(ctx context.Context, obj *model.PluginChallenge) (*model.Project, error)
@@ -1418,6 +1457,9 @@ type QuizChallengeResolver interface {
 	UserCompletedAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error)
 	UserEnrolledAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error)
 	Quiz(ctx context.Context, obj *model.QuizChallenge) (*model.Quiz, error)
+}
+type QuizOrderingItemResolver interface {
+	Question(ctx context.Context, obj *model.QuizOrderingItem) (model.QuizQuestion, error)
 }
 type QuizPredefinedAnswerResolver interface {
 	Question(ctx context.Context, obj *model.QuizPredefinedAnswer) (model.QuizQuestion, error)
@@ -4184,6 +4226,98 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.NumberResponse.TimeSpentSeconds(childComplexity), true
 
+	case "OrderingQuestion.id":
+		if e.complexity.OrderingQuestion.ID == nil {
+			break
+		}
+
+		return e.complexity.OrderingQuestion.ID(childComplexity), true
+	case "OrderingQuestion.orderingItems":
+		if e.complexity.OrderingQuestion.OrderingItems == nil {
+			break
+		}
+
+		return e.complexity.OrderingQuestion.OrderingItems(childComplexity), true
+	case "OrderingQuestion.points":
+		if e.complexity.OrderingQuestion.Points == nil {
+			break
+		}
+
+		return e.complexity.OrderingQuestion.Points(childComplexity), true
+	case "OrderingQuestion.questionOrder":
+		if e.complexity.OrderingQuestion.QuestionOrder == nil {
+			break
+		}
+
+		return e.complexity.OrderingQuestion.QuestionOrder(childComplexity), true
+	case "OrderingQuestion.questionText":
+		if e.complexity.OrderingQuestion.QuestionText == nil {
+			break
+		}
+
+		return e.complexity.OrderingQuestion.QuestionText(childComplexity), true
+	case "OrderingQuestion.quiz":
+		if e.complexity.OrderingQuestion.Quiz == nil {
+			break
+		}
+
+		return e.complexity.OrderingQuestion.Quiz(childComplexity), true
+	case "OrderingQuestion.timeoutSeconds":
+		if e.complexity.OrderingQuestion.TimeoutSeconds == nil {
+			break
+		}
+
+		return e.complexity.OrderingQuestion.TimeoutSeconds(childComplexity), true
+
+	case "OrderingResponse.answeredAt":
+		if e.complexity.OrderingResponse.AnsweredAt == nil {
+			break
+		}
+
+		return e.complexity.OrderingResponse.AnsweredAt(childComplexity), true
+	case "OrderingResponse.id":
+		if e.complexity.OrderingResponse.ID == nil {
+			break
+		}
+
+		return e.complexity.OrderingResponse.ID(childComplexity), true
+	case "OrderingResponse.isCorrect":
+		if e.complexity.OrderingResponse.IsCorrect == nil {
+			break
+		}
+
+		return e.complexity.OrderingResponse.IsCorrect(childComplexity), true
+	case "OrderingResponse.pointsEarned":
+		if e.complexity.OrderingResponse.PointsEarned == nil {
+			break
+		}
+
+		return e.complexity.OrderingResponse.PointsEarned(childComplexity), true
+	case "OrderingResponse.question":
+		if e.complexity.OrderingResponse.Question == nil {
+			break
+		}
+
+		return e.complexity.OrderingResponse.Question(childComplexity), true
+	case "OrderingResponse.submission":
+		if e.complexity.OrderingResponse.Submission == nil {
+			break
+		}
+
+		return e.complexity.OrderingResponse.Submission(childComplexity), true
+	case "OrderingResponse.submittedOrder":
+		if e.complexity.OrderingResponse.SubmittedOrder == nil {
+			break
+		}
+
+		return e.complexity.OrderingResponse.SubmittedOrder(childComplexity), true
+	case "OrderingResponse.timeSpentSeconds":
+		if e.complexity.OrderingResponse.TimeSpentSeconds == nil {
+			break
+		}
+
+		return e.complexity.OrderingResponse.TimeSpentSeconds(childComplexity), true
+
 	case "PageInfo.endCursor":
 		if e.complexity.PageInfo.EndCursor == nil {
 			break
@@ -5478,6 +5612,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizEdge.Node(childComplexity), true
+
+	case "QuizOrderingItem.id":
+		if e.complexity.QuizOrderingItem.ID == nil {
+			break
+		}
+
+		return e.complexity.QuizOrderingItem.ID(childComplexity), true
+	case "QuizOrderingItem.itemText":
+		if e.complexity.QuizOrderingItem.ItemText == nil {
+			break
+		}
+
+		return e.complexity.QuizOrderingItem.ItemText(childComplexity), true
+	case "QuizOrderingItem.question":
+		if e.complexity.QuizOrderingItem.Question == nil {
+			break
+		}
+
+		return e.complexity.QuizOrderingItem.Question(childComplexity), true
 
 	case "QuizPredefinedAnswer.answerOrder":
 		if e.complexity.QuizPredefinedAnswer.AnswerOrder == nil {
@@ -6972,6 +7125,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateContentAchievementFromExternalContentInput,
 		ec.unmarshalInputCreateContentAchievementInput,
 		ec.unmarshalInputCreateEventInput,
+		ec.unmarshalInputCreateOrderingItemInput,
 		ec.unmarshalInputCreatePredefinedAnswerInput,
 		ec.unmarshalInputCreateProjectInput,
 		ec.unmarshalInputCreateQuizAchievementInput,
@@ -8668,6 +8822,7 @@ enum QuizQuestionType {
     FREE_TEXT
     NUMBER
     JSON
+    ORDERING
 }
 
 type Quiz {
@@ -8750,6 +8905,23 @@ type JsonQuestion implements QuizQuestion {
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
+}
+
+type OrderingQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
+    timeoutSeconds: Int
+    points: Int
+    orderingItems: [QuizOrderingItem!]! @goField(forceResolver: true)
+}
+
+type QuizOrderingItem {
+    id: ID!
+    question: QuizQuestion! @goField(forceResolver: true)
+    itemText: String!
+    # correctOrder intentionally NOT exposed to prevent cheating
 }
 
 type QuizPredefinedAnswer {
@@ -8836,6 +9008,17 @@ type JsonResponse implements QuizResponse {
     jsonResponse: JSON!
 }
 
+type OrderingResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    pointsEarned: Int
+    submittedOrder: [ID!]!
+    isCorrect: Boolean
+}
+
 # ==================== Quiz Input Types ====================
 
 input CreateQuizInput {
@@ -8883,12 +9066,19 @@ input CreateQuizQuestionInput {
     minValue: Float
     maxValue: Float
     stepValue: Float
+
+    orderingItems: [CreateOrderingItemInput!]
 }
 
 input CreatePredefinedAnswerInput {
     answerText: String!
     isCorrect: Boolean!
     answerOrder: Int!
+}
+
+input CreateOrderingItemInput {
+    itemText: String!
+    correctOrder: Int!
 }
 
 input UpdateQuizQuestionInput {
@@ -8903,6 +9093,8 @@ input UpdateQuizQuestionInput {
     minValue: Float
     maxValue: Float
     stepValue: Float
+
+    orderingItems: [CreateOrderingItemInput!]
 }
 
 input SubmitQuizAnswerInput {
@@ -8912,6 +9104,7 @@ input SubmitQuizAnswerInput {
     textResponse: String
     numberResponse: Float
     jsonResponse: JSON
+    submittedOrder: [ID!]
 
     timeSpentSeconds: Int
 }
@@ -27436,6 +27629,525 @@ func (ec *executionContext) fieldContext_NumberResponse_numberResponse(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _OrderingQuestion_id(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingQuestion_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingQuestion_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingQuestion_quiz(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingQuestion_quiz,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.OrderingQuestion().Quiz(ctx, obj)
+		},
+		nil,
+		ec.marshalNQuiz2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuiz,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingQuestion_quiz(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Quiz_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Quiz_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Quiz_description(ctx, field)
+			case "image":
+				return ec.fieldContext_Quiz_image(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_Quiz_imageObject(ctx, field)
+			case "project":
+				return ec.fieldContext_Quiz_project(ctx, field)
+			case "challenge":
+				return ec.fieldContext_Quiz_challenge(ctx, field)
+			case "timeoutSeconds":
+				return ec.fieldContext_Quiz_timeoutSeconds(ctx, field)
+			case "randomizeQuestions":
+				return ec.fieldContext_Quiz_randomizeQuestions(ctx, field)
+			case "revealCorrectAnswers":
+				return ec.fieldContext_Quiz_revealCorrectAnswers(ctx, field)
+			case "allowRetakes":
+				return ec.fieldContext_Quiz_allowRetakes(ctx, field)
+			case "completionPoints":
+				return ec.fieldContext_Quiz_completionPoints(ctx, field)
+			case "questions":
+				return ec.fieldContext_Quiz_questions(ctx, field)
+			case "endTime":
+				return ec.fieldContext_Quiz_endTime(ctx, field)
+			case "userSubmissions":
+				return ec.fieldContext_Quiz_userSubmissions(ctx, field)
+			case "userCanStart":
+				return ec.fieldContext_Quiz_userCanStart(ctx, field)
+			case "userActiveSubmission":
+				return ec.fieldContext_Quiz_userActiveSubmission(ctx, field)
+			case "sessions":
+				return ec.fieldContext_Quiz_sessions(ctx, field)
+			case "userSessions":
+				return ec.fieldContext_Quiz_userSessions(ctx, field)
+			case "userActiveSession":
+				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingQuestion_questionText(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingQuestion_questionText,
+		func(ctx context.Context) (any, error) {
+			return obj.QuestionText, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingQuestion_questionText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingQuestion_questionOrder(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingQuestion_questionOrder,
+		func(ctx context.Context) (any, error) {
+			return obj.QuestionOrder, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingQuestion_questionOrder(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingQuestion_timeoutSeconds(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingQuestion_timeoutSeconds,
+		func(ctx context.Context) (any, error) {
+			return obj.TimeoutSeconds, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingQuestion_timeoutSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingQuestion_points(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingQuestion_points,
+		func(ctx context.Context) (any, error) {
+			return obj.Points, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingQuestion_points(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingQuestion_orderingItems(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingQuestion_orderingItems,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.OrderingQuestion().OrderingItems(ctx, obj)
+		},
+		nil,
+		ec.marshalNQuizOrderingItem2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizOrderingItemᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingQuestion_orderingItems(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingQuestion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizOrderingItem_id(ctx, field)
+			case "question":
+				return ec.fieldContext_QuizOrderingItem_question(ctx, field)
+			case "itemText":
+				return ec.fieldContext_QuizOrderingItem_itemText(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizOrderingItem", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingResponse_id(ctx context.Context, field graphql.CollectedField, obj *model.OrderingResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingResponse_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingResponse_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingResponse_submission(ctx context.Context, field graphql.CollectedField, obj *model.OrderingResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingResponse_submission,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.OrderingResponse().Submission(ctx, obj)
+		},
+		nil,
+		ec.marshalNQuizSubmission2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizSubmission,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingResponse_submission(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizSubmission_id(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizSubmission_quiz(ctx, field)
+			case "session":
+				return ec.fieldContext_QuizSubmission_session(ctx, field)
+			case "user":
+				return ec.fieldContext_QuizSubmission_user(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_QuizSubmission_startedAt(ctx, field)
+			case "completedAt":
+				return ec.fieldContext_QuizSubmission_completedAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_QuizSubmission_expiresAt(ctx, field)
+			case "isExpired":
+				return ec.fieldContext_QuizSubmission_isExpired(ctx, field)
+			case "autoSubmitted":
+				return ec.fieldContext_QuizSubmission_autoSubmitted(ctx, field)
+			case "questionOrder":
+				return ec.fieldContext_QuizSubmission_questionOrder(ctx, field)
+			case "orderedQuestions":
+				return ec.fieldContext_QuizSubmission_orderedQuestions(ctx, field)
+			case "responses":
+				return ec.fieldContext_QuizSubmission_responses(ctx, field)
+			case "score":
+				return ec.fieldContext_QuizSubmission_score(ctx, field)
+			case "maxScore":
+				return ec.fieldContext_QuizSubmission_maxScore(ctx, field)
+			case "scorePercentage":
+				return ec.fieldContext_QuizSubmission_scorePercentage(ctx, field)
+			case "pointsAwarded":
+				return ec.fieldContext_QuizSubmission_pointsAwarded(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizSubmission", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingResponse_question(ctx context.Context, field graphql.CollectedField, obj *model.OrderingResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingResponse_question,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.OrderingResponse().Question(ctx, obj)
+		},
+		nil,
+		ec.marshalNQuizQuestion2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizQuestion,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingResponse_question(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingResponse_answeredAt(ctx context.Context, field graphql.CollectedField, obj *model.OrderingResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingResponse_answeredAt,
+		func(ctx context.Context) (any, error) {
+			return obj.AnsweredAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingResponse_answeredAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingResponse_timeSpentSeconds(ctx context.Context, field graphql.CollectedField, obj *model.OrderingResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingResponse_timeSpentSeconds,
+		func(ctx context.Context) (any, error) {
+			return obj.TimeSpentSeconds, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingResponse_timeSpentSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingResponse_pointsEarned(ctx context.Context, field graphql.CollectedField, obj *model.OrderingResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingResponse_pointsEarned,
+		func(ctx context.Context) (any, error) {
+			return obj.PointsEarned, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingResponse_pointsEarned(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingResponse_submittedOrder(ctx context.Context, field graphql.CollectedField, obj *model.OrderingResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingResponse_submittedOrder,
+		func(ctx context.Context) (any, error) {
+			return obj.SubmittedOrder, nil
+		},
+		nil,
+		ec.marshalNID2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingResponse_submittedOrder(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingResponse_isCorrect(ctx context.Context, field graphql.CollectedField, obj *model.OrderingResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingResponse_isCorrect,
+		func(ctx context.Context) (any, error) {
+			return obj.IsCorrect, nil
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingResponse_isCorrect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -35211,6 +35923,93 @@ func (ec *executionContext) fieldContext_QuizEdge_node(_ context.Context, field 
 				return ec.fieldContext_Quiz_userActiveSession(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Quiz", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizOrderingItem_id(ctx context.Context, field graphql.CollectedField, obj *model.QuizOrderingItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizOrderingItem_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizOrderingItem_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizOrderingItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizOrderingItem_question(ctx context.Context, field graphql.CollectedField, obj *model.QuizOrderingItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizOrderingItem_question,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.QuizOrderingItem().Question(ctx, obj)
+		},
+		nil,
+		ec.marshalNQuizQuestion2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizQuestion,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizOrderingItem_question(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizOrderingItem",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuizOrderingItem_itemText(ctx context.Context, field graphql.CollectedField, obj *model.QuizOrderingItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizOrderingItem_itemText,
+		func(ctx context.Context) (any, error) {
+			return obj.ItemText, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizOrderingItem_itemText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizOrderingItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -45991,6 +46790,40 @@ func (ec *executionContext) unmarshalInputCreateEventInput(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateOrderingItemInput(ctx context.Context, obj any) (model.CreateOrderingItemInput, error) {
+	var it model.CreateOrderingItemInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"itemText", "correctOrder"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "itemText":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("itemText"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ItemText = data
+		case "correctOrder":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correctOrder"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrectOrder = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreatePredefinedAnswerInput(ctx context.Context, obj any) (model.CreatePredefinedAnswerInput, error) {
 	var it model.CreatePredefinedAnswerInput
 	asMap := map[string]any{}
@@ -46330,7 +47163,7 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionType", "questionText", "questionOrder", "timeoutSeconds", "points", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue"}
+	fieldsInOrder := [...]string{"questionType", "questionText", "questionOrder", "timeoutSeconds", "points", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -46407,6 +47240,13 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.StepValue = data
+		case "orderingItems":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("orderingItems"))
+			data, err := ec.unmarshalOCreateOrderingItemInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateOrderingItemInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrderingItems = data
 		}
 	}
 
@@ -48024,7 +48864,7 @@ func (ec *executionContext) unmarshalInputSubmitQuizAnswerInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionId", "selectedAnswerIds", "textResponse", "numberResponse", "jsonResponse", "timeSpentSeconds"}
+	fieldsInOrder := [...]string{"questionId", "selectedAnswerIds", "textResponse", "numberResponse", "jsonResponse", "submittedOrder", "timeSpentSeconds"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -48066,6 +48906,13 @@ func (ec *executionContext) unmarshalInputSubmitQuizAnswerInput(ctx context.Cont
 				return it, err
 			}
 			it.JSONResponse = data
+		case "submittedOrder":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("submittedOrder"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubmittedOrder = data
 		case "timeSpentSeconds":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timeSpentSeconds"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -48777,7 +49624,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionText", "questionOrder", "timeoutSeconds", "points", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue"}
+	fieldsInOrder := [...]string{"questionText", "questionOrder", "timeoutSeconds", "points", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -48847,6 +49694,13 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.StepValue = data
+		case "orderingItems":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("orderingItems"))
+			data, err := ec.unmarshalOCreateOrderingItemInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateOrderingItemInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrderingItems = data
 		}
 	}
 
@@ -49362,6 +50216,13 @@ func (ec *executionContext) _QuizQuestion(ctx context.Context, sel ast.Selection
 			return graphql.Null
 		}
 		return ec._PredefinedQuestion(ctx, sel, obj)
+	case model.OrderingQuestion:
+		return ec._OrderingQuestion(ctx, sel, &obj)
+	case *model.OrderingQuestion:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._OrderingQuestion(ctx, sel, obj)
 	case model.NumberQuestion:
 		return ec._NumberQuestion(ctx, sel, &obj)
 	case *model.NumberQuestion:
@@ -49399,6 +50260,13 @@ func (ec *executionContext) _QuizResponse(ctx context.Context, sel ast.Selection
 			return graphql.Null
 		}
 		return ec._PredefinedResponse(ctx, sel, obj)
+	case model.OrderingResponse:
+		return ec._OrderingResponse(ctx, sel, &obj)
+	case *model.OrderingResponse:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._OrderingResponse(ctx, sel, obj)
 	case model.NumberResponse:
 		return ec._NumberResponse(ctx, sel, &obj)
 	case *model.NumberResponse:
@@ -53753,6 +54621,255 @@ func (ec *executionContext) _NumberResponse(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var orderingQuestionImplementors = []string{"OrderingQuestion", "QuizQuestion"}
+
+func (ec *executionContext) _OrderingQuestion(ctx context.Context, sel ast.SelectionSet, obj *model.OrderingQuestion) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, orderingQuestionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OrderingQuestion")
+		case "id":
+			out.Values[i] = ec._OrderingQuestion_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "quiz":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OrderingQuestion_quiz(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "questionText":
+			out.Values[i] = ec._OrderingQuestion_questionText(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "questionOrder":
+			out.Values[i] = ec._OrderingQuestion_questionOrder(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "timeoutSeconds":
+			out.Values[i] = ec._OrderingQuestion_timeoutSeconds(ctx, field, obj)
+		case "points":
+			out.Values[i] = ec._OrderingQuestion_points(ctx, field, obj)
+		case "orderingItems":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OrderingQuestion_orderingItems(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var orderingResponseImplementors = []string{"OrderingResponse", "QuizResponse"}
+
+func (ec *executionContext) _OrderingResponse(ctx context.Context, sel ast.SelectionSet, obj *model.OrderingResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, orderingResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OrderingResponse")
+		case "id":
+			out.Values[i] = ec._OrderingResponse_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "submission":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OrderingResponse_submission(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "question":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OrderingResponse_question(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "answeredAt":
+			out.Values[i] = ec._OrderingResponse_answeredAt(ctx, field, obj)
+		case "timeSpentSeconds":
+			out.Values[i] = ec._OrderingResponse_timeSpentSeconds(ctx, field, obj)
+		case "pointsEarned":
+			out.Values[i] = ec._OrderingResponse_pointsEarned(ctx, field, obj)
+		case "submittedOrder":
+			out.Values[i] = ec._OrderingResponse_submittedOrder(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "isCorrect":
+			out.Values[i] = ec._OrderingResponse_isCorrect(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var pageInfoImplementors = []string{"PageInfo"}
 
 func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet, obj *model.PageInfo) graphql.Marshaler {
@@ -57242,6 +58359,86 @@ func (ec *executionContext) _QuizEdge(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = ec._QuizEdge_node(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var quizOrderingItemImplementors = []string{"QuizOrderingItem"}
+
+func (ec *executionContext) _QuizOrderingItem(ctx context.Context, sel ast.SelectionSet, obj *model.QuizOrderingItem) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, quizOrderingItemImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("QuizOrderingItem")
+		case "id":
+			out.Values[i] = ec._QuizOrderingItem_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "question":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._QuizOrderingItem_question(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "itemText":
+			out.Values[i] = ec._QuizOrderingItem_itemText(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -62573,6 +63770,11 @@ func (ec *executionContext) unmarshalNCreateEventInput2githubᚗcomᚋbccᚑmedi
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNCreateOrderingItemInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateOrderingItemInput(ctx context.Context, v any) (model.CreateOrderingItemInput, error) {
+	res, err := ec.unmarshalInputCreateOrderingItemInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNCreatePredefinedAnswerInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreatePredefinedAnswerInput(ctx context.Context, v any) (model.CreatePredefinedAnswerInput, error) {
 	res, err := ec.unmarshalInputCreatePredefinedAnswerInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -63705,6 +64907,54 @@ func (ec *executionContext) marshalNQuizEdge2ᚕgithubᚗcomᚋbccᚑmediaᚋway
 				defer wg.Done()
 			}
 			ret[i] = ec.marshalNQuizEdge2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNQuizOrderingItem2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizOrderingItem(ctx context.Context, sel ast.SelectionSet, v model.QuizOrderingItem) graphql.Marshaler {
+	return ec._QuizOrderingItem(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNQuizOrderingItem2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizOrderingItemᚄ(ctx context.Context, sel ast.SelectionSet, v []model.QuizOrderingItem) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNQuizOrderingItem2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizOrderingItem(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -65748,6 +66998,24 @@ func (ec *executionContext) unmarshalOContentItemInput2ᚕgithubᚗcomᚋbccᚑm
 	for i := range vSlice {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalNContentItemInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐContentItemInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOCreateOrderingItemInput2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateOrderingItemInputᚄ(ctx context.Context, v any) ([]model.CreateOrderingItemInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.CreateOrderingItemInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNCreateOrderingItemInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐCreateOrderingItemInput(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}

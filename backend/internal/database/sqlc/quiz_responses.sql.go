@@ -26,22 +26,16 @@ func (q *Queries) CalculateSubmissionPointsFromResponses(ctx context.Context, su
 
 const CalculateSubmissionScore = `-- name: CalculateSubmissionScore :one
 SELECT
-    COUNT(*) FILTER (WHERE is_correct = true) AS score,
-    COUNT(*) FILTER (WHERE is_correct IS NOT NULL) AS max_score
+    COALESCE(SUM(points_earned), 0)::int AS score
 FROM quiz_responses
 WHERE submission_id = $1::text
 `
 
-type CalculateSubmissionScoreRow struct {
-	Score    int64 `json:"score"`
-	MaxScore int64 `json:"max_score"`
-}
-
-func (q *Queries) CalculateSubmissionScore(ctx context.Context, submissionid string) (*CalculateSubmissionScoreRow, error) {
+func (q *Queries) CalculateSubmissionScore(ctx context.Context, submissionid string) (int32, error) {
 	row := q.db.QueryRow(ctx, CalculateSubmissionScore, submissionid)
-	var i CalculateSubmissionScoreRow
-	err := row.Scan(&i.Score, &i.MaxScore)
-	return &i, err
+	var score int32
+	err := row.Scan(&score)
+	return score, err
 }
 
 const CreateQuizResponse = `-- name: CreateQuizResponse :one

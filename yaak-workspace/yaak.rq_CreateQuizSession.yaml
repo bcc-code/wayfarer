@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_CreateQuizSession
 createdAt: 2026-01-15T12:00:00
-updatedAt: 2026-01-22T19:17:28.289281
+updatedAt: 2026-01-26T14:16:56.484813
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Quizzes
 authentication: {}
@@ -27,11 +27,11 @@ body:
   variables: |
     {
       "input": {
-        "quizId": "QZ01KFJJTY1WETEW597FSEZBP1GX",
-        "name": "Polykarp Test 1",
+        "quizId": "QZ01KCKBKDX498QPVFRCSAKNSDEN",
+        "name": "TEEEEST",
         "openAt": "2025-01-21T00:00:00",
         "lockAt": null,
-        "finishAt": null
+        "finishAt": null,
       }
     }
 bodyType: graphql

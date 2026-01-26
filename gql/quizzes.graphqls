@@ -7,6 +7,7 @@ enum QuizQuestionType {
     FREE_TEXT
     NUMBER
     JSON
+    ORDERING
 }
 
 type Quiz {
@@ -89,6 +90,23 @@ type JsonQuestion implements QuizQuestion {
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
+}
+
+type OrderingQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
+    timeoutSeconds: Int
+    points: Int
+    orderingItems: [QuizOrderingItem!]! @goField(forceResolver: true)
+}
+
+type QuizOrderingItem {
+    id: ID!
+    question: QuizQuestion! @goField(forceResolver: true)
+    itemText: String!
+    # correctOrder intentionally NOT exposed to prevent cheating
 }
 
 type QuizPredefinedAnswer {
@@ -175,6 +193,17 @@ type JsonResponse implements QuizResponse {
     jsonResponse: JSON!
 }
 
+type OrderingResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    pointsEarned: Int
+    submittedOrder: [ID!]!
+    isCorrect: Boolean
+}
+
 # ==================== Quiz Input Types ====================
 
 input CreateQuizInput {
@@ -222,12 +251,19 @@ input CreateQuizQuestionInput {
     minValue: Float
     maxValue: Float
     stepValue: Float
+
+    orderingItems: [CreateOrderingItemInput!]
 }
 
 input CreatePredefinedAnswerInput {
     answerText: String!
     isCorrect: Boolean!
     answerOrder: Int!
+}
+
+input CreateOrderingItemInput {
+    itemText: String!
+    correctOrder: Int!
 }
 
 input UpdateQuizQuestionInput {
@@ -242,6 +278,8 @@ input UpdateQuizQuestionInput {
     minValue: Float
     maxValue: Float
     stepValue: Float
+
+    orderingItems: [CreateOrderingItemInput!]
 }
 
 input SubmitQuizAnswerInput {
@@ -251,6 +289,7 @@ input SubmitQuizAnswerInput {
     textResponse: String
     numberResponse: Float
     jsonResponse: JSON
+    submittedOrder: [ID!]
 
     timeSpentSeconds: Int
 }

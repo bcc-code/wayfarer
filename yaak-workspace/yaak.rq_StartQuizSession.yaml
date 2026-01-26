@@ -1,16 +1,16 @@
 type: http_request
 model: http_request
-id: rq_GetQuizSubmission
-createdAt: 2025-12-08T12:00:00
-updatedAt: 2026-01-26T12:00:27.280528
+id: rq_StartQuizSession
+createdAt: 2026-01-26T12:00:00
+updatedAt: 2026-01-26T14:18:55.129840
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Quizzes
 authentication: {}
 authenticationType: null
 body:
   query: |
-    query GetQuizSubmission($id: ID!) {
-      quizSubmission(id: $id) {
+    mutation StartQuizSession($sessionId: ID!) {
+      startQuizSession(sessionId: $sessionId) {
         id
         startedAt
         completedAt
@@ -69,17 +69,17 @@ body:
     }
   variables: |
     {
-      "id": "QS01KBZXB9XAGZZ38CRCXHDQE192"
+      "sessionId": "SN01KFJJTY1WETEW597FSEZBP1GX"
     }
 bodyType: graphql
-description: Get a quiz submission by ID
+description: Start a quiz session for the current user
 headers:
 - enabled: true
   name: Content-Type
   value: application/json
-  id: hdr_GetQuizSubmission
+  id: hdr_StartQuizSession
 method: POST
-name: Get Quiz Submission
-sortPriority: 5000.0
+name: Start Quiz Session
+sortPriority: 4150.0
 url: ${[ HOST ]}/graphql
 urlParameters: []

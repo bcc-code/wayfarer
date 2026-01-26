@@ -360,6 +360,11 @@ type CreateEventInput struct {
 	EndDate     scalars.DateTime `json:"endDate"`
 }
 
+type CreateOrderingItemInput struct {
+	ItemText     string `json:"itemText"`
+	CorrectOrder int    `json:"correctOrder"`
+}
+
 type CreatePredefinedAnswerInput struct {
 	AnswerText  string `json:"answerText"`
 	IsCorrect   bool   `json:"isCorrect"`
@@ -419,6 +424,7 @@ type CreateQuizQuestionInput struct {
 	MinValue               *float64                      `json:"minValue,omitempty"`
 	MaxValue               *float64                      `json:"maxValue,omitempty"`
 	StepValue              *float64                      `json:"stepValue,omitempty"`
+	OrderingItems          []CreateOrderingItemInput     `json:"orderingItems,omitempty"`
 }
 
 type CreateQuizSessionInput struct {
@@ -873,6 +879,46 @@ func (this NumberResponse) GetAnsweredAt() *scalars.DateTime { return this.Answe
 func (this NumberResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
 func (this NumberResponse) GetPointsEarned() *int            { return this.PointsEarned }
 
+type OrderingQuestion struct {
+	ID             string             `json:"id"`
+	Quiz           *Quiz              `json:"quiz"`
+	QuestionText   string             `json:"questionText"`
+	QuestionOrder  int                `json:"questionOrder"`
+	TimeoutSeconds *int               `json:"timeoutSeconds,omitempty"`
+	Points         *int               `json:"points,omitempty"`
+	OrderingItems  []QuizOrderingItem `json:"orderingItems"`
+	QuizID         string             `json:"-"`
+}
+
+func (OrderingQuestion) IsQuizQuestion()              {}
+func (this OrderingQuestion) GetID() string           { return this.ID }
+func (this OrderingQuestion) GetQuiz() *Quiz          { return this.Quiz }
+func (this OrderingQuestion) GetQuestionText() string { return this.QuestionText }
+func (this OrderingQuestion) GetQuestionOrder() int   { return this.QuestionOrder }
+func (this OrderingQuestion) GetTimeoutSeconds() *int { return this.TimeoutSeconds }
+func (this OrderingQuestion) GetPoints() *int         { return this.Points }
+
+type OrderingResponse struct {
+	ID               string            `json:"id"`
+	Submission       *QuizSubmission   `json:"submission"`
+	Question         QuizQuestion      `json:"question"`
+	AnsweredAt       *scalars.DateTime `json:"answeredAt,omitempty"`
+	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
+	PointsEarned     *int              `json:"pointsEarned,omitempty"`
+	SubmittedOrder   []string          `json:"submittedOrder"`
+	IsCorrect        *bool             `json:"isCorrect,omitempty"`
+	QuestionID       string            `json:"-"`
+	SubmissionID     string            `json:"-"`
+}
+
+func (OrderingResponse) IsQuizResponse()                       {}
+func (this OrderingResponse) GetID() string                    { return this.ID }
+func (this OrderingResponse) GetSubmission() *QuizSubmission   { return this.Submission }
+func (this OrderingResponse) GetQuestion() QuizQuestion        { return this.Question }
+func (this OrderingResponse) GetAnsweredAt() *scalars.DateTime { return this.AnsweredAt }
+func (this OrderingResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
+func (this OrderingResponse) GetPointsEarned() *int            { return this.PointsEarned }
+
 type PageInfo struct {
 	HasNextPage     bool    `json:"hasNextPage"`
 	HasPreviousPage bool    `json:"hasPreviousPage"`
@@ -1155,6 +1201,14 @@ type QuizFilter struct {
 	ProjectID   *string  `json:"projectId,omitempty"`
 	ChallengeID *string  `json:"challengeId,omitempty"`
 	Ids         []string `json:"ids,omitempty"`
+}
+
+type QuizOrderingItem struct {
+	ID           string       `json:"id"`
+	Question     QuizQuestion `json:"question"`
+	ItemText     string       `json:"itemText"`
+	CorrectOrder int          `json:"-"`
+	QuestionID   string       `json:"-"`
 }
 
 type QuizPredefinedAnswer struct {
@@ -1480,6 +1534,7 @@ type SubmitQuizAnswerInput struct {
 	TextResponse      *string  `json:"textResponse,omitempty"`
 	NumberResponse    *float64 `json:"numberResponse,omitempty"`
 	JSONResponse      *string  `json:"jsonResponse,omitempty"`
+	SubmittedOrder    []string `json:"submittedOrder,omitempty"`
 	TimeSpentSeconds  *int     `json:"timeSpentSeconds,omitempty"`
 }
 
@@ -1651,6 +1706,7 @@ type UpdateQuizQuestionInput struct {
 	MinValue               *float64                      `json:"minValue,omitempty"`
 	MaxValue               *float64                      `json:"maxValue,omitempty"`
 	StepValue              *float64                      `json:"stepValue,omitempty"`
+	OrderingItems          []CreateOrderingItemInput     `json:"orderingItems,omitempty"`
 }
 
 type UpdateQuizSessionInput struct {
@@ -2527,6 +2583,7 @@ const (
 	QuizQuestionTypeFreeText   QuizQuestionType = "FREE_TEXT"
 	QuizQuestionTypeNumber     QuizQuestionType = "NUMBER"
 	QuizQuestionTypeJSON       QuizQuestionType = "JSON"
+	QuizQuestionTypeOrdering   QuizQuestionType = "ORDERING"
 )
 
 var AllQuizQuestionType = []QuizQuestionType{
@@ -2534,11 +2591,12 @@ var AllQuizQuestionType = []QuizQuestionType{
 	QuizQuestionTypeFreeText,
 	QuizQuestionTypeNumber,
 	QuizQuestionTypeJSON,
+	QuizQuestionTypeOrdering,
 }
 
 func (e QuizQuestionType) IsValid() bool {
 	switch e {
-	case QuizQuestionTypePredefined, QuizQuestionTypeFreeText, QuizQuestionTypeNumber, QuizQuestionTypeJSON:
+	case QuizQuestionTypePredefined, QuizQuestionTypeFreeText, QuizQuestionTypeNumber, QuizQuestionTypeJSON, QuizQuestionTypeOrdering:
 		return true
 	}
 	return false

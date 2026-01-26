@@ -202,6 +202,8 @@ func convertQuizQuestionRowToInterface(row quizQuestionRow) model.QuizQuestion {
 		return convertToNumberQuestion(row)
 	case "JSON":
 		return convertToJsonQuestion(row)
+	case "ORDERING":
+		return convertToOrderingQuestion(row)
 	default:
 		// Default to FreeTextQuestion for unknown types
 		return convertToFreeTextQuestion(row)
@@ -283,6 +285,17 @@ func convertToNumberQuestion(row quizQuestionRow) *model.NumberQuestion {
 
 func convertToJsonQuestion(row quizQuestionRow) *model.JSONQuestion {
 	return &model.JSONQuestion{
+		ID:             row.GetID(),
+		QuizID:         row.GetQuizID(),
+		QuestionText:   row.GetQuestionText(),
+		QuestionOrder:  int(row.GetQuestionOrder()),
+		TimeoutSeconds: convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
+		Points:         convertQuestionPoints(row.GetPoints()),
+	}
+}
+
+func convertToOrderingQuestion(row quizQuestionRow) *model.OrderingQuestion {
+	return &model.OrderingQuestion{
 		ID:             row.GetID(),
 		QuizID:         row.GetQuizID(),
 		QuestionText:   row.GetQuestionText(),
@@ -436,6 +449,8 @@ func convertResponseRowToInterface(row *sqlc.QuizResponse, questionType string) 
 		return convertToNumberResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
 	case "JSON":
 		return convertToJsonResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
+	case "ORDERING":
+		return convertToOrderingResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
 	default:
 		// Default to FreeTextResponse for unknown types
 		return convertToFreeTextResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
@@ -502,6 +517,23 @@ func convertToJsonResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime,
 		SubmissionID:     row.SubmissionID,
 		QuestionID:       row.QuestionID,
 		JSONResponse:     jsonResponse,
+		AnsweredAt:       answeredAt,
+		TimeSpentSeconds: timeSpentSeconds,
+		PointsEarned:     pointsEarned,
+	}
+}
+
+func convertToOrderingResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int) *model.OrderingResponse {
+	var submittedOrder []string
+	if row.JsonResponse != nil {
+		_ = json.Unmarshal(row.JsonResponse, &submittedOrder)
+	}
+	return &model.OrderingResponse{
+		ID:               row.ID,
+		SubmissionID:     row.SubmissionID,
+		QuestionID:       row.QuestionID,
+		SubmittedOrder:   submittedOrder,
+		IsCorrect:        row.IsCorrect,
 		AnsweredAt:       answeredAt,
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,

@@ -460,13 +460,13 @@ func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([
 
 		// Non-admins: check publishedAt
 		publishedAt := getChallengePublishedAt(ch)
-		if publishedAt == nil || publishedAt.Time.After(time.Now()) {
+		if publishedAt == nil || publishedAt.After(time.Now()) {
 			continue // Skip unpublished
 		}
 
 		// Check visibility (enrolled OR visible_at in past)
 		visibleAt := getChallengeVisibleAt(ch)
-		isVisible := visibleAt != nil && !visibleAt.Time.After(time.Now())
+		isVisible := visibleAt != nil && !visibleAt.After(time.Now())
 
 		if !isVisible && userID != "" {
 			enrolled, err := r.DB.Queries.IsUserEnrolledInChallenge(ctx, sqlc.IsUserEnrolledInChallengeParams{

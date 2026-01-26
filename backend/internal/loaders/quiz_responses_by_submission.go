@@ -118,6 +118,26 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						AnsweredAt:       answeredAt,
 						TimeSpentSeconds: timeSpentSeconds,
 					}
+				case "ORDERING":
+					var submittedOrder []string
+					if row.JsonResponse != nil {
+						_ = json.Unmarshal(row.JsonResponse, &submittedOrder)
+					}
+					var pointsEarned *int
+					if row.PointsEarned != nil {
+						pe := int(*row.PointsEarned)
+						pointsEarned = &pe
+					}
+					response = &model.OrderingResponse{
+						ID:               row.ID,
+						SubmissionID:     row.SubmissionID,
+						QuestionID:       row.QuestionID,
+						SubmittedOrder:   submittedOrder,
+						IsCorrect:        row.IsCorrect,
+						AnsweredAt:       answeredAt,
+						TimeSpentSeconds: timeSpentSeconds,
+						PointsEarned:     pointsEarned,
+					}
 				default:
 					// Default to FreeTextResponse for unknown types
 					textResponse := ""

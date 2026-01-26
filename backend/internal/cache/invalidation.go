@@ -384,6 +384,11 @@ func (c *CacheWithRegistry) invalidateQuizLocal(quizID string) {
 	c.Delete(QuizSubmissionsByQuizKey(quizID))
 }
 
+// InvalidateQuizAnswers invalidates cached answers/ordering items for a question
+func (c *CacheWithRegistry) InvalidateQuizAnswers(questionID string) {
+	c.Delete(QuizAnswersByQuestionKey(questionID))
+}
+
 // InvalidateQuizSubmission invalidates all cache entries related to a quiz submission
 func (c *CacheWithRegistry) InvalidateQuizSubmission(submissionID string) {
 	c.Delete(QuizSubmissionKey(submissionID))

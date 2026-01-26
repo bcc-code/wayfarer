@@ -247,6 +247,9 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 	if err != nil {
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
 	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found: %s", quizID)
+	}
 
 	// Check authorization
 	if !r.RoleService.CanManageProject(ctx, userID, quiz.ProjectID) {
@@ -316,6 +319,23 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 			})
 			if err != nil {
 				return nil, fmt.Errorf("failed to create answer: %w", err)
+			}
+		}
+	}
+
+	// Create ordering items if provided (stored in quiz_predefined_answers table)
+	if len(input.OrderingItems) > 0 {
+		for _, itemInput := range input.OrderingItems {
+			itemID := ulid.NewQuizAnswerID()
+			_, err := qtx.CreatePredefinedAnswer(ctx, sqlc.CreatePredefinedAnswerParams{
+				ID:          itemID,
+				Questionid:  questionID,
+				Answertext:  itemInput.ItemText,
+				Iscorrect:   false, // Not used for ordering
+				Answerorder: int32(itemInput.CorrectOrder),
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to create ordering item: %w", err)
 			}
 		}
 	}
@@ -426,11 +446,39 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 		}
 	}
 
+	// If ordering items provided, replace all items (stored in quiz_predefined_answers table)
+	if input.OrderingItems != nil {
+		// Delete existing items
+		err = qtx.DeletePredefinedAnswersByQuestion(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to delete existing ordering items: %w", err)
+		}
+
+		// Create new items
+		for _, itemInput := range input.OrderingItems {
+			itemID := ulid.NewQuizAnswerID()
+			_, err := qtx.CreatePredefinedAnswer(ctx, sqlc.CreatePredefinedAnswerParams{
+				ID:          itemID,
+				Questionid:  id,
+				Answertext:  itemInput.ItemText,
+				Iscorrect:   false, // Not used for ordering
+				Answerorder: int32(itemInput.CorrectOrder),
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to create ordering item: %w", err)
+			}
+		}
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	r.Cache.InvalidateQuiz(question.QuizID)
+	// Also invalidate answers cache if answers or ordering items were updated
+	if len(input.PredefinedAnswers) > 0 || len(input.OrderingItems) > 0 {
+		r.Cache.InvalidateQuizAnswers(id)
+	}
 
 	return convertUpdateQuizQuestionRowToInterface(updatedQuestion), nil
 }
@@ -750,6 +798,27 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 			params.Jsonresponse = []byte(*input.JSONResponse)
 		}
 		// JSON is not graded - leave is_correct NULL
+	case "ORDERING":
+		if input.SubmittedOrder != nil {
+			// Store submitted order as JSON in json_response
+			orderJSON, _ := json.Marshal(input.SubmittedOrder)
+			params.Jsonresponse = orderJSON
+
+			// Calculate correctness by comparing against correct order
+			correctAnswers, _ := r.DB.Queries.GetPredefinedAnswersByQuestionID(ctx, input.QuestionID)
+
+			// correctAnswers are returned sorted by answer_order (correct position)
+			isCorrect := len(input.SubmittedOrder) == len(correctAnswers)
+			if isCorrect {
+				for i, ans := range correctAnswers {
+					if input.SubmittedOrder[i] != ans.ID {
+						isCorrect = false
+						break
+					}
+				}
+			}
+			params.Iscorrect = &isCorrect
+		}
 	}
 
 	// Calculate points_earned for correct answers
@@ -879,8 +948,12 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 		return nil, fmt.Errorf("failed to calculate score: %w", err)
 	}
 
-	score := int(scoreResult.Score)
-	maxScore := int(scoreResult.MaxScore)
+	score := int(scoreResult)
+	// Use maxScore from submission (stored when session was started)
+	var maxScore int
+	if submission.MaxScore != nil {
+		maxScore = int(*submission.MaxScore)
+	}
 	scoreSpan.SetAttributes(
 		attribute.Int("score.value", score),
 		attribute.Int("score.max", maxScore),
@@ -1101,12 +1174,14 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 		return nil, fmt.Errorf("failed to marshal question order: %w", err)
 	}
 
-	// Calculate max score (count gradable questions)
-	maxScore := 0
+	// Calculate max score (sum of points for gradable questions)
+	var maxScore int
 	for _, q := range questions {
 		switch q.(type) {
-		case *model.PredefinedQuestion, *model.NumberQuestion:
-			maxScore++
+		case *model.PredefinedQuestion, *model.NumberQuestion, *model.OrderingQuestion:
+			if q.GetPoints() != nil {
+				maxScore += *q.GetPoints()
+			}
 		}
 	}
 
@@ -1230,6 +1305,39 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 				return nil, fmt.Errorf("jsonResponse required for JSON question")
 			}
 			responseParams.Jsonresponse = []byte(*responseInput.JSONResponse)
+
+		case *model.OrderingQuestion:
+			if responseInput.SubmittedOrder == nil {
+				return nil, fmt.Errorf("submittedOrder required for ORDERING question")
+			}
+
+			// Store submitted order as JSON
+			orderJSON, err := json.Marshal(responseInput.SubmittedOrder)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal submitted order: %w", err)
+			}
+			responseParams.Jsonresponse = orderJSON
+
+			// Calculate correctness
+			answersThunk := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, questionID)
+			answers, err := answersThunk()
+			if err != nil {
+				return nil, fmt.Errorf("failed to load ordering items: %w", err)
+			}
+
+			// answers are sorted by answer_order (correct position)
+			correct := len(responseInput.SubmittedOrder) == len(answers)
+			if correct {
+				for i, ans := range answers {
+					if responseInput.SubmittedOrder[i] != ans.ID {
+						correct = false
+						break
+					}
+				}
+			}
+
+			isCorrect = &correct
+			responseParams.Iscorrect = &correct
 		}
 
 		// Calculate points_earned for correct answers
@@ -1248,8 +1356,9 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 			return nil, fmt.Errorf("failed to create response: %w", err)
 		}
 
-		if isCorrect != nil && *isCorrect {
-			score++
+		// Add points earned (already calculated and stored in responseParams.Pointsearned)
+		if responseParams.Pointsearned != nil {
+			score += int(*responseParams.Pointsearned)
 		}
 	}
 
@@ -1328,6 +1437,56 @@ func (r *numberResponseResolver) Submission(ctx context.Context, obj *model.Numb
 
 // Question is the resolver for the question field.
 func (r *numberResponseResolver) Question(ctx context.Context, obj *model.NumberResponse) (model.QuizQuestion, error) {
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// Quiz is the resolver for the quiz field.
+func (r *orderingQuestionResolver) Quiz(ctx context.Context, obj *model.OrderingQuestion) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	quiz, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToQuiz(ctx, quiz), nil
+}
+
+// OrderingItems is the resolver for the orderingItems field.
+func (r *orderingQuestionResolver) OrderingItems(ctx context.Context, obj *model.OrderingQuestion) ([]model.QuizOrderingItem, error) {
+	// Reuse the existing loader for predefined answers, then convert to ordering items
+	thunk := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, obj.ID)
+	answers, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load ordering items: %w", err)
+	}
+
+	// Convert predefined answers to ordering items (answer_order stores the correct position)
+	result := make([]model.QuizOrderingItem, len(answers))
+	for i, a := range answers {
+		result[i] = model.QuizOrderingItem{
+			ID:           a.ID,
+			QuestionID:   a.QuestionID,
+			ItemText:     a.AnswerText,
+			CorrectOrder: a.AnswerOrder,
+		}
+	}
+	return result, nil
+}
+
+// Submission is the resolver for the submission field.
+func (r *orderingResponseResolver) Submission(ctx context.Context, obj *model.OrderingResponse) (*model.QuizSubmission, error) {
+	row, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+	return convertGetQuizSubmissionByIDRow(row), nil
+}
+
+// Question is the resolver for the question field.
+func (r *orderingResponseResolver) Question(ctx context.Context, obj *model.OrderingResponse) (model.QuizQuestion, error) {
 	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
@@ -1901,6 +2060,15 @@ func (r *quizResolver) UserActiveSession(ctx context.Context, obj *model.Quiz) (
 	return convertQuizSessionToModel(row), nil
 }
 
+// Question is the resolver for the question field.
+func (r *quizOrderingItemResolver) Question(ctx context.Context, obj *model.QuizOrderingItem) (model.QuizQuestion, error) {
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
 // Question is the resolver for the question field on QuizPredefinedAnswer.
 func (r *quizPredefinedAnswerResolver) Question(ctx context.Context, obj *model.QuizPredefinedAnswer) (model.QuizQuestion, error) {
 	// Query directly
@@ -2027,6 +2195,12 @@ func (r *Resolver) NumberQuestion() NumberQuestionResolver { return &numberQuest
 // NumberResponse returns NumberResponseResolver implementation.
 func (r *Resolver) NumberResponse() NumberResponseResolver { return &numberResponseResolver{r} }
 
+// OrderingQuestion returns OrderingQuestionResolver implementation.
+func (r *Resolver) OrderingQuestion() OrderingQuestionResolver { return &orderingQuestionResolver{r} }
+
+// OrderingResponse returns OrderingResponseResolver implementation.
+func (r *Resolver) OrderingResponse() OrderingResponseResolver { return &orderingResponseResolver{r} }
+
 // PredefinedQuestion returns PredefinedQuestionResolver implementation.
 func (r *Resolver) PredefinedQuestion() PredefinedQuestionResolver {
 	return &predefinedQuestionResolver{r}
@@ -2039,6 +2213,9 @@ func (r *Resolver) PredefinedResponse() PredefinedResponseResolver {
 
 // Quiz returns QuizResolver implementation.
 func (r *Resolver) Quiz() QuizResolver { return &quizResolver{r} }
+
+// QuizOrderingItem returns QuizOrderingItemResolver implementation.
+func (r *Resolver) QuizOrderingItem() QuizOrderingItemResolver { return &quizOrderingItemResolver{r} }
 
 // QuizPredefinedAnswer returns QuizPredefinedAnswerResolver implementation.
 func (r *Resolver) QuizPredefinedAnswer() QuizPredefinedAnswerResolver {
@@ -2054,8 +2231,11 @@ type jsonQuestionResolver struct{ *Resolver }
 type jsonResponseResolver struct{ *Resolver }
 type numberQuestionResolver struct{ *Resolver }
 type numberResponseResolver struct{ *Resolver }
+type orderingQuestionResolver struct{ *Resolver }
+type orderingResponseResolver struct{ *Resolver }
 type predefinedQuestionResolver struct{ *Resolver }
 type predefinedResponseResolver struct{ *Resolver }
 type quizResolver struct{ *Resolver }
+type quizOrderingItemResolver struct{ *Resolver }
 type quizPredefinedAnswerResolver struct{ *Resolver }
 type quizSubmissionResolver struct{ *Resolver }
