@@ -74,8 +74,8 @@ const {
   pause: computed(() => !isAuthReady.value || !me.value?.church.id),
 })
 
-// Expand all state
-const expandAll = ref(true)
+// Expand state tracking (initialized after filteredUnits is defined)
+const expandedUnitIds = ref<Set<string>>(new Set())
 
 // Track initial load to avoid showing loading state during refetches
 const hasLoadedOnce = ref(false)
@@ -223,6 +223,46 @@ const filteredUnits = computed(() => {
     a.name.localeCompare(b.name, undefined, { numeric: true }),
   )
 })
+
+// Initialize expanded state when data loads
+watch(
+  () => filteredUnits.value,
+  (units) => {
+    // On first load, expand all units
+    if (expandedUnitIds.value.size === 0 && units.length > 0) {
+      expandedUnitIds.value = new Set(units.map((u) => u.id))
+    }
+  },
+  { immediate: true },
+)
+
+// Computed expandAll that reflects actual state
+const expandAll = computed({
+  get: () =>
+    filteredUnits.value.length > 0 &&
+    filteredUnits.value.every((u) => expandedUnitIds.value.has(u.id)),
+  set: (value: boolean) => {
+    if (value) {
+      expandedUnitIds.value = new Set(filteredUnits.value.map((u) => u.id))
+    } else {
+      expandedUnitIds.value = new Set()
+    }
+  },
+})
+
+function isUnitExpanded(unitId: string) {
+  return expandedUnitIds.value.has(unitId)
+}
+
+function setUnitExpanded(unitId: string, expanded: boolean) {
+  const newSet = new Set(expandedUnitIds.value)
+  if (expanded) {
+    newSet.add(unitId)
+  } else {
+    newSet.delete(unitId)
+  }
+  expandedUnitIds.value = newSet
+}
 
 // Get project team IDs for filtering
 const projectTeamIds = computed(
@@ -841,7 +881,7 @@ function handleDropMember(
                   :unit="unit"
                   :members="getTeamMembers(unit)"
                   :user-items="userItems"
-                  :expand-all="expandAll"
+                  :expand-all="isUnitExpanded(unit.id)"
                   :loading="isTeamLoading(unit.id)"
                   @add-member="
                     (
@@ -862,6 +902,7 @@ function handleDropMember(
                   @drop-member="handleDropMember"
                   @assign-leader="handleAssignLeader"
                   @rename-unit="handleRenameUnit"
+                  @update:expanded="setUnitExpanded(unit.id, $event)"
                 />
               </div>
 
