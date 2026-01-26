@@ -1,6 +1,11 @@
 {
   "error": {
-    "title": "Ups! Ceva nu a funcționat"
+    "title": "Ups! Ceva nu a funcționat",
+    "hint": "Te rog încercă din nou. Dacă problema persistă, încearcă să reîncarci pagina.",
+    "networkHint": "Se pare că ai probleme cu conexiunea. Verifică conexiunea la internet și încearcă din nou.",
+    "retry": "Încearcă din nou",
+    "showDetails": "Afișează detaliile tehnice",
+    "hideDetails": "Ascunde detaliile tehnice"
   },
   "emptyStates": {
     "standings": "Niciun clasament nu este încă disponibil",
@@ -20,7 +25,11 @@
     "questionNumber": "{current} din {total}",
     "continue": "Continuă",
     "nextQuestion": "Următoarea întrebare",
+    "previousQuestion": "Anterioară",
     "done": "Gata",
+    "unavailable": "Acest quiz nu este disponibil pentru moment.",
+    "reviewAnswers": "Vezi răspunsurile",
+    "finishReview": "Finalizați revizuirea",
     "result": {
       "receivedNoPoints": "Nu ai obținut niciun punct.",
       "receivedPoints": "Ai acumulat {points} punct(e).",
@@ -117,11 +126,123 @@
     "thankYouDescription": "Părerea ta va fi utilizată pentru dezvoltarea serviciului.",
     "close": "Cu plăcere",
     "canContactMe": "Da, sunt de acord să mă contactați în legătură cu feedback-ul meu.",
-    "regards": "Salutări, {name}"
+    "disclosure": "Feedback-ul va fi asociat contului tău de utilizator."
   },
   "pwa": {
     "updateAvailableTitle": "Este disponibilă o actualizare",
     "updateAvailableButton": "Actualizează acum"
   },
-  "goToHiddenTreasures": "Mergi la studiul biblic"
+  "notifications": {
+    "promptTitle": "Nu rata toate realizările tale, activează notificările.",
+    "promptDescription": "Atunci vei primi o notificare de fiecare dată când ai ajuns la o nouă realizare sau o nouă provocare.",
+    "turnOn": "Activează notificările",
+    "notNow": "Nu acum"
+  },
+  "goToHiddenTreasures": "Mergi la studiul biblic",
+  "admin": {
+    "common": {
+      "back": "Înapoi",
+      "cancel": "Anulează",
+      "save": "Salvează",
+      "create": "Creează",
+      "delete": "Șterge",
+      "deleteAll": "Șterge toate",
+      "copyLink": "Copiază linkul către pagina de administrare",
+      "linkCopied": "Link copiat"
+    },
+    "breadcrumb": {
+      "home": "Acasă"
+    },
+    "churchHome": {
+      "administrators": "Administratori",
+      "unitsAndPeople": "Unități și persoane",
+      "gameNights": "Game Nights",
+      "comingSoon": "Apare în curând"
+    },
+    "admins": {
+      "searchPlaceholder": "Caută administratori...",
+      "addPlaceholder": "Adăugă administrator...",
+      "you": "Tu",
+      "noAdminsFound": "Nu s-au găsit administratori",
+      "confirmRemove": {
+        "title": "Elimini administratorul?",
+        "message": "Ești sigur că dorești să elimini {name} ca administrator?",
+        "confirm": "Elimină"
+      },
+      "success": {
+        "added": "Administrator adăugat",
+        "removed": "Administrator eliminat"
+      },
+      "errors": {
+        "addFailed": "Nu s-a putut adăuga administratorul",
+        "removeFailed": "Nu s-a putut elimina administratorul"
+      },
+      "copyLinkDescription": "Partajează linkul cu alți administratori"
+    },
+    "units": {
+      "title": "Unități",
+      "people": "Persoane",
+      "filter": {
+        "title": "Filtre",
+        "all": "Toate",
+        "notInUnit": "Nu este într-o unitate",
+        "inUnit": "Într-o unitate",
+        "showO36": "Afișează persoanele cu vârsta peste 36 de ani",
+        "showO36Description": "Persoanele cu vârsta peste 36 de ani nu sunt afișate în clasamente și nu participă la concursul pentru tineri."
+      },
+      "searchPlaceholder": "Căută unități sau persoane...",
+      "searchPeoplePlaceholder": "Căută persoane...",
+      "expandAll": "Extinde toate unitățile",
+      "createOneUnit": "Creează o unitate",
+      "createMultipleUnits": "Creează mai multe unități",
+      "namePlaceholder": "Numele unității (opțional)",
+      "selectAll": "Selectează tot",
+      "noActiveProject": "Niciun concurs activ",
+      "noUnitsFound": "Nu s-au găsit unități",
+      "noPeopleFound": "Nu s-au găsit persoane",
+      "years": "{years} ani",
+      "selectedCount": "{count} unitate aleasă | {count} unități alese",
+      "deleteSelected": "Șterge selecția",
+      "bulkCreate": {
+        "countLabel": "Număr de unități",
+        "autoGenerateInfo": "Numele unităților sunt generate automat și pot fi modificate ulterior."
+      },
+      "confirmDelete": {
+        "title": "Ștergi unitatea?",
+        "message": "Ești sigur că dorești să ștergi {name}? Toți membrii vor fi eliminați din unitate."
+      },
+      "confirmBulkDelete": {
+        "title": "Ștergi mai multe unități?",
+        "message": "Ești sigur că dorești să ștergi {count} unități? Toți membrii vor fi eliminați din aceste unități."
+      },
+      "success": {
+        "created": "Unitate creată",
+        "bulkCreated": "{count} unități create",
+        "deleted": "Unitate ștearsă",
+        "bulkDeleted": "{count} unități șterse"
+      },
+      "errors": {
+        "createFailed": "Nu s-a putut crea unitatea",
+        "bulkCreateFailed": "Nu s-au putut crea unitățile",
+        "addMemberFailed": "Nu s-au putut adăuga membri",
+        "removeMemberFailed": "Nu s-au putut elimina membri",
+        "assignLeaderFailed": "Nu s-a putut alege liderul",
+        "deleteFailed": "Nu s-a putut șterge unitatea",
+        "bulkDeleteFailed": "Nu s-au putut șterge unitățile",
+        "renameFailed": "Nu s-a putut modifica numele unității",
+        "exclusionToggleFailed": "Nu s-a putut modifica vizibilitatea în clasament"
+      },
+      "ageWarning": "Vârsta medie în această unitate este de peste 36 de ani, astfel încât nu va apărea în clasament și nu va fi inclusă în concursul pentru tineri. Dacă acest lucru este greșit, iar unitatea trebuie să participe la concursul pentru tineri, te rugăm să ne informezi la {email}"
+    },
+    "unit": {
+      "noLeaderSelected": "Niciun lider selectat",
+      "members": "{count} persoană | {count} persoane",
+      "makeLead": "Fă lider",
+      "dragPeopleHere": "Niciun membru - trageți o persoană aici",
+      "addPersonPlaceholder": "Adăugă o persoană...",
+      "excludeFromLeaderboard": "Exclude din clasament",
+      "excludeFromLeaderboardTooltip": "Când este activată, această unitate nu va apărea în clasament.",
+      "excludedFromLeaderboard": "Exclusă din clasament"
+    }
+  }
 }

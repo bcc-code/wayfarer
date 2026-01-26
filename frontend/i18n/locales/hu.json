@@ -25,8 +25,11 @@
     "questionNumber": "{current} ból {total}",
     "continue": "Folytatás",
     "nextQuestion": "Következő kérdés",
+    "previousQuestion": "Előző",
     "done": "Kész",
     "unavailable": "Ez a kvíz jelenleg nem elérhető.",
+    "reviewAnswers": "Lásd a választ",
+    "finishReview": "Átnézés befejezése",
     "result": {
       "receivedNoPoints": "Nem szereztél pontot.",
       "receivedPoints": "{points} pontot gyűjtöttél.",
