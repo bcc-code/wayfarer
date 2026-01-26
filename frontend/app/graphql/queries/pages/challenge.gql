@@ -4,10 +4,15 @@ query ChallengePage($challengeId: ID!) {
     id
     name
     description
+    requiresTeamMembership
+    requiresSuperTeamMembership
     userEnrolledAt
     userCompletedAt
     ... on SimpleChallenge {
       allowSelfCompletion
+    }
+    ... on PluginChallenge {
+      pluginChallengeId
     }
     ... on ExternalChallenge {
       url

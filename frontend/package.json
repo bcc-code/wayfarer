@@ -33,6 +33,8 @@
     "@vite-pwa/nuxt": "^1.1.0",
     "@vueuse/core": "^14.1.0",
     "@vueuse/nuxt": "14.0.0",
+    "@zag-js/slider": "^1.33.0",
+    "@zag-js/vue": "^1.33.0",
     "blurhash": "^2.0.5",
     "cva": "npm:class-variance-authority@^0.7.1",
     "dayjs": "^1.11.19",

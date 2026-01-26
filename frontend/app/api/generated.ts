@@ -111,7 +111,7 @@ export type BrandingInput = {
 };
 
 export type Challenge = {
-  buttonText: Scalars['String']['output'];
+  buttonText?: Maybe<Scalars['String']['output']>;
   description: Scalars['HTML']['output'];
   endTime?: Maybe<Scalars['DateTime']['output']>;
   event?: Maybe<Event>;
@@ -154,6 +154,7 @@ export type ChallengeFilter = {
 
 export enum ChallengeType {
   External = 'EXTERNAL',
+  Plugin = 'PLUGIN',
   Quiz = 'QUIZ',
   Simple = 'SIMPLE'
 }
@@ -310,11 +311,12 @@ export type ContentItemInput = {
 
 export type CreateChallengeInput = {
   allowSelfCompletion?: InputMaybe<Scalars['Boolean']['input']>;
-  buttonText: Scalars['String']['input'];
+  buttonText?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['HTML']['input']>;
   endTime?: InputMaybe<Scalars['DateTime']['input']>;
   image?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
+  pluginChallengeId?: InputMaybe<Scalars['String']['input']>;
   requiresSuperTeamMembership?: InputMaybe<Scalars['Boolean']['input']>;
   requiresTeamMembership?: InputMaybe<Scalars['Boolean']['input']>;
   type: ChallengeType;
@@ -491,6 +493,15 @@ export type CreateSuperTeamInput = {
 export type CreateTeamInput = {
   description: Scalars['String']['input'];
   name: Scalars['String']['input'];
+};
+
+export type CreateTeamScoreAdjustmentInput = {
+  distributionMode: TeamScoreDistributionMode;
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  points: Scalars['Int']['input'];
+  projectId: Scalars['ID']['input'];
+  reason?: InputMaybe<Scalars['String']['input']>;
+  teamId: Scalars['ID']['input'];
 };
 
 export type CreateUserInput = {
@@ -881,6 +892,7 @@ export type Mutation = {
   createStreakAchievement: StreakAchievement;
   createSuperTeam: SuperTeam;
   createTeam: Team;
+  createTeamScoreAdjustment: Array<ScoreJournal>;
   createWebhook: Webhook;
   deleteAchievement: Scalars['Boolean']['output'];
   deleteChallenge: Scalars['Boolean']['output'];
@@ -1174,6 +1186,11 @@ export type MutationCreateSuperTeamArgs = {
 export type MutationCreateTeamArgs = {
   input: CreateTeamInput;
   projectId: Scalars['ID']['input'];
+};
+
+
+export type MutationCreateTeamScoreAdjustmentArgs = {
+  input: CreateTeamScoreAdjustmentInput;
 };
 
 
@@ -1643,6 +1660,28 @@ export type PageInfo = {
   startCursor?: Maybe<Scalars['String']['output']>;
 };
 
+export type PluginChallenge = Challenge & {
+  __typename?: 'PluginChallenge';
+  buttonText?: Maybe<Scalars['String']['output']>;
+  description: Scalars['HTML']['output'];
+  endTime?: Maybe<Scalars['DateTime']['output']>;
+  event?: Maybe<Event>;
+  id: Scalars['ID']['output'];
+  /** @deprecated Use imageObject instead */
+  image?: Maybe<Scalars['String']['output']>;
+  imageObject?: Maybe<Image>;
+  name: Scalars['String']['output'];
+  pluginChallengeId: Scalars['String']['output'];
+  project: Project;
+  publishedAt?: Maybe<Scalars['DateTime']['output']>;
+  requiresSuperTeamMembership: Scalars['Boolean']['output'];
+  requiresTeamMembership: Scalars['Boolean']['output'];
+  startedAt?: Maybe<Scalars['DateTime']['output']>;
+  userCompletedAt?: Maybe<Scalars['DateTime']['output']>;
+  userEnrolledAt?: Maybe<Scalars['DateTime']['output']>;
+  visibleAt?: Maybe<Scalars['DateTime']['output']>;
+};
+
 export type PredefinedQuestion = QuizQuestion & {
   __typename?: 'PredefinedQuestion';
   allowMultipleSelection: Scalars['Boolean']['output'];
@@ -1790,6 +1829,7 @@ export type Query = {
   superteam: SuperTeam;
   superteams: SuperTeamConnection;
   team: Team;
+  teamByJoinCode?: Maybe<Team>;
   teams: TeamConnection;
   user: User;
   userRoles: Array<UserRole>;
@@ -2000,6 +2040,12 @@ export type QuerySuperteamsArgs = {
 
 export type QueryTeamArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryTeamByJoinCodeArgs = {
+  code: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
 };
 
 
@@ -2316,7 +2362,7 @@ export type ScoreJournalFilter = {
   userId?: InputMaybe<Scalars['ID']['input']>;
 };
 
-export type ScoreSource = ContentAchievement | Event | ExternalChallenge | QuizAchievement | QuizChallenge | SimpleAchievement | SimpleChallenge | StreakAchievement;
+export type ScoreSource = ContentAchievement | Event | ExternalChallenge | PluginChallenge | QuizAchievement | QuizChallenge | SimpleAchievement | SimpleChallenge | StreakAchievement;
 
 export enum ScoreSourceType {
   Achievement = 'ACHIEVEMENT',
@@ -2562,6 +2608,11 @@ export type TeamMember = {
   user: User;
 };
 
+export enum TeamScoreDistributionMode {
+  Each = 'EACH',
+  Split = 'SPLIT'
+}
+
 export type UpdateAchievementInput = {
   awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
   challengeId?: InputMaybe<Scalars['ID']['input']>;
@@ -2584,6 +2635,7 @@ export type UpdateChallengeInput = {
   eventId?: InputMaybe<Scalars['ID']['input']>;
   image?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  pluginChallengeId?: InputMaybe<Scalars['String']['input']>;
   requiresSuperTeamMembership?: InputMaybe<Scalars['Boolean']['input']>;
   requiresTeamMembership?: InputMaybe<Scalars['Boolean']['input']>;
   startedAt?: InputMaybe<Scalars['DateTime']['input']>;
@@ -2825,7 +2877,9 @@ export type WebhookRecentLogsArgs = {
 
 export enum WebhookEventType {
   ExternalContentEvent = 'EXTERNAL_CONTENT_EVENT',
-  PointsAwarded = 'POINTS_AWARDED'
+  PointsAwarded = 'POINTS_AWARDED',
+  QuizSessionFinished = 'QUIZ_SESSION_FINISHED',
+  TeamNameChanged = 'TEAM_NAME_CHANGED'
 }
 
 export type WebhookLog = {
@@ -2854,6 +2908,7 @@ export type PointHistoryQuery = { __typename?: 'Query', myCurrentProject: { __ty
             | { __typename: 'ContentAchievement', id: string, name: string }
             | { __typename: 'Event', id: string, name: string }
             | { __typename: 'ExternalChallenge', id: string, name: string }
+            | { __typename: 'PluginChallenge', id: string, name: string }
             | { __typename: 'QuizAchievement', id: string, name: string }
             | { __typename: 'QuizChallenge', id: string, name: string }
             | { __typename: 'SimpleAchievement', id: string, name: string }
@@ -3004,6 +3059,7 @@ export type UpdateChallengeMutationVariables = Exact<{
 
 export type UpdateChallengeMutation = { __typename?: 'Mutation', updateChallenge:
     | { __typename?: 'ExternalChallenge', id: string }
+    | { __typename?: 'PluginChallenge', id: string }
     | { __typename?: 'QuizChallenge', id: string }
     | { __typename?: 'SimpleChallenge', id: string }
    };
@@ -3017,6 +3073,7 @@ export type CreateChallengeMutationVariables = Exact<{
 
 export type CreateChallengeMutation = { __typename?: 'Mutation', createChallenge:
     | { __typename?: 'ExternalChallenge', id: string }
+    | { __typename?: 'PluginChallenge', id: string }
     | { __typename?: 'QuizChallenge', id: string }
     | { __typename?: 'SimpleChallenge', id: string }
    };
@@ -3375,8 +3432,9 @@ export type ChallengePageQueryVariables = Exact<{
 
 
 export type ChallengePageQuery = { __typename?: 'Query', challenge:
-    | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null }
-    | { __typename: 'QuizChallenge', id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, endTime?: any | null, userCanStart: boolean, userActiveSubmission?: { __typename?: 'QuizSubmission', id: string } | null, userActiveSession?: { __typename?: 'QuizSession', id: string } | null, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null, orderedQuestions: Array<
+    | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userEnrolledAt?: any | null, userCompletedAt?: any | null }
+    | { __typename: 'PluginChallenge', pluginChallengeId: string, id: string, name: string, description: any, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userEnrolledAt?: any | null, userCompletedAt?: any | null }
+    | { __typename: 'QuizChallenge', id: string, name: string, description: any, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userEnrolledAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, endTime?: any | null, userCanStart: boolean, userActiveSubmission?: { __typename?: 'QuizSubmission', id: string } | null, userActiveSession?: { __typename?: 'QuizSession', id: string } | null, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null, orderedQuestions: Array<
             | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
             | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
             | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
@@ -3407,7 +3465,7 @@ export type ChallengePageQuery = { __typename?: 'Query', challenge:
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
           > }> } }
-    | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, userEnrolledAt?: any | null, userCompletedAt?: any | null }
+    | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userEnrolledAt?: any | null, userCompletedAt?: any | null }
    };
 
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
@@ -3415,6 +3473,7 @@ export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', challenges: Array<
       | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+      | { __typename: 'PluginChallenge', id: string, name: string, description: any, buttonText?: string | null, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
       | { __typename: 'QuizChallenge', id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', userCanStart: boolean, userActiveSession?: { __typename?: 'QuizSession', id: string } | null }, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
       | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
     > } };
@@ -3561,6 +3620,7 @@ export type AdminProjectChallengePageQueryVariables = Exact<{
 
 export type AdminProjectChallengePageQuery = { __typename?: 'Query', challenge:
     | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, image?: string | null, buttonText: string, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'PluginChallenge', id: string, name: string, description: any, image?: string | null, buttonText?: string | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
     | { __typename: 'QuizChallenge', id: string, name: string, description: any, image?: string | null, buttonText: string, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, image?: string | null, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, questions: Array<
           | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
           | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
@@ -3603,6 +3663,7 @@ export type AdminProjectPageQuery = { __typename?: 'Query', project: { __typenam
         | { __typename?: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, points: number, hidden: boolean, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
        }> }, challenges: { __typename?: 'ChallengeConnection', edges: Array<{ __typename?: 'ChallengeEdge', node:
         | { __typename: 'ExternalChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+        | { __typename: 'PluginChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
         | { __typename: 'QuizChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
         | { __typename: 'SimpleChallenge', id: string, name: string, description: any, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
        }> } };
@@ -4583,10 +4644,15 @@ export const ChallengePageDocument = gql`
     id
     name
     description
+    requiresTeamMembership
+    requiresSuperTeamMembership
     userEnrolledAt
     userCompletedAt
     ... on SimpleChallenge {
       allowSelfCompletion
+    }
+    ... on PluginChallenge {
+      pluginChallengeId
     }
     ... on ExternalChallenge {
       url

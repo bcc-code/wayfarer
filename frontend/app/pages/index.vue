@@ -199,7 +199,8 @@ const hiddenTreasuresLink = computed(() => {
         :rank="data.myCurrentProject.leaderboard.me?.rank"
         :achievements="data.myCurrentProject.achievements"
       >
-        <div v-if="showBanner" class="p-small">
+        <div v-if="showBanner" class="p-small space-y-4">
+          <DesignSlider :max="2000" />
           <ConsentCard
             v-for="consent in pendingRemote"
             :key="consent.id"

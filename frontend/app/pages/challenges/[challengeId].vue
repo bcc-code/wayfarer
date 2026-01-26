@@ -2,7 +2,12 @@
 const route = useRoute('challenges-challengeId')
 
 const { isAuthReady } = useAuthReady()
-const { data, fetching, error, executeQuery: refresh } = useChallengePageQuery({
+const {
+  data,
+  fetching,
+  error,
+  executeQuery: refresh,
+} = useChallengePageQuery({
   variables: {
     challengeId: route.params.challengeId,
   },
@@ -28,6 +33,10 @@ const isInitialLoading = computed(() => fetching.value && !data.value)
       />
       <QuizChallenge
         v-if="data.challenge.__typename === 'QuizChallenge'"
+        :challenge="data.challenge"
+      />
+      <PluginChallenge
+        v-if="data.challenge.__typename === 'PluginChallenge'"
         :challenge="data.challenge"
       />
     </template>
