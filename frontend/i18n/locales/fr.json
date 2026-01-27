@@ -25,8 +25,11 @@
     "questionNumber": "{current} de {total}",
     "continue": "Continuer",
     "nextQuestion": "Question suivante",
+    "previousQuestion": "Précédent",
     "done": "Terminé",
     "unavailable": "Ce quiz n'est pas disponible pour le moment.",
+    "reviewAnswers": "Voir la réponse",
+    "finishReview": "Terminer la révision",
     "result": {
       "receivedNoPoints": "Tu n’as marqué aucun point.",
       "receivedPoints": "Tu as marqué {points} points.",
@@ -202,7 +205,7 @@
       "deleteSelected": "Supprimer la sélection",
       "bulkCreate": {
         "countLabel": "Nombre d'unités",
-        "autoGenerateInfo": "Les noms sont générés automatiquement."
+        "autoGenerateInfo": "Les noms des unités sont générés automatiquement et peuvent être modifiés ultérieurement."
       },
       "confirmDelete": {
         "title": "Supprimer l'unité ?",
