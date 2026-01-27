@@ -367,6 +367,11 @@ export type CreateEventInput = {
   startDate: Scalars['DateTime']['input'];
 };
 
+export type CreateOrderingItemInput = {
+  correctOrder: Scalars['Int']['input'];
+  itemText: Scalars['String']['input'];
+};
+
 export type CreatePredefinedAnswerInput = {
   answerOrder: Scalars['Int']['input'];
   answerText: Scalars['String']['input'];
@@ -419,6 +424,7 @@ export type CreateQuizQuestionInput = {
   allowMultipleSelection?: InputMaybe<Scalars['Boolean']['input']>;
   maxValue?: InputMaybe<Scalars['Float']['input']>;
   minValue?: InputMaybe<Scalars['Float']['input']>;
+  orderingItems?: InputMaybe<Array<CreateOrderingItemInput>>;
   points?: InputMaybe<Scalars['Int']['input']>;
   predefinedAnswers?: InputMaybe<Array<CreatePredefinedAnswerInput>>;
   questionOrder: Scalars['Int']['input'];
@@ -1652,6 +1658,29 @@ export type NumberResponse = QuizResponse & {
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
 };
 
+export type OrderingQuestion = QuizQuestion & {
+  __typename?: 'OrderingQuestion';
+  id: Scalars['ID']['output'];
+  orderingItems: Array<QuizOrderingItem>;
+  points?: Maybe<Scalars['Int']['output']>;
+  questionOrder: Scalars['Int']['output'];
+  questionText: Scalars['String']['output'];
+  quiz: Quiz;
+  timeoutSeconds?: Maybe<Scalars['Int']['output']>;
+};
+
+export type OrderingResponse = QuizResponse & {
+  __typename?: 'OrderingResponse';
+  answeredAt?: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['ID']['output'];
+  isCorrect?: Maybe<Scalars['Boolean']['output']>;
+  pointsEarned?: Maybe<Scalars['Int']['output']>;
+  question: QuizQuestion;
+  submission: QuizSubmission;
+  submittedOrder: Array<Scalars['ID']['output']>;
+  timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
+};
+
 export type PageInfo = {
   __typename?: 'PageInfo';
   endCursor?: Maybe<Scalars['String']['output']>;
@@ -2197,6 +2226,13 @@ export type QuizFilter = {
   projectId?: InputMaybe<Scalars['ID']['input']>;
 };
 
+export type QuizOrderingItem = {
+  __typename?: 'QuizOrderingItem';
+  id: Scalars['ID']['output'];
+  itemText: Scalars['String']['output'];
+  question: QuizQuestion;
+};
+
 export type QuizPredefinedAnswer = {
   __typename?: 'QuizPredefinedAnswer';
   answerOrder: Scalars['Int']['output'];
@@ -2219,6 +2255,7 @@ export enum QuizQuestionType {
   FreeText = 'FREE_TEXT',
   Json = 'JSON',
   Number = 'NUMBER',
+  Ordering = 'ORDERING',
   Predefined = 'PREDEFINED'
 }
 
@@ -2518,6 +2555,7 @@ export type SubmitQuizAnswerInput = {
   numberResponse?: InputMaybe<Scalars['Float']['input']>;
   questionId: Scalars['ID']['input'];
   selectedAnswerIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  submittedOrder?: InputMaybe<Array<Scalars['ID']['input']>>;
   textResponse?: InputMaybe<Scalars['String']['input']>;
   timeSpentSeconds?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -2699,6 +2737,7 @@ export type UpdateQuizQuestionInput = {
   allowMultipleSelection?: InputMaybe<Scalars['Boolean']['input']>;
   maxValue?: InputMaybe<Scalars['Float']['input']>;
   minValue?: InputMaybe<Scalars['Float']['input']>;
+  orderingItems?: InputMaybe<Array<CreateOrderingItemInput>>;
   points?: InputMaybe<Scalars['Int']['input']>;
   predefinedAnswers?: InputMaybe<Array<CreatePredefinedAnswerInput>>;
   questionOrder?: InputMaybe<Scalars['Int']['input']>;
@@ -2941,12 +2980,15 @@ type QuizQuestionFields_JsonQuestion_Fragment = { __typename: 'JsonQuestion', id
 
 type QuizQuestionFields_NumberQuestion_Fragment = { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null };
 
+type QuizQuestionFields_OrderingQuestion_Fragment = { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null };
+
 type QuizQuestionFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> };
 
 export type QuizQuestionFieldsFragment =
   | QuizQuestionFields_FreeTextQuestion_Fragment
   | QuizQuestionFields_JsonQuestion_Fragment
   | QuizQuestionFields_NumberQuestion_Fragment
+  | QuizQuestionFields_OrderingQuestion_Fragment
   | QuizQuestionFields_PredefinedQuestion_Fragment
 ;
 
@@ -2956,12 +2998,15 @@ type QuizQuestionUserFields_JsonQuestion_Fragment = { __typename: 'JsonQuestion'
 
 type QuizQuestionUserFields_NumberQuestion_Fragment = { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null };
 
+type QuizQuestionUserFields_OrderingQuestion_Fragment = { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null };
+
 type QuizQuestionUserFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> };
 
 export type QuizQuestionUserFieldsFragment =
   | QuizQuestionUserFields_FreeTextQuestion_Fragment
   | QuizQuestionUserFields_JsonQuestion_Fragment
   | QuizQuestionUserFields_NumberQuestion_Fragment
+  | QuizQuestionUserFields_OrderingQuestion_Fragment
   | QuizQuestionUserFields_PredefinedQuestion_Fragment
 ;
 
@@ -3231,6 +3276,7 @@ export type AddQuizQuestionMutation = { __typename?: 'Mutation', addQuizQuestion
     | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
     | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
     | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
+    | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
     | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
    };
 
@@ -3244,6 +3290,7 @@ export type UpdateQuizQuestionMutation = { __typename?: 'Mutation', updateQuizQu
     | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
     | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
     | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
+    | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
     | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
    };
 
@@ -3263,6 +3310,7 @@ export type StartQuizSessionMutation = { __typename?: 'Mutation', startQuizSessi
       | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
       | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
       | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+      | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
       | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
     >, quiz: { __typename?: 'Quiz', id: string, name: string, timeoutSeconds?: number | null } } };
 
@@ -3277,24 +3325,35 @@ export type SubmitQuizAnswerMutation = { __typename?: 'Mutation', submitQuizAnsw
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
+        | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
     | { __typename: 'JsonResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
+        | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
     | { __typename: 'NumberResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
+        | { __typename?: 'OrderingQuestion', id: string }
+        | { __typename?: 'PredefinedQuestion', id: string }
+       }
+    | { __typename: 'OrderingResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+        | { __typename?: 'FreeTextQuestion', id: string }
+        | { __typename?: 'JsonQuestion', id: string }
+        | { __typename?: 'NumberQuestion', id: string }
+        | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
     | { __typename: 'PredefinedResponse', isCorrect?: boolean | null, selectedAnswerIds: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, isCorrect?: boolean | null }>, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
+        | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
    };
@@ -3438,30 +3497,42 @@ export type ChallengePageQuery = { __typename?: 'Query', challenge:
             | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
             | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
             | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+            | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
             | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
           >, responses: Array<
             | { __typename: 'FreeTextResponse', textResponse: string, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
+                | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
             | { __typename: 'JsonResponse', jsonResponse: any, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
+                | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
             | { __typename: 'NumberResponse', numberResponse: number, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
+                | { __typename?: 'OrderingQuestion', id: string }
+                | { __typename?: 'PredefinedQuestion', id: string }
+               }
+            | { __typename: 'OrderingResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+                | { __typename?: 'FreeTextQuestion', id: string }
+                | { __typename?: 'JsonQuestion', id: string }
+                | { __typename?: 'NumberQuestion', id: string }
+                | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
             | { __typename: 'PredefinedResponse', isCorrect?: boolean | null, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }>, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
+                | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
           > }> } }
@@ -3625,6 +3696,7 @@ export type AdminProjectChallengePageQuery = { __typename?: 'Query', challenge:
           | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
           | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
           | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
+          | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
           | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
         > }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
     | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, image?: string | null, buttonText: string, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
