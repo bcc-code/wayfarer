@@ -27,7 +27,7 @@ function onChallengeClick() {
       v-if="challenge.imageObject"
       :image="challenge.imageObject"
       :alt="challenge.name"
-      class="bg-accent aspect-[1.25] w-full"
+      class="aspect-[1.25] w-full"
     />
     <div class="bg-background-raised p-default gap-default space-y-default">
       <div class="space-y-small">
