@@ -1,5 +1,5 @@
 -- name: GetQuizResponsesBySubmissionID :many
-SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds
+SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount
 FROM quiz_responses
 WHERE submission_id = @submissionid::text;
 
@@ -8,14 +8,14 @@ SELECT
     r.id, r.submission_id, r.question_id, r.selected_answer_ids,
     r.text_response, r.number_response, r.json_response,
     r.is_correct, r.points_earned, r.answered_at, r.time_spent_seconds,
-    q.question_type
+    r.bet_amount, q.question_type
 FROM quiz_responses r
 JOIN quiz_questions q ON r.question_id = q.id
 WHERE r.submission_id = ANY(@submission_ids::text[])
 ORDER BY r.submission_id;
 
 -- name: GetQuizResponseBySubmissionAndQuestion :one
-SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds
+SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount
 FROM quiz_responses
 WHERE submission_id = @submissionid::text
     AND question_id = @questionid::text;
@@ -31,7 +31,8 @@ INSERT INTO quiz_responses (
     json_response,
     is_correct,
     points_earned,
-    time_spent_seconds
+    time_spent_seconds,
+    bet_amount
 )
 VALUES (
     @id::text,
@@ -43,9 +44,10 @@ VALUES (
     sqlc.narg('jsonresponse')::jsonb,
     sqlc.narg('iscorrect')::bool,
     sqlc.narg('pointsearned')::int,
-    sqlc.narg('timespentseconds')::int
+    sqlc.narg('timespentseconds')::int,
+    sqlc.narg('betamount')::int
 )
-RETURNING id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds;
+RETURNING id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount;
 
 -- name: UpdateQuizResponse :one
 UPDATE quiz_responses
@@ -57,9 +59,10 @@ SET
     is_correct = COALESCE(sqlc.narg('iscorrect')::bool, is_correct),
     points_earned = COALESCE(sqlc.narg('pointsearned')::int, points_earned),
     time_spent_seconds = COALESCE(sqlc.narg('timespentseconds')::int, time_spent_seconds),
+    bet_amount = COALESCE(sqlc.narg('betamount')::int, bet_amount),
     answered_at = now()
 WHERE id = @id::text
-RETURNING id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds;
+RETURNING id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount;
 
 -- name: CalculateSubmissionScore :one
 SELECT

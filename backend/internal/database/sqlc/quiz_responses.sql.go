@@ -49,7 +49,8 @@ INSERT INTO quiz_responses (
     json_response,
     is_correct,
     points_earned,
-    time_spent_seconds
+    time_spent_seconds,
+    bet_amount
 )
 VALUES (
     $1::text,
@@ -61,9 +62,10 @@ VALUES (
     $7::jsonb,
     $8::bool,
     $9::int,
-    $10::int
+    $10::int,
+    $11::int
 )
-RETURNING id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds
+RETURNING id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount
 `
 
 type CreateQuizResponseParams struct {
@@ -77,6 +79,7 @@ type CreateQuizResponseParams struct {
 	Iscorrect         *bool          `json:"iscorrect"`
 	Pointsearned      *int32         `json:"pointsearned"`
 	Timespentseconds  *int32         `json:"timespentseconds"`
+	Betamount         *int32         `json:"betamount"`
 }
 
 type CreateQuizResponseRow struct {
@@ -91,6 +94,7 @@ type CreateQuizResponseRow struct {
 	PointsEarned      *int32             `json:"points_earned"`
 	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
 	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
+	BetAmount         *int32             `json:"bet_amount"`
 }
 
 func (q *Queries) CreateQuizResponse(ctx context.Context, arg CreateQuizResponseParams) (*CreateQuizResponseRow, error) {
@@ -105,6 +109,7 @@ func (q *Queries) CreateQuizResponse(ctx context.Context, arg CreateQuizResponse
 		arg.Iscorrect,
 		arg.Pointsearned,
 		arg.Timespentseconds,
+		arg.Betamount,
 	)
 	var i CreateQuizResponseRow
 	err := row.Scan(
@@ -119,12 +124,13 @@ func (q *Queries) CreateQuizResponse(ctx context.Context, arg CreateQuizResponse
 		&i.PointsEarned,
 		&i.AnsweredAt,
 		&i.TimeSpentSeconds,
+		&i.BetAmount,
 	)
 	return &i, err
 }
 
 const GetQuizResponseBySubmissionAndQuestion = `-- name: GetQuizResponseBySubmissionAndQuestion :one
-SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds
+SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount
 FROM quiz_responses
 WHERE submission_id = $1::text
     AND question_id = $2::text
@@ -147,6 +153,7 @@ type GetQuizResponseBySubmissionAndQuestionRow struct {
 	PointsEarned      *int32             `json:"points_earned"`
 	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
 	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
+	BetAmount         *int32             `json:"bet_amount"`
 }
 
 func (q *Queries) GetQuizResponseBySubmissionAndQuestion(ctx context.Context, arg GetQuizResponseBySubmissionAndQuestionParams) (*GetQuizResponseBySubmissionAndQuestionRow, error) {
@@ -164,12 +171,13 @@ func (q *Queries) GetQuizResponseBySubmissionAndQuestion(ctx context.Context, ar
 		&i.PointsEarned,
 		&i.AnsweredAt,
 		&i.TimeSpentSeconds,
+		&i.BetAmount,
 	)
 	return &i, err
 }
 
 const GetQuizResponsesBySubmissionID = `-- name: GetQuizResponsesBySubmissionID :many
-SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds
+SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount
 FROM quiz_responses
 WHERE submission_id = $1::text
 `
@@ -186,6 +194,7 @@ type GetQuizResponsesBySubmissionIDRow struct {
 	PointsEarned      *int32             `json:"points_earned"`
 	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
 	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
+	BetAmount         *int32             `json:"bet_amount"`
 }
 
 func (q *Queries) GetQuizResponsesBySubmissionID(ctx context.Context, submissionid string) ([]*GetQuizResponsesBySubmissionIDRow, error) {
@@ -209,6 +218,7 @@ func (q *Queries) GetQuizResponsesBySubmissionID(ctx context.Context, submission
 			&i.PointsEarned,
 			&i.AnsweredAt,
 			&i.TimeSpentSeconds,
+			&i.BetAmount,
 		); err != nil {
 			return nil, err
 		}
@@ -225,7 +235,7 @@ SELECT
     r.id, r.submission_id, r.question_id, r.selected_answer_ids,
     r.text_response, r.number_response, r.json_response,
     r.is_correct, r.points_earned, r.answered_at, r.time_spent_seconds,
-    q.question_type
+    r.bet_amount, q.question_type
 FROM quiz_responses r
 JOIN quiz_questions q ON r.question_id = q.id
 WHERE r.submission_id = ANY($1::text[])
@@ -244,6 +254,7 @@ type GetQuizResponsesBySubmissionIDsRow struct {
 	PointsEarned      *int32             `json:"points_earned"`
 	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
 	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
+	BetAmount         *int32             `json:"bet_amount"`
 	QuestionType      string             `json:"question_type"`
 }
 
@@ -268,6 +279,7 @@ func (q *Queries) GetQuizResponsesBySubmissionIDs(ctx context.Context, submissio
 			&i.PointsEarned,
 			&i.AnsweredAt,
 			&i.TimeSpentSeconds,
+			&i.BetAmount,
 			&i.QuestionType,
 		); err != nil {
 			return nil, err
@@ -290,9 +302,10 @@ SET
     is_correct = COALESCE($5::bool, is_correct),
     points_earned = COALESCE($6::int, points_earned),
     time_spent_seconds = COALESCE($7::int, time_spent_seconds),
+    bet_amount = COALESCE($8::int, bet_amount),
     answered_at = now()
-WHERE id = $8::text
-RETURNING id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds
+WHERE id = $9::text
+RETURNING id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount
 `
 
 type UpdateQuizResponseParams struct {
@@ -303,6 +316,7 @@ type UpdateQuizResponseParams struct {
 	Iscorrect         *bool          `json:"iscorrect"`
 	Pointsearned      *int32         `json:"pointsearned"`
 	Timespentseconds  *int32         `json:"timespentseconds"`
+	Betamount         *int32         `json:"betamount"`
 	ID                string         `json:"id"`
 }
 
@@ -318,6 +332,7 @@ type UpdateQuizResponseRow struct {
 	PointsEarned      *int32             `json:"points_earned"`
 	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
 	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
+	BetAmount         *int32             `json:"bet_amount"`
 }
 
 func (q *Queries) UpdateQuizResponse(ctx context.Context, arg UpdateQuizResponseParams) (*UpdateQuizResponseRow, error) {
@@ -329,6 +344,7 @@ func (q *Queries) UpdateQuizResponse(ctx context.Context, arg UpdateQuizResponse
 		arg.Iscorrect,
 		arg.Pointsearned,
 		arg.Timespentseconds,
+		arg.Betamount,
 		arg.ID,
 	)
 	var i UpdateQuizResponseRow
@@ -344,6 +360,7 @@ func (q *Queries) UpdateQuizResponse(ctx context.Context, arg UpdateQuizResponse
 		&i.PointsEarned,
 		&i.AnsweredAt,
 		&i.TimeSpentSeconds,
+		&i.BetAmount,
 	)
 	return &i, err
 }

@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_GetQuiz
 createdAt: 2025-12-08T12:00:00
-updatedAt: 2026-01-26T14:03:24.801511
+updatedAt: 2026-01-27T13:51:42.409437
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Quizzes
 authentication: {}
@@ -40,6 +40,11 @@ body:
           questionText
           questionOrder
           timeoutSeconds
+          bettingEnabled
+          bettingMinPercentage
+          bettingMaxPercentage
+          bettingMinAbsolute
+          bettingMaxAbsolute
           ... on OrderingQuestion {
             orderingItems {
               id

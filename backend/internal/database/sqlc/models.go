@@ -449,6 +449,11 @@ type QuizQuestion struct {
 	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 	TimeoutSeconds         *int32             `json:"timeout_seconds"`
 	Points                 *int32             `json:"points"`
+	BettingEnabled         bool               `json:"betting_enabled"`
+	BettingMinPercentage   pgtype.Numeric     `json:"betting_min_percentage"`
+	BettingMaxPercentage   pgtype.Numeric     `json:"betting_max_percentage"`
+	BettingMinAbsolute     *int32             `json:"betting_min_absolute"`
+	BettingMaxAbsolute     *int32             `json:"betting_max_absolute"`
 }
 
 type QuizQuestionTranslation struct {
@@ -471,6 +476,7 @@ type QuizResponse struct {
 	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
 	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
 	PointsEarned      *int32             `json:"points_earned"`
+	BetAmount         *int32             `json:"bet_amount"`
 }
 
 type QuizSession struct {
