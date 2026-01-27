@@ -157,7 +157,10 @@
       "administrators": "Administratorer",
       "unitsAndPeople": "Units og personer",
       "gameNights": "Game Nights",
-      "comingSoon": "Kommer snart"
+      "comingSoon": "Kommer snart",
+      "kickOff": "Kick-off",
+      "kickOffDescription": "Denne siden er kun til bruk under kick-off. Om dere ikke gjennomfører kick-off på dette tidspunktet, vennligst forlat siden.",
+      "kickOffButton": "Start unit-onboarding"
     },
     "admins": {
       "searchPlaceholder": "Søk på administratorer...",
