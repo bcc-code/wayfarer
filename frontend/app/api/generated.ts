@@ -3542,7 +3542,7 @@ export type ChallengePageQuery = { __typename?: 'Query', challenge:
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', challenges: Array<
+export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', myTeam?: { __typename?: 'Team', joinCode: string } | null, challenges: Array<
       | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
       | { __typename: 'PluginChallenge', id: string, name: string, description: any, buttonText?: string | null, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
       | { __typename: 'QuizChallenge', id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', userCanStart: boolean, userActiveSession?: { __typename?: 'QuizSession', id: string } | null }, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
@@ -4800,6 +4800,9 @@ export function useChallengePageQuery(options?: Omit<Urql.UseQueryArgs<never, Ch
 export const ChallengesPageDocument = gql`
     query ChallengesPage {
   myCurrentProject {
+    myTeam {
+      joinCode
+    }
     challenges {
       __typename
       id

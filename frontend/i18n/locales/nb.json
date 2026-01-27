@@ -139,6 +139,10 @@
     "notNow": "Ikke nå"
   },
   "goToHiddenTreasures": "Gå til bibelstudie",
+  "gameNights": {
+    "yourCode": "Din unit kode for Game Night",
+    "yourCodeHint": "Åpne siden på din PC og tast inn koden"
+  },
   "admin": {
     "common": {
       "back": "Tilbake",

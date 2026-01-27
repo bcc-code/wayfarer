@@ -644,6 +644,7 @@ func (r *projectResolver) MyTeam(ctx context.Context, obj *model.Project) (*mode
 		Name:        row.Name,
 		Description: description,
 		SuperTeamID: superTeamID,
+		JoinCode:    row.JoinCode,
 	}, nil
 }
 
