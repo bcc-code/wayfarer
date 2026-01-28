@@ -139,6 +139,10 @@
     "notNow": "Nie teraz"
   },
   "goToHiddenTreasures": "Przejdź do projektu biblijnego",
+  "gameNights": {
+    "yourCode": "Twój kod unitu na Game Night",
+    "yourCodeHint": "Otwórz stronę na komputerze i wprowadź kod"
+  },
   "admin": {
     "common": {
       "back": "Wróć",
