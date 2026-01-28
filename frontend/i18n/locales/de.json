@@ -139,6 +139,10 @@
     "notNow": "Nicht jetzt"
   },
   "goToHiddenTreasures": "Zum Bibelstudium",
+  "gameNights": {
+    "yourCode": "Dein Unit-Code für die Game Night",
+    "yourCodeHint": "Öffne die Seite auf deinem PC und gib den Code ein"
+  },
   "admin": {
     "common": {
       "back": "Zurück",

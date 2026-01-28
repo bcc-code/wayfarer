@@ -139,6 +139,10 @@
     "notNow": "Mitte praegu"
   },
   "goToHiddenTreasures": "Mine piibliõppe juurde",
+  "gameNights": {
+    "yourCode": "Sinu üksuse kood mänguõhtuks",
+    "yourCodeHint": "Ava leht oma arvutis ja sisesta kood."
+  },
   "admin": {
     "common": {
       "back": "Tagasi",
