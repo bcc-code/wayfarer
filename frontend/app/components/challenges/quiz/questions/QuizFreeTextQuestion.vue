@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { NumberQuestionData } from './types'
+import type { FreeTextQuestionData } from '../types'
 
 defineProps<{
-  question: NumberQuestionData
+  question: FreeTextQuestionData
 }>()
 </script>
 

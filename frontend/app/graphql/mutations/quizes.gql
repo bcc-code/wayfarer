@@ -73,6 +73,17 @@ mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
   }
 }
 
+mutation UpdateQuizAnswer($responseId: ID!, $input: UpdateQuizAnswerInput!) {
+  updateQuizAnswer(responseId: $responseId, input: $input) {
+    __typename
+    id
+    ... on OrderingResponse {
+      isCorrect
+      submittedOrder
+    }
+  }
+}
+
 mutation FinalizeQuiz($submissionId: ID!) {
   finalizeQuiz(submissionId: $submissionId) {
     ...QuizSubmissionResultFields

@@ -6,6 +6,7 @@ import type {
   PredefinedResponseData,
   OrderingQuestionData,
   OrderingResponseData,
+  QuizQuestionExposed,
 } from './quiz/types'
 import type {
   FinalizeQuizMutation,
@@ -167,6 +168,27 @@ const isLastQuestion = computed(() => {
   return currentQuestionIndex.value === questions.value.length - 1
 })
 
+// Get session state for ordering questions betting mode
+const sessionState = computed(() => {
+  return props.challenge.quiz.userActiveSession?.state
+})
+
+// Find existing ordering response for the current question
+const currentResponse = computed(() => {
+  const submission = activeSubmission.value
+  if (!submission) return undefined
+
+  if ('responses' in submission) {
+    const response = submission.responses.find(
+      (r) => r.question.id === currentQuestion.value?.id,
+    )
+
+    return response
+  }
+
+  return undefined
+})
+
 async function handleAnswerSubmitted(result: QuestionResult) {
   questionResults.value.push(result)
 
@@ -204,6 +226,38 @@ function handleQuizAbandoned() {
     })
   }
 }
+
+// Template refs for question components
+const currentQuestionRef = ref<QuizQuestionExposed | null>(null)
+const reviewModeRef = ref<QuizQuestionExposed | null>(null)
+
+// Get the active ref based on current mode
+const activeRef = computed(() =>
+  isReviewMode.value ? reviewModeRef.value : currentQuestionRef.value,
+)
+
+// Get action state and handlers from the active question component
+// For question components: actionState is ComputedRef<QuizActionState>, so we need .value
+// For QuizReviewMode: actionState is ComputedRef<QuizActionState | undefined>, so we also need .value
+const actionState = computed(() => activeRef.value?.actionState)
+const handlers = computed(() => activeRef.value?.handlers)
+
+// Determine button text for continue action
+const { t } = useI18n()
+const continueButtonText = computed(() => {
+  if (isLastQuestion.value) {
+    return t('quiz.continue')
+  }
+  return t('quiz.nextQuestion')
+})
+
+// Determine button text for next action in review mode
+const nextButtonText = computed(() => {
+  if (actionState.value?.isLastQuestion) {
+    return t('quiz.finishReview')
+  }
+  return t('quiz.nextQuestion')
+})
 </script>
 
 <template>
@@ -221,9 +275,6 @@ function handleQuizAbandoned() {
         :total-questions="questions.length"
         :results="questionResults"
       />
-      <h1 v-else class="text-heading text-text-default">
-        {{ challenge.quiz.name }}
-      </h1>
     </template>
 
     <template v-if="isLoading">
@@ -244,6 +295,7 @@ function handleQuizAbandoned() {
     <template v-else-if="completedSubmission && !canStartQuiz">
       <QuizReviewMode
         v-if="isReviewMode"
+        ref="reviewModeRef"
         :questions="reviewQuestions"
         :responses="reviewResponses"
         :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
@@ -261,22 +313,48 @@ function handleQuizAbandoned() {
     </template>
 
     <template v-else-if="currentQuestion">
+      <div
+        class="flex flex-col items-center justify-center py-6 gap-1 text-center"
+      >
+        <p v-if="questions.length > 1" class="text-caption text-text-muted">
+          {{
+            $t('quiz.questionNumber', {
+              current: currentQuestionIndex + 1,
+              total: questions.length,
+            })
+          }}
+        </p>
+        <h1 class="text-heading text-text-default text-balance">
+          {{ currentQuestion.questionText }}
+        </h1>
+      </div>
+
       <QuizPredefinedQuestion
         v-if="currentQuestion.__typename === 'PredefinedQuestion'"
+        ref="currentQuestionRef"
         :key="`predefined:${currentQuestion.id}`"
         :question="currentQuestion"
         :total-questions="questions.length"
         :current-index="currentQuestionIndex"
         :submission-id="activeSubmission?.id ?? ''"
+        :is-last-question="isLastQuestion"
         @answer-submitted="handleAnswerSubmitted"
       />
       <QuizOrderingQuestion
         v-else-if="currentQuestion.__typename === 'OrderingQuestion'"
+        ref="currentQuestionRef"
         :key="`ordering:${currentQuestion.id}`"
         :question="currentQuestion"
         :total-questions="questions.length"
         :current-index="currentQuestionIndex"
         :submission-id="activeSubmission?.id ?? ''"
+        :session-state="sessionState"
+        :existing-response="
+          currentResponse?.__typename === 'OrderingResponse'
+            ? currentResponse
+            : undefined
+        "
+        :is-last-question="isLastQuestion"
         @answer-submitted="handleAnswerSubmitted"
       />
       <QuizNumberQuestion
@@ -300,6 +378,7 @@ function handleQuizAbandoned() {
     <template v-else-if="completedSubmission">
       <QuizReviewMode
         v-if="isReviewMode"
+        ref="reviewModeRef"
         :questions="reviewQuestions"
         :responses="reviewResponses"
         :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
@@ -329,6 +408,79 @@ function handleQuizAbandoned() {
     <template v-else>
       <div class="flex items-center justify-center grow">
         <LoadingState />
+      </div>
+    </template>
+
+    <template #footer>
+      <div
+        v-if="actionState && !quizCompleted"
+        class="w-full p-default flex flex-col"
+      >
+        <!-- Normal mode -->
+        <template v-if="actionState.mode === 'normal'">
+          <DesignButton
+            v-if="!actionState.isAnswerLocked"
+            size="large"
+            :disabled="!actionState.canSubmit || actionState.isSubmitting"
+            :loading="actionState.isSubmitting"
+            @click="handlers?.submit"
+          >
+            {{ $t('quiz.lockAnswer') }}
+          </DesignButton>
+          <DesignButton v-else size="large" @click="handlers?.continue">
+            {{ continueButtonText }}
+          </DesignButton>
+        </template>
+
+        <!-- Session betting mode -->
+        <template v-else-if="actionState.mode === 'session-betting'">
+          <DesignButton
+            v-if="!actionState.isBetSaved || actionState.isEditing"
+            size="large"
+            :disabled="actionState.isSubmitting"
+            :loading="actionState.isSubmitting"
+            @click="handlers?.submit"
+          >
+            {{ $t('quiz.saveAnswer') }}
+          </DesignButton>
+          <DesignButton
+            v-else
+            size="large"
+            variant="secondary"
+            @click="handlers?.changeBet"
+          >
+            {{ $t('quiz.changeAnswer') }}
+          </DesignButton>
+        </template>
+
+        <!-- Session locked -->
+        <template v-else-if="actionState.mode === 'session-locked'">
+          <div class="text-center text-text-hint text-body py-small">
+            {{ $t('quiz.betting.sessionLocked') }}
+          </div>
+        </template>
+
+        <!-- Review mode -->
+        <template v-else-if="actionState.mode === 'review'">
+          <div class="flex gap-small">
+            <DesignButton
+              v-if="actionState.showPreviousButton"
+              size="large"
+              variant="secondary"
+              class="flex-1"
+              @click="handlers?.previous"
+            >
+              {{ $t('quiz.previousQuestion') }}
+            </DesignButton>
+            <DesignButton
+              size="large"
+              :class="actionState.showPreviousButton ? 'flex-1' : 'w-full'"
+              @click="handlers?.next"
+            >
+              {{ nextButtonText }}
+            </DesignButton>
+          </div>
+        </template>
       </div>
     </template>
   </PageLayout>

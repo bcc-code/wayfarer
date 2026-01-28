@@ -4,6 +4,9 @@ import type {
   PredefinedResponseData,
   OrderingQuestionData,
   OrderingResponseData,
+  QuizActionState,
+  QuizActionHandlers,
+  QuizQuestionExposed,
 } from './types'
 
 const props = defineProps<{
@@ -66,11 +69,42 @@ function handleNext() {
     currentQuestionIndex.value++
   }
 }
+
+// Template ref for the current question component
+const currentQuestionRef = ref<QuizQuestionExposed | null>(null)
+
+// Forward the action state from the current question component
+const actionState = computed<QuizActionState | undefined>(() => {
+  return currentQuestionRef.value?.actionState.value
+})
+
+// Forward the handlers from the current question component
+// These must be methods that delegate to the current question's handlers
+const handlers: QuizActionHandlers = {
+  submit: async () => {
+    await currentQuestionRef.value?.handlers.submit()
+  },
+  continue: () => {
+    currentQuestionRef.value?.handlers.continue()
+  },
+  changeBet: () => {
+    currentQuestionRef.value?.handlers.changeBet()
+  },
+  previous: () => {
+    currentQuestionRef.value?.handlers.previous()
+  },
+  next: () => {
+    currentQuestionRef.value?.handlers.next()
+  },
+}
+
+defineExpose({ actionState, handlers })
 </script>
 
 <template>
   <QuizPredefinedQuestion
     v-if="currentQuestion && currentQuestion.__typename === 'PredefinedQuestion'"
+    ref="currentQuestionRef"
     :key="currentQuestion.id"
     :question="currentQuestion"
     :total-questions="questions.length"
@@ -86,6 +120,7 @@ function handleNext() {
   />
   <QuizOrderingQuestion
     v-else-if="currentQuestion && currentQuestion.__typename === 'OrderingQuestion'"
+    ref="currentQuestionRef"
     :key="currentQuestion.id"
     :question="currentQuestion"
     :total-questions="questions.length"

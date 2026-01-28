@@ -907,6 +907,7 @@ type OrderingResponse struct {
 	PointsEarned     *int              `json:"pointsEarned,omitempty"`
 	SubmittedOrder   []string          `json:"submittedOrder"`
 	IsCorrect        *bool             `json:"isCorrect,omitempty"`
+	IsCorrectValue   *bool             `json:"-"`
 	QuestionID       string            `json:"-"`
 	SubmissionID     string            `json:"-"`
 }
@@ -1682,6 +1683,10 @@ type UpdateProjectInput struct {
 	StartDate        *scalars.DateTime `json:"startDate,omitempty"`
 	EndDate          *scalars.DateTime `json:"endDate,omitempty"`
 	Branding         *BrandingInput    `json:"branding,omitempty"`
+}
+
+type UpdateQuizAnswerInput struct {
+	SubmittedOrder []string `json:"submittedOrder,omitempty"`
 }
 
 type UpdateQuizInput struct {

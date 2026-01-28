@@ -1,3 +1,4 @@
+import type { ComputedRef } from 'vue'
 import type {
   ChallengePageQuery,
   SubmitQuizAnswerMutation,
@@ -55,4 +56,34 @@ export type OrderingResponseData = Extract<
 export interface QuestionResult {
   questionId: string
   isCorrect: boolean | null
+}
+
+export type QuizActionMode =
+  | 'normal' // Standard: lock answer -> continue
+  | 'session-betting' // Ordering with session: save -> change workflow
+  | 'session-locked' // Session locked, no actions
+  | 'review' // Review mode: previous/next navigation
+
+export interface QuizActionState {
+  mode: QuizActionMode
+  canSubmit: boolean // Has selection/order to submit
+  isSubmitting: boolean // Currently submitting
+  isAnswerLocked: boolean // Answer confirmed
+  isBetSaved: boolean // Bet saved (session betting)
+  isEditing: boolean // Editing saved bet
+  showPreviousButton: boolean
+  isLastQuestion: boolean
+}
+
+export interface QuizActionHandlers {
+  submit: () => Promise<void>
+  continue: () => void
+  changeBet: () => void
+  previous: () => void
+  next: () => void
+}
+
+export interface QuizQuestionExposed {
+  actionState: ComputedRef<QuizActionState>
+  handlers: QuizActionHandlers
 }

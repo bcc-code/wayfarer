@@ -22,6 +22,8 @@
     "correctAnswer": "Riktig svar",
     "yourAnswer": "Ditt svar",
     "lockAnswer": "Lås svar",
+    "saveAnswer": "Lagre svar",
+    "changeAnswer": "Endre svar",
     "questionNumber": "{current} av {total}",
     "continue": "Fortsett",
     "nextQuestion": "Neste spørsmål",
@@ -37,11 +39,6 @@
       "betterLuckNextTime": "Bedre lykke neste gang!",
       "wellDone": "Bra jobbet!",
       "perfect": "Perfekt!"
-    },
-    "betting": {
-      "saveBet": "Lagre tipping",
-      "changeBet": "Endre tipping",
-      "done": "Ferdig"
     }
   },
   "pages": {

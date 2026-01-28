@@ -32,27 +32,6 @@ const visibleChallenges = computed(() => {
   })
 })
 
-// Staggered entrance animation for challenge cards
-const cardsContainer = ref<HTMLElement | null>(null)
-const { animate } = useStaggeredEntrance()
-const hasAnimated = ref(false)
-
-watch(
-  () => visibleChallenges.value,
-  (challenges) => {
-    if (hasAnimated.value) return
-    if (challenges.length > 0 && cardsContainer.value) {
-      hasAnimated.value = true
-      nextTick(() => {
-        const cards = cardsContainer.value?.querySelectorAll('.challenge-card')
-        if (cards) {
-          animate(cards)
-        }
-      })
-    }
-  },
-)
-
 const joinCode = computed(() =>
   data.value?.myCurrentProject.myTeam?.joinCode.split(''),
 )
@@ -64,7 +43,6 @@ const joinCode = computed(() =>
     <ErrorState v-else-if="error" :error />
     <div
       v-else-if="visibleChallenges.length"
-      ref="cardsContainer"
       class="space-y-list-section-gap p-list-outside"
     >
       <template v-for="challenge in visibleChallenges" :key="challenge.id">

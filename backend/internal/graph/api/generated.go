@@ -517,6 +517,7 @@ type ComplexityRoot struct {
 		UpdateFeedbackTags                          func(childComplexity int, feedbackID string, tags []string) int
 		UpdateProject                               func(childComplexity int, id string, input model.UpdateProjectInput) int
 		UpdateQuiz                                  func(childComplexity int, id string, input model.UpdateQuizInput) int
+		UpdateQuizAnswer                            func(childComplexity int, responseID string, input model.UpdateQuizAnswerInput) int
 		UpdateQuizQuestion                          func(childComplexity int, id string, input model.UpdateQuizQuestionInput) int
 		UpdateQuizSession                           func(childComplexity int, id string, input model.UpdateQuizSessionInput) int
 		UpdateStreak                                func(childComplexity int, id string, input model.UpdateStreakInput) int
@@ -1291,6 +1292,7 @@ type MutationResolver interface {
 	ReorderQuizQuestions(ctx context.Context, quizID string, questionIds []string) ([]model.QuizQuestion, error)
 	CreateQuizAchievement(ctx context.Context, input model.CreateQuizAchievementInput) (*model.QuizAchievement, error)
 	SubmitQuizAnswer(ctx context.Context, submissionID string, input model.SubmitQuizAnswerInput) (model.QuizResponse, error)
+	UpdateQuizAnswer(ctx context.Context, responseID string, input model.UpdateQuizAnswerInput) (model.QuizResponse, error)
 	FinalizeQuiz(ctx context.Context, submissionID string) (*model.QuizSubmission, error)
 	CreateQuizSubmission(ctx context.Context, quizID string, userID string, responses []model.SubmitQuizAnswerInput, completedAt *scalars.DateTime) (*model.QuizSubmission, error)
 	CreateQuizSession(ctx context.Context, input model.CreateQuizSessionInput) (*model.QuizSession, error)
@@ -1336,6 +1338,8 @@ type OrderingQuestionResolver interface {
 type OrderingResponseResolver interface {
 	Submission(ctx context.Context, obj *model.OrderingResponse) (*model.QuizSubmission, error)
 	Question(ctx context.Context, obj *model.OrderingResponse) (model.QuizQuestion, error)
+
+	IsCorrect(ctx context.Context, obj *model.OrderingResponse) (*bool, error)
 }
 type PluginChallengeResolver interface {
 	ImageObject(ctx context.Context, obj *model.PluginChallenge) (*model.Image, error)
@@ -4050,6 +4054,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateQuiz(childComplexity, args["id"].(string), args["input"].(model.UpdateQuizInput)), true
+	case "Mutation.updateQuizAnswer":
+		if e.complexity.Mutation.UpdateQuizAnswer == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateQuizAnswer_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateQuizAnswer(childComplexity, args["responseId"].(string), args["input"].(model.UpdateQuizAnswerInput)), true
 	case "Mutation.updateQuizQuestion":
 		if e.complexity.Mutation.UpdateQuizQuestion == nil {
 			break
@@ -7167,6 +7182,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateContentAchievementInput,
 		ec.unmarshalInputUpdateEventInput,
 		ec.unmarshalInputUpdateProjectInput,
+		ec.unmarshalInputUpdateQuizAnswerInput,
 		ec.unmarshalInputUpdateQuizInput,
 		ec.unmarshalInputUpdateQuizQuestionInput,
 		ec.unmarshalInputUpdateQuizSessionInput,
@@ -9016,7 +9032,7 @@ type OrderingResponse implements QuizResponse {
     timeSpentSeconds: Int
     pointsEarned: Int
     submittedOrder: [ID!]!
-    isCorrect: Boolean
+    isCorrect: Boolean @goField(forceResolver: true)
 }
 
 # ==================== Quiz Input Types ====================
@@ -9109,6 +9125,10 @@ input SubmitQuizAnswerInput {
     timeSpentSeconds: Int
 }
 
+input UpdateQuizAnswerInput {
+    submittedOrder: [ID!]  # For ordering questions
+}
+
 input QuizFilter {
     projectId: ID
     challengeId: ID
@@ -9182,6 +9202,7 @@ extend type Mutation {
 
     # User: Taking quizzes (via sessions - use startQuizSession)
     submitQuizAnswer(submissionId: ID!, input: SubmitQuizAnswerInput!): QuizResponse!
+    updateQuizAnswer(responseId: ID!, input: UpdateQuizAnswerInput!): QuizResponse!
     finalizeQuiz(submissionId: ID!): QuizSubmission!
 
     # M2M: External submission
@@ -11234,6 +11255,22 @@ func (ec *executionContext) field_Mutation_updateProject_args(ctx context.Contex
 	}
 	args["id"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateProjectInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateProjectInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateQuizAnswer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "responseId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["responseId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateQuizAnswerInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateQuizAnswerInput)
 	if err != nil {
 		return nil, err
 	}
@@ -25138,6 +25175,47 @@ func (ec *executionContext) fieldContext_Mutation_submitQuizAnswer(ctx context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_updateQuizAnswer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateQuizAnswer,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateQuizAnswer(ctx, fc.Args["responseId"].(string), fc.Args["input"].(model.UpdateQuizAnswerInput))
+		},
+		nil,
+		ec.marshalNQuizResponse2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateQuizAnswer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateQuizAnswer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_finalizeQuiz(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -28126,7 +28204,7 @@ func (ec *executionContext) _OrderingResponse_isCorrect(ctx context.Context, fie
 		field,
 		ec.fieldContext_OrderingResponse_isCorrect,
 		func(ctx context.Context) (any, error) {
-			return obj.IsCorrect, nil
+			return ec.resolvers.OrderingResponse().IsCorrect(ctx, obj)
 		},
 		nil,
 		ec.marshalOBoolean2ᚖbool,
@@ -28139,8 +28217,8 @@ func (ec *executionContext) fieldContext_OrderingResponse_isCorrect(_ context.Co
 	fc = &graphql.FieldContext{
 		Object:     "OrderingResponse",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
 		},
@@ -49534,6 +49612,33 @@ func (ec *executionContext) unmarshalInputUpdateProjectInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateQuizAnswerInput(ctx context.Context, obj any) (model.UpdateQuizAnswerInput, error) {
+	var it model.UpdateQuizAnswerInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"submittedOrder"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "submittedOrder":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("submittedOrder"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubmittedOrder = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateQuizInput(ctx context.Context, obj any) (model.UpdateQuizInput, error) {
 	var it model.UpdateQuizInput
 	asMap := map[string]any{}
@@ -54178,6 +54283,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updateQuizAnswer":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateQuizAnswer(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "finalizeQuiz":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_finalizeQuiz(ctx, field)
@@ -54846,7 +54958,38 @@ func (ec *executionContext) _OrderingResponse(ctx context.Context, sel ast.Selec
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "isCorrect":
-			out.Values[i] = ec._OrderingResponse_isCorrect(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OrderingResponse_isCorrect(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -66118,6 +66261,11 @@ func (ec *executionContext) unmarshalNUpdateEventInput2githubᚗcomᚋbccᚑmedi
 
 func (ec *executionContext) unmarshalNUpdateProjectInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateProjectInput(ctx context.Context, v any) (model.UpdateProjectInput, error) {
 	res, err := ec.unmarshalInputUpdateProjectInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateQuizAnswerInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateQuizAnswerInput(ctx context.Context, v any) (model.UpdateQuizAnswerInput, error) {
+	res, err := ec.unmarshalInputUpdateQuizAnswerInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
