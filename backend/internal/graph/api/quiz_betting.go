@@ -33,7 +33,8 @@ type BetValidationConfig struct {
 // Returns nil if the bet is valid, or a BetValidationError if invalid.
 //
 // Validation rules:
-// - If bet is nil or 0, it's always valid (no bet placed)
+// - If betting is enabled, a bet must be provided (nil or 0 is rejected)
+// - If betting is disabled and bet is nil or 0, it's valid (no bet placed)
 // - If betting is disabled on the question, any non-zero bet is rejected
 // - Bet must be >= 0
 // - Bet must not exceed user's current score
@@ -49,7 +50,15 @@ func ValidateBet(
 	config BetValidationConfig,
 	betAmount *int,
 ) error {
-	// No bet or zero bet is always valid
+	// If betting is enabled, a bet is required
+	if config.BettingEnabled && (betAmount == nil || *betAmount == 0) {
+		return &BetValidationError{
+			Field:   "betAmount",
+			Message: "bet is required when betting is enabled",
+		}
+	}
+
+	// No bet or zero bet is valid when betting is not enabled
 	if betAmount == nil || *betAmount == 0 {
 		return nil
 	}
@@ -64,7 +73,8 @@ func ValidateBet(
 		}
 	}
 
-	// Betting must be enabled on the question
+	// At this point betting must be enabled (we checked above for nil/zero bets)
+	// but we keep this check for safety in case the function is called directly
 	if !config.BettingEnabled {
 		return &BetValidationError{
 			Field:   "betAmount",

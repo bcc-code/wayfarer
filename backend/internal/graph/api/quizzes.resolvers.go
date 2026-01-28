@@ -782,8 +782,8 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		return nil, fmt.Errorf("question does not belong to this quiz")
 	}
 
-	// Validate bet if provided
-	if input.BetAmount != nil && *input.BetAmount > 0 {
+	// Validate bet - always validate when betting is enabled to enforce required bets
+	if question.BettingEnabled || (input.BetAmount != nil && *input.BetAmount > 0) {
 		// Load quiz to get project ID for score lookup
 		quizThunk := r.Loaders.QuizByIDLoader.Load(ctx, submission.QuizID)
 		quiz, quizErr := quizThunk()

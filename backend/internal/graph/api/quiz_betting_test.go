@@ -32,23 +32,50 @@ func numericFromFloat(val float64) pgtype.Numeric {
 	return n
 }
 
-func TestValidateBet_NilBet(t *testing.T) {
+func TestValidateBet_NilBet_BettingEnabled(t *testing.T) {
 	config := BetValidationConfig{
 		BettingEnabled: true,
 	}
 
 	err := ValidateBet(context.Background(), nil, "user1", "project1", config, nil)
-	assert.NoError(t, err, "nil bet should always be valid")
+	require.Error(t, err, "nil bet should be rejected when betting is enabled")
+	betErr, ok := err.(*BetValidationError)
+	require.True(t, ok)
+	assert.Equal(t, "betAmount", betErr.Field)
+	assert.Contains(t, betErr.Message, "bet is required when betting is enabled")
 }
 
-func TestValidateBet_ZeroBet(t *testing.T) {
+func TestValidateBet_NilBet_BettingDisabled(t *testing.T) {
+	config := BetValidationConfig{
+		BettingEnabled: false,
+	}
+
+	err := ValidateBet(context.Background(), nil, "user1", "project1", config, nil)
+	assert.NoError(t, err, "nil bet should be valid when betting is disabled")
+}
+
+func TestValidateBet_ZeroBet_BettingEnabled(t *testing.T) {
 	config := BetValidationConfig{
 		BettingEnabled: true,
 	}
 
 	zeroBet := 0
 	err := ValidateBet(context.Background(), nil, "user1", "project1", config, &zeroBet)
-	assert.NoError(t, err, "zero bet should always be valid")
+	require.Error(t, err, "zero bet should be rejected when betting is enabled")
+	betErr, ok := err.(*BetValidationError)
+	require.True(t, ok)
+	assert.Equal(t, "betAmount", betErr.Field)
+	assert.Contains(t, betErr.Message, "bet is required when betting is enabled")
+}
+
+func TestValidateBet_ZeroBet_BettingDisabled(t *testing.T) {
+	config := BetValidationConfig{
+		BettingEnabled: false,
+	}
+
+	zeroBet := 0
+	err := ValidateBet(context.Background(), nil, "user1", "project1", config, &zeroBet)
+	assert.NoError(t, err, "zero bet should be valid when betting is disabled")
 }
 
 func TestValidateBet_NegativeBet(t *testing.T) {
@@ -273,10 +300,11 @@ func TestValidateBet_ZeroScore_AbsoluteLimitsStillApply(t *testing.T) {
 		BettingMaxAbsolute: &maxAbs,
 	}
 
-	// With score 0 and max absolute 0, bet=0 is valid
+	// With betting enabled, zero bet is rejected (bet is required)
 	bet := 0
 	err := validateBetWithMockQueries(context.Background(), queries, "user1", "project1", config, &bet)
-	assert.NoError(t, err, "zero bet should be valid even with zero score")
+	require.Error(t, err, "zero bet should be rejected when betting is enabled")
+	assert.Contains(t, err.Error(), "bet is required when betting is enabled")
 }
 
 func TestValidateBet_NoLimitsSet_AnyBetUpToScoreValid(t *testing.T) {
@@ -306,7 +334,15 @@ func validateBetWithMockQueries(
 	config BetValidationConfig,
 	betAmount *int,
 ) error {
-	// Early returns that don't need the queries
+	// If betting is enabled, a bet is required
+	if config.BettingEnabled && (betAmount == nil || *betAmount == 0) {
+		return &BetValidationError{
+			Field:   "betAmount",
+			Message: "bet is required when betting is enabled",
+		}
+	}
+
+	// No bet or zero bet is valid when betting is not enabled
 	if betAmount == nil || *betAmount == 0 {
 		return nil
 	}

@@ -449,7 +449,7 @@ func TestQuizBetting(t *testing.T) {
 		assert.Equal(t, 25, *result.SubmitQuizAnswer.BetAmount)
 	})
 
-	t.Run("user can submit answer without bet when betting enabled", func(t *testing.T) {
+	t.Run("bet required when betting enabled", func(t *testing.T) {
 		challengeID := createChallenge(t, "No Bet Challenge")
 		publishChallenge(t, challengeID)
 		makeChallengeVisible(t, challengeID)
@@ -460,7 +460,7 @@ func TestQuizBetting(t *testing.T) {
 
 		submissionID := startQuiz(t, quizID, userID, userToken)
 
-		// Submit answer without bet
+		// Submit answer without bet - should fail when betting is enabled
 		resp := client.WithAuth(userToken).MustExecute(t, `
 			mutation SubmitAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
 				submitQuizAnswer(submissionId: $submissionId, input: $input) {
@@ -476,16 +476,8 @@ func TestQuizBetting(t *testing.T) {
 				"timeSpentSeconds":  10,
 			},
 		})
-		require.False(t, resp.HasErrors(), "failed to submit answer: %s", resp.ErrorMessage())
-
-		var result struct {
-			SubmitQuizAnswer struct {
-				BetAmount *int `json:"betAmount"`
-			} `json:"submitQuizAnswer"`
-		}
-		require.NoError(t, resp.UnmarshalData(&result))
-
-		assert.Nil(t, result.SubmitQuizAnswer.BetAmount)
+		require.True(t, resp.HasErrors(), "expected error when betting is enabled but no bet provided")
+		assert.Contains(t, resp.ErrorMessage(), "bet is required when betting is enabled")
 	})
 
 	t.Run("bet rejected when betting is disabled", func(t *testing.T) {
@@ -685,7 +677,7 @@ func TestQuizBetting(t *testing.T) {
 		assert.True(t, resp.HasErrors())
 	})
 
-	t.Run("zero bet always valid when betting enabled", func(t *testing.T) {
+	t.Run("zero bet rejected when betting enabled", func(t *testing.T) {
 		challengeID := createChallenge(t, "Zero Bet Challenge")
 		publishChallenge(t, challengeID)
 		makeChallengeVisible(t, challengeID)
@@ -711,22 +703,11 @@ func TestQuizBetting(t *testing.T) {
 				"questionId":        questionID,
 				"selectedAnswerIds": []string{},
 				"timeSpentSeconds":  10,
-				"betAmount":         0, // Zero bet should always be valid
+				"betAmount":         0, // Zero bet should be rejected when betting is enabled
 			},
 		})
-		require.False(t, resp.HasErrors(), "zero bet should be valid: %s", resp.ErrorMessage())
-
-		var result struct {
-			SubmitQuizAnswer struct {
-				BetAmount *int `json:"betAmount"`
-			} `json:"submitQuizAnswer"`
-		}
-		require.NoError(t, resp.UnmarshalData(&result))
-
-		// Zero bet is stored as nil or 0
-		if result.SubmitQuizAnswer.BetAmount != nil {
-			assert.Equal(t, 0, *result.SubmitQuizAnswer.BetAmount)
-		}
+		require.True(t, resp.HasErrors(), "zero bet should be rejected when betting is enabled")
+		assert.Contains(t, resp.ErrorMessage(), "bet is required when betting is enabled")
 	})
 
 	// ==================== BETTING FIELDS ON ALL QUESTION TYPES ====================
