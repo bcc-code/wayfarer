@@ -25,6 +25,7 @@
     "unavailable": "This quiz is not available at the moment.",
     "reviewAnswers": "Review answers",
     "finishReview": "Finish review",
+    "dragToReorder": "Drag to reorder",
     "result": {
       "receivedNoPoints": "You did not receive any points.",
       "receivedPoints": "You received {points} points.",

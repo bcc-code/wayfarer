@@ -100,6 +100,8 @@ function getQuestionType(typename: string): QuizQuestionType {
       return QuizQuestionType.FreeText
     case 'JsonQuestion':
       return QuizQuestionType.Json
+    case 'OrderingQuestion':
+      return QuizQuestionType.Ordering
     default:
       return QuizQuestionType.Predefined
   }
@@ -158,6 +160,14 @@ const quizData = computed<QuizFormData | undefined>(() => {
               answerText: a.answerText,
               isCorrect: a.isCorrect ?? false,
               answerOrder: a.answerOrder,
+            }))
+          : undefined,
+      orderingItems:
+        q.__typename === 'OrderingQuestion'
+          ? q.orderingItems.map((item, index) => ({
+              id: item.id,
+              itemText: item.itemText,
+              correctOrder: index + 1,
             }))
           : undefined,
       minValue:
@@ -225,6 +235,10 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
               isCorrect: a.isCorrect,
               answerOrder: a.answerOrder,
             })),
+            orderingItems: question.orderingItems?.map((item) => ({
+              itemText: item.itemText,
+              correctOrder: item.correctOrder,
+            })),
             minValue: question.minValue,
             maxValue: question.maxValue,
             stepValue: question.stepValue,
@@ -245,6 +259,10 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
               answerText: a.answerText,
               isCorrect: a.isCorrect,
               answerOrder: a.answerOrder,
+            })),
+            orderingItems: question.orderingItems?.map((item) => ({
+              itemText: item.itemText,
+              correctOrder: item.correctOrder,
             })),
             minValue: question.minValue,
             maxValue: question.maxValue,
@@ -294,6 +312,10 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
             answerText: a.answerText,
             isCorrect: a.isCorrect,
             answerOrder: a.answerOrder,
+          })),
+          orderingItems: question.orderingItems?.map((item) => ({
+            itemText: item.itemText,
+            correctOrder: item.correctOrder,
           })),
           minValue: question.minValue,
           maxValue: question.maxValue,

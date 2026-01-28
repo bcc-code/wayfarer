@@ -30,6 +30,7 @@
     "unavailable": "Denne quizen er ikke tilgjengelig for øyeblikket.",
     "reviewAnswers": "Se svar",
     "finishReview": "Avslutt gjennomgang",
+    "dragToReorder": "Dra for å endre rekkefølgen",
     "result": {
       "receivedNoPoints": "Du samlet ingen poeng.",
       "receivedPoints": "Du samlet {points} poeng.",

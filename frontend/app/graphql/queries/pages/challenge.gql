@@ -74,6 +74,10 @@ query ChallengePage($challengeId: ID!) {
                 isCorrect
               }
             }
+            ... on OrderingResponse {
+              isCorrect
+              submittedOrder
+            }
           }
         }
       }

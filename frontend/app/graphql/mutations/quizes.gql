@@ -66,6 +66,10 @@ mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
         isCorrect
       }
     }
+    ... on OrderingResponse {
+      isCorrect
+      submittedOrder
+    }
   }
 }
 

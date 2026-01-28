@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { VueDraggable } from 'vue-draggable-plus'
 import type { QuizQuestionFormData } from './AdminQuizForm.vue'
 
 const props = defineProps<{
@@ -14,7 +15,22 @@ const emit = defineEmits<{
 const localQuestion = reactive<QuizQuestionFormData>({
   ...props.question,
   predefinedAnswers: props.question.predefinedAnswers?.map((a) => ({ ...a })),
+  orderingItems: props.question.orderingItems?.map((item) => ({ ...item })),
 })
+
+// Initialize ordering items when switching to ORDERING type
+watch(
+  () => localQuestion.questionType,
+  (newType) => {
+    if (newType === QuizQuestionType.Ordering && !localQuestion.orderingItems?.length) {
+      localQuestion.orderingItems = [
+        { itemText: '', correctOrder: 1 },
+        { itemText: '', correctOrder: 2 },
+      ]
+    }
+  },
+  { immediate: true },
+)
 
 function addAnswer() {
   if (!localQuestion.predefinedAnswers) {
@@ -35,6 +51,31 @@ function removeAnswer(index: number) {
   })
 }
 
+function addOrderingItem() {
+  if (!localQuestion.orderingItems) {
+    localQuestion.orderingItems = []
+  }
+  localQuestion.orderingItems.push({
+    itemText: '',
+    correctOrder: localQuestion.orderingItems.length + 1,
+  })
+}
+
+function removeOrderingItem(index: number) {
+  localQuestion.orderingItems?.splice(index, 1)
+  // Reorder
+  localQuestion.orderingItems?.forEach((item, i) => {
+    item.correctOrder = i + 1
+  })
+}
+
+function handleOrderingReorder() {
+  // Update correctOrder based on new positions
+  localQuestion.orderingItems?.forEach((item, i) => {
+    item.correctOrder = i + 1
+  })
+}
+
 function handleSave() {
   // Validate
   if (!localQuestion.questionText.trim()) {
@@ -50,6 +91,21 @@ function handleSave() {
     }
     const hasCorrect = localQuestion.predefinedAnswers.some((a) => a.isCorrect)
     if (!hasCorrect) {
+      return
+    }
+  }
+
+  if (localQuestion.questionType === QuizQuestionType.Ordering) {
+    if (
+      !localQuestion.orderingItems ||
+      localQuestion.orderingItems.length < 2
+    ) {
+      return
+    }
+    const hasEmptyItems = localQuestion.orderingItems.some(
+      (item) => !item.itemText.trim(),
+    )
+    if (hasEmptyItems) {
       return
     }
   }
@@ -181,6 +237,58 @@ function handleSave() {
             class="w-full"
           />
         </UFormField>
+      </div>
+    </template>
+
+    <!-- Ordering Question Options -->
+    <template v-if="localQuestion.questionType === QuizQuestionType.Ordering">
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <label class="text-sm font-medium">Elementer (i riktig rekkefølge)</label>
+          <UButton size="xs" variant="ghost" @click="addOrderingItem">
+            Legg til element
+          </UButton>
+        </div>
+
+        <p class="text-xs text-text-muted">
+          Dra for å endre rekkefølge. Rekkefølgen i listen er den korrekte rekkefølgen.
+        </p>
+
+        <VueDraggable
+          v-model="localQuestion.orderingItems!"
+          handle=".drag-handle"
+          ghost-class="opacity-50"
+          :animation="200"
+          @end="handleOrderingReorder"
+        >
+          <div
+            v-for="(item, index) in localQuestion.orderingItems"
+            :key="index"
+            class="flex items-center gap-3 mb-2"
+          >
+            <div
+              class="drag-handle text-text-muted cursor-grab active:cursor-grabbing"
+            >
+              <UIcon name="lucide:grip-vertical" class="size-5" />
+            </div>
+            <span class="text-sm text-text-muted w-6">{{ index + 1 }}.</span>
+            <UInput
+              v-model="item.itemText"
+              placeholder="Elementtekst"
+              size="xl"
+              class="flex-1"
+            />
+            <UButton
+              size="xs"
+              variant="ghost"
+              color="error"
+              :disabled="(localQuestion.orderingItems?.length ?? 0) <= 2"
+              @click="removeOrderingItem(index)"
+            >
+              Fjern
+            </UButton>
+          </div>
+        </VueDraggable>
       </div>
     </template>
 

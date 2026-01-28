@@ -42,6 +42,16 @@ export type FreeTextQuestionData = Extract<
   { __typename: 'FreeTextQuestion' }
 >
 
+export type OrderingQuestionData = Extract<
+  OrderedQuestion,
+  { __typename: 'OrderingQuestion' }
+>
+
+export type OrderingResponseData = Extract<
+  QuizResponseData,
+  { __typename: 'OrderingResponse' }
+>
+
 export interface QuestionResult {
   questionId: string
   isCorrect: boolean | null

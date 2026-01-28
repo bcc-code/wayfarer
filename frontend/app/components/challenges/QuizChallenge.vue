@@ -4,8 +4,13 @@ import type {
   QuestionResult,
   PredefinedQuestionData,
   PredefinedResponseData,
+  OrderingQuestionData,
+  OrderingResponseData,
 } from './quiz/types'
-import type { FinalizeQuizMutation, StartQuizSessionMutation } from '~/api/generated'
+import type {
+  FinalizeQuizMutation,
+  StartQuizSessionMutation,
+} from '~/api/generated'
 
 const props = defineProps<{
   challenge: QuizChallengeData
@@ -24,7 +29,9 @@ const currentQuestionIndex = ref(0)
 const questionResults = ref<QuestionResult[]>([])
 const quizCompleted = ref(false)
 const finalResult = ref<FinalizeQuizMutation['finalizeQuiz'] | null>(null)
-const startedSubmission = ref<StartQuizSessionMutation['startQuizSession'] | null>(null)
+const startedSubmission = ref<
+  StartQuizSessionMutation['startQuizSession'] | null
+>(null)
 const isReviewMode = ref(false)
 
 // Start with loading true if we need to start a quiz (no active submission and have session)
@@ -48,33 +55,44 @@ const completedSubmissionResults = computed<QuestionResult[]>(() => {
   return completedSubmission.value.responses.map((response) => ({
     questionId: response.question.id,
     isCorrect:
-      response.__typename === 'PredefinedResponse'
+      response.__typename === 'PredefinedResponse' ||
+      response.__typename === 'OrderingResponse'
         ? (response.isCorrect ?? null)
         : null,
   }))
 })
 
-// Check if user can review their answers (has PredefinedResponse answers)
+// Check if user can review their answers (has PredefinedResponse or OrderingResponse answers)
 const canReview = computed(() => {
   if (!completedSubmission.value) return false
   return completedSubmission.value.responses.some(
-    (r) => r.__typename === 'PredefinedResponse',
+    (r) =>
+      r.__typename === 'PredefinedResponse' ||
+      r.__typename === 'OrderingResponse',
   )
 })
 
-// Get questions for review mode (only PredefinedQuestion types)
-const reviewQuestions = computed<PredefinedQuestionData[]>(() => {
+// Get questions for review mode (PredefinedQuestion and OrderingQuestion types)
+const reviewQuestions = computed<
+  (PredefinedQuestionData | OrderingQuestionData)[]
+>(() => {
   if (!completedSubmission.value) return []
   return completedSubmission.value.orderedQuestions.filter(
-    (q): q is PredefinedQuestionData => q.__typename === 'PredefinedQuestion',
+    (q): q is PredefinedQuestionData | OrderingQuestionData =>
+      q.__typename === 'PredefinedQuestion' ||
+      q.__typename === 'OrderingQuestion',
   )
 })
 
-// Get responses for review mode (only PredefinedResponse types)
-const reviewResponses = computed<PredefinedResponseData[]>(() => {
+// Get responses for review mode (PredefinedResponse and OrderingResponse types)
+const reviewResponses = computed<
+  (PredefinedResponseData | OrderingResponseData)[]
+>(() => {
   if (!completedSubmission.value) return []
   return completedSubmission.value.responses.filter(
-    (r): r is PredefinedResponseData => r.__typename === 'PredefinedResponse',
+    (r): r is PredefinedResponseData | OrderingResponseData =>
+      r.__typename === 'PredefinedResponse' ||
+      r.__typename === 'OrderingResponse',
   )
 })
 
@@ -197,7 +215,8 @@ function handleQuizAbandoned() {
     </template>
     <template #title>
       <QuizProgress
-        v-if="activeSubmission && !quizCompleted"
+        v-if="activeSubmission && !quizCompleted && questions.length > 1"
+        :question="currentQuestion"
         :current-index="currentQuestionIndex"
         :total-questions="questions.length"
         :results="questionResults"
@@ -241,7 +260,16 @@ function handleQuizAbandoned() {
     <template v-else-if="currentQuestion">
       <QuizPredefinedQuestion
         v-if="currentQuestion.__typename === 'PredefinedQuestion'"
-        :key="currentQuestion.id"
+        :key="`predefined:${currentQuestion.id}`"
+        :question="currentQuestion"
+        :total-questions="questions.length"
+        :current-index="currentQuestionIndex"
+        :submission-id="activeSubmission?.id ?? ''"
+        @answer-submitted="handleAnswerSubmitted"
+      />
+      <QuizOrderingQuestion
+        v-else-if="currentQuestion.__typename === 'OrderingQuestion'"
+        :key="`ordering:${currentQuestion.id}`"
         :question="currentQuestion"
         :total-questions="questions.length"
         :current-index="currentQuestionIndex"
@@ -250,14 +278,17 @@ function handleQuizAbandoned() {
       />
       <QuizNumberQuestion
         v-else-if="currentQuestion.__typename === 'NumberQuestion'"
+        :key="`number:${currentQuestion.id}`"
         :question="currentQuestion"
       />
       <QuizJsonQuestion
         v-else-if="currentQuestion.__typename === 'JsonQuestion'"
+        :key="`json:${currentQuestion.id}`"
         :question="currentQuestion"
       />
       <QuizFreeTextQuestion
         v-else-if="currentQuestion.__typename === 'FreeTextQuestion'"
+        :key="`free-text:${currentQuestion.id}`"
         :question="currentQuestion"
       />
     </template>
