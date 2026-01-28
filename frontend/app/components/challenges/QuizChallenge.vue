@@ -221,6 +221,9 @@ function handleQuizAbandoned() {
         :total-questions="questions.length"
         :results="questionResults"
       />
+      <h1 v-else class="text-heading text-text-default">
+        {{ challenge.quiz.name }}
+      </h1>
     </template>
 
     <template v-if="isLoading">

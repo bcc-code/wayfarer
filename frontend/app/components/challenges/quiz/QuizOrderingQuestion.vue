@@ -149,104 +149,100 @@ function handleNext() {
 </script>
 
 <template>
-  <div class="text-center p-default flex flex-col gap-small grow">
-    <p class="text-caption text-text-hint text-center">
-      {{ question.questionText }}
-    </p>
-    <div ref="containerRef">
-      <VueDraggable
-        v-model="items"
-        ghost-class="opacity-50"
-        :animation="200"
-        :disabled="isAnswerConfirmed"
-        class="flex flex-col gap-small"
-      >
-        <div
-          v-for="(item, index) in items"
-          :key="item.id"
-          class="flex items-center gap-medium p-medium bg-background-raised rounded-list-inset shadow-small"
-          :class="{ 'opacity-50': isAnswerConfirmed && !readonly }"
+  <div class="flex flex-col gap-default grow">
+    <div class="grow flex flex-col justify-center gap-small p-default">
+      <p class="text-body text-text-hint text-center">
+        {{ question.questionText }}
+      </p>
+      <div ref="containerRef" class="flex flex-col justify-center">
+        <VueDraggable
+          v-model="items"
+          ghost-class="ordering-ghost"
+          :animation="200"
+          :disabled="isAnswerConfirmed"
+          class="flex flex-col gap-small"
         >
           <div
-            class="bg-accent rounded-full aspect-square size-6 text-center shrink-0 grid place-items-center text-label text-on-accent"
+            v-for="(item, index) in items"
+            :key="item.id"
+            class="flex items-center gap-medium p-medium bg-background-raised rounded-list-inset shadow-small"
+            :class="{ 'opacity-50': isAnswerConfirmed && !readonly }"
           >
-            <span class="">
+            <div
+              class="bg-accent rounded-full aspect-square size-6 text-center shrink-0 grid place-items-center text-label text-on-accent"
+            >
               {{ index + 1 }}
+            </div>
+            <span class="text-label text-text-default flex-1 text-left">
+              {{ item.itemText }}
             </span>
+            <div
+              class="text-text-hint shrink-0 flex items-center"
+              :class="
+                isAnswerConfirmed
+                  ? 'cursor-default'
+                  : 'cursor-grab active:cursor-grabbing'
+              "
+            >
+              <UIcon name="lucide:grip-vertical" class="size-4" />
+            </div>
           </div>
-          <span class="text-label text-text-default flex-1 text-left">
-            {{ item.itemText }}
-          </span>
-          <div
-            class="text-text-hint shrink-0 flex items-center"
-            :class="
-              isAnswerConfirmed
-                ? 'cursor-default'
-                : 'cursor-grab active:cursor-grabbing'
-            "
-          >
-            <UIcon name="lucide:grip-vertical" class="size-4" />
-          </div>
-        </div>
-      </VueDraggable>
-    </div>
-
-    <!-- Result badge -->
-    <div v-if="isAnswerConfirmed && !readonly" class="flex justify-center">
-      <span
-        v-if="submittedResult?.isCorrect === true"
-        class="text-label text-on-accent bg-accent-positive rounded-full pl-2 pr-3 py-1 flex gap-1 items-center"
-      >
-        <IconCheck class="size-6" />
-        {{ $t('quiz.correctAnswer') }}
-      </span>
-      <span
-        v-else-if="submittedResult?.isCorrect === false"
-        class="text-label text-on-accent bg-accent-negative rounded-full pl-2 pr-3 py-1 flex gap-1 items-center"
-      >
-        <IconClose class="size-6" />
-        {{ $t('quiz.wrongAnswer') }}
-      </span>
-    </div>
-
-    <!-- Normal mode: Lock answer / Continue buttons -->
-    <template v-if="!readonly">
-      <DesignButton
-        v-if="!isAnswerConfirmed"
-        size="large"
-        class="grow-0"
-        :disabled="isSubmitting"
-        :loading="isSubmitting"
-        @click="handleLockAnswer"
-      >
-        {{ $t('quiz.lockAnswer') }}
-      </DesignButton>
-
-      <DesignButton v-else size="large" class="grow-0" @click="handleContinue">
-        {{ continueText }}
-      </DesignButton>
-    </template>
-
-    <!-- Readonly/review mode: Previous / Next navigation -->
-    <template v-else>
-      <div class="flex gap-small grow-0">
-        <DesignButton
-          v-if="showPreviousButton"
-          size="large"
-          variant="secondary"
-          class="flex-1"
-          @click="handlePrevious"
-        >
-          {{ $t('quiz.previousQuestion') }}
-        </DesignButton>
-        <DesignButton
-          size="large"
-          :class="showPreviousButton ? 'flex-1' : 'w-full'"
-          @click="handleNext"
-        >
-          {{ nextButtonText }}
-        </DesignButton>
+        </VueDraggable>
       </div>
-    </template>
+    </div>
+
+    <div class="bg-background-raised p-default flex flex-col">
+      <!-- Normal mode: Lock answer / Continue buttons -->
+      <template v-if="!readonly">
+        <DesignButton
+          v-if="!isAnswerConfirmed"
+          size="large"
+          class="grow-0"
+          :disabled="isSubmitting"
+          :loading="isSubmitting"
+          @click="handleLockAnswer"
+        >
+          {{ $t('quiz.betting.saveBet') }}
+        </DesignButton>
+
+        <DesignButton
+          v-else
+          size="large"
+          class="grow-0"
+          @click="handleContinue"
+        >
+          {{ continueText }}
+        </DesignButton>
+      </template>
+
+      <!-- Readonly/review mode: Previous / Next navigation -->
+      <template v-else>
+        <div class="flex gap-small grow-0">
+          <DesignButton
+            v-if="showPreviousButton"
+            size="large"
+            variant="secondary"
+            class="flex-1"
+            @click="handlePrevious"
+          >
+            {{ $t('quiz.previousQuestion') }}
+          </DesignButton>
+          <DesignButton
+            size="large"
+            :class="showPreviousButton ? 'flex-1' : 'w-full'"
+            @click="handleNext"
+          >
+            {{ nextButtonText }}
+          </DesignButton>
+        </div>
+      </template>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.ordering-ghost {
+  opacity: 0.5;
+  background: var(--color-background-raised);
+}
+</style>

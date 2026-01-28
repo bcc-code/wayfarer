@@ -37,6 +37,11 @@
       "betterLuckNextTime": "Bedre lykke neste gang!",
       "wellDone": "Bra jobbet!",
       "perfect": "Perfekt!"
+    },
+    "betting": {
+      "saveBet": "Lagre tipping",
+      "changeBet": "Endre tipping",
+      "done": "Ferdig"
     }
   },
   "pages": {
