@@ -41,7 +41,8 @@ type Loaders struct {
 	RelevantDaysByStreakLoader             *dataloader.Loader[string, []model.DateRange]
 	UserStreakActivityLoader               *dataloader.Loader[UserStreakActivityKey, []*sqlc.UserStreakActivity]
 	UserContentProgressLoader              *dataloader.Loader[UserAchievementKey, []*sqlc.UserContentProgress]
-	UserAchievementTimestampLoader         *dataloader.Loader[UserAchievementKey, *time.Time]
+	UserAchievementTimestampLoader          *dataloader.Loader[UserAchievementKey, *time.Time]
+	UserAchievementCelebratedTimestampLoader *dataloader.Loader[UserAchievementKey, *time.Time]
 	UserChallengeCompletionTimestampLoader *dataloader.Loader[UserChallengeKey, *time.Time]
 	UserChallengeEnrollmentTimestampLoader *dataloader.Loader[UserChallengeKey, *time.Time]
 	TranslationLoader                      *dataloader.Loader[TranslationKey, *Translation]
@@ -102,7 +103,8 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		RelevantDaysByStreakLoader:             newBatchedLoader(relevantDaysByStreakBatchFunc(db, cache)),
 		UserStreakActivityLoader:               newBatchedLoader(userStreakActivityBatchFunc(db, cache)),
 		UserContentProgressLoader:              newBatchedLoader(userContentProgressBatchFunc(db, cache)),
-		UserAchievementTimestampLoader:         newBatchedLoader(userAchievementTimestampBatchFunc(db, cache)),
+		UserAchievementTimestampLoader:          newBatchedLoader(userAchievementTimestampBatchFunc(db, cache)),
+		UserAchievementCelebratedTimestampLoader: newBatchedLoader(userAchievementCelebratedTimestampBatchFunc(db, cache)),
 		UserChallengeCompletionTimestampLoader: newBatchedLoader(userChallengeCompletionTimestampBatchFunc(db, cache)),
 		UserChallengeEnrollmentTimestampLoader: newBatchedLoader(userChallengeEnrollmentTimestampBatchFunc(db, cache)),
 		TranslationLoader:                      newBatchedLoader(translationBatchFunc(db, cache)),

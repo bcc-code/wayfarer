@@ -26,6 +26,7 @@ export type Scalars = {
 export type Achievement = {
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
+  celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -275,6 +276,7 @@ export type ContentAchievement = Achievement & {
   __typename?: 'ContentAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
+  celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   completedItemCount: Scalars['Int']['output'];
   descriptionCompleted: Scalars['String']['output'];
@@ -924,6 +926,7 @@ export type Mutation = {
   joinTeam: Team;
   linkAchievementToChallenge: Achievement;
   lockQuizSession: QuizSession;
+  markAchievementCelebrated: Scalars['Boolean']['output'];
   markContentItemCompleted: Array<ContentAchievement>;
   markFeedbackHandled: UserFeedback;
   moveEvent: Event;
@@ -1324,6 +1327,11 @@ export type MutationLinkAchievementToChallengeArgs = {
 
 export type MutationLockQuizSessionArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationMarkAchievementCelebratedArgs = {
+  achievementId: Scalars['ID']['input'];
 };
 
 
@@ -2164,6 +2172,7 @@ export type QuizAchievement = Achievement & {
   __typename?: 'QuizAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
+  celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -2438,6 +2447,7 @@ export type SimpleAchievement = Achievement & {
   __typename?: 'SimpleAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
+  celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -2498,6 +2508,7 @@ export type StreakAchievement = Achievement & {
   __typename?: 'StreakAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
+  celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -3089,6 +3100,13 @@ export type ReorderAchievementsMutation = { __typename?: 'Mutation', reorderAchi
     | { __typename?: 'StreakAchievement', id: string }
   > };
 
+export type MarkAchievementCelebratedMutationVariables = Exact<{
+  achievementId: Scalars['ID']['input'];
+}>;
+
+
+export type MarkAchievementCelebratedMutation = { __typename?: 'Mutation', markAchievementCelebrated: boolean };
+
 export type DeleteChallengeMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -3555,10 +3573,10 @@ export type ProfilePageQueryVariables = Exact<{
 
 
 export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, infoMessageStart?: any | null, infoMessageEnd?: any | null, infoMessage?: { __typename?: 'MarkdownText', markdown: string, html: string } | null, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, achievements: Array<
-      | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, points: number, nextItem?: { __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, title?: string | null, url?: string | null } } | null, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
-      | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
-      | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
-      | { __typename: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, nextItem?: { __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, title?: string | null, url?: string | null } } | null, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
     >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank?: number | null } | null } } };
 
 export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
@@ -4160,6 +4178,15 @@ export const ReorderAchievementsDocument = gql`
 
 export function useReorderAchievementsMutation() {
   return Urql.useMutation<ReorderAchievementsMutation, ReorderAchievementsMutationVariables>(ReorderAchievementsDocument);
+};
+export const MarkAchievementCelebratedDocument = gql`
+    mutation MarkAchievementCelebrated($achievementId: ID!) {
+  markAchievementCelebrated(achievementId: $achievementId)
+}
+    `;
+
+export function useMarkAchievementCelebratedMutation() {
+  return Urql.useMutation<MarkAchievementCelebratedMutation, MarkAchievementCelebratedMutationVariables>(MarkAchievementCelebratedDocument);
 };
 export const DeleteChallengeDocument = gql`
     mutation DeleteChallenge($id: ID!) {
@@ -4886,6 +4913,7 @@ export const ProfilePageDocument = gql`
       }
       hidden
       achievedAt
+      celebratedAt
       points
       ... on ContentAchievement {
         nextItem {

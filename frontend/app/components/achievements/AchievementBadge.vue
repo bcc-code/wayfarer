@@ -7,9 +7,14 @@ const props = defineProps<{
 }>()
 
 const { track } = useAnalytics()
-const { openAchievementId, clearOpenAchievementId } = useAchievementSheet()
+const { openAchievementId, clearOpenAchievementId, celebrating } =
+  useAchievementSheet()
+const { executeMutation: markCelebrated } =
+  useMarkAchievementCelebratedMutation()
+const { burst } = useConfetti()
 
 const open = ref(false)
+const contentRef = ref<HTMLElement | null>(null)
 
 // Determine which image to show based on achievement state
 const currentImage = computed(() => {
@@ -29,8 +34,22 @@ watch(open, (isOpen) => {
       achievement_name: props.achievement.name,
       is_unlocked: !!props.achievement.achievedAt,
     })
-  } else if (openAchievementId.value === props.achievement.id) {
-    clearOpenAchievementId()
+
+    // Trigger confetti when opened for celebration
+    if (celebrating.value) {
+      setTimeout(() => {
+        burst(contentRef.value)
+      }, 300)
+    }
+  } else {
+    // When closing an uncelebrated achievement (e.g. opened via URL param), mark it celebrated
+    if (props.achievement.achievedAt && !props.achievement.celebratedAt) {
+      markCelebrated({ achievementId: props.achievement.id })
+    }
+
+    if (openAchievementId.value === props.achievement.id) {
+      clearOpenAchievementId()
+    }
   }
 })
 
@@ -74,7 +93,10 @@ function descriptionFor(achievement: ProjectCardAchievement) {
         />
       </button>
       <template #content>
-        <div class="flex h-full flex-col items-center justify-center gap-6">
+        <div
+          ref="contentRef"
+          class="relative flex h-full flex-col items-center justify-center gap-6"
+        >
           <div
             :class="[
               'grid aspect-square size-55 place-items-center overflow-hidden rounded-full',
@@ -110,26 +132,6 @@ function descriptionFor(achievement: ProjectCardAchievement) {
               })
             }}
           </div>
-
-          <!-- <template v-if="achievement.__typename === 'ContentAchievement'">
-            <div
-              v-if="achievement.nextItem"
-              class="w-full mt-auto flex flex-col p-default text-center"
-            >
-              <p class="text-label text-text-default">
-                {{ achievement.nextItem.externalContent.title }}
-              </p>
-              <NuxtLink
-                v-if="achievement.nextItem.externalContent.url"
-                :to="achievement.nextItem.externalContent.url"
-                class="contents"
-              >
-                <DesignButton size="large" variant="primary">
-                  {{ $t('achievement.nextStep') }}
-                </DesignButton>
-              </NuxtLink>
-            </div>
-          </template> -->
         </div>
       </template>
     </DesignDrawer>

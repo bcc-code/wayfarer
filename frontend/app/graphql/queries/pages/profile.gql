@@ -45,6 +45,7 @@ query ProfilePage($ageFilter: LeaderboardFilter) {
       }
       hidden
       achievedAt
+      celebratedAt
       points
       ... on ContentAchievement {
         nextItem {
