@@ -22,6 +22,8 @@
     "correctAnswer": "Richtige Antwort",
     "yourAnswer": "Deine Antwort",
     "lockAnswer": "Antwort sperren",
+    "saveAnswer": "Antwort speichern",
+    "changeAnswer": "Antwort ändern",
     "questionNumber": "{current} von {total}",
     "continue": "Weiter",
     "nextQuestion": "Nächste Frage",
@@ -30,6 +32,8 @@
     "unavailable": "Dieses Quiz ist im Moment nicht verfügbar.",
     "reviewAnswers": "Antwort anzeigen",
     "finishReview": "Überprüfung beenden",
+    "yourNumber": "Deine Zahl",
+    "writeYourAnswer": "Schreibe deine Antwort...",
     "result": {
       "receivedNoPoints": "Du hast keine Punkte gesammelt.",
       "receivedPoints": "Du hast {points} Punkte gesammelt.",
