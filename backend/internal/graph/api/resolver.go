@@ -89,8 +89,8 @@ func (r *Resolver) LoadQuizByID(ctx context.Context, quizID string) (*model.Quiz
 	return quiz, nil
 }
 
-// LoadChallengeWithVisibility loads a challenge and enforces visibility rules for non-admins.
-// Admins can see all challenges, non-admins can only see published challenges.
+// LoadChallengeWithVisibility loads a challenge and enforces visibility rules.
+// Admins can see all challenges via direct lookup. Non-admins can only see published challenges.
 // For quiz challenges, session access grants visibility regardless of publish status.
 func (r *Resolver) LoadChallengeWithVisibility(ctx context.Context, challengeID string) (model.Challenge, error) {
 	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, challengeID)
@@ -102,7 +102,7 @@ func (r *Resolver) LoadChallengeWithVisibility(ctx context.Context, challengeID 
 	userID, _ := middleware.GetUserID(ctx)
 	projectID := getChallengeProjectID(challenge)
 
-	// Admins can see all challenges
+	// Admins can see all challenges via direct lookup
 	if userID != "" && r.RoleService.CanManageProject(ctx, userID, projectID) {
 		return challenge, nil
 	}

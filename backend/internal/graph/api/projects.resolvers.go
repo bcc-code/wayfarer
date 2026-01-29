@@ -429,7 +429,6 @@ func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([
 	}
 
 	userID, _ := middleware.GetUserID(ctx)
-	isAdmin := userID != "" && r.RoleService.CanManageProject(ctx, userID, obj.ID)
 
 	result := make([]model.Challenge, 0, len(challenges))
 	for _, ch := range challenges {
@@ -452,13 +451,7 @@ func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([
 			continue
 		}
 
-		// Admins can see all non-quiz challenges
-		if isAdmin {
-			result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
-			continue
-		}
-
-		// Non-admins: check publishedAt
+		// Check publishedAt
 		publishedAt := getChallengePublishedAt(ch)
 		if publishedAt == nil || publishedAt.After(time.Now()) {
 			continue // Skip unpublished
