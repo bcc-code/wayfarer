@@ -2,6 +2,7 @@ package ladder_to_heaven
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/bcc-media/wayfarer/internal/firebase"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/bcc-media/wayfarer/internal/webhook"
 	"github.com/gin-gonic/gin"
@@ -21,6 +23,7 @@ type contentEventHandler struct {
 	cache         *cache.CacheWithRegistry
 	achievementID string
 	secretKey     string
+	firebase      *firebase.Service
 }
 
 // contentEventRequest matches the outbound WebhookPayload format
@@ -235,6 +238,11 @@ func (h *contentEventHandler) handle(c *gin.Context) {
 	h.cache.InvalidateProject(achievement.ProjectID)
 	if achievement.EventID != nil {
 		h.cache.InvalidateEvent(*achievement.EventID)
+	}
+
+	// Notify frontend via Firestore so real-time listeners trigger a refetch
+	if h.firebase != nil {
+		go h.firebase.NotifyUserContent(context.Background(), req.User.ID)
 	}
 
 	slog.Info("ladder_to_heaven: awarded points",

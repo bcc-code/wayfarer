@@ -6,6 +6,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
+	"github.com/bcc-media/wayfarer/internal/firebase"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/gin-gonic/gin"
 )
@@ -17,6 +18,7 @@ type Dependencies struct {
 	Cache           *cache.CacheWithRegistry
 	SettingsService *services.SettingsService
 	JWTConfig       config.JWTConfig
+	Firebase        *firebase.Service
 }
 
 // Plugin defines the interface that all plugins must implement.

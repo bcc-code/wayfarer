@@ -236,7 +236,7 @@ func main() {
 	slog.Info("RoleService initialized with caching")
 
 	// Initialize LeaderboardService
-	leaderboardService := services.NewLeaderboardService(db.Queries, cacheInstance.Cache, dataLoaders)
+	leaderboardService := services.NewLeaderboardService(db.Queries, cacheInstance, dataLoaders)
 	slog.Info("LeaderboardService initialized with caching and loaders")
 
 	// Initialize SettingsService
@@ -450,6 +450,7 @@ func main() {
 		Cache:           cacheInstance,
 		SettingsService: settingsService,
 		JWTConfig:       cfg.JWT,
+		Firebase:        firebaseService,
 	}
 	apiKeyAuth := middleware.APIKeyAuth(cfg.APIKey)
 

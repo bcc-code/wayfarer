@@ -53,6 +53,7 @@ func (p *LadderToHeavenPlugin) Register(router gin.IRouter, deps plugins.Depende
 		cache:         deps.Cache,
 		achievementID: p.config.AchievementID,
 		secretKey:     p.config.SecretKey,
+		firebase:      deps.Firebase,
 	}
 
 	router.POST("/plugins/ladder-to-heaven/content-event", contentHandler.handle)
@@ -62,6 +63,7 @@ func (p *LadderToHeavenPlugin) Register(router gin.IRouter, deps plugins.Depende
 		cache:       deps.Cache,
 		challengeID: p.config.TeamRenameChallengeID,
 		secretKey:   p.config.SecretKey,
+		firebase:    deps.Firebase,
 	}
 
 	router.POST("/plugins/ladder-to-heaven/team-name-changed", teamRenameHandler.handle)
