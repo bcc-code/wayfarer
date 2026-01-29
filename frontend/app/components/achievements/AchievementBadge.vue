@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { vConfetti } from '@neoconfetti/vue'
+
 type ProjectCardAchievement =
   ProfilePageQuery['myCurrentProject']['achievements'][number]
 
@@ -11,10 +13,9 @@ const { openAchievementId, clearOpenAchievementId, celebrating } =
   useAchievementSheet()
 const { executeMutation: markCelebrated } =
   useMarkAchievementCelebratedMutation()
-const { burst } = useConfetti()
 
 const open = ref(false)
-const contentRef = ref<HTMLElement | null>(null)
+const showConfetti = ref(false)
 
 // Determine which image to show based on achievement state
 const currentImage = computed(() => {
@@ -38,7 +39,7 @@ watch(open, (isOpen) => {
     // Trigger confetti when opened for celebration
     if (celebrating.value) {
       setTimeout(() => {
-        burst(contentRef.value)
+        showConfetti.value = true
       }, 300)
     }
   } else {
@@ -94,9 +95,9 @@ function descriptionFor(achievement: ProjectCardAchievement) {
       </button>
       <template #content>
         <div
-          ref="contentRef"
-          class="relative flex h-full flex-col items-center justify-center gap-6"
+          class="relative flex h-full flex-col items-center justify-center gap-6 overflow-hidden"
         >
+          <div v-if="showConfetti" v-confetti />
           <div
             :class="[
               'grid aspect-square size-55 place-items-center overflow-hidden rounded-full',
