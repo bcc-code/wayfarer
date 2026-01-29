@@ -314,7 +314,7 @@ const nextButtonText = computed(() => {
 
     <template v-else-if="currentQuestion">
       <div
-        class="flex flex-col items-center justify-center py-6 gap-1 text-center"
+        class="flex flex-col items-center justify-center py-6 px-default gap-1 text-center"
       >
         <p v-if="questions.length > 1" class="text-caption text-text-muted">
           {{
@@ -359,18 +359,36 @@ const nextButtonText = computed(() => {
       />
       <QuizNumberQuestion
         v-else-if="currentQuestion.__typename === 'NumberQuestion'"
+        ref="currentQuestionRef"
         :key="`number:${currentQuestion.id}`"
         :question="currentQuestion"
+        :total-questions="questions.length"
+        :current-index="currentQuestionIndex"
+        :submission-id="activeSubmission?.id ?? ''"
+        :is-last-question="isLastQuestion"
+        @answer-submitted="handleAnswerSubmitted"
       />
       <QuizJsonQuestion
         v-else-if="currentQuestion.__typename === 'JsonQuestion'"
+        ref="currentQuestionRef"
         :key="`json:${currentQuestion.id}`"
         :question="currentQuestion"
+        :total-questions="questions.length"
+        :current-index="currentQuestionIndex"
+        :submission-id="activeSubmission?.id ?? ''"
+        :is-last-question="isLastQuestion"
+        @answer-submitted="handleAnswerSubmitted"
       />
       <QuizFreeTextQuestion
         v-else-if="currentQuestion.__typename === 'FreeTextQuestion'"
+        ref="currentQuestionRef"
         :key="`free-text:${currentQuestion.id}`"
         :question="currentQuestion"
+        :total-questions="questions.length"
+        :current-index="currentQuestionIndex"
+        :submission-id="activeSubmission?.id ?? ''"
+        :is-last-question="isLastQuestion"
+        @answer-submitted="handleAnswerSubmitted"
       />
     </template>
 

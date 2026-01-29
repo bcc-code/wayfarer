@@ -33,6 +33,8 @@
     "reviewAnswers": "Se svar",
     "finishReview": "Avslutt gjennomgang",
     "dragToReorder": "Dra for å endre rekkefølgen",
+    "yourNumber": "Ditt tall",
+    "writeYourAnswer": "Skriv ditt svar...",
     "result": {
       "receivedNoPoints": "Du samlet ingen poeng.",
       "receivedPoints": "Du samlet {points} poeng.",

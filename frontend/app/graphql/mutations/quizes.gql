@@ -70,6 +70,12 @@ mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
       isCorrect
       submittedOrder
     }
+    ... on NumberResponse {
+      numberResponse
+    }
+    ... on FreeTextResponse {
+      textResponse
+    }
   }
 }
 
