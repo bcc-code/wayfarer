@@ -873,6 +873,46 @@ func (q *Queries) GetBulkUserAchievementTimestamps(ctx context.Context, arg GetB
 	return items, nil
 }
 
+const GetBulkUserContentProgress = `-- name: GetBulkUserContentProgress :many
+
+SELECT user_id, achievement_id, external_content_id, completed_at
+FROM user_content_progress
+WHERE (user_id, achievement_id) IN (
+    SELECT unnest($1::text[]), unnest($2::text[])
+)
+`
+
+type GetBulkUserContentProgressParams struct {
+	UserIds        []string `json:"user_ids"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+// ==================== Content Progress Operations ====================
+func (q *Queries) GetBulkUserContentProgress(ctx context.Context, arg GetBulkUserContentProgressParams) ([]*UserContentProgress, error) {
+	rows, err := q.db.Query(ctx, GetBulkUserContentProgress, arg.UserIds, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*UserContentProgress{}
+	for rows.Next() {
+		var i UserContentProgress
+		if err := rows.Scan(
+			&i.UserID,
+			&i.AchievementID,
+			&i.ExternalContentID,
+			&i.CompletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetContentItemsByAchievementIDs = `-- name: GetContentItemsByAchievementIDs :many
 SELECT id, achievement_id, external_content_id, sort_order
 FROM content_achievement_items
@@ -1102,7 +1142,6 @@ func (q *Queries) GetUserAchievementTimestamps(ctx context.Context, arg GetUserA
 }
 
 const GetUserContentProgress = `-- name: GetUserContentProgress :many
-
 SELECT user_id, achievement_id, external_content_id, completed_at
 FROM user_content_progress
 WHERE user_id = $1::text
@@ -1114,7 +1153,6 @@ type GetUserContentProgressParams struct {
 	AchievementIds []string `json:"achievement_ids"`
 }
 
-// ==================== Content Progress Operations ====================
 func (q *Queries) GetUserContentProgress(ctx context.Context, arg GetUserContentProgressParams) ([]*UserContentProgress, error) {
 	rows, err := q.db.Query(ctx, GetUserContentProgress, arg.UserID, arg.AchievementIds)
 	if err != nil {

@@ -40,6 +40,7 @@ type Loaders struct {
 	StreaksByProjectLoader                 *dataloader.Loader[string, []*model.Streak]
 	RelevantDaysByStreakLoader             *dataloader.Loader[string, []model.DateRange]
 	UserStreakActivityLoader               *dataloader.Loader[UserStreakActivityKey, []*sqlc.UserStreakActivity]
+	UserContentProgressLoader              *dataloader.Loader[UserAchievementKey, []*sqlc.UserContentProgress]
 	UserAchievementTimestampLoader         *dataloader.Loader[UserAchievementKey, *time.Time]
 	UserChallengeCompletionTimestampLoader *dataloader.Loader[UserChallengeKey, *time.Time]
 	UserChallengeEnrollmentTimestampLoader *dataloader.Loader[UserChallengeKey, *time.Time]
@@ -100,6 +101,7 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		StreaksByProjectLoader:                 newBatchedLoader(streaksByProjectBatchFunc(db, cache)),
 		RelevantDaysByStreakLoader:             newBatchedLoader(relevantDaysByStreakBatchFunc(db, cache)),
 		UserStreakActivityLoader:               newBatchedLoader(userStreakActivityBatchFunc(db, cache)),
+		UserContentProgressLoader:              newBatchedLoader(userContentProgressBatchFunc(db, cache)),
 		UserAchievementTimestampLoader:         newBatchedLoader(userAchievementTimestampBatchFunc(db, cache)),
 		UserChallengeCompletionTimestampLoader: newBatchedLoader(userChallengeCompletionTimestampBatchFunc(db, cache)),
 		UserChallengeEnrollmentTimestampLoader: newBatchedLoader(userChallengeEnrollmentTimestampBatchFunc(db, cache)),

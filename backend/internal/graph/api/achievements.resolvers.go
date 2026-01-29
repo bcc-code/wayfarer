@@ -14,6 +14,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
@@ -80,11 +81,9 @@ func (r *contentAchievementResolver) UserCompletedItems(ctx context.Context, obj
 		return nil, fmt.Errorf("failed to load content items: %w", err)
 	}
 
-	// Get user's completed items
-	progress, err := r.DB.Queries.GetUserContentProgressForAchievement(ctx, sqlc.GetUserContentProgressForAchievementParams{
-		UserID:        userID,
-		AchievementID: obj.ID,
-	})
+	// Get user's completed items via dataloader
+	progressThunk := r.Loaders.UserContentProgressLoader.Load(ctx, loaders.UserAchievementKey{UserID: userID, AchievementID: obj.ID})
+	progress, err := progressThunk()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load user progress: %w", err)
 	}
@@ -134,11 +133,9 @@ func (r *contentAchievementResolver) NextItem(ctx context.Context, obj *model.Co
 		return nil, nil
 	}
 
-	// Get user's completed items
-	progress, err := r.DB.Queries.GetUserContentProgressForAchievement(ctx, sqlc.GetUserContentProgressForAchievementParams{
-		UserID:        userID,
-		AchievementID: obj.ID,
-	})
+	// Get user's completed items via dataloader
+	progressThunk := r.Loaders.UserContentProgressLoader.Load(ctx, loaders.UserAchievementKey{UserID: userID, AchievementID: obj.ID})
+	progress, err := progressThunk()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load user progress: %w", err)
 	}
@@ -167,10 +164,8 @@ func (r *contentAchievementResolver) CompletedItemCount(ctx context.Context, obj
 		return 0, nil
 	}
 
-	progress, err := r.DB.Queries.GetUserContentProgressForAchievement(ctx, sqlc.GetUserContentProgressForAchievementParams{
-		UserID:        userID,
-		AchievementID: obj.ID,
-	})
+	progressThunk := r.Loaders.UserContentProgressLoader.Load(ctx, loaders.UserAchievementKey{UserID: userID, AchievementID: obj.ID})
+	progress, err := progressThunk()
 	if err != nil {
 		return 0, fmt.Errorf("failed to load user progress: %w", err)
 	}

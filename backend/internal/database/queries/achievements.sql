@@ -351,6 +351,13 @@ WHERE (user_id, achievement_id) IN (
 
 -- ==================== Content Progress Operations ====================
 
+-- name: GetBulkUserContentProgress :many
+SELECT user_id, achievement_id, external_content_id, completed_at
+FROM user_content_progress
+WHERE (user_id, achievement_id) IN (
+    SELECT unnest(@user_ids::text[]), unnest(@achievement_ids::text[])
+);
+
 -- name: GetUserContentProgress :many
 SELECT user_id, achievement_id, external_content_id, completed_at
 FROM user_content_progress
