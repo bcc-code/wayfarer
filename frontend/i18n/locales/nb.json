@@ -22,6 +22,8 @@
     "correctAnswer": "Riktig svar",
     "yourAnswer": "Ditt svar",
     "lockAnswer": "Lås svar",
+    "saveAnswer": "Lagre svar",
+    "changeAnswer": "Endre svar",
     "questionNumber": "{current} av {total}",
     "continue": "Fortsett",
     "nextQuestion": "Neste spørsmål",
@@ -30,6 +32,8 @@
     "unavailable": "Denne quizen er ikke tilgjengelig for øyeblikket.",
     "reviewAnswers": "Se svar",
     "finishReview": "Avslutt gjennomgang",
+    "yourNumber": "Ditt tall",
+    "writeYourAnswer": "Skriv ditt svar...",
     "result": {
       "receivedNoPoints": "Du samlet ingen poeng.",
       "receivedPoints": "Du samlet {points} poeng.",

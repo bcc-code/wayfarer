@@ -533,7 +533,7 @@ func convertToOrderingResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateT
 		SubmissionID:     row.SubmissionID,
 		QuestionID:       row.QuestionID,
 		SubmittedOrder:   submittedOrder,
-		IsCorrect:        row.IsCorrect,
+		IsCorrectValue:   row.IsCorrect, // Store actual value for resolver
 		AnsweredAt:       answeredAt,
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,
