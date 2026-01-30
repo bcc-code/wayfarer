@@ -22,6 +22,8 @@
     "correctAnswer": "Răspuns corect",
     "yourAnswer": "Răspunsul tău",
     "lockAnswer": "Blochează răspunsul",
+    "saveAnswer": "Salvează răspunsul",
+    "changeAnswer": "Modifică răspunsul",
     "questionNumber": "{current} din {total}",
     "continue": "Continuă",
     "nextQuestion": "Următoarea întrebare",
@@ -30,6 +32,8 @@
     "unavailable": "Acest quiz nu este disponibil pentru moment.",
     "reviewAnswers": "Vezi răspunsurile",
     "finishReview": "Finalizați revizuirea",
+    "yourNumber": "Numărul tău",
+    "writeYourAnswer": "Scrie răspunsul tău...",
     "result": {
       "receivedNoPoints": "Nu ai obținut niciun punct.",
       "receivedPoints": "Ai acumulat {points} punct(e).",
