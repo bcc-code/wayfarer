@@ -139,6 +139,10 @@
     "notNow": "Nu acum"
   },
   "goToHiddenTreasures": "Mergi la studiul biblic",
+  "gameNights": {
+    "yourCode": "Codul unității tale pentru Game Night",
+    "yourCodeHint": "Deschideți pagina pe computer și introduceți codul"
+  },
   "admin": {
     "common": {
       "back": "Înapoi",
