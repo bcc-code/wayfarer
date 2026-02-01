@@ -22,6 +22,8 @@
     "correctAnswer": "Helyes válasz",
     "yourAnswer": "Válaszod",
     "lockAnswer": "Válasz zárolása",
+    "saveAnswer": "Válasz mentése",
+    "changeAnswer": "Válasz módosítása",
     "questionNumber": "{current} ból {total}",
     "continue": "Folytatás",
     "nextQuestion": "Következő kérdés",
@@ -30,6 +32,8 @@
     "unavailable": "Ez a kvíz jelenleg nem elérhető.",
     "reviewAnswers": "Lásd a választ",
     "finishReview": "Átnézés befejezése",
+    "yourNumber": "A számod",
+    "writeYourAnswer": "Írd meg a válaszodat...",
     "result": {
       "receivedNoPoints": "Nem szereztél pontot.",
       "receivedPoints": "{points} pontot gyűjtöttél.",
