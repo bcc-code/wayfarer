@@ -9,23 +9,41 @@ import (
 	"github.com/resend/resend-go/v2"
 )
 
+// ForwardDestination represents a feedback forwarding target
+type ForwardDestination string
+
+const (
+	ForwardDestinationBCCMediaSupport ForwardDestination = "BCC_MEDIA_SUPPORT"
+	ForwardDestinationSSFTicket       ForwardDestination = "SSF_TICKET"
+)
+
 // Service handles email operations using Resend
 type Service struct {
-	client       *resend.Client
-	adminBaseURL string
+	client            *resend.Client
+	adminBaseURL      string
+	destinationEmails map[ForwardDestination]string
 }
 
 // NewService creates a new email service
-func NewService(apiKey string, adminBaseURL string) *Service {
+func NewService(apiKey string, adminBaseURL string, ssfTicketEmail string) *Service {
+	destinations := map[ForwardDestination]string{
+		ForwardDestinationBCCMediaSupport: "support@bcc.media",
+	}
+	if ssfTicketEmail != "" {
+		destinations[ForwardDestinationSSFTicket] = ssfTicketEmail
+	}
+
 	if apiKey == "" {
 		return &Service{
-			client:       nil,
-			adminBaseURL: adminBaseURL,
+			client:            nil,
+			adminBaseURL:      adminBaseURL,
+			destinationEmails: destinations,
 		}
 	}
 	return &Service{
-		client:       resend.NewClient(apiKey),
-		adminBaseURL: adminBaseURL,
+		client:            resend.NewClient(apiKey),
+		adminBaseURL:      adminBaseURL,
+		destinationEmails: destinations,
 	}
 }
 
@@ -49,17 +67,22 @@ type FeedbackEmailParams struct {
 	Message     string
 }
 
-// SendFeedbackToDesk sends a feedback email to the support desk
-func (s *Service) SendFeedbackToDesk(ctx context.Context, params FeedbackEmailParams) error {
+// SendFeedbackToDesk sends a feedback email to the specified destination
+func (s *Service) SendFeedbackToDesk(ctx context.Context, destination ForwardDestination, params FeedbackEmailParams) error {
 	if s.client == nil {
 		return fmt.Errorf("email service not configured: RESEND_API_KEY not set")
+	}
+
+	toEmail, ok := s.destinationEmails[destination]
+	if !ok {
+		return fmt.Errorf("unknown forward destination: %s", destination)
 	}
 
 	body := s.buildFeedbackEmailBody(params)
 
 	sendParams := &resend.SendEmailRequest{
 		From:    "Wayfarer Feedback <noreply@mailer.bcc.media>",
-		To:      []string{"support@bcc.media"},
+		To:      []string{toEmail},
 		ReplyTo: params.UserEmail,
 		Subject: fmt.Sprintf("Interact feedback from %s", params.UserName),
 		Text:    body,

@@ -1,5 +1,10 @@
 # ==================== User Feedback ====================
 
+enum ForwardDestination {
+    BCC_MEDIA_SUPPORT
+    SSF_TICKET
+}
+
 type UserFeedback {
     id: ID!
     userId: ID!
@@ -62,7 +67,7 @@ extend type Query {
 extend type Mutation {
     submitFeedback(input: SubmitFeedbackInput!): UserFeedback!
     deleteFeedback(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-    forwardFeedbackToDesk(feedbackId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    forwardFeedbackToDesk(feedbackId: ID!, destination: ForwardDestination!): Boolean! @requireRole(roles: ["admin", "superadmin"])
     markFeedbackHandled(feedbackId: ID!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
     updateFeedbackTags(feedbackId: ID!, tags: [String!]!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
 }

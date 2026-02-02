@@ -465,7 +465,7 @@ type ComplexityRoot struct {
 		EnrollUserInChallenge                       func(childComplexity int, userID string, challengeID string) int
 		FinalizeQuiz                                func(childComplexity int, submissionID string) int
 		FinishQuizSession                           func(childComplexity int, id string) int
-		ForwardFeedbackToDesk                       func(childComplexity int, feedbackID string) int
+		ForwardFeedbackToDesk                       func(childComplexity int, feedbackID string, destination model.ForwardDestination) int
 		GrantQuizSessionAccess                      func(childComplexity int, input model.GrantQuizSessionAccessInput) int
 		JoinEvent                                   func(childComplexity int, eventID string) int
 		JoinProject                                 func(childComplexity int, projectID string) int
@@ -1315,7 +1315,7 @@ type MutationResolver interface {
 	SendPushNotification(ctx context.Context, input model.SendPushNotificationInput) (*model.SendPushNotificationResult, error)
 	SubmitFeedback(ctx context.Context, input model.SubmitFeedbackInput) (*model.UserFeedback, error)
 	DeleteFeedback(ctx context.Context, id string) (bool, error)
-	ForwardFeedbackToDesk(ctx context.Context, feedbackID string) (bool, error)
+	ForwardFeedbackToDesk(ctx context.Context, feedbackID string, destination model.ForwardDestination) (bool, error)
 	MarkFeedbackHandled(ctx context.Context, feedbackID string) (*model.UserFeedback, error)
 	UpdateFeedbackTags(ctx context.Context, feedbackID string, tags []string) (*model.UserFeedback, error)
 	CreateWebhook(ctx context.Context, input model.CreateWebhookInput) (*model.Webhook, error)
@@ -3492,7 +3492,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ForwardFeedbackToDesk(childComplexity, args["feedbackId"].(string)), true
+		return e.complexity.Mutation.ForwardFeedbackToDesk(childComplexity, args["feedbackId"].(string), args["destination"].(model.ForwardDestination)), true
 	case "Mutation.grantQuizSessionAccess":
 		if e.complexity.Mutation.GrantQuizSessionAccess == nil {
 			break
@@ -9525,6 +9525,11 @@ extend type Mutation {
 `, BuiltIn: false},
 	{Name: "../../../../gql/feedback.graphqls", Input: `# ==================== User Feedback ====================
 
+enum ForwardDestination {
+    BCC_MEDIA_SUPPORT
+    SSF_TICKET
+}
+
 type UserFeedback {
     id: ID!
     userId: ID!
@@ -9587,7 +9592,7 @@ extend type Query {
 extend type Mutation {
     submitFeedback(input: SubmitFeedbackInput!): UserFeedback!
     deleteFeedback(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-    forwardFeedbackToDesk(feedbackId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    forwardFeedbackToDesk(feedbackId: ID!, destination: ForwardDestination!): Boolean! @requireRole(roles: ["admin", "superadmin"])
     markFeedbackHandled(feedbackId: ID!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
     updateFeedbackTags(feedbackId: ID!, tags: [String!]!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
 }
@@ -10534,6 +10539,11 @@ func (ec *executionContext) field_Mutation_forwardFeedbackToDesk_args(ctx contex
 		return nil, err
 	}
 	args["feedbackId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "destination", ec.unmarshalNForwardDestination2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐForwardDestination)
+	if err != nil {
+		return nil, err
+	}
+	args["destination"] = arg1
 	return args, nil
 }
 
@@ -26620,7 +26630,7 @@ func (ec *executionContext) _Mutation_forwardFeedbackToDesk(ctx context.Context,
 		ec.fieldContext_Mutation_forwardFeedbackToDesk,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().ForwardFeedbackToDesk(ctx, fc.Args["feedbackId"].(string))
+			return ec.resolvers.Mutation().ForwardFeedbackToDesk(ctx, fc.Args["feedbackId"].(string), fc.Args["destination"].(model.ForwardDestination))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -64435,6 +64445,16 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 		}
 	}
 	return graphql.WrapContextMarshaler(ctx, res)
+}
+
+func (ec *executionContext) unmarshalNForwardDestination2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐForwardDestination(ctx context.Context, v any) (model.ForwardDestination, error) {
+	var res model.ForwardDestination
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNForwardDestination2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐForwardDestination(ctx context.Context, sel ast.SelectionSet, v model.ForwardDestination) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNGender2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐGender(ctx context.Context, v any) (model.Gender, error) {

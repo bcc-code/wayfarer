@@ -735,6 +735,11 @@ export type FirebaseTokenResponse = {
   token: Scalars['String']['output'];
 };
 
+export enum ForwardDestination {
+  BccMediaSupport = 'BCC_MEDIA_SUPPORT',
+  SsfTicket = 'SSF_TICKET'
+}
+
 export type FreeTextQuestion = QuizQuestion & {
   __typename?: 'FreeTextQuestion';
   id: Scalars['ID']['output'];
@@ -1293,6 +1298,7 @@ export type MutationFinishQuizSessionArgs = {
 
 
 export type MutationForwardFeedbackToDeskArgs = {
+  destination: ForwardDestination;
   feedbackId: Scalars['ID']['input'];
 };
 
@@ -3214,6 +3220,7 @@ export type DeleteFeedbackMutation = { __typename?: 'Mutation', deleteFeedback: 
 
 export type ForwardFeedbackToDeskMutationVariables = Exact<{
   feedbackId: Scalars['ID']['input'];
+  destination: ForwardDestination;
 }>;
 
 
@@ -4352,8 +4359,8 @@ export function useDeleteFeedbackMutation() {
   return Urql.useMutation<DeleteFeedbackMutation, DeleteFeedbackMutationVariables>(DeleteFeedbackDocument);
 };
 export const ForwardFeedbackToDeskDocument = gql`
-    mutation ForwardFeedbackToDesk($feedbackId: ID!) {
-  forwardFeedbackToDesk(feedbackId: $feedbackId)
+    mutation ForwardFeedbackToDesk($feedbackId: ID!, $destination: ForwardDestination!) {
+  forwardFeedbackToDesk(feedbackId: $feedbackId, destination: $destination)
 }
     `;
 

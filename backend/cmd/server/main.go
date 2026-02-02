@@ -290,7 +290,7 @@ func main() {
 	// Initialize Email service for feedback forwarding
 	var emailService *email.Service
 	if cfg.Resend.APIKey != "" {
-		emailService = email.NewService(cfg.Resend.APIKey, cfg.Resend.AdminBaseURL)
+		emailService = email.NewService(cfg.Resend.APIKey, cfg.Resend.AdminBaseURL, cfg.Resend.SSFTicketEmail)
 		slog.Info("Email service initialized")
 	} else {
 		slog.Warn("Email service not configured - RESEND_API_KEY not set")

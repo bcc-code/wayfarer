@@ -110,7 +110,7 @@ func (r *mutationResolver) DeleteFeedback(ctx context.Context, id string) (bool,
 }
 
 // ForwardFeedbackToDesk is the resolver for the forwardFeedbackToDesk field.
-func (r *mutationResolver) ForwardFeedbackToDesk(ctx context.Context, feedbackID string) (bool, error) {
+func (r *mutationResolver) ForwardFeedbackToDesk(ctx context.Context, feedbackID string, destination model.ForwardDestination) (bool, error) {
 	if r.EmailService == nil {
 		return false, fmt.Errorf("email service not configured")
 	}
@@ -179,7 +179,7 @@ func (r *mutationResolver) ForwardFeedbackToDesk(ctx context.Context, feedbackID
 	}
 
 	// Send email
-	err = r.EmailService.SendFeedbackToDesk(ctx, email.FeedbackEmailParams{
+	err = r.EmailService.SendFeedbackToDesk(ctx, email.ForwardDestination(destination), email.FeedbackEmailParams{
 		UserID:      feedback.UserID,
 		UserName:    user.Name,
 		UserEmail:   user.Email,
