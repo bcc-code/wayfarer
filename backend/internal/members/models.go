@@ -105,6 +105,12 @@ type MemberWithRoles struct {
 	RoleAssignments []RoleAssignment `json:"roleAssignments"`
 }
 
+// ExcludedOrgNames contains organization names that should not be used for church assignment.
+var ExcludedOrgNames = map[string]bool{
+	"BCC Norge":  true,
+	"BCC A-team": true,
+}
+
 // OrganizationAddress contains address data for an organization
 type OrganizationAddress struct {
 	CountryCode string `json:"countryCode"`
