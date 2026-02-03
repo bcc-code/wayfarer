@@ -737,6 +737,11 @@ func (r *mutationResolver) BulkEnrollUsersInChallenge(ctx context.Context, targe
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
+	// Notify Firestore listeners
+	for _, userID := range userIds {
+		go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
+	}
+
 	// Return challenge for each user (same challenge, no dataloader needed)
 	translatedChallenge := r.ApplyTranslationToChallenge(ctx, challenge)
 	result := make([]model.Challenge, len(userIds))
@@ -785,6 +790,11 @@ func (r *mutationResolver) BulkUnenrollUsersFromChallenge(ctx context.Context, t
 	projectID := getChallengeProjectID(challenge)
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
+
+	// Notify Firestore listeners
+	for _, userID := range userIds {
+		go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
+	}
 
 	return true, nil
 }
@@ -920,6 +930,11 @@ func (r *mutationResolver) BulkCompleteChallenges(ctx context.Context, target mo
 	projectID := getChallengeProjectID(challenge)
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
+
+	// Notify Firestore listeners
+	for _, userID := range userIds {
+		go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
+	}
 
 	// Return challenge for each user (same challenge, no dataloader needed)
 	translatedChallenge := r.ApplyTranslationToChallenge(ctx, challenge)
