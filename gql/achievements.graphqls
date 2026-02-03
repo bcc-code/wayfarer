@@ -16,6 +16,7 @@ interface Achievement {
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime @goField(forceResolver: true)
+    celebratedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
@@ -37,6 +38,7 @@ type SimpleAchievement implements Achievement {
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime @goField(forceResolver: true)
+    celebratedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
@@ -56,6 +58,7 @@ type ContentAchievement implements Achievement {
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime @goField(forceResolver: true)
+    celebratedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
@@ -81,6 +84,7 @@ type StreakAchievement implements Achievement {
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime @goField(forceResolver: true)
+    celebratedAt: DateTime @goField(forceResolver: true)
     neededStreak: Int!
     points: Int!
     hidden: Boolean!
@@ -102,6 +106,7 @@ type QuizAchievement implements Achievement {
     event: Event @goField(forceResolver: true)
     challenge: Challenge @goField(forceResolver: true)
     achievedAt: DateTime @goField(forceResolver: true)
+    celebratedAt: DateTime @goField(forceResolver: true)
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
@@ -278,4 +283,7 @@ extend type Mutation {
 
     # Streak tracking (M2M)
     recordStreakActivity(userId: ID!, achievementId: ID!, currentStreak: Int!): StreakAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+
+    # Mark achievement as celebrated (any authenticated user)
+    markAchievementCelebrated(achievementId: ID!): Boolean!
 }

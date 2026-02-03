@@ -840,6 +840,45 @@ func (q *Queries) GetAllAchievementsByProjectID(ctx context.Context, projectID s
 	return items, nil
 }
 
+const GetBulkUserAchievementCelebratedTimestamps = `-- name: GetBulkUserAchievementCelebratedTimestamps :many
+SELECT user_id, achievement_id, celebrated_at
+FROM user_achievements
+WHERE (user_id, achievement_id) IN (
+    SELECT unnest($1::text[]), unnest($2::text[])
+)
+`
+
+type GetBulkUserAchievementCelebratedTimestampsParams struct {
+	UserIds        []string `json:"user_ids"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+type GetBulkUserAchievementCelebratedTimestampsRow struct {
+	UserID        string             `json:"user_id"`
+	AchievementID string             `json:"achievement_id"`
+	CelebratedAt  pgtype.Timestamptz `json:"celebrated_at"`
+}
+
+func (q *Queries) GetBulkUserAchievementCelebratedTimestamps(ctx context.Context, arg GetBulkUserAchievementCelebratedTimestampsParams) ([]*GetBulkUserAchievementCelebratedTimestampsRow, error) {
+	rows, err := q.db.Query(ctx, GetBulkUserAchievementCelebratedTimestamps, arg.UserIds, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetBulkUserAchievementCelebratedTimestampsRow{}
+	for rows.Next() {
+		var i GetBulkUserAchievementCelebratedTimestampsRow
+		if err := rows.Scan(&i.UserID, &i.AchievementID, &i.CelebratedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetBulkUserAchievementTimestamps = `-- name: GetBulkUserAchievementTimestamps :many
 SELECT user_id, achievement_id, achieved_at
 FROM user_achievements
@@ -853,15 +892,21 @@ type GetBulkUserAchievementTimestampsParams struct {
 	AchievementIds []string `json:"achievement_ids"`
 }
 
-func (q *Queries) GetBulkUserAchievementTimestamps(ctx context.Context, arg GetBulkUserAchievementTimestampsParams) ([]*UserAchievement, error) {
+type GetBulkUserAchievementTimestampsRow struct {
+	UserID        string             `json:"user_id"`
+	AchievementID string             `json:"achievement_id"`
+	AchievedAt    pgtype.Timestamptz `json:"achieved_at"`
+}
+
+func (q *Queries) GetBulkUserAchievementTimestamps(ctx context.Context, arg GetBulkUserAchievementTimestampsParams) ([]*GetBulkUserAchievementTimestampsRow, error) {
 	rows, err := q.db.Query(ctx, GetBulkUserAchievementTimestamps, arg.UserIds, arg.AchievementIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*UserAchievement{}
+	items := []*GetBulkUserAchievementTimestampsRow{}
 	for rows.Next() {
-		var i UserAchievement
+		var i GetBulkUserAchievementTimestampsRow
 		if err := rows.Scan(&i.UserID, &i.AchievementID, &i.AchievedAt); err != nil {
 			return nil, err
 		}
@@ -1213,6 +1258,24 @@ func (q *Queries) GetUserContentProgressForAchievement(ctx context.Context, arg 
 		return nil, err
 	}
 	return items, nil
+}
+
+const MarkAchievementCelebrated = `-- name: MarkAchievementCelebrated :exec
+UPDATE user_achievements
+SET celebrated_at = now()
+WHERE user_id = $1::text
+  AND achievement_id = $2::text
+  AND celebrated_at IS NULL
+`
+
+type MarkAchievementCelebratedParams struct {
+	UserID        string `json:"user_id"`
+	AchievementID string `json:"achievement_id"`
+}
+
+func (q *Queries) MarkAchievementCelebrated(ctx context.Context, arg MarkAchievementCelebratedParams) error {
+	_, err := q.db.Exec(ctx, MarkAchievementCelebrated, arg.UserID, arg.AchievementID)
+	return err
 }
 
 const MarkContentItemCompleted = `-- name: MarkContentItemCompleted :exec

@@ -26,6 +26,7 @@ type Achievement interface {
 	GetEvent() *Event
 	GetChallenge() Challenge
 	GetAchievedAt() *scalars.DateTime
+	GetCelebratedAt() *scalars.DateTime
 	GetPoints() int
 	GetHidden() bool
 	GetAwardableFrom() *scalars.DateTime
@@ -258,6 +259,7 @@ type ContentAchievement struct {
 	Event                *Event            `json:"event,omitempty"`
 	Challenge            Challenge         `json:"challenge,omitempty"`
 	AchievedAt           *scalars.DateTime `json:"achievedAt,omitempty"`
+	CelebratedAt         *scalars.DateTime `json:"celebratedAt,omitempty"`
 	Points               int               `json:"points"`
 	Hidden               bool              `json:"hidden"`
 	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
@@ -285,6 +287,7 @@ func (this ContentAchievement) GetProject() *Project                { return thi
 func (this ContentAchievement) GetEvent() *Event                    { return this.Event }
 func (this ContentAchievement) GetChallenge() Challenge             { return this.Challenge }
 func (this ContentAchievement) GetAchievedAt() *scalars.DateTime    { return this.AchievedAt }
+func (this ContentAchievement) GetCelebratedAt() *scalars.DateTime  { return this.CelebratedAt }
 func (this ContentAchievement) GetPoints() int                      { return this.Points }
 func (this ContentAchievement) GetHidden() bool                     { return this.Hidden }
 func (this ContentAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }
@@ -1111,6 +1114,7 @@ type QuizAchievement struct {
 	Event                *Event            `json:"event,omitempty"`
 	Challenge            Challenge         `json:"challenge,omitempty"`
 	AchievedAt           *scalars.DateTime `json:"achievedAt,omitempty"`
+	CelebratedAt         *scalars.DateTime `json:"celebratedAt,omitempty"`
 	Points               int               `json:"points"`
 	Hidden               bool              `json:"hidden"`
 	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
@@ -1137,6 +1141,7 @@ func (this QuizAchievement) GetProject() *Project                { return this.P
 func (this QuizAchievement) GetEvent() *Event                    { return this.Event }
 func (this QuizAchievement) GetChallenge() Challenge             { return this.Challenge }
 func (this QuizAchievement) GetAchievedAt() *scalars.DateTime    { return this.AchievedAt }
+func (this QuizAchievement) GetCelebratedAt() *scalars.DateTime  { return this.CelebratedAt }
 func (this QuizAchievement) GetPoints() int                      { return this.Points }
 func (this QuizAchievement) GetHidden() bool                     { return this.Hidden }
 func (this QuizAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }
@@ -1372,6 +1377,7 @@ type SimpleAchievement struct {
 	Event                *Event            `json:"event,omitempty"`
 	Challenge            Challenge         `json:"challenge,omitempty"`
 	AchievedAt           *scalars.DateTime `json:"achievedAt,omitempty"`
+	CelebratedAt         *scalars.DateTime `json:"celebratedAt,omitempty"`
 	Points               int               `json:"points"`
 	Hidden               bool              `json:"hidden"`
 	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
@@ -1394,6 +1400,7 @@ func (this SimpleAchievement) GetProject() *Project                { return this
 func (this SimpleAchievement) GetEvent() *Event                    { return this.Event }
 func (this SimpleAchievement) GetChallenge() Challenge             { return this.Challenge }
 func (this SimpleAchievement) GetAchievedAt() *scalars.DateTime    { return this.AchievedAt }
+func (this SimpleAchievement) GetCelebratedAt() *scalars.DateTime  { return this.CelebratedAt }
 func (this SimpleAchievement) GetPoints() int                      { return this.Points }
 func (this SimpleAchievement) GetHidden() bool                     { return this.Hidden }
 func (this SimpleAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }
@@ -1469,6 +1476,7 @@ type StreakAchievement struct {
 	Event                *Event            `json:"event,omitempty"`
 	Challenge            Challenge         `json:"challenge,omitempty"`
 	AchievedAt           *scalars.DateTime `json:"achievedAt,omitempty"`
+	CelebratedAt         *scalars.DateTime `json:"celebratedAt,omitempty"`
 	NeededStreak         int               `json:"neededStreak"`
 	Points               int               `json:"points"`
 	Hidden               bool              `json:"hidden"`
@@ -1494,6 +1502,7 @@ func (this StreakAchievement) GetProject() *Project                { return this
 func (this StreakAchievement) GetEvent() *Event                    { return this.Event }
 func (this StreakAchievement) GetChallenge() Challenge             { return this.Challenge }
 func (this StreakAchievement) GetAchievedAt() *scalars.DateTime    { return this.AchievedAt }
+func (this StreakAchievement) GetCelebratedAt() *scalars.DateTime  { return this.CelebratedAt }
 func (this StreakAchievement) GetPoints() int                      { return this.Points }
 func (this StreakAchievement) GetHidden() bool                     { return this.Hidden }
 func (this StreakAchievement) GetAwardableFrom() *scalars.DateTime { return this.AwardableFrom }

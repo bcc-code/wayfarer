@@ -640,6 +640,7 @@ type UserAchievement struct {
 	UserID        string             `json:"user_id"`
 	AchievementID string             `json:"achievement_id"`
 	AchievedAt    pgtype.Timestamptz `json:"achieved_at"`
+	CelebratedAt  pgtype.Timestamptz `json:"celebrated_at"`
 }
 
 type UserChallengeCompletion struct {

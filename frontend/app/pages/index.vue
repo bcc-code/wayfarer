@@ -80,6 +80,10 @@ const {
 
 const isInitialLoading = computed(() => fetching.value && !data.value)
 
+// Achievement celebration - auto-open drawer with confetti for uncelebrated achievements
+const achievements = computed(() => data.value?.myCurrentProject?.achievements)
+useAchievementCelebration(achievements)
+
 // Consent banner
 const showBanner = useLocalStorage('showBanner', false, {
   listenToStorageChanges: true,

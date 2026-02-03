@@ -51,6 +51,11 @@ func (r *contentAchievementResolver) AchievedAt(ctx context.Context, obj *model.
 	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
 }
 
+// CelebratedAt is the resolver for the celebratedAt field.
+func (r *contentAchievementResolver) CelebratedAt(ctx context.Context, obj *model.ContentAchievement) (*scalars.DateTime, error) {
+	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
+}
+
 // Items is the resolver for the items field.
 func (r *contentAchievementResolver) Items(ctx context.Context, obj *model.ContentAchievement) ([]model.ContentItem, error) {
 	thunk := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)
@@ -1175,6 +1180,26 @@ func (r *mutationResolver) RecordStreakActivity(ctx context.Context, userID stri
 	panic(fmt.Errorf("not implemented: RecordStreakActivity - recordStreakActivity"))
 }
 
+// MarkAchievementCelebrated is the resolver for the markAchievementCelebrated field.
+func (r *mutationResolver) MarkAchievementCelebrated(ctx context.Context, achievementID string) (bool, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return false, fmt.Errorf("user not authenticated")
+	}
+
+	if err := r.DB.Queries.MarkAchievementCelebrated(ctx, sqlc.MarkAchievementCelebratedParams{
+		UserID:        userID,
+		AchievementID: achievementID,
+	}); err != nil {
+		return false, fmt.Errorf("failed to mark achievement celebrated: %w", err)
+	}
+
+	// Invalidate celebrated timestamp cache
+	r.Cache.Delete(cache.UserAchievementCelebratedTimestampKey(userID, achievementID))
+
+	return true, nil
+}
+
 // Achievement is the resolver for the achievement field.
 func (r *queryResolver) Achievement(ctx context.Context, id string) (model.Achievement, error) {
 	return r.LoadAchievementWithTranslation(ctx, id)
@@ -1324,6 +1349,11 @@ func (r *quizAchievementResolver) AchievedAt(ctx context.Context, obj *model.Qui
 	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
 }
 
+// CelebratedAt is the resolver for the celebratedAt field.
+func (r *quizAchievementResolver) CelebratedAt(ctx context.Context, obj *model.QuizAchievement) (*scalars.DateTime, error) {
+	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
+}
+
 // Quiz is the resolver for the quiz field.
 func (r *quizAchievementResolver) Quiz(ctx context.Context, obj *model.QuizAchievement) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
@@ -1360,6 +1390,11 @@ func (r *simpleAchievementResolver) AchievedAt(ctx context.Context, obj *model.S
 	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
 }
 
+// CelebratedAt is the resolver for the celebratedAt field.
+func (r *simpleAchievementResolver) CelebratedAt(ctx context.Context, obj *model.SimpleAchievement) (*scalars.DateTime, error) {
+	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
+}
+
 // ImagePendingObject is the resolver for the imagePendingObject field.
 func (r *streakAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.StreakAchievement) (*model.Image, error) {
 	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
@@ -1388,6 +1423,11 @@ func (r *streakAchievementResolver) Challenge(ctx context.Context, obj *model.St
 // AchievedAt is the resolver for the achievedAt field.
 func (r *streakAchievementResolver) AchievedAt(ctx context.Context, obj *model.StreakAchievement) (*scalars.DateTime, error) {
 	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// CelebratedAt is the resolver for the celebratedAt field.
+func (r *streakAchievementResolver) CelebratedAt(ctx context.Context, obj *model.StreakAchievement) (*scalars.DateTime, error) {
+	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
 }
 
 // Streak is the resolver for the streak field.
