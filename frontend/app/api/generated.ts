@@ -3123,6 +3123,19 @@ export type CreateChallengeMutation = { __typename?: 'Mutation', createChallenge
     | { __typename?: 'SimpleChallenge', id: string }
    };
 
+export type BulkEnrollUsersInChallengeMutationVariables = Exact<{
+  challengeId: Scalars['ID']['input'];
+  target: EnrollmentTargetInput;
+}>;
+
+
+export type BulkEnrollUsersInChallengeMutation = { __typename?: 'Mutation', bulkEnrollUsersInChallenge: Array<
+    | { __typename?: 'ExternalChallenge', id: string }
+    | { __typename?: 'PluginChallenge', id: string }
+    | { __typename?: 'QuizChallenge', id: string }
+    | { __typename?: 'SimpleChallenge', id: string }
+  > };
+
 export type AcceptConsentMutationVariables = Exact<{
   consentId: Scalars['ID']['input'];
 }>;
@@ -3658,6 +3671,11 @@ export type ChurchAdminsPageQueryVariables = Exact<{
 
 export type ChurchAdminsPageQuery = { __typename?: 'Query', usersWithRole: Array<{ __typename?: 'User', id: string, name: string, email: string }>, users: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, name: string, email: string } }> } };
 
+export type AdminKickOffPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminKickOffPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', teams: Array<{ __typename?: 'Team', members: Array<{ __typename?: 'TeamMember', id: string, isTeamLead: boolean }> }> } };
+
 export type MyChurchUnitsPageQueryVariables = Exact<{
   filter?: InputMaybe<UserFilter>;
 }>;
@@ -4191,6 +4209,17 @@ export const CreateChallengeDocument = gql`
 
 export function useCreateChallengeMutation() {
   return Urql.useMutation<CreateChallengeMutation, CreateChallengeMutationVariables>(CreateChallengeDocument);
+};
+export const BulkEnrollUsersInChallengeDocument = gql`
+    mutation BulkEnrollUsersInChallenge($challengeId: ID!, $target: EnrollmentTargetInput!) {
+  bulkEnrollUsersInChallenge(challengeId: $challengeId, target: $target) {
+    id
+  }
+}
+    `;
+
+export function useBulkEnrollUsersInChallengeMutation() {
+  return Urql.useMutation<BulkEnrollUsersInChallengeMutation, BulkEnrollUsersInChallengeMutationVariables>(BulkEnrollUsersInChallengeDocument);
 };
 export const AcceptConsentDocument = gql`
     mutation AcceptConsent($consentId: ID!) {
@@ -5278,6 +5307,22 @@ export const ChurchAdminsPageDocument = gql`
 
 export function useChurchAdminsPageQuery(options?: Omit<Urql.UseQueryArgs<never, ChurchAdminsPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<ChurchAdminsPageQuery, ChurchAdminsPageQueryVariables | undefined>({ query: ChurchAdminsPageDocument, variables: undefined, ...options });
+};
+export const AdminKickOffPageDocument = gql`
+    query AdminKickOffPage {
+  myCurrentProject {
+    teams {
+      members {
+        id
+        isTeamLead
+      }
+    }
+  }
+}
+    `;
+
+export function useAdminKickOffPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminKickOffPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<AdminKickOffPageQuery, AdminKickOffPageQueryVariables | undefined>({ query: AdminKickOffPageDocument, variables: undefined, ...options });
 };
 export const MyChurchUnitsPageDocument = gql`
     query MyChurchUnitsPage($filter: UserFilter) {

@@ -3,6 +3,48 @@ definePageMeta({
   layout: 'church-admin',
   middleware: ['admin'],
 })
+
+gql(`
+  query AdminKickOffPage {
+    myCurrentProject {
+      teams {
+        members {
+          id
+          isTeamLead
+        }
+      }
+    }
+  }
+`)
+
+const { data } = useAdminKickOffPageQuery()
+const { executeMutation } = useBulkEnrollUsersInChallengeMutation()
+
+const teamLeads = computed(() =>
+  data.value?.myCurrentProject.teams.flatMap((team) =>
+    team.members.filter((member) => member.isTeamLead),
+  ),
+)
+const teamLeadIds = computed(() => teamLeads.value?.map((lead) => lead.id))
+
+watch(teamLeadIds, (leads) => {
+  console.log(leads)
+})
+
+const readyToLaunch = ref(false)
+
+const { isActive, start, stop, remaining } = useCountdown(5, {
+  immediate: false,
+  onComplete: async () => {
+    await executeMutation({
+      challengeId: '',
+      target: {
+        userIds: [],
+      },
+    })
+    readyToLaunch.value = false
+  },
+})
 </script>
 
 <template>
@@ -22,7 +64,7 @@ definePageMeta({
         />
       </UContainer>
     </div>
-    <UContainer class="py-6">
+    <UContainer class="py-6 relative">
       <UButton
         color="neutral"
         variant="soft"
@@ -33,22 +75,54 @@ definePageMeta({
         {{ $t('admin.common.back') }}
       </UButton>
 
-      <div class="mt-12 max-w-2xl relative">
-        <h2 class="text-3xl font-semibold mb-4">
+      <TransitionGroup
+        tag="div"
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="scale-90 opacity-0"
+        enter-to-class="scale-100 opacity-100"
+        leave-active-class="transition duration-300 ease-out absolute"
+        leave-from-class="scale-100 opacity-100"
+        leave-to-class="scale-90 opacity-0"
+        move-class="transition duration-300 ease-out"
+        class="mt-12 max-w-2xl relative flex flex-col items-start gap-4"
+      >
+        <h2 key="title" class="text-3xl font-semibold">
           {{ $t('admin.churchHome.kickOff') }}
         </h2>
-        <p>{{ $t('admin.churchHome.kickOffDescription') }}</p>
+        <p key="description">{{ $t('admin.churchHome.kickOffDescription') }}</p>
 
-        <div
-          class="relative rounded-full dark:bg-red-900 bg-red-800 aspect-square mt-20 w-64 transition duration-100 ease-100 shadow-2xl has-active:shadow-none"
-        >
-          <button
-            class="rounded-[inherit] bg-red-500 p-8 text-black text-xl font-semibold size-full scale-105 -translate-y-6 active:translate-y-0 active:scale-100 transition duration-100 ease-out ring-2 ring-red-400 ring-inset cursor-pointer"
-          >
-            {{ $t('admin.churchHome.kickOffButton') }}
-          </button>
+        <USwitch
+          key="switch"
+          v-model="readyToLaunch"
+          :label="$t('admin.churchHome.kickOffConfirmation')"
+          class="my-4"
+        />
+        <div v-if="readyToLaunch" key="button" class="flex gap-8 items-center">
+          <BigRedButton
+            :label="$t('admin.churchHome.kickOffButton')"
+            class="my-6"
+            @click="() => start()"
+          />
+          <div v-if="isActive">
+            <p class="tabular-nums mb-2">
+              {{
+                $t(
+                  'admin.churchHome.kickOffOnboardingCountdown',
+                  { seconds: remaining },
+                  remaining,
+                )
+              }}
+            </p>
+            <UButton color="neutral" variant="subtle" @click="() => stop()">
+              {{ $t('admin.common.cancel') }}
+            </UButton>
+          </div>
         </div>
-      </div>
+
+        <p key="description2" class="text-muted">
+          {{ $t('admin.churchHome.kickOffOnboardingDescription') }}
+        </p>
+      </TransitionGroup>
     </UContainer>
   </div>
 </template>

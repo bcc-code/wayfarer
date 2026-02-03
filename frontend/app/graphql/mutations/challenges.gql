@@ -17,3 +17,12 @@ mutation CreateChallenge(
     id
   }
 }
+
+mutation BulkEnrollUsersInChallenge(
+  $challengeId: ID!
+  $target: EnrollmentTargetInput!
+) {
+  bulkEnrollUsersInChallenge(challengeId: $challengeId, target: $target) {
+    id
+  }
+}

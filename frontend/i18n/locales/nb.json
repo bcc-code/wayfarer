@@ -160,7 +160,10 @@
       "comingSoon": "Kommer snart",
       "kickOff": "Kick-off",
       "kickOffDescription": "Denne siden er kun til bruk under kick-off. Om dere ikke gjennomfører kick-off på dette tidspunktet, vennligst forlat siden.",
-      "kickOffButton": "Start unit-onboarding"
+      "kickOffButton": "Start unit-onboarding",
+      "kickOffOnboardingDescription": "Når du starter unit-onboarding vil alle unitledere i din lokalmenighet få en oppgave om å endre navnet på sin unit.",
+      "kickOffConfirmation": "Jeg bekrefter at vi utfører kick-off på dette tidspunktet, og at vi er klare til å starte unit-onboarding.",
+      "kickOffOnboardingCountdown": "Starter om {seconds} sekund | Starter om {seconds} sekunder"
     },
     "admins": {
       "searchPlaceholder": "Søk på administratorer...",
