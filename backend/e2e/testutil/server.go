@@ -135,7 +135,7 @@ func SetupTestServer(ctx context.Context, dbMgr *TestDBManager) (*gin.Engine, fu
 
 	// Create services
 	roleService := services.NewRoleService(dbMgr.DB.Queries, testCache)
-	leaderboardService := services.NewLeaderboardService(dbMgr.DB.Queries, testCache.Cache, dataLoaders)
+	leaderboardService := services.NewLeaderboardService(dbMgr.DB.Queries, testCache, dataLoaders)
 	languageService := services.NewLanguageService(dbMgr.DB.Queries, testCache, dataLoaders.UserByIDLoader, logger)
 
 	// Create settings service
@@ -181,7 +181,7 @@ func SetupTestServerWithCache(ctx context.Context, dbMgr *TestDBManager) (*gin.E
 
 	// Create services
 	roleService := services.NewRoleService(dbMgr.DB.Queries, testCache)
-	leaderboardService := services.NewLeaderboardService(dbMgr.DB.Queries, testCache.Cache, dataLoaders)
+	leaderboardService := services.NewLeaderboardService(dbMgr.DB.Queries, testCache, dataLoaders)
 	languageService := services.NewLanguageService(dbMgr.DB.Queries, testCache, dataLoaders.UserByIDLoader, logger)
 
 	// Create settings service

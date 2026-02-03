@@ -291,6 +291,7 @@ CREATE TABLE user_achievements (
     user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     achievement_id CHAR(28) NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
     achieved_at TIMESTAMPTZ DEFAULT now(),
+    celebrated_at TIMESTAMPTZ,
     PRIMARY KEY (user_id, achievement_id),
     INDEX idx_user_achievements_user (user_id),
     INDEX idx_user_achievements_achievement (achievement_id),

@@ -129,6 +129,45 @@ func (q *Queries) CreateQuizResponse(ctx context.Context, arg CreateQuizResponse
 	return &i, err
 }
 
+const GetQuizResponseByID = `-- name: GetQuizResponseByID :one
+SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds
+FROM quiz_responses
+WHERE id = $1::text
+`
+
+type GetQuizResponseByIDRow struct {
+	ID                string             `json:"id"`
+	SubmissionID      string             `json:"submission_id"`
+	QuestionID        string             `json:"question_id"`
+	SelectedAnswerIds []byte             `json:"selected_answer_ids"`
+	TextResponse      *string            `json:"text_response"`
+	NumberResponse    pgtype.Numeric     `json:"number_response"`
+	JsonResponse      []byte             `json:"json_response"`
+	IsCorrect         *bool              `json:"is_correct"`
+	PointsEarned      *int32             `json:"points_earned"`
+	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
+	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
+}
+
+func (q *Queries) GetQuizResponseByID(ctx context.Context, id string) (*GetQuizResponseByIDRow, error) {
+	row := q.db.QueryRow(ctx, GetQuizResponseByID, id)
+	var i GetQuizResponseByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.SubmissionID,
+		&i.QuestionID,
+		&i.SelectedAnswerIds,
+		&i.TextResponse,
+		&i.NumberResponse,
+		&i.JsonResponse,
+		&i.IsCorrect,
+		&i.PointsEarned,
+		&i.AnsweredAt,
+		&i.TimeSpentSeconds,
+	)
+	return &i, err
+}
+
 const GetQuizResponseBySubmissionAndQuestion = `-- name: GetQuizResponseBySubmissionAndQuestion :one
 SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount
 FROM quiz_responses

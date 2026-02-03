@@ -236,7 +236,7 @@ func main() {
 	slog.Info("RoleService initialized with caching")
 
 	// Initialize LeaderboardService
-	leaderboardService := services.NewLeaderboardService(db.Queries, cacheInstance.Cache, dataLoaders)
+	leaderboardService := services.NewLeaderboardService(db.Queries, cacheInstance, dataLoaders)
 	slog.Info("LeaderboardService initialized with caching and loaders")
 
 	// Initialize SettingsService
@@ -290,7 +290,7 @@ func main() {
 	// Initialize Email service for feedback forwarding
 	var emailService *email.Service
 	if cfg.Resend.APIKey != "" {
-		emailService = email.NewService(cfg.Resend.APIKey, cfg.Resend.AdminBaseURL)
+		emailService = email.NewService(cfg.Resend.APIKey, cfg.Resend.AdminBaseURL, cfg.Resend.SSFTicketEmail)
 		slog.Info("Email service initialized")
 	} else {
 		slog.Warn("Email service not configured - RESEND_API_KEY not set")
@@ -450,6 +450,7 @@ func main() {
 		Cache:           cacheInstance,
 		SettingsService: settingsService,
 		JWTConfig:       cfg.JWT,
+		Firebase:        firebaseService,
 	}
 	apiKeyAuth := middleware.APIKeyAuth(cfg.APIKey)
 

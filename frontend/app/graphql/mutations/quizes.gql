@@ -66,6 +66,27 @@ mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
         isCorrect
       }
     }
+    ... on OrderingResponse {
+      isCorrect
+      submittedOrder
+    }
+    ... on NumberResponse {
+      numberResponse
+    }
+    ... on FreeTextResponse {
+      textResponse
+    }
+  }
+}
+
+mutation UpdateQuizAnswer($responseId: ID!, $input: UpdateQuizAnswerInput!) {
+  updateQuizAnswer(responseId: $responseId, input: $input) {
+    __typename
+    id
+    ... on OrderingResponse {
+      isCorrect
+      submittedOrder
+    }
   }
 }
 

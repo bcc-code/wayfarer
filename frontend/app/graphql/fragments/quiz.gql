@@ -23,6 +23,12 @@ fragment QuizQuestionFields on QuizQuestion {
     maxValue
     stepValue
   }
+  ... on OrderingQuestion {
+    orderingItems {
+      id
+      itemText
+    }
+  }
 }
 
 # Variant without points (used in user-facing quiz)
@@ -42,6 +48,12 @@ fragment QuizQuestionUserFields on QuizQuestion {
     minValue
     maxValue
     stepValue
+  }
+  ... on OrderingQuestion {
+    orderingItems {
+      id
+      itemText
+    }
   }
 }
 

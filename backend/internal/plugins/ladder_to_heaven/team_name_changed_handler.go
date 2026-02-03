@@ -2,6 +2,7 @@ package ladder_to_heaven
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/bcc-media/wayfarer/internal/firebase"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/bcc-media/wayfarer/internal/webhook"
 	"github.com/gin-gonic/gin"
@@ -21,6 +23,7 @@ type teamNameChangedHandler struct {
 	cache       *cache.CacheWithRegistry
 	challengeID string
 	secretKey   string
+	firebase    *firebase.Service
 }
 
 // teamNameChangedRequest matches the outbound WebhookPayload format for team_name_changed events
@@ -172,6 +175,13 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 
 	// Invalidate project cache
 	h.cache.InvalidateProject(req.ProjectID)
+
+	// Notify frontend via Firestore so real-time listeners trigger a refetch
+	if h.firebase != nil {
+		for _, userID := range teamMembers {
+			go h.firebase.NotifyUserChallenges(context.Background(), userID)
+		}
+	}
 
 	slog.Info("ladder_to_heaven: team rename processed successfully",
 		"team_id", req.Data.TeamID,

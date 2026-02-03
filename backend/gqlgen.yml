@@ -497,11 +497,15 @@ models:
         resolver: true
       question:
         resolver: true
+      isCorrect:
+        resolver: true
     extraFields:
       SubmissionID:
         type: string
       QuestionID:
         type: string
+      IsCorrectValue:
+        type: "*bool"
 
   QuizAchievement:
     fields:

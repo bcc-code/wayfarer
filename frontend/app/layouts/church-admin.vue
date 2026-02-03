@@ -1,15 +1,46 @@
 <script setup lang="ts">
 import '~/assets/styles/admin.css'
 
-// Force Norwegian locale in admin
-const { setLocale } = useI18n()
-setLocale('nb')
-
 useHead({
   title: 'Interact Admin',
 })
 
 const { me, logout } = useAuth()
+
+// Initialize Firestore sync for realtime updates
+const { initialize: initFirestoreSync } = useFirestoreSync()
+onMounted(() => {
+  initFirestoreSync()
+})
+
+// PWA update notification
+const { $pwa } = useNuxtApp()
+const toast = useToast()
+
+watch(
+  () => $pwa?.needRefresh,
+  (needRefresh) => {
+    if (needRefresh) {
+      toast.add({
+        id: 'pwa-update',
+        title: 'Oppdatering tilgjengelig',
+        description: 'En ny versjon av appen er klar.',
+        icon: 'lucide:download',
+        close: false,
+        duration: 0,
+        color: 'neutral',
+        actions: [
+          {
+            label: 'Oppdater nå',
+            color: 'neutral',
+            onClick: () => $pwa?.updateServiceWorker(true),
+          },
+        ],
+      })
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -23,11 +54,13 @@ const { me, logout } = useAuth()
             class="h-6"
           />
         </NuxtLink>
-        <div class="ml-auto flex gap-4 items-center">
+        <div class="ml-auto flex gap-2 items-center">
           <AdminUserFeedback />
-          <div class="text-end flex flex-col">
+          <div class="text-end">
             <span class="text-sm">{{ me?.name }}</span>
           </div>
+          <AdminColorModeSelector />
+          <AdminLocaleSelector />
           <UButton variant="soft" color="neutral" @click="logout">
             {{ $t('auth.logoutButton') }}
           </UButton>

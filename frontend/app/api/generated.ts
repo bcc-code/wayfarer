@@ -26,6 +26,7 @@ export type Scalars = {
 export type Achievement = {
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
+  celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -275,6 +276,7 @@ export type ContentAchievement = Achievement & {
   __typename?: 'ContentAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
+  celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   completedItemCount: Scalars['Int']['output'];
   descriptionCompleted: Scalars['String']['output'];
@@ -367,6 +369,11 @@ export type CreateEventInput = {
   startDate: Scalars['DateTime']['input'];
 };
 
+export type CreateOrderingItemInput = {
+  correctOrder: Scalars['Int']['input'];
+  itemText: Scalars['String']['input'];
+};
+
 export type CreatePredefinedAnswerInput = {
   answerOrder: Scalars['Int']['input'];
   answerText: Scalars['String']['input'];
@@ -419,6 +426,7 @@ export type CreateQuizQuestionInput = {
   allowMultipleSelection?: InputMaybe<Scalars['Boolean']['input']>;
   maxValue?: InputMaybe<Scalars['Float']['input']>;
   minValue?: InputMaybe<Scalars['Float']['input']>;
+  orderingItems?: InputMaybe<Array<CreateOrderingItemInput>>;
   points?: InputMaybe<Scalars['Int']['input']>;
   predefinedAnswers?: InputMaybe<Array<CreatePredefinedAnswerInput>>;
   questionOrder: Scalars['Int']['input'];
@@ -729,6 +737,11 @@ export type FirebaseTokenResponse = {
   token: Scalars['String']['output'];
 };
 
+export enum ForwardDestination {
+  BccMediaSupport = 'BCC_MEDIA_SUPPORT',
+  SsfTicket = 'SSF_TICKET'
+}
+
 export type FreeTextQuestion = QuizQuestion & {
   __typename?: 'FreeTextQuestion';
   id: Scalars['ID']['output'];
@@ -918,6 +931,7 @@ export type Mutation = {
   joinTeam: Team;
   linkAchievementToChallenge: Achievement;
   lockQuizSession: QuizSession;
+  markAchievementCelebrated: Scalars['Boolean']['output'];
   markContentItemCompleted: Array<ContentAchievement>;
   markFeedbackHandled: UserFeedback;
   moveEvent: Event;
@@ -963,6 +977,7 @@ export type Mutation = {
   updateFeedbackTags: UserFeedback;
   updateProject: Project;
   updateQuiz: Quiz;
+  updateQuizAnswer: QuizResponse;
   updateQuizQuestion: QuizQuestion;
   updateQuizSession: QuizSession;
   updateStreak: Streak;
@@ -1286,6 +1301,7 @@ export type MutationFinishQuizSessionArgs = {
 
 
 export type MutationForwardFeedbackToDeskArgs = {
+  destination: ForwardDestination;
   feedbackId: Scalars['ID']['input'];
 };
 
@@ -1318,6 +1334,11 @@ export type MutationLinkAchievementToChallengeArgs = {
 
 export type MutationLockQuizSessionArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationMarkAchievementCelebratedArgs = {
+  achievementId: Scalars['ID']['input'];
 };
 
 
@@ -1581,6 +1602,12 @@ export type MutationUpdateQuizArgs = {
 };
 
 
+export type MutationUpdateQuizAnswerArgs = {
+  input: UpdateQuizAnswerInput;
+  responseId: Scalars['ID']['input'];
+};
+
+
 export type MutationUpdateQuizQuestionArgs = {
   id: Scalars['ID']['input'];
   input: UpdateQuizQuestionInput;
@@ -1649,6 +1676,29 @@ export type NumberResponse = QuizResponse & {
   pointsEarned?: Maybe<Scalars['Int']['output']>;
   question: QuizQuestion;
   submission: QuizSubmission;
+  timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
+};
+
+export type OrderingQuestion = QuizQuestion & {
+  __typename?: 'OrderingQuestion';
+  id: Scalars['ID']['output'];
+  orderingItems: Array<QuizOrderingItem>;
+  points?: Maybe<Scalars['Int']['output']>;
+  questionOrder: Scalars['Int']['output'];
+  questionText: Scalars['String']['output'];
+  quiz: Quiz;
+  timeoutSeconds?: Maybe<Scalars['Int']['output']>;
+};
+
+export type OrderingResponse = QuizResponse & {
+  __typename?: 'OrderingResponse';
+  answeredAt?: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['ID']['output'];
+  isCorrect?: Maybe<Scalars['Boolean']['output']>;
+  pointsEarned?: Maybe<Scalars['Int']['output']>;
+  question: QuizQuestion;
+  submission: QuizSubmission;
+  submittedOrder: Array<Scalars['ID']['output']>;
   timeSpentSeconds?: Maybe<Scalars['Int']['output']>;
 };
 
@@ -2135,6 +2185,7 @@ export type QuizAchievement = Achievement & {
   __typename?: 'QuizAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
+  celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -2197,6 +2248,13 @@ export type QuizFilter = {
   projectId?: InputMaybe<Scalars['ID']['input']>;
 };
 
+export type QuizOrderingItem = {
+  __typename?: 'QuizOrderingItem';
+  id: Scalars['ID']['output'];
+  itemText: Scalars['String']['output'];
+  question: QuizQuestion;
+};
+
 export type QuizPredefinedAnswer = {
   __typename?: 'QuizPredefinedAnswer';
   answerOrder: Scalars['Int']['output'];
@@ -2219,6 +2277,7 @@ export enum QuizQuestionType {
   FreeText = 'FREE_TEXT',
   Json = 'JSON',
   Number = 'NUMBER',
+  Ordering = 'ORDERING',
   Predefined = 'PREDEFINED'
 }
 
@@ -2401,6 +2460,7 @@ export type SimpleAchievement = Achievement & {
   __typename?: 'SimpleAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
+  celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -2461,6 +2521,7 @@ export type StreakAchievement = Achievement & {
   __typename?: 'StreakAchievement';
   achievedAt?: Maybe<Scalars['DateTime']['output']>;
   awardableFrom?: Maybe<Scalars['DateTime']['output']>;
+  celebratedAt?: Maybe<Scalars['DateTime']['output']>;
   challenge?: Maybe<Challenge>;
   descriptionCompleted: Scalars['String']['output'];
   descriptionPending: Scalars['String']['output'];
@@ -2518,6 +2579,7 @@ export type SubmitQuizAnswerInput = {
   numberResponse?: InputMaybe<Scalars['Float']['input']>;
   questionId: Scalars['ID']['input'];
   selectedAnswerIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  submittedOrder?: InputMaybe<Array<Scalars['ID']['input']>>;
   textResponse?: InputMaybe<Scalars['String']['input']>;
   timeSpentSeconds?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -2683,6 +2745,10 @@ export type UpdateProjectInput = {
   startDate?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
+export type UpdateQuizAnswerInput = {
+  submittedOrder?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
 export type UpdateQuizInput = {
   allowRetakes?: InputMaybe<Scalars['Boolean']['input']>;
   completionPoints?: InputMaybe<Scalars['Int']['input']>;
@@ -2699,6 +2765,7 @@ export type UpdateQuizQuestionInput = {
   allowMultipleSelection?: InputMaybe<Scalars['Boolean']['input']>;
   maxValue?: InputMaybe<Scalars['Float']['input']>;
   minValue?: InputMaybe<Scalars['Float']['input']>;
+  orderingItems?: InputMaybe<Array<CreateOrderingItemInput>>;
   points?: InputMaybe<Scalars['Int']['input']>;
   predefinedAnswers?: InputMaybe<Array<CreatePredefinedAnswerInput>>;
   questionOrder?: InputMaybe<Scalars['Int']['input']>;
@@ -2941,12 +3008,15 @@ type QuizQuestionFields_JsonQuestion_Fragment = { __typename: 'JsonQuestion', id
 
 type QuizQuestionFields_NumberQuestion_Fragment = { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null };
 
+type QuizQuestionFields_OrderingQuestion_Fragment = { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> };
+
 type QuizQuestionFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> };
 
 export type QuizQuestionFieldsFragment =
   | QuizQuestionFields_FreeTextQuestion_Fragment
   | QuizQuestionFields_JsonQuestion_Fragment
   | QuizQuestionFields_NumberQuestion_Fragment
+  | QuizQuestionFields_OrderingQuestion_Fragment
   | QuizQuestionFields_PredefinedQuestion_Fragment
 ;
 
@@ -2956,12 +3026,15 @@ type QuizQuestionUserFields_JsonQuestion_Fragment = { __typename: 'JsonQuestion'
 
 type QuizQuestionUserFields_NumberQuestion_Fragment = { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null };
 
+type QuizQuestionUserFields_OrderingQuestion_Fragment = { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> };
+
 type QuizQuestionUserFields_PredefinedQuestion_Fragment = { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> };
 
 export type QuizQuestionUserFieldsFragment =
   | QuizQuestionUserFields_FreeTextQuestion_Fragment
   | QuizQuestionUserFields_JsonQuestion_Fragment
   | QuizQuestionUserFields_NumberQuestion_Fragment
+  | QuizQuestionUserFields_OrderingQuestion_Fragment
   | QuizQuestionUserFields_PredefinedQuestion_Fragment
 ;
 
@@ -3043,6 +3116,13 @@ export type ReorderAchievementsMutation = { __typename?: 'Mutation', reorderAchi
     | { __typename?: 'SimpleAchievement', id: string }
     | { __typename?: 'StreakAchievement', id: string }
   > };
+
+export type MarkAchievementCelebratedMutationVariables = Exact<{
+  achievementId: Scalars['ID']['input'];
+}>;
+
+
+export type MarkAchievementCelebratedMutation = { __typename?: 'Mutation', markAchievementCelebrated: boolean };
 
 export type DeleteChallengeMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -3158,6 +3238,7 @@ export type DeleteFeedbackMutation = { __typename?: 'Mutation', deleteFeedback: 
 
 export type ForwardFeedbackToDeskMutationVariables = Exact<{
   feedbackId: Scalars['ID']['input'];
+  destination: ForwardDestination;
 }>;
 
 
@@ -3231,6 +3312,7 @@ export type AddQuizQuestionMutation = { __typename?: 'Mutation', addQuizQuestion
     | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
     | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
     | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
+    | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
     | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
    };
 
@@ -3244,6 +3326,7 @@ export type UpdateQuizQuestionMutation = { __typename?: 'Mutation', updateQuizQu
     | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
     | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
     | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
+    | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
     | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
    };
 
@@ -3263,6 +3346,7 @@ export type StartQuizSessionMutation = { __typename?: 'Mutation', startQuizSessi
       | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
       | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
       | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+      | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
       | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
     >, quiz: { __typename?: 'Quiz', id: string, name: string, timeoutSeconds?: number | null } } };
 
@@ -3273,30 +3357,55 @@ export type SubmitQuizAnswerMutationVariables = Exact<{
 
 
 export type SubmitQuizAnswerMutation = { __typename?: 'Mutation', submitQuizAnswer:
-    | { __typename: 'FreeTextResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+    | { __typename: 'FreeTextResponse', textResponse: string, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
+        | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
     | { __typename: 'JsonResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
+        | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
-    | { __typename: 'NumberResponse', id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+    | { __typename: 'NumberResponse', numberResponse: number, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
+        | { __typename?: 'OrderingQuestion', id: string }
+        | { __typename?: 'PredefinedQuestion', id: string }
+       }
+    | { __typename: 'OrderingResponse', isCorrect?: boolean | null, submittedOrder: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+        | { __typename?: 'FreeTextQuestion', id: string }
+        | { __typename?: 'JsonQuestion', id: string }
+        | { __typename?: 'NumberQuestion', id: string }
+        | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
     | { __typename: 'PredefinedResponse', isCorrect?: boolean | null, selectedAnswerIds: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, isCorrect?: boolean | null }>, question:
         | { __typename?: 'FreeTextQuestion', id: string }
         | { __typename?: 'JsonQuestion', id: string }
         | { __typename?: 'NumberQuestion', id: string }
+        | { __typename?: 'OrderingQuestion', id: string }
         | { __typename?: 'PredefinedQuestion', id: string }
        }
+   };
+
+export type UpdateQuizAnswerMutationVariables = Exact<{
+  responseId: Scalars['ID']['input'];
+  input: UpdateQuizAnswerInput;
+}>;
+
+
+export type UpdateQuizAnswerMutation = { __typename?: 'Mutation', updateQuizAnswer:
+    | { __typename: 'FreeTextResponse', id: string }
+    | { __typename: 'JsonResponse', id: string }
+    | { __typename: 'NumberResponse', id: string }
+    | { __typename: 'OrderingResponse', isCorrect?: boolean | null, submittedOrder: Array<string>, id: string }
+    | { __typename: 'PredefinedResponse', id: string }
    };
 
 export type FinalizeQuizMutationVariables = Exact<{
@@ -3434,34 +3543,46 @@ export type ChallengePageQueryVariables = Exact<{
 export type ChallengePageQuery = { __typename?: 'Query', challenge:
     | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userEnrolledAt?: any | null, userCompletedAt?: any | null }
     | { __typename: 'PluginChallenge', pluginChallengeId: string, id: string, name: string, description: any, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userEnrolledAt?: any | null, userCompletedAt?: any | null }
-    | { __typename: 'QuizChallenge', id: string, name: string, description: any, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userEnrolledAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, endTime?: any | null, userCanStart: boolean, userActiveSubmission?: { __typename?: 'QuizSubmission', id: string } | null, userActiveSession?: { __typename?: 'QuizSession', id: string } | null, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null, orderedQuestions: Array<
+    | { __typename: 'QuizChallenge', id: string, name: string, description: any, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userEnrolledAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string, description: string, timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, endTime?: any | null, userCanStart: boolean, userActiveSubmission?: { __typename?: 'QuizSubmission', id: string } | null, userActiveSession?: { __typename?: 'QuizSession', id: string, state: QuizSessionState } | null, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null, orderedQuestions: Array<
             | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
             | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
             | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null }
+            | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
             | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
           >, responses: Array<
             | { __typename: 'FreeTextResponse', textResponse: string, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
+                | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
             | { __typename: 'JsonResponse', jsonResponse: any, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
+                | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
             | { __typename: 'NumberResponse', numberResponse: number, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
+                | { __typename?: 'OrderingQuestion', id: string }
+                | { __typename?: 'PredefinedQuestion', id: string }
+               }
+            | { __typename: 'OrderingResponse', isCorrect?: boolean | null, submittedOrder: Array<string>, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, question:
+                | { __typename?: 'FreeTextQuestion', id: string }
+                | { __typename?: 'JsonQuestion', id: string }
+                | { __typename?: 'NumberQuestion', id: string }
+                | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
             | { __typename: 'PredefinedResponse', isCorrect?: boolean | null, id: string, answeredAt?: any | null, timeSpentSeconds?: number | null, selectedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }>, question:
                 | { __typename?: 'FreeTextQuestion', id: string }
                 | { __typename?: 'JsonQuestion', id: string }
                 | { __typename?: 'NumberQuestion', id: string }
+                | { __typename?: 'OrderingQuestion', id: string }
                 | { __typename?: 'PredefinedQuestion', id: string }
                }
           > }> } }
@@ -3471,7 +3592,7 @@ export type ChallengePageQuery = { __typename?: 'Query', challenge:
 export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', challenges: Array<
+export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', myTeam?: { __typename?: 'Team', joinCode: string } | null, challenges: Array<
       | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
       | { __typename: 'PluginChallenge', id: string, name: string, description: any, buttonText?: string | null, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
       | { __typename: 'QuizChallenge', id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', userCanStart: boolean, userActiveSession?: { __typename?: 'QuizSession', id: string } | null }, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
@@ -3484,10 +3605,10 @@ export type ProfilePageQueryVariables = Exact<{
 
 
 export type ProfilePageQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, consentStatus: { __typename?: 'ConsentStatus', pendingConsents: Array<{ __typename: 'Consent', id: string, key: string, version: number, title: string, shortText: string, url?: string | null, managementType: ConsentManagementType, managedBy?: string | null, body: { __typename?: 'MarkdownText', html: string } }> } }, myCurrentProject: { __typename?: 'Project', id: string, name: string, infoMessageStart?: any | null, infoMessageEnd?: any | null, infoMessage?: { __typename?: 'MarkdownText', markdown: string, html: string } | null, branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, achievements: Array<
-      | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, points: number, nextItem?: { __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, title?: string | null, url?: string | null } } | null, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
-      | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
-      | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
-      | { __typename: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, nextItem?: { __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, title?: string | null, url?: string | null } } | null, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'QuizAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
+      | { __typename: 'StreakAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, hidden: boolean, achievedAt?: any | null, celebratedAt?: any | null, points: number, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } }
     >, leaderboard: { __typename?: 'LeaderboardConnection', me?: { __typename?: 'LeaderboardEntry', score: number, rank?: number | null } | null } } };
 
 export type ConsentsPageQueryVariables = Exact<{ [key: string]: never; }>;
@@ -3625,6 +3746,7 @@ export type AdminProjectChallengePageQuery = { __typename?: 'Query', challenge:
           | { __typename: 'FreeTextQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
           | { __typename: 'JsonQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
           | { __typename: 'NumberQuestion', minValue?: number | null, maxValue?: number | null, stepValue?: number | null, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null }
+          | { __typename: 'OrderingQuestion', id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, orderingItems: Array<{ __typename?: 'QuizOrderingItem', id: string, itemText: string }> }
           | { __typename: 'PredefinedQuestion', allowMultipleSelection: boolean, id: string, questionText: string, questionOrder: number, timeoutSeconds?: number | null, points?: number | null, predefinedAnswers: Array<{ __typename?: 'QuizPredefinedAnswer', id: string, answerText: string, answerOrder: number, isCorrect?: boolean | null }> }
         > }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
     | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, image?: string | null, buttonText: string, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
@@ -3855,6 +3977,12 @@ export const QuizQuestionFieldsFragmentDoc = gql`
     maxValue
     stepValue
   }
+  ... on OrderingQuestion {
+    orderingItems {
+      id
+      itemText
+    }
+  }
 }
     ${PredefinedAnswerFieldsFragmentDoc}`;
 export const QuizQuestionUserFieldsFragmentDoc = gql`
@@ -3874,6 +4002,12 @@ export const QuizQuestionUserFieldsFragmentDoc = gql`
     minValue
     maxValue
     stepValue
+  }
+  ... on OrderingQuestion {
+    orderingItems {
+      id
+      itemText
+    }
   }
 }
     ${PredefinedAnswerFieldsFragmentDoc}`;
@@ -4089,6 +4223,15 @@ export const ReorderAchievementsDocument = gql`
 export function useReorderAchievementsMutation() {
   return Urql.useMutation<ReorderAchievementsMutation, ReorderAchievementsMutationVariables>(ReorderAchievementsDocument);
 };
+export const MarkAchievementCelebratedDocument = gql`
+    mutation MarkAchievementCelebrated($achievementId: ID!) {
+  markAchievementCelebrated(achievementId: $achievementId)
+}
+    `;
+
+export function useMarkAchievementCelebratedMutation() {
+  return Urql.useMutation<MarkAchievementCelebratedMutation, MarkAchievementCelebratedMutationVariables>(MarkAchievementCelebratedDocument);
+};
 export const DeleteChallengeDocument = gql`
     mutation DeleteChallenge($id: ID!) {
   deleteChallenge(id: $id)
@@ -4243,8 +4386,8 @@ export function useDeleteFeedbackMutation() {
   return Urql.useMutation<DeleteFeedbackMutation, DeleteFeedbackMutationVariables>(DeleteFeedbackDocument);
 };
 export const ForwardFeedbackToDeskDocument = gql`
-    mutation ForwardFeedbackToDesk($feedbackId: ID!) {
-  forwardFeedbackToDesk(feedbackId: $feedbackId)
+    mutation ForwardFeedbackToDesk($feedbackId: ID!, $destination: ForwardDestination!) {
+  forwardFeedbackToDesk(feedbackId: $feedbackId, destination: $destination)
 }
     `;
 
@@ -4412,12 +4555,38 @@ export const SubmitQuizAnswerDocument = gql`
         isCorrect
       }
     }
+    ... on OrderingResponse {
+      isCorrect
+      submittedOrder
+    }
+    ... on NumberResponse {
+      numberResponse
+    }
+    ... on FreeTextResponse {
+      textResponse
+    }
   }
 }
     `;
 
 export function useSubmitQuizAnswerMutation() {
   return Urql.useMutation<SubmitQuizAnswerMutation, SubmitQuizAnswerMutationVariables>(SubmitQuizAnswerDocument);
+};
+export const UpdateQuizAnswerDocument = gql`
+    mutation UpdateQuizAnswer($responseId: ID!, $input: UpdateQuizAnswerInput!) {
+  updateQuizAnswer(responseId: $responseId, input: $input) {
+    __typename
+    id
+    ... on OrderingResponse {
+      isCorrect
+      submittedOrder
+    }
+  }
+}
+    `;
+
+export function useUpdateQuizAnswerMutation() {
+  return Urql.useMutation<UpdateQuizAnswerMutation, UpdateQuizAnswerMutationVariables>(UpdateQuizAnswerDocument);
 };
 export const FinalizeQuizDocument = gql`
     mutation FinalizeQuiz($submissionId: ID!) {
@@ -4674,6 +4843,7 @@ export const ChallengePageDocument = gql`
         }
         userActiveSession {
           id
+          state
         }
         userSubmissions {
           id
@@ -4714,6 +4884,10 @@ export const ChallengePageDocument = gql`
                 isCorrect
               }
             }
+            ... on OrderingResponse {
+              isCorrect
+              submittedOrder
+            }
           }
         }
       }
@@ -4728,6 +4902,9 @@ export function useChallengePageQuery(options?: Omit<Urql.UseQueryArgs<never, Ch
 export const ChallengesPageDocument = gql`
     query ChallengesPage {
   myCurrentProject {
+    myTeam {
+      joinCode
+    }
     challenges {
       __typename
       id
@@ -4811,6 +4988,7 @@ export const ProfilePageDocument = gql`
       }
       hidden
       achievedAt
+      celebratedAt
       points
       ... on ContentAchievement {
         nextItem {

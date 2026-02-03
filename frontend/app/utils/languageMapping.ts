@@ -16,3 +16,18 @@ export function dbLanguageToLocale(dbLang: string): string {
 export function localeToDbLanguage(locale: string): string {
   return LOCALE_TO_DB[locale] || locale
 }
+
+const LOCALE_TO_COUNTRY: Record<string, string> = {
+  nb: 'no', // Norwegian Bokmål → Norway
+  en: 'gb', // English → Great Britain
+  et: 'ee', // Estonian → Estonia
+  'zh-CN': 'cn', // Chinese Simplified → China
+}
+
+export function localeToFlagEmoji(locale: string): string {
+  const countryCode = (LOCALE_TO_COUNTRY[locale] || locale).toUpperCase()
+  return countryCode
+    .split('')
+    .map(char => String.fromCodePoint(0x1F1E6 + char.charCodeAt(0) - 65))
+    .join('')
+}

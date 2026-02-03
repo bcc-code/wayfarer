@@ -1,0 +1,58 @@
+type: http_request
+model: http_request
+id: rq_CreateTeamScoreAdjustment
+createdAt: 2026-02-02T12:00:00
+updatedAt: 2026-02-02T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Teams
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation CreateTeamScoreAdjustment($input: CreateTeamScoreAdjustmentInput!) {
+      createTeamScoreAdjustment(input: $input) {
+        id
+        project {
+          id
+          name
+        }
+        user {
+          id
+          name
+        }
+        event {
+          id
+          name
+        }
+        points
+        sourceType
+        reason
+        awardedBy {
+          id
+          name
+        }
+        createdAt
+      }
+    }
+  variables: |
+    {
+      "input": {
+        "teamId": "TM01ARZ3NDEKTSV4RRFFQ69G5FAV",
+        "projectId": "PR01K9VZ8684DP9R4W3ZEV526E5X",
+        "points": 100,
+        "distributionMode": "EACH",
+        "reason": "Manual team score adjustment"
+      }
+    }
+bodyType: graphql
+description: Create a score adjustment for all members of a team
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_CreateTeamScoreAdjustment
+method: POST
+name: Create Team Score Adjustment
+sortPriority: 2000.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

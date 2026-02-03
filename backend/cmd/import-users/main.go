@@ -29,11 +29,6 @@ const (
 	defaultLang = "no"
 )
 
-// ExcludedChurchNames contains organization names that should not be used for church assignment
-var ExcludedChurchNames = map[string]bool{
-	"BCC Norge": true,
-}
-
 func main() {
 	ctx := context.Background()
 
@@ -110,7 +105,7 @@ func buildChurchMaps(ctx context.Context, membersClient *members.Client, db *dat
 	excludedOrgIDs := make(map[int]bool)
 	for _, org := range orgs {
 		orgUidToOrgID[org.Uid] = org.OrgID
-		if ExcludedChurchNames[org.Name] {
+		if members.ExcludedOrgNames[org.Name] {
 			excludedOrgIDs[org.OrgID] = true
 		}
 	}

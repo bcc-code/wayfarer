@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
+import { ForwardDestination } from '~/api/generated'
 
 definePageMeta({
   layout: 'admin',
@@ -174,8 +175,13 @@ async function handleDelete() {
 // Forward to support functionality
 const { executeMutation: forwardFeedback } = useForwardFeedbackToDeskMutation()
 
-async function handleForward(id: string) {
-  const result = await forwardFeedback({ feedbackId: id })
+const forwardDestinationLabels: Record<ForwardDestination, string> = {
+  [ForwardDestination.BccMediaSupport]: 'BCC Media Support',
+  [ForwardDestination.SsfTicket]: 'Skjulte Skatter',
+}
+
+async function handleForward(id: string, destination: ForwardDestination) {
+  const result = await forwardFeedback({ feedbackId: id, destination })
 
   if (result.error) {
     toast.add({
@@ -185,7 +191,7 @@ async function handleForward(id: string) {
     })
   } else {
     toast.add({
-      title: 'Videresendt til support',
+      title: `Videresendt til ${forwardDestinationLabels[destination]}`,
       color: 'success',
     })
     executeQuery({ requestPolicy: 'network-only' })
@@ -322,15 +328,22 @@ async function handleUpdateTags(feedbackId: string, tags: string[]) {
         </template>
         <template #actions-cell="{ row }">
           <div class="flex justify-end items-center gap-1">
-            <UButton
+            <UDropdownMenu
               v-if="canForwardFeedback && !row.original.handledAt"
-              variant="soft"
-              color="neutral"
-              size="sm"
-              icon="lucide:send-horizontal"
-              label="Videresend til support"
-              @click="handleForward(row.original.id)"
-            />
+              :items="Object.values(ForwardDestination).map((dest) => ({
+                label: forwardDestinationLabels[dest],
+                onSelect: () => handleForward(row.original.id, dest),
+              }))"
+            >
+              <UButton
+                variant="soft"
+                color="neutral"
+                size="sm"
+                icon="lucide:send-horizontal"
+                label="Videresend"
+                trailing-icon="lucide:chevron-down"
+              />
+            </UDropdownMenu>
             <UButton
               v-if="canForwardFeedback && !row.original.handledAt"
               variant="soft"

@@ -1,4 +1,5 @@
 const openAchievementId = ref<string | null>(null)
+const celebrating = ref(false)
 
 export function useAchievementSheet() {
   const route = useRoute()
@@ -10,14 +11,21 @@ export function useAchievementSheet() {
 
   function clearOpenAchievementId() {
     openAchievementId.value = null
+    celebrating.value = false
     const newQuery = { ...route.query }
     delete newQuery['achievement']
     router.replace({ path: route.path, query: newQuery })
   }
 
+  function setCelebrating(value: boolean) {
+    celebrating.value = value
+  }
+
   return {
     openAchievementId: readonly(openAchievementId),
+    celebrating: readonly(celebrating),
     openAchievementSheet,
     clearOpenAchievementId,
+    setCelebrating,
   }
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
+import { vConfetti } from '@neoconfetti/vue'
 import type { QuestionResult } from './types'
 
 const props = defineProps<{
@@ -17,8 +18,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const containerRef = ref<HTMLElement | null>(null)
-
-const { burst } = useConfetti()
 
 const isPerfectScore = computed(
   () => props.score === props.maxScore && props.maxScore > 0,
@@ -45,6 +44,7 @@ const pointsText = computed(() => {
   return t('quiz.result.receivedPoints', { points: animatedPoints.value })
 })
 
+const showConfetti = ref(false)
 onMounted(() => {
   // Animate points counting up
   if (props.pointsAwarded > 0) {
@@ -70,7 +70,7 @@ onMounted(() => {
   if (isPerfectScore.value && containerRef.value) {
     // Small delay for the confetti to feel more natural after the result appears
     setTimeout(() => {
-      burst(containerRef.value)
+      showConfetti.value = true
     }, 300)
   }
 })
@@ -81,6 +81,7 @@ onMounted(() => {
     ref="containerRef"
     class="text-center p-default flex flex-col gap-large grow relative overflow-hidden"
   >
+    <div v-if="showConfetti" v-confetti />
     <div class="grow flex flex-col items-center justify-center gap-default">
       <QuizProgress
         size="large"

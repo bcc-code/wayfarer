@@ -660,9 +660,6 @@ func normalizeGender(gender string) string {
 	return "UNKNOWN"
 }
 
-// ExcludedChurchNames contains organization names that should not be used for church assignment
-var ExcludedChurchNames = []string{"BCC Norge"}
-
 // findChurchFromAffiliations finds the first valid non-excluded church from member affiliations.
 // It iterates through all active affiliations and returns the first one that is not excluded.
 func (h *AuthHandler) findChurchFromAffiliations(ctx context.Context, affiliations []members.Affiliation) (*sqlc.GetChurchByExternalIDRow, error) {
@@ -697,11 +694,8 @@ func (h *AuthHandler) findChurchByOrgUID(ctx context.Context, orgUID uuid.UUID) 
 		return nil, fmt.Errorf("failed to get organization from Members API: %w", err)
 	}
 
-	// Check if the organization name is excluded
-	for _, excluded := range ExcludedChurchNames {
-		if org.Name == excluded {
-			return nil, fmt.Errorf("organization %q is excluded from church assignment", org.Name)
-		}
+	if members.ExcludedOrgNames[org.Name] {
+		return nil, fmt.Errorf("organization %q is excluded from church assignment", org.Name)
 	}
 
 	return h.findChurchByExternalID(ctx, int32(org.OrgID))

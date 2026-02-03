@@ -22,6 +22,8 @@
     "correctAnswer": "Õige vastus",
     "yourAnswer": "Sinu vastus",
     "lockAnswer": "Lukusta vastus",
+    "saveAnswer": "Salvesta vastus",
+    "changeAnswer": "Muuda vastust",
     "questionNumber": "{current} {total}-st",
     "continue": "Jätka",
     "nextQuestion": "Järgmine küsimus",
@@ -30,6 +32,8 @@
     "unavailable": "See küsimustik pole hetkel saadaval.",
     "reviewAnswers": "Vaata vastust",
     "finishReview": "Lõpetada läbivaatamine",
+    "yourNumber": "Sinu number",
+    "writeYourAnswer": "Kirjuta oma vastus...",
     "result": {
       "receivedNoPoints": "Sa ei saanud ühtegi punkti.",
       "receivedPoints": "Sa kogusid {points} punkti.",
@@ -139,6 +143,10 @@
     "notNow": "Mitte praegu"
   },
   "goToHiddenTreasures": "Mine piibliõppe juurde",
+  "gameNights": {
+    "yourCode": "Sinu üksuse kood mänguõhtuks",
+    "yourCodeHint": "Ava leht oma arvutis ja sisesta kood."
+  },
   "admin": {
     "common": {
       "back": "Tagasi",

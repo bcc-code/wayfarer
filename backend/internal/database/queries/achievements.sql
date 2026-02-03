@@ -349,7 +349,28 @@ WHERE (user_id, achievement_id) IN (
     SELECT unnest(@user_ids::text[]), unnest(@achievement_ids::text[])
 );
 
+-- name: GetBulkUserAchievementCelebratedTimestamps :many
+SELECT user_id, achievement_id, celebrated_at
+FROM user_achievements
+WHERE (user_id, achievement_id) IN (
+    SELECT unnest(@user_ids::text[]), unnest(@achievement_ids::text[])
+);
+
+-- name: MarkAchievementCelebrated :exec
+UPDATE user_achievements
+SET celebrated_at = now()
+WHERE user_id = @user_id::text
+  AND achievement_id = @achievement_id::text
+  AND celebrated_at IS NULL;
+
 -- ==================== Content Progress Operations ====================
+
+-- name: GetBulkUserContentProgress :many
+SELECT user_id, achievement_id, external_content_id, completed_at
+FROM user_content_progress
+WHERE (user_id, achievement_id) IN (
+    SELECT unnest(@user_ids::text[]), unnest(@achievement_ids::text[])
+);
 
 -- name: GetUserContentProgress :many
 SELECT user_id, achievement_id, external_content_id, completed_at

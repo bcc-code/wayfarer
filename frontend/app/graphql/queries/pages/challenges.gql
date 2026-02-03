@@ -1,5 +1,8 @@
 query ChallengesPage {
   myCurrentProject {
+    myTeam {
+      joinCode
+    }
     challenges {
       __typename
       id

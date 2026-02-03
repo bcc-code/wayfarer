@@ -34,6 +34,7 @@ query ChallengePage($challengeId: ID!) {
         }
         userActiveSession {
           id
+          state
         }
         userSubmissions {
           id
@@ -73,6 +74,10 @@ query ChallengePage($challengeId: ID!) {
                 answerOrder
                 isCorrect
               }
+            }
+            ... on OrderingResponse {
+              isCorrect
+              submittedOrder
             }
           }
         }

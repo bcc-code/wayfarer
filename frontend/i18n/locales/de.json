@@ -22,6 +22,8 @@
     "correctAnswer": "Richtige Antwort",
     "yourAnswer": "Deine Antwort",
     "lockAnswer": "Antwort sperren",
+    "saveAnswer": "Antwort speichern",
+    "changeAnswer": "Antwort ändern",
     "questionNumber": "{current} von {total}",
     "continue": "Weiter",
     "nextQuestion": "Nächste Frage",
@@ -30,6 +32,8 @@
     "unavailable": "Dieses Quiz ist im Moment nicht verfügbar.",
     "reviewAnswers": "Antwort anzeigen",
     "finishReview": "Überprüfung beenden",
+    "yourNumber": "Deine Zahl",
+    "writeYourAnswer": "Schreibe deine Antwort...",
     "result": {
       "receivedNoPoints": "Du hast keine Punkte gesammelt.",
       "receivedPoints": "Du hast {points} Punkte gesammelt.",
@@ -139,6 +143,10 @@
     "notNow": "Nicht jetzt"
   },
   "goToHiddenTreasures": "Zum Bibelstudium",
+  "gameNights": {
+    "yourCode": "Dein Unit-Code für die Game Night",
+    "yourCodeHint": "Öffne die Seite auf deinem PC und gib den Code ein"
+  },
   "admin": {
     "common": {
       "back": "Zurück",

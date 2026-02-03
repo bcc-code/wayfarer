@@ -46,8 +46,24 @@ const selectedTeamLeader = computed(() => {
 const { executeMutation } = useUpdateTeamMutation()
 const { executeMutation: assignTeamLead } = useAssignTeamLeadMutation()
 
-// Drawer state
-const showEditDrawer = ref(false)
+// Drawer state - sync showEditDrawer to URL query param
+const route = useRoute()
+const router = useRouter()
+
+const showEditDrawer = computed({
+  get() {
+    return route.query.edit === 'true'
+  },
+  set(value: boolean) {
+    const newQuery = { ...route.query }
+    if (value) {
+      newQuery.edit = 'true'
+    } else {
+      delete newQuery.edit
+    }
+    router.replace({ query: newQuery })
+  },
+})
 const showLeadSelector = ref(false)
 
 function selectTeamLead(userId: string) {
@@ -77,6 +93,11 @@ async function saveChanges() {
   showEditDrawer.value = false
   saving.value = false
 }
+
+const now = useNow({ interval: 60000 })
+const showEditButton = computed(
+  () => now.value >= new Date('2026-02-19T11:00:00Z'),
+)
 </script>
 
 <template>
@@ -91,13 +112,12 @@ async function saveChanges() {
         <h2 class="text-heading text-balance">
           {{ data.myCurrentProject.myTeam.name }}
         </h2>
-        <!-- TODO: Enable for kickoff -->
-        <!-- <DesignDrawer
+        <DesignDrawer
           v-if="isTeamLead"
           v-model:open="showEditDrawer"
           :title="$t('unit.editUnit')"
         >
-          <DesignButton variant="secondary" size="medium">
+          <DesignButton v-if="showEditButton" variant="secondary" size="medium">
             {{ $t('unit.editUnit') }}
           </DesignButton>
           <template #content>
@@ -160,7 +180,7 @@ async function saveChanges() {
               </div>
             </div>
           </template>
-        </DesignDrawer> -->
+        </DesignDrawer>
       </div>
       <LeaderboardList
         v-if="data.myCurrentProject.myTeam?.memberLeaderboard?.length"
