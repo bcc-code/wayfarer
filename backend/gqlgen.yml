@@ -21,6 +21,7 @@ schema:
   - ../gql/feedback.graphqls
   - ../gql/webhooks.graphqls
   - ../gql/file_uploads.graphqls
+  - ../gql/settings.graphqls
 
 # Generated code locations
 exec:

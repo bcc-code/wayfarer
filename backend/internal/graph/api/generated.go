@@ -687,6 +687,7 @@ type ComplexityRoot struct {
 		Feedback                      func(childComplexity int, filter *model.FeedbackFilter, first *int, after *string, last *int, before *string) int
 		FileUpload                    func(childComplexity int, id string) int
 		FirebaseToken                 func(childComplexity int) int
+		FrontendConfig                func(childComplexity int) int
 		InstanceID                    func(childComplexity int) int
 		Me                            func(childComplexity int) int
 		MyCurrentEvent                func(childComplexity int) int
@@ -1434,6 +1435,7 @@ type QueryResolver interface {
 	Webhook(ctx context.Context, id string) (*model.Webhook, error)
 	Webhooks(ctx context.Context, projectID string) ([]model.Webhook, error)
 	FileUpload(ctx context.Context, id string) (*model.FileUpload, error)
+	FrontendConfig(ctx context.Context) (string, error)
 }
 type QuizResolver interface {
 	ImageObject(ctx context.Context, obj *model.Quiz) (*model.Image, error)
@@ -4971,6 +4973,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.FirebaseToken(childComplexity), true
+	case "Query.frontendConfig":
+		if e.complexity.Query.FrontendConfig == nil {
+			break
+		}
+
+		return e.complexity.Query.FrontendConfig(childComplexity), true
 	case "Query.instanceID":
 		if e.complexity.Query.InstanceID == nil {
 			break
@@ -9738,6 +9746,10 @@ type FileUpload {
     height: Int
     blurhash: String
     createdAt: DateTime!
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/settings.graphqls", Input: `extend type Query {
+    frontendConfig: JSON!
 }
 `, BuiltIn: false},
 }
@@ -33791,6 +33803,35 @@ func (ec *executionContext) fieldContext_Query_fileUpload(ctx context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_frontendConfig(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_frontendConfig,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().FrontendConfig(ctx)
+		},
+		nil,
+		ec.marshalNJSON2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_frontendConfig(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type JSON does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -57649,6 +57690,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_fileUpload(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "frontendConfig":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_frontendConfig(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
