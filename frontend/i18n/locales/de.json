@@ -42,6 +42,10 @@
       "perfect": "Perfekt."
     }
   },
+  "challenges": {
+    "active": "Aktiv",
+    "completed": "Abgeschlossen"
+  },
   "pages": {
     "standings": "Bestenlisten",
     "challenges": "Herausforderungen",
@@ -165,7 +169,15 @@
       "administrators": "Administratoren",
       "unitsAndPeople": "Units und Personen",
       "gameNights": "Game Nights",
-      "comingSoon": "Kommt bald"
+      "comingSoon": "Kommt bald",
+      "kickOff": "Kick-Off",
+      "kickOffDescription": "Diese Seite ist ausschließlich für die Nutzung während des Kick-offs. Wenn ihr das Kick-off zu diesem Zeitpunkt nicht durchführt, verlasst bitte die Seite.",
+      "kickOffButton": "Unit-Onboarding starten",
+      "kickOffOnboardingDescription": "Wenn du das Unit-Onboarding startest, erhalten alle Unit-Leiter in deiner Ortsgemeinde eine Aufgabe, den Namen ihrer Unit zu ändern.",
+      "kickOffConfirmation": "Ich bestätige, dass wir den Kick-off zu diesem Zeitpunkt durchführen und bereit sind, das Unit-Onboarding zu starten.",
+      "kickOffOnboardingCountdown": "Start in {seconds} Sekunde | Start in {seconds} Sekunden",
+      "kickOffSuccessTitle": "Das Unit-Onboarding läuft!",
+      "kickOffSuccessDescription": "Alle Unit-Leiter haben jetzt eine Aufgabe in der App erhalten und können den Namen ihrer Unit ändern."
     },
     "admins": {
       "searchPlaceholder": "Such nach Admins...",
