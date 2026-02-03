@@ -17,35 +17,60 @@ useFirestoreRefresh(['ChallengesPageDocument'], () => {
 
 const isInitialLoading = computed(() => fetching.value && !data.value)
 
-// Filter out quiz challenges without active sessions
-const visibleChallenges = computed(() => {
-  if (!data.value?.myCurrentProject.challenges) return []
-
-  return data.value.myCurrentProject.challenges.filter((challenge) => {
+const activeChallenges = computed(() =>
+  data.value?.myCurrentProject.challenges.filter((challenge) => {
     if (challenge.__typename === 'QuizChallenge') {
-      // Hide quiz challenges without an active session
-      if (!challenge.quiz.userActiveSession?.id) {
+      if (challenge.quiz.userActiveSession?.id) {
+        return true
+      }
+    }
+    return !challenge.userCompletedAt
+  }),
+)
+
+const completedChallenges = computed(() =>
+  data.value?.myCurrentProject.challenges.filter((challenge) => {
+    if (challenge.__typename === 'QuizChallenge') {
+      if (challenge.quiz.userActiveSession?.id) {
         return false
       }
     }
-    return true
-  })
-})
+    return (
+      !!challenge.userCompletedAt ||
+      new Date(challenge.endTime).getTime() < Date.now()
+    )
+  }),
+)
 
 const joinCode = computed(() =>
   data.value?.myCurrentProject.myTeam?.joinCode.split(''),
+)
+
+const tab = ref<'active' | 'completed'>('active')
+const tabChallenges = computed(() =>
+  tab.value === 'active' ? activeChallenges.value : completedChallenges.value,
 )
 </script>
 
 <template>
   <PageLayout :title="$t('pages.challenges')">
+    <div class="px-list-outside">
+      <DesignTabs
+        v-model="tab"
+        :tabs="[
+          { key: 'active', value: 'active', label: $t('challenges.active') },
+          {
+            key: 'completed',
+            value: 'completed',
+            label: $t('challenges.completed'),
+          },
+        ]"
+      />
+    </div>
     <LoadingState v-if="isInitialLoading" />
     <ErrorState v-else-if="error" :error />
-    <div
-      v-else-if="visibleChallenges.length"
-      class="space-y-list-section-gap p-list-outside"
-    >
-      <template v-for="challenge in visibleChallenges" :key="challenge.id">
+    <div v-else class="space-y-list-section-gap p-list-outside mt-3 grow">
+      <template v-for="challenge in tabChallenges" :key="challenge.id">
         <!-- This is very specific for the Ladder to Heaven project, and should be more generic later on -->
         <div
           v-if="challenge.__typename === 'PluginChallenge'"
@@ -72,9 +97,12 @@ const joinCode = computed(() =>
             </div>
           </div>
         </div>
-        <ChallengeCard v-else :challenge class="challenge-card" />
+        <ChallengeCard v-else :challenge />
       </template>
+      <EmptyState
+        v-if="!tabChallenges?.length"
+        :title="$t('emptyStates.challenges')"
+      />
     </div>
-    <EmptyState v-else :title="$t('emptyStates.challenges')" />
   </PageLayout>
 </template>

@@ -19,6 +19,10 @@ function onChallengeClick() {
     is_external: !!externalUrl.value,
   })
 }
+
+const isCompleted = computed(() => {
+  return props.challenge.userCompletedAt !== null
+})
 </script>
 
 <template>
@@ -45,7 +49,10 @@ function onChallengeClick() {
           class="contents"
           @click="onChallengeClick"
         >
-          <DesignButton size="large">
+          <DesignButton
+            size="large"
+            :variant="isCompleted ? 'secondary' : 'primary'"
+          >
             {{ challenge.buttonText }}
           </DesignButton>
         </NuxtLink>

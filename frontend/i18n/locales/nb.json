@@ -42,6 +42,10 @@
       "perfect": "Perfekt!"
     }
   },
+  "challenges": {
+    "active": "Aktive",
+    "completed": "Ferdige"
+  },
   "pages": {
     "standings": "Topplister",
     "challenges": "Utfordringer",
