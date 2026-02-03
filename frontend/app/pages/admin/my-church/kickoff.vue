@@ -27,11 +27,8 @@ const teamLeads = computed(() =>
 )
 const teamLeadIds = computed(() => teamLeads.value?.map((lead) => lead.id))
 
-watch(teamLeadIds, (leads) => {
-  console.log(leads)
-})
-
 const readyToLaunch = ref(false)
+const hasLaunched = ref(false)
 
 const { isActive, start, stop, remaining } = useCountdown(5, {
   immediate: false,
@@ -42,7 +39,7 @@ const { isActive, start, stop, remaining } = useCountdown(5, {
         userIds: teamLeadIds.value,
       },
     })
-    readyToLaunch.value = false
+    hasLaunched.value = true
   },
 })
 </script>
@@ -107,7 +104,14 @@ const { isActive, start, stop, remaining } = useCountdown(5, {
           :ui="{ label: 'text-base' }"
           class="my-4"
         />
-        <div v-if="readyToLaunch" key="button" class="flex gap-8 items-center">
+        <div
+          v-if="readyToLaunch"
+          key="button"
+          :class="[
+            'flex gap-8 items-center',
+            { 'opacity-50 pointer-events-none': hasLaunched },
+          ]"
+        >
           <BigRedButton
             :label="$t('admin.churchHome.kickOffButton')"
             :loading="fetching"
@@ -128,6 +132,16 @@ const { isActive, start, stop, remaining } = useCountdown(5, {
             </UButton>
           </div>
         </div>
+        <UAlert
+          v-if="hasLaunched"
+          key="success"
+          :title="$t('admin.churchHome.kickOffSuccessTitle')"
+          :description="$t('admin.churchHome.kickOffSuccessDescription')"
+          color="success"
+          variant="subtle"
+          icon="lucide:check"
+          :ui="{ title: 'text-default' }"
+        />
       </TransitionGroup>
     </UContainer>
   </div>

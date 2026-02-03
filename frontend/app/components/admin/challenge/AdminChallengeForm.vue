@@ -239,7 +239,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             class="w-full"
           />
         </UFormField>
-        <UFormField
+        <!-- <UFormField
           v-if="isEditMode"
           name="startedAt"
           label="Startet"
@@ -265,7 +265,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             size="xl"
             class="w-full"
           />
-        </UFormField>
+        </UFormField> -->
         <UButton type="submit" size="lg" block>{{ submitLabel }}</UButton>
         <UButton
           v-if="onDelete"
