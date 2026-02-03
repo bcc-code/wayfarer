@@ -133,30 +133,38 @@ func (s *ContentAchievementService) processAchievements(ctx context.Context, use
 		"external_content_id", content.ID,
 		"achievement_count", len(achievements))
 
-	// Check and award completed achievements
-	for _, achievement := range achievements {
-		if s.Cache != nil {
+	// Invalidate caches for all achievements
+	if s.Cache != nil {
+		for _, achievement := range achievements {
 			s.Cache.Delete(cache.UserContentProgressKey(userID, achievement.ID))
 		}
+	}
 
-		// Check if all items are completed
-		items, err := s.DB.Queries.GetContentItemsByAchievementIDs(ctx, []string{achievement.ID})
-		if err != nil {
-			slog.Error("content_achievements: failed to get content items", "error", err, "achievement_id", achievement.ID)
-			continue
-		}
+	// Collect achievement IDs and build lookup map
+	achievementIDs := make([]string, len(achievements))
+	achievementsByID := make(map[string]*sqlc.GetPublishedContentAchievementsByExternalContentRow, len(achievements))
+	for i, achievement := range achievements {
+		achievementIDs[i] = achievement.ID
+		achievementsByID[achievement.ID] = achievement
+	}
 
-		progress, err := s.DB.Queries.GetUserContentProgressForAchievement(ctx, sqlc.GetUserContentProgressForAchievementParams{
-			UserID:        userID,
-			AchievementID: achievement.ID,
-		})
-		if err != nil {
-			slog.Error("content_achievements: failed to get user progress", "error", err, "achievement_id", achievement.ID)
-			continue
-		}
+	// Get completion status for all achievements in one query
+	completionStatus, err := s.DB.Queries.GetAchievementCompletionStatus(ctx, sqlc.GetAchievementCompletionStatusParams{
+		UserID:         userID,
+		AchievementIds: achievementIDs,
+	})
+	if err != nil {
+		slog.Error("content_achievements: failed to get achievement completion status", "error", err)
+		return
+	}
 
-		if len(progress) == len(items) {
-			s.awardAchievement(ctx, userID, achievement)
+	// Check and award completed achievements
+	for _, status := range completionStatus {
+		if status.ProgressCount == status.ItemCount && status.ItemCount > 0 {
+			achievement := achievementsByID[status.AchievementID]
+			if achievement != nil {
+				s.awardAchievement(ctx, userID, achievement)
+			}
 		}
 	}
 }

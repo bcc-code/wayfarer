@@ -1090,6 +1090,27 @@ func (r *mutationResolver) MarkContentItemCompleted(ctx context.Context, userID 
 		return nil, fmt.Errorf("failed to mark content item completed: %w", err)
 	}
 
+	// Collect achievement IDs for batch query
+	achievementIDs := make([]string, len(achievementRows))
+	for i, row := range achievementRows {
+		achievementIDs[i] = row.ID
+	}
+
+	// Get completion status for all achievements in one query
+	completionStatus, err := r.DB.Queries.GetAchievementCompletionStatus(ctx, sqlc.GetAchievementCompletionStatusParams{
+		UserID:         userID,
+		AchievementIds: achievementIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get achievement completion status: %w", err)
+	}
+
+	// Build lookup map for completion status
+	statusByAchievement := make(map[string]*sqlc.GetAchievementCompletionStatusRow, len(completionStatus))
+	for _, s := range completionStatus {
+		statusByAchievement[s.AchievementID] = s
+	}
+
 	// Convert to model, apply translations, and check for auto-award
 	result := make([]model.ContentAchievement, 0, len(achievementRows))
 	for _, row := range achievementRows {
@@ -1102,26 +1123,13 @@ func (r *mutationResolver) MarkContentItemCompleted(ctx context.Context, userID 
 		r.Cache.Delete(cache.UserContentProgressKey(userID, row.ID))
 
 		// Check if all items are completed and award achievement if so
-		items, err := r.DB.Queries.GetContentItemsByAchievementIDs(ctx, []string{row.ID})
-		if err != nil {
-			slog.Error("failed to get content items for auto-award check", "error", err, "achievement_id", row.ID)
-			continue
-		}
-
-		progress, err := r.DB.Queries.GetUserContentProgressForAchievement(ctx, sqlc.GetUserContentProgressForAchievementParams{
-			UserID:        userID,
-			AchievementID: row.ID,
-		})
-		if err != nil {
-			slog.Error("failed to get user progress for auto-award check", "error", err, "achievement_id", row.ID)
-			continue
-		}
-
-		if len(progress) == len(items) {
-			// Award the achievement
-			if _, err := r.AwardAchievement(ctx, userID, row.ID); err != nil {
-				// Log error but don't fail - the progress was still recorded
-				slog.Error("failed to auto-award achievement", "error", err, "user_id", userID, "achievement_id", row.ID)
+		if status := statusByAchievement[row.ID]; status != nil {
+			if status.ProgressCount == status.ItemCount && status.ItemCount > 0 {
+				// Award the achievement
+				if _, err := r.AwardAchievement(ctx, userID, row.ID); err != nil {
+					// Log error but don't fail - the progress was still recorded
+					slog.Error("failed to auto-award achievement", "error", err, "user_id", userID, "achievement_id", row.ID)
+				}
 			}
 		}
 	}

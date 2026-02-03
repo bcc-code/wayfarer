@@ -412,6 +412,51 @@ func (q *Queries) GetAchievementByID(ctx context.Context, id string) (*GetAchiev
 	return &i, err
 }
 
+const GetAchievementCompletionStatus = `-- name: GetAchievementCompletionStatus :many
+SELECT
+    cai.achievement_id,
+    COUNT(DISTINCT cai.external_content_id)::int AS item_count,
+    COUNT(DISTINCT ucp.external_content_id)::int AS progress_count
+FROM content_achievement_items cai
+LEFT JOIN user_content_progress ucp
+    ON ucp.achievement_id = cai.achievement_id
+    AND ucp.user_id = $1::text
+    AND ucp.external_content_id = cai.external_content_id
+WHERE cai.achievement_id = ANY($2::text[])
+GROUP BY cai.achievement_id
+`
+
+type GetAchievementCompletionStatusParams struct {
+	UserID         string   `json:"user_id"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+type GetAchievementCompletionStatusRow struct {
+	AchievementID string `json:"achievement_id"`
+	ItemCount     int32  `json:"item_count"`
+	ProgressCount int32  `json:"progress_count"`
+}
+
+func (q *Queries) GetAchievementCompletionStatus(ctx context.Context, arg GetAchievementCompletionStatusParams) ([]*GetAchievementCompletionStatusRow, error) {
+	rows, err := q.db.Query(ctx, GetAchievementCompletionStatus, arg.UserID, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetAchievementCompletionStatusRow{}
+	for rows.Next() {
+		var i GetAchievementCompletionStatusRow
+		if err := rows.Scan(&i.AchievementID, &i.ItemCount, &i.ProgressCount); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetAchievementsByIDs = `-- name: GetAchievementsByIDs :many
 SELECT
     a.id,
@@ -1200,43 +1245,6 @@ type GetUserContentProgressParams struct {
 
 func (q *Queries) GetUserContentProgress(ctx context.Context, arg GetUserContentProgressParams) ([]*UserContentProgress, error) {
 	rows, err := q.db.Query(ctx, GetUserContentProgress, arg.UserID, arg.AchievementIds)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*UserContentProgress{}
-	for rows.Next() {
-		var i UserContentProgress
-		if err := rows.Scan(
-			&i.UserID,
-			&i.AchievementID,
-			&i.ExternalContentID,
-			&i.CompletedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const GetUserContentProgressForAchievement = `-- name: GetUserContentProgressForAchievement :many
-SELECT user_id, achievement_id, external_content_id, completed_at
-FROM user_content_progress
-WHERE user_id = $1::text
-  AND achievement_id = $2::text
-`
-
-type GetUserContentProgressForAchievementParams struct {
-	UserID        string `json:"user_id"`
-	AchievementID string `json:"achievement_id"`
-}
-
-func (q *Queries) GetUserContentProgressForAchievement(ctx context.Context, arg GetUserContentProgressForAchievementParams) ([]*UserContentProgress, error) {
-	rows, err := q.db.Query(ctx, GetUserContentProgressForAchievement, arg.UserID, arg.AchievementID)
 	if err != nil {
 		return nil, err
 	}

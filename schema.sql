@@ -334,7 +334,8 @@ CREATE TABLE user_content_progress (
     PRIMARY KEY (user_id, achievement_id, external_content_id),
     INDEX idx_user_content_progress_user (user_id),
     INDEX idx_user_content_progress_achievement (achievement_id),
-    INDEX idx_user_content_progress_content (external_content_id)
+    INDEX idx_user_content_progress_content (external_content_id),
+    INDEX idx_user_content_progress_user_achievement (user_id, achievement_id)
 );
 
 CREATE TABLE user_streak_activity (
