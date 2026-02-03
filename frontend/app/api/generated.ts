@@ -1856,6 +1856,7 @@ export type Query = {
   feedback: FeedbackConnection;
   fileUpload?: Maybe<FileUpload>;
   firebaseToken: FirebaseTokenResponse;
+  frontendConfig: Scalars['JSON']['output'];
   instanceID: Scalars['String']['output'];
   me: User;
   myCurrentEvent: Event;
@@ -3724,7 +3725,7 @@ export type ChurchAdminsPageQuery = { __typename?: 'Query', usersWithRole: Array
 export type AdminKickOffPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminKickOffPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', teams: Array<{ __typename?: 'Team', members: Array<{ __typename?: 'TeamMember', id: string, isTeamLead: boolean }> }> } };
+export type AdminKickOffPageQuery = { __typename?: 'Query', frontendConfig: any, myCurrentProject: { __typename?: 'Project', teams: Array<{ __typename?: 'Team', members: Array<{ __typename?: 'TeamMember', id: string, isTeamLead: boolean }> }> } };
 
 export type MyChurchUnitsPageQueryVariables = Exact<{
   filter?: InputMaybe<UserFilter>;
@@ -5416,6 +5417,7 @@ export function useChurchAdminsPageQuery(options?: Omit<Urql.UseQueryArgs<never,
 };
 export const AdminKickOffPageDocument = gql`
     query AdminKickOffPage {
+  frontendConfig
   myCurrentProject {
     teams {
       members {

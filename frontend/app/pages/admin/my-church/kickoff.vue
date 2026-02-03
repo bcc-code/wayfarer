@@ -6,6 +6,7 @@ definePageMeta({
 
 gql(`
   query AdminKickOffPage {
+    frontendConfig
     myCurrentProject {
       teams {
         members {
@@ -30,11 +31,21 @@ const teamLeadIds = computed(() => teamLeads.value?.map((lead) => lead.id))
 const readyToLaunch = ref(false)
 const hasLaunched = ref(false)
 
+// hacky, but it works for these kinds of custom things
+const challengeId = computed(() => {
+  const frontendConfig = data.value?.frontendConfig
+  if (!frontendConfig) return
+  const frontendConfigJson = JSON.parse(frontendConfig)
+  const id = frontendConfigJson['team_name_changed_challenge_id']
+  if (!id) return
+  return id as string
+})
+
 const { isActive, start, stop, remaining } = useCountdown(5, {
   immediate: false,
   onComplete: async () => {
     await executeMutation({
-      challengeId: 'CL01KGHH108EX5C0CEPGWDSY85X4',
+      challengeId: challengeId.value ?? '',
       target: {
         userIds: teamLeadIds.value,
       },
