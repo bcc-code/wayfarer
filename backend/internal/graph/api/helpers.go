@@ -66,6 +66,28 @@ func resolveAchievedAt(ctx context.Context, r *Resolver, achievementID string) (
 	return &scalars.DateTime{Time: *ts}, nil
 }
 
+// resolveCelebratedAt is a helper function to load the celebratedAt timestamp for an achievement
+// for the current user using the dataloader
+func resolveCelebratedAt(ctx context.Context, r *Resolver, achievementID string) (*scalars.DateTime, error) {
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, nil // Return nil for unauthenticated users
+	}
+
+	key := loaders.UserAchievementKey{UserID: currentUserID, AchievementID: achievementID}
+	thunk := r.Loaders.UserAchievementCelebratedTimestampLoader.Load(ctx, key)
+	ts, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement celebrated timestamp: %w", err)
+	}
+
+	if ts == nil {
+		return nil, nil // User hasn't celebrated this
+	}
+
+	return &scalars.DateTime{Time: *ts}, nil
+}
+
 // viewerContext holds pre-loaded viewer data to avoid N+1 queries in tag computation
 type viewerContext struct {
 	teamIDs      map[string]bool // Viewer's team IDs in the current project

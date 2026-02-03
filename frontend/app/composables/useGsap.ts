@@ -2,9 +2,6 @@ import { gsap } from 'gsap'
 import {
   prefersReducedMotion,
   calculateStaggerTiming,
-  calculateParticleTrajectory,
-  generateConfettiParticle,
-  CONFETTI_COLORS,
 } from '~/utils/animations'
 
 /**
@@ -135,71 +132,6 @@ export function useStaggeredEntrance(options?: StaggeredEntranceOptions) {
   onUnmounted(cleanup)
 
   return { animate, cleanup }
-}
-
-/**
- * Confetti burst animation for celebrations
- */
-export function useConfetti() {
-  let ctx: gsap.Context | null = null
-
-  function burst(container: HTMLElement | null) {
-    if (!container || prefersReducedMotion()) return
-
-    // Clean up previous
-    ctx?.revert()
-
-    const particleCount = 50
-    const particles: HTMLElement[] = []
-
-    ctx = gsap.context(() => {
-      // Create particles
-      for (let i = 0; i < particleCount; i++) {
-        const { color, isCircle } = generateConfettiParticle(CONFETTI_COLORS)
-        const particle = document.createElement('div')
-        particle.style.cssText = `
-          position: absolute;
-          width: 10px;
-          height: 10px;
-          background: ${color};
-          border-radius: ${isCircle ? '50%' : '2px'};
-          pointer-events: none;
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-        `
-        container.appendChild(particle)
-        particles.push(particle)
-      }
-
-      // Animate particles
-      particles.forEach((particle) => {
-        const angle = Math.random() * Math.PI * 2
-        const velocity = 100 + Math.random() * 150
-        const trajectory = calculateParticleTrajectory(angle, velocity)
-
-        gsap.to(particle, {
-          x: trajectory.x,
-          y: trajectory.y,
-          rotation: trajectory.rotation,
-          opacity: 0,
-          duration: trajectory.duration,
-          ease: 'power2.out',
-          onComplete: () => {
-            particle.remove()
-          },
-        })
-      })
-    }, container)
-  }
-
-  function cleanup() {
-    ctx?.revert()
-  }
-
-  onUnmounted(cleanup)
-
-  return { burst, cleanup }
 }
 
 /**

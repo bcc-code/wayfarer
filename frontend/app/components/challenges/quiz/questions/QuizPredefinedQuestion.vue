@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import type { PredefinedQuestionData, QuestionResult } from './types'
+import type {
+  PredefinedQuestionData,
+  QuestionResult,
+  QuizActionState,
+  QuizActionHandlers,
+} from '../types'
 
 const props = defineProps<{
   question: PredefinedQuestionData
@@ -115,24 +120,33 @@ function shouldShowWrong(alternative: {
     selectedAnswer.value === alternative.id && alternative.isCorrect === false
   )
 }
+
+// Action state for parent component
+const actionState = computed<QuizActionState>(() => ({
+  mode: props.readonly ? 'review' : 'normal',
+  canSubmit: selectedAnswer.value !== undefined,
+  isSubmitting: isSubmitting.value,
+  isAnswerLocked: isAnswerConfirmed.value,
+  isBetSaved: false,
+  isEditing: false,
+  showPreviousButton: props.showPreviousButton ?? false,
+  isLastQuestion: props.isLastQuestion ?? false,
+}))
+
+// Handlers for parent component
+const handlers: QuizActionHandlers = {
+  submit: handleLockAnswer,
+  continue: handleContinue,
+  changeBet: () => {},
+  previous: handlePrevious,
+  next: handleNext,
+}
+
+defineExpose({ actionState, handlers })
 </script>
 
 <template>
   <div class="text-center p-default flex flex-col gap-default grow">
-    <div class="grow flex flex-col items-center justify-center py-15 gap-1">
-      <p class="text-caption text-text-muted">
-        {{
-          $t('quiz.questionNumber', {
-            current: currentIndex + 1,
-            total: totalQuestions,
-          })
-        }}
-      </p>
-      <h2 class="text-heading text-text-default text-balance">
-        {{ question.questionText }}
-      </h2>
-    </div>
-
     <template
       v-for="alternative in question.predefinedAnswers"
       :key="alternative.id"
@@ -149,44 +163,5 @@ function shouldShowWrong(alternative: {
       />
     </template>
 
-    <!-- Normal mode: Lock answer / Continue buttons -->
-    <template v-if="!readonly">
-      <DesignButton
-        v-if="!isAnswerConfirmed"
-        size="large"
-        class="grow-0"
-        :disabled="selectedAnswer === undefined || isSubmitting"
-        :loading="isSubmitting"
-        @click="handleLockAnswer"
-      >
-        {{ $t('quiz.lockAnswer') }}
-      </DesignButton>
-
-      <DesignButton v-else size="large" class="grow-0" @click="handleContinue">
-        {{ continueText }}
-      </DesignButton>
-    </template>
-
-    <!-- Readonly/review mode: Previous / Next navigation -->
-    <template v-else>
-      <div class="flex gap-small grow-0">
-        <DesignButton
-          v-if="showPreviousButton"
-          size="large"
-          variant="secondary"
-          class="flex-1"
-          @click="handlePrevious"
-        >
-          {{ $t('quiz.previousQuestion') }}
-        </DesignButton>
-        <DesignButton
-          size="large"
-          :class="showPreviousButton ? 'flex-1' : 'w-full'"
-          @click="handleNext"
-        >
-          {{ nextButtonText }}
-        </DesignButton>
-      </div>
-    </template>
   </div>
 </template>

@@ -63,12 +63,12 @@ type LeaderboardQuerier interface {
 // LeaderboardService provides leaderboard functionality with caching
 type LeaderboardService struct {
 	queries LeaderboardQuerier
-	cache   *cache.Cache
+	cache   *cache.CacheWithRegistry
 	loaders *loaders.Loaders
 }
 
 // NewLeaderboardService creates a new leaderboard service
-func NewLeaderboardService(queries LeaderboardQuerier, c *cache.Cache, l *loaders.Loaders) *LeaderboardService {
+func NewLeaderboardService(queries LeaderboardQuerier, c *cache.CacheWithRegistry, l *loaders.Loaders) *LeaderboardService {
 	return &LeaderboardService{
 		queries: queries,
 		cache:   c,

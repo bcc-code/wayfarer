@@ -201,7 +201,7 @@ type OrderingResponse implements QuizResponse {
     timeSpentSeconds: Int
     pointsEarned: Int
     submittedOrder: [ID!]!
-    isCorrect: Boolean
+    isCorrect: Boolean @goField(forceResolver: true)
 }
 
 # ==================== Quiz Input Types ====================
@@ -294,6 +294,10 @@ input SubmitQuizAnswerInput {
     timeSpentSeconds: Int
 }
 
+input UpdateQuizAnswerInput {
+    submittedOrder: [ID!]  # For ordering questions
+}
+
 input QuizFilter {
     projectId: ID
     challengeId: ID
@@ -367,6 +371,7 @@ extend type Mutation {
 
     # User: Taking quizzes (via sessions - use startQuizSession)
     submitQuizAnswer(submissionId: ID!, input: SubmitQuizAnswerInput!): QuizResponse!
+    updateQuizAnswer(responseId: ID!, input: UpdateQuizAnswerInput!): QuizResponse!
     finalizeQuiz(submissionId: ID!): QuizSubmission!
 
     # M2M: External submission

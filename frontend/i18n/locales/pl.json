@@ -22,6 +22,8 @@
     "correctAnswer": "Prawidłowa odpowiedź",
     "yourAnswer": "Twoja odpowiedź",
     "lockAnswer": "Zatwierdź odpowiedź",
+    "saveAnswer": "Zapisz odpowiedź",
+    "changeAnswer": "Zmień odpowiedź",
     "questionNumber": "{current} z {total}",
     "continue": "Kontynuuj",
     "nextQuestion": "Następne pytanie",
@@ -30,6 +32,8 @@
     "unavailable": "Ten quiz jest obecnie niedostępny.",
     "reviewAnswers": "Zobacz odpowiedzi",
     "finishReview": "Zakończ przeglądanie",
+    "yourNumber": "Twoja liczba",
+    "writeYourAnswer": "Wpisz swoją odpowiedź...",
     "result": {
       "receivedNoPoints": "Nie zdobyłeś żadnych punktów.",
       "receivedPoints": "Zdobyłeś {points} pkt.",
@@ -139,6 +143,10 @@
     "notNow": "Nie teraz"
   },
   "goToHiddenTreasures": "Przejdź do projektu biblijnego",
+  "gameNights": {
+    "yourCode": "Twój kod unitu na Game Night",
+    "yourCodeHint": "Otwórz stronę na komputerze i wprowadź kod"
+  },
   "admin": {
     "common": {
       "back": "Wróć",

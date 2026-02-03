@@ -291,6 +291,11 @@ func UserAchievementTimestampKey(userID string, achievementID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixUserAchievements, userID, achievementID)
 }
 
+// UserAchievementCelebratedTimestampKey builds a cache key for user achievement celebrated timestamp (celebratedAt)
+func UserAchievementCelebratedTimestampKey(userID string, achievementID string) string {
+	return fmt.Sprintf("%scelebrated:%s:%s", PrefixUserAchievements, userID, achievementID)
+}
+
 // UserChallengeEnrollmentKey builds a cache key for user challenge enrollment timestamp
 func UserChallengeEnrollmentKey(userID string, challengeID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixUserChallengeEnrollments, userID, challengeID)

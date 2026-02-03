@@ -96,6 +96,10 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
           isCorrect: a.isCorrect,
           answerOrder: a.answerOrder,
         })),
+        orderingItems: question.orderingItems?.map((item) => ({
+          itemText: item.itemText,
+          correctOrder: item.correctOrder,
+        })),
         minValue: question.minValue,
         maxValue: question.maxValue,
         stepValue: question.stepValue,

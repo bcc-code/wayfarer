@@ -281,6 +281,10 @@ const scoreTotalCount = computed(
   () => data.value?.adminScoreJournal.totalCount ?? 0,
 )
 
+const scoreTotal = computed(() =>
+  scoreEntries.value.reduce((acc, entry) => acc + entry.points, 0),
+)
+
 function formatSourceType(type: string) {
   return type.charAt(0) + type.slice(1).toLowerCase()
 }
@@ -583,12 +587,14 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
             <div class="flex items-center justify-between">
               <h2 class="text-xl font-semibold">
                 Poenglogg
-                <span
-                  v-if="scoreTotalCount > 0"
-                  class="text-dimmed text-sm font-normal"
-                >
-                  ({{ scoreTotalCount }} oppføringer)
-                </span>
+                <template v-if="scoreTotalCount > 0">
+                  <UBadge color="neutral" variant="soft">
+                    {{ scoreTotal }} poeng
+                  </UBadge>
+                  <span class="text-dimmed text-sm font-normal">
+                    ({{ scoreTotalCount }} oppføringer)
+                  </span>
+                </template>
               </h2>
               <UButton variant="ghost" size="sm" :to="{ name: 'admin-scores' }">
                 Vis alle

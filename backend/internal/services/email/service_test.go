@@ -113,7 +113,7 @@ func TestBuildFeedbackEmailBody(t *testing.T) {
 
 func TestNewService(t *testing.T) {
 	t.Run("with API key", func(t *testing.T) {
-		service := NewService("test-api-key", "https://admin.example.com")
+		service := NewService("test-api-key", "https://admin.example.com", "ssf@example.com")
 
 		assert.NotNil(t, service)
 		assert.NotNil(t, service.client)
@@ -121,11 +121,26 @@ func TestNewService(t *testing.T) {
 	})
 
 	t.Run("without API key", func(t *testing.T) {
-		service := NewService("", "https://admin.example.com")
+		service := NewService("", "https://admin.example.com", "")
 
 		assert.NotNil(t, service)
 		assert.Nil(t, service.client)
 		assert.Equal(t, "https://admin.example.com", service.adminBaseURL)
+	})
+
+	t.Run("destination emails configured correctly", func(t *testing.T) {
+		service := NewService("test-key", "https://admin.example.com", "ssf@example.com")
+
+		assert.Equal(t, "support@bcc.media", service.destinationEmails[ForwardDestinationBCCMediaSupport])
+		assert.Equal(t, "ssf@example.com", service.destinationEmails[ForwardDestinationSSFTicket])
+	})
+
+	t.Run("SSF destination omitted when email empty", func(t *testing.T) {
+		service := NewService("test-key", "https://admin.example.com", "")
+
+		assert.Equal(t, "support@bcc.media", service.destinationEmails[ForwardDestinationBCCMediaSupport])
+		_, exists := service.destinationEmails[ForwardDestinationSSFTicket]
+		assert.False(t, exists)
 	})
 }
 

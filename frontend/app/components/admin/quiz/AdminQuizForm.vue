@@ -32,6 +32,11 @@ export interface QuizQuestionFormData {
   minValue?: number
   maxValue?: number
   stepValue?: number
+  orderingItems?: {
+    id?: string
+    itemText: string
+    correctOrder: number
+  }[]
 }
 
 const props = defineProps<{
@@ -164,6 +169,7 @@ const questionTypeOptions = [
   { value: QuizQuestionType.Predefined, label: 'Flervalg' },
   { value: QuizQuestionType.FreeText, label: 'Fritekst' },
   { value: QuizQuestionType.Number, label: 'Tall' },
+  { value: QuizQuestionType.Ordering, label: 'Rekkefølge' },
 ]
 </script>
 
@@ -268,7 +274,9 @@ const questionTypeOptions = [
                       ? 'Flervalg'
                       : question.questionType === QuizQuestionType.Number
                         ? 'Tall'
-                        : 'Fritekst'
+                        : question.questionType === QuizQuestionType.Ordering
+                          ? 'Rekkefølge'
+                          : 'Fritekst'
                   }}
                 </div>
                 <div class="font-medium">

@@ -885,6 +885,121 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 	return convertResponseRowToInterface(responseAsModel, question.QuestionType), nil
 }
 
+// UpdateQuizAnswer is the resolver for the updateQuizAnswer field.
+func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID string, input model.UpdateQuizAnswerInput) (model.QuizResponse, error) {
+	ctx, span := otel.StartSpan(ctx, "quiz.update_answer",
+		attribute.String("response.id", responseID),
+	)
+	defer span.End()
+
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+	otel.SetUserID(span, userID)
+
+	// Load the existing response
+	existingResponse, err := r.DB.Queries.GetQuizResponseByID(ctx, responseID)
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to load response: %w", err)
+	}
+
+	// Load submission to verify ownership and session state
+	submission, err := r.DB.Queries.GetQuizSubmissionByID(ctx, existingResponse.SubmissionID)
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+	otel.SetQuizID(span, submission.QuizID)
+
+	// Verify ownership
+	if submission.UserID != userID {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	// Check session state - only allow updates when session is OPEN
+	if submission.SessionID != nil && *submission.SessionID != "" {
+		session, err := r.DB.Queries.GetQuizSession(ctx, *submission.SessionID)
+		if err != nil {
+			otel.RecordError(span, err)
+			return nil, fmt.Errorf("failed to load session: %w", err)
+		}
+
+		if session.State != string(model.QuizSessionStateOpen) {
+			return nil, fmt.Errorf("quiz session is %s, answers cannot be modified", session.State)
+		}
+	}
+
+	// Load question to get type
+	question, err := r.DB.Queries.GetQuizQuestionByID(ctx, existingResponse.QuestionID)
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+
+	// Build update params
+	params := sqlc.UpdateQuizResponseParams{
+		ID: responseID,
+	}
+
+	// Only handle ORDERING questions for now
+	if question.QuestionType == "ORDERING" && input.SubmittedOrder != nil {
+		// Store submitted order as JSON
+		orderJSON, _ := json.Marshal(input.SubmittedOrder)
+		params.Jsonresponse = orderJSON
+
+		// Calculate correctness by comparing against correct order
+		correctAnswers, _ := r.DB.Queries.GetPredefinedAnswersByQuestionID(ctx, existingResponse.QuestionID)
+
+		isCorrect := len(input.SubmittedOrder) == len(correctAnswers)
+		if isCorrect {
+			for i, ans := range correctAnswers {
+				if input.SubmittedOrder[i] != ans.ID {
+					isCorrect = false
+					break
+				}
+			}
+		}
+		params.Iscorrect = &isCorrect
+
+		// Calculate points_earned for correct answers
+		if isCorrect && question.Points != nil {
+			params.Pointsearned = question.Points
+		} else {
+			zero := int32(0)
+			params.Pointsearned = &zero
+		}
+	} else {
+		return nil, fmt.Errorf("update not supported for this question type")
+	}
+
+	// Update the response
+	updatedResponse, err := r.DB.Queries.UpdateQuizResponse(ctx, params)
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to update response: %w", err)
+	}
+
+	r.Cache.InvalidateQuizSubmission(submission.ID)
+
+	// Convert to QuizResponse model
+	responseAsModel := &sqlc.QuizResponse{
+		ID:                updatedResponse.ID,
+		SubmissionID:      updatedResponse.SubmissionID,
+		QuestionID:        updatedResponse.QuestionID,
+		SelectedAnswerIds: updatedResponse.SelectedAnswerIds,
+		TextResponse:      updatedResponse.TextResponse,
+		NumberResponse:    updatedResponse.NumberResponse,
+		JsonResponse:      updatedResponse.JsonResponse,
+		IsCorrect:         updatedResponse.IsCorrect,
+		PointsEarned:      updatedResponse.PointsEarned,
+		AnsweredAt:        updatedResponse.AnsweredAt,
+		TimeSpentSeconds:  updatedResponse.TimeSpentSeconds,
+	}
+	return convertResponseRowToInterface(responseAsModel, question.QuestionType), nil
+}
+
 // FinalizeQuiz is the resolver for the finalizeQuiz field.
 func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string) (*model.QuizSubmission, error) {
 	ctx, span := otel.StartSpan(ctx, "quiz.finalize",
@@ -1492,6 +1607,32 @@ func (r *orderingResponseResolver) Question(ctx context.Context, obj *model.Orde
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
 	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// IsCorrect is the resolver for the isCorrect field on OrderingResponse.
+// It hides the correctness until the session is LOCKED or FINISHED.
+func (r *orderingResponseResolver) IsCorrect(ctx context.Context, obj *model.OrderingResponse) (*bool, error) {
+	// Load submission to get session ID
+	submission, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+
+	// If there's a session, check its state
+	if submission.SessionID != nil && *submission.SessionID != "" {
+		session, err := r.DB.Queries.GetQuizSession(ctx, *submission.SessionID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load session: %w", err)
+		}
+
+		// Hide isCorrect when session is OPEN
+		if session.State == string(model.QuizSessionStateOpen) {
+			return nil, nil
+		}
+	}
+
+	// Return actual isCorrect value for LOCKED/FINISHED sessions or non-session quizzes
+	return obj.IsCorrectValue, nil
 }
 
 // Quiz is the resolver for the quiz field.

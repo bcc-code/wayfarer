@@ -8,8 +8,8 @@ mutation DeleteFeedback($id: ID!) {
   deleteFeedback(id: $id)
 }
 
-mutation ForwardFeedbackToDesk($feedbackId: ID!) {
-  forwardFeedbackToDesk(feedbackId: $feedbackId)
+mutation ForwardFeedbackToDesk($feedbackId: ID!, $destination: ForwardDestination!) {
+  forwardFeedbackToDesk(feedbackId: $feedbackId, destination: $destination)
 }
 
 mutation MarkFeedbackHandled($feedbackId: ID!) {
