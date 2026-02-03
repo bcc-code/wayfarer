@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import type { ChallengeFormData } from '~/components/admin/challenge/AdminChallengeForm.vue'
-import type {
-  QuizFormData,
-  QuizQuestionFormData,
-} from '~/components/admin/quiz/AdminQuizForm.vue'
+import type { QuizFormData } from '~/components/admin/quiz/AdminQuizForm.vue'
 
 definePageMeta({
   layout: 'admin',

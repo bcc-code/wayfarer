@@ -18,7 +18,7 @@ gql(`
 `)
 
 const { data } = useAdminKickOffPageQuery()
-const { executeMutation } = useBulkEnrollUsersInChallengeMutation()
+const { executeMutation, fetching } = useBulkEnrollUsersInChallengeMutation()
 
 const teamLeads = computed(() =>
   data.value?.myCurrentProject.teams.flatMap((team) =>
@@ -37,9 +37,9 @@ const { isActive, start, stop, remaining } = useCountdown(5, {
   immediate: false,
   onComplete: async () => {
     await executeMutation({
-      challengeId: '',
+      challengeId: 'CL01KGHH108EX5C0CEPGWDSY85X4',
       target: {
-        userIds: [],
+        userIds: teamLeadIds.value,
       },
     })
     readyToLaunch.value = false
@@ -91,20 +91,30 @@ const { isActive, start, stop, remaining } = useCountdown(5, {
         </h2>
         <p key="description">{{ $t('admin.churchHome.kickOffDescription') }}</p>
 
+        <UAlert
+          key="alert"
+          :title="$t('admin.churchHome.kickOffOnboardingDescription')"
+          color="info"
+          variant="subtle"
+          icon="lucide:info"
+          :ui="{ title: 'text-default' }"
+        />
+
         <USwitch
           key="switch"
           v-model="readyToLaunch"
           :label="$t('admin.churchHome.kickOffConfirmation')"
+          :ui="{ label: 'text-base' }"
           class="my-4"
         />
         <div v-if="readyToLaunch" key="button" class="flex gap-8 items-center">
           <BigRedButton
             :label="$t('admin.churchHome.kickOffButton')"
-            class="my-6"
+            :loading="fetching"
             @click="() => start()"
           />
           <div v-if="isActive">
-            <p class="tabular-nums mb-2">
+            <p class="tabular-nums mb-2 font-bold uppercase">
               {{
                 $t(
                   'admin.churchHome.kickOffOnboardingCountdown',
@@ -118,10 +128,6 @@ const { isActive, start, stop, remaining } = useCountdown(5, {
             </UButton>
           </div>
         </div>
-
-        <p key="description2" class="text-muted">
-          {{ $t('admin.churchHome.kickOffOnboardingDescription') }}
-        </p>
       </TransitionGroup>
     </UContainer>
   </div>
