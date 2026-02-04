@@ -171,13 +171,17 @@
       "gameNights": "Mänguõhtud",
       "comingSoon": "Peagi saadaval",
       "kickOff": "Avaüritus",
-      "kickOffDescription": "See leht on mõeldud kasutamiseks ainult avaüritusel. Kui te praegu avaüritust ei korralda, palun lahkuge sellelt leheküljelt.",
-      "kickOffButton": "Käivita üksuste registreerimine",
-      "kickOffOnboardingDescription": "Kui sa käivitad üksuste registreerimise, antakse kõigile sinu kohaliku koguduse üksuste juhtidele ülesanne muuta oma üksuse nimi.",
-      "kickOffConfirmation": "Kinnitan, et me korraldame praegu avaürituse ja oleme valmis alustama üksuste registreerimist.",
+      "kickOffButton": "Käivita üksuste registreerimine nüüd",
+      "kickOffOnboardingDescription": "See tegevus käivitab üksuste registreerimise kogu kohalikule kogudusele.",
+      "kickOffOnboardingDescriptionWarning": "⚠ Ära käivita, kui te pole valmis.",
+      "kickOffOnboardingExplanationTitle": "Mis juhtub, kui sa käivitad?",
+      "kickOffOnboardingExplanation1": "Kõik kohaliku koguduse üksuste juhid saavad Interactis (veebirakendus) väljakutse.",
+      "kickOffOnboardingExplanation2": "Nad saavad muuta üksuse nime – ja kui see on tehtud, saavad nad 300 punkti.",
+      "kickOffConfirmation": "Kinnitan, et avaüritus viiakse praegu läbi ja oleme valmis alustama.",
       "kickOffOnboardingCountdown": "Algab {seconds} sekundi pärast | Algab {seconds} sekundi pärast",
       "kickOffSuccessTitle": "Üksuste registreerimine on käivitunud!",
-      "kickOffSuccessDescription": "Kõik üksuste juhid on nüüd saanud rakenduses ülesande ja saavad muuta oma üksuse nime."
+      "kickOffSuccessDescription": "Kõik üksuste juhid on nüüd saanud rakenduses ülesande ja saavad muuta oma üksuse nime.",
+      "noAccess": "Sul pole sellele lehele juurdepääsu, kuna sa pole administraator. Palu ühel teisel administraatoril anda sulle juurdepääs."
     },
     "admins": {
       "searchPlaceholder": "Otsi administraatoreid...",
