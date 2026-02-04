@@ -42,6 +42,10 @@
       "perfect": "Idealnie!"
     }
   },
+  "challenges": {
+    "active": "Aktywne",
+    "completed": "Ukończone"
+  },
   "pages": {
     "standings": "Listy rankingowe",
     "challenges": "Wyzwania",
@@ -165,7 +169,19 @@
       "administrators": "Administratorzy",
       "unitsAndPeople": "Unity i osoby",
       "gameNights": "Game Nights",
-      "comingSoon": "Pojawi się wkrótce"
+      "comingSoon": "Pojawi się wkrótce",
+      "kickOff": "Kick-off",
+      "kickOffButton": "Rozpocznij onboarding do unitów",
+      "kickOffOnboardingDescription": "Ta akcja rozpoczyna proces onboardingu do unitów dla całego zboru.",
+      "kickOffOnboardingDescriptionWarning": "⚠ Nie zaczynajcie, jeśli nie jesteście gotowi.",
+      "kickOffOnboardingExplanationTitle": "Co się stanie po rozpoczęciu?",
+      "kickOffOnboardingExplanation1": "Wszyscy liderzy unitów w danym zborze dostaną wyzwanie w Interact (aplikacja internetowa).",
+      "kickOffOnboardingExplanation2": "Będą mogli zmienić nazwę unitu – i dostać za to 300 punktów.",
+      "kickOffConfirmation": "Potwierdzam, że kick-off się zaczyna i jesteśmy gotowi do rozpoczęcia.",
+      "kickOffOnboardingCountdown": "Rozpocznie się za {seconds} sekundę | Rozpocznie się za {seconds} sekund",
+      "kickOffSuccessTitle": "Onboarding do unitów w trakcie!",
+      "kickOffSuccessDescription": "Wszyscy liderzy unitów otrzymali teraz zadanie w aplikacji i mogą zmienić nazwę swojego unitu.",
+      "noAccess": "Nie masz dostępu do tej strony, ponieważ nie jesteś administratorem. Poproś innego administratora o przyznanie Ci dostępu."
     },
     "admins": {
       "searchPlaceholder": "Wyszukaj wśród administratorów...",
