@@ -317,6 +317,61 @@ func TestCacheWithRegistry_UserInvalidation(t *testing.T) {
 	assert.True(t, found, "other user's content progress should still exist")
 }
 
+func TestCacheWithRegistry_TeamMemberLeaderboardInvalidationViaProject(t *testing.T) {
+	c, err := NewCacheWithRegistry(DefaultConfig())
+	assert.NoError(t, err)
+	defer c.Close()
+
+	teamID1 := "TM01AAAAAAAAAAAAAAAAAAAAAA01"
+	teamID2 := "TM01AAAAAAAAAAAAAAAAAAAAAA02"
+
+	// Set team member leaderboard entries for two teams
+	c.Set(TeamMemberLeaderboardKey(teamID1), "leaderboard-team1")
+	c.Set(TeamMemberLeaderboardKey(teamID2), "leaderboard-team2")
+	c.Set(TeamMemberLeaderboardTeamLeadTagsKey(teamID1), "tags-team1")
+
+	// Set an unrelated key that should not be affected
+	c.Set(TeamKey(teamID1), "team-data")
+
+	c.cache.Wait()
+
+	// Verify keys exist
+	_, found := c.Get(TeamMemberLeaderboardKey(teamID1))
+	assert.True(t, found, "team1 leaderboard should exist before invalidation")
+	_, found = c.Get(TeamMemberLeaderboardKey(teamID2))
+	assert.True(t, found, "team2 leaderboard should exist before invalidation")
+	_, found = c.Get(TeamMemberLeaderboardTeamLeadTagsKey(teamID1))
+	assert.True(t, found, "team1 lead tags should exist before invalidation")
+
+	// Simulate what invalidateProjectLocal does for team member leaderboards
+	c.DeletePrefix(PrefixTeamMemberLeaderboard)
+	c.cache.Wait()
+
+	// All team member leaderboard keys should be deleted
+	_, found = c.Get(TeamMemberLeaderboardKey(teamID1))
+	assert.False(t, found, "team1 leaderboard should be deleted after project invalidation")
+	_, found = c.Get(TeamMemberLeaderboardKey(teamID2))
+	assert.False(t, found, "team2 leaderboard should be deleted after project invalidation")
+	// Tags keys have a more specific prefix, so they are registered under PrefixTeamLeaderboardTags, not PrefixTeamMemberLeaderboard
+	_, found = c.Get(TeamMemberLeaderboardTeamLeadTagsKey(teamID1))
+	assert.True(t, found, "team1 lead tags should NOT be deleted by PrefixTeamMemberLeaderboard")
+
+	// Unrelated team key should still exist
+	_, found = c.Get(TeamKey(teamID1))
+	assert.True(t, found, "team data should still exist")
+}
+
+func TestExtractPrefixes_TeamMemberLeaderboardKey(t *testing.T) {
+	teamID := "TM01AAAAAAAAAAAAAAAAAAAAAA01"
+	key := TeamMemberLeaderboardKey(teamID)
+
+	// Key should be "team:leaderboard:TM01AAAAAAAAAAAAAAAAAAAAAA01"
+	assert.Equal(t, "team:leaderboard:"+teamID, key)
+
+	prefixes := extractPrefixes(key)
+	assert.Contains(t, prefixes, PrefixTeamMemberLeaderboard, "should be registered under PrefixTeamMemberLeaderboard")
+}
+
 func TestCacheWithRegistry_LeaderboardInvalidation(t *testing.T) {
 	cache, err := NewCacheWithRegistry(DefaultConfig())
 	assert.NoError(t, err)

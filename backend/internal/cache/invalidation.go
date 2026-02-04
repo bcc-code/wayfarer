@@ -113,7 +113,8 @@ func extractPrefixes(key string) []string {
 	// Add the main entity prefix
 	// Note: More specific prefixes must come before general ones (e.g., PrefixTeamLeaderboardTags before PrefixTeam)
 	for _, prefix := range []string{
-		PrefixTeamLeaderboardTags, // Must be before PrefixTeam
+		PrefixTeamLeaderboardTags,   // Must be before PrefixTeamMemberLeaderboard and PrefixTeam
+		PrefixTeamMemberLeaderboard, // Must be before PrefixTeam
 		PrefixUser, PrefixChurch, PrefixProject, PrefixEvent, PrefixTeam,
 		PrefixSuperTeam, PrefixChallenge, PrefixAchievement, PrefixStreak,
 		PrefixUserProjects, PrefixUserEvents, PrefixTeamMembers, PrefixUserRoles,
@@ -276,9 +277,8 @@ func (c *CacheWithRegistry) invalidateProjectLocal(projectID string) {
 	c.DeletePrefix("leaderboard:count:project:" + projectID)
 	c.DeletePrefix("leaderboard:full:project:" + projectID)
 
-	// Invalidate all team leaderboards in this project (scores changed)
-	// Team leaderboard keys are "team:leaderboard:{teamID}"
-	c.DeletePrefix("team:leaderboard:")
+	// Invalidate all team member leaderboards in this project (scores changed)
+	c.DeletePrefix(PrefixTeamMemberLeaderboard)
 }
 
 // InvalidateEvent invalidates all cache entries related to an event and broadcasts to other instances
@@ -309,6 +309,7 @@ func (c *CacheWithRegistry) invalidateTeamLocal(teamID string) {
 	c.Delete(TeamKey(teamID))
 	c.Delete(TeamMembersByTeamKey(teamID))
 	c.Delete(TeamMemberLeaderboardKey(teamID))
+	c.Delete(TeamMemberLeaderboardTeamLeadTagsKey(teamID))
 	c.Delete(UsersByTeamKey(teamID))
 	c.DeletePrefix("team:" + teamID)
 }
