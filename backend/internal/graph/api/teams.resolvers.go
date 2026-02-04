@@ -217,6 +217,11 @@ func (r *mutationResolver) UpdateTeam(ctx context.Context, id string, input mode
 		return nil, fmt.Errorf("failed to load team: %w", err)
 	}
 
+	// Team leads can only update the team name
+	if err := validateTeamUpdateInput(ctx, r.RoleService, userID, existingTeam.ProjectID, input); err != nil {
+		return nil, err
+	}
+
 	// Capture old name for webhook notification
 	oldName := existingTeam.Name
 

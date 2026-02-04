@@ -7997,7 +7997,7 @@ extend type Mutation {
 
     # Team management
     createTeam(projectId: ID!, input: CreateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
-    updateTeam(id: ID!, input: UpdateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    updateTeam(id: ID!, input: UpdateTeamInput!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin", "team_lead"])
     deleteTeam(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "church_admin"])
     addTeamMembers(teamId: ID!, userIds: [ID!]!, force: Boolean): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
     removeTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
@@ -20222,7 +20222,7 @@ func (ec *executionContext) _Mutation_updateTeam(ctx context.Context, field grap
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin", "team_lead"})
 				if err != nil {
 					var zeroVal *model.Team
 					return zeroVal, err
