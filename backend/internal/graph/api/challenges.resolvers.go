@@ -127,6 +127,8 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 
 	// Invalidate cache
 	r.Cache.InvalidateProject(projectID)
+	r.Cache.DeletePrefix(cache.PrefixChallengesFilter)
+	r.Cache.DeletePrefix(cache.PrefixChallengesCount)
 	if eventID != nil && *eventID != "" {
 		r.Cache.InvalidateEvent(*eventID)
 	}
