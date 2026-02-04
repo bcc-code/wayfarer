@@ -389,11 +389,22 @@ func ExtractUserTag(key string) (string, bool) {
 	if strings.HasPrefix(key, PrefixUser) {
 		return strings.TrimPrefix(key, PrefixUser), true
 	}
-	// Check for user-prefixed relationship keys
-	prefixes := []string{PrefixUserProjects, PrefixUserEvents, PrefixUserRoles}
+	// Check for user-prefixed relationship and progress keys
+	// For composite keys like "usercontent:{userID}:{achievementID}", extract just the userID
+	prefixes := []string{
+		PrefixUserProjects, PrefixUserEvents, PrefixUserRoles,
+		PrefixUserContentProgress, PrefixUserAchievements,
+		PrefixUserStreakActivity, PrefixUserChallengeEnrollments,
+		PrefixUserChallengeCompletions, PrefixUserConsents,
+	}
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(key, prefix) {
-			return strings.TrimPrefix(key, prefix), true
+			remainder := strings.TrimPrefix(key, prefix)
+			// For composite keys, extract just the user ID (first segment)
+			if idx := strings.Index(remainder, ":"); idx > 0 {
+				return remainder[:idx], true
+			}
+			return remainder, true
 		}
 	}
 	return "", false

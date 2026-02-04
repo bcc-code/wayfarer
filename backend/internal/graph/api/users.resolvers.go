@@ -11,11 +11,13 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/bcc-media/wayfarer/internal/cache"
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // UpdateAvatar is the resolver for the updateAvatar field.
@@ -60,8 +62,53 @@ func (r *mutationResolver) SyncUser(ctx context.Context, userID string) (*model.
 		ContentEventsProcessed: result.ContentEventsProcessed,
 		GenderUpdated:          result.GenderUpdated,
 		ChurchUpdated:          result.ChurchUpdated,
+		ChurchLockSkipped:      result.ChurchLockSkipped,
 		PersonUUIDUpdated:      result.PersonUUIDUpdated,
 	}, nil
+}
+
+// LockUserChurch is the resolver for the lockUserChurch field.
+func (r *mutationResolver) LockUserChurch(ctx context.Context, userID string) (*model.User, error) {
+	lockedUntil := time.Now().AddDate(0, 6, 0)
+	err := r.DB.Queries.LockUserChurch(ctx, sqlc.LockUserChurchParams{
+		ID:          userID,
+		LockedUntil: pgtype.Timestamptz{Time: lockedUntil, Valid: true},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to lock user church: %w", err)
+	}
+
+	if r.Cache != nil {
+		r.Cache.InvalidateUser(userID)
+	}
+
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, userID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user after lock: %w", err)
+	}
+
+	return user, nil
+}
+
+// UnlockUserChurch is the resolver for the unlockUserChurch field.
+func (r *mutationResolver) UnlockUserChurch(ctx context.Context, userID string) (*model.User, error) {
+	err := r.DB.Queries.UnlockUserChurch(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unlock user church: %w", err)
+	}
+
+	if r.Cache != nil {
+		r.Cache.InvalidateUser(userID)
+	}
+
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, userID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user after unlock: %w", err)
+	}
+
+	return user, nil
 }
 
 // User is the resolver for the user field.
@@ -209,17 +256,24 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter, fir
 			personUUID = &s
 		}
 
+		var churchLockedUntil *scalars.DateTime
+		if row.ChurchLockedUntil.Valid {
+			dt := scalars.DateTime{Time: row.ChurchLockedUntil.Time}
+			churchLockedUntil = &dt
+		}
+
 		modelUsers[i] = model.User{
-			ID:         row.ID,
-			MembersID:  row.MembersID,
-			PersonUUID: personUUID,
-			Email:      row.Email,
-			Name:       row.Name,
-			Gender:     model.Gender(row.Gender),
-			Birthdate:  birthdateStr,
-			ChurchID:   row.ChurchID,
-			Image:      row.AvatarUrl,
-			CreatedAt:  scalars.DateTime{Time: row.CreatedAt.Time},
+			ID:                row.ID,
+			MembersID:         row.MembersID,
+			PersonUUID:        personUUID,
+			Email:             row.Email,
+			Name:              row.Name,
+			Gender:            model.Gender(row.Gender),
+			Birthdate:         birthdateStr,
+			ChurchID:          row.ChurchID,
+			ChurchLockedUntil: churchLockedUntil,
+			Image:             row.AvatarUrl,
+			CreatedAt:         scalars.DateTime{Time: row.CreatedAt.Time},
 		}
 	}
 

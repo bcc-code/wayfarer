@@ -473,6 +473,7 @@ type ComplexityRoot struct {
 		JoinTeam                                    func(childComplexity int, code string) int
 		LinkAchievementToChallenge                  func(childComplexity int, achievementID string, challengeID string) int
 		LockQuizSession                             func(childComplexity int, id string) int
+		LockUserChurch                              func(childComplexity int, userID string) int
 		MarkAchievementCelebrated                   func(childComplexity int, achievementID string) int
 		MarkContentItemCompleted                    func(childComplexity int, userID string, externalContentID string) int
 		MarkFeedbackHandled                         func(childComplexity int, feedbackID string) int
@@ -508,6 +509,7 @@ type ComplexityRoot struct {
 		UncompleteChallenge                         func(childComplexity int, userID string, challengeID string) int
 		UnenrollFromChallenge                       func(childComplexity int, challengeID string) int
 		UnenrollUserFromChallenge                   func(childComplexity int, userID string, challengeID string) int
+		UnlockUserChurch                            func(childComplexity int, userID string) int
 		UnmarkContentItemCompleted                  func(childComplexity int, userID string, externalContentID string) int
 		UnregisterPushSubscription                  func(childComplexity int, endpoint string) int
 		UpdateAchievement                           func(childComplexity int, id string, input model.UpdateAchievementInput) int
@@ -1008,6 +1010,7 @@ type ComplexityRoot struct {
 	}
 
 	SyncUserResult struct {
+		ChurchLockSkipped      func(childComplexity int) int
 		ChurchUpdated          func(childComplexity int) int
 		ContentEventsProcessed func(childComplexity int) int
 		GenderUpdated          func(childComplexity int) int
@@ -1049,26 +1052,27 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		Age           func(childComplexity int) int
-		Birthdate     func(childComplexity int) int
-		Church        func(childComplexity int) int
-		ChurchID      func(childComplexity int) int
-		ConsentStatus func(childComplexity int) int
-		CreatedAt     func(childComplexity int) int
-		Email         func(childComplexity int) int
-		Events        func(childComplexity int) int
-		Gender        func(childComplexity int) int
-		ID            func(childComplexity int) int
-		Image         func(childComplexity int) int
-		ImageObject   func(childComplexity int) int
-		Language      func(childComplexity int) int
-		MembersID     func(childComplexity int) int
-		Name          func(childComplexity int) int
-		PersonUUID    func(childComplexity int) int
-		Projects      func(childComplexity int) int
-		Roles         func(childComplexity int) int
-		SuperTeams    func(childComplexity int) int
-		Teams         func(childComplexity int) int
+		Age               func(childComplexity int) int
+		Birthdate         func(childComplexity int) int
+		Church            func(childComplexity int) int
+		ChurchID          func(childComplexity int) int
+		ChurchLockedUntil func(childComplexity int) int
+		ConsentStatus     func(childComplexity int) int
+		CreatedAt         func(childComplexity int) int
+		Email             func(childComplexity int) int
+		Events            func(childComplexity int) int
+		Gender            func(childComplexity int) int
+		ID                func(childComplexity int) int
+		Image             func(childComplexity int) int
+		ImageObject       func(childComplexity int) int
+		Language          func(childComplexity int) int
+		MembersID         func(childComplexity int) int
+		Name              func(childComplexity int) int
+		PersonUUID        func(childComplexity int) int
+		Projects          func(childComplexity int) int
+		Roles             func(childComplexity int) int
+		SuperTeams        func(childComplexity int) int
+		Teams             func(childComplexity int) int
 	}
 
 	UserConnection struct {
@@ -1290,6 +1294,8 @@ type MutationResolver interface {
 	RemoveUserFromProject(ctx context.Context, userID string, projectID string) (*model.User, error)
 	AssignUserToEvent(ctx context.Context, userID string, eventID string) (*model.User, error)
 	SyncUser(ctx context.Context, userID string) (*model.SyncUserResult, error)
+	LockUserChurch(ctx context.Context, userID string) (*model.User, error)
+	UnlockUserChurch(ctx context.Context, userID string) (*model.User, error)
 	AssignRole(ctx context.Context, input model.AssignRoleInput) (*model.UserRole, error)
 	RevokeRole(ctx context.Context, input model.RevokeRoleInput) (bool, error)
 	UpdateChurch(ctx context.Context, id string, input model.UpdateChurchInput) (*model.Church, error)
@@ -3587,6 +3593,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.LockQuizSession(childComplexity, args["id"].(string)), true
+	case "Mutation.lockUserChurch":
+		if e.complexity.Mutation.LockUserChurch == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_lockUserChurch_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.LockUserChurch(childComplexity, args["userId"].(string)), true
 	case "Mutation.markAchievementCelebrated":
 		if e.complexity.Mutation.MarkAchievementCelebrated == nil {
 			break
@@ -3972,6 +3989,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UnenrollUserFromChallenge(childComplexity, args["userId"].(string), args["challengeId"].(string)), true
+	case "Mutation.unlockUserChurch":
+		if e.complexity.Mutation.UnlockUserChurch == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_unlockUserChurch_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UnlockUserChurch(childComplexity, args["userId"].(string)), true
 	case "Mutation.unmarkContentItemCompleted":
 		if e.complexity.Mutation.UnmarkContentItemCompleted == nil {
 			break
@@ -6585,6 +6613,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SuperTeamEdge.Node(childComplexity), true
 
+	case "SyncUserResult.churchLockSkipped":
+		if e.complexity.SyncUserResult.ChurchLockSkipped == nil {
+			break
+		}
+
+		return e.complexity.SyncUserResult.ChurchLockSkipped(childComplexity), true
 	case "SyncUserResult.churchUpdated":
 		if e.complexity.SyncUserResult.ChurchUpdated == nil {
 			break
@@ -6770,6 +6804,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.ChurchID(childComplexity), true
+	case "User.churchLockedUntil":
+		if e.complexity.User.ChurchLockedUntil == nil {
+			break
+		}
+
+		return e.complexity.User.ChurchLockedUntil(childComplexity), true
 	case "User.consentStatus":
 		if e.complexity.User.ConsentStatus == nil {
 			break
@@ -8591,6 +8631,7 @@ type User {
     gender: Gender!
     churchId: ID!
     church: Church! @goField(forceResolver: true)
+    churchLockedUntil: DateTime
     birthdate: String!
     age: Int @goField(forceResolver: true)
     email: String!
@@ -8657,6 +8698,7 @@ type SyncUserResult {
     contentEventsProcessed: Int!
     genderUpdated: Boolean!
     churchUpdated: Boolean!
+    churchLockSkipped: Boolean!
     personUuidUpdated: Boolean!
 }
 
@@ -8673,6 +8715,10 @@ extend type Mutation {
 
     # User sync
     syncUser(userId: ID!): SyncUserResult! @requireRole(roles: ["admin", "superadmin"])
+
+    # Church lock
+    lockUserChurch(userId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
+    unlockUserChurch(userId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/roles.graphqls", Input: `# Role management queries and mutations
@@ -10750,6 +10796,17 @@ func (ec *executionContext) field_Mutation_lockQuizSession_args(ctx context.Cont
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_lockUserChurch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_markAchievementCelebrated_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -11232,6 +11289,17 @@ func (ec *executionContext) field_Mutation_unenrollUserFromChallenge_args(ctx co
 		return nil, err
 	}
 	args["challengeId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_unlockUserChurch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
 	return args, nil
 }
 
@@ -23674,6 +23742,8 @@ func (ec *executionContext) fieldContext_Mutation_updateAvatar(ctx context.Conte
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -23775,6 +23845,8 @@ func (ec *executionContext) fieldContext_Mutation_assignUserToProject(ctx contex
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -23876,6 +23948,8 @@ func (ec *executionContext) fieldContext_Mutation_removeUserFromProject(ctx cont
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -23977,6 +24051,8 @@ func (ec *executionContext) fieldContext_Mutation_assignUserToEvent(ctx context.
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -24074,6 +24150,8 @@ func (ec *executionContext) fieldContext_Mutation_syncUser(ctx context.Context, 
 				return ec.fieldContext_SyncUserResult_genderUpdated(ctx, field)
 			case "churchUpdated":
 				return ec.fieldContext_SyncUserResult_churchUpdated(ctx, field)
+			case "churchLockSkipped":
+				return ec.fieldContext_SyncUserResult_churchLockSkipped(ctx, field)
 			case "personUuidUpdated":
 				return ec.fieldContext_SyncUserResult_personUuidUpdated(ctx, field)
 			}
@@ -24088,6 +24166,212 @@ func (ec *executionContext) fieldContext_Mutation_syncUser(ctx context.Context, 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_syncUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_lockUserChurch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_lockUserChurch,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().LockUserChurch(ctx, fc.Args["userId"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.User
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.User
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_lockUserChurch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "membersId":
+				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "churchId":
+				return ec.fieldContext_User_churchId(ctx, field)
+			case "church":
+				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "image":
+				return ec.fieldContext_User_image(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_User_imageObject(ctx, field)
+			case "projects":
+				return ec.fieldContext_User_projects(ctx, field)
+			case "events":
+				return ec.fieldContext_User_events(ctx, field)
+			case "teams":
+				return ec.fieldContext_User_teams(ctx, field)
+			case "superTeams":
+				return ec.fieldContext_User_superTeams(ctx, field)
+			case "roles":
+				return ec.fieldContext_User_roles(ctx, field)
+			case "consentStatus":
+				return ec.fieldContext_User_consentStatus(ctx, field)
+			case "language":
+				return ec.fieldContext_User_language(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_lockUserChurch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_unlockUserChurch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_unlockUserChurch,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UnlockUserChurch(ctx, fc.Args["userId"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.User
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.User
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_unlockUserChurch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "membersId":
+				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "churchId":
+				return ec.fieldContext_User_churchId(ctx, field)
+			case "church":
+				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "image":
+				return ec.fieldContext_User_image(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_User_imageObject(ctx, field)
+			case "projects":
+				return ec.fieldContext_User_projects(ctx, field)
+			case "events":
+				return ec.fieldContext_User_events(ctx, field)
+			case "teams":
+				return ec.fieldContext_User_teams(ctx, field)
+			case "superTeams":
+				return ec.fieldContext_User_superTeams(ctx, field)
+			case "roles":
+				return ec.fieldContext_User_roles(ctx, field)
+			case "consentStatus":
+				return ec.fieldContext_User_consentStatus(ctx, field)
+			case "language":
+				return ec.fieldContext_User_language(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_unlockUserChurch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -30955,6 +31239,8 @@ func (ec *executionContext) fieldContext_Query_me(_ context.Context, field graph
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -32262,6 +32548,8 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -32445,6 +32733,8 @@ func (ec *executionContext) fieldContext_Query_usersWithRole(ctx context.Context
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -36902,6 +37192,8 @@ func (ec *executionContext) fieldContext_QuizSession_createdBy(_ context.Context
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -37278,6 +37570,8 @@ func (ec *executionContext) fieldContext_QuizSubmission_user(_ context.Context, 
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -38211,6 +38505,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_user(_ context.Context, fi
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -38474,6 +38770,8 @@ func (ec *executionContext) fieldContext_ScoreJournal_awardedBy(_ context.Contex
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -41595,6 +41893,8 @@ func (ec *executionContext) fieldContext_SyncUserResult_user(_ context.Context, 
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -41705,6 +42005,35 @@ func (ec *executionContext) _SyncUserResult_churchUpdated(ctx context.Context, f
 }
 
 func (ec *executionContext) fieldContext_SyncUserResult_churchUpdated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SyncUserResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SyncUserResult_churchLockSkipped(ctx context.Context, field graphql.CollectedField, obj *model.SyncUserResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SyncUserResult_churchLockSkipped,
+		func(ctx context.Context) (any, error) {
+			return obj.ChurchLockSkipped, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SyncUserResult_churchLockSkipped(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SyncUserResult",
 		Field:      field,
@@ -42500,6 +42829,8 @@ func (ec *executionContext) fieldContext_TeamMember_user(_ context.Context, fiel
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -42714,6 +43045,35 @@ func (ec *executionContext) fieldContext_User_church(_ context.Context, field gr
 				return ec.fieldContext_Church_category(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Church", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_churchLockedUntil(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_User_churchLockedUntil,
+		func(ctx context.Context) (any, error) {
+			return obj.ChurchLockedUntil, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_User_churchLockedUntil(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
 		},
 	}
 	return fc, nil
@@ -43784,6 +44144,8 @@ func (ec *executionContext) fieldContext_UserEdge_node(_ context.Context, field 
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -43913,6 +44275,8 @@ func (ec *executionContext) fieldContext_UserFeedback_user(_ context.Context, fi
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -44419,6 +44783,8 @@ func (ec *executionContext) fieldContext_UserRole_user(_ context.Context, field 
 				return ec.fieldContext_User_churchId(ctx, field)
 			case "church":
 				return ec.fieldContext_User_church(ctx, field)
+			case "churchLockedUntil":
+				return ec.fieldContext_User_churchLockedUntil(ctx, field)
 			case "birthdate":
 				return ec.fieldContext_User_birthdate(ctx, field)
 			case "age":
@@ -54832,6 +55198,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "lockUserChurch":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_lockUserChurch(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unlockUserChurch":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_unlockUserChurch(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "assignRole":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_assignRole(ctx, field)
@@ -62196,6 +62576,11 @@ func (ec *executionContext) _SyncUserResult(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "churchLockSkipped":
+			out.Values[i] = ec._SyncUserResult_churchLockSkipped(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "personUuidUpdated":
 			out.Values[i] = ec._SyncUserResult_personUuidUpdated(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -62745,6 +63130,8 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "churchLockedUntil":
+			out.Values[i] = ec._User_churchLockedUntil(ctx, field, obj)
 		case "birthdate":
 			out.Values[i] = ec._User_birthdate(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

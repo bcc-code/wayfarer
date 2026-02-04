@@ -932,6 +932,7 @@ export type Mutation = {
   joinTeam: Team;
   linkAchievementToChallenge: Achievement;
   lockQuizSession: QuizSession;
+  lockUserChurch: User;
   markAchievementCelebrated: Scalars['Boolean']['output'];
   markContentItemCompleted: Array<ContentAchievement>;
   markFeedbackHandled: UserFeedback;
@@ -967,6 +968,7 @@ export type Mutation = {
   uncompleteChallenge: Scalars['Boolean']['output'];
   unenrollFromChallenge: Scalars['Boolean']['output'];
   unenrollUserFromChallenge: Scalars['Boolean']['output'];
+  unlockUserChurch: User;
   unmarkContentItemCompleted: Array<ContentAchievement>;
   unregisterPushSubscription: Scalars['Boolean']['output'];
   updateAchievement: Achievement;
@@ -1339,6 +1341,11 @@ export type MutationLockQuizSessionArgs = {
 };
 
 
+export type MutationLockUserChurchArgs = {
+  userId: Scalars['ID']['input'];
+};
+
+
 export type MutationMarkAchievementCelebratedArgs = {
   achievementId: Scalars['ID']['input'];
 };
@@ -1530,6 +1537,11 @@ export type MutationUnenrollFromChallengeArgs = {
 
 export type MutationUnenrollUserFromChallengeArgs = {
   challengeId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationUnlockUserChurchArgs = {
   userId: Scalars['ID']['input'];
 };
 
@@ -2634,6 +2646,7 @@ export type SuperTeamFilter = {
 
 export type SyncUserResult = {
   __typename?: 'SyncUserResult';
+  churchLockSkipped: Scalars['Boolean']['output'];
   churchUpdated: Scalars['Boolean']['output'];
   contentEventsProcessed: Scalars['Int']['output'];
   genderUpdated: Scalars['Boolean']['output'];
@@ -2847,6 +2860,7 @@ export type User = {
   birthdate: Scalars['String']['output'];
   church: Church;
   churchId: Scalars['ID']['output'];
+  churchLockedUntil?: Maybe<Scalars['DateTime']['output']>;
   consentStatus: ConsentStatus;
   createdAt: Scalars['DateTime']['output'];
   email: Scalars['String']['output'];
@@ -3891,7 +3905,7 @@ export type AdminUserPageQueryVariables = Exact<{
 }>;
 
 
-export type AdminUserPageQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, personUuid?: string | null, createdAt: any, name: string, email: string, membersId: string, gender: Gender, birthdate: string, age?: number | null, image?: string | null, church: { __typename?: 'Church', id: string, name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType } | null }>, consentStatus: { __typename?: 'ConsentStatus', acceptedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number, managementType: ConsentManagementType } }>, rejectedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number } }>, pendingConsents: Array<{ __typename?: 'Consent', id: string, key: string, title: string, version: number }> } }, adminScoreJournal: { __typename?: 'ScoreJournalConnection', totalCount: number, edges: Array<{ __typename?: 'ScoreJournalEdge', node: { __typename?: 'ScoreJournal', id: string, points: number, sourceType: ScoreSourceType, reason?: string | null, createdAt: any, project: { __typename?: 'Project', id: string, name: string }, awardedBy?: { __typename?: 'User', id: string, name: string } | null } }> }, feedback: { __typename?: 'FeedbackConnection', totalCount: number, edges: Array<{ __typename?: 'FeedbackEdge', node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, createdAt: any } }> } };
+export type AdminUserPageQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, personUuid?: string | null, createdAt: any, name: string, email: string, membersId: string, gender: Gender, birthdate: string, age?: number | null, image?: string | null, churchLockedUntil?: any | null, church: { __typename?: 'Church', id: string, name: string }, roles: Array<{ __typename?: 'UserRole', id: string, role: RoleType, scope?: { __typename?: 'RoleScope', id: string, type: ScopeType } | null }>, consentStatus: { __typename?: 'ConsentStatus', acceptedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number, managementType: ConsentManagementType } }>, rejectedConsents: Array<{ __typename?: 'UserConsent', id: string, action: ConsentAction, actionDate: any, consent: { __typename?: 'Consent', id: string, key: string, title: string, version: number } }>, pendingConsents: Array<{ __typename?: 'Consent', id: string, key: string, title: string, version: number }> } }, adminScoreJournal: { __typename?: 'ScoreJournalConnection', totalCount: number, edges: Array<{ __typename?: 'ScoreJournalEdge', node: { __typename?: 'ScoreJournal', id: string, points: number, sourceType: ScoreSourceType, reason?: string | null, createdAt: any, project: { __typename?: 'Project', id: string, name: string }, awardedBy?: { __typename?: 'User', id: string, name: string } | null } }> }, feedback: { __typename?: 'FeedbackConnection', totalCount: number, edges: Array<{ __typename?: 'FeedbackEdge', node: { __typename?: 'UserFeedback', id: string, message: string, canContactMe: boolean, userAgent?: string | null, platform?: string | null, screenWidth?: number | null, screenHeight?: number | null, appVersion?: string | null, createdAt: any } }> } };
 
 export type AdminSetUserConsentMutationVariables = Exact<{
   userId: Scalars['ID']['input'];
@@ -3907,7 +3921,21 @@ export type SyncUserMutationVariables = Exact<{
 }>;
 
 
-export type SyncUserMutation = { __typename?: 'Mutation', syncUser: { __typename?: 'SyncUserResult', contentEventsProcessed: number, genderUpdated: boolean, churchUpdated: boolean, personUuidUpdated: boolean, user: { __typename?: 'User', id: string, name: string, gender: Gender, personUuid?: string | null, church: { __typename?: 'Church', id: string, name: string } } } };
+export type SyncUserMutation = { __typename?: 'Mutation', syncUser: { __typename?: 'SyncUserResult', contentEventsProcessed: number, genderUpdated: boolean, churchUpdated: boolean, churchLockSkipped: boolean, personUuidUpdated: boolean, user: { __typename?: 'User', id: string, name: string, gender: Gender, personUuid?: string | null, churchLockedUntil?: any | null, church: { __typename?: 'Church', id: string, name: string } } } };
+
+export type LockUserChurchMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+}>;
+
+
+export type LockUserChurchMutation = { __typename?: 'Mutation', lockUserChurch: { __typename?: 'User', id: string, churchLockedUntil?: any | null, church: { __typename?: 'Church', id: string, name: string } } };
+
+export type UnlockUserChurchMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+}>;
+
+
+export type UnlockUserChurchMutation = { __typename?: 'Mutation', unlockUserChurch: { __typename?: 'User', id: string, churchLockedUntil?: any | null, church: { __typename?: 'Church', id: string, name: string } } };
 
 export type AdminUsersPageQueryVariables = Exact<{
   filter?: InputMaybe<UserFilter>;
@@ -6008,6 +6036,7 @@ export const AdminUserPageDocument = gql`
     birthdate
     age
     image
+    churchLockedUntil
     church {
       id
       name
@@ -6114,6 +6143,7 @@ export const SyncUserDocument = gql`
       name
       gender
       personUuid
+      churchLockedUntil
       church {
         id
         name
@@ -6122,6 +6152,7 @@ export const SyncUserDocument = gql`
     contentEventsProcessed
     genderUpdated
     churchUpdated
+    churchLockSkipped
     personUuidUpdated
   }
 }
@@ -6129,6 +6160,38 @@ export const SyncUserDocument = gql`
 
 export function useSyncUserMutation() {
   return Urql.useMutation<SyncUserMutation, SyncUserMutationVariables>(SyncUserDocument);
+};
+export const LockUserChurchDocument = gql`
+    mutation LockUserChurch($userId: ID!) {
+  lockUserChurch(userId: $userId) {
+    id
+    churchLockedUntil
+    church {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useLockUserChurchMutation() {
+  return Urql.useMutation<LockUserChurchMutation, LockUserChurchMutationVariables>(LockUserChurchDocument);
+};
+export const UnlockUserChurchDocument = gql`
+    mutation UnlockUserChurch($userId: ID!) {
+  unlockUserChurch(userId: $userId) {
+    id
+    churchLockedUntil
+    church {
+      id
+      name
+    }
+  }
+}
+    `;
+
+export function useUnlockUserChurchMutation() {
+  return Urql.useMutation<UnlockUserChurchMutation, UnlockUserChurchMutationVariables>(UnlockUserChurchDocument);
 };
 export const AdminUsersPageDocument = gql`
     query AdminUsersPage($filter: UserFilter, $first: Int, $after: String, $last: Int, $before: String) {

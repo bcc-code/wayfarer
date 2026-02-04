@@ -9,6 +9,7 @@ type User {
     gender: Gender!
     churchId: ID!
     church: Church! @goField(forceResolver: true)
+    churchLockedUntil: DateTime
     birthdate: String!
     age: Int @goField(forceResolver: true)
     email: String!
@@ -75,6 +76,7 @@ type SyncUserResult {
     contentEventsProcessed: Int!
     genderUpdated: Boolean!
     churchUpdated: Boolean!
+    churchLockSkipped: Boolean!
     personUuidUpdated: Boolean!
 }
 
@@ -91,4 +93,8 @@ extend type Mutation {
 
     # User sync
     syncUser(userId: ID!): SyncUserResult! @requireRole(roles: ["admin", "superadmin"])
+
+    # Church lock
+    lockUserChurch(userId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
+    unlockUserChurch(userId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
 }

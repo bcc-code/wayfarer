@@ -24,6 +24,7 @@ CREATE TABLE users (
     gender VARCHAR(10) NOT NULL CHECK (gender IN ('MALE', 'FEMALE', 'UNKNOWN')),
     birthdate DATE,
     church_id CHAR(28) NOT NULL REFERENCES churches(id) ON DELETE RESTRICT,
+    church_locked_until TIMESTAMPTZ,
     avatar_url VARCHAR(500),
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),

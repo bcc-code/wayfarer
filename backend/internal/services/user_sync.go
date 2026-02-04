@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/members"
@@ -18,6 +19,7 @@ import (
 // UserSyncService synchronizes user data from external sources (SSF, Members API).
 type UserSyncService struct {
 	DB                        *database.DB
+	Cache                     *cache.CacheWithRegistry
 	SSFClient                 *ssf.Client
 	MembersClient             *members.Client
 	ChurchResolver            *ChurchResolver
@@ -29,6 +31,7 @@ type SyncUserResult struct {
 	ContentEventsProcessed int
 	GenderUpdated          bool
 	ChurchUpdated          bool
+	ChurchLockSkipped      bool
 	PersonUUIDUpdated      bool
 }
 
@@ -68,8 +71,14 @@ func (s *UserSyncService) SyncUser(ctx context.Context, userID string) (*SyncUse
 		} else {
 			result.GenderUpdated = memberResult.GenderUpdated
 			result.ChurchUpdated = memberResult.ChurchUpdated
+			result.ChurchLockSkipped = memberResult.ChurchLockSkipped
 			result.PersonUUIDUpdated = memberResult.PersonUUIDUpdated
 		}
+	}
+
+	// Invalidate all user-related cache entries after sync
+	if s.Cache != nil {
+		s.Cache.InvalidateUser(userID)
 	}
 
 	return result, nil
@@ -176,8 +185,9 @@ func (s *UserSyncService) syncContentEvents(ctx context.Context, userID string, 
 }
 
 type memberSyncResult struct {
-	GenderUpdated    bool
-	ChurchUpdated    bool
+	GenderUpdated     bool
+	ChurchUpdated     bool
+	ChurchLockSkipped bool
 	PersonUUIDUpdated bool
 }
 
@@ -202,9 +212,15 @@ func (s *UserSyncService) syncMemberData(ctx context.Context, user *sqlc.GetUser
 		result.GenderUpdated = newGender != user.Gender
 	}
 
-	// Resolve church from affiliations
+	// Resolve church from affiliations (skip if church is locked)
 	newChurchID := ""
-	if s.ChurchResolver != nil {
+	if user.ChurchLockedUntil.Valid && user.ChurchLockedUntil.Time.After(time.Now()) {
+		slog.Info("user_sync: church update skipped due to lock",
+			"user_id", user.ID,
+			"locked_until", user.ChurchLockedUntil.Time,
+		)
+		result.ChurchLockSkipped = true
+	} else if s.ChurchResolver != nil {
 		church, err := s.ChurchResolver.FindChurchFromAffiliations(ctx, member.Affiliations)
 		if err != nil {
 			slog.Debug("user_sync: no valid church from affiliations",

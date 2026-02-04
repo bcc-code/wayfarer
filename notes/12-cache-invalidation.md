@@ -78,9 +78,24 @@ func (c *CacheWithRegistry) InvalidateEvent(eventID string) {
 }
 ```
 
+### InvalidateUser
+
+Invalidates all cache entries related to a user:
+
+- Direct user entity (`user:{userID}`)
+- User's project and event lists (`userprojects:{userID}`, `userevents:{userID}`)
+- User roles (`userroles:{userID}`)
+- All keys tagged with `user:{userID}` (reverse lookups, etc.)
+- Challenge enrollments and completions
+- Content progress (reading/listening achievements)
+- Achievement timestamps (earned and celebrated)
+- Streak activity
+- User filter/count queries (since user attributes like gender/church affect results)
+
+Called automatically by `UserSyncService.SyncUser()` and `MaintenanceHandler` sync endpoints after updating user data.
+
 ### Other Helpers
 
-- `InvalidateUser(userID)` - Invalidates user and related data
 - `InvalidateTeam(teamID)` - Invalidates team and members
 - `InvalidateChallenge(challengeID)` - Invalidates challenge
 - `InvalidateAchievement(achievementID)` - Invalidates achievement

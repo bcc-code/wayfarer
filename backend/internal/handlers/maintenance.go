@@ -5,7 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
+	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/members"
@@ -18,6 +20,7 @@ import (
 // MaintenanceHandler handles maintenance tasks like syncing user data
 type MaintenanceHandler struct {
 	DB                        *database.DB
+	Cache                     *cache.CacheWithRegistry
 	MembersClient             *members.Client
 	ChurchResolver            *services.ChurchResolver
 	AuthHandler               *AuthHandler
@@ -103,8 +106,13 @@ func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 			newGender = members.NormalizeGender(member.Gender)
 		}
 
-		// Update church if using default church and member has affiliation
-		if h.isDefaultChurch(ctx, user.ChurchID) {
+		// Update church if using default church and member has affiliation (skip if locked)
+		if user.ChurchLockedUntil.Valid && user.ChurchLockedUntil.Time.After(time.Now()) {
+			slog.Debug("maintenance: church update skipped due to lock",
+				"user_id", user.ID,
+				"locked_until", user.ChurchLockedUntil.Time,
+			)
+		} else if h.isDefaultChurch(ctx, user.ChurchID) {
 			church, err := h.ChurchResolver.FindChurchFromAffiliations(ctx, member.Affiliations)
 			if err != nil {
 				slog.Debug("maintenance: no valid church from affiliations",
@@ -136,6 +144,11 @@ func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 			response.Failed++
 			response.Errors = append(response.Errors, "failed to update user "+user.ID+": "+err.Error())
 			continue
+		}
+
+		// Invalidate all user-related cache entries
+		if h.Cache != nil {
+			h.Cache.InvalidateUser(user.ID)
 		}
 
 		slog.Info("maintenance: updated user data",
@@ -206,17 +219,24 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 		newGender = members.NormalizeGender(member.Gender)
 	}
 
-	// Attempt to update church from member affiliation
-	church, err := h.ChurchResolver.FindChurchFromAffiliations(ctx, member.Affiliations)
-	if err != nil {
-		slog.Debug("maintenance: no valid church from affiliations, keeping existing",
+	// Attempt to update church from member affiliation (skip if locked)
+	if user.ChurchLockedUntil.Valid && user.ChurchLockedUntil.Time.After(time.Now()) {
+		slog.Debug("maintenance: church update skipped due to lock",
 			"user_id", userID,
-			"affiliations", member.Affiliations,
-			"error", err,
+			"locked_until", user.ChurchLockedUntil.Time,
 		)
-		// Keep existing church - don't update to default
 	} else {
-		newChurchID = church.ID
+		church, err := h.ChurchResolver.FindChurchFromAffiliations(ctx, member.Affiliations)
+		if err != nil {
+			slog.Debug("maintenance: no valid church from affiliations, keeping existing",
+				"user_id", userID,
+				"affiliations", member.Affiliations,
+				"error", err,
+			)
+			// Keep existing church - don't update to default
+		} else {
+			newChurchID = church.ID
+		}
 	}
 
 	// Update user
@@ -256,6 +276,11 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 
 		onboardingProcessed = true
 		slog.Info("maintenance: processed onboarding events", "user_id", userID, "person_uuid", personUUIDStr)
+	}
+
+	// Invalidate all user-related cache entries
+	if h.Cache != nil {
+		h.Cache.InvalidateUser(userID)
 	}
 
 	slog.Info("maintenance: updated user data",

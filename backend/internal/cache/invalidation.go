@@ -118,6 +118,8 @@ func extractPrefixes(key string) []string {
 		PrefixSuperTeam, PrefixChallenge, PrefixAchievement, PrefixStreak,
 		PrefixUserProjects, PrefixUserEvents, PrefixTeamMembers, PrefixUserRoles,
 		PrefixUserChallengeEnrollments, PrefixUserChallengeCompletions,
+		PrefixUserContentProgress, PrefixUserAchievements, PrefixUserStreakActivity,
+		PrefixUserConsents,
 		PrefixUsersFilter, PrefixUsersCount,
 		PrefixProjectsFilter, PrefixProjectsCount,
 		PrefixEventsFilter, PrefixEventsCount,
@@ -232,11 +234,19 @@ func (c *CacheWithRegistry) InvalidateUser(userID string) {
 func (c *CacheWithRegistry) invalidateUserLocal(userID string) {
 	c.Delete(UserKey(userID))
 	c.Delete(ProjectsByUserKey(userID))
+	c.Delete(EventsByUserKey(userID))
 	c.Delete(UserRolesKey(userID))
 	c.DeletePrefix("user:" + userID)
 	// Invalidate enrollment and completion data
 	c.DeletePrefix(PrefixUserChallengeEnrollments + userID)
 	c.DeletePrefix(PrefixUserChallengeCompletions + userID)
+	// Invalidate content progress, achievements, and streak activity
+	c.DeletePrefix(PrefixUserContentProgress + userID)
+	c.DeletePrefix(PrefixUserAchievements + userID)
+	c.DeletePrefix(PrefixUserStreakActivity + userID)
+	// Invalidate user filter/count queries (gender/church changes affect results)
+	c.DeletePrefix(PrefixUsersFilter)
+	c.DeletePrefix(PrefixUsersCount)
 }
 
 // InvalidateProject invalidates all cache entries related to a project and broadcasts to other instances

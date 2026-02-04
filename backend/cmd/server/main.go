@@ -315,6 +315,7 @@ func main() {
 	// User sync service
 	userSyncService := &services.UserSyncService{
 		DB:                        db,
+		Cache:                     cacheInstance,
 		SSFClient:                 ssfClient,
 		MembersClient:             membersClient,
 		ChurchResolver:            churchResolver,
@@ -485,6 +486,7 @@ func main() {
 	// Maintenance handler for syncing user data from Members API
 	maintenanceHandler := &handlers.MaintenanceHandler{
 		DB:                        db,
+		Cache:                     cacheInstance,
 		MembersClient:             membersClient,
 		ChurchResolver:            churchResolver,
 		AuthHandler:               authHandler,

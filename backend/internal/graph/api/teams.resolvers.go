@@ -13,6 +13,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
+	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/webhooks"
@@ -1304,15 +1305,23 @@ func (r *superTeamResolver) Members(ctx context.Context, obj *model.SuperTeam, f
 	modelUsers := make([]model.User, len(users))
 	for i, row := range users {
 		birthdateStr := row.Birthdate.Time.Format("2006-01-02")
+
+		var churchLockedUntil *scalars.DateTime
+		if row.ChurchLockedUntil.Valid {
+			dt := scalars.DateTime{Time: row.ChurchLockedUntil.Time}
+			churchLockedUntil = &dt
+		}
+
 		modelUsers[i] = model.User{
-			ID:        row.ID,
-			MembersID: row.MembersID,
-			Email:     row.Email,
-			Name:      row.Name,
-			Gender:    model.Gender(row.Gender),
-			Birthdate: birthdateStr,
-			ChurchID:  row.ChurchID,
-			Image:     row.AvatarUrl,
+			ID:                row.ID,
+			MembersID:         row.MembersID,
+			Email:             row.Email,
+			Name:              row.Name,
+			Gender:            model.Gender(row.Gender),
+			Birthdate:         birthdateStr,
+			ChurchID:          row.ChurchID,
+			ChurchLockedUntil: churchLockedUntil,
+			Image:             row.AvatarUrl,
 		}
 	}
 
