@@ -123,7 +123,7 @@ extend type Mutation {
     addTeamMembers(teamId: ID!, userIds: [ID!]!, force: Boolean): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
     removeTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
     regenerateJoinCode(teamId: ID!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
-    assignTeamLead(teamId: ID!, userId: ID!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    assignTeamLead(teamId: ID!, userId: ID!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin", "team_lead"])
 
     # SuperTeam management
     createSuperTeam(projectId: ID!, input: CreateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])

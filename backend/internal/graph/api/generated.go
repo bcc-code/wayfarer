@@ -8002,7 +8002,7 @@ extend type Mutation {
     addTeamMembers(teamId: ID!, userIds: [ID!]!, force: Boolean): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
     removeTeamMembers(teamId: ID!, userIds: [ID!]!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
     regenerateJoinCode(teamId: ID!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
-    assignTeamLead(teamId: ID!, userId: ID!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin"])
+    assignTeamLead(teamId: ID!, userId: ID!): Team! @requireRole(roles: ["admin", "superadmin", "church_admin", "team_lead"])
 
     # SuperTeam management
     createSuperTeam(projectId: ID!, input: CreateSuperTeamInput!): SuperTeam! @requireRole(roles: ["admin", "superadmin"])
@@ -20605,7 +20605,7 @@ func (ec *executionContext) _Mutation_assignTeamLead(ctx context.Context, field 
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "church_admin", "team_lead"})
 				if err != nil {
 					var zeroVal *model.Team
 					return zeroVal, err
