@@ -42,6 +42,10 @@
       "perfect": "Perfekt."
     }
   },
+  "challenges": {
+    "active": "Aktiv",
+    "completed": "Abgeschlossen"
+  },
   "pages": {
     "standings": "Bestenlisten",
     "challenges": "Herausforderungen",
@@ -165,7 +169,19 @@
       "administrators": "Administratoren",
       "unitsAndPeople": "Units und Personen",
       "gameNights": "Game Nights",
-      "comingSoon": "Kommt bald"
+      "comingSoon": "Kommt bald",
+      "kickOff": "Kick-Off",
+      "kickOffButton": "Unit-Onboarding jetzt starten",
+      "kickOffOnboardingDescription": "Diese Aktion startet das Unit-Onboarding für die ganze Ortsgemeinde.",
+      "kickOffOnboardingDescriptionWarning": "⚠ Nicht starten, wenn ihr noch nicht bereit seid.",
+      "kickOffOnboardingExplanationTitle": "Was passiert, wenn du startest?",
+      "kickOffOnboardingExplanation1": "Alle Unit-Leiter in der Ortsgemeinde bekommen eine Herausforderung in Interact (Web-App).",
+      "kickOffOnboardingExplanation2": "Sie können den Unit-Namen ändern – und erhalten dafür 300 Punkte.",
+      "kickOffConfirmation": "Ich bestätige, dass der Kick-off jetzt durchgeführt wird und wir bereit sind, loszulegen.",
+      "kickOffOnboardingCountdown": "Start in {seconds} Sekunde | Start in {seconds} Sekunden",
+      "kickOffSuccessTitle": "Das Unit-Onboarding läuft!",
+      "kickOffSuccessDescription": "Alle Unit-Leiter haben jetzt eine Aufgabe in der App erhalten und können den Namen ihrer Unit ändern.",
+      "noAccess": "Du kannst diese Seite nicht aufrufen, weil du kein Administrator bist. Frage einen anderen Admin, ob er dir Zugriff geben kann."
     },
     "admins": {
       "searchPlaceholder": "Such nach Admins...",

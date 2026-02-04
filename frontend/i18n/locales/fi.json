@@ -1,6 +1,11 @@
 {
   "error": {
-    "title": "Hups! Jotain meni pieleen"
+    "title": "Hups! Jotain meni pieleen",
+    "hint": "Yritä uudelleen. Jos ongelma jatkuu, yritä päivittää sivu.",
+    "networkHint": "Näyttää siltä, että sinulla on yhteysongelmia. Tarkista internetyhteytesi ja yritä uudelleen.",
+    "retry": "Yritä uudelleen",
+    "showDetails": "Näytä tekniset tiedot",
+    "hideDetails": "Piilota tekniset tiedot"
   },
   "emptyStates": {
     "standings": "Ei vielä top-listaa",
@@ -17,10 +22,18 @@
     "correctAnswer": "Oikea vastaus",
     "yourAnswer": "Vastauksesi",
     "lockAnswer": "Lukitse vastaus",
+    "saveAnswer": "Tallenna vastaus",
+    "changeAnswer": "Muuta vastausta",
     "questionNumber": "{current} / {total}",
     "continue": "Jatka",
     "nextQuestion": "Seuraava kysymys",
+    "previousQuestion": "Edellinen",
     "done": "Valmis",
+    "unavailable": "Tämä tietokilpailu ei ole tällä hetkellä käytettävissä.",
+    "reviewAnswers": "Katso vastaus",
+    "finishReview": "Lopeta läpikäynti",
+    "yourNumber": "Sinun numerosi",
+    "writeYourAnswer": "Kirjoita vastauksesi...",
     "result": {
       "receivedNoPoints": "Et saanut yhtään pistettä.",
       "receivedPoints": "Sait {points} pistettä.",
@@ -28,6 +41,10 @@
       "wellDone": "Hyvin tehty!",
       "perfect": "Täydellistä!"
     }
+  },
+  "challenges": {
+    "active": "Aktiivisia",
+    "completed": "Valmiita"
   },
   "pages": {
     "standings": "Top-listat",
@@ -117,11 +134,139 @@
     "thankYouDescription": "Palautteesi käytetään palvelun kehittämiseen.",
     "close": "Eipä kestä",
     "canContactMe": "Kyllä, hyväksyn, että voitte ottaa minuun yhteyttä palautteeseeni liittyen",
-    "regards": "Terveisin {name}"
+    "disclosure": "Palaute liitetään käyttäjätiliisi."
   },
   "pwa": {
     "updateAvailableTitle": "Päivitys on saatavilla",
     "updateAvailableButton": "Päivitä nyt"
   },
-  "goToHiddenTreasures": "Mene raamattutunnille"
+  "notifications": {
+    "promptTitle": "Huomaa kaikki palkintosi, ota ilmoitukset käyttöön",
+    "promptDescription": "Saat ilmoituksen aina, kun saat uuden palkinnon tai haasteen.",
+    "turnOn": "Ota ilmoitukset käyttöön",
+    "notNow": "Ei nyt"
+  },
+  "goToHiddenTreasures": "Mene raamattutunnille",
+  "gameNights": {
+    "yourCode": "Game Night -pelin yksikkökoodisi",
+    "yourCodeHint": "Avaa sivu tietokoneellasi ja syötä koodi."
+  },
+  "admin": {
+    "common": {
+      "back": "Takaisin",
+      "cancel": "Peruuta",
+      "save": "Tallenna",
+      "create": "Luo",
+      "delete": "Poista",
+      "deleteAll": "Poista kaikki",
+      "copyLink": "Kopioi linkki hallintasivulle",
+      "linkCopied": "Linkki kopioitu"
+    },
+    "breadcrumb": {
+      "home": "Etusivu"
+    },
+    "churchHome": {
+      "administrators": "Ylläpitäjät",
+      "unitsAndPeople": "Yksiköt ja henkilöt",
+      "gameNights": "Game Nights",
+      "comingSoon": "Tulossa pian",
+      "kickOff": "Kick-off",
+      "kickOffButton": "Aloita yksikköjen perehdytys",
+      "kickOffOnboardingDescription": "Tämä toimenpide käynnistää yksikön perehdyttämisen koko paikallisessa seurakunnassa.",
+      "kickOffOnboardingDescriptionWarning": "⚠ Älä aloita, jos ette ole valmiina.",
+      "kickOffOnboardingExplanationTitle": "Mitä tapahtuu, kun aloitat?",
+      "kickOffOnboardingExplanation1": "Kaikki paikallisseurakunnan yksikönjohtajat saavat haasteen Interact-sovelluksessa (verkkosovellus).",
+      "kickOffOnboardingExplanation2": "He voivat nimetä yksikön uudelleen – ja saavat siitä 300 pistettä.",
+      "kickOffConfirmation": "Vahvistan, että kick-off on nyt käynnissä ja että olemme valmiita aloittamaan.",
+      "kickOffOnboardingCountdown": "Käynnistyy {seconds} sekunnin kuluttua | Käynnistyy {seconds} sekunnin kuluttua",
+      "kickOffSuccessTitle": "Yksikön perehdytys on käynnissä!",
+      "kickOffSuccessDescription": "Kaikille yksikön johtajille on nyt annettu tehtävä sovelluksessa, ja he voivat muuttaa yksikkönsä nimen.",
+      "noAccess": "Sinulla ei ole pääsyä tälle sivulle, koska et ole ylläpitäjä. Pyydä toista ylläpitäjää myöntämään sinulle käyttöoikeudet."
+    },
+    "admins": {
+      "searchPlaceholder": "Etsi ylläpitäjiä...",
+      "addPlaceholder": "Lisää ylläpitäjä...",
+      "you": "Sinä",
+      "noAdminsFound": "Ylläpitäjä ei löytynyt",
+      "confirmRemove": {
+        "title": "Poista ylläpitäjä?",
+        "message": "Haluatko varmasti poistaa {name} ylläpitäjistä?",
+        "confirm": "Poista"
+      },
+      "success": {
+        "added": "Ylläpitäjä lisätty",
+        "removed": "Ylläpitäjä poistettu"
+      },
+      "errors": {
+        "addFailed": "Ylläpitäjää ei voitu lisätä",
+        "removeFailed": "Ylläpitäjä ei voitu poistaa"
+      },
+      "copyLinkDescription": "Jaa linkki muiden ylläpitäjien kanssa"
+    },
+    "units": {
+      "title": "Yksiköt",
+      "people": "Henkilöt",
+      "filter": {
+        "title": "Suodata",
+        "all": "Kaikki",
+        "notInUnit": "Ei yksikössä",
+        "inUnit": "Yksikössä",
+        "showO36": "Näytä yli 36-vuotiaat henkilöt",
+        "showO36Description": "Yli 36-vuotiaat henkilöt eivät ole mukana kärkikymmenikössä eivätkä osallistu nuorten kilpailuun."
+      },
+      "searchPlaceholder": "Etsi yksiköitä tai henkilöitä...",
+      "searchPeoplePlaceholder": "Etsi ihmisiä...",
+      "expandAll": "Laajenna kaikki yksiköt",
+      "createOneUnit": "Luo yksi yksikkö",
+      "createMultipleUnits": "Luo useita yksiköitä",
+      "namePlaceholder": "Yksikön nimi (valinnainen)",
+      "selectAll": "Valitse kaikki",
+      "noActiveProject": "Ei aktiivista kilpailua",
+      "noUnitsFound": "Yksiköitä ei löytynyt",
+      "noPeopleFound": "Henkilöitä ei löytynyt",
+      "years": "{years} vuosi",
+      "selectedCount": "{count} yksikkö valittu | {count} yksikköä valittu",
+      "deleteSelected": "Poista valitut",
+      "bulkCreate": {
+        "countLabel": "Yksiköiden lukumäärä",
+        "autoGenerateInfo": "Yksiköiden nimet luodaan automaattisesti, ja niitä voidaan muuttaa myöhemmin."
+      },
+      "confirmDelete": {
+        "title": "Poista yksikkö?",
+        "message": "Haluatko varmasti poistaa {name}:n? Kaikki jäsenet poistetaan yksiköstä."
+      },
+      "confirmBulkDelete": {
+        "title": "Poista useita yksiköitä?",
+        "message": "Haluatko varmasti poistaa {count} yksikköä? Kaikki jäsenet poistetaan näistä yksiköistä."
+      },
+      "success": {
+        "created": "Yksikkö luotu",
+        "bulkCreated": "{count} yksikköä luotu",
+        "deleted": "Yksikkö poistettu",
+        "bulkDeleted": "{count} yksikköä poistettu"
+      },
+      "errors": {
+        "createFailed": "Yksikköä ei voitu luoda",
+        "bulkCreateFailed": "Yksikköjä ei voitu luoda",
+        "addMemberFailed": "Jäsentä ei voitu lisätä",
+        "removeMemberFailed": "Jäsentä ei voitu poistaa",
+        "assignLeaderFailed": "Johtajaa ei voitu asettaa",
+        "deleteFailed": "Yksikköä ei voitu poistaa",
+        "bulkDeleteFailed": "Yksikköjä ei voitu poistaa",
+        "renameFailed": "Yksikön nimeä ei voitu muuttaa",
+        "exclusionToggleFailed": "Ei voitu muuttaa näkyvyyttä listoilla"
+      },
+      "ageWarning": "Tämän yksikön keski-ikä on yli 36 vuotta, joten se ei tule näkyviin suosituimpien listojen kärjessä eikä osallistu nuorten kilpailuun. Jos tämä on virheellinen tieto ja yksikkö osallistuu nuorten kilpailuun, ilmoittakaa siitä meille osoitteeseen {email}"
+    },
+    "unit": {
+      "noLeaderSelected": "Johtajaa ei valittu",
+      "members": "{count} henkilö | {count} henkilöä",
+      "makeLead": "Tee johtajaksi",
+      "dragPeopleHere": "Ei jäseniä - vedä henkilö tähän",
+      "addPersonPlaceholder": "Lisää henkilö...",
+      "excludeFromLeaderboard": "Piilota listoilta",
+      "excludeFromLeaderboardTooltip": "Kun tämä on aktivoitu, ei yksikkö näy tuloslistoilla.",
+      "excludedFromLeaderboard": "Piilotettu listoilta"
+    }
+  }
 }

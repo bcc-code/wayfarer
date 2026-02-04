@@ -42,6 +42,10 @@
       "perfect": "Perfect!"
     }
   },
+  "challenges": {
+    "active": "Active",
+    "completed": "Terminat"
+  },
   "pages": {
     "standings": "Clasamente",
     "challenges": "Provocări",
@@ -165,7 +169,15 @@
       "administrators": "Administratori",
       "unitsAndPeople": "Unități și persoane",
       "gameNights": "Game Nights",
-      "comingSoon": "Apare în curând"
+      "comingSoon": "Apare în curând",
+      "kickOff": "Kick-off",
+      "kickOffDescription": "Această pagină este destinată utilizării numai în timpul kick-off-ului. Dacă nu participați la kick-off în acest moment, vă rugăm să părăsiți această pagină.",
+      "kickOffButton": "Start unit-onboarding",
+      "kickOffOnboardingDescription": "Când începeți unit-onboarding, tuturor liderilor de unitate din biserica voastră locală li se va da sarcina de a schimba numele unității lor.",
+      "kickOffConfirmation": "Confirm că în acest moment participăm la kick-off și că suntem pregătiți să începem unit-onboarding.",
+      "kickOffOnboardingCountdown": "Începe în {seconds} secunde | Începe în {seconds} secunde",
+      "kickOffSuccessTitle": "Unit-onboarding este în curs de desfășurare!",
+      "kickOffSuccessDescription": "Toți liderii de unități au primit acum o sarcină în aplicație și pot schimba numele unității lor."
     },
     "admins": {
       "searchPlaceholder": "Caută administratori...",
