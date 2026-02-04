@@ -171,13 +171,17 @@
       "gameNights": "Game Nights",
       "comingSoon": "Tulossa pian",
       "kickOff": "Kick-off",
-      "kickOffDescription": "Tämä sivu on tarkoitettu käytettäväksi vain kick-offissa. Jos ette ole pitämässä kick-offia tällä hetkellä, poistu tältä sivulta.",
       "kickOffButton": "Aloita yksikköjen perehdytys",
-      "kickOffOnboardingDescription": "Kun aloitat yksikön perehdyttämisen, kaikki paikallisen seurakuntasi yksikön johtajat saavat tehtäväkseen muuttaa yksikkönsä nimen.",
-      "kickOffConfirmation": "Vahvistan, että aloitamme nyt projektin ja olemme valmiita aloittamaan yksikköjen perehdyttämisen.",
+      "kickOffOnboardingDescription": "Tämä toimenpide käynnistää yksikön perehdyttämisen koko paikallisessa seurakunnassa.",
+      "kickOffOnboardingDescriptionWarning": "⚠ Älä aloita, jos ette ole valmiina.",
+      "kickOffOnboardingExplanationTitle": "Mitä tapahtuu, kun aloitat?",
+      "kickOffOnboardingExplanation1": "Kaikki paikallisseurakunnan yksikönjohtajat saavat haasteen Interact-sovelluksessa (verkkosovellus).",
+      "kickOffOnboardingExplanation2": "He voivat nimetä yksikön uudelleen – ja saavat siitä 300 pistettä.",
+      "kickOffConfirmation": "Vahvistan, että kick-off on nyt käynnissä ja että olemme valmiita aloittamaan.",
       "kickOffOnboardingCountdown": "Käynnistyy {seconds} sekunnin kuluttua | Käynnistyy {seconds} sekunnin kuluttua",
       "kickOffSuccessTitle": "Yksikön perehdytys on käynnissä!",
-      "kickOffSuccessDescription": "Kaikille yksikön johtajille on nyt annettu tehtävä sovelluksessa, ja he voivat muuttaa yksikkönsä nimen."
+      "kickOffSuccessDescription": "Kaikille yksikön johtajille on nyt annettu tehtävä sovelluksessa, ja he voivat muuttaa yksikkönsä nimen.",
+      "noAccess": "Sinulla ei ole pääsyä tälle sivulle, koska et ole ylläpitäjä. Pyydä toista ylläpitäjää myöntämään sinulle käyttöoikeudet."
     },
     "admins": {
       "searchPlaceholder": "Etsi ylläpitäjiä...",
