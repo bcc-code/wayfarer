@@ -109,13 +109,14 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
 }
 
 async function handleSubmit(formData: ChallengeFormData) {
-  const { type, allowSelfCompletion, url, quiz, pluginChallengeId, ...rest } =
+  const { type, allowSelfCompletion, url, quiz, publishedAt, pluginChallengeId, ...rest } =
     formData
 
   // Only include type-specific fields
   const input = {
     ...rest,
     type,
+    publishedAt: publishedAt ? toISOString(publishedAt) : undefined,
     ...(type === ChallengeType.Simple && { allowSelfCompletion }),
     ...(type === ChallengeType.External && { url }),
     ...(type === ChallengeType.Plugin && { pluginChallengeId }),

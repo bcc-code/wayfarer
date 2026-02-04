@@ -8341,6 +8341,7 @@ input CreateChallengeInput {
     description: HTML
     image: String
     buttonText: String            # Required for all types except PLUGIN
+    publishedAt: DateTime         # Optional, defaults to NOW() if not provided
     visibleAt: DateTime
     endTime: DateTime
     requiresTeamMembership: Boolean
@@ -8357,6 +8358,7 @@ input UpdateChallengeInput {
     image: String
     eventId: ID
     buttonText: String
+    publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
     endTime: DateTime
@@ -46766,7 +46768,7 @@ func (ec *executionContext) unmarshalInputCreateChallengeInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"type", "name", "description", "image", "buttonText", "visibleAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership", "allowSelfCompletion", "url", "pluginChallengeId"}
+	fieldsInOrder := [...]string{"type", "name", "description", "image", "buttonText", "publishedAt", "visibleAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership", "allowSelfCompletion", "url", "pluginChallengeId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -46808,6 +46810,13 @@ func (ec *executionContext) unmarshalInputCreateChallengeInput(ctx context.Conte
 				return it, err
 			}
 			it.ButtonText = data
+		case "publishedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedAt"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PublishedAt = data
 		case "visibleAt":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("visibleAt"))
 			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
@@ -49524,7 +49533,7 @@ func (ec *executionContext) unmarshalInputUpdateChallengeInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "eventId", "buttonText", "visibleAt", "startedAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership", "allowSelfCompletion", "url", "pluginChallengeId"}
+	fieldsInOrder := [...]string{"name", "description", "image", "eventId", "buttonText", "publishedAt", "visibleAt", "startedAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership", "allowSelfCompletion", "url", "pluginChallengeId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -49566,6 +49575,13 @@ func (ec *executionContext) unmarshalInputUpdateChallengeInput(ctx context.Conte
 				return it, err
 			}
 			it.ButtonText = data
+		case "publishedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedAt"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PublishedAt = data
 		case "visibleAt":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("visibleAt"))
 			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)

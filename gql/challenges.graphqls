@@ -122,6 +122,7 @@ input CreateChallengeInput {
     description: HTML
     image: String
     buttonText: String            # Required for all types except PLUGIN
+    publishedAt: DateTime         # Optional, defaults to NOW() if not provided
     visibleAt: DateTime
     endTime: DateTime
     requiresTeamMembership: Boolean
@@ -138,6 +139,7 @@ input UpdateChallengeInput {
     image: String
     eventId: ID
     buttonText: String
+    publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
     endTime: DateTime

@@ -16,6 +16,7 @@ gql(`
       description
       image
       buttonText
+      publishedAt
       visibleAt
       startedAt
       endTime
@@ -114,6 +115,7 @@ const initialData = computed(() => {
     image: c.image ?? undefined,
     url: c.__typename === 'ExternalChallenge' ? c.url : undefined,
     buttonText: c.buttonText,
+    publishedAt: toLocalDatetimeLocal(c.publishedAt),
     endTime: toLocalDatetimeLocal(c.endTime),
     visibleAt: toLocalDatetimeLocal(c.visibleAt),
     startedAt: toLocalDatetimeLocal(c.startedAt),
@@ -329,6 +331,7 @@ async function handleSubmit(formData: ChallengeFormData) {
     allowSelfCompletion,
     url,
     quiz,
+    publishedAt,
     endTime,
     visibleAt,
     startedAt,
@@ -339,6 +342,7 @@ async function handleSubmit(formData: ChallengeFormData) {
   // Only include type-specific fields
   const input = {
     ...rest,
+    publishedAt: toISOString(publishedAt),
     endTime: toISOString(endTime),
     visibleAt: toISOString(visibleAt),
     startedAt: toISOString(startedAt),

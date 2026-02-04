@@ -311,6 +311,7 @@ type CreateChallengeInput struct {
 	Description                 *scalars.HTML     `json:"description,omitempty"`
 	Image                       *string           `json:"image,omitempty"`
 	ButtonText                  *string           `json:"buttonText,omitempty"`
+	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
 	RequiresTeamMembership      *bool             `json:"requiresTeamMembership,omitempty"`
@@ -1644,6 +1645,7 @@ type UpdateChallengeInput struct {
 	Image                       *string           `json:"image,omitempty"`
 	EventID                     *string           `json:"eventId,omitempty"`
 	ButtonText                  *string           `json:"buttonText,omitempty"`
+	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
 	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`

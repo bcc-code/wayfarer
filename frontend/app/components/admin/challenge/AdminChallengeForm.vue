@@ -11,6 +11,7 @@ const props = defineProps<{
     image?: string
     url?: string
     buttonText: string
+    publishedAt?: string
     endTime?: string
     visibleAt?: string
     startedAt?: string
@@ -36,6 +37,7 @@ export interface ChallengeFormData {
   image?: string
   url?: string
   buttonText?: string
+  publishedAt?: string
   endTime?: string
   visibleAt?: string
   startedAt?: string
@@ -52,6 +54,7 @@ const schema = z
     image: z.string().optional(),
     url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
     buttonText: z.string().optional(),
+    publishedAt: z.string().optional(),
     endTime: z.string().optional(),
     visibleAt: z.string().optional(),
     startedAt: z.string().optional(),
@@ -86,6 +89,7 @@ const state = reactive<Schema>({
   image: props.initialData?.image,
   url: props.initialData?.url,
   buttonText: props.initialData?.buttonText ?? '',
+  publishedAt: props.initialData?.publishedAt,
   endTime: props.initialData?.endTime,
   visibleAt: props.initialData?.visibleAt,
   startedAt: props.initialData?.startedAt,
@@ -106,6 +110,7 @@ watch(
       state.image = data.image
       state.url = data.url
       state.buttonText = data.buttonText
+      state.publishedAt = data.publishedAt
       state.endTime = data.endTime
       state.visibleAt = data.visibleAt
       state.startedAt = data.startedAt
@@ -222,6 +227,19 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             v-model="state.buttonText"
             size="xl"
             :required="state.type !== ChallengeType.Plugin"
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField
+          name="publishedAt"
+          label="Publiseringstidspunkt"
+          hint="(valgfritt - standard: nå)"
+          help="Når utfordringen blir tilgjengelig for brukere"
+        >
+          <UInput
+            v-model="state.publishedAt"
+            type="datetime-local"
+            size="xl"
             class="w-full"
           />
         </UFormField>

@@ -87,6 +87,9 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 	}
 
 	// Set optional timestamps
+	if input.PublishedAt != nil {
+		params.Publishedat = pgtype.Timestamptz{Time: input.PublishedAt.Time, Valid: true}
+	}
 	if input.VisibleAt != nil {
 		params.Visibleat = pgtype.Timestamptz{Time: input.VisibleAt.Time, Valid: true}
 	}
@@ -175,6 +178,9 @@ func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input
 	params.Buttontext = input.ButtonText
 
 	// Set optional timestamps
+	if input.PublishedAt != nil {
+		params.Publishedat = pgtype.Timestamptz{Time: input.PublishedAt.Time, Valid: true}
+	}
 	if input.VisibleAt != nil {
 		params.Visibleat = pgtype.Timestamptz{Time: input.VisibleAt.Time, Valid: true}
 	}

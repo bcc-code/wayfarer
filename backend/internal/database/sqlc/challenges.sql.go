@@ -351,7 +351,7 @@ VALUES (
     $7::text,
     $8::text,
     $9::text,
-    $10::timestamptz,
+    COALESCE($10::timestamptz, now()),
     $11::timestamptz,
     $12::timestamptz,
     COALESCE($13::bool, true),
@@ -1066,15 +1066,16 @@ SET
     url = COALESCE($4::text, url),
     button_text = COALESCE($5::text, button_text),
     event_id = COALESCE($6::text, event_id),
-    visible_at = COALESCE($7::timestamptz, visible_at),
-    started_at = COALESCE($8::timestamptz, started_at),
-    end_time = COALESCE($9::timestamptz, end_time),
-    allow_self_completion = COALESCE($10::bool, allow_self_completion),
-    requires_team_membership = COALESCE($11::bool, requires_team_membership),
-    requires_super_team_membership = COALESCE($12::bool, requires_super_team_membership),
-    plugin_challenge_id = COALESCE($13::text, plugin_challenge_id),
+    published_at = COALESCE($7::timestamptz, published_at),
+    visible_at = COALESCE($8::timestamptz, visible_at),
+    started_at = COALESCE($9::timestamptz, started_at),
+    end_time = COALESCE($10::timestamptz, end_time),
+    allow_self_completion = COALESCE($11::bool, allow_self_completion),
+    requires_team_membership = COALESCE($12::bool, requires_team_membership),
+    requires_super_team_membership = COALESCE($13::bool, requires_super_team_membership),
+    plugin_challenge_id = COALESCE($14::text, plugin_challenge_id),
     updated_at = now()
-WHERE id = $14::text
+WHERE id = $15::text
 RETURNING id, project_id, event_id, challenge_type, name, description, image_url, url, button_text, published_at, visible_at, started_at, end_time, allow_self_completion, requires_team_membership, requires_super_team_membership, plugin_challenge_id, created_at, updated_at
 `
 
@@ -1085,6 +1086,7 @@ type UpdateChallengeParams struct {
 	Url                         *string            `json:"url"`
 	Buttontext                  *string            `json:"buttontext"`
 	Eventid                     *string            `json:"eventid"`
+	Publishedat                 pgtype.Timestamptz `json:"publishedat"`
 	Visibleat                   pgtype.Timestamptz `json:"visibleat"`
 	Startedat                   pgtype.Timestamptz `json:"startedat"`
 	Endtime                     pgtype.Timestamptz `json:"endtime"`
@@ -1125,6 +1127,7 @@ func (q *Queries) UpdateChallenge(ctx context.Context, arg UpdateChallengeParams
 		arg.Url,
 		arg.Buttontext,
 		arg.Eventid,
+		arg.Publishedat,
 		arg.Visibleat,
 		arg.Startedat,
 		arg.Endtime,
