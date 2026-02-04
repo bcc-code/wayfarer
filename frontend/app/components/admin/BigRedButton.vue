@@ -31,8 +31,8 @@ defineProps<{
 }
 
 .button-base {
-  width: 200px;
-  height: 200px;
+  width: 250px;
+  height: 250px;
   border-radius: 50%;
   background: linear-gradient(180deg, #94a3b8 0%, #64748b 40%, #475569 100%);
   display: flex;
@@ -57,8 +57,8 @@ defineProps<{
 .button-dome {
   position: relative;
   z-index: 1;
-  width: 150px;
-  height: 150px;
+  width: 200px;
+  height: 200px;
   border-radius: 50%;
   border: none;
   cursor: pointer;

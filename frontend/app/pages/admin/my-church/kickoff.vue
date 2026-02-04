@@ -97,30 +97,36 @@ const { isActive, start, stop, remaining } = useCountdown(5, {
         <h2 key="title" class="text-3xl font-semibold">
           {{ $t('admin.churchHome.kickOff') }}
         </h2>
-        <p key="description">{{ $t('admin.churchHome.kickOffDescription') }}</p>
+        <p key="description">
+          {{ $t('admin.churchHome.kickOffOnboardingDescription') }}
+          <br />
+          {{ $t('admin.churchHome.kickOffOnboardingDescriptionWarning') }}
+        </p>
 
-        <UAlert
-          key="alert"
-          :title="$t('admin.churchHome.kickOffOnboardingDescription')"
-          color="info"
-          variant="subtle"
-          icon="lucide:info"
-          :ui="{ title: 'text-default' }"
-        />
+        <h3 key="explanation-title" class="text-lg font-bold">
+          {{ $t('admin.churchHome.kickOffOnboardingExplanationTitle') }}
+        </h3>
+        <ul class="list-disc pl-6">
+          <li>{{ $t('admin.churchHome.kickOffOnboardingExplanation1') }}</li>
+          <li>{{ $t('admin.churchHome.kickOffOnboardingExplanation2') }}</li>
+        </ul>
 
-        <USwitch
+        <UCheckbox
           key="switch"
           v-model="readyToLaunch"
           :label="$t('admin.churchHome.kickOffConfirmation')"
-          :ui="{ label: 'text-base' }"
+          :ui="{
+            label: 'text-base font-normal',
+            base: 'size-5 ring-current rounded-none',
+          }"
           class="my-4"
         />
+
         <div
-          v-if="readyToLaunch"
           key="button"
           :class="[
             'flex gap-8 items-center',
-            { 'opacity-50 pointer-events-none': hasLaunched },
+            { 'opacity-50 pointer-events-none': !readyToLaunch || hasLaunched },
           ]"
         >
           <BigRedButton
@@ -143,6 +149,7 @@ const { isActive, start, stop, remaining } = useCountdown(5, {
             </UButton>
           </div>
         </div>
+
         <UAlert
           v-if="hasLaunched"
           key="success"
