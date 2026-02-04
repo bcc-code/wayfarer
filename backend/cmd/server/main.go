@@ -491,12 +491,15 @@ func main() {
 		ChurchResolver:            churchResolver,
 		AuthHandler:               authHandler,
 		ContentAchievementService: contentAchievementService,
+		SSFClient:                 ssfClient,
 	}
 	router.POST("/api/maintenance/sync-user-data", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncUserData)
 	router.POST("/api/maintenance/sync-user/:user_id", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncSingleUser)
+	router.POST("/api/maintenance/backfill-ssf-events", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.BackfillSSFEvents)
 	slog.Info("Maintenance endpoints registered",
 		"batch_sync", "POST /api/maintenance/sync-user-data",
 		"single_sync", "POST /api/maintenance/sync-user/:user_id",
+		"backfill_ssf", "POST /api/maintenance/backfill-ssf-events",
 	)
 
 	// Quiz scheduler handler for timed session state transitions

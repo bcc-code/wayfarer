@@ -195,3 +195,10 @@ WHERE id = @id::text;
 UPDATE users
 SET church_locked_until = NULL, updated_at = now()
 WHERE id = @id::text;
+
+-- name: GetUsersByPersonUUIDs :many
+SELECT id, members_id, person_uuid, gender, church_id, church_locked_until,
+       birthdate, email, name, first_name, last_name, middle_name, display_name,
+       avatar_url, language, created_at
+FROM users
+WHERE person_uuid = ANY(@person_uuids::uuid[]);

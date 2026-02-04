@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// GetMonthlyContentEvents fetches content events for a given month with pagination
+// GetMonthlyContentEvents fetches content events for a given month with pagination.
 func (c *Client) GetMonthlyContentEvents(ctx context.Context, year int, month int, page int) (*ContentEventsResponse, error) {
 	endpoint := fmt.Sprintf("/v1/bcc/content-events/monthly?year=%d&month=%d&page=%d", year, month, page)
 

@@ -366,6 +366,70 @@ func (q *Queries) GetUsersByIDs(ctx context.Context, ids []string) ([]*GetUsersB
 	return items, nil
 }
 
+const GetUsersByPersonUUIDs = `-- name: GetUsersByPersonUUIDs :many
+SELECT id, members_id, person_uuid, gender, church_id, church_locked_until,
+       birthdate, email, name, first_name, last_name, middle_name, display_name,
+       avatar_url, language, created_at
+FROM users
+WHERE person_uuid = ANY($1::uuid[])
+`
+
+type GetUsersByPersonUUIDsRow struct {
+	ID                string             `json:"id"`
+	MembersID         string             `json:"members_id"`
+	PersonUuid        pgtype.UUID        `json:"person_uuid"`
+	Gender            string             `json:"gender"`
+	ChurchID          string             `json:"church_id"`
+	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
+	Birthdate         pgtype.Date        `json:"birthdate"`
+	Email             string             `json:"email"`
+	Name              string             `json:"name"`
+	FirstName         *string            `json:"first_name"`
+	LastName          *string            `json:"last_name"`
+	MiddleName        *string            `json:"middle_name"`
+	DisplayName       *string            `json:"display_name"`
+	AvatarUrl         *string            `json:"avatar_url"`
+	Language          string             `json:"language"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetUsersByPersonUUIDs(ctx context.Context, personUuids []pgtype.UUID) ([]*GetUsersByPersonUUIDsRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersByPersonUUIDs, personUuids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUsersByPersonUUIDsRow{}
+	for rows.Next() {
+		var i GetUsersByPersonUUIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MembersID,
+			&i.PersonUuid,
+			&i.Gender,
+			&i.ChurchID,
+			&i.ChurchLockedUntil,
+			&i.Birthdate,
+			&i.Email,
+			&i.Name,
+			&i.FirstName,
+			&i.LastName,
+			&i.MiddleName,
+			&i.DisplayName,
+			&i.AvatarUrl,
+			&i.Language,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUsersBySuperTeamIDCursor = `-- name: GetUsersBySuperTeamIDCursor :many
 WITH distinct_user_ids AS (
     SELECT DISTINCT u.id
