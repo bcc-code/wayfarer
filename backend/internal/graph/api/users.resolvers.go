@@ -38,6 +38,32 @@ func (r *mutationResolver) AssignUserToEvent(ctx context.Context, userID string,
 	panic(fmt.Errorf("not implemented: AssignUserToEvent - assignUserToEvent"))
 }
 
+// SyncUser is the resolver for the syncUser field.
+func (r *mutationResolver) SyncUser(ctx context.Context, userID string) (*model.SyncUserResult, error) {
+	if r.UserSyncService == nil {
+		return nil, fmt.Errorf("user sync service not configured")
+	}
+
+	result, err := r.UserSyncService.SyncUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, userID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user after sync: %w", err)
+	}
+
+	return &model.SyncUserResult{
+		User:                   user,
+		ContentEventsProcessed: result.ContentEventsProcessed,
+		GenderUpdated:          result.GenderUpdated,
+		ChurchUpdated:          result.ChurchUpdated,
+		PersonUUIDUpdated:      result.PersonUUIDUpdated,
+	}, nil
+}
+
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
 	// Get current user ID from context

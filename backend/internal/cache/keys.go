@@ -82,6 +82,9 @@ const (
 	PrefixUserConsents   = "userconsents:"
 	PrefixLatestConsents = "latestconsents"
 
+	// Reverse lookups
+	PrefixUserByPersonUUID = "user:personuuid:"
+
 	// External content
 	PrefixExternalContent        = "externalcontent:"
 	PrefixExternalContentsFilter = "externalcontentsfilter:"
@@ -97,6 +100,11 @@ const (
 // UserKey builds a cache key for a user by ID
 func UserKey(userID string) string {
 	return PrefixUser + userID
+}
+
+// UserByPersonUUIDKey builds a cache key for looking up a user by person UUID
+func UserByPersonUUIDKey(personUUID string) string {
+	return PrefixUserByPersonUUID + personUUID
 }
 
 // ChurchKey builds a cache key for a church by ID
@@ -209,6 +217,11 @@ func AchievementsByProjectKey(projectID string) string {
 // ContentItemsByAchievementKey builds a cache key for content items by achievement ID
 func ContentItemsByAchievementKey(achievementID string) string {
 	return fmt.Sprintf("%s:items:%s", PrefixAchievement, achievementID)
+}
+
+// ContentItemCountKey builds a cache key for content item count by achievement ID
+func ContentItemCountKey(achievementID string) string {
+	return fmt.Sprintf("%s:itemcount:%s", PrefixAchievement, achievementID)
 }
 
 // UserContentProgressKey builds a cache key for user content progress

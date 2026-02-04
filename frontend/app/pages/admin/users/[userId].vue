@@ -116,6 +116,27 @@ gql(`
 	}
 `)
 
+gql(`
+	mutation SyncUser($userId: ID!) {
+		syncUser(userId: $userId) {
+			user {
+				id
+				name
+				gender
+				personUuid
+				church {
+					id
+					name
+				}
+			}
+			contentEventsProcessed
+			genderUpdated
+			churchUpdated
+			personUuidUpdated
+		}
+	}
+`)
+
 const route = useRoute('admin-users-userId')
 
 const { isAuthReady } = useAuthReady()
@@ -135,7 +156,9 @@ const { executeMutation: assignRole } = useAssignRoleMutation()
 const { executeMutation: revokeRole } = useRevokeRoleMutation()
 const { executeMutation: adminSetUserConsent } =
   useAdminSetUserConsentMutation()
+const { executeMutation: syncUserMutation } = useSyncUserMutation()
 const toast = useToast()
+const syncing = ref(false)
 
 // Permissions
 const { canAssignRoles } = usePermissions()
@@ -272,6 +295,41 @@ async function handleRemoveConsent() {
   refetch()
 }
 
+async function handleSyncUser() {
+  syncing.value = true
+  const result = await syncUserMutation({
+    userId: route.params.userId,
+  })
+  syncing.value = false
+
+  if (result.error) {
+    toast.add({
+      title: 'Synkronisering feilet',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  const syncResult = result.data?.syncUser
+  const details: string[] = []
+  if (syncResult) {
+    if (syncResult.contentEventsProcessed > 0)
+      details.push(`${syncResult.contentEventsProcessed} innholdseventer`)
+    if (syncResult.genderUpdated) details.push('kjønn oppdatert')
+    if (syncResult.churchUpdated) details.push('menighet oppdatert')
+    if (syncResult.personUuidUpdated) details.push('person-UUID oppdatert')
+  }
+
+  toast.add({
+    title: 'Synkronisering fullført',
+    description: details.length > 0 ? details.join(', ') : 'Ingen endringer',
+    color: 'success',
+  })
+
+  refetch({ requestPolicy: 'network-only' })
+}
+
 // Score journal helpers
 const scoreEntries = computed(
   () => data.value?.adminScoreJournal.edges.map((edge) => edge.node) ?? [],
@@ -320,9 +378,19 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
       <ErrorState v-else-if="error" :error />
       <div v-else-if="data" class="space-y-6">
         <!-- User Header -->
-        <div>
-          <h1 class="text-3xl font-bold">{{ data.user.name }}</h1>
-          <p class="text-dimmed text-lg">{{ data.user.email }}</p>
+        <div class="flex items-start justify-between">
+          <div>
+            <h1 class="text-3xl font-bold">{{ data.user.name }}</h1>
+            <p class="text-dimmed text-lg">{{ data.user.email }}</p>
+          </div>
+          <UButton
+            icon="i-lucide-refresh-cw"
+            variant="soft"
+            :loading="syncing"
+            @click="handleSyncUser"
+          >
+            Synkroniser
+          </UButton>
         </div>
 
         <!-- User Info -->

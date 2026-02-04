@@ -1003,6 +1003,39 @@ func (q *Queries) GetBulkUserContentProgress(ctx context.Context, arg GetBulkUse
 	return items, nil
 }
 
+const GetContentItemCounts = `-- name: GetContentItemCounts :many
+SELECT achievement_id, COUNT(*)::int AS item_count
+FROM content_achievement_items
+WHERE achievement_id = ANY($1::text[])
+GROUP BY achievement_id
+`
+
+type GetContentItemCountsRow struct {
+	AchievementID string `json:"achievement_id"`
+	ItemCount     int32  `json:"item_count"`
+}
+
+// Get content item counts per achievement (for caching)
+func (q *Queries) GetContentItemCounts(ctx context.Context, achievementIds []string) ([]*GetContentItemCountsRow, error) {
+	rows, err := q.db.Query(ctx, GetContentItemCounts, achievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetContentItemCountsRow{}
+	for rows.Next() {
+		var i GetContentItemCountsRow
+		if err := rows.Scan(&i.AchievementID, &i.ItemCount); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetContentItemsByAchievementIDs = `-- name: GetContentItemsByAchievementIDs :many
 SELECT id, achievement_id, external_content_id, sort_order
 FROM content_achievement_items
@@ -1231,6 +1264,39 @@ func (q *Queries) GetUserAchievementTimestamps(ctx context.Context, arg GetUserA
 	return items, nil
 }
 
+const GetUserAwardedAchievementIDs = `-- name: GetUserAwardedAchievementIDs :many
+SELECT achievement_id
+FROM user_achievements
+WHERE user_id = $1::text
+  AND achievement_id = ANY($2::text[])
+`
+
+type GetUserAwardedAchievementIDsParams struct {
+	UserID         string   `json:"user_id"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+// Get which achievements from a list the user already has
+func (q *Queries) GetUserAwardedAchievementIDs(ctx context.Context, arg GetUserAwardedAchievementIDsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetUserAwardedAchievementIDs, arg.UserID, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var achievement_id string
+		if err := rows.Scan(&achievement_id); err != nil {
+			return nil, err
+		}
+		items = append(items, achievement_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUserContentProgress = `-- name: GetUserContentProgress :many
 SELECT user_id, achievement_id, external_content_id, completed_at
 FROM user_content_progress
@@ -1258,6 +1324,45 @@ func (q *Queries) GetUserContentProgress(ctx context.Context, arg GetUserContent
 			&i.ExternalContentID,
 			&i.CompletedAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUserProgressCounts = `-- name: GetUserProgressCounts :many
+SELECT achievement_id, COUNT(*)::int AS progress_count
+FROM user_content_progress
+WHERE user_id = $1::text
+  AND achievement_id = ANY($2::text[])
+GROUP BY achievement_id
+`
+
+type GetUserProgressCountsParams struct {
+	UserID         string   `json:"user_id"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+type GetUserProgressCountsRow struct {
+	AchievementID string `json:"achievement_id"`
+	ProgressCount int32  `json:"progress_count"`
+}
+
+// Get user progress counts per achievement
+func (q *Queries) GetUserProgressCounts(ctx context.Context, arg GetUserProgressCountsParams) ([]*GetUserProgressCountsRow, error) {
+	rows, err := q.db.Query(ctx, GetUserProgressCounts, arg.UserID, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUserProgressCountsRow{}
+	for rows.Next() {
+		var i GetUserProgressCountsRow
+		if err := rows.Scan(&i.AchievementID, &i.ProgressCount); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)

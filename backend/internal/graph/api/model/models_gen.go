@@ -1579,6 +1579,14 @@ type SuperTeamFilter struct {
 	MaxMembers *int     `json:"maxMembers,omitempty"`
 }
 
+type SyncUserResult struct {
+	User                   *User `json:"user"`
+	ContentEventsProcessed int   `json:"contentEventsProcessed"`
+	GenderUpdated          bool  `json:"genderUpdated"`
+	ChurchUpdated          bool  `json:"churchUpdated"`
+	PersonUUIDUpdated      bool  `json:"personUuidUpdated"`
+}
+
 type Team struct {
 	ID                  string             `json:"id"`
 	Name                string             `json:"name"`

@@ -695,6 +695,7 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 	r.Cache.InvalidateProject(contentAch.ProjectID)
 	r.Cache.InvalidateAchievement(id)
 	r.Cache.Delete(cache.ContentItemsByAchievementKey(id))
+	r.Cache.Delete(cache.ContentItemCountKey(id))
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
 	r.Loaders.ContentItemsByAchievementLoader.Clear(ctx, id)
 
@@ -903,7 +904,10 @@ func (r *mutationResolver) DeleteAchievement(ctx context.Context, id string) (bo
 	// Invalidate caches
 	r.Cache.InvalidateProject(projectID)
 	r.Cache.InvalidateAchievement(id)
+	r.Cache.Delete(cache.ContentItemsByAchievementKey(id))
+	r.Cache.Delete(cache.ContentItemCountKey(id))
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
+	r.Loaders.ContentItemsByAchievementLoader.Clear(ctx, id)
 
 	return true, nil
 }
@@ -1096,19 +1100,72 @@ func (r *mutationResolver) MarkContentItemCompleted(ctx context.Context, userID 
 		achievementIDs[i] = row.ID
 	}
 
-	// Get completion status for all achievements in one query
-	completionStatus, err := r.DB.Queries.GetAchievementCompletionStatus(ctx, sqlc.GetAchievementCompletionStatusParams{
+	// Invalidate caches for all achievements
+	for _, id := range achievementIDs {
+		r.Cache.Delete(cache.UserContentProgressKey(userID, id))
+	}
+
+	// Check which achievements user already has - skip completion check for those
+	alreadyAwarded, err := r.DB.Queries.GetUserAwardedAchievementIDs(ctx, sqlc.GetUserAwardedAchievementIDsParams{
 		UserID:         userID,
 		AchievementIds: achievementIDs,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get achievement completion status: %w", err)
+		return nil, fmt.Errorf("failed to check awarded achievements: %w", err)
 	}
 
-	// Build lookup map for completion status
-	statusByAchievement := make(map[string]*sqlc.GetAchievementCompletionStatusRow, len(completionStatus))
-	for _, s := range completionStatus {
-		statusByAchievement[s.AchievementID] = s
+	awardedSet := make(map[string]bool, len(alreadyAwarded))
+	for _, id := range alreadyAwarded {
+		awardedSet[id] = true
+	}
+
+	// Filter to only pending achievements
+	pendingIDs := make([]string, 0, len(achievementIDs))
+	for _, id := range achievementIDs {
+		if !awardedSet[id] {
+			pendingIDs = append(pendingIDs, id)
+		}
+	}
+
+	// Get item counts from cache, fetch missing from DB
+	itemCounts := make(map[string]int32, len(pendingIDs))
+	var uncachedIDs []string
+
+	for _, id := range pendingIDs {
+		if cached, ok := r.Cache.Get(cache.ContentItemCountKey(id)); ok {
+			if count, ok := cached.(int32); ok {
+				itemCounts[id] = count
+				continue
+			}
+		}
+		uncachedIDs = append(uncachedIDs, id)
+	}
+
+	// Fetch uncached item counts from DB
+	if len(uncachedIDs) > 0 {
+		dbCounts, err := r.DB.Queries.GetContentItemCounts(ctx, uncachedIDs)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get content item counts: %w", err)
+		}
+		for _, c := range dbCounts {
+			itemCounts[c.AchievementID] = c.ItemCount
+			r.Cache.Set(cache.ContentItemCountKey(c.AchievementID), c.ItemCount)
+		}
+	}
+
+	// Get progress counts from DB (user-specific, not cached)
+	progressByAchievement := make(map[string]int32)
+	if len(pendingIDs) > 0 {
+		progressCounts, err := r.DB.Queries.GetUserProgressCounts(ctx, sqlc.GetUserProgressCountsParams{
+			UserID:         userID,
+			AchievementIds: pendingIDs,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user progress counts: %w", err)
+		}
+		for _, p := range progressCounts {
+			progressByAchievement[p.AchievementID] = p.ProgressCount
+		}
 	}
 
 	// Convert to model, apply translations, and check for auto-award
@@ -1119,17 +1176,20 @@ func (r *mutationResolver) MarkContentItemCompleted(ctx context.Context, userID 
 		translated := r.ApplyTranslationToAchievement(ctx, contentAch)
 		result = append(result, *translated.(*model.ContentAchievement))
 
-		// Invalidate user-specific caches
-		r.Cache.Delete(cache.UserContentProgressKey(userID, row.ID))
+		// Skip already-awarded achievements
+		if awardedSet[row.ID] {
+			continue
+		}
 
 		// Check if all items are completed and award achievement if so
-		if status := statusByAchievement[row.ID]; status != nil {
-			if status.ProgressCount == status.ItemCount && status.ItemCount > 0 {
-				// Award the achievement
-				if _, err := r.AwardAchievement(ctx, userID, row.ID); err != nil {
-					// Log error but don't fail - the progress was still recorded
-					slog.Error("failed to auto-award achievement", "error", err, "user_id", userID, "achievement_id", row.ID)
-				}
+		itemCount := itemCounts[row.ID]
+		progressCount := progressByAchievement[row.ID]
+
+		if progressCount == itemCount && itemCount > 0 {
+			// Award the achievement
+			if _, err := r.AwardAchievement(ctx, userID, row.ID); err != nil {
+				// Log error but don't fail - the progress was still recorded
+				slog.Error("failed to auto-award achievement", "error", err, "user_id", userID, "achievement_id", row.ID)
 			}
 		}
 	}

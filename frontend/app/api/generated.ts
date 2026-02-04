@@ -962,6 +962,7 @@ export type Mutation = {
   startQuizSession: QuizSubmission;
   submitFeedback: UserFeedback;
   submitQuizAnswer: QuizResponse;
+  syncUser: SyncUserResult;
   testWebhook: WebhookLog;
   uncompleteChallenge: Scalars['Boolean']['output'];
   unenrollFromChallenge: Scalars['Boolean']['output'];
@@ -1503,6 +1504,11 @@ export type MutationSubmitFeedbackArgs = {
 export type MutationSubmitQuizAnswerArgs = {
   input: SubmitQuizAnswerInput;
   submissionId: Scalars['ID']['input'];
+};
+
+
+export type MutationSyncUserArgs = {
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -2624,6 +2630,15 @@ export type SuperTeamFilter = {
   minMembers?: InputMaybe<Scalars['Int']['input']>;
   minTeams?: InputMaybe<Scalars['Int']['input']>;
   projectId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type SyncUserResult = {
+  __typename?: 'SyncUserResult';
+  churchUpdated: Scalars['Boolean']['output'];
+  contentEventsProcessed: Scalars['Int']['output'];
+  genderUpdated: Scalars['Boolean']['output'];
+  personUuidUpdated: Scalars['Boolean']['output'];
+  user: User;
 };
 
 export type Team = {
@@ -3886,6 +3901,13 @@ export type AdminSetUserConsentMutationVariables = Exact<{
 
 
 export type AdminSetUserConsentMutation = { __typename?: 'Mutation', adminSetUserConsent: { __typename?: 'UserConsentHistoryEntry', id: string, action: ConsentAction } };
+
+export type SyncUserMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+}>;
+
+
+export type SyncUserMutation = { __typename?: 'Mutation', syncUser: { __typename?: 'SyncUserResult', contentEventsProcessed: number, genderUpdated: boolean, churchUpdated: boolean, personUuidUpdated: boolean, user: { __typename?: 'User', id: string, name: string, gender: Gender, personUuid?: string | null, church: { __typename?: 'Church', id: string, name: string } } } };
 
 export type AdminUsersPageQueryVariables = Exact<{
   filter?: InputMaybe<UserFilter>;
@@ -6083,6 +6105,30 @@ export const AdminSetUserConsentDocument = gql`
 
 export function useAdminSetUserConsentMutation() {
   return Urql.useMutation<AdminSetUserConsentMutation, AdminSetUserConsentMutationVariables>(AdminSetUserConsentDocument);
+};
+export const SyncUserDocument = gql`
+    mutation SyncUser($userId: ID!) {
+  syncUser(userId: $userId) {
+    user {
+      id
+      name
+      gender
+      personUuid
+      church {
+        id
+        name
+      }
+    }
+    contentEventsProcessed
+    genderUpdated
+    churchUpdated
+    personUuidUpdated
+  }
+}
+    `;
+
+export function useSyncUserMutation() {
+  return Urql.useMutation<SyncUserMutation, SyncUserMutationVariables>(SyncUserDocument);
 };
 export const AdminUsersPageDocument = gql`
     query AdminUsersPage($filter: UserFilter, $first: Int, $after: String, $last: Int, $before: String) {

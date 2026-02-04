@@ -68,6 +68,16 @@ extend type Query {
     users(filter: UserFilter, first: Int, after: String, last: Int, before: String): UserConnection!
 }
 
+# ==================== Result Types ====================
+
+type SyncUserResult {
+    user: User!
+    contentEventsProcessed: Int!
+    genderUpdated: Boolean!
+    churchUpdated: Boolean!
+    personUuidUpdated: Boolean!
+}
+
 # ==================== Mutations ====================
 
 extend type Mutation {
@@ -78,4 +88,7 @@ extend type Mutation {
     assignUserToProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
     removeUserFromProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
     assignUserToEvent(userId: ID!, eventId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
+
+    # User sync
+    syncUser(userId: ID!): SyncUserResult! @requireRole(roles: ["admin", "superadmin"])
 }

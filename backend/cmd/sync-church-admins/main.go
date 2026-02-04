@@ -67,17 +67,6 @@ func parseBirthdate(birthDate string) pgtype.Date {
 	}
 }
 
-// normalizeGender converts member gender to Wayfarer's format
-func normalizeGender(gender string) string {
-	switch strings.ToLower(gender) {
-	case "male", "m":
-		return "MALE"
-	case "female", "f":
-		return "FEMALE"
-	default:
-		return "UNKNOWN"
-	}
-}
 
 // ptr returns a pointer to the given string, or nil if empty
 func ptr(s string) *string {
@@ -358,7 +347,7 @@ func processRole(
 						LastName:    ptr(member.LastName),
 						MiddleName:  ptr(member.MiddleName),
 						DisplayName: ptr(member.DisplayName),
-						Gender:      normalizeGender(member.Gender),
+						Gender:      members.NormalizeGender(member.Gender),
 						Birthdate:   parseBirthdate(member.BirthDate),
 						ChurchID:    churchID,
 						AvatarUrl:   nil,

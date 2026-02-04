@@ -503,6 +503,7 @@ type ComplexityRoot struct {
 		StartQuizSession                            func(childComplexity int, sessionID string) int
 		SubmitFeedback                              func(childComplexity int, input model.SubmitFeedbackInput) int
 		SubmitQuizAnswer                            func(childComplexity int, submissionID string, input model.SubmitQuizAnswerInput) int
+		SyncUser                                    func(childComplexity int, userID string) int
 		TestWebhook                                 func(childComplexity int, id string) int
 		UncompleteChallenge                         func(childComplexity int, userID string, challengeID string) int
 		UnenrollFromChallenge                       func(childComplexity int, challengeID string) int
@@ -1006,6 +1007,14 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	SyncUserResult struct {
+		ChurchUpdated          func(childComplexity int) int
+		ContentEventsProcessed func(childComplexity int) int
+		GenderUpdated          func(childComplexity int) int
+		PersonUUIDUpdated      func(childComplexity int) int
+		User                   func(childComplexity int) int
+	}
+
 	Team struct {
 		AverageAge          func(childComplexity int) int
 		Description         func(childComplexity int) int
@@ -1280,6 +1289,7 @@ type MutationResolver interface {
 	AssignUserToProject(ctx context.Context, userID string, projectID string) (*model.User, error)
 	RemoveUserFromProject(ctx context.Context, userID string, projectID string) (*model.User, error)
 	AssignUserToEvent(ctx context.Context, userID string, eventID string) (*model.User, error)
+	SyncUser(ctx context.Context, userID string) (*model.SyncUserResult, error)
 	AssignRole(ctx context.Context, input model.AssignRoleInput) (*model.UserRole, error)
 	RevokeRole(ctx context.Context, input model.RevokeRoleInput) (bool, error)
 	UpdateChurch(ctx context.Context, id string, input model.UpdateChurchInput) (*model.Church, error)
@@ -3907,6 +3917,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.SubmitQuizAnswer(childComplexity, args["submissionId"].(string), args["input"].(model.SubmitQuizAnswerInput)), true
+	case "Mutation.syncUser":
+		if e.complexity.Mutation.SyncUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_syncUser_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SyncUser(childComplexity, args["userId"].(string)), true
 	case "Mutation.testWebhook":
 		if e.complexity.Mutation.TestWebhook == nil {
 			break
@@ -6564,6 +6585,37 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SuperTeamEdge.Node(childComplexity), true
 
+	case "SyncUserResult.churchUpdated":
+		if e.complexity.SyncUserResult.ChurchUpdated == nil {
+			break
+		}
+
+		return e.complexity.SyncUserResult.ChurchUpdated(childComplexity), true
+	case "SyncUserResult.contentEventsProcessed":
+		if e.complexity.SyncUserResult.ContentEventsProcessed == nil {
+			break
+		}
+
+		return e.complexity.SyncUserResult.ContentEventsProcessed(childComplexity), true
+	case "SyncUserResult.genderUpdated":
+		if e.complexity.SyncUserResult.GenderUpdated == nil {
+			break
+		}
+
+		return e.complexity.SyncUserResult.GenderUpdated(childComplexity), true
+	case "SyncUserResult.personUuidUpdated":
+		if e.complexity.SyncUserResult.PersonUUIDUpdated == nil {
+			break
+		}
+
+		return e.complexity.SyncUserResult.PersonUUIDUpdated(childComplexity), true
+	case "SyncUserResult.user":
+		if e.complexity.SyncUserResult.User == nil {
+			break
+		}
+
+		return e.complexity.SyncUserResult.User(childComplexity), true
+
 	case "Team.averageAge":
 		if e.complexity.Team.AverageAge == nil {
 			break
@@ -8598,6 +8650,16 @@ extend type Query {
     users(filter: UserFilter, first: Int, after: String, last: Int, before: String): UserConnection!
 }
 
+# ==================== Result Types ====================
+
+type SyncUserResult {
+    user: User!
+    contentEventsProcessed: Int!
+    genderUpdated: Boolean!
+    churchUpdated: Boolean!
+    personUuidUpdated: Boolean!
+}
+
 # ==================== Mutations ====================
 
 extend type Mutation {
@@ -8608,6 +8670,9 @@ extend type Mutation {
     assignUserToProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
     removeUserFromProject(userId: ID!, projectId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
     assignUserToEvent(userId: ID!, eventId: ID!): User! @requireRole(roles: ["admin", "superadmin"])
+
+    # User sync
+    syncUser(userId: ID!): SyncUserResult! @requireRole(roles: ["admin", "superadmin"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/roles.graphqls", Input: `# Role management queries and mutations
@@ -11102,6 +11167,17 @@ func (ec *executionContext) field_Mutation_submitQuizAnswer_args(ctx context.Con
 		return nil, err
 	}
 	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_syncUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
 	return args, nil
 }
 
@@ -23941,6 +24017,77 @@ func (ec *executionContext) fieldContext_Mutation_assignUserToEvent(ctx context.
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_assignUserToEvent_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_syncUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_syncUser,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().SyncUser(ctx, fc.Args["userId"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.SyncUserResult
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.SyncUserResult
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNSyncUserResult2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSyncUserResult,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_syncUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "user":
+				return ec.fieldContext_SyncUserResult_user(ctx, field)
+			case "contentEventsProcessed":
+				return ec.fieldContext_SyncUserResult_contentEventsProcessed(ctx, field)
+			case "genderUpdated":
+				return ec.fieldContext_SyncUserResult_genderUpdated(ctx, field)
+			case "churchUpdated":
+				return ec.fieldContext_SyncUserResult_churchUpdated(ctx, field)
+			case "personUuidUpdated":
+				return ec.fieldContext_SyncUserResult_personUuidUpdated(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SyncUserResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_syncUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -41412,6 +41559,193 @@ func (ec *executionContext) fieldContext_SuperTeamEdge_node(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _SyncUserResult_user(ctx context.Context, field graphql.CollectedField, obj *model.SyncUserResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SyncUserResult_user,
+		func(ctx context.Context) (any, error) {
+			return obj.User, nil
+		},
+		nil,
+		ec.marshalNUser2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SyncUserResult_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SyncUserResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "membersId":
+				return ec.fieldContext_User_membersId(ctx, field)
+			case "personUuid":
+				return ec.fieldContext_User_personUuid(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "churchId":
+				return ec.fieldContext_User_churchId(ctx, field)
+			case "church":
+				return ec.fieldContext_User_church(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_User_birthdate(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "image":
+				return ec.fieldContext_User_image(ctx, field)
+			case "imageObject":
+				return ec.fieldContext_User_imageObject(ctx, field)
+			case "projects":
+				return ec.fieldContext_User_projects(ctx, field)
+			case "events":
+				return ec.fieldContext_User_events(ctx, field)
+			case "teams":
+				return ec.fieldContext_User_teams(ctx, field)
+			case "superTeams":
+				return ec.fieldContext_User_superTeams(ctx, field)
+			case "roles":
+				return ec.fieldContext_User_roles(ctx, field)
+			case "consentStatus":
+				return ec.fieldContext_User_consentStatus(ctx, field)
+			case "language":
+				return ec.fieldContext_User_language(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SyncUserResult_contentEventsProcessed(ctx context.Context, field graphql.CollectedField, obj *model.SyncUserResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SyncUserResult_contentEventsProcessed,
+		func(ctx context.Context) (any, error) {
+			return obj.ContentEventsProcessed, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SyncUserResult_contentEventsProcessed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SyncUserResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SyncUserResult_genderUpdated(ctx context.Context, field graphql.CollectedField, obj *model.SyncUserResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SyncUserResult_genderUpdated,
+		func(ctx context.Context) (any, error) {
+			return obj.GenderUpdated, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SyncUserResult_genderUpdated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SyncUserResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SyncUserResult_churchUpdated(ctx context.Context, field graphql.CollectedField, obj *model.SyncUserResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SyncUserResult_churchUpdated,
+		func(ctx context.Context) (any, error) {
+			return obj.ChurchUpdated, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SyncUserResult_churchUpdated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SyncUserResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SyncUserResult_personUuidUpdated(ctx context.Context, field graphql.CollectedField, obj *model.SyncUserResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SyncUserResult_personUuidUpdated,
+		func(ctx context.Context) (any, error) {
+			return obj.PersonUUIDUpdated, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SyncUserResult_personUuidUpdated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SyncUserResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Team_id(ctx context.Context, field graphql.CollectedField, obj *model.Team) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -54491,6 +54825,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "syncUser":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_syncUser(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "assignRole":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_assignRole(ctx, field)
@@ -61824,6 +62165,65 @@ func (ec *executionContext) _SuperTeamEdge(ctx context.Context, sel ast.Selectio
 	return out
 }
 
+var syncUserResultImplementors = []string{"SyncUserResult"}
+
+func (ec *executionContext) _SyncUserResult(ctx context.Context, sel ast.SelectionSet, obj *model.SyncUserResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, syncUserResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SyncUserResult")
+		case "user":
+			out.Values[i] = ec._SyncUserResult_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "contentEventsProcessed":
+			out.Values[i] = ec._SyncUserResult_contentEventsProcessed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "genderUpdated":
+			out.Values[i] = ec._SyncUserResult_genderUpdated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "churchUpdated":
+			out.Values[i] = ec._SyncUserResult_churchUpdated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "personUuidUpdated":
+			out.Values[i] = ec._SyncUserResult_personUuidUpdated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var teamImplementors = []string{"Team"}
 
 func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj *model.Team) graphql.Marshaler {
@@ -66533,6 +66933,20 @@ func (ec *executionContext) marshalNSuperTeamEdge2ᚕgithubᚗcomᚋbccᚑmedia�
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNSyncUserResult2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSyncUserResult(ctx context.Context, sel ast.SelectionSet, v model.SyncUserResult) graphql.Marshaler {
+	return ec._SyncUserResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSyncUserResult2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐSyncUserResult(ctx context.Context, sel ast.SelectionSet, v *model.SyncUserResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SyncUserResult(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNTeam2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐTeam(ctx context.Context, sel ast.SelectionSet, v model.Team) graphql.Marshaler {

@@ -175,6 +175,21 @@ LEFT JOIN user_content_progress ucp
 WHERE cai.achievement_id = ANY(@achievement_ids::text[])
 GROUP BY cai.achievement_id;
 
+-- name: GetContentItemCounts :many
+-- Get content item counts per achievement (for caching)
+SELECT achievement_id, COUNT(*)::int AS item_count
+FROM content_achievement_items
+WHERE achievement_id = ANY(@achievement_ids::text[])
+GROUP BY achievement_id;
+
+-- name: GetUserProgressCounts :many
+-- Get user progress counts per achievement
+SELECT achievement_id, COUNT(*)::int AS progress_count
+FROM user_content_progress
+WHERE user_id = @user_id::text
+  AND achievement_id = ANY(@achievement_ids::text[])
+GROUP BY achievement_id;
+
 -- ==================== Create Operations ====================
 
 -- name: CreateAchievement :one
@@ -298,6 +313,13 @@ SELECT EXISTS(
     SELECT 1 FROM user_achievements
     WHERE user_id = @user_id::text AND achievement_id = @achievement_id::text
 ) AS has_achievement;
+
+-- name: GetUserAwardedAchievementIDs :many
+-- Get which achievements from a list the user already has
+SELECT achievement_id
+FROM user_achievements
+WHERE user_id = @user_id::text
+  AND achievement_id = ANY(@achievement_ids::text[]);
 
 -- name: AwardTeamAchievementBatch :exec
 -- Award achievement to all members of a team in a single query

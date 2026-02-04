@@ -19,6 +19,7 @@ import (
 type MaintenanceHandler struct {
 	DB                        *database.DB
 	MembersClient             *members.Client
+	ChurchResolver            *services.ChurchResolver
 	AuthHandler               *AuthHandler
 	ContentAchievementService *services.ContentAchievementService
 }
@@ -99,12 +100,12 @@ func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 
 		// Update gender if currently UNKNOWN and member has gender
 		if user.Gender == "UNKNOWN" && member.Gender != "" {
-			newGender = normalizeGender(member.Gender)
+			newGender = members.NormalizeGender(member.Gender)
 		}
 
 		// Update church if using default church and member has affiliation
 		if h.isDefaultChurch(ctx, user.ChurchID) {
-			church, err := h.AuthHandler.findChurchFromAffiliations(ctx, member.Affiliations)
+			church, err := h.ChurchResolver.FindChurchFromAffiliations(ctx, member.Affiliations)
 			if err != nil {
 				slog.Debug("maintenance: no valid church from affiliations",
 					"user_id", user.ID,
@@ -202,11 +203,11 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 
 	// Always update gender from member data
 	if member.Gender != "" {
-		newGender = normalizeGender(member.Gender)
+		newGender = members.NormalizeGender(member.Gender)
 	}
 
 	// Attempt to update church from member affiliation
-	church, err := h.AuthHandler.findChurchFromAffiliations(ctx, member.Affiliations)
+	church, err := h.ChurchResolver.FindChurchFromAffiliations(ctx, member.Affiliations)
 	if err != nil {
 		slog.Debug("maintenance: no valid church from affiliations, keeping existing",
 			"user_id", userID,

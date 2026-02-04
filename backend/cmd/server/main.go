@@ -161,9 +161,10 @@ func main() {
 	}
 
 	// Initialize SSF client and sync service
+	var ssfClient *ssf.Client
 	var ssfSyncService *ssf.SyncService
 	if cfg.SSF.APIKey != "" {
-		ssfClient := ssf.New(ssf.Config{
+		ssfClient = ssf.New(ssf.Config{
 			BaseURL:   cfg.SSF.BaseURL,
 			APIKey:    cfg.SSF.APIKey,
 			DebugMode: cfg.SSF.DebugMode,
@@ -296,6 +297,30 @@ func main() {
 		slog.Warn("Email service not configured - RESEND_API_KEY not set")
 	}
 
+	// Content achievement service (shared between auth and webhook handlers)
+	contentAchievementService := &services.ContentAchievementService{
+		DB:             db,
+		Cache:          cacheInstance,
+		PushService:    pushService,
+		Loaders:        dataLoaders,
+		WebhookService: webhookService,
+	}
+
+	// Church resolver (shared between auth, maintenance, and sync)
+	churchResolver := &services.ChurchResolver{
+		DB:            db,
+		MembersClient: membersClient,
+	}
+
+	// User sync service
+	userSyncService := &services.UserSyncService{
+		DB:                        db,
+		SSFClient:                 ssfClient,
+		MembersClient:             membersClient,
+		ChurchResolver:            churchResolver,
+		ContentAchievementService: contentAchievementService,
+	}
+
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{
 		DB:                 db,
@@ -308,6 +333,7 @@ func main() {
 		WebhookService:     webhookService,
 		FirebaseService:    firebaseService,
 		EmailService:       emailService,
+		UserSyncService:    userSyncService,
 		InstanceID:         cacheSync.InstanceID(),
 	}
 
@@ -408,15 +434,6 @@ func main() {
 	}
 	slog.Info("Profiling endpoints enabled at /debug/pprof")
 
-	// Content achievement service (shared between auth and webhook handlers)
-	contentAchievementService := &services.ContentAchievementService{
-		DB:             db,
-		Cache:          cacheInstance,
-		PushService:    pushService,
-		Loaders:        dataLoaders,
-		WebhookService: webhookService,
-	}
-
 	// Authentication token endpoint (no JWT middleware)
 	authHandler := &handlers.AuthHandler{
 		DB:                        db,
@@ -426,6 +443,7 @@ func main() {
 		MembersClient:             membersClient,
 		RoleService:               roleService,
 		ContentAchievementService: contentAchievementService,
+		ChurchResolver:            churchResolver,
 	}
 	router.GET("/token", authHandler.Callback)
 
@@ -468,6 +486,7 @@ func main() {
 	maintenanceHandler := &handlers.MaintenanceHandler{
 		DB:                        db,
 		MembersClient:             membersClient,
+		ChurchResolver:            churchResolver,
 		AuthHandler:               authHandler,
 		ContentAchievementService: contentAchievementService,
 	}
