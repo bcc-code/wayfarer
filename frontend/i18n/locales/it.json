@@ -42,6 +42,10 @@
       "perfect": "Perfetto!"
     }
   },
+  "challenges": {
+    "active": "Attivi",
+    "completed": "Finito"
+  },
   "pages": {
     "standings": "Classifiche",
     "challenges": "Sfide",
@@ -165,7 +169,20 @@
       "administrators": "Amministratori",
       "unitsAndPeople": "Unità e persone",
       "gameNights": "Game Nights",
-      "comingSoon": "Prossimamente"
+      "comingSoon": "Prossimamente",
+      "kickOff": "Kick-off",
+      "statistics": "Statistiche",
+      "kickOffButton": "Avvia subito l'onboarding dell'unità",
+      "kickOffOnboardingDescription": "Questa azione avvia l'onboarding dell'unità per l'intera comunità locale.",
+      "kickOffOnboardingDescriptionWarning": "⚠ Non iniziate se non siete pronti.",
+      "kickOffOnboardingExplanationTitle": "Cosa succede quando inizi?",
+      "kickOffOnboardingExplanation1": "Tutti i responsabili delle unità delle comunità locali ricevono una sfida nell'Interact (webapp).",
+      "kickOffOnboardingExplanation2": "È possibile modificare il nome dell'unità e ottenere 300 punti una volta completata l'operazione.",
+      "kickOffConfirmation": "Confermo che il kick-off è in corso e che siamo pronti per iniziare.",
+      "kickOffOnboardingCountdown": "Avvio tra {seconds} secondi | Avvio tra {seconds} secondi",
+      "kickOffSuccessTitle": "L’onboarding delle unità è in corso!",
+      "kickOffSuccessDescription": "A tutti i responsabili delle unità è stato assegnato un compito nell'app ed è ora possibile modificare il nome della propria unità.",
+      "noAccess": "Non hai accesso a questa pagina perché non sei un amministratore. Chiedi a un altro amministratore di concederti l'accesso."
     },
     "admins": {
       "searchPlaceholder": "Cerca amministratori...",
@@ -251,6 +268,21 @@
       "excludeFromLeaderboard": "Escludi dalla lista dei migliori",
       "excludeFromLeaderboardTooltip": "Una volta attivata, questa unità non apparirà nella classifica.",
       "excludedFromLeaderboard": "Nascosta dalle classifiche"
+    },
+    "statistics": {
+      "totalUsersInTeams": "Persone nelle unità",
+      "averageScoresByAgeGroup": "Punteggio medio per fascia d'età",
+      "averageScoresByAgeGroupDescription": "Ecco una panoramica dei punteggi medi per fascia d'età. Sono considerate solo le persone che fanno parte di un'unità.",
+      "ageGroup": "Fascia d'età",
+      "users": "Utenti",
+      "averageScore": "Punteggio medio",
+      "yearsOld": "anno",
+      "noData": "Nessun dato disponibile",
+      "pointsDistribution": "Distribuzione dei punti",
+      "pointsDistributionDescription": "Qui trovi una panoramica dei punteggi di tutte le persone della tua comunità locale che sono membri di un'unità.",
+      "points": "punti",
+      "peopleInAUnit": "Persone in un'unità",
+      "lastUpdated": "Ultimo aggiornamento"
     }
   }
 }
