@@ -13,7 +13,7 @@ import (
 func (s *Service) updateProjects(ctx context.Context, data []common.TranslationData) []error {
 	errs := make([]error, 0)
 	for _, d := range data {
-		value := &NameDescriptionTranslation{}
+		value := &ProjectTranslation{}
 		err := json.Unmarshal(d.Value, value)
 		if err != nil {
 			errs = append(errs, err)
@@ -24,7 +24,8 @@ func (s *Service) updateProjects(ctx context.Context, data []common.TranslationD
 			ProjectID:    d.ID,
 			LanguageCode: d.Language,
 			Name:         value.Name,
-			Description:  value.Description.String,
+			Description:  joinLines(value.Description),
+			Rules:        joinLines(value.Rules),
 		})
 		if err != nil {
 			errs = append(errs, err)
@@ -46,54 +47,6 @@ func (s *Service) updateEvents(ctx context.Context, data []common.TranslationDat
 
 		err = s.queries.UpsertEventTranslation(ctx, sqlc.UpsertEventTranslationParams{
 			EventID:      d.ID,
-			LanguageCode: d.Language,
-			Name:         value.Name,
-			Description:  value.Description.String,
-		})
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	return errs
-}
-
-func (s *Service) updateTeams(ctx context.Context, data []common.TranslationData) []error {
-	errs := make([]error, 0)
-	for _, d := range data {
-		value := &NameDescriptionTranslation{}
-		err := json.Unmarshal(d.Value, value)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		err = s.queries.UpsertTeamTranslation(ctx, sqlc.UpsertTeamTranslationParams{
-			TeamID:       d.ID,
-			LanguageCode: d.Language,
-			Name:         value.Name,
-			Description:  value.Description.String,
-		})
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	return errs
-}
-
-func (s *Service) updateSuperTeams(ctx context.Context, data []common.TranslationData) []error {
-	errs := make([]error, 0)
-	for _, d := range data {
-		value := &NameDescriptionTranslation{}
-		err := json.Unmarshal(d.Value, value)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		err = s.queries.UpsertSuperTeamTranslation(ctx, sqlc.UpsertSuperTeamTranslationParams{
-			SuperTeamID:  d.ID,
 			LanguageCode: d.Language,
 			Name:         value.Name,
 			Description:  value.Description.String,
@@ -246,7 +199,7 @@ func (s *Service) updateConsents(ctx context.Context, data []common.TranslationD
 			LanguageCode: d.Language,
 			Title:        value.Title,
 			ShortText:    value.ShortText,
-			Body:         value.Body,
+			Body:         joinLines(value.Body),
 		})
 		if err != nil {
 			errs = append(errs, err)

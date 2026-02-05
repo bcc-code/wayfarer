@@ -8,9 +8,9 @@
   --font-serif: 'Noto Serif', serif;
 
   /* Colors */
-  --color-accent: #ffaedf;
-  --color-accent-contrast: #5d0045;
-  --color-on-accent: #5d0045;
+  --color-accent: #222222;
+  --color-accent-contrast: #222222;
+  --color-on-accent: #ffffff;
   --color-accent-positive: #9ed63c;
   --color-accent-negative: #e86a4a;
   --color-background-default: #efefef;
@@ -59,39 +59,47 @@
   --shadow-small: 0 1px 2px 0 var(--color-shadow-default);
 
   /* Typography - Font Sizes */
+  --font-size-hero: 46px;
   --font-size-heading: 30px;
   --font-size-title: 24px;
   --font-size-label: 16px;
+  --font-size-body: 16px;
   --font-size-caption: 14px;
   --font-size-tiny: 11px;
 
   /* Typography - Line Heights */
+  --line-height-hero: 1.5;
   --line-height-heading: 36px;
   --line-height-title: 32px;
   --line-height-label: 20px;
-  --line-height-caption: 20px;
+  --line-height-body: 1.5;
+  --line-height-caption: 18px;
   --line-height-tiny: 12px;
 
   /* Typography - Letter Spacing */
+  --letter-spacing-hero: -1.38px;
   --letter-spacing-heading: -0.9px;
   --letter-spacing-title: -0.72px;
   --letter-spacing-label: -0.48px;
+  --letter-spacing-body: -0.48px;
   --letter-spacing-caption: -0.42px;
   --letter-spacing-tiny: -0.33px;
 
   /* Typography - Font Weights */
-  --font-weight-heading: 600;
-  --font-weight-title: 500;
-  --font-weight-label: 500;
-  --font-weight-caption: 500;
-  --font-weight-tiny: 500;
+  --font-weight-hero: var(--font-weight-semibold);
+  --font-weight-heading: var(--font-weight-semibold);
+  --font-weight-title: var(--font-weight-medium);
+  --font-weight-label: var(--font-weight-medium);
+  --font-weight-body: var(--font-weight-normal);
+  --font-weight-caption: var(--font-weight-medium);
+  --font-weight-tiny: var(--font-weight-medium);
 }
 
 /* Dark mode */
 .dark {
-  --color-accent: #ffaedf;
-  --color-accent-contrast: #ffaedf;
-  --color-on-accent: #5d0045;
+  --color-accent: #ffffff;
+  --color-accent-contrast: #ffffff;
+  --color-on-accent: #222222;
   --color-accent-positive: #a5d357;
   --color-accent-negative: #e86a4a;
   --color-background-default: #222222;
@@ -107,6 +115,13 @@
 
 /* Semantic Typography Classes */
 @layer utilities {
+  .text-hero {
+    font-size: var(--font-size-hero);
+    line-height: var(--line-height-hero);
+    font-weight: var(--font-weight-hero);
+    letter-spacing: var(--letter-spacing-hero);
+  }
+
   .text-heading {
     font-size: var(--font-size-heading);
     line-height: var(--line-height-heading);
@@ -126,6 +141,13 @@
     line-height: var(--line-height-label);
     font-weight: var(--font-weight-label);
     letter-spacing: var(--letter-spacing-label);
+  }
+
+  .text-body {
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+    font-weight: var(--font-weight-body);
+    letter-spacing: var(--letter-spacing-body);
   }
 
   .text-caption {

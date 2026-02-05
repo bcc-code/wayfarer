@@ -10,10 +10,19 @@ mutation UpdateChallenge($id: ID!, $input: UpdateChallengeInput!) {
 
 mutation CreateChallenge(
   $projectId: ID!
-  $eventId: ID!
+  $eventId: ID
   $input: CreateChallengeInput!
 ) {
   createChallenge(projectId: $projectId, eventId: $eventId, input: $input) {
+    id
+  }
+}
+
+mutation BulkEnrollUsersInChallenge(
+  $challengeId: ID!
+  $target: EnrollmentTargetInput!
+) {
+  bulkEnrollUsersInChallenge(challengeId: $challengeId, target: $target) {
     id
   }
 }

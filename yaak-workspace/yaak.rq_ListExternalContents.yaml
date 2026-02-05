@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_ListExternalContents
 createdAt: 2025-12-10T13:00:00
-updatedAt: 2025-12-10T15:04:51.996902
+updatedAt: 2026-01-08T14:38:36.525243
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_ExternalContent
 authentication: {}
@@ -40,10 +40,9 @@ body:
   variables: |
     {
       "filter": {
-        "planId": "hidden-treasures-podcast"
       },
-      "sortBy": "PUBLISHED_AT_ASC",
-      "first": 300
+      "sortBy": "PUBLISHED_AT_DESC",
+      "first": 10
     }
 bodyType: graphql
 description: List external contents with filters and pagination (admin only)
@@ -52,6 +51,14 @@ headers:
   name: Content-Type
   value: application/json
   id: hdr_ListExternalContents
+- enabled: true
+  name: Accept-Language
+  value: nb
+  id: Ma56NG7wjB
+- enabled: true
+  name: ''
+  value: ''
+  id: MXwhYiiWTB
 method: POST
 name: List External Contents
 sortPriority: 2000.0

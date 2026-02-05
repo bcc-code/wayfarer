@@ -1,5 +1,24 @@
+import { execSync } from 'node:child_process'
+
+function getAppVersion(): string {
+  if (process.env.APP_VERSION) {
+    return process.env.APP_VERSION
+  }
+
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim()
+  } catch {
+    throw new Error(
+      'APP_VERSION environment variable not set and git is not available. Set APP_VERSION in your build environment.',
+    )
+  }
+}
+
+const gitCommitHash = getAppVersion()
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
+
   modules: [
     '@nuxt/ui',
     '@nuxt/test-utils',
@@ -8,7 +27,9 @@ export default defineNuxtConfig({
     '@nuxtjs/i18n',
     '@vite-pwa/nuxt',
     '@posthog/nuxt',
+    '@sentry/nuxt/module',
   ],
+
   devtools: { enabled: false },
   ssr: false,
   css: ['~/assets/styles/main.css'],
@@ -43,6 +64,7 @@ export default defineNuxtConfig({
       ],
     },
   },
+
   components: {
     dirs: [
       {
@@ -55,25 +77,38 @@ export default defineNuxtConfig({
       },
     ],
   },
+
   imports: {
     dirs: ['api'],
   },
+
   runtimeConfig: {
     public: {
       apiUrl: 'http://localhost:8080/graphql',
       tokenUrl: 'http://localhost:8080/token',
-      loginUrl: 'https://app.bcc.media/r/sigve-test',
+      auth0Domain: 'login.bcc.no',
+      auth0ClientId: '',
+      auth0Audience: '',
       rudderstackWriteKey: '',
       rudderstackDataPlaneUrl: '',
       vapidPublicKey: '',
+      appVersion: gitCommitHash,
+      isStaging: false,
+      firebaseDatabase: '',
+      firebaseApiKey: '',
+      firebaseAuthDomain: '',
+      firebaseProjectId: '',
     },
   },
+
   experimental: {
     typedPages: true,
   },
+
   sourcemap: {
     client: 'hidden',
   },
+
   vite: {
     optimizeDeps: {
       include: [
@@ -94,9 +129,22 @@ export default defineNuxtConfig({
         'zod',
         '@internationalized/date',
         '@rudderstack/analytics-js',
+        '@sentry/nuxt',
+        'gsap',
+        '@auth0/auth0-vue',
+        'vue-draggable-plus',
+        'dayjs',
+        'blurhash',
+        'firebase/app',
+        'firebase/auth',
+        'firebase/firestore',
+        '@zag-js/vue',
+        '@zag-js/slider',
+        '@neoconfetti/vue',
       ],
     },
   },
+
   routeRules: {
     // CDN cache rules
     '/manifest.webmanifest': {
@@ -110,6 +158,8 @@ export default defineNuxtConfig({
   i18n: {
     defaultLocale: 'nb',
     locales: [
+      // The commented ones are not actively translated.
+      // Verified by Milenko
       {
         name: 'Norsk',
         code: 'nb',
@@ -160,16 +210,16 @@ export default defineNuxtConfig({
         code: 'hu',
         file: 'hu.json',
       },
-      {
-        name: 'മലയാളം',
-        code: 'ml',
-        file: 'ml.json',
-      },
-      {
-        name: 'Papiamentu',
-        code: 'pap',
-        file: 'pap.json',
-      },
+      // {
+      //   name: 'മലയാളം',
+      //   code: 'ml',
+      //   file: 'ml.json',
+      // },
+      // {
+      //   name: 'Papiamentu',
+      //   code: 'pap',
+      //   file: 'pap.json',
+      // },
       {
         name: 'Polski',
         code: 'pl',
@@ -190,16 +240,16 @@ export default defineNuxtConfig({
         code: 'ru',
         file: 'ru.json',
       },
-      {
-        name: 'Slovenščina',
-        code: 'sl',
-        file: 'sl.json',
-      },
-      {
-        name: 'தமிழ்',
-        code: 'ta',
-        file: 'ta.json',
-      },
+      // {
+      //   name: 'Slovenščina',
+      //   code: 'sl',
+      //   file: 'sl.json',
+      // },
+      // {
+      //   name: 'தமிழ்',
+      //   code: 'ta',
+      //   file: 'ta.json',
+      // },
       {
         name: 'Türkçe',
         code: 'tr',
@@ -208,13 +258,13 @@ export default defineNuxtConfig({
       {
         name: '中文(简体)',
         code: 'zh-CN',
-        file: 'zn_cn.json',
+        file: 'zh_cn.json',
       },
-      {
-        name: '中文(香港)',
-        code: 'zh-HK',
-        file: 'zh_hk.json',
-      },
+      // {
+      //   name: '中文(香港)',
+      //   code: 'zh-HK',
+      //   file: 'zh_hk.json',
+      // },
     ],
     strategy: 'no_prefix',
   },
@@ -224,12 +274,13 @@ export default defineNuxtConfig({
     srcDir: '../service-worker',
     filename: 'service-worker.ts',
     strategies: 'injectManifest',
+    registerType: 'prompt',
     injectRegister: 'auto',
     injectManifest: {
       globPatterns: [
         '**/*.{js,json,css,html,txt,svg,png,ico,webp,woff,woff2,ttf,eot,otf,wasm}',
       ],
-      globIgnores: ['manifest**.webmanifest'],
+      globIgnores: ['manifest**.webmanifest', '**/admin/**'],
     },
     devOptions: {
       enabled: true,
@@ -278,5 +329,10 @@ export default defineNuxtConfig({
   colorMode: {
     preference: 'dark',
     fallback: 'dark',
+  },
+
+  sentry: {
+    org: 'bcc-media-sti',
+    project: 'interact',
   },
 })

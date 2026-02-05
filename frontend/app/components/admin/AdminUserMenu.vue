@@ -12,11 +12,11 @@ const themes: Record<string, { label: string; icon: string }> = {
     icon: 'lucide:monitor',
   },
   dark: {
-    label: 'Dark',
+    label: 'Mørk',
     icon: 'lucide:moon',
   },
   light: {
-    label: 'Light',
+    label: 'Lys',
     icon: 'lucide:sun',
   },
 }
@@ -24,13 +24,6 @@ const themes: Record<string, { label: string; icon: string }> = {
 const { me } = useAuth()
 
 const items = computed<DropdownMenuItem[][]>(() => [
-  [
-    {
-      type: 'label',
-      label: me.value?.name,
-      avatar: { src: me.value?.image ?? '', alt: me.value?.name },
-    },
-  ],
   [
     {
       label: themes[colorMode.preference]?.label,
@@ -53,7 +46,7 @@ const items = computed<DropdownMenuItem[][]>(() => [
   ],
   [
     {
-      label: 'Log out',
+      label: 'Logg ut',
       icon: 'lucide:log-out',
     },
   ],
@@ -70,7 +63,6 @@ const items = computed<DropdownMenuItem[][]>(() => [
   >
     <UButton
       v-bind="{
-        avatar: { src: me?.image ?? '', alt: me?.name },
         label: collapsed ? undefined : me?.name,
         trailingIcon: collapsed ? undefined : 'lucide:chevrons-up-down',
       }"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const { me } = useAuth()
-const { $pwa } = useNuxtApp()
+const { me, logout } = useAuth()
+const { track } = useAnalytics()
 
 const {
   subscribe,
@@ -8,6 +8,8 @@ const {
   isSubscribed,
   isSupported: isPushSupported,
   isLoading: isPushLoading,
+  permission: pushPermission,
+  error: pushError,
 } = usePushNotifications()
 
 async function toggleNotifications(enabled: boolean) {
@@ -16,6 +18,9 @@ async function toggleNotifications(enabled: boolean) {
   } else {
     await unsubscribe()
   }
+  track(AnalyticsEvent.PushNotificationsToggled, {
+    enabled,
+  })
 }
 </script>
 
@@ -27,7 +32,7 @@ async function toggleNotifications(enabled: boolean) {
       </NuxtLink>
     </template>
 
-    <div class="space-y-list-section-gap p-list-outside">
+    <div class="space-y-list-section-gap p-list-outside grow flex flex-col">
       <DesignPanel class="gap-list-section-inset flex flex-col">
         <LocaleSelector v-slot="{ selectedLocale }">
           <div class="flex items-center justify-between gap-2.5 px-3 py-2">
@@ -46,34 +51,55 @@ async function toggleNotifications(enabled: boolean) {
             </DesignButton>
           </div>
         </ColorModeSelector> -->
-        <template v-if="isPushSupported">
-          <hr class="border-border-default mx-3" />
-          <label class="flex items-center justify-between gap-2.5 px-3 py-2">
-            <p class="text-label">{{ $t('settings.notifications') }}</p>
-            <DesignSwitch
-              :model-value="isSubscribed"
-              :disabled="isPushLoading"
-              @update:model-value="toggleNotifications"
-            />
-          </label>
-        </template>
+        <hr class="border-border-default mx-3" />
+        <label class="flex items-center justify-between gap-2.5 px-3 py-2">
+          <p class="text-label">{{ $t('settings.notifications') }}</p>
+          <DesignSwitch
+            :model-value="isSubscribed"
+            :disabled="
+              isPushLoading ||
+              pushPermission === 'denied' ||
+              !$pwa?.isPWAInstalled ||
+              !isPushSupported
+            "
+            :loading="isPushLoading"
+            @update:model-value="toggleNotifications"
+          />
+        </label>
+        <p
+          v-if="!$pwa?.isPWAInstalled"
+          class="text-caption text-text-hint px-3 pb-2"
+        >
+          {{ $t('settings.notificationsOnlyAvailableWhenInstalled') }}
+        </p>
+        <p
+          v-else-if="pushPermission === 'denied'"
+          class="text-text-hint text-caption px-3 pb-2"
+        >
+          {{ $t('settings.notificationsBlocked') }}
+        </p>
+        <p
+          v-else-if="pushError"
+          class="text-accent-negative text-caption px-3 pb-2"
+        >
+          {{ pushError.message }}
+        </p>
       </DesignPanel>
       <DesignPanel class="gap-list-section-inset flex flex-col">
-        <button
+        <NuxtLink
+          :to="{ name: 'settings-add-to-home' }"
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12 disabled:opacity-25 disabled:cursor-not-allowed"
-          :disabled="!($pwa?.showInstallPrompt && !$pwa?.isPWAInstalled)"
-          @click="$pwa?.install()"
         >
           <p class="text-label">{{ $t('settings.addToHomeScreen') }}</p>
-          <Icon name="IconChevronRight" class="size-6" />
-        </button>
+          <IconChevronRight class="size-6" />
+        </NuxtLink>
         <hr class="border-border-default mx-3" />
         <NuxtLink
-          to="https://bcc.media/privacy"
+          to="https://bcc.media/personvern"
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
         >
           <p class="text-label">{{ $t('settings.privacyPolicy') }}</p>
-          <Icon name="IconChevronRight" class="size-6" />
+          <IconChevronRight class="size-6" />
         </NuxtLink>
         <hr class="border-border-default mx-3" />
         <NuxtLink
@@ -81,15 +107,27 @@ async function toggleNotifications(enabled: boolean) {
           class="flex items-center justify-between gap-2.5 px-3 py-2 h-12"
         >
           <p class="text-label">{{ $t('settings.consents') }}</p>
-          <Icon name="IconChevronRight" class="size-6" />
+          <IconChevronRight class="size-6" />
         </NuxtLink>
       </DesignPanel>
+      <UserFeedback />
+      <div class="flex items-center justify-center p-default">
+        <DesignButton
+          variant="secondary"
+          size="small"
+          class="grow-0"
+          @click="logout"
+        >
+          {{ $t('auth.logoutButton') }}
+        </DesignButton>
+      </div>
       <div
         v-if="me"
-        class="text-text-hint text-caption p-medium mt-auto text-center"
+        class="text-text-hint text-tiny p-medium mt-auto text-center space-y-1"
       >
         <p>{{ me.id }}</p>
         <p>{{ me.church.id }}</p>
+        <p>{{ useRuntimeConfig().public.appVersion }}</p>
       </div>
     </div>
   </PageLayout>

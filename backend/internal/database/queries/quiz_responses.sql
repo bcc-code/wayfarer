@@ -1,3 +1,8 @@
+-- name: GetQuizResponseByID :one
+SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds
+FROM quiz_responses
+WHERE id = @id::text;
+
 -- name: GetQuizResponsesBySubmissionID :many
 SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds
 FROM quiz_responses
@@ -63,8 +68,7 @@ RETURNING id, submission_id, question_id, selected_answer_ids, text_response, nu
 
 -- name: CalculateSubmissionScore :one
 SELECT
-    COUNT(*) FILTER (WHERE is_correct = true) AS score,
-    COUNT(*) FILTER (WHERE is_correct IS NOT NULL) AS max_score
+    COALESCE(SUM(points_earned), 0)::int AS score
 FROM quiz_responses
 WHERE submission_id = @submissionid::text;
 

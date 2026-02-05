@@ -25,6 +25,9 @@ type Config struct {
 	S3       S3Config
 	VAPID    VAPIDConfig
 	Phrase   PhraseConfig
+	Plugin   PluginConfig
+	Firebase FirebaseConfig
+	Resend   ResendConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -54,6 +57,8 @@ type JWTConfig struct {
 	Issuer            string
 	BrunstadTVJWKSURL string
 	BrunstadTVIssuer  string
+	Auth0JWKSURL      string
+	Auth0Issuer       string
 }
 
 // APIKeyConfig holds API key authentication configuration for external systems
@@ -102,10 +107,9 @@ type SSFConfig struct {
 type S3Config struct {
 	Bucket          string // S3 bucket name
 	Region          string // AWS region
-	AccessKeyID     string // AWS access key ID (used locally, optional on Cloud Run)
-	SecretAccessKey string // AWS secret access key (used locally, optional on Cloud Run)
+	AccessKeyID     string // AWS access key ID
+	SecretAccessKey string // AWS secret access key
 	PublicBaseURL   string // Public base URL for uploaded files
-	RoleARN         string // AWS role ARN for OIDC auth on Cloud Run
 }
 
 // VAPIDConfig holds VAPID keys for web push notifications
@@ -129,6 +133,28 @@ type PhraseConfig struct {
 	ExportKey   string   // Static key for export endpoint authentication (like SSF.SyncKey)
 }
 
+// PluginConfig holds configuration for plugins
+type PluginConfig struct {
+	LadderToHeavenAchievementID         string // Achievement ID for Ladder to Heaven plugin (empty = disabled)
+	LadderToHeavenSecretKey             string // Secret key for webhook signature verification
+	LadderToHeavenTeamRenameChallengeID string // Challenge ID to complete when team renames (empty = disabled)
+	LadderToHeavenCryptexSecretKey      string // Secret key for Cryptex JWT token signing (empty = endpoint disabled)
+	LadderToHeavenCryptexBaseURL        string // Base URL for Cryptex admin login (e.g., https://cryptex.example.com)
+}
+
+// FirebaseConfig holds Firebase Admin SDK configuration
+type FirebaseConfig struct {
+	ServiceAccountJSON string // Path to service account JSON file or base64-encoded JSON content
+	DatabaseName       string // Firestore database name (default: "(default)")
+}
+
+// ResendConfig holds Resend email service configuration
+type ResendConfig struct {
+	APIKey        string // Resend API key for sending emails
+	AdminBaseURL  string // Base URL for admin panel links (e.g., "https://admin.example.com")
+	SSFTicketEmail string // Email address for SSF ticket forwarding
+}
+
 // Load reads all environment variables and returns a Config struct
 // This should be called once at application startup
 func Load() (*Config, error) {
@@ -141,7 +167,7 @@ func Load() (*Config, error) {
 			Port:            getEnvAsInt("SERVER_PORT", 8080),
 			Environment:     getEnv("ENVIRONMENT", "development"),
 			ReadTimeout:     getEnvAsDuration("SERVER_READ_TIMEOUT", 10*time.Second),
-			WriteTimeout:    getEnvAsDuration("SERVER_WRITE_TIMEOUT", 10*time.Second),
+			WriteTimeout:    getEnvAsDuration("SERVER_WRITE_TIMEOUT", 5*time.Minute),
 			IdleTimeout:     getEnvAsDuration("SERVER_IDLE_TIMEOUT", 120*time.Second),
 			StaticFilesPath: getEnv("STATIC_FILES_PATH", ""),
 		},
@@ -158,6 +184,8 @@ func Load() (*Config, error) {
 			Issuer:            getEnv("JWT_ISSUER", "wayfarer"),
 			BrunstadTVJWKSURL: getEnv("BRUNSTAD_TV_JWKS_URL", "https://api.brunstad.tv/.well-known/jwks.json"),
 			BrunstadTVIssuer:  getEnv("BRUNSTAD_TV_JWT_ISSUER", "https://api.brunstad.tv/"),
+			Auth0JWKSURL:      getEnv("AUTH0_JWKS_URL", "https://login.bcc.no/.well-known/jwks.json"),
+			Auth0Issuer:       getEnv("AUTH0_JWT_ISSUER", "https://login.bcc.no/"),
 		},
 		APIKey: APIKeyConfig{
 			Keys: parseAPIKeys(getEnv("EXTERNAL_API_KEYS", "")),
@@ -195,7 +223,6 @@ func Load() (*Config, error) {
 			AccessKeyID:     getEnv("AWS_S3_ACCESS_KEY_ID", ""),
 			SecretAccessKey: getEnv("AWS_S3_SECRET_ACCESS_KEY", ""),
 			PublicBaseURL:   getEnv("AWS_S3_PUBLIC_BASE_URL", ""),
-			RoleARN:         getEnv("AWS_S3_ROLE_ARN", ""),
 		},
 		VAPID: VAPIDConfig{
 			PublicKey:  getEnv("VAPID_PUBLIC_KEY", ""),
@@ -213,6 +240,22 @@ func Load() (*Config, error) {
 			Debug:       getEnvAsBool("PHRASE_DEBUG", false),
 			Languages:   parseLanguages(getEnv("PHRASE_TARGET_LANGUAGES", "da,de,en,fr,fi,hu,it,nl,pl,pt,ro,es,ru")),
 			ExportKey:   getEnv("TRANSLATIONS_EXPORT_KEY", ""),
+		},
+		Plugin: PluginConfig{
+			LadderToHeavenAchievementID:         getEnv("PLUGIN_LADDER_TO_HEAVEN_ACHIEVEMENT_ID", ""),
+			LadderToHeavenSecretKey:             getEnv("PLUGIN_LADDER_TO_HEAVEN_SECRET_KEY", ""),
+			LadderToHeavenTeamRenameChallengeID: getEnv("PLUGIN_LADDER_TO_HEAVEN_TEAM_RENAME_CHALLENGE_ID", ""),
+			LadderToHeavenCryptexSecretKey:      getEnv("PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_SECRET_KEY", ""),
+			LadderToHeavenCryptexBaseURL:        getEnv("PLUGIN_LADDER_TO_HEAVEN_CRYPTEX_BASE_URL", ""),
+		},
+		Firebase: FirebaseConfig{
+			ServiceAccountJSON: getEnv("FIREBASE_SERVICE_ACCOUNT", ""),
+			DatabaseName:       getEnv("FIREBASE_DATABASE_NAME", "(default)"),
+		},
+		Resend: ResendConfig{
+			APIKey:        getEnv("RESEND_API_KEY", ""),
+			AdminBaseURL:  getEnv("ADMIN_BASE_URL", ""),
+			SSFTicketEmail: getEnv("SSF_TICKET_EMAIL", ""),
 		},
 	}
 

@@ -157,15 +157,16 @@ func (q *Queries) GetEventsForTranslation(ctx context.Context) ([]*GetEventsForT
 
 const GetProjectsForTranslation = `-- name: GetProjectsForTranslation :many
 
-SELECT id, name, description
+SELECT id, name, description, rules
 FROM projects
 WHERE archived = false
 `
 
 type GetProjectsForTranslationRow struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Rules       *string `json:"rules"`
 }
 
 // Export queries for translations - fetch base language content
@@ -178,7 +179,12 @@ func (q *Queries) GetProjectsForTranslation(ctx context.Context) ([]*GetProjects
 	items := []*GetProjectsForTranslationRow{}
 	for rows.Next() {
 		var i GetProjectsForTranslationRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Rules,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)
@@ -304,68 +310,6 @@ func (q *Queries) GetStreaksForTranslation(ctx context.Context) ([]*GetStreaksFo
 	items := []*GetStreaksForTranslationRow{}
 	for rows.Next() {
 		var i GetStreaksForTranslationRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const GetSuperTeamsForTranslation = `-- name: GetSuperTeamsForTranslation :many
-SELECT id, name, description
-FROM super_teams
-`
-
-type GetSuperTeamsForTranslationRow struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Description *string `json:"description"`
-}
-
-func (q *Queries) GetSuperTeamsForTranslation(ctx context.Context) ([]*GetSuperTeamsForTranslationRow, error) {
-	rows, err := q.db.Query(ctx, GetSuperTeamsForTranslation)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetSuperTeamsForTranslationRow{}
-	for rows.Next() {
-		var i GetSuperTeamsForTranslationRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const GetTeamsForTranslation = `-- name: GetTeamsForTranslation :many
-SELECT id, name, description
-FROM teams
-`
-
-type GetTeamsForTranslationRow struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Description *string `json:"description"`
-}
-
-func (q *Queries) GetTeamsForTranslation(ctx context.Context) ([]*GetTeamsForTranslationRow, error) {
-	rows, err := q.db.Query(ctx, GetTeamsForTranslation)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetTeamsForTranslationRow{}
-	for rows.Next() {
-		var i GetTeamsForTranslationRow
 		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
 			return nil, err
 		}

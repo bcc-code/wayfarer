@@ -54,3 +54,10 @@ ON CONFLICT (user_id, challenge_id) DO NOTHING;
 DELETE FROM user_challenge_enrollments
 WHERE challenge_id = @challengeid::text
   AND user_id = ANY(@userids::text[]);
+
+-- name: GetUserEnrolledChallengeIDsInProject :many
+SELECT uce.challenge_id
+FROM user_challenge_enrollments uce
+JOIN challenges c ON c.id = uce.challenge_id
+WHERE uce.user_id = @userid::text
+  AND c.project_id = @projectid::text;

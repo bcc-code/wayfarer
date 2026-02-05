@@ -96,6 +96,10 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
           isCorrect: a.isCorrect,
           answerOrder: a.answerOrder,
         })),
+        orderingItems: question.orderingItems?.map((item) => ({
+          itemText: item.itemText,
+          correctOrder: item.correctOrder,
+        })),
         minValue: question.minValue,
         maxValue: question.maxValue,
         stepValue: question.stepValue,
@@ -105,28 +109,22 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
 }
 
 async function handleSubmit(formData: ChallengeFormData) {
-  if (!eventId.value) {
-    toast.add({
-      title: 'Error',
-      description: 'Please select an event',
-      color: 'error',
-    })
-    return
-  }
-
-  const { type, allowSelfCompletion, url, quiz, ...rest } = formData
+  const { type, allowSelfCompletion, url, quiz, publishedAt, pluginChallengeId, ...rest } =
+    formData
 
   // Only include type-specific fields
   const input = {
     ...rest,
     type,
+    publishedAt: publishedAt ? toISOString(publishedAt) : undefined,
     ...(type === ChallengeType.Simple && { allowSelfCompletion }),
     ...(type === ChallengeType.External && { url }),
+    ...(type === ChallengeType.Plugin && { pluginChallengeId }),
   }
 
   const response = await executeMutation({
     projectId: route.params.projectId,
-    eventId: eventId.value,
+    eventId: eventId.value || undefined,
     input,
   })
 
@@ -146,8 +144,8 @@ async function handleSubmit(formData: ChallengeFormData) {
       await saveQuiz(quiz, challengeId)
     } catch (err) {
       toast.add({
-        title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to save quiz',
+        title: 'Feil',
+        description: err instanceof Error ? err.message : 'Kunne ikke lagre quiz',
         color: 'error',
       })
       return
@@ -155,8 +153,8 @@ async function handleSubmit(formData: ChallengeFormData) {
   }
 
   toast.add({
-    title: 'Success',
-    description: 'Challenge created successfully',
+    title: 'Suksess',
+    description: 'Utfordring opprettet',
     color: 'success',
   })
   navigateTo({
@@ -173,7 +171,7 @@ async function handleSubmit(formData: ChallengeFormData) {
         <UBreadcrumb
           :items="[
             {
-              label: 'Projects',
+              label: 'Prosjekter',
               to: { name: 'admin-projects' },
             },
             {
@@ -184,29 +182,29 @@ async function handleSubmit(formData: ChallengeFormData) {
               },
             },
             {
-              label: 'Challenges',
+              label: 'Utfordringer',
             },
             {
-              label: 'New',
+              label: 'Ny',
             },
           ]"
         />
       </UContainer>
     </div>
     <UContainer class="py-12">
-      <h1 class="mb-6 text-2xl font-bold">Create Challenge</h1>
+      <h1 class="mb-6 text-2xl font-bold">Opprett utfordring</h1>
       <AdminChallengeForm
         :project-id="route.params.projectId"
         :colors="data?.project.branding.colors"
-        submit-label="Create Challenge"
+        submit-label="Opprett utfordring"
         @submit="handleSubmit"
       >
         <template #before-type>
-          <UFormField name="eventId" label="Event">
+          <UFormField name="eventId" label="Arrangement (valgfritt)">
             <USelect
               v-model="eventId"
               :items="eventOptions"
-              required
+              placeholder="Ingen (prosjekt-nivå)"
               class="w-full"
             />
           </UFormField>

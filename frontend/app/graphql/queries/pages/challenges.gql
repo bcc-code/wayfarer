@@ -1,11 +1,16 @@
 query ChallengesPage {
   myCurrentProject {
+    myTeam {
+      joinCode
+    }
     challenges {
       __typename
       id
       name
       description
-      image
+      imageObject {
+        ...ImageFields
+      }
       buttonText
       publishedAt
       endTime
@@ -20,6 +25,9 @@ query ChallengesPage {
       ... on QuizChallenge {
         quiz {
           userCanStart
+          userActiveSession {
+            id
+          }
         }
       }
     }

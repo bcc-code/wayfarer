@@ -1,25 +1,25 @@
 -- name: GetUserByID :one
-SELECT id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
+SELECT id, members_id, person_uuid, gender, church_id, church_locked_until, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url, language, created_at
 FROM users
 WHERE id = @id;
 
 -- name: GetUsersByIDs :many
-SELECT id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
+SELECT id, members_id, person_uuid, gender, church_id, church_locked_until, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url, language, created_at
 FROM users
 WHERE id = ANY(@ids::text[]);
 
 -- name: GetUserByMembersID :one
-SELECT id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
+SELECT id, members_id, person_uuid, gender, church_id, church_locked_until, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url, language, created_at
 FROM users
 WHERE members_id = @members_id;
 
 -- name: CreateUser :one
-INSERT INTO users (id, members_id, email, name, first_name, last_name, middle_name, display_name, gender, birthdate, church_id, avatar_url)
-VALUES (@id, @members_id, @email, @name, @first_name, @last_name, @middle_name, @display_name, @gender, @birthdate, @church_id, @avatar_url)
-RETURNING id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url;
+INSERT INTO users (id, members_id, person_uuid, email, name, first_name, last_name, middle_name, display_name, gender, birthdate, church_id, avatar_url, language)
+VALUES (@id, @members_id, @person_uuid, @email, @name, @first_name, @last_name, @middle_name, @display_name, @gender, @birthdate, @church_id, @avatar_url, @language)
+RETURNING id, members_id, person_uuid, gender, church_id, church_locked_until, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url, language, created_at;
 
 -- name: GetUsersFiltered :many
-SELECT DISTINCT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
+SELECT DISTINCT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.church_locked_until, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url, u.language, u.created_at
 FROM users u
 LEFT JOIN user_projects up ON u.id = up.user_id AND @projectid::text IS NOT NULL
 LEFT JOIN user_events ue ON u.id = ue.user_id AND @eventid::text IS NOT NULL
@@ -38,10 +38,11 @@ LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END
 OFFSET CASE WHEN @queryoffset::int IS NULL THEN 0 ELSE @queryoffset::int END;
 
 -- name: GetUsersFilteredCursor :many
-SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
+SELECT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.church_locked_until, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url, u.language, u.created_at
 FROM users u
 WHERE
-    (@churchid::text = '' OR u.church_id = @churchid::text)
+    (@query::text = '' OR (u.name ILIKE '%' || @query::text || '%' OR u.email ILIKE '%' || @query::text || '%'))
+    AND (@churchid::text = '' OR u.church_id = @churchid::text)
     AND (@gender::text = '' OR u.gender = @gender::text)
     AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
     AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)
@@ -66,7 +67,8 @@ LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END;
 SELECT COUNT(u.id)
 FROM users u
 WHERE
-    (@churchid::text = '' OR u.church_id = @churchid::text)
+    (@query::text = '' OR (u.name ILIKE '%' || @query::text || '%' OR u.email ILIKE '%' || @query::text || '%'))
+    AND (@churchid::text = '' OR u.church_id = @churchid::text)
     AND (@gender::text = '' OR u.gender = @gender::text)
     AND (@minage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= @minage::int)
     AND (@maxage::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= @maxage::int)
@@ -85,8 +87,10 @@ WHERE
 SELECT
     u.id,
     u.members_id,
+    u.person_uuid,
     u.gender,
     u.church_id,
+    u.church_locked_until,
     u.birthdate,
     u.email,
     u.name,
@@ -95,6 +99,8 @@ SELECT
     u.middle_name,
     u.display_name,
     u.avatar_url,
+    u.language,
+    u.created_at,
     tm.team_id,
     tm.joined_at,
     EXISTS(
@@ -110,7 +116,7 @@ WHERE tm.team_id = ANY(@teamids::text[])
 ORDER BY tm.team_id, tm.joined_at;
 
 -- name: GetUsersBySuperTeamIDs :many
-SELECT DISTINCT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
+SELECT DISTINCT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.church_locked_until, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url, u.language, u.created_at
 FROM users u
 INNER JOIN team_members tm ON u.id = tm.user_id
 INNER JOIN teams t ON tm.team_id = t.id
@@ -125,7 +131,7 @@ WITH distinct_user_ids AS (
     INNER JOIN teams t ON tm.team_id = t.id
     WHERE t.super_team_id = @superteamid::text
 )
-SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
+SELECT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.church_locked_until, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url, u.language, u.created_at
 FROM distinct_user_ids du
 INNER JOIN users u ON du.id = u.id
 WHERE (@aftercursor::text = '' OR u.id > @aftercursor::text)
@@ -141,3 +147,58 @@ FROM users u
 INNER JOIN team_members tm ON u.id = tm.user_id
 INNER JOIN teams t ON tm.team_id = t.id
 WHERE t.super_team_id = @superteamid::text;
+
+-- name: GetUserByPersonUUID :one
+SELECT id, members_id, person_uuid, gender, church_id, church_locked_until, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url, language, created_at
+FROM users
+WHERE person_uuid = @person_uuid::uuid;
+
+-- name: UpdateUserPersonUUID :exec
+UPDATE users
+SET person_uuid = @person_uuid::uuid, updated_at = now()
+WHERE id = @id::text;
+
+-- name: GetUsersWithoutPersonUUID :many
+SELECT id, members_id
+FROM users
+WHERE person_uuid IS NULL
+  AND members_id ~ '^[0-9]+$'
+ORDER BY id
+LIMIT @querylimit::int;
+
+-- name: UpdateUserLanguage :exec
+UPDATE users
+SET language = @language::text, updated_at = now()
+WHERE id = @user_id::text;
+
+-- name: GetUsersWithIncompleteData :many
+SELECT id, members_id, person_uuid, gender, church_id, church_locked_until
+FROM users
+WHERE gender = 'UNKNOWN'
+ORDER BY id
+LIMIT @querylimit::int;
+
+-- name: UpdateUserGenderAndChurch :exec
+UPDATE users
+SET
+    gender = COALESCE(NULLIF(@gender::text, ''), gender),
+    church_id = COALESCE(NULLIF(@church_id::text, ''), church_id),
+    updated_at = now()
+WHERE id = @id::text;
+
+-- name: LockUserChurch :exec
+UPDATE users
+SET church_locked_until = @locked_until::timestamptz, updated_at = now()
+WHERE id = @id::text;
+
+-- name: UnlockUserChurch :exec
+UPDATE users
+SET church_locked_until = NULL, updated_at = now()
+WHERE id = @id::text;
+
+-- name: GetUsersByPersonUUIDs :many
+SELECT id, members_id, person_uuid, gender, church_id, church_locked_until,
+       birthdate, email, name, first_name, last_name, middle_name, display_name,
+       avatar_url, language, created_at
+FROM users
+WHERE person_uuid = ANY(@person_uuids::uuid[]);

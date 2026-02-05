@@ -1,0 +1,49 @@
+type: http_request
+model: http_request
+id: rq_ZUqxpmus4a
+createdAt: 2026-01-03T21:42:31.170113
+updatedAt: 2026-01-05T14:08:44.791989
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Achievements
+authentication: {}
+authenticationType: null
+body:
+  query: |2-
+      mutation {
+        updateContentAchievement(
+          id: "AC01KCCNMRWECKQG6W0WD1Y3Q7T1"
+          input: {
+            items: [
+              { externalContentId: "EC01KE2RXAPKA64PP7G3CHQ37R4B" }
+    { externalContentId: "EC01KE2RXAVQNYZX8GDEGFRYRQ83" }
+    { externalContentId: "EC01KE2RXAZ5WMMA7BKWKASRXK3A" }
+    { externalContentId: "EC01KE2RXB7A06CZ5YQHK47VVV9H" }
+    { externalContentId: "EC01KE2RXBAQ0RS0TW92SSNMTDD2" }
+    { externalContentId: "EC01KE2RXBDAQTGSDZ2RXG6CVWXX" }
+            ]
+          }
+        ) {
+          id
+          name
+          items {
+            id
+            externalContent {
+              id
+              title
+            }
+          }
+        }
+      }
+  variables: ''
+bodyType: graphql
+description: Create a simple achievement (admin only)
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_CreateSimpleAchievement
+method: POST
+name: Update Content For Achivment
+sortPriority: 3100.001
+url: ${[ HOST ]}/graphql
+urlParameters: []

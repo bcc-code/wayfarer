@@ -154,14 +154,22 @@ func (r *queryResolver) UserRoles(ctx context.Context, userID string) ([]model.U
 
 // UsersWithRole is the resolver for the usersWithRole field.
 func (r *queryResolver) UsersWithRole(ctx context.Context, role model.RoleType, scopeType *model.ScopeType, scopeID *string) ([]model.User, error) {
-	// Check admin authorization
+	// Check authorization
 	currentUserID, ok := middleware.GetUserID(ctx)
 	if !ok || currentUserID == "" {
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
+	// Admin/superadmin can query any scope
 	if !r.RoleService.IsAdmin(ctx, currentUserID) {
-		return nil, fmt.Errorf("permission denied: admin role required")
+		// Church admins can query users with roles in their own church
+		if scopeType != nil && *scopeType == model.ScopeTypeChurch && scopeID != nil {
+			if !r.RoleService.CanManageChurch(ctx, currentUserID, *scopeID) {
+				return nil, fmt.Errorf("permission denied: admin role required")
+			}
+		} else {
+			return nil, fmt.Errorf("permission denied: admin role required")
+		}
 	}
 
 	var users []model.User
@@ -269,3 +277,85 @@ func (r *queryResolver) UsersWithRole(ctx context.Context, role model.RoleType, 
 
 	return users, nil
 }
+
+// Church is the resolver for the church field.
+func (r *roleScopeResolver) Church(ctx context.Context, obj *model.RoleScope) (*model.Church, error) {
+	// Only return church if scope type is CHURCH
+	if obj.Type != model.ScopeTypeChurch {
+		return nil, nil
+	}
+
+	// Use dataloader to fetch church
+	thunk := r.Loaders.ChurchLoader.Load(ctx, obj.ID)
+	church, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load church: %w", err)
+	}
+
+	return church, nil
+}
+
+// Project is the resolver for the project field.
+func (r *roleScopeResolver) Project(ctx context.Context, obj *model.RoleScope) (*model.Project, error) {
+	// Only return project if scope type is PROJECT
+	if obj.Type != model.ScopeTypeProject {
+		return nil, nil
+	}
+
+	// Use translation-aware wrapper to fetch project
+	return r.LoadProjectWithTranslation(ctx, obj.ID)
+}
+
+// Team is the resolver for the team field.
+func (r *roleScopeResolver) Team(ctx context.Context, obj *model.RoleScope) (*model.Team, error) {
+	// Only return team if scope type is TEAM
+	if obj.Type != model.ScopeTypeTeam {
+		return nil, nil
+	}
+
+	return r.Loaders.TeamByIDLoader.Load(ctx, obj.ID)()
+}
+
+// User is the resolver for the user field.
+func (r *userRoleResolver) User(ctx context.Context, obj *model.UserRole) (*model.User, error) {
+	// The user field contains a partial User object with just the ID
+	// Use the dataloader to fetch the full user data
+	if obj.User == nil {
+		return nil, fmt.Errorf("user ID not set in UserRole")
+	}
+
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load user first to get churchId for authorization
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.User.ID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	// Check authorization with user's church
+	if !r.RoleService.CanAccessUser(ctx, currentUserID, obj.User.ID, user.ChurchID) {
+		return nil, fmt.Errorf("permission denied")
+	}
+
+	return user, nil
+}
+
+// Scope is the resolver for the scope field.
+func (r *userRoleResolver) Scope(ctx context.Context, obj *model.UserRole) (*model.RoleScope, error) {
+	// The scope is already populated in the dataloader
+	return obj.Scope, nil
+}
+
+// RoleScope returns RoleScopeResolver implementation.
+func (r *Resolver) RoleScope() RoleScopeResolver { return &roleScopeResolver{r} }
+
+// UserRole returns UserRoleResolver implementation.
+func (r *Resolver) UserRole() UserRoleResolver { return &userRoleResolver{r} }
+
+type roleScopeResolver struct{ *Resolver }
+type userRoleResolver struct{ *Resolver }

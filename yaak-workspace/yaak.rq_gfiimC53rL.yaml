@@ -2,28 +2,30 @@ type: http_request
 model: http_request
 id: rq_gfiimC53rL
 createdAt: 2025-12-08T21:20:37.260804
-updatedAt: 2025-12-10T10:49:00.352459
+updatedAt: 2026-02-04T13:50:32.394172
 workspaceId: wk_XKsmbMdFg7
-folderId: null
+folderId: fl_nyjimFtHG9
 authentication: {}
 authenticationType: null
 body:
   query: |
-    query ChallengesPage {
-      myCurrentProject {
-        challenges {
-          id
-          name
-          description
-          image
-          buttonText
-          publishedAt
-          endTime
-          visibleAt
+    query ProjectSuperTeams($projectId: ID!) {
+      superteams(filter: {projectId: $projectId}) {
+        edges {
+          node {
+            id
+            name
+            parentProject {
+              id
+            }
+          }
         }
       }
     }
-  variables: ''
+  variables: |-
+    {
+      "projectId": "PR01K9VZ8684DP9R4W3ZEV526E5X"
+    }
 bodyType: graphql
 description: ''
 headers:
@@ -32,7 +34,7 @@ headers:
   value: application/json
   id: YNmEv7zw36
 method: POST
-name: ''
-sortPriority: 11000.0
+name: ProjectSuperTeams
+sortPriority: 0.0
 url: ${[ HOST ]}/graphql
 urlParameters: []

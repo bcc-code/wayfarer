@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const CountEventChurchLeaderboard = `-- name: CountEventChurchLeaderboard :one
@@ -95,16 +97,28 @@ func (q *Queries) CountEventSuperTeamLeaderboard(ctx context.Context, eventid st
 
 const CountEventTeamLeaderboard = `-- name: CountEventTeamLeaderboard :one
 WITH event_project AS (
-    SELECT project_id FROM events WHERE id = $1::text
+    SELECT project_id FROM events WHERE id = $2::text
 )
 SELECT COUNT(DISTINCT t.id)::bigint AS total
 FROM teams t
 CROSS JOIN event_project ep
 WHERE t.project_id = ep.project_id
+  AND t.leaderboard_excluded = false
+  -- Church filter: team has ANY member from specified church
+  AND ($1::text = '' OR EXISTS (
+      SELECT 1 FROM team_members tm
+      INNER JOIN users u ON tm.user_id = u.id
+      WHERE tm.team_id = t.id AND u.church_id = $1::text
+  ))
 `
 
-func (q *Queries) CountEventTeamLeaderboard(ctx context.Context, eventid string) (int64, error) {
-	row := q.db.QueryRow(ctx, CountEventTeamLeaderboard, eventid)
+type CountEventTeamLeaderboardParams struct {
+	Churchid string `json:"churchid"`
+	Eventid  string `json:"eventid"`
+}
+
+func (q *Queries) CountEventTeamLeaderboard(ctx context.Context, arg CountEventTeamLeaderboardParams) (int64, error) {
+	row := q.db.QueryRow(ctx, CountEventTeamLeaderboard, arg.Churchid, arg.Eventid)
 	var total int64
 	err := row.Scan(&total)
 	return total, err
@@ -155,8 +169,8 @@ WITH project_users AS MATERIALIZED (
 )
 SELECT COUNT(*)::bigint AS total
 FROM project_users pu
-WHERE ($1::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) >= $1::int)
-  AND ($2::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) <= $2::int)
+WHERE ($1::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM pu.birthdate)) >= $1::int)
+  AND ($2::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM pu.birthdate)) <= $2::int)
   AND ($3::text = '' OR EXISTS (
       SELECT 1 FROM churches c
       WHERE c.id = pu.church_id AND c.country = $3::text
@@ -214,16 +228,24 @@ SELECT COUNT(DISTINCT t.id)::bigint AS total
 FROM teams t
 WHERE
     t.project_id = $1::text
+    AND t.leaderboard_excluded = false
     AND ($2::text = '' OR t.super_team_id = $2::text)
+    -- Church filter: team has ANY member from specified church
+    AND ($3::text = '' OR EXISTS (
+        SELECT 1 FROM team_members tm
+        INNER JOIN users u ON tm.user_id = u.id
+        WHERE tm.team_id = t.id AND u.church_id = $3::text
+    ))
 `
 
 type CountProjectTeamLeaderboardParams struct {
 	Projectid   string `json:"projectid"`
 	Superteamid string `json:"superteamid"`
+	Churchid    string `json:"churchid"`
 }
 
 func (q *Queries) CountProjectTeamLeaderboard(ctx context.Context, arg CountProjectTeamLeaderboardParams) (int64, error) {
-	row := q.db.QueryRow(ctx, CountProjectTeamLeaderboard, arg.Projectid, arg.Superteamid)
+	row := q.db.QueryRow(ctx, CountProjectTeamLeaderboard, arg.Projectid, arg.Superteamid, arg.Churchid)
 	var total int64
 	err := row.Scan(&total)
 	return total, err
@@ -236,7 +258,8 @@ WITH ranked_scores AS (
         c.name,
         NULL::text AS image,
         lec.score,
-        RANK() OVER (ORDER BY lec.score DESC, c.name ASC) AS rank
+        lec.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lec.score DESC) AS rank
     FROM leaderboard_event_churches lec
     INNER JOIN churches c ON lec.church_id = c.id
     WHERE lec.event_id = $1::text
@@ -248,7 +271,7 @@ user_church AS (
     FROM users
     WHERE id = $4::text
 )
-SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank
+SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank, rs.last_score_at
 FROM ranked_scores rs
 INNER JOIN user_church uc ON rs.entity_id = uc.church_id
 `
@@ -261,11 +284,12 @@ type FindMyEventChurchPositionParams struct {
 }
 
 type FindMyEventChurchPositionRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) FindMyEventChurchPosition(ctx context.Context, arg FindMyEventChurchPositionParams) (*FindMyEventChurchPositionRow, error) {
@@ -282,6 +306,7 @@ func (q *Queries) FindMyEventChurchPosition(ctx context.Context, arg FindMyEvent
 		&i.Image,
 		&i.Score,
 		&i.Rank,
+		&i.LastScoreAt,
 	)
 	return &i, err
 }
@@ -294,7 +319,8 @@ WITH ranked_scores AS (
         c.name AS church_name,
         u.avatar_url AS image,
         lep.score,
-        RANK() OVER (ORDER BY lep.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
+        lep.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lep.score DESC) AS rank
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON lep.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -303,7 +329,7 @@ WITH ranked_scores AS (
       AND ($4::int IS NULL OR lep.score <= $4::int)
       AND ($5::text = '' OR u.church_id = $5::text)
 )
-SELECT entity_id, name, church_name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank, last_score_at
 FROM ranked_scores
 WHERE entity_id = $1::text
 `
@@ -317,12 +343,13 @@ type FindMyEventPersonPositionParams struct {
 }
 
 type FindMyEventPersonPositionRow struct {
-	EntityID   string  `json:"entity_id"`
-	Name       string  `json:"name"`
-	ChurchName string  `json:"church_name"`
-	Image      *string `json:"image"`
-	Score      int64   `json:"score"`
-	Rank       int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	ChurchName  string             `json:"church_name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) FindMyEventPersonPosition(ctx context.Context, arg FindMyEventPersonPositionParams) (*FindMyEventPersonPositionRow, error) {
@@ -341,6 +368,7 @@ func (q *Queries) FindMyEventPersonPosition(ctx context.Context, arg FindMyEvent
 		&i.Image,
 		&i.Score,
 		&i.Rank,
+		&i.LastScoreAt,
 	)
 	return &i, err
 }
@@ -352,7 +380,8 @@ WITH ranked_scores AS (
         st.name,
         NULL::text AS image,
         les.score,
-        RANK() OVER (ORDER BY les.score DESC, st.name ASC) AS rank
+        les.last_score_at,
+        DENSE_RANK() OVER (ORDER BY les.score DESC) AS rank
     FROM leaderboard_event_superteams les
     INNER JOIN super_teams st ON les.super_team_id = st.id
     WHERE les.event_id = $1::text
@@ -368,7 +397,7 @@ user_superteam AS (
       AND t.super_team_id IS NOT NULL
     LIMIT 1
 )
-SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank
+SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank, rs.last_score_at
 FROM ranked_scores rs
 INNER JOIN user_superteam ust ON rs.entity_id = ust.super_team_id
 `
@@ -381,11 +410,12 @@ type FindMyEventSuperTeamPositionParams struct {
 }
 
 type FindMyEventSuperTeamPositionRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) FindMyEventSuperTeamPosition(ctx context.Context, arg FindMyEventSuperTeamPositionParams) (*FindMyEventSuperTeamPositionRow, error) {
@@ -402,6 +432,7 @@ func (q *Queries) FindMyEventSuperTeamPosition(ctx context.Context, arg FindMyEv
 		&i.Image,
 		&i.Score,
 		&i.Rank,
+		&i.LastScoreAt,
 	)
 	return &i, err
 }
@@ -413,22 +444,30 @@ WITH ranked_scores AS (
         t.name,
         NULL::text AS image,
         let.score,
-        RANK() OVER (ORDER BY let.score DESC, t.name ASC) AS rank
+        let.last_score_at,
+        DENSE_RANK() OVER (ORDER BY let.score DESC) AS rank
     FROM leaderboard_event_teams let
     INNER JOIN teams t ON let.team_id = t.id
     WHERE let.event_id = $1::text
+      AND t.leaderboard_excluded = false
       AND let.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR let.score <= $3::int)
+      -- Church filter: team has ANY member from specified church
+      AND ($4::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN users u ON tm.user_id = u.id
+          WHERE tm.team_id = t.id AND u.church_id = $4::text
+      ))
 ),
 user_team AS (
     SELECT tm.team_id
     FROM team_members tm
     INNER JOIN teams t ON tm.team_id = t.id
     INNER JOIN events e ON t.project_id = e.project_id AND e.id = $1::text
-    WHERE tm.user_id = $4::text
+    WHERE tm.user_id = $5::text
     LIMIT 1
 )
-SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank
+SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank, rs.last_score_at
 FROM ranked_scores rs
 INNER JOIN user_team ut ON rs.entity_id = ut.team_id
 `
@@ -437,15 +476,17 @@ type FindMyEventTeamPositionParams struct {
 	Eventid  string `json:"eventid"`
 	Minscore int32  `json:"minscore"`
 	Maxscore int32  `json:"maxscore"`
+	Churchid string `json:"churchid"`
 	Userid   string `json:"userid"`
 }
 
 type FindMyEventTeamPositionRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) FindMyEventTeamPosition(ctx context.Context, arg FindMyEventTeamPositionParams) (*FindMyEventTeamPositionRow, error) {
@@ -453,6 +494,7 @@ func (q *Queries) FindMyEventTeamPosition(ctx context.Context, arg FindMyEventTe
 		arg.Eventid,
 		arg.Minscore,
 		arg.Maxscore,
+		arg.Churchid,
 		arg.Userid,
 	)
 	var i FindMyEventTeamPositionRow
@@ -462,6 +504,7 @@ func (q *Queries) FindMyEventTeamPosition(ctx context.Context, arg FindMyEventTe
 		&i.Image,
 		&i.Score,
 		&i.Rank,
+		&i.LastScoreAt,
 	)
 	return &i, err
 }
@@ -473,7 +516,8 @@ WITH ranked_scores AS (
         c.name,
         NULL::text AS image,
         lpc.score,
-        RANK() OVER (ORDER BY lpc.score DESC, c.name ASC) AS rank
+        lpc.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lpc.score DESC) AS rank
     FROM leaderboard_project_churches lpc
     INNER JOIN churches c ON lpc.church_id = c.id
     WHERE lpc.project_id = $1::text
@@ -485,7 +529,7 @@ user_church AS (
     FROM users
     WHERE id = $4::text
 )
-SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank
+SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank, rs.last_score_at
 FROM ranked_scores rs
 INNER JOIN user_church uc ON rs.entity_id = uc.church_id
 `
@@ -498,11 +542,12 @@ type FindMyProjectChurchPositionParams struct {
 }
 
 type FindMyProjectChurchPositionRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) FindMyProjectChurchPosition(ctx context.Context, arg FindMyProjectChurchPositionParams) (*FindMyProjectChurchPositionRow, error) {
@@ -519,6 +564,7 @@ func (q *Queries) FindMyProjectChurchPosition(ctx context.Context, arg FindMyPro
 		&i.Image,
 		&i.Score,
 		&i.Rank,
+		&i.LastScoreAt,
 	)
 	return &i, err
 }
@@ -531,7 +577,8 @@ WITH ranked_scores AS (
         c.name AS church_name,
         u.avatar_url AS image,
         lpp.score,
-        RANK() OVER (ORDER BY lpp.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
+        lpp.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lpp.score DESC) AS rank
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON lpp.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -540,7 +587,7 @@ WITH ranked_scores AS (
       AND ($4::int IS NULL OR lpp.score <= $4::int)
       AND ($5::text = '' OR u.church_id = $5::text)
 )
-SELECT entity_id, name, church_name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank, last_score_at
 FROM ranked_scores
 WHERE entity_id = $1::text
 `
@@ -554,12 +601,13 @@ type FindMyProjectPersonPositionParams struct {
 }
 
 type FindMyProjectPersonPositionRow struct {
-	EntityID   string  `json:"entity_id"`
-	Name       string  `json:"name"`
-	ChurchName string  `json:"church_name"`
-	Image      *string `json:"image"`
-	Score      int64   `json:"score"`
-	Rank       int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	ChurchName  string             `json:"church_name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) FindMyProjectPersonPosition(ctx context.Context, arg FindMyProjectPersonPositionParams) (*FindMyProjectPersonPositionRow, error) {
@@ -578,6 +626,7 @@ func (q *Queries) FindMyProjectPersonPosition(ctx context.Context, arg FindMyPro
 		&i.Image,
 		&i.Score,
 		&i.Rank,
+		&i.LastScoreAt,
 	)
 	return &i, err
 }
@@ -589,7 +638,8 @@ WITH ranked_scores AS (
         st.name,
         NULL::text AS image,
         lps.score,
-        RANK() OVER (ORDER BY lps.score DESC, st.name ASC) AS rank
+        lps.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lps.score DESC) AS rank
     FROM leaderboard_project_superteams lps
     INNER JOIN super_teams st ON lps.super_team_id = st.id
     WHERE lps.project_id = $1::text
@@ -605,7 +655,7 @@ user_superteam AS (
       AND t.project_id = $1::text
     LIMIT 1
 )
-SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank
+SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank, rs.last_score_at
 FROM ranked_scores rs
 INNER JOIN user_superteam ust ON rs.entity_id = ust.super_team_id
 `
@@ -618,11 +668,12 @@ type FindMyProjectSuperTeamPositionParams struct {
 }
 
 type FindMyProjectSuperTeamPositionRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) FindMyProjectSuperTeamPosition(ctx context.Context, arg FindMyProjectSuperTeamPositionParams) (*FindMyProjectSuperTeamPositionRow, error) {
@@ -639,6 +690,7 @@ func (q *Queries) FindMyProjectSuperTeamPosition(ctx context.Context, arg FindMy
 		&i.Image,
 		&i.Score,
 		&i.Rank,
+		&i.LastScoreAt,
 	)
 	return &i, err
 }
@@ -650,21 +702,29 @@ WITH ranked_scores AS (
         t.name,
         NULL::text AS image,
         lpt.score,
-        RANK() OVER (ORDER BY lpt.score DESC, t.name ASC) AS rank
+        lpt.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lpt.score DESC) AS rank
     FROM leaderboard_project_teams lpt
     INNER JOIN teams t ON lpt.team_id = t.id
     WHERE lpt.project_id = $1::text
+      AND t.leaderboard_excluded = false
       AND lpt.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpt.score <= $3::int)
+      -- Church filter: team has ANY member from specified church
+      AND ($4::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN users u ON tm.user_id = u.id
+          WHERE tm.team_id = t.id AND u.church_id = $4::text
+      ))
 ),
 user_team AS (
     SELECT team_id
     FROM team_members
-    WHERE user_id = $4::text
+    WHERE user_id = $5::text
       AND team_id IN (SELECT id FROM teams WHERE project_id = $1::text)
     LIMIT 1
 )
-SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank
+SELECT rs.entity_id, rs.name, rs.image, rs.score, rs.rank, rs.last_score_at
 FROM ranked_scores rs
 INNER JOIN user_team ut ON rs.entity_id = ut.team_id
 `
@@ -673,15 +733,17 @@ type FindMyProjectTeamPositionParams struct {
 	Projectid string `json:"projectid"`
 	Minscore  int32  `json:"minscore"`
 	Maxscore  int32  `json:"maxscore"`
+	Churchid  string `json:"churchid"`
 	Userid    string `json:"userid"`
 }
 
 type FindMyProjectTeamPositionRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) FindMyProjectTeamPosition(ctx context.Context, arg FindMyProjectTeamPositionParams) (*FindMyProjectTeamPositionRow, error) {
@@ -689,6 +751,7 @@ func (q *Queries) FindMyProjectTeamPosition(ctx context.Context, arg FindMyProje
 		arg.Projectid,
 		arg.Minscore,
 		arg.Maxscore,
+		arg.Churchid,
 		arg.Userid,
 	)
 	var i FindMyProjectTeamPositionRow
@@ -698,6 +761,7 @@ func (q *Queries) FindMyProjectTeamPosition(ctx context.Context, arg FindMyProje
 		&i.Image,
 		&i.Score,
 		&i.Rank,
+		&i.LastScoreAt,
 	)
 	return &i, err
 }
@@ -709,7 +773,8 @@ WITH church_scores AS (
         c.id AS entity_id,
         c.name,
         NULL::text AS image,
-        COALESCE(SUM(sj.points), 0)::bigint AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score,
+        MAX(sj.created_at) AS last_score_at
     FROM churches c
     INNER JOIN users u ON c.id = u.church_id
     INNER JOIN user_events ue ON u.id = ue.user_id
@@ -726,10 +791,11 @@ ranked_scores AS (
         name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        last_score_at,
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM church_scores
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
 WHERE
     score >= 1
@@ -737,7 +803,7 @@ WHERE
     AND ($2::int IS NULL OR score <= $2::int)
     AND ($3::bigint IS NULL OR rank > $3::bigint)
     AND ($4::bigint IS NULL OR rank < $4::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 LIMIT $5::int
 `
 
@@ -753,11 +819,12 @@ type GetEventChurchLeaderboardParams struct {
 }
 
 type GetEventChurchLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string      `json:"entity_id"`
+	Name        string      `json:"name"`
+	Image       *string     `json:"image"`
+	Score       int64       `json:"score"`
+	Rank        int64       `json:"rank"`
+	LastScoreAt interface{} `json:"last_score_at"`
 }
 
 // ==================== Event Church Leaderboard ====================
@@ -785,6 +852,7 @@ func (q *Queries) GetEventChurchLeaderboard(ctx context.Context, arg GetEventChu
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}
@@ -804,7 +872,8 @@ WITH person_scores AS (
         COALESCE(u.display_name, u.name) AS name,
         c.name AS church_name,
         u.avatar_url AS image,
-        COALESCE(SUM(sj.points), 0)::bigint AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score,
+        MAX(sj.created_at) AS last_score_at
     FROM users u
     INNER JOIN user_events ue ON u.id = ue.user_id
     INNER JOIN churches c ON u.church_id = c.id
@@ -830,10 +899,11 @@ ranked_scores AS (
         church_name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        last_score_at,
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM person_scores
 )
-SELECT entity_id, name, church_name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank, last_score_at
 FROM ranked_scores
 WHERE
     score >= 1
@@ -841,7 +911,7 @@ WHERE
     AND ($2::int IS NULL OR score <= $2::int)
     AND ($3::bigint IS NULL OR rank > $3::bigint)
     AND ($4::bigint IS NULL OR rank < $4::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 LIMIT $5::int
 `
 
@@ -861,12 +931,13 @@ type GetEventPersonLeaderboardParams struct {
 }
 
 type GetEventPersonLeaderboardRow struct {
-	EntityID   string  `json:"entity_id"`
-	Name       string  `json:"name"`
-	ChurchName string  `json:"church_name"`
-	Image      *string `json:"image"`
-	Score      int64   `json:"score"`
-	Rank       int64   `json:"rank"`
+	EntityID    string      `json:"entity_id"`
+	Name        string      `json:"name"`
+	ChurchName  string      `json:"church_name"`
+	Image       *string     `json:"image"`
+	Score       int64       `json:"score"`
+	Rank        int64       `json:"rank"`
+	LastScoreAt interface{} `json:"last_score_at"`
 }
 
 // ==================== Event Person Leaderboard ====================
@@ -899,6 +970,7 @@ func (q *Queries) GetEventPersonLeaderboard(ctx context.Context, arg GetEventPer
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}
@@ -920,7 +992,8 @@ superteam_scores AS (
         st.id AS entity_id,
         st.name,
         NULL::text AS image,
-        COALESCE(SUM(sj.points), 0)::bigint AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score,
+        MAX(sj.created_at) AS last_score_at
     FROM super_teams st
     CROSS JOIN event_project ep
     INNER JOIN teams t ON t.super_team_id = st.id
@@ -938,10 +1011,11 @@ ranked_scores AS (
         name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        last_score_at,
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM superteam_scores
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
 WHERE
     score >= 1
@@ -949,7 +1023,7 @@ WHERE
     AND ($2::int IS NULL OR score <= $2::int)
     AND ($3::bigint IS NULL OR rank > $3::bigint)
     AND ($4::bigint IS NULL OR rank < $4::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 LIMIT $5::int
 `
 
@@ -963,11 +1037,12 @@ type GetEventSuperTeamLeaderboardParams struct {
 }
 
 type GetEventSuperTeamLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string      `json:"entity_id"`
+	Name        string      `json:"name"`
+	Image       *string     `json:"image"`
+	Score       int64       `json:"score"`
+	Rank        int64       `json:"rank"`
+	LastScoreAt interface{} `json:"last_score_at"`
 }
 
 // ==================== Event SuperTeam Leaderboard ====================
@@ -993,6 +1068,7 @@ func (q *Queries) GetEventSuperTeamLeaderboard(ctx context.Context, arg GetEvent
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1014,7 +1090,8 @@ team_scores AS (
         t.id AS entity_id,
         t.name,
         NULL::text AS image,
-        COALESCE(SUM(sj.points), 0)::bigint AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score,
+        MAX(sj.created_at) AS last_score_at
     FROM teams t
     CROSS JOIN event_project ep
     INNER JOIN team_members tm ON t.id = tm.team_id
@@ -1023,6 +1100,13 @@ team_scores AS (
     LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.event_id = $6::text
     WHERE
         t.project_id = ep.project_id
+        AND t.leaderboard_excluded = false
+        -- Church filter: team has ANY member from specified church
+        AND ($7::text = '' OR EXISTS (
+            SELECT 1 FROM team_members tm2
+            INNER JOIN users u2 ON tm2.user_id = u2.id
+            WHERE tm2.team_id = t.id AND u2.church_id = $7::text
+        ))
     GROUP BY t.id, t.name
 ),
 ranked_scores AS (
@@ -1031,10 +1115,11 @@ ranked_scores AS (
         name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        last_score_at,
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM team_scores
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
 WHERE
     score >= 1
@@ -1042,7 +1127,7 @@ WHERE
     AND ($2::int IS NULL OR score <= $2::int)
     AND ($3::bigint IS NULL OR rank > $3::bigint)
     AND ($4::bigint IS NULL OR rank < $4::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 LIMIT $5::int
 `
 
@@ -1053,14 +1138,16 @@ type GetEventTeamLeaderboardParams struct {
 	Beforerank *int64 `json:"beforerank"`
 	Querylimit int32  `json:"querylimit"`
 	Eventid    string `json:"eventid"`
+	Churchid   string `json:"churchid"`
 }
 
 type GetEventTeamLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string      `json:"entity_id"`
+	Name        string      `json:"name"`
+	Image       *string     `json:"image"`
+	Score       int64       `json:"score"`
+	Rank        int64       `json:"rank"`
+	LastScoreAt interface{} `json:"last_score_at"`
 }
 
 // ==================== Event Team Leaderboard ====================
@@ -1072,6 +1159,7 @@ func (q *Queries) GetEventTeamLeaderboard(ctx context.Context, arg GetEventTeamL
 		arg.Beforerank,
 		arg.Querylimit,
 		arg.Eventid,
+		arg.Churchid,
 	)
 	if err != nil {
 		return nil, err
@@ -1086,6 +1174,7 @@ func (q *Queries) GetEventTeamLeaderboard(ctx context.Context, arg GetEventTeamL
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1104,16 +1193,17 @@ WITH ranked_scores AS (
         c.name,
         NULL::text AS image,
         lec.score,
-        RANK() OVER (ORDER BY lec.score DESC, c.name ASC) AS rank
+        lec.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lec.score DESC) AS rank
     FROM leaderboard_event_churches lec
     INNER JOIN churches c ON lec.church_id = c.id
     WHERE lec.event_id = $1::text
       AND lec.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lec.score <= $3::int)
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 `
 
 type GetFullEventChurchLeaderboardParams struct {
@@ -1123,11 +1213,12 @@ type GetFullEventChurchLeaderboardParams struct {
 }
 
 type GetFullEventChurchLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) GetFullEventChurchLeaderboard(ctx context.Context, arg GetFullEventChurchLeaderboardParams) ([]*GetFullEventChurchLeaderboardRow, error) {
@@ -1145,6 +1236,7 @@ func (q *Queries) GetFullEventChurchLeaderboard(ctx context.Context, arg GetFull
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1164,7 +1256,8 @@ WITH ranked_scores AS (
         c.name AS church_name,
         u.avatar_url AS image,
         lep.score,
-        RANK() OVER (ORDER BY lep.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
+        lep.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lep.score DESC) AS rank
     FROM leaderboard_event_persons lep
     INNER JOIN users u ON lep.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -1172,30 +1265,59 @@ WITH ranked_scores AS (
       AND lep.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lep.score <= $3::int)
       AND ($4::text = '' OR u.church_id = $4::text)
-      AND ($5::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) >= $5::int)
-      AND ($6::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) <= $6::int)
+      AND ($5::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $5::int)
+      AND ($6::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $6::int)
+      -- Team filtering
+      AND ($7::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          WHERE tm.user_id = u.id AND tm.team_id = $7::text
+      ))
+      AND ($8::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN teams t ON tm.team_id = t.id
+          WHERE tm.user_id = u.id AND t.super_team_id = $8::text
+      ))
+      -- Consent filter: skip if team-filtered, otherwise require leaderboard_consent
+      AND (
+          $7::text != '' OR $8::text != ''
+          OR EXISTS (
+              SELECT 1 FROM user_consent_history uch
+              WHERE uch.user_id = u.id
+                AND uch.consent_key = 'leaderboard_consent'
+                AND uch.action = 'ACCEPTED'
+                AND uch.occurred_at = (
+                    SELECT MAX(uch2.occurred_at)
+                    FROM user_consent_history uch2
+                    WHERE uch2.user_id = u.id
+                      AND uch2.consent_key = 'leaderboard_consent'
+                )
+          )
+      )
 )
-SELECT entity_id, name, church_name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank, last_score_at
 FROM ranked_scores
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 `
 
 type GetFullEventPersonLeaderboardParams struct {
-	Eventid  string `json:"eventid"`
-	Minscore int32  `json:"minscore"`
-	Maxscore int32  `json:"maxscore"`
-	Churchid string `json:"churchid"`
-	Minage   int32  `json:"minage"`
-	Maxage   int32  `json:"maxage"`
+	Eventid     string `json:"eventid"`
+	Minscore    int32  `json:"minscore"`
+	Maxscore    int32  `json:"maxscore"`
+	Churchid    string `json:"churchid"`
+	Minage      int32  `json:"minage"`
+	Maxage      int32  `json:"maxage"`
+	Teamid      string `json:"teamid"`
+	Superteamid string `json:"superteamid"`
 }
 
 type GetFullEventPersonLeaderboardRow struct {
-	EntityID   string  `json:"entity_id"`
-	Name       string  `json:"name"`
-	ChurchName string  `json:"church_name"`
-	Image      *string `json:"image"`
-	Score      int64   `json:"score"`
-	Rank       int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	ChurchName  string             `json:"church_name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) GetFullEventPersonLeaderboard(ctx context.Context, arg GetFullEventPersonLeaderboardParams) ([]*GetFullEventPersonLeaderboardRow, error) {
@@ -1206,6 +1328,8 @@ func (q *Queries) GetFullEventPersonLeaderboard(ctx context.Context, arg GetFull
 		arg.Churchid,
 		arg.Minage,
 		arg.Maxage,
+		arg.Teamid,
+		arg.Superteamid,
 	)
 	if err != nil {
 		return nil, err
@@ -1221,6 +1345,7 @@ func (q *Queries) GetFullEventPersonLeaderboard(ctx context.Context, arg GetFull
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1239,16 +1364,17 @@ WITH ranked_scores AS (
         st.name,
         NULL::text AS image,
         lest.score,
-        RANK() OVER (ORDER BY lest.score DESC, st.name ASC) AS rank
+        lest.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lest.score DESC) AS rank
     FROM leaderboard_event_superteams lest
     INNER JOIN super_teams st ON lest.super_team_id = st.id
     WHERE lest.event_id = $1::text
       AND lest.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lest.score <= $3::int)
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 `
 
 type GetFullEventSuperTeamLeaderboardParams struct {
@@ -1258,11 +1384,12 @@ type GetFullEventSuperTeamLeaderboardParams struct {
 }
 
 type GetFullEventSuperTeamLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) GetFullEventSuperTeamLeaderboard(ctx context.Context, arg GetFullEventSuperTeamLeaderboardParams) ([]*GetFullEventSuperTeamLeaderboardRow, error) {
@@ -1280,6 +1407,7 @@ func (q *Queries) GetFullEventSuperTeamLeaderboard(ctx context.Context, arg GetF
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1298,34 +1426,49 @@ WITH ranked_scores AS (
         t.name,
         NULL::text AS image,
         let.score,
-        RANK() OVER (ORDER BY let.score DESC, t.name ASC) AS rank
+        let.last_score_at,
+        DENSE_RANK() OVER (ORDER BY let.score DESC) AS rank
     FROM leaderboard_event_teams let
     INNER JOIN teams t ON let.team_id = t.id
     WHERE let.event_id = $1::text
+      AND t.leaderboard_excluded = false
       AND let.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR let.score <= $3::int)
+      -- Church filter: team has ANY member from specified church
+      AND ($4::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN users u ON tm.user_id = u.id
+          WHERE tm.team_id = t.id AND u.church_id = $4::text
+      ))
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 `
 
 type GetFullEventTeamLeaderboardParams struct {
 	Eventid  string `json:"eventid"`
 	Minscore int32  `json:"minscore"`
 	Maxscore int32  `json:"maxscore"`
+	Churchid string `json:"churchid"`
 }
 
 type GetFullEventTeamLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) GetFullEventTeamLeaderboard(ctx context.Context, arg GetFullEventTeamLeaderboardParams) ([]*GetFullEventTeamLeaderboardRow, error) {
-	rows, err := q.db.Query(ctx, GetFullEventTeamLeaderboard, arg.Eventid, arg.Minscore, arg.Maxscore)
+	rows, err := q.db.Query(ctx, GetFullEventTeamLeaderboard,
+		arg.Eventid,
+		arg.Minscore,
+		arg.Maxscore,
+		arg.Churchid,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1339,6 +1482,7 @@ func (q *Queries) GetFullEventTeamLeaderboard(ctx context.Context, arg GetFullEv
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1357,16 +1501,17 @@ WITH ranked_scores AS (
         c.name,
         NULL::text AS image,
         lpc.score,
-        RANK() OVER (ORDER BY lpc.score DESC, c.name ASC) AS rank
+        lpc.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lpc.score DESC) AS rank
     FROM leaderboard_project_churches lpc
     INNER JOIN churches c ON lpc.church_id = c.id
     WHERE lpc.project_id = $1::text
       AND lpc.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpc.score <= $3::int)
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 `
 
 type GetFullProjectChurchLeaderboardParams struct {
@@ -1376,11 +1521,12 @@ type GetFullProjectChurchLeaderboardParams struct {
 }
 
 type GetFullProjectChurchLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) GetFullProjectChurchLeaderboard(ctx context.Context, arg GetFullProjectChurchLeaderboardParams) ([]*GetFullProjectChurchLeaderboardRow, error) {
@@ -1398,6 +1544,7 @@ func (q *Queries) GetFullProjectChurchLeaderboard(ctx context.Context, arg GetFu
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1417,7 +1564,8 @@ WITH ranked_scores AS (
         c.name AS church_name,
         u.avatar_url AS image,
         lpp.score,
-        RANK() OVER (ORDER BY lpp.score DESC, COALESCE(u.display_name, u.name) ASC) AS rank
+        lpp.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lpp.score DESC) AS rank
     FROM leaderboard_project_persons lpp
     INNER JOIN users u ON lpp.user_id = u.id
     INNER JOIN churches c ON u.church_id = c.id
@@ -1425,30 +1573,59 @@ WITH ranked_scores AS (
       AND lpp.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpp.score <= $3::int)
       AND ($4::text = '' OR u.church_id = $4::text)
-      AND ($5::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) >= $5::int)
-      AND ($6::int IS NULL OR DATE_PART('year', AGE(u.birthdate)) <= $6::int)
+      AND ($5::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $5::int)
+      AND ($6::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $6::int)
+      -- Team filtering
+      AND ($7::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          WHERE tm.user_id = u.id AND tm.team_id = $7::text
+      ))
+      AND ($8::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN teams t ON tm.team_id = t.id
+          WHERE tm.user_id = u.id AND t.super_team_id = $8::text
+      ))
+      -- Consent filter: skip if team-filtered, otherwise require leaderboard_consent
+      AND (
+          $7::text != '' OR $8::text != ''
+          OR EXISTS (
+              SELECT 1 FROM user_consent_history uch
+              WHERE uch.user_id = u.id
+                AND uch.consent_key = 'leaderboard_consent'
+                AND uch.action = 'ACCEPTED'
+                AND uch.occurred_at = (
+                    SELECT MAX(uch2.occurred_at)
+                    FROM user_consent_history uch2
+                    WHERE uch2.user_id = u.id
+                      AND uch2.consent_key = 'leaderboard_consent'
+                )
+          )
+      )
 )
-SELECT entity_id, name, church_name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank, last_score_at
 FROM ranked_scores
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 `
 
 type GetFullProjectPersonLeaderboardParams struct {
-	Projectid string `json:"projectid"`
-	Minscore  int32  `json:"minscore"`
-	Maxscore  int32  `json:"maxscore"`
-	Churchid  string `json:"churchid"`
-	Minage    int32  `json:"minage"`
-	Maxage    int32  `json:"maxage"`
+	Projectid   string `json:"projectid"`
+	Minscore    int32  `json:"minscore"`
+	Maxscore    int32  `json:"maxscore"`
+	Churchid    string `json:"churchid"`
+	Minage      int32  `json:"minage"`
+	Maxage      int32  `json:"maxage"`
+	Teamid      string `json:"teamid"`
+	Superteamid string `json:"superteamid"`
 }
 
 type GetFullProjectPersonLeaderboardRow struct {
-	EntityID   string  `json:"entity_id"`
-	Name       string  `json:"name"`
-	ChurchName string  `json:"church_name"`
-	Image      *string `json:"image"`
-	Score      int64   `json:"score"`
-	Rank       int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	ChurchName  string             `json:"church_name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) GetFullProjectPersonLeaderboard(ctx context.Context, arg GetFullProjectPersonLeaderboardParams) ([]*GetFullProjectPersonLeaderboardRow, error) {
@@ -1459,6 +1636,8 @@ func (q *Queries) GetFullProjectPersonLeaderboard(ctx context.Context, arg GetFu
 		arg.Churchid,
 		arg.Minage,
 		arg.Maxage,
+		arg.Teamid,
+		arg.Superteamid,
 	)
 	if err != nil {
 		return nil, err
@@ -1474,6 +1653,7 @@ func (q *Queries) GetFullProjectPersonLeaderboard(ctx context.Context, arg GetFu
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1492,16 +1672,17 @@ WITH ranked_scores AS (
         st.name,
         NULL::text AS image,
         lpst.score,
-        RANK() OVER (ORDER BY lpst.score DESC, st.name ASC) AS rank
+        lpst.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lpst.score DESC) AS rank
     FROM leaderboard_project_superteams lpst
     INNER JOIN super_teams st ON lpst.super_team_id = st.id
     WHERE lpst.project_id = $1::text
       AND lpst.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpst.score <= $3::int)
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 `
 
 type GetFullProjectSuperTeamLeaderboardParams struct {
@@ -1511,11 +1692,12 @@ type GetFullProjectSuperTeamLeaderboardParams struct {
 }
 
 type GetFullProjectSuperTeamLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) GetFullProjectSuperTeamLeaderboard(ctx context.Context, arg GetFullProjectSuperTeamLeaderboardParams) ([]*GetFullProjectSuperTeamLeaderboardRow, error) {
@@ -1533,6 +1715,7 @@ func (q *Queries) GetFullProjectSuperTeamLeaderboard(ctx context.Context, arg Ge
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1551,34 +1734,49 @@ WITH ranked_scores AS (
         t.name,
         NULL::text AS image,
         lpt.score,
-        RANK() OVER (ORDER BY lpt.score DESC, t.name ASC) AS rank
+        lpt.last_score_at,
+        DENSE_RANK() OVER (ORDER BY lpt.score DESC) AS rank
     FROM leaderboard_project_teams lpt
     INNER JOIN teams t ON lpt.team_id = t.id
     WHERE lpt.project_id = $1::text
+      AND t.leaderboard_excluded = false
       AND lpt.score >= COALESCE($2::int, 1)
       AND ($3::int IS NULL OR lpt.score <= $3::int)
+      -- Church filter: team has ANY member from specified church
+      AND ($4::text = '' OR EXISTS (
+          SELECT 1 FROM team_members tm
+          INNER JOIN users u ON tm.user_id = u.id
+          WHERE tm.team_id = t.id AND u.church_id = $4::text
+      ))
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 `
 
 type GetFullProjectTeamLeaderboardParams struct {
 	Projectid string `json:"projectid"`
 	Minscore  int32  `json:"minscore"`
 	Maxscore  int32  `json:"maxscore"`
+	Churchid  string `json:"churchid"`
 }
 
 type GetFullProjectTeamLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string             `json:"entity_id"`
+	Name        string             `json:"name"`
+	Image       *string            `json:"image"`
+	Score       int64              `json:"score"`
+	Rank        int64              `json:"rank"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 func (q *Queries) GetFullProjectTeamLeaderboard(ctx context.Context, arg GetFullProjectTeamLeaderboardParams) ([]*GetFullProjectTeamLeaderboardRow, error) {
-	rows, err := q.db.Query(ctx, GetFullProjectTeamLeaderboard, arg.Projectid, arg.Minscore, arg.Maxscore)
+	rows, err := q.db.Query(ctx, GetFullProjectTeamLeaderboard,
+		arg.Projectid,
+		arg.Minscore,
+		arg.Maxscore,
+		arg.Churchid,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1592,6 +1790,7 @@ func (q *Queries) GetFullProjectTeamLeaderboard(ctx context.Context, arg GetFull
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1610,7 +1809,8 @@ WITH church_scores AS (
         c.id AS entity_id,
         c.name,
         NULL::text AS image,
-        COALESCE(SUM(sj.points), 0)::bigint AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score,
+        MAX(sj.created_at) AS last_score_at
     FROM churches c
     INNER JOIN users u ON c.id = u.church_id
     INNER JOIN user_projects up ON u.id = up.user_id
@@ -1627,10 +1827,11 @@ ranked_scores AS (
         name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        last_score_at,
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM church_scores
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
 WHERE
     score >= 1
@@ -1638,7 +1839,7 @@ WHERE
     AND ($2::int IS NULL OR score <= $2::int)
     AND ($3::bigint IS NULL OR rank > $3::bigint)
     AND ($4::bigint IS NULL OR rank < $4::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 LIMIT $5::int
 `
 
@@ -1654,11 +1855,12 @@ type GetProjectChurchLeaderboardParams struct {
 }
 
 type GetProjectChurchLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string      `json:"entity_id"`
+	Name        string      `json:"name"`
+	Image       *string     `json:"image"`
+	Score       int64       `json:"score"`
+	Rank        int64       `json:"rank"`
+	LastScoreAt interface{} `json:"last_score_at"`
 }
 
 // ==================== Project Church Leaderboard ====================
@@ -1686,6 +1888,7 @@ func (q *Queries) GetProjectChurchLeaderboard(ctx context.Context, arg GetProjec
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1730,8 +1933,8 @@ filtered_users AS MATERIALIZED (
     -- Apply age and church filters
     SELECT pu.id, pu.name, pu.avatar_url, pu.church_name
     FROM project_users pu
-    WHERE ($11::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) >= $11::int)
-      AND ($12::int IS NULL OR DATE_PART('year', AGE(pu.birthdate)) <= $12::int)
+    WHERE ($11::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM pu.birthdate)) >= $11::int)
+      AND ($12::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM pu.birthdate)) <= $12::int)
       AND ($13::text = '' OR EXISTS (
           SELECT 1 FROM churches c
           WHERE c.id = pu.church_id AND c.country = $13::text
@@ -1747,7 +1950,8 @@ person_scores AS (
         fu.name,
         fu.church_name,
         fu.avatar_url AS image,
-        COALESCE(SUM(sj.points), 0)::bigint AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score,
+        MAX(sj.created_at) AS last_score_at
     FROM filtered_users fu
     LEFT JOIN score_journal sj ON sj.user_id = fu.id AND sj.project_id = $6::text
     GROUP BY fu.id, fu.name, fu.church_name, fu.avatar_url
@@ -1760,17 +1964,18 @@ ranked_scores AS (
         church_name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        last_score_at,
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM person_scores
 )
-SELECT entity_id, name, church_name, image, score, rank
+SELECT entity_id, name, church_name, image, score, rank, last_score_at
 FROM ranked_scores
 WHERE
     ($1::int IS NULL OR score >= $1::int)
     AND ($2::int IS NULL OR score <= $2::int)
     AND ($3::bigint IS NULL OR rank > $3::bigint)
     AND ($4::bigint IS NULL OR rank < $4::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 LIMIT $5::int
 `
 
@@ -1792,12 +1997,13 @@ type GetProjectPersonLeaderboardParams struct {
 }
 
 type GetProjectPersonLeaderboardRow struct {
-	EntityID   string  `json:"entity_id"`
-	Name       string  `json:"name"`
-	ChurchName string  `json:"church_name"`
-	Image      *string `json:"image"`
-	Score      int64   `json:"score"`
-	Rank       int64   `json:"rank"`
+	EntityID    string      `json:"entity_id"`
+	Name        string      `json:"name"`
+	ChurchName  string      `json:"church_name"`
+	Image       *string     `json:"image"`
+	Score       int64       `json:"score"`
+	Rank        int64       `json:"rank"`
+	LastScoreAt interface{} `json:"last_score_at"`
 }
 
 // ==================== Project Person Leaderboard ====================
@@ -1832,6 +2038,7 @@ func (q *Queries) GetProjectPersonLeaderboard(ctx context.Context, arg GetProjec
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1850,7 +2057,8 @@ WITH superteam_scores AS (
         st.id AS entity_id,
         st.name,
         NULL::text AS image,
-        COALESCE(SUM(sj.points), 0)::bigint AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score,
+        MAX(sj.created_at) AS last_score_at
     FROM super_teams st
     INNER JOIN teams t ON t.super_team_id = st.id
     INNER JOIN team_members tm ON t.id = tm.team_id
@@ -1866,10 +2074,11 @@ ranked_scores AS (
         name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        last_score_at,
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM superteam_scores
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
 WHERE
     score >= 1
@@ -1877,7 +2086,7 @@ WHERE
     AND ($2::int IS NULL OR score <= $2::int)
     AND ($3::bigint IS NULL OR rank > $3::bigint)
     AND ($4::bigint IS NULL OR rank < $4::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 LIMIT $5::int
 `
 
@@ -1891,11 +2100,12 @@ type GetProjectSuperTeamLeaderboardParams struct {
 }
 
 type GetProjectSuperTeamLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string      `json:"entity_id"`
+	Name        string      `json:"name"`
+	Image       *string     `json:"image"`
+	Score       int64       `json:"score"`
+	Rank        int64       `json:"rank"`
+	LastScoreAt interface{} `json:"last_score_at"`
 }
 
 // ==================== Project SuperTeam Leaderboard ====================
@@ -1921,6 +2131,7 @@ func (q *Queries) GetProjectSuperTeamLeaderboard(ctx context.Context, arg GetPro
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1939,14 +2150,22 @@ WITH team_scores AS (
         t.id AS entity_id,
         t.name,
         NULL::text AS image,
-        COALESCE(SUM(sj.points), 0)::bigint AS score
+        COALESCE(SUM(sj.points), 0)::bigint AS score,
+        MAX(sj.created_at) AS last_score_at
     FROM teams t
     INNER JOIN team_members tm ON t.id = tm.team_id
     INNER JOIN users u ON tm.user_id = u.id
     LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = $6::text
     WHERE
         t.project_id = $6::text
+        AND t.leaderboard_excluded = false
         AND ($7::text = '' OR t.super_team_id = $7::text)
+        -- Church filter: team has ANY member from specified church
+        AND ($8::text = '' OR EXISTS (
+            SELECT 1 FROM team_members tm2
+            INNER JOIN users u2 ON tm2.user_id = u2.id
+            WHERE tm2.team_id = t.id AND u2.church_id = $8::text
+        ))
     GROUP BY t.id, t.name
 ),
 ranked_scores AS (
@@ -1955,10 +2174,11 @@ ranked_scores AS (
         name,
         image,
         score,
-        RANK() OVER (ORDER BY score DESC, name ASC) AS rank
+        last_score_at,
+        DENSE_RANK() OVER (ORDER BY score DESC) AS rank
     FROM team_scores
 )
-SELECT entity_id, name, image, score, rank
+SELECT entity_id, name, image, score, rank, last_score_at
 FROM ranked_scores
 WHERE
     score >= 1
@@ -1966,7 +2186,7 @@ WHERE
     AND ($2::int IS NULL OR score <= $2::int)
     AND ($3::bigint IS NULL OR rank > $3::bigint)
     AND ($4::bigint IS NULL OR rank < $4::bigint)
-ORDER BY rank ASC
+ORDER BY rank ASC, last_score_at DESC NULLS LAST, name ASC
 LIMIT $5::int
 `
 
@@ -1978,14 +2198,16 @@ type GetProjectTeamLeaderboardParams struct {
 	Querylimit  int32  `json:"querylimit"`
 	Projectid   string `json:"projectid"`
 	Superteamid string `json:"superteamid"`
+	Churchid    string `json:"churchid"`
 }
 
 type GetProjectTeamLeaderboardRow struct {
-	EntityID string  `json:"entity_id"`
-	Name     string  `json:"name"`
-	Image    *string `json:"image"`
-	Score    int64   `json:"score"`
-	Rank     int64   `json:"rank"`
+	EntityID    string      `json:"entity_id"`
+	Name        string      `json:"name"`
+	Image       *string     `json:"image"`
+	Score       int64       `json:"score"`
+	Rank        int64       `json:"rank"`
+	LastScoreAt interface{} `json:"last_score_at"`
 }
 
 // ==================== Project Team Leaderboard ====================
@@ -1998,6 +2220,7 @@ func (q *Queries) GetProjectTeamLeaderboard(ctx context.Context, arg GetProjectT
 		arg.Querylimit,
 		arg.Projectid,
 		arg.Superteamid,
+		arg.Churchid,
 	)
 	if err != nil {
 		return nil, err
@@ -2012,6 +2235,7 @@ func (q *Queries) GetProjectTeamLeaderboard(ctx context.Context, arg GetProjectT
 			&i.Image,
 			&i.Score,
 			&i.Rank,
+			&i.LastScoreAt,
 		); err != nil {
 			return nil, err
 		}

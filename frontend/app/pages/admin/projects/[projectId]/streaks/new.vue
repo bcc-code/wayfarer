@@ -12,16 +12,16 @@ const toast = useToast()
 const { executeMutation } = useCreateStreakMutation()
 
 const dateRangeSchema = z.object({
-  start: z.string().min(1, 'Start date is required'),
-  end: z.string().min(1, 'End date is required'),
+  start: z.string().min(1, 'Startdato er påkrevd'),
+  end: z.string().min(1, 'Sluttdato er påkrevd'),
 })
 
 const schema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
+  name: z.string().min(1, 'Navn er påkrevd'),
+  description: z.string().min(1, 'Beskrivelse er påkrevd'),
   relevantDays: z
     .array(dateRangeSchema)
-    .min(1, 'At least one date range is required'),
+    .min(1, 'Minst én datoperiode er påkrevd'),
 })
 type Schema = z.infer<typeof schema>
 const state = reactive<Schema>({
@@ -67,8 +67,8 @@ async function createStreak(event: FormSubmitEvent<Schema>) {
       return
     }
     toast.add({
-      title: 'Success',
-      description: 'Streak created successfully',
+      title: 'Suksess',
+      description: 'Streak opprettet',
       color: 'success',
     })
     navigateTo({
@@ -86,7 +86,7 @@ async function createStreak(event: FormSubmitEvent<Schema>) {
         <UBreadcrumb
           :items="[
             {
-              label: 'Projects',
+              label: 'Prosjekter',
               to: { name: 'admin-projects' },
             },
             {
@@ -97,17 +97,17 @@ async function createStreak(event: FormSubmitEvent<Schema>) {
               },
             },
             {
-              label: 'Streaks',
+              label: 'Streaker',
             },
             {
-              label: 'New',
+              label: 'Ny',
             },
           ]"
         />
       </UContainer>
     </div>
     <UContainer class="py-12">
-      <h1 class="mb-6 text-2xl font-bold">Create Streak</h1>
+      <h1 class="mb-6 text-2xl font-bold">Opprett streak</h1>
       <UForm
         :state
         :schema="schema"
@@ -115,10 +115,10 @@ async function createStreak(event: FormSubmitEvent<Schema>) {
         class="flex max-w-md flex-col gap-6"
         @submit.prevent="createStreak"
       >
-        <UFormField name="name" label="Name">
+        <UFormField name="name" label="Navn">
           <UInput v-model="state.name" size="xl" required class="w-full" />
         </UFormField>
-        <UFormField name="description" label="Description">
+        <UFormField name="description" label="Beskrivelse">
           <UTextarea
             v-model="state.description"
             class="w-full"
@@ -127,7 +127,7 @@ async function createStreak(event: FormSubmitEvent<Schema>) {
           />
         </UFormField>
         <div class="flex flex-col gap-4">
-          <label class="text-sm font-medium">Relevant Days</label>
+          <label class="text-sm font-medium">Relevante dager</label>
           <div
             v-for="(range, index) in state.relevantDays"
             :key="index"
@@ -135,7 +135,7 @@ async function createStreak(event: FormSubmitEvent<Schema>) {
           >
             <div class="flex items-center justify-between">
               <span class="text-sm font-medium">
-                Date Range {{ index + 1 }}
+                Datoperiode {{ index + 1 }}
               </span>
               <UButton
                 v-if="state.relevantDays.length > 1"
@@ -144,7 +144,7 @@ async function createStreak(event: FormSubmitEvent<Schema>) {
                 size="xs"
                 @click="removeDateRange(index)"
               >
-                Remove
+                Fjern
               </UButton>
             </div>
             <DateRangeField
@@ -153,10 +153,10 @@ async function createStreak(event: FormSubmitEvent<Schema>) {
             />
           </div>
           <UButton type="button" variant="outline" @click="addDateRange">
-            Add Date Range
+            Legg til datoperiode
           </UButton>
         </div>
-        <UButton type="submit" size="lg" block>Create Streak</UButton>
+        <UButton type="submit" size="lg" block>Opprett streak</UButton>
       </UForm>
     </UContainer>
   </div>

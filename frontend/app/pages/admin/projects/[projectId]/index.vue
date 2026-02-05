@@ -8,6 +8,9 @@ definePageMeta({
 
 const route = useRoute('admin-projects-projectId')
 
+const { canEditProject } = usePermissions()
+const canEdit = computed(() => canEditProject(route.params.projectId))
+
 gql(`
   query AdminProjectPage($projectId: ID!) {
     project(id: $projectId) {
@@ -17,7 +20,9 @@ gql(`
       startDate
       endDate
       branding {
-        logo
+        logoImage {
+          ...ImageFields
+        }
         rounding
         colors {
           light {
@@ -36,8 +41,12 @@ gql(`
           name
           descriptionPending
           descriptionCompleted
-          imagePending
-          imageCompleted
+          imagePendingObject {
+            ...ImageFields
+          }
+          imageCompletedObject {
+            ...ImageFields
+          }
           points
           hidden
         }
@@ -50,7 +59,9 @@ gql(`
           id
           name
           description
-          image
+          imageObject {
+            ...ImageFields
+          }
         }
       }
     }
@@ -78,7 +89,7 @@ const state = reactive<State>({
   startDate: '',
   endDate: '',
   branding: {
-    logo: '',
+    logoImage: null,
     colors: {
       dark: {
         accent: '',
@@ -150,7 +161,7 @@ async function handleReorder() {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to reorder',
+      title: 'Kunne ikke endre rekkefølge',
       description: result.error.message,
       color: 'error',
     })
@@ -160,7 +171,7 @@ async function handleReorder() {
   }
 
   toast.add({
-    title: 'Order saved',
+    title: 'Rekkefølge lagret',
     color: 'success',
   })
 }
@@ -173,7 +184,7 @@ async function handleReorder() {
         <UBreadcrumb
           :items="[
             {
-              label: 'Projects',
+              label: 'Prosjekter',
               to: { name: 'admin-projects' },
             },
             {
@@ -189,13 +200,13 @@ async function handleReorder() {
     </div>
     <UContainer class="py-12">
       <LoadingState v-if="fetching" />
-      <ErrorState v-else-if="error" :error class="h-[600px]" />
+      <ErrorState v-else-if="error" :error class="h-150" />
       <template v-else-if="data">
         <header class="my-12">
           <div class="space-y-2">
             <img
-              v-if="state.branding.logo"
-              :src="state.branding.logo"
+              v-if="state.branding.logoImage?.url"
+              :src="state.branding.logoImage.url"
               width="64"
               class="mb-4 rounded"
             />
@@ -205,7 +216,7 @@ async function handleReorder() {
             <p v-if="state.description" class="text-muted max-w-2xl">
               {{ state.description }}
             </p>
-            <div class="mt-4">
+            <div v-if="canEdit" class="mt-4">
               <UButton
                 variant="soft"
                 icon="lucide:pencil"
@@ -214,7 +225,7 @@ async function handleReorder() {
                   params: { projectId: route.params.projectId },
                 }"
               >
-                Edit project
+                Rediger prosjekt
               </UButton>
             </div>
           </div>
@@ -224,15 +235,15 @@ async function handleReorder() {
           :items="[
             {
               value: 'achievements',
-              label: 'Achievements',
+              label: 'Utmerkelser',
               slot: 'achievements',
             },
-            { value: 'challenges', label: 'Challenges', slot: 'challenges' },
+            { value: 'challenges', label: 'Utfordringer', slot: 'challenges' },
           ]"
           variant="link"
         >
           <template #challenges>
-            <div class="my-2">
+            <div v-if="canEdit" class="my-2">
               <UButton
                 icon="lucide:plus"
                 :to="{
@@ -240,23 +251,23 @@ async function handleReorder() {
                   params: { projectId: route.params.projectId },
                 }"
               >
-                Create Challenge
+                Opprett utfordring
               </UButton>
             </div>
             <UTable
               :data="data.challenges.edges.map((e) => e.node)"
               :columns="[
-                { accessorKey: 'image' },
+                { accessorKey: 'imageObject' },
                 { accessorKey: 'name' },
                 { accessorKey: 'description' },
                 { accessorKey: 'type', header: 'Type' },
                 { id: 'actions' },
               ]"
             >
-              <template #image-cell="{ row }">
+              <template #imageObject-cell="{ row }">
                 <img
-                  v-if="row.original.image"
-                  :src="row.original.image"
+                  v-if="row.original.imageObject?.url"
+                  :src="row.original.imageObject.url"
                   height="32"
                   width="32"
                   class="bg-muted size-8 rounded"
@@ -265,10 +276,12 @@ async function handleReorder() {
               <template #type-cell="{ row }">
                 {{
                   row.original.__typename === 'ExternalChallenge'
-                    ? 'External'
+                    ? 'Ekstern'
                     : row.original.__typename === 'QuizChallenge'
                       ? 'Quiz'
-                      : 'Simple'
+                      : row.original.__typename === 'PluginChallenge'
+                        ? 'Plugin'
+                        : 'Enkel'
                 }}
               </template>
               <template #actions-cell="{ row }">
@@ -284,14 +297,14 @@ async function handleReorder() {
                       },
                     }"
                   >
-                    Edit
+                    Rediger
                   </UButton>
                 </div>
               </template>
             </UTable>
           </template>
           <template #achievements>
-            <div class="mt-2 mb-4">
+            <div v-if="canEdit" class="mt-2 mb-4">
               <UButton
                 icon="lucide:plus"
                 :to="{
@@ -299,7 +312,7 @@ async function handleReorder() {
                   params: { projectId: route.params.projectId },
                 }"
               >
-                Create Achievement
+                Opprett utmerkelse
               </UButton>
             </div>
             <div class="border-default rounded-lg border">
@@ -321,8 +334,8 @@ async function handleReorder() {
                     <UIcon name="lucide:grip-vertical" class="size-5" />
                   </div>
                   <img
-                    v-if="achievement.imageCompleted"
-                    :src="achievement.imageCompleted"
+                    v-if="achievement.imageCompletedObject?.url"
+                    :src="achievement.imageCompletedObject.url"
                     height="32"
                     width="32"
                     class="size-8 shrink-0 rounded"
@@ -341,14 +354,14 @@ async function handleReorder() {
                     </div>
                   </div>
                   <div class="text-muted shrink-0 text-sm">
-                    {{ achievement.points }} pts
+                    {{ formatNumber(achievement.points) }} pts
                   </div>
                   <UBadge
                     v-if="achievement.hidden"
                     variant="soft"
                     color="warning"
                   >
-                    Hidden
+                    Skjult
                   </UBadge>
                   <UButton
                     variant="ghost"
@@ -361,7 +374,7 @@ async function handleReorder() {
                       },
                     }"
                   >
-                    Edit
+                    Rediger
                   </UButton>
                 </div>
               </VueDraggable>
@@ -369,7 +382,7 @@ async function handleReorder() {
                 v-if="achievements.length === 0"
                 class="text-dimmed py-8 text-center"
               >
-                No achievements yet
+                Ingen utmerkelser ennå
               </div>
             </div>
           </template>

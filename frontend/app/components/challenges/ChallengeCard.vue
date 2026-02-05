@@ -19,22 +19,26 @@ function onChallengeClick() {
     is_external: !!externalUrl.value,
   })
 }
+
+const isCompleted = computed(() => {
+  return props.challenge.userCompletedAt !== null
+})
 </script>
 
 <template>
   <div class="shadow-large rounded-card overflow-clip">
-    <img
-      v-if="challenge.image"
-      :src="challenge.image"
-      loading="lazy"
-      class="bg-accent aspect-[1.25] w-full object-cover"
+    <DesignImage
+      v-if="challenge.imageObject"
+      :image="challenge.imageObject"
+      :alt="challenge.name"
+      class="aspect-[1.25] w-full"
     />
     <div class="bg-background-raised p-default gap-default space-y-default">
       <div class="space-y-small">
         <h3 class="text-heading">{{ challenge.name }}</h3>
         <div class="text-label" v-html="challenge.description" />
       </div>
-      <div class="mt-auto grid">
+      <div v-if="challenge.buttonText" class="mt-auto grid">
         <NuxtLink
           :to="
             externalUrl || {
@@ -45,7 +49,10 @@ function onChallengeClick() {
           class="contents"
           @click="onChallengeClick"
         >
-          <DesignButton size="large">
+          <DesignButton
+            size="large"
+            :variant="isCompleted ? 'secondary' : 'primary'"
+          >
             {{ challenge.buttonText }}
           </DesignButton>
         </NuxtLink>

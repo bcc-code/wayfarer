@@ -82,7 +82,7 @@ async function saveChanges() {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to update consent',
+      title: 'Kunne ikke oppdatere samtykke',
       description: result.error.message,
       color: 'error',
     })
@@ -90,7 +90,7 @@ async function saveChanges() {
   }
 
   toast.add({
-    title: 'Consent updated',
+    title: 'Samtykke oppdatert',
     color: 'success',
   })
 
@@ -106,7 +106,7 @@ async function publishConsent() {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to publish consent',
+      title: 'Kunne ikke publisere samtykke',
       description: result.error.message,
       color: 'error',
     })
@@ -114,7 +114,7 @@ async function publishConsent() {
   }
 
   toast.add({
-    title: 'Consent published',
+    title: 'Samtykke publisert',
     color: 'success',
   })
 
@@ -128,7 +128,7 @@ async function publishConsent() {
       <UContainer>
         <UBreadcrumb
           :items="[
-            { label: 'Consents', to: { name: 'admin-consents' } },
+            { label: 'Samtykker', to: { name: 'admin-consents' } },
             {
               label: data?.consent.title ?? route.params.consentId,
               to: {
@@ -157,7 +157,7 @@ async function publishConsent() {
                 variant="soft"
                 color="warning"
               >
-                Draft
+                Utkast
               </UBadge>
             </div>
             <p class="text-dimmed">{{ data.consent.shortText }}</p>
@@ -169,10 +169,10 @@ async function publishConsent() {
               color="success"
               @click="publishConsent"
             >
-              Publish
+              Publiser
             </UButton>
             <UButton v-if="!isEditing" variant="soft" @click="startEditing">
-              Edit
+              Rediger
             </UButton>
           </div>
         </div>
@@ -180,21 +180,21 @@ async function publishConsent() {
         <!-- Edit Form -->
         <UCard v-if="isEditing">
           <template #header>
-            <h2 class="text-xl font-semibold">Edit Consent</h2>
+            <h2 class="text-xl font-semibold">Rediger samtykke</h2>
           </template>
           <div class="space-y-4">
-            <UFormField label="Title">
+            <UFormField label="Tittel">
               <UInput v-model="editState.title" class="w-full" />
             </UFormField>
-            <UFormField label="Short Text">
+            <UFormField label="Kort tekst">
               <UTextarea
                 v-model="editState.shortText"
                 class="w-full"
                 autoresize
-                placeholder="A brief description shown before users read the full consent"
+                placeholder="En kort beskrivelse som vises før brukere leser hele samtykket"
               />
             </UFormField>
-            <UFormField label="Body (Markdown)">
+            <UFormField label="Innhold (Markdown)">
               <UTextarea
                 v-model="editState.body"
                 class="w-full font-mono"
@@ -202,7 +202,7 @@ async function publishConsent() {
                 autoresize
               />
             </UFormField>
-            <UFormField label="URL (optional)">
+            <UFormField label="URL (valgfritt)">
               <UInput
                 v-model="editState.url"
                 class="w-full"
@@ -210,18 +210,18 @@ async function publishConsent() {
                 placeholder="https://..."
               />
             </UFormField>
-            <UFormField label="Managed By (optional)">
+            <UFormField label="Administreres av (valgfritt)">
               <UInput
                 v-model="editState.managedBy"
                 class="w-full"
-                placeholder="External system identifier"
+                placeholder="Ekstern systemidentifikator"
               />
             </UFormField>
           </div>
           <template #footer>
             <div class="flex justify-end gap-3">
-              <UButton variant="ghost" @click="cancelEditing">Cancel</UButton>
-              <UButton @click="saveChanges">Save Changes</UButton>
+              <UButton variant="ghost" @click="cancelEditing">Avbryt</UButton>
+              <UButton @click="saveChanges">Lagre endringer</UButton>
             </div>
           </template>
         </UCard>
@@ -229,11 +229,11 @@ async function publishConsent() {
         <!-- Consent Info -->
         <dl class="text-sm">
           <div class="border-default flex gap-6 border-b py-2">
-            <dt class="text-muted w-24 shrink-0">Consent ID</dt>
+            <dt class="text-muted w-24 shrink-0">Samtykke-ID</dt>
             <dd class="font-mono">{{ data.consent.id }}</dd>
           </div>
           <div class="border-default flex gap-6 border-b py-2">
-            <dt class="text-muted w-24 shrink-0">Key</dt>
+            <dt class="text-muted w-24 shrink-0">Nøkkel</dt>
             <dd>
               <code class="bg-background-indent rounded px-2 py-1">
                 {{ data.consent.key }}
@@ -241,15 +241,15 @@ async function publishConsent() {
             </dd>
           </div>
           <div class="border-default flex gap-6 border-b py-2">
-            <dt class="text-muted w-24 shrink-0">Version</dt>
+            <dt class="text-muted w-24 shrink-0">Versjon</dt>
             <dd class="font-medium">{{ data.consent.version }}</dd>
           </div>
           <div class="border-default flex gap-6 border-b py-2">
-            <dt class="text-muted w-24 shrink-0">Published</dt>
+            <dt class="text-muted w-24 shrink-0">Publisert</dt>
             <dd v-if="data.consent.publishedAt" class="font-medium">
               {{ formatDateTime(data.consent.publishedAt) }}
             </dd>
-            <dd v-else class="text-muted">Not published</dd>
+            <dd v-else class="text-muted">Ikke publisert</dd>
           </div>
           <div class="border-default flex gap-6 border-b py-2">
             <dt class="text-muted w-24 shrink-0">Type</dt>
@@ -263,7 +263,7 @@ async function publishConsent() {
             </dd>
           </div>
           <div v-if="data.consent.managedBy" class="border-default flex gap-6 border-b py-2">
-            <dt class="text-muted w-24 shrink-0">Managed By</dt>
+            <dt class="text-muted w-24 shrink-0">Administrert av</dt>
             <dd class="font-medium">{{ data.consent.managedBy }}</dd>
           </div>
           <div v-if="data.consent.url" class="flex gap-6 py-2">
@@ -284,7 +284,7 @@ async function publishConsent() {
         <!-- Body Preview -->
         <UCard>
           <template #header>
-            <h2 class="text-xl font-semibold">Content Preview</h2>
+            <h2 class="text-xl font-semibold">Forhåndsvisning av innhold</h2>
           </template>
           <div
             class="prose prose-sm dark:prose-invert max-w-none"

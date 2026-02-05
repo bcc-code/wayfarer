@@ -10,15 +10,15 @@ definePageMeta({
 const schema = z.object({
   key: z
     .string()
-    .min(1, 'Key is required')
+    .min(1, 'Nøkkel er påkrevd')
     .regex(
       /^[a-z0-9_-]+$/,
-      'Key must be lowercase alphanumeric with underscores or hyphens',
+      'Nøkkel må være små bokstaver og tall med understrek eller bindestrek',
     ),
-  title: z.string().min(1, 'Title is required'),
+  title: z.string().min(1, 'Tittel er påkrevd'),
   shortText: z.string().optional(),
-  body: z.string().min(1, 'Body is required'),
-  url: z.url('Must be a valid URL').optional().or(z.literal('')),
+  body: z.string().min(1, 'Innhold er påkrevd'),
+  url: z.url('Må være en gyldig URL').optional().or(z.literal('')),
   publishNow: z.boolean().default(false),
   isRemote: z.boolean().default(false),
   managedBy: z.string().optional(),
@@ -56,7 +56,7 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to create consent',
+      title: 'Kunne ikke opprette samtykke',
       description: result.error.message,
       color: 'error',
     })
@@ -64,7 +64,7 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
   }
 
   toast.add({
-    title: 'Consent created',
+    title: 'Samtykke opprettet',
     color: 'success',
   })
 
@@ -86,60 +86,60 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
       <UContainer>
         <UBreadcrumb
           :items="[
-            { label: 'Consents', to: { name: 'admin-consents' } },
-            { label: 'New Consent' },
+            { label: 'Samtykker', to: { name: 'admin-consents' } },
+            { label: 'Nytt samtykke' },
           ]"
         />
       </UContainer>
     </div>
     <UContainer class="py-12">
       <div class="max-w-2xl">
-        <h1 class="mb-6 text-3xl font-bold">Create New Consent</h1>
+        <h1 class="mb-6 text-3xl font-bold">Opprett nytt samtykke</h1>
 
         <UForm :state :schema @submit="handleSubmit">
           <div class="space-y-6">
-            <UFormField name="key" label="Key" required>
+            <UFormField name="key" label="Nøkkel" required>
               <UInput
                 v-model="state.key"
                 class="w-full"
-                placeholder="privacy_policy"
-                description="Unique identifier for this consent. Use lowercase with underscores."
+                placeholder="personvern"
+                description="Unik identifikator for dette samtykket. Bruk små bokstaver med understrek."
               />
             </UFormField>
 
-            <UFormField name="title" label="Title" required>
+            <UFormField name="title" label="Tittel" required>
               <UInput
                 v-model="state.title"
                 class="w-full"
-                placeholder="Privacy Policy"
+                placeholder="Personvernerklæring"
               />
             </UFormField>
 
-            <UFormField name="shortText" label="Short Text">
+            <UFormField name="shortText" label="Kort tekst">
               <UTextarea
                 v-model="state.shortText"
                 class="w-full"
                 autoresize
-                placeholder="A brief description shown to users before they read the full consent"
+                placeholder="En kort beskrivelse som vises til brukere før de leser hele samtykket"
               />
             </UFormField>
 
-            <UFormField name="body" label="Body (Markdown)" required>
+            <UFormField name="body" label="Innhold (Markdown)" required>
               <UTextarea
                 v-model="state.body"
                 class="w-full font-mono"
                 :rows="10"
                 autoresize
-                placeholder="# Privacy Policy&#10;&#10;Your markdown content here..."
+                placeholder="# Personvernerklæring&#10;&#10;Din markdown-innhold her..."
               />
             </UFormField>
 
-            <UFormField name="url" label="External URL">
+            <UFormField name="url" label="Ekstern URL">
               <UInput
                 v-model="state.url"
                 class="w-full"
                 type="url"
-                placeholder="https://example.com/privacy-policy"
+                placeholder="https://example.com/personvern"
               />
             </UFormField>
 
@@ -147,40 +147,40 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
 
             <div class="space-y-4">
               <UFormField name="isRemote">
-                <UCheckbox v-model="state.isRemote" label="Remote Management" />
+                <UCheckbox v-model="state.isRemote" label="Ekstern administrasjon" />
                 <template #description>
-                  Enable if this consent is managed by an external system
+                  Aktiver hvis dette samtykket administreres av et eksternt system
                 </template>
               </UFormField>
 
               <UFormField
                 v-if="state.isRemote"
                 name="managedBy"
-                label="Managed By"
+                label="Administreres av"
               >
                 <UInput
                   v-model="state.managedBy"
                   class="w-full"
-                  placeholder="External system name"
+                  placeholder="Eksternt systemnavn"
                 />
               </UFormField>
 
               <UFormField name="publishNow">
                 <UCheckbox
                   v-model="state.publishNow"
-                  label="Publish immediately"
+                  label="Publiser umiddelbart"
                 />
                 <template #description>
-                  If unchecked, the consent will be saved as a draft
+                  Hvis ikke valgt, lagres samtykket som utkast
                 </template>
               </UFormField>
             </div>
 
             <div class="flex justify-end gap-3 pt-4">
               <UButton variant="ghost" :to="{ name: 'admin-consents' }">
-                Cancel
+                Avbryt
               </UButton>
-              <UButton type="submit"> Create Consent </UButton>
+              <UButton type="submit"> Opprett samtykke </UButton>
             </div>
           </div>
         </UForm>

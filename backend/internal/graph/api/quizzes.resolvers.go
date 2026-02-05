@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
@@ -18,11 +17,68 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/otel"
+	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"go.opentelemetry.io/otel/attribute"
 )
+
+// Quiz is the resolver for the quiz field.
+func (r *freeTextQuestionResolver) Quiz(ctx context.Context, obj *model.FreeTextQuestion) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	quiz, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToQuiz(ctx, quiz), nil
+}
+
+// Submission is the resolver for the submission field.
+func (r *freeTextResponseResolver) Submission(ctx context.Context, obj *model.FreeTextResponse) (*model.QuizSubmission, error) {
+	row, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+	return convertGetQuizSubmissionByIDRow(row), nil
+}
+
+// Question is the resolver for the question field.
+func (r *freeTextResponseResolver) Question(ctx context.Context, obj *model.FreeTextResponse) (model.QuizQuestion, error) {
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// Quiz is the resolver for the quiz field.
+func (r *jsonQuestionResolver) Quiz(ctx context.Context, obj *model.JSONQuestion) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	quiz, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToQuiz(ctx, quiz), nil
+}
+
+// Submission is the resolver for the submission field.
+func (r *jsonResponseResolver) Submission(ctx context.Context, obj *model.JSONResponse) (*model.QuizSubmission, error) {
+	row, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+	return convertGetQuizSubmissionByIDRow(row), nil
+}
+
+// Question is the resolver for the question field.
+func (r *jsonResponseResolver) Question(ctx context.Context, obj *model.JSONResponse) (model.QuizQuestion, error) {
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
 
 // CreateQuiz is the resolver for the createQuiz field.
 func (r *mutationResolver) CreateQuiz(ctx context.Context, input model.CreateQuizInput) (*model.Quiz, error) {
@@ -61,9 +117,6 @@ func (r *mutationResolver) CreateQuiz(ctx context.Context, input model.CreateQui
 	if input.TimeoutSeconds != nil {
 		ts := int32(*input.TimeoutSeconds)
 		params.Timeoutseconds = &ts
-	}
-	if input.PublishedAt != nil {
-		params.Publishedat = pgtype.Timestamptz{Time: input.PublishedAt.Time, Valid: true}
 	}
 	if input.EndTime != nil {
 		params.Endtime = pgtype.Timestamptz{Time: input.EndTime.Time, Valid: true}
@@ -143,9 +196,6 @@ func (r *mutationResolver) UpdateQuiz(ctx context.Context, id string, input mode
 	r.Cache.InvalidateQuiz(id)
 	r.Cache.InvalidateProject(existingQuiz.ProjectID)
 
-	// Delete translations cache
-	_ = r.DB.Queries.DeleteQuizTranslations(ctx, id)
-
 	// Convert to GraphQL model
 	return convertUpdateQuizRowToQuiz(row), nil
 }
@@ -183,43 +233,6 @@ func (r *mutationResolver) DeleteQuiz(ctx context.Context, id string) (bool, err
 	return true, nil
 }
 
-// PublishQuiz is the resolver for the publishQuiz field.
-func (r *mutationResolver) PublishQuiz(ctx context.Context, id string, publishedAt scalars.DateTime) (*model.Quiz, error) {
-	// Get authenticated user ID from context
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return nil, fmt.Errorf("user not authenticated")
-	}
-
-	// Load existing quiz to verify it exists and get project ID
-	thunk := r.Loaders.QuizByIDLoader.Load(ctx, id)
-	existingQuiz, err := thunk()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load quiz: %w", err)
-	}
-
-	// Check authorization
-	if !r.RoleService.CanManageProject(ctx, userID, existingQuiz.ProjectID) {
-		return nil, fmt.Errorf("unauthorized to publish this quiz")
-	}
-
-	// Publish quiz
-	row, err := r.DB.Queries.PublishQuiz(ctx, sqlc.PublishQuizParams{
-		ID:          id,
-		Publishedat: pgtype.Timestamptz{Time: publishedAt.Time, Valid: true},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to publish quiz: %w", err)
-	}
-
-	// Invalidate caches
-	r.Cache.InvalidateQuiz(id)
-	r.Cache.InvalidateProject(existingQuiz.ProjectID)
-
-	// Convert to GraphQL model
-	return convertPublishQuizRowToQuiz(row), nil
-}
-
 // AddQuizQuestion is the resolver for the addQuizQuestion field.
 func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, input model.CreateQuizQuestionInput) (model.QuizQuestion, error) {
 	// Get authenticated user ID from context
@@ -233,6 +246,9 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 	quiz, err := thunk()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load quiz: %w", err)
+	}
+	if quiz == nil {
+		return nil, fmt.Errorf("quiz not found: %s", quizID)
 	}
 
 	// Check authorization
@@ -303,6 +319,23 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 			})
 			if err != nil {
 				return nil, fmt.Errorf("failed to create answer: %w", err)
+			}
+		}
+	}
+
+	// Create ordering items if provided (stored in quiz_predefined_answers table)
+	if len(input.OrderingItems) > 0 {
+		for _, itemInput := range input.OrderingItems {
+			itemID := ulid.NewQuizAnswerID()
+			_, err := qtx.CreatePredefinedAnswer(ctx, sqlc.CreatePredefinedAnswerParams{
+				ID:          itemID,
+				Questionid:  questionID,
+				Answertext:  itemInput.ItemText,
+				Iscorrect:   false, // Not used for ordering
+				Answerorder: int32(itemInput.CorrectOrder),
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to create ordering item: %w", err)
 			}
 		}
 	}
@@ -413,11 +446,39 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 		}
 	}
 
+	// If ordering items provided, replace all items (stored in quiz_predefined_answers table)
+	if input.OrderingItems != nil {
+		// Delete existing items
+		err = qtx.DeletePredefinedAnswersByQuestion(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to delete existing ordering items: %w", err)
+		}
+
+		// Create new items
+		for _, itemInput := range input.OrderingItems {
+			itemID := ulid.NewQuizAnswerID()
+			_, err := qtx.CreatePredefinedAnswer(ctx, sqlc.CreatePredefinedAnswerParams{
+				ID:          itemID,
+				Questionid:  id,
+				Answertext:  itemInput.ItemText,
+				Iscorrect:   false, // Not used for ordering
+				Answerorder: int32(itemInput.CorrectOrder),
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to create ordering item: %w", err)
+			}
+		}
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	r.Cache.InvalidateQuiz(question.QuizID)
+	// Also invalidate answers cache if answers or ordering items were updated
+	if len(input.PredefinedAnswers) > 0 || len(input.OrderingItems) > 0 {
+		r.Cache.InvalidateQuizAnswers(id)
+	}
 
 	return convertUpdateQuizQuestionRowToInterface(updatedQuestion), nil
 }
@@ -599,6 +660,9 @@ func (r *mutationResolver) CreateQuizAchievement(ctx context.Context, input mode
 	} else {
 		r.Cache.InvalidateChallenge(quiz.ChallengeID, input.ProjectID, nil)
 	}
+	// Invalidate achievements list caches so new achievement appears in queries
+	r.Cache.DeletePrefix(cache.PrefixAchievementsFilter)
+	r.Cache.DeletePrefix(cache.PrefixAchievementsCount)
 
 	// Convert to GraphQL model
 	var minScorePercentage *int
@@ -628,130 +692,6 @@ func (r *mutationResolver) CreateQuizAchievement(ctx context.Context, input mode
 		MinScorePercentage:   minScorePercentage,
 		RequireCompletion:    input.RequireCompletion,
 	}, nil
-}
-
-// StartQuiz is the resolver for the startQuiz field.
-func (r *mutationResolver) StartQuiz(ctx context.Context, quizID string) (*model.QuizSubmission, error) {
-	ctx, span := otel.StartSpan(ctx, "quiz.start",
-		attribute.String("quiz.id", quizID),
-	)
-	defer span.End()
-
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok || userID == "" {
-		return nil, fmt.Errorf("user not authenticated")
-	}
-	otel.SetUserID(span, userID)
-
-	// Load quiz
-	thunk := r.Loaders.QuizByIDLoader.Load(ctx, quizID)
-	quiz, err := thunk()
-	if err != nil {
-		otel.RecordError(span, err)
-		return nil, fmt.Errorf("failed to load quiz: %w", err)
-	}
-	otel.SetProjectID(span, quiz.ProjectID)
-
-	// Check if quiz is published
-	if quiz.PublishedAt == nil || quiz.PublishedAt.Time.After(time.Now()) {
-		return nil, fmt.Errorf("quiz is not available")
-	}
-
-	// Check if quiz has ended
-	if quiz.EndTime != nil && quiz.EndTime.Time.Before(time.Now()) {
-		return nil, fmt.Errorf("quiz has ended")
-	}
-
-	// Check retake policy
-	if !quiz.AllowRetakes {
-		existing, _ := r.DB.Queries.GetCompletedSubmissionsByUserAndQuiz(ctx, sqlc.GetCompletedSubmissionsByUserAndQuizParams{
-			Userid: userID,
-			Quizid: quizID,
-		})
-		if len(existing) > 0 {
-			return nil, fmt.Errorf("retakes not allowed for this quiz")
-		}
-	}
-
-	// Check for active submission
-	active, _ := r.DB.Queries.GetActiveSubmissionByUserAndQuiz(ctx, sqlc.GetActiveSubmissionByUserAndQuizParams{
-		Userid: userID,
-		Quizid: quizID,
-	})
-	if active.ID != "" {
-		// Return existing active submission
-		span.SetAttributes(attribute.Bool("submission.resumed", true))
-		return convertSubmissionRowToModel(active), nil
-	}
-
-	// Load questions
-	questions, err := r.Loaders.QuizQuestionsByQuizLoader.Load(ctx, quizID)()
-	if err != nil {
-		otel.RecordError(span, err)
-		return nil, fmt.Errorf("failed to load questions: %w", err)
-	}
-	span.SetAttributes(attribute.Int("questions.count", len(questions)))
-
-	// Build question order
-	questionOrder := make([]string, len(questions))
-	for i, q := range questions {
-		questionOrder[i] = q.GetID()
-	}
-
-	// Randomize if configured
-	if quiz.RandomizeQuestions {
-		rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-		rng.Shuffle(len(questionOrder), func(i, j int) {
-			questionOrder[i], questionOrder[j] = questionOrder[j], questionOrder[i]
-		})
-	}
-
-	// Calculate expiry
-	var expiresAt pgtype.Timestamptz
-	if quiz.TimeoutSeconds != nil {
-		exp := time.Now().Add(time.Duration(*quiz.TimeoutSeconds) * time.Second)
-		expiresAt = pgtype.Timestamptz{Time: exp, Valid: true}
-	}
-
-	// Calculate max score (count gradable questions)
-	maxScore := 0
-	for _, q := range questions {
-		// Only PREDEFINED and NUMBER types can be graded
-		switch q.(type) {
-		case *model.PredefinedQuestion, *model.NumberQuestion:
-			maxScore++
-		}
-	}
-
-	// Marshal question order to JSON
-	questionOrderJSON, err := json.Marshal(questionOrder)
-	if err != nil {
-		otel.RecordError(span, err)
-		return nil, fmt.Errorf("failed to marshal question order: %w", err)
-	}
-
-	// Create submission
-	submissionID := ulid.NewQuizSubmissionID()
-	submission, err := r.DB.Queries.CreateQuizSubmission(ctx, sqlc.CreateQuizSubmissionParams{
-		ID:            submissionID,
-		Quizid:        quizID,
-		Userid:        userID,
-		Expiresat:     expiresAt,
-		Questionorder: questionOrderJSON,
-		Maxscore:      int32(maxScore),
-	})
-	if err != nil {
-		otel.RecordError(span, err)
-		return nil, fmt.Errorf("failed to create submission: %w", err)
-	}
-	otel.SetSubmissionID(span, submissionID)
-	span.SetAttributes(attribute.Bool("submission.resumed", false))
-
-	// Invalidate cached submissions for this user and quiz
-	r.Cache.Delete(cache.QuizSubmissionsByUserKey(userID))
-	r.Cache.Delete(cache.QuizSubmissionsByQuizKey(quizID))
-
-	return convertSubmissionRowToModel(submission), nil
 }
 
 // SubmitQuizAnswer is the resolver for the submitQuizAnswer field.
@@ -858,6 +798,27 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 			params.Jsonresponse = []byte(*input.JSONResponse)
 		}
 		// JSON is not graded - leave is_correct NULL
+	case "ORDERING":
+		if input.SubmittedOrder != nil {
+			// Store submitted order as JSON in json_response
+			orderJSON, _ := json.Marshal(input.SubmittedOrder)
+			params.Jsonresponse = orderJSON
+
+			// Calculate correctness by comparing against correct order
+			correctAnswers, _ := r.DB.Queries.GetPredefinedAnswersByQuestionID(ctx, input.QuestionID)
+
+			// correctAnswers are returned sorted by answer_order (correct position)
+			isCorrect := len(input.SubmittedOrder) == len(correctAnswers)
+			if isCorrect {
+				for i, ans := range correctAnswers {
+					if input.SubmittedOrder[i] != ans.ID {
+						isCorrect = false
+						break
+					}
+				}
+			}
+			params.Iscorrect = &isCorrect
+		}
 	}
 
 	// Calculate points_earned for correct answers
@@ -920,6 +881,121 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		PointsEarned:      response.PointsEarned,
 		AnsweredAt:        response.AnsweredAt,
 		TimeSpentSeconds:  response.TimeSpentSeconds,
+	}
+	return convertResponseRowToInterface(responseAsModel, question.QuestionType), nil
+}
+
+// UpdateQuizAnswer is the resolver for the updateQuizAnswer field.
+func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID string, input model.UpdateQuizAnswerInput) (model.QuizResponse, error) {
+	ctx, span := otel.StartSpan(ctx, "quiz.update_answer",
+		attribute.String("response.id", responseID),
+	)
+	defer span.End()
+
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+	otel.SetUserID(span, userID)
+
+	// Load the existing response
+	existingResponse, err := r.DB.Queries.GetQuizResponseByID(ctx, responseID)
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to load response: %w", err)
+	}
+
+	// Load submission to verify ownership and session state
+	submission, err := r.DB.Queries.GetQuizSubmissionByID(ctx, existingResponse.SubmissionID)
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+	otel.SetQuizID(span, submission.QuizID)
+
+	// Verify ownership
+	if submission.UserID != userID {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	// Check session state - only allow updates when session is OPEN
+	if submission.SessionID != nil && *submission.SessionID != "" {
+		session, err := r.DB.Queries.GetQuizSession(ctx, *submission.SessionID)
+		if err != nil {
+			otel.RecordError(span, err)
+			return nil, fmt.Errorf("failed to load session: %w", err)
+		}
+
+		if session.State != string(model.QuizSessionStateOpen) {
+			return nil, fmt.Errorf("quiz session is %s, answers cannot be modified", session.State)
+		}
+	}
+
+	// Load question to get type
+	question, err := r.DB.Queries.GetQuizQuestionByID(ctx, existingResponse.QuestionID)
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+
+	// Build update params
+	params := sqlc.UpdateQuizResponseParams{
+		ID: responseID,
+	}
+
+	// Only handle ORDERING questions for now
+	if question.QuestionType == "ORDERING" && input.SubmittedOrder != nil {
+		// Store submitted order as JSON
+		orderJSON, _ := json.Marshal(input.SubmittedOrder)
+		params.Jsonresponse = orderJSON
+
+		// Calculate correctness by comparing against correct order
+		correctAnswers, _ := r.DB.Queries.GetPredefinedAnswersByQuestionID(ctx, existingResponse.QuestionID)
+
+		isCorrect := len(input.SubmittedOrder) == len(correctAnswers)
+		if isCorrect {
+			for i, ans := range correctAnswers {
+				if input.SubmittedOrder[i] != ans.ID {
+					isCorrect = false
+					break
+				}
+			}
+		}
+		params.Iscorrect = &isCorrect
+
+		// Calculate points_earned for correct answers
+		if isCorrect && question.Points != nil {
+			params.Pointsearned = question.Points
+		} else {
+			zero := int32(0)
+			params.Pointsearned = &zero
+		}
+	} else {
+		return nil, fmt.Errorf("update not supported for this question type")
+	}
+
+	// Update the response
+	updatedResponse, err := r.DB.Queries.UpdateQuizResponse(ctx, params)
+	if err != nil {
+		otel.RecordError(span, err)
+		return nil, fmt.Errorf("failed to update response: %w", err)
+	}
+
+	r.Cache.InvalidateQuizSubmission(submission.ID)
+
+	// Convert to QuizResponse model
+	responseAsModel := &sqlc.QuizResponse{
+		ID:                updatedResponse.ID,
+		SubmissionID:      updatedResponse.SubmissionID,
+		QuestionID:        updatedResponse.QuestionID,
+		SelectedAnswerIds: updatedResponse.SelectedAnswerIds,
+		TextResponse:      updatedResponse.TextResponse,
+		NumberResponse:    updatedResponse.NumberResponse,
+		JsonResponse:      updatedResponse.JsonResponse,
+		IsCorrect:         updatedResponse.IsCorrect,
+		PointsEarned:      updatedResponse.PointsEarned,
+		AnsweredAt:        updatedResponse.AnsweredAt,
+		TimeSpentSeconds:  updatedResponse.TimeSpentSeconds,
 	}
 	return convertResponseRowToInterface(responseAsModel, question.QuestionType), nil
 }
@@ -987,8 +1063,12 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 		return nil, fmt.Errorf("failed to calculate score: %w", err)
 	}
 
-	score := int(scoreResult.Score)
-	maxScore := int(scoreResult.MaxScore)
+	score := int(scoreResult)
+	// Use maxScore from submission (stored when session was started)
+	var maxScore int
+	if submission.MaxScore != nil {
+		maxScore = int(*submission.MaxScore)
+	}
 	scoreSpan.SetAttributes(
 		attribute.Int("score.value", score),
 		attribute.Int("score.max", maxScore),
@@ -1076,6 +1156,7 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	achievements, _ := qtx.GetQuizAchievementsByQuizID(ctx, quiz.ID)
 	achSpan.SetAttributes(attribute.Int("achievements.count", len(achievements)))
 	achievementsAwarded := 0
+	awardedAchievementIDs := make([]string, 0)
 	for _, ach := range achievements {
 		shouldAward := true
 
@@ -1104,6 +1185,7 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 				fmt.Printf("warning: failed to award achievement %s to user %s: %v\n", ach.AchievementID, userID, err)
 			} else {
 				achievementsAwarded++
+				awardedAchievementIDs = append(awardedAchievementIDs, ach.AchievementID)
 			}
 		}
 	}
@@ -1116,6 +1198,26 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 	txSuccess = true
+
+	// Send push notifications for awarded achievements (after transaction commits) with translations
+	if r.PushService != nil && len(awardedAchievementIDs) > 0 {
+		go func(achievementIDs []string, targetUserID string) {
+			bgCtx := context.Background()
+			achRows, err := r.DB.Queries.GetAchievementsByIDs(bgCtx, achievementIDs)
+			if err != nil {
+				fmt.Printf("warning: failed to load achievements for notifications: %v\n", err)
+				return
+			}
+			for _, ach := range achRows {
+				push.SendTranslatedAchievementNotification(r.PushService, r.Loaders, targetUserID, push.AchievementInfo{
+					ID:               ach.ID,
+					Name:             ach.Name,
+					NotificationText: ach.NotificationText,
+					ImageCompleted:   ach.ImageCompleted,
+				})
+			}
+		}(awardedAchievementIDs, userID)
+	}
 
 	// Auto-complete the associated challenge (after transaction commits)
 	ctx, challengeSpan := otel.StartSpan(ctx, "quiz.finalize.complete_challenge")
@@ -1149,7 +1251,14 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	r.Cache.InvalidateUser(userID)
 	cacheSpan.End()
 
-	return convertSubmissionRowToModel(updatedSubmission), nil
+	// Notify Firestore listeners
+	go r.FirebaseService.NotifyUserQuizzes(context.Background(), userID)
+	// Also notify about achievements if any were awarded
+	if len(awardedAchievementIDs) > 0 {
+		go r.FirebaseService.NotifyUserAchievements(context.Background(), userID)
+	}
+
+	return convertUpdateQuizSubmissionRow(updatedSubmission), nil
 }
 
 // CreateQuizSubmission is the resolver for the createQuizSubmission field (M2M).
@@ -1180,12 +1289,14 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 		return nil, fmt.Errorf("failed to marshal question order: %w", err)
 	}
 
-	// Calculate max score (count gradable questions)
-	maxScore := 0
+	// Calculate max score (sum of points for gradable questions)
+	var maxScore int
 	for _, q := range questions {
 		switch q.(type) {
-		case *model.PredefinedQuestion, *model.NumberQuestion:
-			maxScore++
+		case *model.PredefinedQuestion, *model.NumberQuestion, *model.OrderingQuestion:
+			if q.GetPoints() != nil {
+				maxScore += *q.GetPoints()
+			}
 		}
 	}
 
@@ -1208,10 +1319,11 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 		Maxscore:      int32(maxScore),
 	}
 
-	submission, err := qtx.CreateQuizSubmission(ctx, submissionParams)
+	submissionRow, err := qtx.CreateQuizSubmission(ctx, submissionParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create submission: %w", err)
 	}
+	submission := convertCreateQuizSubmissionRow(submissionRow)
 
 	// Create responses for each answer
 	score := 0
@@ -1308,6 +1420,39 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 				return nil, fmt.Errorf("jsonResponse required for JSON question")
 			}
 			responseParams.Jsonresponse = []byte(*responseInput.JSONResponse)
+
+		case *model.OrderingQuestion:
+			if responseInput.SubmittedOrder == nil {
+				return nil, fmt.Errorf("submittedOrder required for ORDERING question")
+			}
+
+			// Store submitted order as JSON
+			orderJSON, err := json.Marshal(responseInput.SubmittedOrder)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal submitted order: %w", err)
+			}
+			responseParams.Jsonresponse = orderJSON
+
+			// Calculate correctness
+			answersThunk := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, questionID)
+			answers, err := answersThunk()
+			if err != nil {
+				return nil, fmt.Errorf("failed to load ordering items: %w", err)
+			}
+
+			// answers are sorted by answer_order (correct position)
+			correct := len(responseInput.SubmittedOrder) == len(answers)
+			if correct {
+				for i, ans := range answers {
+					if responseInput.SubmittedOrder[i] != ans.ID {
+						correct = false
+						break
+					}
+				}
+			}
+
+			isCorrect = &correct
+			responseParams.Iscorrect = &correct
 		}
 
 		// Calculate points_earned for correct answers
@@ -1326,8 +1471,9 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 			return nil, fmt.Errorf("failed to create response: %w", err)
 		}
 
-		if isCorrect != nil && *isCorrect {
-			score++
+		// Add points earned (already calculated and stored in responseParams.Pointsearned)
+		if responseParams.Pointsearned != nil {
+			score += int(*responseParams.Pointsearned)
 		}
 	}
 
@@ -1366,10 +1512,11 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 			}
 		}
 
-		submission, err = qtx.UpdateQuizSubmission(ctx, updateParams)
+		updatedRow, err := qtx.UpdateQuizSubmission(ctx, updateParams)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update submission with score: %w", err)
 		}
+		submission = convertUpdateQuizSubmissionRow(updatedRow)
 	}
 
 	// Commit transaction
@@ -1381,7 +1528,186 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 	r.Cache.InvalidateQuizSubmission(submissionID)
 	r.Cache.InvalidateProject(quiz.ProjectID)
 
-	return convertSubmissionRowToModel(submission), nil
+	return submission, nil
+}
+
+// Quiz is the resolver for the quiz field.
+func (r *numberQuestionResolver) Quiz(ctx context.Context, obj *model.NumberQuestion) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	quiz, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToQuiz(ctx, quiz), nil
+}
+
+// Submission is the resolver for the submission field.
+func (r *numberResponseResolver) Submission(ctx context.Context, obj *model.NumberResponse) (*model.QuizSubmission, error) {
+	row, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+	return convertGetQuizSubmissionByIDRow(row), nil
+}
+
+// Question is the resolver for the question field.
+func (r *numberResponseResolver) Question(ctx context.Context, obj *model.NumberResponse) (model.QuizQuestion, error) {
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// Quiz is the resolver for the quiz field.
+func (r *orderingQuestionResolver) Quiz(ctx context.Context, obj *model.OrderingQuestion) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	quiz, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToQuiz(ctx, quiz), nil
+}
+
+// OrderingItems is the resolver for the orderingItems field.
+func (r *orderingQuestionResolver) OrderingItems(ctx context.Context, obj *model.OrderingQuestion) ([]model.QuizOrderingItem, error) {
+	// Reuse the existing loader for predefined answers, then convert to ordering items
+	thunk := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, obj.ID)
+	answers, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load ordering items: %w", err)
+	}
+
+	// Convert predefined answers to ordering items (answer_order stores the correct position)
+	result := make([]model.QuizOrderingItem, len(answers))
+	for i, a := range answers {
+		result[i] = model.QuizOrderingItem{
+			ID:           a.ID,
+			QuestionID:   a.QuestionID,
+			ItemText:     a.AnswerText,
+			CorrectOrder: a.AnswerOrder,
+		}
+	}
+	return result, nil
+}
+
+// Submission is the resolver for the submission field.
+func (r *orderingResponseResolver) Submission(ctx context.Context, obj *model.OrderingResponse) (*model.QuizSubmission, error) {
+	row, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+	return convertGetQuizSubmissionByIDRow(row), nil
+}
+
+// Question is the resolver for the question field.
+func (r *orderingResponseResolver) Question(ctx context.Context, obj *model.OrderingResponse) (model.QuizQuestion, error) {
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// IsCorrect is the resolver for the isCorrect field on OrderingResponse.
+// It hides the correctness until the session is LOCKED or FINISHED.
+func (r *orderingResponseResolver) IsCorrect(ctx context.Context, obj *model.OrderingResponse) (*bool, error) {
+	// Load submission to get session ID
+	submission, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+
+	// If there's a session, check its state
+	if submission.SessionID != nil && *submission.SessionID != "" {
+		session, err := r.DB.Queries.GetQuizSession(ctx, *submission.SessionID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load session: %w", err)
+		}
+
+		// Hide isCorrect when session is OPEN
+		if session.State == string(model.QuizSessionStateOpen) {
+			return nil, nil
+		}
+	}
+
+	// Return actual isCorrect value for LOCKED/FINISHED sessions or non-session quizzes
+	return obj.IsCorrectValue, nil
+}
+
+// Quiz is the resolver for the quiz field.
+func (r *predefinedQuestionResolver) Quiz(ctx context.Context, obj *model.PredefinedQuestion) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	quiz, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToQuiz(ctx, quiz), nil
+}
+
+// PredefinedAnswers is the resolver for the predefinedAnswers field.
+func (r *predefinedQuestionResolver) PredefinedAnswers(ctx context.Context, obj *model.PredefinedQuestion) ([]model.QuizPredefinedAnswer, error) {
+	thunk := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, obj.ID)
+	answers, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load predefined answers: %w", err)
+	}
+	// Convert []*model.QuizPredefinedAnswer to []model.QuizPredefinedAnswer and apply translations
+	result := make([]model.QuizPredefinedAnswer, len(answers))
+	for i, a := range answers {
+		translated := r.ApplyTranslationToQuizAnswer(ctx, a)
+		result[i] = *translated
+	}
+	return result, nil
+}
+
+// Submission is the resolver for the submission field.
+func (r *predefinedResponseResolver) Submission(ctx context.Context, obj *model.PredefinedResponse) (*model.QuizSubmission, error) {
+	row, err := r.DB.Queries.GetQuizSubmissionByID(ctx, obj.SubmissionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submission: %w", err)
+	}
+	return convertGetQuizSubmissionByIDRow(row), nil
+}
+
+// Question is the resolver for the question field.
+func (r *predefinedResponseResolver) Question(ctx context.Context, obj *model.PredefinedResponse) (model.QuizQuestion, error) {
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// SelectedAnswers is the resolver for the selectedAnswers field.
+func (r *predefinedResponseResolver) SelectedAnswers(ctx context.Context, obj *model.PredefinedResponse) ([]model.QuizPredefinedAnswer, error) {
+	if len(obj.SelectedAnswerIds) == 0 {
+		return []model.QuizPredefinedAnswer{}, nil
+	}
+
+	// Load answers for the question and filter by selected IDs
+	thunk := r.Loaders.QuizAnswersByQuestionLoader.Load(ctx, obj.QuestionID)
+	allAnswers, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load answers: %w", err)
+	}
+
+	// Build a set of selected IDs
+	selectedSet := make(map[string]bool)
+	for _, id := range obj.SelectedAnswerIds {
+		selectedSet[id] = true
+	}
+
+	// Filter to only selected answers and apply translations
+	var result []model.QuizPredefinedAnswer
+	for _, a := range allAnswers {
+		if selectedSet[a.ID] {
+			translated := r.ApplyTranslationToQuizAnswer(ctx, a)
+			result = append(result, *translated)
+		}
+	}
+
+	return result, nil
 }
 
 // Quiz is the resolver for the quiz field.
@@ -1391,8 +1717,8 @@ func (r *queryResolver) Quiz(ctx context.Context, id string) (*model.Quiz, error
 	)
 	defer span.End()
 
-	// Load quiz with visibility check
-	quiz, err := r.LoadQuizWithVisibility(ctx, id)
+	// Load quiz
+	quiz, err := r.LoadQuizByID(ctx, id)
 	if err != nil {
 		otel.RecordError(span, err)
 		return nil, err
@@ -1413,18 +1739,11 @@ func (r *queryResolver) Quizzes(ctx context.Context, filter *model.QuizFilter, f
 	// Build filter params
 	var projectID, challengeID *string
 	var ids []string
-	var publishedAfter, publishedBefore *time.Time
 
 	if filter != nil {
 		projectID = filter.ProjectID
 		challengeID = filter.ChallengeID
 		ids = filter.Ids
-		if filter.PublishedAfter != nil {
-			publishedAfter = &filter.PublishedAfter.Time
-		}
-		if filter.PublishedBefore != nil {
-			publishedBefore = &filter.PublishedBefore.Time
-		}
 		if projectID != nil {
 			otel.SetProjectID(span, *projectID)
 		}
@@ -1456,12 +1775,6 @@ func (r *queryResolver) Quizzes(ctx context.Context, filter *model.QuizFilter, f
 	}
 	if challengeID != nil {
 		params.Challengeid = *challengeID
-	}
-	if publishedAfter != nil {
-		params.Publishedafter = pgtype.Timestamptz{Time: *publishedAfter, Valid: true}
-	}
-	if publishedBefore != nil {
-		params.Publishedbefore = pgtype.Timestamptz{Time: *publishedBefore, Valid: true}
 	}
 	if len(ids) > 0 {
 		params.Ids = ids
@@ -1505,12 +1818,6 @@ func (r *queryResolver) Quizzes(ctx context.Context, filter *model.QuizFilter, f
 	}
 	if challengeID != nil {
 		countParams.Challengeid = *challengeID
-	}
-	if publishedAfter != nil {
-		countParams.Publishedafter = pgtype.Timestamptz{Time: *publishedAfter, Valid: true}
-	}
-	if publishedBefore != nil {
-		countParams.Publishedbefore = pgtype.Timestamptz{Time: *publishedBefore, Valid: true}
 	}
 	if len(ids) > 0 {
 		countParams.Ids = ids
@@ -1571,7 +1878,7 @@ func (r *queryResolver) QuizSubmission(ctx context.Context, id string) (*model.Q
 		}
 	}
 
-	return convertSubmissionRowToModel(row), nil
+	return convertGetQuizSubmissionByIDRow(row), nil
 }
 
 // QuizSubmissions is the resolver for the quizSubmissions field.
@@ -1638,10 +1945,10 @@ func (r *queryResolver) QuizSubmissions(ctx context.Context, quizID string, user
 
 	// Convert rows to models
 	edges := make([]*model.QuizSubmissionEdge, len(rows))
-	for i, row := range rows {
+	for i := range rows {
 		edges[i] = &model.QuizSubmissionEdge{
-			Cursor: row.ID,
-			Node:   convertSubmissionRowToModel(row),
+			Cursor: rows[i].ID,
+			Node:   convertGetQuizSubmissionsFilteredCursorRow(rows[i]),
 		}
 	}
 
@@ -1680,3 +1987,396 @@ func (r *queryResolver) QuizSubmissions(ctx context.Context, quizID string, user
 		TotalCount: int(totalCount),
 	}, nil
 }
+
+// ImageObject is the resolver for the imageObject field.
+func (r *quizResolver) ImageObject(ctx context.Context, obj *model.Quiz) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
+// Project is the resolver for the project field on Quiz.
+func (r *quizResolver) Project(ctx context.Context, obj *model.Quiz) (*model.Project, error) {
+	thunk := r.Loaders.ProjectByIDLoader.Load(ctx, obj.ProjectID)
+	project, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToProject(ctx, project), nil
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *quizResolver) Challenge(ctx context.Context, obj *model.Quiz) (model.Challenge, error) {
+	thunk := r.Loaders.ChallengeByIDLoader.Load(ctx, obj.ChallengeID)
+	challenge, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return r.ApplyTranslationToChallenge(ctx, challenge), nil
+}
+
+// Questions is the resolver for the questions field on Quiz.
+func (r *quizResolver) Questions(ctx context.Context, obj *model.Quiz) ([]model.QuizQuestion, error) {
+	thunk := r.Loaders.QuizQuestionsByQuizLoader.Load(ctx, obj.ID)
+	questions, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply translations to each question
+	result := make([]model.QuizQuestion, len(questions))
+	for i, q := range questions {
+		result[i] = r.ApplyTranslationToQuizQuestion(ctx, q)
+	}
+	return result, nil
+}
+
+// UserSubmissions is the resolver for the userSubmissions field on Quiz.
+func (r *quizResolver) UserSubmissions(ctx context.Context, obj *model.Quiz) ([]model.QuizSubmission, error) {
+	// Get authenticated user ID
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return []model.QuizSubmission{}, nil
+	}
+
+	// Load all submissions for this user
+	thunk := r.Loaders.QuizSubmissionsByUserLoader.Load(ctx, userID)
+	allSubmissions, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user submissions: %w", err)
+	}
+
+	// Filter to submissions for this quiz
+	var quizSubmissions []model.QuizSubmission
+	for _, sub := range allSubmissions {
+		if sub.QuizID == obj.ID {
+			quizSubmissions = append(quizSubmissions, *sub)
+		}
+	}
+
+	return quizSubmissions, nil
+}
+
+// UserCanStart is the resolver for the userCanStart field on Quiz.
+// Note: This is a legacy field. Prefer using session-based access via userActiveSession.
+func (r *quizResolver) UserCanStart(ctx context.Context, obj *model.Quiz) (bool, error) {
+	// Get authenticated user ID
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return false, nil
+	}
+
+	// Check if quiz has ended
+	if obj.EndTime != nil && obj.EndTime.Time.Before(time.Now()) {
+		return false, nil
+	}
+
+	// Load user submissions for this quiz
+	thunk := r.Loaders.QuizSubmissionsByUserLoader.Load(ctx, userID)
+	allSubmissions, err := thunk()
+	if err != nil {
+		return false, fmt.Errorf("failed to load user submissions: %w", err)
+	}
+
+	// Filter to submissions for this quiz
+	var quizSubmissions []*model.QuizSubmission
+	for _, sub := range allSubmissions {
+		if sub.QuizID == obj.ID {
+			quizSubmissions = append(quizSubmissions, sub)
+		}
+	}
+
+	// Check if retakes are allowed
+	if !obj.AllowRetakes {
+		// Check if user has any completed submissions
+		for _, sub := range quizSubmissions {
+			if sub.CompletedAt != nil {
+				return false, nil // Already completed, no retakes allowed
+			}
+		}
+	}
+
+	// Check if there's an active (non-completed, non-expired) submission
+	for _, sub := range quizSubmissions {
+		if sub.CompletedAt == nil {
+			// Check if expired
+			if sub.ExpiresAt != nil && sub.ExpiresAt.Time.Before(time.Now()) {
+				continue // This one is expired, keep looking
+			}
+			return false, nil // Active submission exists
+		}
+	}
+
+	return true, nil
+}
+
+// UserActiveSubmission is the resolver for the userActiveSubmission field on Quiz.
+func (r *quizResolver) UserActiveSubmission(ctx context.Context, obj *model.Quiz) (*model.QuizSubmission, error) {
+	// Get authenticated user ID
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, nil
+	}
+
+	// Load user submissions for this quiz
+	thunk := r.Loaders.QuizSubmissionsByUserLoader.Load(ctx, userID)
+	allSubmissions, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user submissions: %w", err)
+	}
+
+	// Find active submission (not completed, not expired)
+	for _, sub := range allSubmissions {
+		if sub.QuizID == obj.ID && sub.CompletedAt == nil {
+			// Check if expired
+			if sub.ExpiresAt != nil && sub.ExpiresAt.Time.Before(time.Now()) {
+				continue
+			}
+			return sub, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// Sessions is the resolver for the sessions field.
+func (r *quizResolver) Sessions(ctx context.Context, obj *model.Quiz, state *model.QuizSessionState) ([]model.QuizSession, error) {
+	stateFilter := ""
+	if state != nil {
+		stateFilter = string(*state)
+	}
+
+	rows, err := r.DB.Queries.GetQuizSessionsByQuiz(ctx, sqlc.GetQuizSessionsByQuizParams{
+		Quizid: obj.ID,
+		State:  stateFilter,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get quiz sessions: %w", err)
+	}
+
+	sessions := make([]model.QuizSession, len(rows))
+	for i, row := range rows {
+		sessions[i] = *convertQuizSessionToModel(row)
+	}
+	return sessions, nil
+}
+
+// UserSessions is the resolver for the userSessions field.
+func (r *quizResolver) UserSessions(ctx context.Context, obj *model.Quiz) ([]model.QuizSession, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return []model.QuizSession{}, nil
+	}
+
+	rows, err := r.DB.Queries.GetUserAccessibleSessions(ctx, sqlc.GetUserAccessibleSessionsParams{
+		Userid: userID,
+		Quizid: obj.ID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user sessions: %w", err)
+	}
+
+	sessions := make([]model.QuizSession, len(rows))
+	for i, row := range rows {
+		sessions[i] = *convertQuizSessionToModel(row)
+	}
+	return sessions, nil
+}
+
+// UserActiveSession is the resolver for the userActiveSession field.
+// Returns the user's currently accessible open session for this quiz, or nil if none.
+func (r *quizResolver) UserActiveSession(ctx context.Context, obj *model.Quiz) (*model.QuizSession, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, nil
+	}
+
+	row, err := r.DB.Queries.GetUserActiveSessionForQuiz(ctx, sqlc.GetUserActiveSessionForQuizParams{
+		Quizid: obj.ID,
+		Userid: userID,
+	})
+	if err != nil {
+		// No active session found is not an error - return nil
+		return nil, nil
+	}
+
+	return convertQuizSessionToModel(row), nil
+}
+
+// Question is the resolver for the question field.
+func (r *quizOrderingItemResolver) Question(ctx context.Context, obj *model.QuizOrderingItem) (model.QuizQuestion, error) {
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// Question is the resolver for the question field on QuizPredefinedAnswer.
+func (r *quizPredefinedAnswerResolver) Question(ctx context.Context, obj *model.QuizPredefinedAnswer) (model.QuizQuestion, error) {
+	// Query directly
+	row, err := r.DB.Queries.GetQuizQuestionByID(ctx, obj.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load question: %w", err)
+	}
+	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// IsCorrect is the resolver for the isCorrect field on QuizPredefinedAnswer.
+func (r *quizPredefinedAnswerResolver) IsCorrect(ctx context.Context, obj *model.QuizPredefinedAnswer) (*bool, error) {
+	return &obj.IsCorrectValue, nil
+}
+
+// Quiz is the resolver for the quiz field on QuizSubmission.
+func (r *quizSubmissionResolver) Quiz(ctx context.Context, obj *model.QuizSubmission) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	return thunk()
+}
+
+// Session is the resolver for the session field.
+func (r *quizSubmissionResolver) Session(ctx context.Context, obj *model.QuizSubmission) (*model.QuizSession, error) {
+	if obj.SessionID == nil || *obj.SessionID == "" {
+		return nil, nil
+	}
+
+	row, err := r.DB.Queries.GetQuizSession(ctx, *obj.SessionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get quiz session: %w", err)
+	}
+
+	return convertQuizSessionToModel(row), nil
+}
+
+// User is the resolver for the user field on QuizSubmission.
+func (r *quizSubmissionResolver) User(ctx context.Context, obj *model.QuizSubmission) (*model.User, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load user first to get churchId for authorization
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	// Check authorization with user's church
+	if !r.RoleService.CanAccessUser(ctx, currentUserID, obj.UserID, user.ChurchID) {
+		return nil, fmt.Errorf("permission denied")
+	}
+
+	return user, nil
+}
+
+// IsExpired is the resolver for the isExpired field on QuizSubmission.
+func (r *quizSubmissionResolver) IsExpired(ctx context.Context, obj *model.QuizSubmission) (bool, error) {
+	if obj.ExpiresAt == nil {
+		return false, nil
+	}
+	return obj.ExpiresAt.Time.Before(time.Now()), nil
+}
+
+// OrderedQuestions is the resolver for the orderedQuestions field on QuizSubmission.
+func (r *quizSubmissionResolver) OrderedQuestions(ctx context.Context, obj *model.QuizSubmission) ([]model.QuizQuestion, error) {
+	// Load all questions for the quiz
+	thunk := r.Loaders.QuizQuestionsByQuizLoader.Load(ctx, obj.QuizID)
+	allQuestions, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load questions: %w", err)
+	}
+
+	// Build map of questions by ID
+	questionMap := make(map[string]model.QuizQuestion)
+	for _, q := range allQuestions {
+		questionMap[q.GetID()] = q
+	}
+
+	// Order questions according to submission's question_order
+	orderedQuestions := make([]model.QuizQuestion, 0, len(obj.QuestionOrder))
+	for _, questionID := range obj.QuestionOrder {
+		if q, ok := questionMap[questionID]; ok {
+			orderedQuestions = append(orderedQuestions, q)
+		}
+	}
+
+	return orderedQuestions, nil
+}
+
+// Responses is the resolver for the responses field on QuizSubmission.
+func (r *quizSubmissionResolver) Responses(ctx context.Context, obj *model.QuizSubmission) ([]model.QuizResponse, error) {
+	thunk := r.Loaders.QuizResponsesBySubmissionLoader.Load(ctx, obj.ID)
+	return thunk()
+}
+
+// ScorePercentage is the resolver for the scorePercentage field on QuizSubmission.
+func (r *quizSubmissionResolver) ScorePercentage(ctx context.Context, obj *model.QuizSubmission) (*float64, error) {
+	if obj.Score == nil || obj.MaxScore == nil || *obj.MaxScore == 0 {
+		return nil, nil
+	}
+
+	percentage := (float64(*obj.Score) / float64(*obj.MaxScore)) * 100
+	return &percentage, nil
+}
+
+// FreeTextQuestion returns FreeTextQuestionResolver implementation.
+func (r *Resolver) FreeTextQuestion() FreeTextQuestionResolver { return &freeTextQuestionResolver{r} }
+
+// FreeTextResponse returns FreeTextResponseResolver implementation.
+func (r *Resolver) FreeTextResponse() FreeTextResponseResolver { return &freeTextResponseResolver{r} }
+
+// JsonQuestion returns JsonQuestionResolver implementation.
+func (r *Resolver) JsonQuestion() JsonQuestionResolver { return &jsonQuestionResolver{r} }
+
+// JsonResponse returns JsonResponseResolver implementation.
+func (r *Resolver) JsonResponse() JsonResponseResolver { return &jsonResponseResolver{r} }
+
+// NumberQuestion returns NumberQuestionResolver implementation.
+func (r *Resolver) NumberQuestion() NumberQuestionResolver { return &numberQuestionResolver{r} }
+
+// NumberResponse returns NumberResponseResolver implementation.
+func (r *Resolver) NumberResponse() NumberResponseResolver { return &numberResponseResolver{r} }
+
+// OrderingQuestion returns OrderingQuestionResolver implementation.
+func (r *Resolver) OrderingQuestion() OrderingQuestionResolver { return &orderingQuestionResolver{r} }
+
+// OrderingResponse returns OrderingResponseResolver implementation.
+func (r *Resolver) OrderingResponse() OrderingResponseResolver { return &orderingResponseResolver{r} }
+
+// PredefinedQuestion returns PredefinedQuestionResolver implementation.
+func (r *Resolver) PredefinedQuestion() PredefinedQuestionResolver {
+	return &predefinedQuestionResolver{r}
+}
+
+// PredefinedResponse returns PredefinedResponseResolver implementation.
+func (r *Resolver) PredefinedResponse() PredefinedResponseResolver {
+	return &predefinedResponseResolver{r}
+}
+
+// Quiz returns QuizResolver implementation.
+func (r *Resolver) Quiz() QuizResolver { return &quizResolver{r} }
+
+// QuizOrderingItem returns QuizOrderingItemResolver implementation.
+func (r *Resolver) QuizOrderingItem() QuizOrderingItemResolver { return &quizOrderingItemResolver{r} }
+
+// QuizPredefinedAnswer returns QuizPredefinedAnswerResolver implementation.
+func (r *Resolver) QuizPredefinedAnswer() QuizPredefinedAnswerResolver {
+	return &quizPredefinedAnswerResolver{r}
+}
+
+// QuizSubmission returns QuizSubmissionResolver implementation.
+func (r *Resolver) QuizSubmission() QuizSubmissionResolver { return &quizSubmissionResolver{r} }
+
+type freeTextQuestionResolver struct{ *Resolver }
+type freeTextResponseResolver struct{ *Resolver }
+type jsonQuestionResolver struct{ *Resolver }
+type jsonResponseResolver struct{ *Resolver }
+type numberQuestionResolver struct{ *Resolver }
+type numberResponseResolver struct{ *Resolver }
+type orderingQuestionResolver struct{ *Resolver }
+type orderingResponseResolver struct{ *Resolver }
+type predefinedQuestionResolver struct{ *Resolver }
+type predefinedResponseResolver struct{ *Resolver }
+type quizResolver struct{ *Resolver }
+type quizOrderingItemResolver struct{ *Resolver }
+type quizPredefinedAnswerResolver struct{ *Resolver }
+type quizSubmissionResolver struct{ *Resolver }

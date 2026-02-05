@@ -1,0 +1,35 @@
+type: http_request
+model: http_request
+id: rq_UploadFile
+createdAt: 2025-01-07T12:00:00
+updatedAt: 2026-01-13T11:01:44.296790
+workspaceId: wk_XKsmbMdFg7
+folderId: null
+authentication: {}
+authenticationType: null
+body:
+  form:
+  - enabled: true
+    file: /Users/matjaz/Downloads/Achieved-13.png
+    id: cq82umDwEb
+    name: file
+  - enabled: true
+    id: rDIRSJUcYK
+    name: ''
+    value: ''
+bodyType: multipart/form-data
+description: Upload a file to S3 (admin only). Supports JPEG, PNG, GIF, WebP, MP4, WebM, MOV, PDF. Max 30MB.
+headers:
+- enabled: true
+  name: Authorization
+  value: Bearer ${[ TOKEN ]}
+  id: hdr_UploadFileAuth
+- enabled: true
+  name: Content-Type
+  value: multipart/form-data
+  id: JHmf3GcSIW
+method: POST
+name: Upload File
+sortPriority: 23000.0
+url: ${[ HOST ]}/api/upload
+urlParameters: []

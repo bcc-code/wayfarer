@@ -1,5 +1,335 @@
 # Quiz queries and mutations
 
+# ==================== Quiz Types ====================
+
+enum QuizQuestionType {
+    PREDEFINED
+    FREE_TEXT
+    NUMBER
+    JSON
+    ORDERING
+}
+
+type Quiz {
+    id: ID!
+    name: String!
+    description: String!
+    image: String @deprecated(reason: "Use imageObject instead")
+    imageObject: Image @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+    challenge: Challenge! @goField(forceResolver: true)
+
+    timeoutSeconds: Int
+    randomizeQuestions: Boolean!
+    revealCorrectAnswers: Boolean!
+    allowRetakes: Boolean!
+    completionPoints: Int!
+
+    questions: [QuizQuestion!]! @goField(forceResolver: true)
+
+    endTime: DateTime
+
+    # User-specific fields (legacy - prefer session-based access)
+    userSubmissions: [QuizSubmission!]! @goField(forceResolver: true)
+    userCanStart: Boolean! @goField(forceResolver: true)
+    userActiveSubmission: QuizSubmission @goField(forceResolver: true)
+
+    # Session-based access (new)
+    sessions(state: QuizSessionState): [QuizSession!]! @goField(forceResolver: true)
+    userSessions: [QuizSession!]! @goField(forceResolver: true)
+    userActiveSession: QuizSession @goField(forceResolver: true)
+}
+
+# ==================== Quiz Question Interface ====================
+
+interface QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
+    timeoutSeconds: Int
+    points: Int
+}
+
+type PredefinedQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
+    timeoutSeconds: Int
+    points: Int
+    allowMultipleSelection: Boolean!
+    predefinedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
+}
+
+type FreeTextQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
+    timeoutSeconds: Int
+    points: Int
+}
+
+type NumberQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
+    timeoutSeconds: Int
+    points: Int
+    minValue: Float
+    maxValue: Float
+    stepValue: Float
+}
+
+type JsonQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
+    timeoutSeconds: Int
+    points: Int
+}
+
+type OrderingQuestion implements QuizQuestion {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    questionText: String!
+    questionOrder: Int!
+    timeoutSeconds: Int
+    points: Int
+    orderingItems: [QuizOrderingItem!]! @goField(forceResolver: true)
+}
+
+type QuizOrderingItem {
+    id: ID!
+    question: QuizQuestion! @goField(forceResolver: true)
+    itemText: String!
+    # correctOrder intentionally NOT exposed to prevent cheating
+}
+
+type QuizPredefinedAnswer {
+    id: ID!
+    question: QuizQuestion! @goField(forceResolver: true)
+    answerText: String!
+    answerOrder: Int!
+    isCorrect: Boolean @goField(forceResolver: true)
+}
+
+type QuizSubmission {
+    id: ID!
+    quiz: Quiz! @goField(forceResolver: true)
+    session: QuizSession @goField(forceResolver: true)
+    user: User! @goField(forceResolver: true)
+
+    startedAt: DateTime!
+    completedAt: DateTime
+    expiresAt: DateTime
+    isExpired: Boolean! @goField(forceResolver: true)
+    autoSubmitted: Boolean!
+
+    questionOrder: [ID!]!
+    orderedQuestions: [QuizQuestion!]! @goField(forceResolver: true)
+
+    responses: [QuizResponse!]! @goField(forceResolver: true)
+
+    score: Int
+    maxScore: Int
+    scorePercentage: Float @goField(forceResolver: true)
+    pointsAwarded: Int
+}
+
+# ==================== Quiz Response Interface ====================
+
+interface QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    pointsEarned: Int
+}
+
+type PredefinedResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    pointsEarned: Int
+    selectedAnswerIds: [ID!]!
+    selectedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
+    isCorrect: Boolean
+}
+
+type FreeTextResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    pointsEarned: Int
+    textResponse: String!
+}
+
+type NumberResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    pointsEarned: Int
+    numberResponse: Float!
+}
+
+type JsonResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    pointsEarned: Int
+    jsonResponse: JSON!
+}
+
+type OrderingResponse implements QuizResponse {
+    id: ID!
+    submission: QuizSubmission! @goField(forceResolver: true)
+    question: QuizQuestion! @goField(forceResolver: true)
+    answeredAt: DateTime
+    timeSpentSeconds: Int
+    pointsEarned: Int
+    submittedOrder: [ID!]!
+    isCorrect: Boolean @goField(forceResolver: true)
+}
+
+# ==================== Quiz Input Types ====================
+
+input CreateQuizInput {
+    name: String!
+    description: String!
+    image: String
+    projectId: ID!
+    challengeId: ID!
+
+    timeoutSeconds: Int
+
+    randomizeQuestions: Boolean!
+    revealCorrectAnswers: Boolean!
+    allowRetakes: Boolean!
+    completionPoints: Int!
+
+    endTime: DateTime
+}
+
+input UpdateQuizInput {
+    name: String
+    description: String
+    image: String
+
+    timeoutSeconds: Int
+
+    randomizeQuestions: Boolean
+    revealCorrectAnswers: Boolean
+    allowRetakes: Boolean
+    completionPoints: Int
+
+    endTime: DateTime
+}
+
+input CreateQuizQuestionInput {
+    questionType: QuizQuestionType!
+    questionText: String!
+    questionOrder: Int!
+    timeoutSeconds: Int
+    points: Int
+
+    allowMultipleSelection: Boolean
+    predefinedAnswers: [CreatePredefinedAnswerInput!]
+
+    minValue: Float
+    maxValue: Float
+    stepValue: Float
+
+    orderingItems: [CreateOrderingItemInput!]
+}
+
+input CreatePredefinedAnswerInput {
+    answerText: String!
+    isCorrect: Boolean!
+    answerOrder: Int!
+}
+
+input CreateOrderingItemInput {
+    itemText: String!
+    correctOrder: Int!
+}
+
+input UpdateQuizQuestionInput {
+    questionText: String
+    questionOrder: Int
+    timeoutSeconds: Int
+    points: Int
+
+    allowMultipleSelection: Boolean
+    predefinedAnswers: [CreatePredefinedAnswerInput!]
+
+    minValue: Float
+    maxValue: Float
+    stepValue: Float
+
+    orderingItems: [CreateOrderingItemInput!]
+}
+
+input SubmitQuizAnswerInput {
+    questionId: ID!
+
+    selectedAnswerIds: [ID!]
+    textResponse: String
+    numberResponse: Float
+    jsonResponse: JSON
+    submittedOrder: [ID!]
+
+    timeSpentSeconds: Int
+}
+
+input UpdateQuizAnswerInput {
+    submittedOrder: [ID!]  # For ordering questions
+}
+
+input QuizFilter {
+    projectId: ID
+    challengeId: ID
+    ids: [ID!]
+}
+
+# ==================== Quiz Pagination ====================
+
+type QuizEdge {
+    cursor: String!
+    node: Quiz!
+}
+
+type QuizConnection {
+    edges: [QuizEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type QuizSubmissionEdge {
+    cursor: String!
+    node: QuizSubmission!
+}
+
+type QuizSubmissionConnection {
+    edges: [QuizSubmissionEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
 extend type Query {
     quiz(id: ID!): Quiz! @requireRole(roles: ["user", "admin", "superadmin"])
     quizzes(
@@ -22,12 +352,13 @@ extend type Query {
     ): QuizSubmissionConnection! @requireRole(roles: ["admin", "superadmin"])
 }
 
+# ==================== Mutations ====================
+
 extend type Mutation {
     # Admin: Quiz management
     createQuiz(input: CreateQuizInput!): Quiz! @requireRole(roles: ["admin", "superadmin"])
     updateQuiz(id: ID!, input: UpdateQuizInput!): Quiz! @requireRole(roles: ["admin", "superadmin"])
     deleteQuiz(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
-    publishQuiz(id: ID!, publishedAt: DateTime!): Quiz! @requireRole(roles: ["admin", "superadmin"])
 
     # Admin: Question management
     addQuizQuestion(quizId: ID!, input: CreateQuizQuestionInput!): QuizQuestion! @requireRole(roles: ["admin", "superadmin"])
@@ -38,9 +369,9 @@ extend type Mutation {
     # Admin: Achievement integration
     createQuizAchievement(input: CreateQuizAchievementInput!): QuizAchievement! @requireRole(roles: ["admin", "superadmin"])
 
-    # User: Taking quizzes
-    startQuiz(quizId: ID!): QuizSubmission!
+    # User: Taking quizzes (via sessions - use startQuizSession)
     submitQuizAnswer(submissionId: ID!, input: SubmitQuizAnswerInput!): QuizResponse!
+    updateQuizAnswer(responseId: ID!, input: UpdateQuizAnswerInput!): QuizResponse!
     finalizeQuiz(submissionId: ID!): QuizSubmission!
 
     # M2M: External submission

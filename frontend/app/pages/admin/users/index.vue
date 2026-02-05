@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { UAvatar } from '#components'
 import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({
@@ -43,12 +42,26 @@ gql(`
   }
 `)
 
+const searchQuery = ref('')
+const debouncedSearch = refDebounced(searchQuery, 300)
+
 const pagination = usePagination({
   defaultPageSize: 15,
 })
+
+// Reset pagination when search changes
+watch(debouncedSearch, () => {
+  pagination.reset()
+})
+
+const queryVariables = computed(() => ({
+  ...pagination.variables.value,
+  filter: debouncedSearch.value ? { query: debouncedSearch.value } : undefined,
+}))
+
 const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useAdminUsersPageQuery({
-  variables: pagination.variables,
+  variables: queryVariables,
   pause: computed(() => !isAuthReady.value),
 })
 
@@ -65,34 +78,39 @@ const users = computed(() => data.value?.users.edges.map((edge) => edge.node))
 const columns: TableColumn<
   AdminUsersPageQuery['users']['edges'][number]['node']
 >[] = [
-  { accessorKey: 'name', header: 'Name' },
-  { accessorKey: 'church.name', header: 'Church' },
-  { accessorKey: 'roles', header: 'Roles' },
+  { accessorKey: 'name', header: 'Navn' },
+  { accessorKey: 'church.name', header: 'Menighet' },
+  { accessorKey: 'roles', header: 'Roller' },
   { id: 'actions' },
 ]
 </script>
 
 <template>
   <UContainer class="py-12">
-    <h1 class="mb-6 text-3xl">Users</h1>
+    <h1 class="mb-6 text-3xl">Brukere</h1>
     <ErrorState v-if="error" :error />
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between gap-2">
+        <UInput
+          v-model="searchQuery"
+          placeholder="Søk etter navn eller e-post..."
+          icon="i-lucide-search"
+          class="w-64"
+        />
         <RelayPagination v-model:pagination="pagination" />
       </div>
       <UTable :data="users" :loading="fetching" :columns>
         <template #name-cell="{ row }">
-          <div class="flex items-center gap-3">
-            <UAvatar
-              :src="row.original.image ?? ''"
-              :text="getInitials(row.original.name)"
-              size="sm"
-            />
-            <div class="flex flex-col">
-              <span>{{ row.original.name }}</span>
-              <span class="text-dimmed text-xs">{{ row.original.email }}</span>
-            </div>
-          </div>
+          <NuxtLink
+            :to="{
+              name: 'admin-users-userId',
+              params: { userId: row.original.id },
+            }"
+            class="flex flex-col hover:underline"
+          >
+            <span>{{ row.original.name }}</span>
+            <span class="text-dimmed text-xs">{{ row.original.email }}</span>
+          </NuxtLink>
         </template>
         <template #roles-cell="{ row }">
           <div class="flex flex-wrap gap-1">
@@ -103,19 +121,6 @@ const columns: TableColumn<
             >
               {{ role.role }}
             </UBadge>
-          </div>
-        </template>
-        <template #actions-cell="{ row }">
-          <div class="flex justify-end">
-            <UButton
-              variant="ghost"
-              :to="{
-                name: 'admin-users-userId',
-                params: { userId: row.original.id },
-              }"
-            >
-              Edit
-            </UButton>
           </div>
         </template>
       </UTable>

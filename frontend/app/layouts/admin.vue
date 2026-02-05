@@ -2,84 +2,173 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 import '~/assets/styles/admin.css'
 
+// Force Norwegian locale in admin
+const { setLocale } = useI18n()
+setLocale('nb')
+
+// Initialize Firestore sync for realtime updates
+const { initialize: initFirestoreSync } = useFirestoreSync()
+onMounted(() => {
+  initFirestoreSync()
+})
+
+// PWA update notification
+const { $pwa } = useNuxtApp()
+const toast = useToast()
+
+watch(
+  () => $pwa?.needRefresh,
+  (needRefresh) => {
+    if (needRefresh) {
+      toast.add({
+        id: 'pwa-update',
+        title: 'Oppdatering tilgjengelig',
+        description: 'En ny versjon av appen er klar.',
+        icon: 'lucide:download',
+        close: false,
+        duration: 0,
+        color: 'neutral',
+        actions: [
+          {
+            label: 'Oppdater nå',
+            color: 'neutral',
+            onClick: () => $pwa?.updateServiceWorker(true),
+          },
+        ],
+      })
+    }
+  },
+  { immediate: true },
+)
+
 useHead({
   title: 'Interact Admin',
 })
 
-gql(`
-  query AdminSidebar {
-    projects {
-      edges {
-        node {
-          id
-          name
-          endDate
-          startDate
-        }
-      }
-    }
-  }
-`)
-
-const { isAuthReady } = useAuthReady()
-const { data } = useAdminSidebarQuery({
-  pause: computed(() => !isAuthReady.value),
-})
-
-const projectsLinks = computed(() => {
-  return data.value?.projects.edges.map(({ node: project }) => ({
-    label: project.name,
-    badge: isWithinRange(new Date(), project.startDate, project.endDate)
-      ? 'Current'
-      : undefined,
-    to: `/admin/projects/${project.id}`,
-  }))
-})
+const { me, isLoading, isAuth0Loading, token } = useAuth()
+const {
+  canAccessAdmin,
+  canAccessProjects,
+  canAccessUsers,
+  canAccessTeams,
+  canAccessConsents,
+  canAccessScores,
+  canAccessFeedback,
+} = usePermissions()
 
 const route = useRoute()
 
-const links = computed<NavigationMenuItem[]>(() => [
-  {
-    label: 'Home',
-    icon: 'lucide:house',
-    to: '/admin',
+// Check if user is church-admin-only
+const isChurchAdminOnly = computed(() => {
+  if (!me.value) return false
+  const hasFullAdminRole = me.value.roles.some((role: { role: RoleType }) =>
+    [RoleType.Admin, RoleType.Superadmin].includes(role.role),
+  )
+  return (
+    !hasFullAdminRole &&
+    me.value.roles.some(
+      (role: { role: RoleType }) => role.role === RoleType.ChurchAdmin,
+    )
+  )
+})
+
+// Redirect unauthorized users after auth loads
+watch(
+  [isLoading, isAuth0Loading, me, token, () => route.path],
+  ([loading, auth0Loading, user, hasToken, path]) => {
+    // Wait for both Wayfarer auth and Auth0 to finish loading
+    if (loading || auth0Loading) return
+    // If we have a token but no user data yet, wait for the query to complete
+    if (hasToken && !user) return
+    if (!user || !canAccessAdmin.value) {
+      navigateTo('/')
+      return
+    }
+
+    // Restrict church-admin-only users to /admin/my-church
+    if (isChurchAdminOnly.value && !path.startsWith('/admin/my-church')) {
+      navigateTo('/admin/my-church')
+    }
   },
-  {
-    label: 'Projects',
-    icon: 'lucide:layers',
-    active: route.fullPath.includes('/projects'),
-    to: '/admin/projects',
-  },
-  {
-    label: 'Teams',
-    icon: 'lucide:users-round',
-    active: route.fullPath.includes('/teams'),
-    to: '/admin/teams',
-  },
-  {
-    label: 'Users',
-    icon: 'lucide:user',
-    active: route.fullPath.includes('/users'),
-    to: '/admin/users',
-  },
-  {
-    label: 'Consents',
-    icon: 'lucide:file-check',
-    active: route.fullPath.includes('/consents'),
-    to: '/admin/consents',
-  },
-])
+  { immediate: true },
+)
+
+const links = computed<NavigationMenuItem[]>(() => {
+  // Church-admin-only users use a different layout, don't show main admin nav
+  if (isChurchAdminOnly.value) {
+    return []
+  }
+
+  const items: NavigationMenuItem[] = [
+    {
+      label: 'Hjem',
+      icon: 'lucide:house',
+      to: '/admin',
+    },
+  ]
+
+  if (canAccessProjects.value) {
+    items.push({
+      label: 'Prosjekter',
+      icon: 'lucide:layers',
+      active: route.fullPath.includes('/projects'),
+      to: '/admin/projects',
+    })
+  }
+
+  if (canAccessTeams.value) {
+    items.push({
+      label: 'Lag',
+      icon: 'lucide:users-round',
+      active: route.fullPath.includes('/teams'),
+      to: '/admin/teams',
+    })
+  }
+
+  if (canAccessUsers.value) {
+    items.push({
+      label: 'Brukere',
+      icon: 'lucide:user',
+      active: route.fullPath.includes('/users'),
+      to: '/admin/users',
+    })
+  }
+
+  if (canAccessScores.value) {
+    items.push({
+      label: 'Poeng',
+      icon: 'lucide:trophy',
+      active: route.fullPath.includes('/scores'),
+      to: '/admin/scores',
+    })
+  }
+
+  if (canAccessConsents.value) {
+    items.push({
+      label: 'Samtykker',
+      icon: 'lucide:file-check',
+      active: route.fullPath.includes('/consents'),
+      to: '/admin/consents',
+    })
+  }
+
+  if (canAccessFeedback.value) {
+    items.push({
+      label: 'Tilbakemeldinger',
+      icon: 'lucide:message-square',
+      active: route.fullPath.includes('/feedback'),
+      to: '/admin/feedback',
+    })
+  }
+
+  return items
+})
 
 const groups = computed(() => [
   {
     id: 'links',
-    label: 'Go to',
+    label: 'Gå til',
     items: links.value.flat(),
-  },
-  {
-    id: 'projects',
-    label: 'Projects',
-    items: projectsLinks.value,
   },
 ])
 </script>
@@ -102,7 +191,6 @@ const groups = computed(() => [
           orientation="horizontal"
         />
         <div class="ml-auto flex gap-2">
-          <UDashboardSearchButton />
           <AdminUserMenu />
         </div>
       </UContainer>

@@ -2,20 +2,12 @@ package services
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
-	"strings"
 
-	"cloud.google.com/go/compute/metadata"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	appconfig "github.com/bcc-media/wayfarer/internal/config"
 )
 
@@ -27,55 +19,17 @@ type S3Service struct {
 	publicBaseURL string
 }
 
-// gcpTokenFetcher fetches OIDC tokens from Cloud Run metadata server
-type gcpTokenFetcher struct {
-	audience string
-}
-
-func (t gcpTokenFetcher) GetIdentityToken() ([]byte, error) {
-	token, err := metadata.Get(
-		fmt.Sprintf("instance/service-accounts/default/identity?audience=%s", t.audience),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get identity token from metadata server: %w", err)
-	}
-
-	// Debug: decode and log JWT claims
-	parts := strings.Split(token, ".")
-	if len(parts) == 3 {
-		payload, err := base64.RawURLEncoding.DecodeString(parts[1])
-		if err == nil {
-			var claims map[string]interface{}
-			if json.Unmarshal(payload, &claims) == nil {
-				slog.Info("OIDC token claims", "aud", claims["aud"], "iss", claims["iss"], "sub", claims["sub"], "email", claims["email"])
-			}
-		}
-	}
-
-	return []byte(token), nil
-}
-
 // NewS3Service creates a new S3 service with the given configuration.
-// On Cloud Run with RoleARN set, it uses OIDC to assume the AWS role.
-// Locally, it uses the default AWS credential chain (env vars, ~/.aws/credentials).
-func NewS3Service(ctx context.Context, cfg appconfig.S3Config) (*S3Service, error) {
-	// Load default AWS config
-	awsCfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(cfg.Region))
-	if err != nil {
-		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+// Uses static AWS credentials from configuration.
+func NewS3Service(cfg appconfig.S3Config) (*S3Service, error) {
+	awsCfg := aws.Config{
+		Region: cfg.Region,
+		Credentials: credentials.NewStaticCredentialsProvider(
+			cfg.AccessKeyID,
+			cfg.SecretAccessKey,
+			"",
+		),
 	}
-
-	// If on GCE/Cloud Run and RoleARN is set, use OIDC authentication
-	if metadata.OnGCE() && cfg.RoleARN != "" {
-		stsClient := sts.NewFromConfig(awsCfg)
-		creds := stscreds.NewWebIdentityRoleProvider(
-			stsClient,
-			cfg.RoleARN,
-			gcpTokenFetcher{audience: cfg.RoleARN},
-		)
-		awsCfg.Credentials = aws.NewCredentialsCache(creds)
-	}
-	// Otherwise, LoadDefaultConfig uses env vars or ~/.aws/credentials
 
 	client := s3.NewFromConfig(awsCfg)
 
@@ -96,7 +50,6 @@ func (s *S3Service) UploadFile(ctx context.Context, file io.Reader, filename str
 		Body:          file,
 		ContentType:   aws.String(contentType),
 		ContentLength: aws.Int64(fileSize),
-		ACL:           types.ObjectCannedACLPublicRead,
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to upload file to S3: %w", err)

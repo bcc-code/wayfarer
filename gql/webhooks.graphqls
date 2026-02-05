@@ -1,0 +1,71 @@
+# ==================== Webhook Types ====================
+
+enum WebhookEventType {
+    EXTERNAL_CONTENT_EVENT
+    POINTS_AWARDED
+    QUIZ_SESSION_FINISHED
+    TEAM_NAME_CHANGED
+}
+
+type Webhook {
+    id: ID!
+    project: Project! @goField(forceResolver: true)
+    name: String!
+    url: String!
+    eventType: WebhookEventType!
+    includeUserData: Boolean!
+    includeEventData: Boolean!
+    active: Boolean!
+    hasSecret: Boolean! @goField(forceResolver: true)
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    recentLogs(first: Int): [WebhookLog!]! @goField(forceResolver: true)
+}
+
+type WebhookLog {
+    id: ID!
+    eventType: WebhookEventType!
+    requestPayload: JSON!
+    responseStatusCode: Int
+    responseBody: String
+    durationMs: Int!
+    errorMessage: String
+    createdAt: DateTime!
+}
+
+# ==================== Webhook Inputs ====================
+
+input CreateWebhookInput {
+    projectId: ID!
+    name: String!
+    url: String!
+    eventType: WebhookEventType!
+    includeUserData: Boolean
+    includeEventData: Boolean
+    secret: String
+}
+
+input UpdateWebhookInput {
+    name: String
+    url: String
+    includeUserData: Boolean
+    includeEventData: Boolean
+    active: Boolean
+    secret: String
+}
+
+# ==================== Webhook Queries ====================
+
+extend type Query {
+    webhook(id: ID!): Webhook
+    webhooks(projectId: ID!): [Webhook!]!
+}
+
+# ==================== Webhook Mutations ====================
+
+extend type Mutation {
+    createWebhook(input: CreateWebhookInput!): Webhook! @requireRole(roles: ["superadmin"])
+    updateWebhook(id: ID!, input: UpdateWebhookInput!): Webhook! @requireRole(roles: ["superadmin"])
+    deleteWebhook(id: ID!): Boolean! @requireRole(roles: ["superadmin"])
+    testWebhook(id: ID!): WebhookLog! @requireRole(roles: ["superadmin"])
+}

@@ -45,16 +45,24 @@ func projectsByUserBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(c
 				if row.LogoUrl != nil {
 					logo = row.LogoUrl
 				}
+				var banner *string
+				if row.BannerUrl != nil {
+					banner = row.BannerUrl
+				}
 
 				project := &model.Project{
-					ID:          row.ID,
-					Name:        row.Name,
-					Description: row.Description,
-					RulesRaw:    row.Rules,
-					StartDate:   scalars.DateTime{Time: row.StartDate.Time},
-					EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+					ID:               row.ID,
+					Name:             row.Name,
+					Description:      row.Description,
+					RulesRaw:         row.Rules,
+					InfoMessageRaw:   row.InfoMessage,
+					InfoMessageStart: scalars.ToDateTimePointer(row.InfoMessageStart),
+					InfoMessageEnd:   scalars.ToDateTimePointer(row.InfoMessageEnd),
+					StartDate:        scalars.DateTime{Time: row.StartDate.Time},
+					EndDate:          scalars.DateTime{Time: row.EndDate.Time},
 					Branding: &model.Branding{
-						Logo: logo,
+						Logo:   logo,
+						Banner: banner,
 						Colors: &model.Colors{
 							Light: &model.ColorSet{
 								Accent:            row.ColorLightAccent,

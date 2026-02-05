@@ -18,11 +18,13 @@ CREATE TABLE churches (
 CREATE TABLE users (
     id CHAR(28) PRIMARY KEY CHECK (id ~ '^US[0-9A-Z]{26}$'),
     members_id VARCHAR(255) UNIQUE NOT NULL,
+    person_uuid UUID,
     email VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
     gender VARCHAR(10) NOT NULL CHECK (gender IN ('MALE', 'FEMALE', 'UNKNOWN')),
     birthdate DATE,
     church_id CHAR(28) NOT NULL REFERENCES churches(id) ON DELETE RESTRICT,
+    church_locked_until TIMESTAMPTZ,
     avatar_url VARCHAR(500),
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
@@ -79,6 +81,7 @@ CREATE TABLE projects (
     start_date TIMESTAMPTZ NOT NULL,
     end_date TIMESTAMPTZ NOT NULL,
     logo_url VARCHAR(500),
+    banner_url VARCHAR(500),
     -- Light mode colors
     color_light_accent VARCHAR(50) NOT NULL,
     color_light_accent_contrast VARCHAR(50) NOT NULL,
@@ -107,6 +110,10 @@ CREATE TABLE projects (
     color_dark_border_default VARCHAR(50) NOT NULL,
     rounding INT NOT NULL DEFAULT 0,
     archived BOOLEAN DEFAULT false,
+    rules TEXT,
+    info_message TEXT,
+    info_message_start TIMESTAMPTZ,
+    info_message_end TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     CHECK (end_date > start_date)
@@ -142,11 +149,13 @@ CREATE TABLE teams (
     description TEXT,
     join_code VARCHAR(50) UNIQUE NOT NULL,
     super_team_id CHAR(28) REFERENCES super_teams(id) ON DELETE SET NULL,
+    leaderboard_excluded BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     INDEX idx_teams_project (project_id),
     INDEX idx_teams_super_team (super_team_id),
-    INDEX idx_teams_join_code (join_code)
+    INDEX idx_teams_join_code (join_code),
+    INDEX idx_teams_leaderboard_excluded (leaderboard_excluded) WHERE leaderboard_excluded = true
 );
 
 CREATE TABLE streaks (
@@ -172,7 +181,7 @@ CREATE TABLE challenges (
     id CHAR(28) PRIMARY KEY CHECK (id ~ '^CL[0-9A-Z]{26}$'),
     project_id CHAR(28) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     event_id CHAR(28) REFERENCES events(id) ON DELETE SET NULL,
-    challenge_type VARCHAR(50) NOT NULL DEFAULT 'SIMPLE' CHECK (challenge_type IN ('SIMPLE', 'QUIZ', 'EXTERNAL')),
+    challenge_type VARCHAR(50) NOT NULL DEFAULT 'SIMPLE' CHECK (challenge_type IN ('SIMPLE', 'QUIZ', 'EXTERNAL', 'PLUGIN')),
     name VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     image_url VARCHAR(500),
@@ -185,19 +194,23 @@ CREATE TABLE challenges (
     allow_self_completion BOOLEAN DEFAULT true NOT NULL,
     requires_team_membership BOOLEAN DEFAULT false NOT NULL,
     requires_super_team_membership BOOLEAN DEFAULT false NOT NULL,
+    plugin_challenge_id VARCHAR(100),
+    plugin_data JSONB,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
-    -- Type constraints: EXTERNAL requires url, QUIZ must not have url
+    -- Type constraints: EXTERNAL requires url, QUIZ must not have url, PLUGIN requires plugin_challenge_id
     CONSTRAINT challenge_type_url_constraint CHECK (
         (challenge_type = 'EXTERNAL' AND url IS NOT NULL AND url != '') OR
         (challenge_type = 'QUIZ' AND (url IS NULL OR url = '')) OR
-        (challenge_type = 'SIMPLE')
+        (challenge_type = 'SIMPLE') OR
+        (challenge_type = 'PLUGIN' AND plugin_challenge_id IS NOT NULL AND plugin_challenge_id != '')
     ),
     INDEX idx_challenges_project (project_id),
     INDEX idx_challenges_event (event_id),
     INDEX idx_challenges_published (published_at),
     INDEX idx_challenges_visible (visible_at),
-    INDEX idx_challenges_type (challenge_type)
+    INDEX idx_challenges_type (challenge_type),
+    UNIQUE INDEX idx_challenges_plugin_challenge_id (plugin_challenge_id) WHERE plugin_challenge_id IS NOT NULL
 );
 
 CREATE TABLE achievements (
@@ -279,6 +292,7 @@ CREATE TABLE user_achievements (
     user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     achievement_id CHAR(28) NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
     achieved_at TIMESTAMPTZ DEFAULT now(),
+    celebrated_at TIMESTAMPTZ,
     PRIMARY KEY (user_id, achievement_id),
     INDEX idx_user_achievements_user (user_id),
     INDEX idx_user_achievements_achievement (achievement_id),
@@ -321,7 +335,8 @@ CREATE TABLE user_content_progress (
     PRIMARY KEY (user_id, achievement_id, external_content_id),
     INDEX idx_user_content_progress_user (user_id),
     INDEX idx_user_content_progress_achievement (achievement_id),
-    INDEX idx_user_content_progress_content (external_content_id)
+    INDEX idx_user_content_progress_content (external_content_id),
+    INDEX idx_user_content_progress_user_achievement (user_id, achievement_id)
 );
 
 CREATE TABLE user_streak_activity (
@@ -361,6 +376,8 @@ CREATE TABLE project_translations (
     language_code VARCHAR(10) NOT NULL,
     name VARCHAR(255),
     description TEXT,
+    rules TEXT,
+    info_message TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     PRIMARY KEY (project_id, language_code)
@@ -374,26 +391,6 @@ CREATE TABLE event_translations (
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     PRIMARY KEY (event_id, language_code)
-);
-
-CREATE TABLE team_translations (
-    team_id CHAR(28) NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-    language_code VARCHAR(10) NOT NULL,
-    name VARCHAR(255),
-    description TEXT,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    PRIMARY KEY (team_id, language_code)
-);
-
-CREATE TABLE super_team_translations (
-    super_team_id CHAR(28) NOT NULL REFERENCES super_teams(id) ON DELETE CASCADE,
-    language_code VARCHAR(10) NOT NULL,
-    name VARCHAR(255),
-    description TEXT,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    PRIMARY KEY (super_team_id, language_code)
 );
 
 CREATE TABLE streak_translations (
@@ -697,4 +694,56 @@ CREATE TABLE push_notification_log (
     successful_deliveries INT NOT NULL DEFAULT 0,
     failed_deliveries INT NOT NULL DEFAULT 0,
     INDEX idx_push_notification_log_sent_at (sent_at)
+);
+
+-- ==================== User Feedback ====================
+
+CREATE TABLE user_feedback (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^FB[0-9A-Z]{26}$'),
+    user_id CHAR(28) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    can_contact_me BOOLEAN NOT NULL DEFAULT FALSE,
+    user_agent TEXT,
+    platform TEXT,
+    screen_width INT,
+    screen_height INT,
+    app_version TEXT,
+    locale TEXT,
+    project_id CHAR(28) REFERENCES projects(id) ON DELETE SET NULL,
+    timezone TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    INDEX idx_user_feedback_user_id (user_id),
+    INDEX idx_user_feedback_created_at (created_at DESC)
+);
+
+-- ==================== Webhooks ====================
+
+CREATE TABLE webhooks (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^WH[0-9A-Z]{26}$'),
+    project_id CHAR(28) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    url VARCHAR(2000) NOT NULL,
+    event_type VARCHAR(50) NOT NULL CHECK (event_type IN ('external_content_event', 'points_awarded')),
+    include_user_data BOOLEAN DEFAULT true NOT NULL,
+    include_event_data BOOLEAN DEFAULT true NOT NULL,
+    active BOOLEAN DEFAULT true NOT NULL,
+    secret VARCHAR(255),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    INDEX idx_webhooks_project (project_id),
+    INDEX idx_webhooks_event_active (project_id, event_type) WHERE active = true
+);
+
+CREATE TABLE webhook_logs (
+    id CHAR(28) PRIMARY KEY CHECK (id ~ '^WL[0-9A-Z]{26}$'),
+    webhook_id CHAR(28) NOT NULL REFERENCES webhooks(id) ON DELETE CASCADE,
+    event_type VARCHAR(50) NOT NULL,
+    request_payload JSONB NOT NULL,
+    response_status_code INT,
+    response_body TEXT,
+    duration_ms INT NOT NULL,
+    error_message TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    INDEX idx_webhook_logs_webhook (webhook_id),
+    INDEX idx_webhook_logs_created (created_at DESC)
 );

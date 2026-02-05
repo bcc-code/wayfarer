@@ -40,7 +40,9 @@ type Loaders struct {
 	StreaksByProjectLoader                 *dataloader.Loader[string, []*model.Streak]
 	RelevantDaysByStreakLoader             *dataloader.Loader[string, []model.DateRange]
 	UserStreakActivityLoader               *dataloader.Loader[UserStreakActivityKey, []*sqlc.UserStreakActivity]
-	UserAchievementTimestampLoader         *dataloader.Loader[UserAchievementKey, *time.Time]
+	UserContentProgressLoader              *dataloader.Loader[UserAchievementKey, []*sqlc.UserContentProgress]
+	UserAchievementTimestampLoader          *dataloader.Loader[UserAchievementKey, *time.Time]
+	UserAchievementCelebratedTimestampLoader *dataloader.Loader[UserAchievementKey, *time.Time]
 	UserChallengeCompletionTimestampLoader *dataloader.Loader[UserChallengeKey, *time.Time]
 	UserChallengeEnrollmentTimestampLoader *dataloader.Loader[UserChallengeKey, *time.Time]
 	TranslationLoader                      *dataloader.Loader[TranslationKey, *Translation]
@@ -53,6 +55,7 @@ type Loaders struct {
 	QuizResponsesBySubmissionLoader        *dataloader.Loader[string, []model.QuizResponse]
 	ExternalContentByIDLoader              *dataloader.Loader[string, *model.ExternalContent]
 	ExternalContentTranslationsLoader      *dataloader.Loader[string, []model.ExternalContentTranslation]
+	ImageMetadataByURLLoader               *dataloader.Loader[string, *model.Image]
 }
 
 // newBatchedLoader creates a new batched dataloader with standard configuration:
@@ -99,7 +102,9 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		StreaksByProjectLoader:                 newBatchedLoader(streaksByProjectBatchFunc(db, cache)),
 		RelevantDaysByStreakLoader:             newBatchedLoader(relevantDaysByStreakBatchFunc(db, cache)),
 		UserStreakActivityLoader:               newBatchedLoader(userStreakActivityBatchFunc(db, cache)),
-		UserAchievementTimestampLoader:         newBatchedLoader(userAchievementTimestampBatchFunc(db, cache)),
+		UserContentProgressLoader:              newBatchedLoader(userContentProgressBatchFunc(db, cache)),
+		UserAchievementTimestampLoader:          newBatchedLoader(userAchievementTimestampBatchFunc(db, cache)),
+		UserAchievementCelebratedTimestampLoader: newBatchedLoader(userAchievementCelebratedTimestampBatchFunc(db, cache)),
 		UserChallengeCompletionTimestampLoader: newBatchedLoader(userChallengeCompletionTimestampBatchFunc(db, cache)),
 		UserChallengeEnrollmentTimestampLoader: newBatchedLoader(userChallengeEnrollmentTimestampBatchFunc(db, cache)),
 		TranslationLoader:                      newBatchedLoader(translationBatchFunc(db, cache)),
@@ -112,5 +117,6 @@ func NewLoaders(db *database.DB, cache *cache.CacheWithRegistry) *Loaders {
 		QuizResponsesBySubmissionLoader:        newBatchedLoader(quizResponsesBySubmissionBatchFunc(db, cache)),
 		ExternalContentByIDLoader:              newBatchedLoader(externalContentByIDBatchFunc(db, cache)),
 		ExternalContentTranslationsLoader:      newBatchedLoader(externalContentTranslationsBatchFunc(db, cache)),
+		ImageMetadataByURLLoader:               newBatchedLoader(imageMetadataByURLBatchFunc(db, cache)),
 	}
 }

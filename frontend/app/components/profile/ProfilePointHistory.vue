@@ -60,6 +60,8 @@ const { data, fetching, error } = usePointHistoryQuery({
   pause: computed(() => !isAuthReady.value || !open.value),
 })
 
+const isInitialLoading = computed(() => fetching.value && !data.value)
+
 function getScoreJournalName(
   journal: PointHistoryQuery['myCurrentProject']['journal']['edges'][number]['node'],
 ) {
@@ -86,7 +88,7 @@ function getScoreJournalName(
         {{ $t('pointHistory.explanation') }}
       </p>
 
-      <LoadingState v-if="fetching" />
+      <LoadingState v-if="isInitialLoading" />
       <ErrorState v-else-if="error" :error />
       <DesignPanel
         v-else-if="data?.myCurrentProject.journal.edges.length"
@@ -104,7 +106,7 @@ function getScoreJournalName(
                 {{ getScoreJournalName(journal.node) }}
               </p>
               <span class="text-caption text-text-muted">
-                {{ formatDate(journal.node.createdAt) }}
+                {{ formatDateTime(journal.node.createdAt) }}
               </span>
             </div>
             <span
@@ -116,8 +118,8 @@ function getScoreJournalName(
                 },
               ]"
             >
-              {{ journal.node.points > 0 ? '+' : '-' }}
-              {{ journal.node.points }}
+              {{ journal.node.points > 0 ? '+' : ''
+              }}{{ formatNumber(journal.node.points) }}
             </span>
           </div>
           <hr

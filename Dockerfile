@@ -1,14 +1,6 @@
 # Stage 1: Build frontend
 FROM node:22-slim AS frontend-builder
 
-# Build arguments for frontend environment
-ARG NUXT_PUBLIC_API_URL
-ARG NUXT_PUBLIC_TOKEN_URL
-ARG NUXT_PUBLIC_LOGIN_URL
-ARG NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY
-ARG NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL
-ARG NUXT_PUBLIC_VAPID_PUBLIC_KEY
-
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /build
@@ -17,8 +9,26 @@ WORKDIR /build
 COPY frontend/package.json frontend/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
-# Copy frontend source and build
+# Copy frontend source
 COPY frontend/ ./
+
+# Build arguments declared after dependency install for better layer caching
+ARG NUXT_PUBLIC_API_URL
+ARG NUXT_PUBLIC_TOKEN_URL
+ARG NUXT_PUBLIC_AUTH0_DOMAIN=login.bcc.no
+ARG NUXT_PUBLIC_AUTH0_CLIENT_ID
+ARG NUXT_PUBLIC_AUTH0_AUDIENCE
+ARG NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY
+ARG NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL
+ARG NUXT_PUBLIC_VAPID_PUBLIC_KEY
+ARG NUXT_PUBLIC_IS_STAGING
+ARG NUXT_PUBLIC_FIREBASE_DATABASE
+ARG NUXT_PUBLIC_FIREBASE_API_KEY
+ARG NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+ARG NUXT_PUBLIC_FIREBASE_PROJECT_ID
+ARG APP_VERSION
+
+ENV APP_VERSION=${APP_VERSION}
 RUN pnpm run build
 
 # Stage 2: Build Go backend

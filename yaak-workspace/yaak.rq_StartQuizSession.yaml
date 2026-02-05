@@ -1,0 +1,85 @@
+type: http_request
+model: http_request
+id: rq_StartQuizSession
+createdAt: 2026-01-26T12:00:00
+updatedAt: 2026-01-26T14:18:55.129840
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation StartQuizSession($sessionId: ID!) {
+      startQuizSession(sessionId: $sessionId) {
+        id
+        startedAt
+        completedAt
+        expiresAt
+        isExpired
+        score
+        maxScore
+        scorePercentage
+        pointsAwarded
+        questionOrder
+        quiz {
+          id
+          name
+        }
+        user {
+          id
+          name
+        }
+        responses {
+          id
+          answeredAt
+          timeSpentSeconds
+          question {
+            id
+            questionText
+          }
+          ... on PredefinedResponse {
+            selectedAnswerIds
+            selectedAnswers {
+              id
+              answerText
+              isCorrect
+            }
+            isCorrect
+            pointsEarned
+          }
+          ... on FreeTextResponse {
+            textResponse
+            pointsEarned
+          }
+          ... on NumberResponse {
+            numberResponse
+            pointsEarned
+          }
+          ... on JsonResponse {
+            jsonResponse
+            pointsEarned
+          }
+          ... on OrderingResponse {
+            submittedOrder
+            isCorrect
+            pointsEarned
+          }
+        }
+      }
+    }
+  variables: |
+    {
+      "sessionId": "SN01KFJJTY1WETEW597FSEZBP1GX"
+    }
+bodyType: graphql
+description: Start a quiz session for the current user
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_StartQuizSession
+method: POST
+name: Start Quiz Session
+sortPriority: 4150.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

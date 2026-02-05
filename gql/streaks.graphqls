@@ -1,9 +1,73 @@
 # Streak queries and mutations
 
+# ==================== Streak Types ====================
+
+type Streak {
+    id: ID!
+    name: String!
+    description: String!
+    status: Int! @goField(forceResolver: true)
+    relevantDays: [DateRange!]! @goField(forceResolver: true)
+    listenedDays(last: Int!): [StreakDay!]! @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+}
+
+type StreakDay {
+    date: Date!
+    active: Boolean!
+}
+
+type DateRange {
+    start: Date!
+    end: Date!
+}
+
+# ==================== Streak Input Types ====================
+
+input DateRangeInput {
+    start: Date!
+    end: Date!
+}
+
+input CreateStreakInput {
+    name: String!
+    description: String!
+    projectId: ID!
+    relevantDays: [DateRangeInput!]!
+}
+
+input UpdateStreakInput {
+    name: String
+    description: String
+    relevantDays: [DateRangeInput!]
+}
+
+input StreakFilter {
+    projectId: ID  # Filter by project
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+}
+
+# ==================== Streak Pagination ====================
+
+type StreakEdge {
+    cursor: String!
+    node: Streak!
+}
+
+type StreakConnection {
+    edges: [StreakEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
 extend type Query {
     streak(id: ID!): Streak!
     streaks(filter: StreakFilter, first: Int, after: String, last: Int, before: String): StreakConnection!
 }
+
+# ==================== Mutations ====================
 
 extend type Mutation {
     createStreak(input: CreateStreakInput!): Streak! @requireRole(roles: ["admin", "superadmin"])

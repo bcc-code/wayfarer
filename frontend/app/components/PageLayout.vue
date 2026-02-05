@@ -27,8 +27,11 @@ withDefaults(
         </template>
       </TitleBar>
     </div>
-    <div :class="['flex grow flex-col', { 'pb-28': bottomPadding }]">
+    <div :class="['flex relative grow flex-col', { 'pb-28': bottomPadding }]">
       <slot />
+    </div>
+    <div v-if="$slots.footer" class="z-10">
+      <slot name="footer" />
     </div>
   </div>
 </template>

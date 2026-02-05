@@ -9,6 +9,7 @@ schema {
 type Query {
     me: User!
     instanceID: String!
+    firebaseToken: FirebaseTokenResponse!
 }
 
 type Mutation {

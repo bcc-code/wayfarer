@@ -1,11 +1,18 @@
 import { ref, computed, type Ref } from 'vue'
+import {
+  buildNextPageVariables,
+  buildPreviousPageVariables,
+  buildFirstPageVariables,
+  buildLastPageVariables,
+  isFirstPage as isFirstPagePure,
+  isLastPage as isLastPagePure,
+  validatePageSize,
+  type CursorPageInfo,
+  type CursorPaginationVariables,
+} from '~/utils/pagination'
 
-export interface PaginationPageInfo {
-  hasNextPage: boolean
-  hasPreviousPage: boolean
-  startCursor?: string | null
-  endCursor?: string | null
-}
+export type PaginationPageInfo = CursorPageInfo
+export type PaginationVariables = CursorPaginationVariables
 
 export interface Edge<T> {
   cursor: string
@@ -14,15 +21,8 @@ export interface Edge<T> {
 
 export interface Connection<T> {
   edges: Edge<T>[]
-  pageInfo: PageInfo
+  pageInfo: PaginationPageInfo
   totalCount?: number
-}
-
-export interface PaginationVariables {
-  first?: number | null
-  after?: string | null
-  last?: number | null
-  before?: string | null
 }
 
 export interface UsePaginationOptions {
@@ -30,6 +30,8 @@ export interface UsePaginationOptions {
   defaultPageSize?: number
   /** Initial cursor to start from */
   initialCursor?: string | null
+  /** Pagination direction: 'forward' (oldest first) or 'backward' (newest first) */
+  direction?: 'forward' | 'backward'
 }
 
 export interface UsePaginationReturn {
@@ -85,60 +87,56 @@ export interface UsePaginationReturn {
 export function usePagination(
   options: UsePaginationOptions = {},
 ): UsePaginationReturn {
-  const { defaultPageSize = 20, initialCursor = null } = options
+  const { defaultPageSize = 20, initialCursor = null, direction = 'forward' } = options
+  const isBackward = direction === 'backward'
+
+  // Build initial variables based on direction
+  const buildInitialVariables = (size: number) =>
+    isBackward
+      ? buildLastPageVariables(size, initialCursor)
+      : buildFirstPageVariables(size, initialCursor)
 
   // Reactive state
   const pageSize = ref(defaultPageSize)
   const pageInfo = ref<PaginationPageInfo | null>(null)
   const totalCount = ref<number | null>(null)
-  const variables = ref<PaginationVariables>({
-    first: defaultPageSize,
-    after: initialCursor,
-  })
+  const variables = ref<PaginationVariables>(buildInitialVariables(defaultPageSize))
 
   // Computed properties
-  const isFirstPage = computed(() => {
-    return !pageInfo.value?.hasPreviousPage
-  })
-
-  const isLastPage = computed(() => {
-    return !pageInfo.value?.hasNextPage
-  })
+  // For backward pagination, "first page" is the last page of data (newest items)
+  const isFirstPage = computed(() =>
+    isBackward ? isLastPagePure(pageInfo.value) : isFirstPagePure(pageInfo.value),
+  )
+  const isLastPage = computed(() =>
+    isBackward ? isFirstPagePure(pageInfo.value) : isLastPagePure(pageInfo.value),
+  )
 
   // Methods
+  // For backward pagination, "next" means older items, "previous" means newer items
   function nextPage() {
-    if (!pageInfo.value?.hasNextPage || !pageInfo.value?.endCursor) {
-      return
-    }
+    if (!pageInfo.value) return
 
-    variables.value = {
-      first: pageSize.value,
-      after: pageInfo.value.endCursor,
-      last: null,
-      before: null,
+    const nextVars = isBackward
+      ? buildPreviousPageVariables(pageInfo.value, pageSize.value)
+      : buildNextPageVariables(pageInfo.value, pageSize.value)
+    if (nextVars) {
+      variables.value = nextVars
     }
   }
 
   function previousPage() {
-    if (!pageInfo.value?.hasPreviousPage || !pageInfo.value?.startCursor) {
-      return
-    }
+    if (!pageInfo.value) return
 
-    variables.value = {
-      first: null,
-      after: null,
-      last: pageSize.value,
-      before: pageInfo.value.startCursor,
+    const prevVars = isBackward
+      ? buildNextPageVariables(pageInfo.value, pageSize.value)
+      : buildPreviousPageVariables(pageInfo.value, pageSize.value)
+    if (prevVars) {
+      variables.value = prevVars
     }
   }
 
   function firstPage() {
-    variables.value = {
-      first: pageSize.value,
-      after: initialCursor,
-      last: null,
-      before: null,
-    }
+    variables.value = buildInitialVariables(pageSize.value)
     pageInfo.value = null
     totalCount.value = null
   }
@@ -157,16 +155,11 @@ export function usePagination(
   function reset() {
     pageInfo.value = null
     totalCount.value = null
-    variables.value = {
-      first: pageSize.value,
-      after: initialCursor,
-      last: null,
-      before: null,
-    }
+    variables.value = buildInitialVariables(pageSize.value)
   }
 
   function setPageSize(size: number) {
-    if (size <= 0) {
+    if (!validatePageSize(size)) {
       throw new Error('Page size must be greater than 0')
     }
 

@@ -18,15 +18,6 @@ gql(`
         }
       }
     }
-    users(first: 100) {
-      edges {
-        node {
-          id
-          name
-          email
-        }
-      }
-    }
   }
 `)
 
@@ -49,14 +40,10 @@ const projects = computed(
   () => data.value?.projects.edges.map((edge) => edge.node) ?? [],
 )
 
-const users = computed(
-  () => data.value?.users.edges.map((edge) => edge.node) ?? [],
-)
-
 const schema = z.object({
-  projectId: z.string().min(1, 'Project is required'),
-  userId: z.string().min(1, 'User is required'),
-  points: z.number().int('Points must be a whole number'),
+  projectId: z.string().min(1, 'Prosjekt er påkrevd'),
+  userId: z.string().min(1, 'Bruker ID er påkrevd'),
+  points: z.number().int('Poengjustering må være heltall'),
   reason: z.string().optional(),
 })
 
@@ -86,7 +73,7 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
 
   if (result.error) {
     toast.add({
-      title: 'Failed to create score adjustment',
+      title: 'Kunne ikke opprette poengjustering',
       description: result.error.message,
       color: 'error',
     })
@@ -94,8 +81,8 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
   }
 
   toast.add({
-    title: 'Score adjustment created',
-    description: `${event.data.points >= 0 ? '+' : ''}${event.data.points} points`,
+    title: 'Poengjustering opprettet',
+    description: `${event.data.points >= 0 ? '+' : ''}${event.data.points} poeng`,
     color: 'success',
   })
 
@@ -109,45 +96,37 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
       <UContainer>
         <UBreadcrumb
           :items="[
-            { label: 'Score Journal', to: { name: 'admin-scores' } },
-            { label: 'New Adjustment' },
+            { label: 'Poenglogg', to: { name: 'admin-scores' } },
+            { label: 'Ny justering' },
           ]"
         />
       </UContainer>
     </div>
     <UContainer class="py-12">
       <div class="max-w-2xl">
-        <h1 class="mb-6 text-3xl font-bold">Create Score Adjustment</h1>
+        <h1 class="mb-6 text-3xl font-bold">Opprett poengjustering</h1>
 
         <LoadingState v-if="fetching" />
         <UForm v-else :state :schema @submit="handleSubmit">
           <div class="space-y-6">
-            <UFormField name="projectId" label="Project" required>
+            <UFormField name="projectId" label="Prosjekt" required>
               <USelect
                 v-model="state.projectId"
-                :items="
-                  projects.map((p) => ({ label: p.name, value: p.id }))
-                "
-                placeholder="Select a project"
+                :items="projects.map((p) => ({ label: p.name, value: p.id }))"
+                placeholder="Velg et prosjekt"
                 class="w-full"
               />
             </UFormField>
 
-            <UFormField name="userId" label="User" required>
-              <USelect
+            <UFormField name="userId" label="Bruker ID" required>
+              <UInput
                 v-model="state.userId"
-                :items="
-                  users.map((u) => ({
-                    label: `${u.name} (${u.email})`,
-                    value: u.id,
-                  }))
-                "
-                placeholder="Select a user"
+                placeholder="Skriv bruker ID her..."
                 class="w-full"
               />
             </UFormField>
 
-            <UFormField name="points" label="Points" required>
+            <UFormField name="points" label="Poeng" required>
               <UInput
                 v-model.number="state.points"
                 type="number"
@@ -155,24 +134,24 @@ async function handleSubmit(event: FormSubmitEvent<Schema>) {
                 placeholder="100"
               />
               <template #description>
-                Use negative values to deduct points
+                Bruk negative verdier for å trekke fra poeng
               </template>
             </UFormField>
 
-            <UFormField name="reason" label="Reason">
+            <UFormField name="reason" label="Grunn">
               <UTextarea
                 v-model="state.reason"
                 class="w-full"
                 autoresize
-                placeholder="Reason for this adjustment..."
+                placeholder="Grunn for denne justeringen..."
               />
             </UFormField>
 
             <div class="flex justify-end gap-3 pt-4">
               <UButton variant="ghost" :to="{ name: 'admin-scores' }">
-                Cancel
+                Avbryt
               </UButton>
-              <UButton type="submit"> Create Adjustment </UButton>
+              <UButton type="submit">Opprett justering</UButton>
             </div>
           </div>
         </UForm>

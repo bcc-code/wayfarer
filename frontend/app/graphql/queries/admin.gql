@@ -1,0 +1,54 @@
+# Admin queries for achievement management
+
+query AdminExternalContents(
+  $filter: ExternalContentFilter!
+  $sortBy: ExternalContentSortBy
+  $first: Int
+  $after: String
+) {
+  externalContents(filter: $filter, sortBy: $sortBy, first: $first, after: $after) {
+    edges {
+      node {
+        id
+        planId
+        taskId
+        contentId
+        contentType
+        publishedAt
+        source
+        title
+        translations {
+          languageCode
+          title
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+query AdminProjectStreaks($projectId: ID!) {
+  streaks(filter: { projectId: $projectId }, first: 100) {
+    edges {
+      node {
+        id
+        name
+        description
+      }
+    }
+  }
+}
+
+query AdminProjectQuizzes($projectId: ID!) {
+  quizzes(filter: { projectId: $projectId }, first: 100) {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+}

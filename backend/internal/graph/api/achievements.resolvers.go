@@ -13,9 +13,169 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
+	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *contentAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.ContentAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *contentAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.ContentAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
+}
+
+// Project is the resolver for the project field.
+func (r *contentAchievementResolver) Project(ctx context.Context, obj *model.ContentAchievement) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *contentAchievementResolver) Event(ctx context.Context, obj *model.ContentAchievement) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *contentAchievementResolver) Challenge(ctx context.Context, obj *model.ContentAchievement) (model.Challenge, error) {
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// AchievedAt is the resolver for the achievedAt field.
+func (r *contentAchievementResolver) AchievedAt(ctx context.Context, obj *model.ContentAchievement) (*scalars.DateTime, error) {
+	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// CelebratedAt is the resolver for the celebratedAt field.
+func (r *contentAchievementResolver) CelebratedAt(ctx context.Context, obj *model.ContentAchievement) (*scalars.DateTime, error) {
+	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
+}
+
+// Items is the resolver for the items field.
+func (r *contentAchievementResolver) Items(ctx context.Context, obj *model.ContentAchievement) ([]model.ContentItem, error) {
+	thunk := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)
+	items, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load content items: %w", err)
+	}
+
+	// Convert []*model.ContentItem to []model.ContentItem
+	result := make([]model.ContentItem, len(items))
+	for i, item := range items {
+		result[i] = *item
+	}
+	return result, nil
+}
+
+// UserCompletedItems is the resolver for the userCompletedItems field.
+func (r *contentAchievementResolver) UserCompletedItems(ctx context.Context, obj *model.ContentAchievement) ([]model.ContentItem, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return []model.ContentItem{}, nil
+	}
+
+	// Get all items for this achievement
+	thunk := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)
+	items, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load content items: %w", err)
+	}
+
+	// Get user's completed items via dataloader
+	progressThunk := r.Loaders.UserContentProgressLoader.Load(ctx, loaders.UserAchievementKey{UserID: userID, AchievementID: obj.ID})
+	progress, err := progressThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user progress: %w", err)
+	}
+
+	// Create a set of completed external content IDs
+	completedSet := make(map[string]bool)
+	for _, p := range progress {
+		completedSet[p.ExternalContentID] = true
+	}
+
+	// Filter items to only those the user has completed
+	var completedItems []model.ContentItem
+	for _, item := range items {
+		if completedSet[item.ExternalContentID] {
+			completedItems = append(completedItems, *item)
+		}
+	}
+	if completedItems == nil {
+		completedItems = []model.ContentItem{}
+	}
+	return completedItems, nil
+}
+
+// NextItem is the resolver for the nextItem field.
+func (r *contentAchievementResolver) NextItem(ctx context.Context, obj *model.ContentAchievement) (*model.ContentItem, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		// No user, return first item
+		thunk := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)
+		items, err := thunk()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load content items: %w", err)
+		}
+		if len(items) == 0 {
+			return nil, nil
+		}
+		return items[0], nil
+	}
+
+	// Get all items for this achievement
+	thunk := r.Loaders.ContentItemsByAchievementLoader.Load(ctx, obj.ID)
+	items, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load content items: %w", err)
+	}
+	if len(items) == 0 {
+		return nil, nil
+	}
+
+	// Get user's completed items via dataloader
+	progressThunk := r.Loaders.UserContentProgressLoader.Load(ctx, loaders.UserAchievementKey{UserID: userID, AchievementID: obj.ID})
+	progress, err := progressThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user progress: %w", err)
+	}
+
+	// Create a set of completed external content IDs
+	completedSet := make(map[string]bool)
+	for _, p := range progress {
+		completedSet[p.ExternalContentID] = true
+	}
+
+	// Find the first incomplete item
+	for _, item := range items {
+		if !completedSet[item.ExternalContentID] {
+			return item, nil
+		}
+	}
+
+	// All items completed
+	return nil, nil
+}
+
+// CompletedItemCount is the resolver for the completedItemCount field.
+func (r *contentAchievementResolver) CompletedItemCount(ctx context.Context, obj *model.ContentAchievement) (int, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return 0, nil
+	}
+
+	progressThunk := r.Loaders.UserContentProgressLoader.Load(ctx, loaders.UserAchievementKey{UserID: userID, AchievementID: obj.ID})
+	progress, err := progressThunk()
+	if err != nil {
+		return 0, fmt.Errorf("failed to load user progress: %w", err)
+	}
+	return len(progress), nil
+}
 
 // CreateSimpleAchievement is the resolver for the createSimpleAchievement field.
 func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input model.CreateSimpleAchievementInput) (*model.SimpleAchievement, error) {
@@ -55,6 +215,9 @@ func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input mo
 	if input.ChallengeID != nil {
 		params.ChallengeID = *input.ChallengeID
 	}
+	if input.AwardableFrom != nil {
+		params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
+	}
 
 	// Create achievement in database
 	achievement, err := r.DB.Queries.CreateAchievement(ctx, params)
@@ -64,11 +227,20 @@ func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input mo
 
 	// Invalidate project cache
 	r.Cache.InvalidateProject(input.ProjectID)
+	// Invalidate achievements list caches so new achievement appears in queries
+	r.Cache.DeletePrefix(cache.PrefixAchievementsFilter)
+	r.Cache.DeletePrefix(cache.PrefixAchievementsCount)
 
 	// Convert to GraphQL model
 	hidden := false
 	if achievement.Hidden != nil {
 		hidden = *achievement.Hidden
+	}
+
+	// Convert AwardableFrom to GraphQL scalar
+	var awardableFrom *scalars.DateTime
+	if achievement.AwardableFrom.Valid {
+		awardableFrom = &scalars.DateTime{Time: achievement.AwardableFrom.Time}
 	}
 
 	return &model.SimpleAchievement{
@@ -81,6 +253,7 @@ func (r *mutationResolver) CreateSimpleAchievement(ctx context.Context, input mo
 		ImageCompleted:       achievement.ImageCompleted,
 		Points:               int(achievement.Points),
 		Hidden:               hidden,
+		AwardableFrom:        awardableFrom,
 		ProjectID:            achievement.ProjectID,
 		EventID:              achievement.EventID,
 		ChallengeID:          achievement.ChallengeID,
@@ -137,6 +310,9 @@ func (r *mutationResolver) CreateContentAchievement(ctx context.Context, input m
 	if input.ChallengeID != nil {
 		achievementParams.ChallengeID = *input.ChallengeID
 	}
+	if input.AwardableFrom != nil {
+		achievementParams.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
+	}
 
 	achievement, err := qtx.CreateAchievement(ctx, achievementParams)
 	if err != nil {
@@ -169,11 +345,20 @@ func (r *mutationResolver) CreateContentAchievement(ctx context.Context, input m
 
 	// Invalidate project cache
 	r.Cache.InvalidateProject(input.ProjectID)
+	// Invalidate achievements list caches so new achievement appears in queries
+	r.Cache.DeletePrefix(cache.PrefixAchievementsFilter)
+	r.Cache.DeletePrefix(cache.PrefixAchievementsCount)
 
 	// Convert to GraphQL model
 	hidden := false
 	if achievement.Hidden != nil {
 		hidden = *achievement.Hidden
+	}
+
+	// Convert AwardableFrom to GraphQL scalar
+	var awardableFrom *scalars.DateTime
+	if achievement.AwardableFrom.Valid {
+		awardableFrom = &scalars.DateTime{Time: achievement.AwardableFrom.Time}
 	}
 
 	return &model.ContentAchievement{
@@ -186,6 +371,7 @@ func (r *mutationResolver) CreateContentAchievement(ctx context.Context, input m
 		ImageCompleted:       achievement.ImageCompleted,
 		Points:               int(achievement.Points),
 		Hidden:               hidden,
+		AwardableFrom:        awardableFrom,
 		ProjectID:            achievement.ProjectID,
 		EventID:              achievement.EventID,
 		ChallengeID:          achievement.ChallengeID,
@@ -243,6 +429,9 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 	if input.ChallengeID != nil {
 		achievementParams.ChallengeID = *input.ChallengeID
 	}
+	if input.AwardableFrom != nil {
+		achievementParams.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
+	}
 
 	achievement, err := qtx.CreateAchievement(ctx, achievementParams)
 	if err != nil {
@@ -267,11 +456,20 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 
 	// Invalidate project cache
 	r.Cache.InvalidateProject(input.ProjectID)
+	// Invalidate achievements list caches so new achievement appears in queries
+	r.Cache.DeletePrefix(cache.PrefixAchievementsFilter)
+	r.Cache.DeletePrefix(cache.PrefixAchievementsCount)
 
 	// Convert to GraphQL model
 	hidden := false
 	if achievement.Hidden != nil {
 		hidden = *achievement.Hidden
+	}
+
+	// Convert AwardableFrom to GraphQL scalar
+	var awardableFrom *scalars.DateTime
+	if achievement.AwardableFrom.Valid {
+		awardableFrom = &scalars.DateTime{Time: achievement.AwardableFrom.Time}
 	}
 
 	return &model.StreakAchievement{
@@ -284,6 +482,7 @@ func (r *mutationResolver) CreateStreakAchievement(ctx context.Context, input mo
 		ImageCompleted:       achievement.ImageCompleted,
 		Points:               int(achievement.Points),
 		Hidden:               hidden,
+		AwardableFrom:        awardableFrom,
 		ProjectID:            achievement.ProjectID,
 		EventID:              achievement.EventID,
 		ChallengeID:          achievement.ChallengeID,
@@ -349,6 +548,11 @@ func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, inp
 		params.Points = &points
 	}
 
+	// Convert AwardableFrom if provided
+	if input.AwardableFrom != nil {
+		params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
+	}
+
 	// Update achievement in database
 	_, err = r.DB.Queries.UpdateAchievement(ctx, params)
 	if err != nil {
@@ -359,12 +563,6 @@ func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, inp
 	r.Cache.InvalidateProject(projectID)
 	r.Cache.InvalidateAchievement(id)
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
-
-	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil {
-		_ = r.DB.Queries.DeleteAchievementTranslations(ctx, id)
-		r.Cache.DeletePrefix(cache.PrefixTranslation + "achievement:" + id)
-	}
 
 	// If eventID is being changed, invalidate both old and new events
 	if input.EventID != nil {
@@ -419,7 +617,7 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 		qtx := r.DB.Queries.WithTx(tx)
 
 		// Update common fields if provided
-		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.NotificationText != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
+		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.NotificationText != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil || input.AwardableFrom != nil {
 			params := sqlc.UpdateAchievementParams{
 				ID:                   id,
 				Name:                 input.Name,
@@ -435,6 +633,9 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 			if input.Points != nil {
 				points := int32(*input.Points)
 				params.Points = &points
+			}
+			if input.AwardableFrom != nil {
+				params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
 			}
 
 			if _, err := qtx.UpdateAchievement(ctx, params); err != nil {
@@ -481,6 +682,9 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 			points := int32(*input.Points)
 			params.Points = &points
 		}
+		if input.AwardableFrom != nil {
+			params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
+		}
 
 		if _, err := r.DB.Queries.UpdateAchievement(ctx, params); err != nil {
 			return nil, fmt.Errorf("failed to update achievement: %w", err)
@@ -491,14 +695,9 @@ func (r *mutationResolver) UpdateContentAchievement(ctx context.Context, id stri
 	r.Cache.InvalidateProject(contentAch.ProjectID)
 	r.Cache.InvalidateAchievement(id)
 	r.Cache.Delete(cache.ContentItemsByAchievementKey(id))
+	r.Cache.Delete(cache.ContentItemCountKey(id))
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
 	r.Loaders.ContentItemsByAchievementLoader.Clear(ctx, id)
-
-	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil {
-		_ = r.DB.Queries.DeleteAchievementTranslations(ctx, id)
-		r.Cache.DeletePrefix(cache.PrefixTranslation + "achievement:" + id)
-	}
 
 	// If eventID is being changed, invalidate both old and new events
 	if input.EventID != nil {
@@ -563,7 +762,7 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 		qtx := r.DB.Queries.WithTx(tx)
 
 		// Update common fields if provided
-		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.NotificationText != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil {
+		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.NotificationText != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.ChallengeID != nil || input.Points != nil || input.Hidden != nil || input.AwardableFrom != nil {
 			params := sqlc.UpdateAchievementParams{
 				ID:                   id,
 				Name:                 input.Name,
@@ -579,6 +778,9 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 			if input.Points != nil {
 				points := int32(*input.Points)
 				params.Points = &points
+			}
+			if input.AwardableFrom != nil {
+				params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
 			}
 
 			if _, err := qtx.UpdateAchievement(ctx, params); err != nil {
@@ -621,6 +823,9 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 			points := int32(*input.Points)
 			params.Points = &points
 		}
+		if input.AwardableFrom != nil {
+			params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
+		}
 
 		if _, err := r.DB.Queries.UpdateAchievement(ctx, params); err != nil {
 			return nil, fmt.Errorf("failed to update achievement: %w", err)
@@ -631,12 +836,6 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 	r.Cache.InvalidateProject(streakAch.ProjectID)
 	r.Cache.InvalidateAchievement(id)
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
-
-	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil {
-		_ = r.DB.Queries.DeleteAchievementTranslations(ctx, id)
-		r.Cache.DeletePrefix(cache.PrefixTranslation + "achievement:" + id)
-	}
 
 	// If eventID is being changed, invalidate both old and new events
 	if input.EventID != nil {
@@ -705,7 +904,10 @@ func (r *mutationResolver) DeleteAchievement(ctx context.Context, id string) (bo
 	// Invalidate caches
 	r.Cache.InvalidateProject(projectID)
 	r.Cache.InvalidateAchievement(id)
+	r.Cache.Delete(cache.ContentItemsByAchievementKey(id))
+	r.Cache.Delete(cache.ContentItemCountKey(id))
 	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
+	r.Loaders.ContentItemsByAchievementLoader.Clear(ctx, id)
 
 	return true, nil
 }
@@ -760,17 +962,20 @@ func (r *mutationResolver) ReorderAchievements(ctx context.Context, projectID st
 
 // AwardAchievement is the resolver for the awardAchievement field.
 func (r *mutationResolver) AwardAchievement(ctx context.Context, userID string, achievementID string) (model.Achievement, error) {
-	// First, get the achievement to know which project/event it belongs to
-	achievementRow, err := r.DB.Queries.GetAchievementsByIDs(ctx, []string{achievementID})
-	if err != nil || len(achievementRow) == 0 {
+	// Load achievement via caching loader
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, achievementID)
+	achievement, err := achievementThunk()
+	if err != nil {
 		return nil, fmt.Errorf("failed to load achievement: %w", err)
 	}
 
-	projectID := achievementRow[0].ProjectID
-	var eventID *string
-	if achievementRow[0].EventID != nil && *achievementRow[0].EventID != "" {
-		eventID = achievementRow[0].EventID
+	// Check if achievement is awardable based on awardable_from timestamp
+	if err := isAchievementAwardable(getAchievementAwardableFrom(achievement)); err != nil {
+		return nil, err
 	}
+
+	projectID := getAchievementProjectID(achievement)
+	eventID := getAchievementEventID(achievement)
 
 	// Award achievement to user (will return error if already awarded)
 	if err := r.DB.Queries.AwardUserAchievement(ctx, sqlc.AwardUserAchievementParams{
@@ -790,9 +995,17 @@ func (r *mutationResolver) AwardAchievement(ctx context.Context, userID string, 
 	r.Cache.InvalidateProject(projectID)
 
 	// Invalidate event leaderboards if achievement belongs to an event
-	if eventID != nil {
+	if eventID != nil && *eventID != "" {
 		r.Cache.InvalidateEvent(*eventID)
 	}
+
+	// Send push notification in background with translated content
+	if r.PushService != nil {
+		go push.SendTranslatedAchievementNotification(r.PushService, r.Loaders, userID, getAchievementPushInfo(achievement))
+	}
+
+	// Notify Firestore listeners
+	go r.FirebaseService.NotifyUserAchievements(context.Background(), userID)
 
 	// Load and return the achievement with translation
 	return r.LoadAchievementWithTranslation(ctx, achievementID)
@@ -842,6 +1055,9 @@ func (r *mutationResolver) RevokeAchievement(ctx context.Context, userID string,
 		r.Cache.InvalidateEvent(*eventID)
 	}
 
+	// Notify Firestore listeners
+	go r.FirebaseService.NotifyUserAchievements(context.Background(), userID)
+
 	return true, nil
 }
 
@@ -878,6 +1094,80 @@ func (r *mutationResolver) MarkContentItemCompleted(ctx context.Context, userID 
 		return nil, fmt.Errorf("failed to mark content item completed: %w", err)
 	}
 
+	// Collect achievement IDs for batch query
+	achievementIDs := make([]string, len(achievementRows))
+	for i, row := range achievementRows {
+		achievementIDs[i] = row.ID
+	}
+
+	// Invalidate caches for all achievements
+	for _, id := range achievementIDs {
+		r.Cache.Delete(cache.UserContentProgressKey(userID, id))
+	}
+
+	// Check which achievements user already has - skip completion check for those
+	alreadyAwarded, err := r.DB.Queries.GetUserAwardedAchievementIDs(ctx, sqlc.GetUserAwardedAchievementIDsParams{
+		UserID:         userID,
+		AchievementIds: achievementIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to check awarded achievements: %w", err)
+	}
+
+	awardedSet := make(map[string]bool, len(alreadyAwarded))
+	for _, id := range alreadyAwarded {
+		awardedSet[id] = true
+	}
+
+	// Filter to only pending achievements
+	pendingIDs := make([]string, 0, len(achievementIDs))
+	for _, id := range achievementIDs {
+		if !awardedSet[id] {
+			pendingIDs = append(pendingIDs, id)
+		}
+	}
+
+	// Get item counts from cache, fetch missing from DB
+	itemCounts := make(map[string]int32, len(pendingIDs))
+	var uncachedIDs []string
+
+	for _, id := range pendingIDs {
+		if cached, ok := r.Cache.Get(cache.ContentItemCountKey(id)); ok {
+			if count, ok := cached.(int32); ok {
+				itemCounts[id] = count
+				continue
+			}
+		}
+		uncachedIDs = append(uncachedIDs, id)
+	}
+
+	// Fetch uncached item counts from DB
+	if len(uncachedIDs) > 0 {
+		dbCounts, err := r.DB.Queries.GetContentItemCounts(ctx, uncachedIDs)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get content item counts: %w", err)
+		}
+		for _, c := range dbCounts {
+			itemCounts[c.AchievementID] = c.ItemCount
+			r.Cache.Set(cache.ContentItemCountKey(c.AchievementID), c.ItemCount)
+		}
+	}
+
+	// Get progress counts from DB (user-specific, not cached)
+	progressByAchievement := make(map[string]int32)
+	if len(pendingIDs) > 0 {
+		progressCounts, err := r.DB.Queries.GetUserProgressCounts(ctx, sqlc.GetUserProgressCountsParams{
+			UserID:         userID,
+			AchievementIds: pendingIDs,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user progress counts: %w", err)
+		}
+		for _, p := range progressCounts {
+			progressByAchievement[p.AchievementID] = p.ProgressCount
+		}
+	}
+
 	// Convert to model, apply translations, and check for auto-award
 	result := make([]model.ContentAchievement, 0, len(achievementRows))
 	for _, row := range achievementRows {
@@ -886,26 +1176,16 @@ func (r *mutationResolver) MarkContentItemCompleted(ctx context.Context, userID 
 		translated := r.ApplyTranslationToAchievement(ctx, contentAch)
 		result = append(result, *translated.(*model.ContentAchievement))
 
-		// Invalidate user-specific caches
-		r.Cache.Delete(cache.UserContentProgressKey(userID, row.ID))
+		// Skip already-awarded achievements
+		if awardedSet[row.ID] {
+			continue
+		}
 
 		// Check if all items are completed and award achievement if so
-		items, err := r.DB.Queries.GetContentItemsByAchievementIDs(ctx, []string{row.ID})
-		if err != nil {
-			slog.Error("failed to get content items for auto-award check", "error", err, "achievement_id", row.ID)
-			continue
-		}
+		itemCount := itemCounts[row.ID]
+		progressCount := progressByAchievement[row.ID]
 
-		progress, err := r.DB.Queries.GetUserContentProgressForAchievement(ctx, sqlc.GetUserContentProgressForAchievementParams{
-			UserID:        userID,
-			AchievementID: row.ID,
-		})
-		if err != nil {
-			slog.Error("failed to get user progress for auto-award check", "error", err, "achievement_id", row.ID)
-			continue
-		}
-
-		if len(progress) == len(items) {
+		if progressCount == itemCount && itemCount > 0 {
 			// Award the achievement
 			if _, err := r.AwardAchievement(ctx, userID, row.ID); err != nil {
 				// Log error but don't fail - the progress was still recorded
@@ -913,6 +1193,9 @@ func (r *mutationResolver) MarkContentItemCompleted(ctx context.Context, userID 
 			}
 		}
 	}
+
+	// Notify Firestore listeners about content progress
+	go r.FirebaseService.NotifyUserContent(context.Background(), userID)
 
 	return result, nil
 }
@@ -954,12 +1237,35 @@ func (r *mutationResolver) UnmarkContentItemCompleted(ctx context.Context, userI
 		r.Cache.Delete(cache.UserContentProgressKey(userID, row.ID))
 	}
 
+	// Notify Firestore listeners about content progress
+	go r.FirebaseService.NotifyUserContent(context.Background(), userID)
+
 	return result, nil
 }
 
 // RecordStreakActivity is the resolver for the recordStreakActivity field.
 func (r *mutationResolver) RecordStreakActivity(ctx context.Context, userID string, achievementID string, currentStreak int) (*model.StreakAchievement, error) {
 	panic(fmt.Errorf("not implemented: RecordStreakActivity - recordStreakActivity"))
+}
+
+// MarkAchievementCelebrated is the resolver for the markAchievementCelebrated field.
+func (r *mutationResolver) MarkAchievementCelebrated(ctx context.Context, achievementID string) (bool, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return false, fmt.Errorf("user not authenticated")
+	}
+
+	if err := r.DB.Queries.MarkAchievementCelebrated(ctx, sqlc.MarkAchievementCelebratedParams{
+		UserID:        userID,
+		AchievementID: achievementID,
+	}); err != nil {
+		return false, fmt.Errorf("failed to mark achievement celebrated: %w", err)
+	}
+
+	// Invalidate celebrated timestamp cache
+	r.Cache.Delete(cache.UserAchievementCelebratedTimestampKey(userID, achievementID))
+
+	return true, nil
 }
 
 // Achievement is the resolver for the achievement field.
@@ -1080,3 +1386,142 @@ func (r *queryResolver) Achievements(ctx context.Context, filter model.Achieveme
 
 	return connection, nil
 }
+
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *quizAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.QuizAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *quizAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.QuizAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
+}
+
+// Project is the resolver for the project field.
+func (r *quizAchievementResolver) Project(ctx context.Context, obj *model.QuizAchievement) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *quizAchievementResolver) Event(ctx context.Context, obj *model.QuizAchievement) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *quizAchievementResolver) Challenge(ctx context.Context, obj *model.QuizAchievement) (model.Challenge, error) {
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// AchievedAt is the resolver for the achievedAt field.
+func (r *quizAchievementResolver) AchievedAt(ctx context.Context, obj *model.QuizAchievement) (*scalars.DateTime, error) {
+	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// CelebratedAt is the resolver for the celebratedAt field.
+func (r *quizAchievementResolver) CelebratedAt(ctx context.Context, obj *model.QuizAchievement) (*scalars.DateTime, error) {
+	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
+}
+
+// Quiz is the resolver for the quiz field.
+func (r *quizAchievementResolver) Quiz(ctx context.Context, obj *model.QuizAchievement) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
+	return thunk()
+}
+
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *simpleAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.SimpleAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *simpleAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.SimpleAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
+}
+
+// Project is the resolver for the project field.
+func (r *simpleAchievementResolver) Project(ctx context.Context, obj *model.SimpleAchievement) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *simpleAchievementResolver) Event(ctx context.Context, obj *model.SimpleAchievement) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *simpleAchievementResolver) Challenge(ctx context.Context, obj *model.SimpleAchievement) (model.Challenge, error) {
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// AchievedAt is the resolver for the achievedAt field.
+func (r *simpleAchievementResolver) AchievedAt(ctx context.Context, obj *model.SimpleAchievement) (*scalars.DateTime, error) {
+	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// CelebratedAt is the resolver for the celebratedAt field.
+func (r *simpleAchievementResolver) CelebratedAt(ctx context.Context, obj *model.SimpleAchievement) (*scalars.DateTime, error) {
+	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
+}
+
+// ImagePendingObject is the resolver for the imagePendingObject field.
+func (r *streakAchievementResolver) ImagePendingObject(ctx context.Context, obj *model.StreakAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImagePending)
+}
+
+// ImageCompletedObject is the resolver for the imageCompletedObject field.
+func (r *streakAchievementResolver) ImageCompletedObject(ctx context.Context, obj *model.StreakAchievement) (*model.Image, error) {
+	return resolveImageByURLNonNullable(ctx, r.Loaders, obj.ImageCompleted)
+}
+
+// Project is the resolver for the project field.
+func (r *streakAchievementResolver) Project(ctx context.Context, obj *model.StreakAchievement) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *streakAchievementResolver) Event(ctx context.Context, obj *model.StreakAchievement) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *streakAchievementResolver) Challenge(ctx context.Context, obj *model.StreakAchievement) (model.Challenge, error) {
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// AchievedAt is the resolver for the achievedAt field.
+func (r *streakAchievementResolver) AchievedAt(ctx context.Context, obj *model.StreakAchievement) (*scalars.DateTime, error) {
+	return resolveAchievedAt(ctx, r.Resolver, obj.ID)
+}
+
+// CelebratedAt is the resolver for the celebratedAt field.
+func (r *streakAchievementResolver) CelebratedAt(ctx context.Context, obj *model.StreakAchievement) (*scalars.DateTime, error) {
+	return resolveCelebratedAt(ctx, r.Resolver, obj.ID)
+}
+
+// Streak is the resolver for the streak field.
+func (r *streakAchievementResolver) Streak(ctx context.Context, obj *model.StreakAchievement) (*model.Streak, error) {
+	return r.LoadStreakWithTranslation(ctx, obj.StreakID)
+}
+
+// ContentAchievement returns ContentAchievementResolver implementation.
+func (r *Resolver) ContentAchievement() ContentAchievementResolver {
+	return &contentAchievementResolver{r}
+}
+
+// QuizAchievement returns QuizAchievementResolver implementation.
+func (r *Resolver) QuizAchievement() QuizAchievementResolver { return &quizAchievementResolver{r} }
+
+// SimpleAchievement returns SimpleAchievementResolver implementation.
+func (r *Resolver) SimpleAchievement() SimpleAchievementResolver {
+	return &simpleAchievementResolver{r}
+}
+
+// StreakAchievement returns StreakAchievementResolver implementation.
+func (r *Resolver) StreakAchievement() StreakAchievementResolver {
+	return &streakAchievementResolver{r}
+}
+
+type contentAchievementResolver struct{ *Resolver }
+type quizAchievementResolver struct{ *Resolver }
+type simpleAchievementResolver struct{ *Resolver }
+type streakAchievementResolver struct{ *Resolver }

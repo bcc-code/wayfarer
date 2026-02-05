@@ -30,23 +30,25 @@ const CountUsersFiltered = `-- name: CountUsersFiltered :one
 SELECT COUNT(u.id)
 FROM users u
 WHERE
-    ($1::text = '' OR u.church_id = $1::text)
-    AND ($2::text = '' OR u.gender = $2::text)
-    AND ($3::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $3::int)
-    AND ($4::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $4::int)
-    AND ($5::text = '' OR EXISTS (
-        SELECT 1 FROM user_projects up WHERE up.user_id = u.id AND up.project_id = $5::text
-    ))
+    ($1::text = '' OR (u.name ILIKE '%' || $1::text || '%' OR u.email ILIKE '%' || $1::text || '%'))
+    AND ($2::text = '' OR u.church_id = $2::text)
+    AND ($3::text = '' OR u.gender = $3::text)
+    AND ($4::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $4::int)
+    AND ($5::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $5::int)
     AND ($6::text = '' OR EXISTS (
-        SELECT 1 FROM user_events ue WHERE ue.user_id = u.id AND ue.event_id = $6::text
+        SELECT 1 FROM user_projects up WHERE up.user_id = u.id AND up.project_id = $6::text
     ))
     AND ($7::text = '' OR EXISTS (
-        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $7::text
+        SELECT 1 FROM user_events ue WHERE ue.user_id = u.id AND ue.event_id = $7::text
     ))
-    AND ($8::text[] IS NULL OR u.id = ANY($8::text[]))
+    AND ($8::text = '' OR EXISTS (
+        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $8::text
+    ))
+    AND ($9::text[] IS NULL OR u.id = ANY($9::text[]))
 `
 
 type CountUsersFilteredParams struct {
+	Query     string   `json:"query"`
 	Churchid  string   `json:"churchid"`
 	Gender    string   `json:"gender"`
 	Minage    int32    `json:"minage"`
@@ -59,6 +61,7 @@ type CountUsersFilteredParams struct {
 
 func (q *Queries) CountUsersFiltered(ctx context.Context, arg CountUsersFilteredParams) (int64, error) {
 	row := q.db.QueryRow(ctx, CountUsersFiltered,
+		arg.Query,
 		arg.Churchid,
 		arg.Gender,
 		arg.Minage,
@@ -74,14 +77,15 @@ func (q *Queries) CountUsersFiltered(ctx context.Context, arg CountUsersFiltered
 }
 
 const CreateUser = `-- name: CreateUser :one
-INSERT INTO users (id, members_id, email, name, first_name, last_name, middle_name, display_name, gender, birthdate, church_id, avatar_url)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-RETURNING id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
+INSERT INTO users (id, members_id, person_uuid, email, name, first_name, last_name, middle_name, display_name, gender, birthdate, church_id, avatar_url, language)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+RETURNING id, members_id, person_uuid, gender, church_id, church_locked_until, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url, language, created_at
 `
 
 type CreateUserParams struct {
 	ID          string      `json:"id"`
 	MembersID   string      `json:"members_id"`
+	PersonUuid  pgtype.UUID `json:"person_uuid"`
 	Email       string      `json:"email"`
 	Name        string      `json:"name"`
 	FirstName   *string     `json:"first_name"`
@@ -92,27 +96,33 @@ type CreateUserParams struct {
 	Birthdate   pgtype.Date `json:"birthdate"`
 	ChurchID    string      `json:"church_id"`
 	AvatarUrl   *string     `json:"avatar_url"`
+	Language    string      `json:"language"`
 }
 
 type CreateUserRow struct {
-	ID          string      `json:"id"`
-	MembersID   string      `json:"members_id"`
-	Gender      string      `json:"gender"`
-	ChurchID    string      `json:"church_id"`
-	Birthdate   pgtype.Date `json:"birthdate"`
-	Email       string      `json:"email"`
-	Name        string      `json:"name"`
-	FirstName   *string     `json:"first_name"`
-	LastName    *string     `json:"last_name"`
-	MiddleName  *string     `json:"middle_name"`
-	DisplayName *string     `json:"display_name"`
-	AvatarUrl   *string     `json:"avatar_url"`
+	ID                string             `json:"id"`
+	MembersID         string             `json:"members_id"`
+	PersonUuid        pgtype.UUID        `json:"person_uuid"`
+	Gender            string             `json:"gender"`
+	ChurchID          string             `json:"church_id"`
+	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
+	Birthdate         pgtype.Date        `json:"birthdate"`
+	Email             string             `json:"email"`
+	Name              string             `json:"name"`
+	FirstName         *string            `json:"first_name"`
+	LastName          *string            `json:"last_name"`
+	MiddleName        *string            `json:"middle_name"`
+	DisplayName       *string            `json:"display_name"`
+	AvatarUrl         *string            `json:"avatar_url"`
+	Language          string             `json:"language"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*CreateUserRow, error) {
 	row := q.db.QueryRow(ctx, CreateUser,
 		arg.ID,
 		arg.MembersID,
+		arg.PersonUuid,
 		arg.Email,
 		arg.Name,
 		arg.FirstName,
@@ -123,13 +133,16 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*Create
 		arg.Birthdate,
 		arg.ChurchID,
 		arg.AvatarUrl,
+		arg.Language,
 	)
 	var i CreateUserRow
 	err := row.Scan(
 		&i.ID,
 		&i.MembersID,
+		&i.PersonUuid,
 		&i.Gender,
 		&i.ChurchID,
+		&i.ChurchLockedUntil,
 		&i.Birthdate,
 		&i.Email,
 		&i.Name,
@@ -138,29 +151,35 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*Create
 		&i.MiddleName,
 		&i.DisplayName,
 		&i.AvatarUrl,
+		&i.Language,
+		&i.CreatedAt,
 	)
 	return &i, err
 }
 
 const GetUserByID = `-- name: GetUserByID :one
-SELECT id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
+SELECT id, members_id, person_uuid, gender, church_id, church_locked_until, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url, language, created_at
 FROM users
 WHERE id = $1
 `
 
 type GetUserByIDRow struct {
-	ID          string      `json:"id"`
-	MembersID   string      `json:"members_id"`
-	Gender      string      `json:"gender"`
-	ChurchID    string      `json:"church_id"`
-	Birthdate   pgtype.Date `json:"birthdate"`
-	Email       string      `json:"email"`
-	Name        string      `json:"name"`
-	FirstName   *string     `json:"first_name"`
-	LastName    *string     `json:"last_name"`
-	MiddleName  *string     `json:"middle_name"`
-	DisplayName *string     `json:"display_name"`
-	AvatarUrl   *string     `json:"avatar_url"`
+	ID                string             `json:"id"`
+	MembersID         string             `json:"members_id"`
+	PersonUuid        pgtype.UUID        `json:"person_uuid"`
+	Gender            string             `json:"gender"`
+	ChurchID          string             `json:"church_id"`
+	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
+	Birthdate         pgtype.Date        `json:"birthdate"`
+	Email             string             `json:"email"`
+	Name              string             `json:"name"`
+	FirstName         *string            `json:"first_name"`
+	LastName          *string            `json:"last_name"`
+	MiddleName        *string            `json:"middle_name"`
+	DisplayName       *string            `json:"display_name"`
+	AvatarUrl         *string            `json:"avatar_url"`
+	Language          string             `json:"language"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, id string) (*GetUserByIDRow, error) {
@@ -169,8 +188,10 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (*GetUserByIDRow, 
 	err := row.Scan(
 		&i.ID,
 		&i.MembersID,
+		&i.PersonUuid,
 		&i.Gender,
 		&i.ChurchID,
+		&i.ChurchLockedUntil,
 		&i.Birthdate,
 		&i.Email,
 		&i.Name,
@@ -179,29 +200,35 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (*GetUserByIDRow, 
 		&i.MiddleName,
 		&i.DisplayName,
 		&i.AvatarUrl,
+		&i.Language,
+		&i.CreatedAt,
 	)
 	return &i, err
 }
 
 const GetUserByMembersID = `-- name: GetUserByMembersID :one
-SELECT id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
+SELECT id, members_id, person_uuid, gender, church_id, church_locked_until, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url, language, created_at
 FROM users
 WHERE members_id = $1
 `
 
 type GetUserByMembersIDRow struct {
-	ID          string      `json:"id"`
-	MembersID   string      `json:"members_id"`
-	Gender      string      `json:"gender"`
-	ChurchID    string      `json:"church_id"`
-	Birthdate   pgtype.Date `json:"birthdate"`
-	Email       string      `json:"email"`
-	Name        string      `json:"name"`
-	FirstName   *string     `json:"first_name"`
-	LastName    *string     `json:"last_name"`
-	MiddleName  *string     `json:"middle_name"`
-	DisplayName *string     `json:"display_name"`
-	AvatarUrl   *string     `json:"avatar_url"`
+	ID                string             `json:"id"`
+	MembersID         string             `json:"members_id"`
+	PersonUuid        pgtype.UUID        `json:"person_uuid"`
+	Gender            string             `json:"gender"`
+	ChurchID          string             `json:"church_id"`
+	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
+	Birthdate         pgtype.Date        `json:"birthdate"`
+	Email             string             `json:"email"`
+	Name              string             `json:"name"`
+	FirstName         *string            `json:"first_name"`
+	LastName          *string            `json:"last_name"`
+	MiddleName        *string            `json:"middle_name"`
+	DisplayName       *string            `json:"display_name"`
+	AvatarUrl         *string            `json:"avatar_url"`
+	Language          string             `json:"language"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) GetUserByMembersID(ctx context.Context, membersID string) (*GetUserByMembersIDRow, error) {
@@ -210,8 +237,10 @@ func (q *Queries) GetUserByMembersID(ctx context.Context, membersID string) (*Ge
 	err := row.Scan(
 		&i.ID,
 		&i.MembersID,
+		&i.PersonUuid,
 		&i.Gender,
 		&i.ChurchID,
+		&i.ChurchLockedUntil,
 		&i.Birthdate,
 		&i.Email,
 		&i.Name,
@@ -220,29 +249,84 @@ func (q *Queries) GetUserByMembersID(ctx context.Context, membersID string) (*Ge
 		&i.MiddleName,
 		&i.DisplayName,
 		&i.AvatarUrl,
+		&i.Language,
+		&i.CreatedAt,
+	)
+	return &i, err
+}
+
+const GetUserByPersonUUID = `-- name: GetUserByPersonUUID :one
+SELECT id, members_id, person_uuid, gender, church_id, church_locked_until, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url, language, created_at
+FROM users
+WHERE person_uuid = $1::uuid
+`
+
+type GetUserByPersonUUIDRow struct {
+	ID                string             `json:"id"`
+	MembersID         string             `json:"members_id"`
+	PersonUuid        pgtype.UUID        `json:"person_uuid"`
+	Gender            string             `json:"gender"`
+	ChurchID          string             `json:"church_id"`
+	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
+	Birthdate         pgtype.Date        `json:"birthdate"`
+	Email             string             `json:"email"`
+	Name              string             `json:"name"`
+	FirstName         *string            `json:"first_name"`
+	LastName          *string            `json:"last_name"`
+	MiddleName        *string            `json:"middle_name"`
+	DisplayName       *string            `json:"display_name"`
+	AvatarUrl         *string            `json:"avatar_url"`
+	Language          string             `json:"language"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetUserByPersonUUID(ctx context.Context, personUuid pgtype.UUID) (*GetUserByPersonUUIDRow, error) {
+	row := q.db.QueryRow(ctx, GetUserByPersonUUID, personUuid)
+	var i GetUserByPersonUUIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.MembersID,
+		&i.PersonUuid,
+		&i.Gender,
+		&i.ChurchID,
+		&i.ChurchLockedUntil,
+		&i.Birthdate,
+		&i.Email,
+		&i.Name,
+		&i.FirstName,
+		&i.LastName,
+		&i.MiddleName,
+		&i.DisplayName,
+		&i.AvatarUrl,
+		&i.Language,
+		&i.CreatedAt,
 	)
 	return &i, err
 }
 
 const GetUsersByIDs = `-- name: GetUsersByIDs :many
-SELECT id, members_id, gender, church_id, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url
+SELECT id, members_id, person_uuid, gender, church_id, church_locked_until, birthdate, email, name, first_name, last_name, middle_name, display_name, avatar_url, language, created_at
 FROM users
 WHERE id = ANY($1::text[])
 `
 
 type GetUsersByIDsRow struct {
-	ID          string      `json:"id"`
-	MembersID   string      `json:"members_id"`
-	Gender      string      `json:"gender"`
-	ChurchID    string      `json:"church_id"`
-	Birthdate   pgtype.Date `json:"birthdate"`
-	Email       string      `json:"email"`
-	Name        string      `json:"name"`
-	FirstName   *string     `json:"first_name"`
-	LastName    *string     `json:"last_name"`
-	MiddleName  *string     `json:"middle_name"`
-	DisplayName *string     `json:"display_name"`
-	AvatarUrl   *string     `json:"avatar_url"`
+	ID                string             `json:"id"`
+	MembersID         string             `json:"members_id"`
+	PersonUuid        pgtype.UUID        `json:"person_uuid"`
+	Gender            string             `json:"gender"`
+	ChurchID          string             `json:"church_id"`
+	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
+	Birthdate         pgtype.Date        `json:"birthdate"`
+	Email             string             `json:"email"`
+	Name              string             `json:"name"`
+	FirstName         *string            `json:"first_name"`
+	LastName          *string            `json:"last_name"`
+	MiddleName        *string            `json:"middle_name"`
+	DisplayName       *string            `json:"display_name"`
+	AvatarUrl         *string            `json:"avatar_url"`
+	Language          string             `json:"language"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) GetUsersByIDs(ctx context.Context, ids []string) ([]*GetUsersByIDsRow, error) {
@@ -257,8 +341,10 @@ func (q *Queries) GetUsersByIDs(ctx context.Context, ids []string) ([]*GetUsersB
 		if err := rows.Scan(
 			&i.ID,
 			&i.MembersID,
+			&i.PersonUuid,
 			&i.Gender,
 			&i.ChurchID,
+			&i.ChurchLockedUntil,
 			&i.Birthdate,
 			&i.Email,
 			&i.Name,
@@ -267,6 +353,72 @@ func (q *Queries) GetUsersByIDs(ctx context.Context, ids []string) ([]*GetUsersB
 			&i.MiddleName,
 			&i.DisplayName,
 			&i.AvatarUrl,
+			&i.Language,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUsersByPersonUUIDs = `-- name: GetUsersByPersonUUIDs :many
+SELECT id, members_id, person_uuid, gender, church_id, church_locked_until,
+       birthdate, email, name, first_name, last_name, middle_name, display_name,
+       avatar_url, language, created_at
+FROM users
+WHERE person_uuid = ANY($1::uuid[])
+`
+
+type GetUsersByPersonUUIDsRow struct {
+	ID                string             `json:"id"`
+	MembersID         string             `json:"members_id"`
+	PersonUuid        pgtype.UUID        `json:"person_uuid"`
+	Gender            string             `json:"gender"`
+	ChurchID          string             `json:"church_id"`
+	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
+	Birthdate         pgtype.Date        `json:"birthdate"`
+	Email             string             `json:"email"`
+	Name              string             `json:"name"`
+	FirstName         *string            `json:"first_name"`
+	LastName          *string            `json:"last_name"`
+	MiddleName        *string            `json:"middle_name"`
+	DisplayName       *string            `json:"display_name"`
+	AvatarUrl         *string            `json:"avatar_url"`
+	Language          string             `json:"language"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetUsersByPersonUUIDs(ctx context.Context, personUuids []pgtype.UUID) ([]*GetUsersByPersonUUIDsRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersByPersonUUIDs, personUuids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUsersByPersonUUIDsRow{}
+	for rows.Next() {
+		var i GetUsersByPersonUUIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MembersID,
+			&i.PersonUuid,
+			&i.Gender,
+			&i.ChurchID,
+			&i.ChurchLockedUntil,
+			&i.Birthdate,
+			&i.Email,
+			&i.Name,
+			&i.FirstName,
+			&i.LastName,
+			&i.MiddleName,
+			&i.DisplayName,
+			&i.AvatarUrl,
+			&i.Language,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -286,7 +438,7 @@ WITH distinct_user_ids AS (
     INNER JOIN teams t ON tm.team_id = t.id
     WHERE t.super_team_id = $5::text
 )
-SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
+SELECT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.church_locked_until, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url, u.language, u.created_at
 FROM distinct_user_ids du
 INNER JOIN users u ON du.id = u.id
 WHERE ($1::text = '' OR u.id > $1::text)
@@ -306,18 +458,22 @@ type GetUsersBySuperTeamIDCursorParams struct {
 }
 
 type GetUsersBySuperTeamIDCursorRow struct {
-	ID          string      `json:"id"`
-	MembersID   string      `json:"members_id"`
-	Gender      string      `json:"gender"`
-	ChurchID    string      `json:"church_id"`
-	Birthdate   pgtype.Date `json:"birthdate"`
-	Email       string      `json:"email"`
-	Name        string      `json:"name"`
-	FirstName   *string     `json:"first_name"`
-	LastName    *string     `json:"last_name"`
-	MiddleName  *string     `json:"middle_name"`
-	DisplayName *string     `json:"display_name"`
-	AvatarUrl   *string     `json:"avatar_url"`
+	ID                string             `json:"id"`
+	MembersID         string             `json:"members_id"`
+	PersonUuid        pgtype.UUID        `json:"person_uuid"`
+	Gender            string             `json:"gender"`
+	ChurchID          string             `json:"church_id"`
+	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
+	Birthdate         pgtype.Date        `json:"birthdate"`
+	Email             string             `json:"email"`
+	Name              string             `json:"name"`
+	FirstName         *string            `json:"first_name"`
+	LastName          *string            `json:"last_name"`
+	MiddleName        *string            `json:"middle_name"`
+	DisplayName       *string            `json:"display_name"`
+	AvatarUrl         *string            `json:"avatar_url"`
+	Language          string             `json:"language"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) GetUsersBySuperTeamIDCursor(ctx context.Context, arg GetUsersBySuperTeamIDCursorParams) ([]*GetUsersBySuperTeamIDCursorRow, error) {
@@ -338,8 +494,10 @@ func (q *Queries) GetUsersBySuperTeamIDCursor(ctx context.Context, arg GetUsersB
 		if err := rows.Scan(
 			&i.ID,
 			&i.MembersID,
+			&i.PersonUuid,
 			&i.Gender,
 			&i.ChurchID,
+			&i.ChurchLockedUntil,
 			&i.Birthdate,
 			&i.Email,
 			&i.Name,
@@ -348,6 +506,8 @@ func (q *Queries) GetUsersBySuperTeamIDCursor(ctx context.Context, arg GetUsersB
 			&i.MiddleName,
 			&i.DisplayName,
 			&i.AvatarUrl,
+			&i.Language,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -360,7 +520,7 @@ func (q *Queries) GetUsersBySuperTeamIDCursor(ctx context.Context, arg GetUsersB
 }
 
 const GetUsersBySuperTeamIDs = `-- name: GetUsersBySuperTeamIDs :many
-SELECT DISTINCT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
+SELECT DISTINCT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.church_locked_until, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url, u.language, u.created_at
 FROM users u
 INNER JOIN team_members tm ON u.id = tm.user_id
 INNER JOIN teams t ON tm.team_id = t.id
@@ -369,18 +529,22 @@ ORDER BY u.id
 `
 
 type GetUsersBySuperTeamIDsRow struct {
-	ID          string      `json:"id"`
-	MembersID   string      `json:"members_id"`
-	Gender      string      `json:"gender"`
-	ChurchID    string      `json:"church_id"`
-	Birthdate   pgtype.Date `json:"birthdate"`
-	Email       string      `json:"email"`
-	Name        string      `json:"name"`
-	FirstName   *string     `json:"first_name"`
-	LastName    *string     `json:"last_name"`
-	MiddleName  *string     `json:"middle_name"`
-	DisplayName *string     `json:"display_name"`
-	AvatarUrl   *string     `json:"avatar_url"`
+	ID                string             `json:"id"`
+	MembersID         string             `json:"members_id"`
+	PersonUuid        pgtype.UUID        `json:"person_uuid"`
+	Gender            string             `json:"gender"`
+	ChurchID          string             `json:"church_id"`
+	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
+	Birthdate         pgtype.Date        `json:"birthdate"`
+	Email             string             `json:"email"`
+	Name              string             `json:"name"`
+	FirstName         *string            `json:"first_name"`
+	LastName          *string            `json:"last_name"`
+	MiddleName        *string            `json:"middle_name"`
+	DisplayName       *string            `json:"display_name"`
+	AvatarUrl         *string            `json:"avatar_url"`
+	Language          string             `json:"language"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) GetUsersBySuperTeamIDs(ctx context.Context, superteamids []string) ([]*GetUsersBySuperTeamIDsRow, error) {
@@ -395,8 +559,10 @@ func (q *Queries) GetUsersBySuperTeamIDs(ctx context.Context, superteamids []str
 		if err := rows.Scan(
 			&i.ID,
 			&i.MembersID,
+			&i.PersonUuid,
 			&i.Gender,
 			&i.ChurchID,
+			&i.ChurchLockedUntil,
 			&i.Birthdate,
 			&i.Email,
 			&i.Name,
@@ -405,6 +571,8 @@ func (q *Queries) GetUsersBySuperTeamIDs(ctx context.Context, superteamids []str
 			&i.MiddleName,
 			&i.DisplayName,
 			&i.AvatarUrl,
+			&i.Language,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -420,8 +588,10 @@ const GetUsersByTeamIDs = `-- name: GetUsersByTeamIDs :many
 SELECT
     u.id,
     u.members_id,
+    u.person_uuid,
     u.gender,
     u.church_id,
+    u.church_locked_until,
     u.birthdate,
     u.email,
     u.name,
@@ -430,6 +600,8 @@ SELECT
     u.middle_name,
     u.display_name,
     u.avatar_url,
+    u.language,
+    u.created_at,
     tm.team_id,
     tm.joined_at,
     EXISTS(
@@ -446,21 +618,25 @@ ORDER BY tm.team_id, tm.joined_at
 `
 
 type GetUsersByTeamIDsRow struct {
-	ID          string             `json:"id"`
-	MembersID   string             `json:"members_id"`
-	Gender      string             `json:"gender"`
-	ChurchID    string             `json:"church_id"`
-	Birthdate   pgtype.Date        `json:"birthdate"`
-	Email       string             `json:"email"`
-	Name        string             `json:"name"`
-	FirstName   *string            `json:"first_name"`
-	LastName    *string            `json:"last_name"`
-	MiddleName  *string            `json:"middle_name"`
-	DisplayName *string            `json:"display_name"`
-	AvatarUrl   *string            `json:"avatar_url"`
-	TeamID      string             `json:"team_id"`
-	JoinedAt    pgtype.Timestamptz `json:"joined_at"`
-	IsTeamLead  bool               `json:"is_team_lead"`
+	ID                string             `json:"id"`
+	MembersID         string             `json:"members_id"`
+	PersonUuid        pgtype.UUID        `json:"person_uuid"`
+	Gender            string             `json:"gender"`
+	ChurchID          string             `json:"church_id"`
+	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
+	Birthdate         pgtype.Date        `json:"birthdate"`
+	Email             string             `json:"email"`
+	Name              string             `json:"name"`
+	FirstName         *string            `json:"first_name"`
+	LastName          *string            `json:"last_name"`
+	MiddleName        *string            `json:"middle_name"`
+	DisplayName       *string            `json:"display_name"`
+	AvatarUrl         *string            `json:"avatar_url"`
+	Language          string             `json:"language"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	TeamID            string             `json:"team_id"`
+	JoinedAt          pgtype.Timestamptz `json:"joined_at"`
+	IsTeamLead        bool               `json:"is_team_lead"`
 }
 
 func (q *Queries) GetUsersByTeamIDs(ctx context.Context, teamids []string) ([]*GetUsersByTeamIDsRow, error) {
@@ -475,8 +651,10 @@ func (q *Queries) GetUsersByTeamIDs(ctx context.Context, teamids []string) ([]*G
 		if err := rows.Scan(
 			&i.ID,
 			&i.MembersID,
+			&i.PersonUuid,
 			&i.Gender,
 			&i.ChurchID,
+			&i.ChurchLockedUntil,
 			&i.Birthdate,
 			&i.Email,
 			&i.Name,
@@ -485,6 +663,8 @@ func (q *Queries) GetUsersByTeamIDs(ctx context.Context, teamids []string) ([]*G
 			&i.MiddleName,
 			&i.DisplayName,
 			&i.AvatarUrl,
+			&i.Language,
+			&i.CreatedAt,
 			&i.TeamID,
 			&i.JoinedAt,
 			&i.IsTeamLead,
@@ -500,7 +680,7 @@ func (q *Queries) GetUsersByTeamIDs(ctx context.Context, teamids []string) ([]*G
 }
 
 const GetUsersFiltered = `-- name: GetUsersFiltered :many
-SELECT DISTINCT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
+SELECT DISTINCT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.church_locked_until, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url, u.language, u.created_at
 FROM users u
 LEFT JOIN user_projects up ON u.id = up.user_id AND $1::text IS NOT NULL
 LEFT JOIN user_events ue ON u.id = ue.user_id AND $2::text IS NOT NULL
@@ -533,18 +713,22 @@ type GetUsersFilteredParams struct {
 }
 
 type GetUsersFilteredRow struct {
-	ID          string      `json:"id"`
-	MembersID   string      `json:"members_id"`
-	Gender      string      `json:"gender"`
-	ChurchID    string      `json:"church_id"`
-	Birthdate   pgtype.Date `json:"birthdate"`
-	Email       string      `json:"email"`
-	Name        string      `json:"name"`
-	FirstName   *string     `json:"first_name"`
-	LastName    *string     `json:"last_name"`
-	MiddleName  *string     `json:"middle_name"`
-	DisplayName *string     `json:"display_name"`
-	AvatarUrl   *string     `json:"avatar_url"`
+	ID                string             `json:"id"`
+	MembersID         string             `json:"members_id"`
+	PersonUuid        pgtype.UUID        `json:"person_uuid"`
+	Gender            string             `json:"gender"`
+	ChurchID          string             `json:"church_id"`
+	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
+	Birthdate         pgtype.Date        `json:"birthdate"`
+	Email             string             `json:"email"`
+	Name              string             `json:"name"`
+	FirstName         *string            `json:"first_name"`
+	LastName          *string            `json:"last_name"`
+	MiddleName        *string            `json:"middle_name"`
+	DisplayName       *string            `json:"display_name"`
+	AvatarUrl         *string            `json:"avatar_url"`
+	Language          string             `json:"language"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) GetUsersFiltered(ctx context.Context, arg GetUsersFilteredParams) ([]*GetUsersFilteredRow, error) {
@@ -570,8 +754,10 @@ func (q *Queries) GetUsersFiltered(ctx context.Context, arg GetUsersFilteredPara
 		if err := rows.Scan(
 			&i.ID,
 			&i.MembersID,
+			&i.PersonUuid,
 			&i.Gender,
 			&i.ChurchID,
+			&i.ChurchLockedUntil,
 			&i.Birthdate,
 			&i.Email,
 			&i.Name,
@@ -580,6 +766,8 @@ func (q *Queries) GetUsersFiltered(ctx context.Context, arg GetUsersFilteredPara
 			&i.MiddleName,
 			&i.DisplayName,
 			&i.AvatarUrl,
+			&i.Language,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -592,32 +780,34 @@ func (q *Queries) GetUsersFiltered(ctx context.Context, arg GetUsersFilteredPara
 }
 
 const GetUsersFilteredCursor = `-- name: GetUsersFilteredCursor :many
-SELECT u.id, u.members_id, u.gender, u.church_id, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url
+SELECT u.id, u.members_id, u.person_uuid, u.gender, u.church_id, u.church_locked_until, u.birthdate, u.email, u.name, u.first_name, u.last_name, u.middle_name, u.display_name, u.avatar_url, u.language, u.created_at
 FROM users u
 WHERE
-    ($1::text = '' OR u.church_id = $1::text)
-    AND ($2::text = '' OR u.gender = $2::text)
-    AND ($3::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $3::int)
-    AND ($4::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $4::int)
-    AND ($5::text = '' OR EXISTS (
-        SELECT 1 FROM user_projects up WHERE up.user_id = u.id AND up.project_id = $5::text
-    ))
+    ($1::text = '' OR (u.name ILIKE '%' || $1::text || '%' OR u.email ILIKE '%' || $1::text || '%'))
+    AND ($2::text = '' OR u.church_id = $2::text)
+    AND ($3::text = '' OR u.gender = $3::text)
+    AND ($4::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) >= $4::int)
+    AND ($5::int IS NULL OR (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM u.birthdate)) <= $5::int)
     AND ($6::text = '' OR EXISTS (
-        SELECT 1 FROM user_events ue WHERE ue.user_id = u.id AND ue.event_id = $6::text
+        SELECT 1 FROM user_projects up WHERE up.user_id = u.id AND up.project_id = $6::text
     ))
     AND ($7::text = '' OR EXISTS (
-        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $7::text
+        SELECT 1 FROM user_events ue WHERE ue.user_id = u.id AND ue.event_id = $7::text
     ))
-    AND ($8::text[] IS NULL OR u.id = ANY($8::text[]))
-    AND ($9::text = '' OR u.id > $9::text)
-    AND ($10::text = '' OR u.id < $10::text)
+    AND ($8::text = '' OR EXISTS (
+        SELECT 1 FROM team_members tm WHERE tm.user_id = u.id AND tm.team_id = $8::text
+    ))
+    AND ($9::text[] IS NULL OR u.id = ANY($9::text[]))
+    AND ($10::text = '' OR u.id > $10::text)
+    AND ($11::text = '' OR u.id < $11::text)
 ORDER BY
-    CASE WHEN $11::bool = true THEN u.id END DESC,
-    CASE WHEN $11::bool = false OR $11::bool IS NULL THEN u.id END ASC
-LIMIT CASE WHEN $12::int IS NULL THEN NULL ELSE $12::int END
+    CASE WHEN $12::bool = true THEN u.id END DESC,
+    CASE WHEN $12::bool = false OR $12::bool IS NULL THEN u.id END ASC
+LIMIT CASE WHEN $13::int IS NULL THEN NULL ELSE $13::int END
 `
 
 type GetUsersFilteredCursorParams struct {
+	Query        string   `json:"query"`
 	Churchid     string   `json:"churchid"`
 	Gender       string   `json:"gender"`
 	Minage       int32    `json:"minage"`
@@ -633,22 +823,27 @@ type GetUsersFilteredCursorParams struct {
 }
 
 type GetUsersFilteredCursorRow struct {
-	ID          string      `json:"id"`
-	MembersID   string      `json:"members_id"`
-	Gender      string      `json:"gender"`
-	ChurchID    string      `json:"church_id"`
-	Birthdate   pgtype.Date `json:"birthdate"`
-	Email       string      `json:"email"`
-	Name        string      `json:"name"`
-	FirstName   *string     `json:"first_name"`
-	LastName    *string     `json:"last_name"`
-	MiddleName  *string     `json:"middle_name"`
-	DisplayName *string     `json:"display_name"`
-	AvatarUrl   *string     `json:"avatar_url"`
+	ID                string             `json:"id"`
+	MembersID         string             `json:"members_id"`
+	PersonUuid        pgtype.UUID        `json:"person_uuid"`
+	Gender            string             `json:"gender"`
+	ChurchID          string             `json:"church_id"`
+	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
+	Birthdate         pgtype.Date        `json:"birthdate"`
+	Email             string             `json:"email"`
+	Name              string             `json:"name"`
+	FirstName         *string            `json:"first_name"`
+	LastName          *string            `json:"last_name"`
+	MiddleName        *string            `json:"middle_name"`
+	DisplayName       *string            `json:"display_name"`
+	AvatarUrl         *string            `json:"avatar_url"`
+	Language          string             `json:"language"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) GetUsersFilteredCursor(ctx context.Context, arg GetUsersFilteredCursorParams) ([]*GetUsersFilteredCursorRow, error) {
 	rows, err := q.db.Query(ctx, GetUsersFilteredCursor,
+		arg.Query,
 		arg.Churchid,
 		arg.Gender,
 		arg.Minage,
@@ -672,8 +867,10 @@ func (q *Queries) GetUsersFilteredCursor(ctx context.Context, arg GetUsersFilter
 		if err := rows.Scan(
 			&i.ID,
 			&i.MembersID,
+			&i.PersonUuid,
 			&i.Gender,
 			&i.ChurchID,
+			&i.ChurchLockedUntil,
 			&i.Birthdate,
 			&i.Email,
 			&i.Name,
@@ -682,6 +879,8 @@ func (q *Queries) GetUsersFilteredCursor(ctx context.Context, arg GetUsersFilter
 			&i.MiddleName,
 			&i.DisplayName,
 			&i.AvatarUrl,
+			&i.Language,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -691,4 +890,161 @@ func (q *Queries) GetUsersFilteredCursor(ctx context.Context, arg GetUsersFilter
 		return nil, err
 	}
 	return items, nil
+}
+
+const GetUsersWithIncompleteData = `-- name: GetUsersWithIncompleteData :many
+SELECT id, members_id, person_uuid, gender, church_id, church_locked_until
+FROM users
+WHERE gender = 'UNKNOWN'
+ORDER BY id
+LIMIT $1::int
+`
+
+type GetUsersWithIncompleteDataRow struct {
+	ID                string             `json:"id"`
+	MembersID         string             `json:"members_id"`
+	PersonUuid        pgtype.UUID        `json:"person_uuid"`
+	Gender            string             `json:"gender"`
+	ChurchID          string             `json:"church_id"`
+	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
+}
+
+func (q *Queries) GetUsersWithIncompleteData(ctx context.Context, querylimit int32) ([]*GetUsersWithIncompleteDataRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersWithIncompleteData, querylimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUsersWithIncompleteDataRow{}
+	for rows.Next() {
+		var i GetUsersWithIncompleteDataRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MembersID,
+			&i.PersonUuid,
+			&i.Gender,
+			&i.ChurchID,
+			&i.ChurchLockedUntil,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUsersWithoutPersonUUID = `-- name: GetUsersWithoutPersonUUID :many
+SELECT id, members_id
+FROM users
+WHERE person_uuid IS NULL
+  AND members_id ~ '^[0-9]+$'
+ORDER BY id
+LIMIT $1::int
+`
+
+type GetUsersWithoutPersonUUIDRow struct {
+	ID        string `json:"id"`
+	MembersID string `json:"members_id"`
+}
+
+func (q *Queries) GetUsersWithoutPersonUUID(ctx context.Context, querylimit int32) ([]*GetUsersWithoutPersonUUIDRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersWithoutPersonUUID, querylimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUsersWithoutPersonUUIDRow{}
+	for rows.Next() {
+		var i GetUsersWithoutPersonUUIDRow
+		if err := rows.Scan(&i.ID, &i.MembersID); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const LockUserChurch = `-- name: LockUserChurch :exec
+UPDATE users
+SET church_locked_until = $1::timestamptz, updated_at = now()
+WHERE id = $2::text
+`
+
+type LockUserChurchParams struct {
+	LockedUntil pgtype.Timestamptz `json:"locked_until"`
+	ID          string             `json:"id"`
+}
+
+func (q *Queries) LockUserChurch(ctx context.Context, arg LockUserChurchParams) error {
+	_, err := q.db.Exec(ctx, LockUserChurch, arg.LockedUntil, arg.ID)
+	return err
+}
+
+const UnlockUserChurch = `-- name: UnlockUserChurch :exec
+UPDATE users
+SET church_locked_until = NULL, updated_at = now()
+WHERE id = $1::text
+`
+
+func (q *Queries) UnlockUserChurch(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, UnlockUserChurch, id)
+	return err
+}
+
+const UpdateUserGenderAndChurch = `-- name: UpdateUserGenderAndChurch :exec
+UPDATE users
+SET
+    gender = COALESCE(NULLIF($1::text, ''), gender),
+    church_id = COALESCE(NULLIF($2::text, ''), church_id),
+    updated_at = now()
+WHERE id = $3::text
+`
+
+type UpdateUserGenderAndChurchParams struct {
+	Gender   string `json:"gender"`
+	ChurchID string `json:"church_id"`
+	ID       string `json:"id"`
+}
+
+func (q *Queries) UpdateUserGenderAndChurch(ctx context.Context, arg UpdateUserGenderAndChurchParams) error {
+	_, err := q.db.Exec(ctx, UpdateUserGenderAndChurch, arg.Gender, arg.ChurchID, arg.ID)
+	return err
+}
+
+const UpdateUserLanguage = `-- name: UpdateUserLanguage :exec
+UPDATE users
+SET language = $1::text, updated_at = now()
+WHERE id = $2::text
+`
+
+type UpdateUserLanguageParams struct {
+	Language string `json:"language"`
+	UserID   string `json:"user_id"`
+}
+
+func (q *Queries) UpdateUserLanguage(ctx context.Context, arg UpdateUserLanguageParams) error {
+	_, err := q.db.Exec(ctx, UpdateUserLanguage, arg.Language, arg.UserID)
+	return err
+}
+
+const UpdateUserPersonUUID = `-- name: UpdateUserPersonUUID :exec
+UPDATE users
+SET person_uuid = $1::uuid, updated_at = now()
+WHERE id = $2::text
+`
+
+type UpdateUserPersonUUIDParams struct {
+	PersonUuid pgtype.UUID `json:"person_uuid"`
+	ID         string      `json:"id"`
+}
+
+func (q *Queries) UpdateUserPersonUUID(ctx context.Context, arg UpdateUserPersonUUIDParams) error {
+	_, err := q.db.Exec(ctx, UpdateUserPersonUUID, arg.PersonUuid, arg.ID)
+	return err
 }

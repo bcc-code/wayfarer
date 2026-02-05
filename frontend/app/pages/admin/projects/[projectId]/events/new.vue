@@ -12,10 +12,10 @@ const toast = useToast()
 const { executeMutation } = useCreateEventMutation()
 
 const schema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
-  startDate: z.string().min(1, 'Start date is required'),
-  endDate: z.string().min(1, 'End date is required'),
+  name: z.string().min(1, 'Navn er påkrevd'),
+  description: z.string().min(1, 'Beskrivelse er påkrevd'),
+  startDate: z.string().min(1, 'Startdato er påkrevd'),
+  endDate: z.string().min(1, 'Sluttdato er påkrevd'),
 })
 type Schema = z.infer<typeof schema>
 const state = reactive<Schema>({
@@ -46,8 +46,8 @@ async function createEvent(event: FormSubmitEvent<Schema>) {
       return
     }
     toast.add({
-      title: 'Success',
-      description: 'Event created successfully',
+      title: 'Suksess',
+      description: 'Arrangement opprettet',
       color: 'success',
     })
     navigateTo({
@@ -65,7 +65,7 @@ async function createEvent(event: FormSubmitEvent<Schema>) {
         <UBreadcrumb
           :items="[
             {
-              label: 'Projects',
+              label: 'Prosjekter',
               to: { name: 'admin-projects' },
             },
             {
@@ -76,17 +76,17 @@ async function createEvent(event: FormSubmitEvent<Schema>) {
               },
             },
             {
-              label: 'Events',
+              label: 'Arrangementer',
             },
             {
-              label: 'New',
+              label: 'Ny',
             },
           ]"
         />
       </UContainer>
     </div>
     <UContainer class="py-12">
-      <h1 class="mb-6 text-2xl font-bold">Create Event</h1>
+      <h1 class="mb-6 text-2xl font-bold">Opprett arrangement</h1>
       <UForm
         :state
         :schema="schema"
@@ -94,10 +94,10 @@ async function createEvent(event: FormSubmitEvent<Schema>) {
         class="flex max-w-md flex-col gap-6"
         @submit.prevent="createEvent"
       >
-        <UFormField name="name" label="Name">
+        <UFormField name="name" label="Navn">
           <UInput v-model="state.name" size="xl" required class="w-full" />
         </UFormField>
-        <UFormField name="description" label="Description">
+        <UFormField name="description" label="Beskrivelse">
           <UTextarea
             v-model="state.description"
             class="w-full"
@@ -109,7 +109,7 @@ async function createEvent(event: FormSubmitEvent<Schema>) {
           v-model:start="state.startDate"
           v-model:end="state.endDate"
         />
-        <UButton type="submit" size="lg" block>Create Event</UButton>
+        <UButton type="submit" size="lg" block>Opprett arrangement</UButton>
       </UForm>
     </UContainer>
   </div>

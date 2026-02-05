@@ -11,6 +11,8 @@ describe('usePagination', () => {
       expect(pagination.variables.value).toEqual({
         first: 20,
         after: null,
+        last: null,
+        before: null,
       })
     })
 
@@ -21,6 +23,8 @@ describe('usePagination', () => {
       expect(pagination.variables.value).toEqual({
         first: 50,
         after: null,
+        last: null,
+        before: null,
       })
     })
 
@@ -33,6 +37,8 @@ describe('usePagination', () => {
       expect(pagination.variables.value).toEqual({
         first: 20,
         after: 'cursor123',
+        last: null,
+        before: null,
       })
     })
 
@@ -350,6 +356,82 @@ describe('usePagination', () => {
       expect(() => pagination.setPageSize(-1)).toThrow(
         'Page size must be greater than 0',
       )
+    })
+  })
+
+  describe('backward pagination (direction: backward)', () => {
+    it('should initialize with last instead of first', () => {
+      const pagination = usePagination({
+        defaultPageSize: 15,
+        direction: 'backward',
+      })
+
+      expect(pagination.variables.value).toEqual({
+        first: null,
+        after: null,
+        last: 15,
+        before: null,
+      })
+    })
+
+    it('should swap next/previous behavior', () => {
+      const pagination = usePagination({
+        defaultPageSize: 20,
+        direction: 'backward',
+      })
+
+      // Simulate being on a page with both directions available
+      const connection: Connection<{ id: string }> = {
+        edges: [{ cursor: 'c1', node: { id: '1' } }],
+        pageInfo: {
+          hasNextPage: true, // In backward mode, this means there are newer items
+          hasPreviousPage: true, // In backward mode, this means there are older items
+          startCursor: 'start',
+          endCursor: 'end',
+        },
+        totalCount: 100,
+      }
+
+      pagination.updateConnection(connection)
+
+      // nextPage in backward mode should go to older items (use last/before)
+      pagination.nextPage()
+      expect(pagination.variables.value).toEqual({
+        first: null,
+        after: null,
+        last: 20,
+        before: 'start',
+      })
+    })
+
+    it('should swap isFirstPage/isLastPage', () => {
+      const pagination = usePagination({
+        defaultPageSize: 20,
+        direction: 'backward',
+      })
+
+      // In backward mode, "first page" shows newest items
+      // hasNextPage=false means no newer items = we're on the first page
+      pagination.updateConnection({
+        edges: [],
+        pageInfo: {
+          hasNextPage: false,
+          hasPreviousPage: true,
+        },
+      })
+      expect(pagination.isFirstPage.value).toBe(true)
+      expect(pagination.isLastPage.value).toBe(false)
+
+      // hasNextPage=true means there are newer items = not on first page
+      pagination.updateConnection({
+        edges: [],
+        pageInfo: {
+          hasNextPage: true,
+          hasPreviousPage: false,
+        },
+      })
+      expect(pagination.isFirstPage.value).toBe(false)
+      expect(pagination.isLastPage.value).toBe(true)
     })
   })
 

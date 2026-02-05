@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ChallengeFormData } from '~/components/admin/challenge/AdminChallengeForm.vue'
-import type { QuizFormData, QuizQuestionFormData } from '~/components/admin/quiz/AdminQuizForm.vue'
+import type { QuizFormData } from '~/components/admin/quiz/AdminQuizForm.vue'
 
 definePageMeta({
   layout: 'admin',
@@ -16,6 +16,7 @@ gql(`
       description
       image
       buttonText
+      publishedAt
       visibleAt
       startedAt
       endTime
@@ -50,6 +51,9 @@ gql(`
           }
         }
       }
+      ... on PluginChallenge {
+        pluginChallengeId
+      }
     }
   }
 `)
@@ -79,6 +83,8 @@ function getChallengeType(typename: string): ChallengeType {
       return ChallengeType.External
     case 'QuizChallenge':
       return ChallengeType.Quiz
+    case 'PluginChallenge':
+      return ChallengeType.Plugin
     default:
       return ChallengeType.Simple
   }
@@ -92,6 +98,8 @@ function getQuestionType(typename: string): QuizQuestionType {
       return QuizQuestionType.FreeText
     case 'JsonQuestion':
       return QuizQuestionType.Json
+    case 'OrderingQuestion':
+      return QuizQuestionType.Ordering
     default:
       return QuizQuestionType.Predefined
   }
@@ -107,11 +115,14 @@ const initialData = computed(() => {
     image: c.image ?? undefined,
     url: c.__typename === 'ExternalChallenge' ? c.url : undefined,
     buttonText: c.buttonText,
-    endTime: c.endTime?.slice(0, 16) ?? undefined,
-    visibleAt: c.visibleAt?.slice(0, 16) ?? undefined,
-    startedAt: c.startedAt?.slice(0, 16) ?? undefined,
+    publishedAt: toLocalDatetimeLocal(c.publishedAt),
+    endTime: toLocalDatetimeLocal(c.endTime),
+    visibleAt: toLocalDatetimeLocal(c.visibleAt),
+    startedAt: toLocalDatetimeLocal(c.startedAt),
     allowSelfCompletion:
       c.__typename === 'SimpleChallenge' ? c.allowSelfCompletion : undefined,
+    pluginChallengeId:
+      c.__typename === 'PluginChallenge' ? c.pluginChallengeId : undefined,
   }
 })
 
@@ -150,9 +161,26 @@ const quizData = computed<QuizFormData | undefined>(() => {
               answerOrder: a.answerOrder,
             }))
           : undefined,
-      minValue: q.__typename === 'NumberQuestion' ? q.minValue ?? undefined : undefined,
-      maxValue: q.__typename === 'NumberQuestion' ? q.maxValue ?? undefined : undefined,
-      stepValue: q.__typename === 'NumberQuestion' ? q.stepValue ?? undefined : undefined,
+      orderingItems:
+        q.__typename === 'OrderingQuestion'
+          ? q.orderingItems.map((item, index) => ({
+              id: item.id,
+              itemText: item.itemText,
+              correctOrder: index + 1,
+            }))
+          : undefined,
+      minValue:
+        q.__typename === 'NumberQuestion'
+          ? (q.minValue ?? undefined)
+          : undefined,
+      maxValue:
+        q.__typename === 'NumberQuestion'
+          ? (q.maxValue ?? undefined)
+          : undefined,
+      stepValue:
+        q.__typename === 'NumberQuestion'
+          ? (q.stepValue ?? undefined)
+          : undefined,
     })),
   }
 })
@@ -206,6 +234,10 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
               isCorrect: a.isCorrect,
               answerOrder: a.answerOrder,
             })),
+            orderingItems: question.orderingItems?.map((item) => ({
+              itemText: item.itemText,
+              correctOrder: item.correctOrder,
+            })),
             minValue: question.minValue,
             maxValue: question.maxValue,
             stepValue: question.stepValue,
@@ -226,6 +258,10 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
               answerText: a.answerText,
               isCorrect: a.isCorrect,
               answerOrder: a.answerOrder,
+            })),
+            orderingItems: question.orderingItems?.map((item) => ({
+              itemText: item.itemText,
+              correctOrder: item.correctOrder,
             })),
             minValue: question.minValue,
             maxValue: question.maxValue,
@@ -276,6 +312,10 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
             isCorrect: a.isCorrect,
             answerOrder: a.answerOrder,
           })),
+          orderingItems: question.orderingItems?.map((item) => ({
+            itemText: item.itemText,
+            correctOrder: item.correctOrder,
+          })),
           minValue: question.minValue,
           maxValue: question.maxValue,
           stepValue: question.stepValue,
@@ -286,13 +326,29 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
 }
 
 async function handleSubmit(formData: ChallengeFormData) {
-  const { type, allowSelfCompletion, url, quiz, ...rest } = formData
+  const {
+    type,
+    allowSelfCompletion,
+    url,
+    quiz,
+    publishedAt,
+    endTime,
+    visibleAt,
+    startedAt,
+    pluginChallengeId,
+    ...rest
+  } = formData
 
   // Only include type-specific fields
   const input = {
     ...rest,
+    publishedAt: toISOString(publishedAt),
+    endTime: toISOString(endTime),
+    visibleAt: toISOString(visibleAt),
+    startedAt: toISOString(startedAt),
     ...(type === ChallengeType.Simple && { allowSelfCompletion }),
     ...(type === ChallengeType.External && { url }),
+    ...(type === ChallengeType.Plugin && { pluginChallengeId }),
   }
 
   const response = await executeMutation({
@@ -315,8 +371,9 @@ async function handleSubmit(formData: ChallengeFormData) {
       await saveQuiz(quiz, route.params.challengeId)
     } catch (err) {
       toast.add({
-        title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to save quiz',
+        title: 'Feil',
+        description:
+          err instanceof Error ? err.message : 'Kunne ikke lagre quiz',
         color: 'error',
       })
       return
@@ -324,8 +381,8 @@ async function handleSubmit(formData: ChallengeFormData) {
   }
 
   toast.add({
-    title: 'Success',
-    description: 'Challenge updated successfully',
+    title: 'Suksess',
+    description: 'Utfordring oppdatert',
     color: 'success',
   })
   navigateTo({
@@ -336,7 +393,7 @@ async function handleSubmit(formData: ChallengeFormData) {
 
 async function handleDelete() {
   const confirmed = confirm(
-    `Are you sure you want to delete "${data.value?.challenge.name}"? This action cannot be undone.`,
+    `Er du sikker på at du vil slette "${data.value?.challenge.name}"? Denne handlingen kan ikke angres.`,
   )
 
   if (!confirmed) return
@@ -352,8 +409,8 @@ async function handleDelete() {
   }
 
   toast.add({
-    title: 'Success',
-    description: 'Challenge deleted successfully',
+    title: 'Suksess',
+    description: 'Utfordring slettet',
     color: 'success',
   })
   navigateTo({
@@ -370,7 +427,7 @@ async function handleDelete() {
         <UBreadcrumb
           :items="[
             {
-              label: 'Projects',
+              label: 'Prosjekter',
               to: { name: 'admin-projects' },
             },
             {
@@ -381,7 +438,7 @@ async function handleDelete() {
               },
             },
             {
-              label: 'Challenges',
+              label: 'Utfordringer',
             },
             {
               label: data?.challenge.name ?? route.params.challengeId,
@@ -406,7 +463,7 @@ async function handleDelete() {
         :quiz-data="quizData"
         :project-id="route.params.projectId"
         :colors="data?.challenge.project.branding.colors"
-        submit-label="Save changes"
+        submit-label="Lagre endringer"
         is-edit-mode
         :on-delete="handleDelete"
         @submit="handleSubmit"

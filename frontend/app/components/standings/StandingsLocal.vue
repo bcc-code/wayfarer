@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { getExtraItems } from '~/utils/leaderboard'
+
 const entityType = ref(LeaderboardEntityType.Persons)
 
 const { me } = useAuth()
 const { isAuthReady } = useAuthReady()
 const { data, error, fetching } = useStandingsLocalPageQuery({
   variables: computed(() => ({
+    first: entityType.value === LeaderboardEntityType.Persons ? 20 : 500,
     filter: {
       churchId: me.value?.church.id,
       ageRange: { min: 13, max: 37 },
@@ -15,32 +18,30 @@ const { data, error, fetching } = useStandingsLocalPageQuery({
 
 const personLeaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
   if (!data.value) return []
-  const result = []
-  result.push(
-    ...data.value.myCurrentProject.personLeaderboard.edges.map(
-      (edge) => edge.node,
-    ),
+  return data.value.myCurrentProject.personLeaderboard.edges.map(
+    (edge) => edge.node,
   )
-  const me = data.value?.myCurrentProject.personLeaderboard.me
-  if (me && !result.find((entry) => entry.id === me.id)) {
-    result.push(me)
-  }
-  return result
+})
+
+const personExtraItems = computed<Partial<LeaderboardEntry>[]>(() => {
+  return getExtraItems(
+    personLeaderboard.value,
+    data.value?.myCurrentProject.personLeaderboard.me,
+  )
 })
 
 const unitLeaderboard = computed<Partial<LeaderboardEntry>[]>(() => {
   if (!data.value) return []
-  const result = []
-  result.push(
-    ...data.value.myCurrentProject.unitLeaderboard.edges.map(
-      (edge) => edge.node,
-    ),
+  return data.value.myCurrentProject.unitLeaderboard.edges.map(
+    (edge) => edge.node,
   )
-  const me = data.value?.myCurrentProject.unitLeaderboard.me
-  if (me && !result.find((entry) => entry.id === me.id)) {
-    result.push(me)
-  }
-  return result
+})
+
+const unitExtraItems = computed<Partial<LeaderboardEntry>[]>(() => {
+  return getExtraItems(
+    unitLeaderboard.value,
+    data.value?.myCurrentProject.unitLeaderboard.me,
+  )
 })
 
 const debouncedFetching = useDebounce(fetching, 200)
@@ -48,7 +49,7 @@ const debouncedFetching = useDebounce(fetching, 200)
 const totalPersons = computed(() => {
   const totalCount = data.value?.myCurrentProject.personLeaderboard.totalCount
 
-  if (!totalCount) return 0
+  if (!totalCount) return 20
   if (totalCount >= 50) return 20
   if (totalCount > 20) return 10
   return 3
@@ -57,7 +58,7 @@ const totalPersons = computed(() => {
 
 <template>
   <div>
-    <LoadingState v-if="debouncedFetching" />
+    <StandingsListSkeleton v-if="debouncedFetching" />
     <ErrorState v-else-if="error" :error />
     <template v-else-if="data">
       <div
@@ -69,19 +70,18 @@ const totalPersons = computed(() => {
         </h2>
       </div>
       <DesignTabs
+        v-if="unitLeaderboard.length"
         v-model="entityType"
         :tabs="[
           {
             key: 'persons',
             label: $t('standings.top', { amount: totalPersons }),
             value: LeaderboardEntityType.Persons,
-            icon: 'IconUser',
           },
           {
             key: 'units',
             label: $t('standings.units'),
             value: LeaderboardEntityType.Teams,
-            icon: 'IconUsers',
           },
         ]"
         class="mb-list-section-gap"
@@ -89,7 +89,8 @@ const totalPersons = computed(() => {
       >
         <template #tab="{ tab }">
           <div class="flex flex-col items-center gap-0.5">
-            <Icon :name="tab.icon" class="size-7" />
+            <IconUser v-if="tab.key === 'persons'" class="size-7" />
+            <IconUsers v-else class="size-7" />
             <span>{{ tab.label }}</span>
           </div>
         </template>
@@ -100,14 +101,14 @@ const totalPersons = computed(() => {
           entityType === LeaderboardEntityType.Persons
         "
         :leaderboard="personLeaderboard"
-        hide-medals
+        :extra-items="personExtraItems"
       />
       <LeaderboardList
         v-if="
           unitLeaderboard?.length && entityType === LeaderboardEntityType.Teams
         "
         :leaderboard="unitLeaderboard"
-        hide-medals
+        :extra-items="unitExtraItems"
       />
     </template>
     <EmptyState v-else :title="$t('emptyStates.standings')" />

@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"embed"
 	"fmt"
 	"log/slog"
@@ -13,10 +14,45 @@ import (
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
+	"github.com/pressly/goose/v3"
+
+	_ "github.com/jackc/pgx/v5/stdlib" // pgx stdlib driver for database/sql
 )
 
 //go:embed migrations/*.sql
 var Migrations embed.FS
+
+// Migrate runs all pending database migrations
+func Migrate(ctx context.Context, databaseURL string) error {
+	slog.Info("Running database migrations")
+
+	// Open a database/sql connection for goose (it requires database/sql, not pgxpool)
+	db, err := sql.Open("pgx", databaseURL)
+	if err != nil {
+		return fmt.Errorf("failed to open database for migrations: %w", err)
+	}
+	defer db.Close()
+
+	// Verify connection
+	if err := db.PingContext(ctx); err != nil {
+		return fmt.Errorf("failed to ping database for migrations: %w", err)
+	}
+
+	// Configure goose to use embedded migrations
+	goose.SetBaseFS(Migrations)
+
+	if err := goose.SetDialect("postgres"); err != nil {
+		return fmt.Errorf("failed to set goose dialect: %w", err)
+	}
+
+	// Run migrations
+	if err := goose.UpContext(ctx, db, "migrations"); err != nil {
+		return fmt.Errorf("migration failed: %w", err)
+	}
+
+	slog.Info("Database migrations completed successfully")
+	return nil
+}
 
 // DB wraps the pgxpool connection pool and sqlc queries
 type DB struct {

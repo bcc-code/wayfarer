@@ -1,4 +1,4 @@
-.PHONY: help generate migrate seed test build clean
+.PHONY: help generate migrate seed test build clean test-e2e test-e2e-short test-e2e-coverage test-all
 
 help: ## Display this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -36,12 +36,31 @@ seed-large: ## Seed database with large dataset for performance testing
 	@echo "Seeding database with large dataset (10k users, 50 projects)..."
 	@go run ./cmd/seed -users 10000 -projects 50 -churches 100 -superteams 5 -achievements 50 -team-size 8
 
-test: ## Run all tests
-	@echo "Running tests..."
+test: ## Run unit tests
+	@echo "Running unit tests..."
 	@go test -v -race -coverprofile=coverage.out ./...
 
 test-coverage: test ## Run tests and show coverage report
 	@go tool cover -html=coverage.out
+
+## E2E Testing Commands (requires Docker)
+
+test-e2e: ## Run E2E tests (requires Docker)
+	@echo "Running E2E tests..."
+	@go test -v -race -timeout 10m ./e2e/...
+
+test-e2e-short: ## Run E2E tests in short mode (skip slow tests)
+	@echo "Running E2E tests (short)..."
+	@go test -v -race -short -timeout 5m ./e2e/...
+
+test-e2e-coverage: ## Run E2E tests with coverage of application code
+	@echo "Running E2E tests with coverage..."
+	@go test -v -race -timeout 10m -coverprofile=coverage-e2e.out -coverpkg=./internal/... ./e2e/...
+	@go tool cover -func=coverage-e2e.out | tail -1
+	@go tool cover -html=coverage-e2e.out -o coverage-e2e.html
+	@echo "Coverage report: coverage-e2e.html"
+
+test-all: test test-e2e ## Run all tests (unit + E2E)
 
 build: ## Build all binaries
 	@echo "Building binaries..."
@@ -68,13 +87,29 @@ tidy: ## Tidy Go modules
 	@echo "Tidying modules..."
 	@go mod tidy
 
-dev: ## Run development server
-	@echo "Starting development server..."
-	@go run ./cmd/server
+dev: ## Run development server with Neon branch
+	@echo "Setting up Neon database branch..."
+	@export DATABASE_URL=$$(./scripts/neon-branch.sh) && \
+		echo "Starting development server..." && \
+		go run ./cmd/server
 
 debug: ## Run debug TUI tool
 	@echo "Starting debug tool..."
 	@go run ./cmd/debug
+
+update-db-url: ## Update DATABASE_URL in .env with current Neon branch
+	@echo "Getting connection string for current branch..."
+	@CONNECTION=$$(./scripts/neon-branch.sh) && \
+		sed -i "s|^DATABASE_URL=.*|DATABASE_URL=$$CONNECTION|" .env && \
+		echo "Updated DATABASE_URL in .env"
+
+## Token Generation Commands
+
+m2m-token: ## Generate an M2M token (default: 1 year validity)
+	@go run ./cmd/m2mtoken
+
+m2m-token-%: ## Generate an M2M token valid for N years (e.g., m2m-token-2)
+	@go run ./cmd/m2mtoken $*
 
 ## Observability Commands
 

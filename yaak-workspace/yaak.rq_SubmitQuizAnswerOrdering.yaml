@@ -1,0 +1,53 @@
+type: http_request
+model: http_request
+id: rq_SubmitQuizAnswerOrdering
+createdAt: 2026-01-26T12:00:00
+updatedAt: 2026-01-26T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+      submitQuizAnswer(submissionId: $submissionId, input: $input) {
+        id
+        answeredAt
+        timeSpentSeconds
+        pointsEarned
+        question {
+          id
+          questionText
+        }
+        ... on OrderingResponse {
+          submittedOrder
+          isCorrect
+        }
+      }
+    }
+  variables: |
+    {
+      "submissionId": "QS01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "input": {
+        "questionId": "QQ01ARZ3NDEKTSV4RRFFQ69G5FAV",
+        "submittedOrder": [
+          "QA01ARZ3NDEKTSV4RRFFQ69G5FA1",
+          "QA01ARZ3NDEKTSV4RRFFQ69G5FA2",
+          "QA01ARZ3NDEKTSV4RRFFQ69G5FA3",
+          "QA01ARZ3NDEKTSV4RRFFQ69G5FA4"
+        ],
+        "timeSpentSeconds": 25
+      }
+    }
+bodyType: graphql
+description: Submit an ordering answer (user). The submittedOrder array contains ordering item IDs in the order the user arranged them.
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_SubmitQuizAnswerOrdering
+method: POST
+name: Submit Quiz Answer (Ordering)
+sortPriority: 4400.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

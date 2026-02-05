@@ -17,11 +17,11 @@ const modelValue = defineModel<string>()
     >
       {{ label }}
     </label>
-    <DesignPanel>
+    <DesignPanel class="focus-within:ring-2 focus-within:ring-accent-contrast">
       <input
         :id="id"
         v-model="modelValue"
-        class="text-label w-full px-3 py-4"
+        class="text-label w-full px-3 py-4 focus-visible:outline-none rounded-list size-full"
       />
     </DesignPanel>
   </div>

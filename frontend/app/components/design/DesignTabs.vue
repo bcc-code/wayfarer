@@ -112,9 +112,28 @@ function updateIndicator(animate = true) {
 
 watch(modelValue, () => updateIndicator(true))
 
-// Use a small delay to ensure buttons are rendered and sized
+// Use ResizeObserver to detect when button content (like icons) finishes loading
+let resizeObserver: ResizeObserver | null = null
+
 onMounted(() => {
+  // Initial update
   setTimeout(() => updateIndicator(false), 0)
+
+  // Watch for size changes (e.g., when icons load)
+  resizeObserver = new ResizeObserver(() => {
+    updateIndicator(false)
+  })
+
+  // Observe all buttons for size changes
+  buttonRefs.value.forEach((button) => {
+    if (button) {
+      resizeObserver?.observe(button)
+    }
+  })
+})
+
+onUnmounted(() => {
+  resizeObserver?.disconnect()
 })
 </script>
 

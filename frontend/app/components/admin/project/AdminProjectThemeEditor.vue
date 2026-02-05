@@ -8,18 +8,18 @@ const modelValue = defineModel<Colors>({ required: true })
 const toast = useToast()
 
 const colorFields = [
-  { key: 'accent', label: 'Accent' },
-  { key: 'accentContrast', label: 'Accent Contrast' },
-  { key: 'onAccent', label: 'On Accent' },
-  { key: 'backgroundDefault', label: 'Background Default' },
-  { key: 'backgroundRaised', label: 'Background Raised' },
-  { key: 'backgroundIndent', label: 'Background Indent' },
-  { key: 'textDefault', label: 'Text Default' },
-  { key: 'textMuted', label: 'Text Muted' },
-  { key: 'textHint', label: 'Text Hint' },
-  { key: 'shadowDefault', label: 'Shadow Default' },
-  { key: 'shadowBlank', label: 'Shadow Blank' },
-  { key: 'borderDefault', label: 'Border Default' },
+  { key: 'accent', label: 'Aksentfarge' },
+  { key: 'accentContrast', label: 'Aksentkontrast' },
+  { key: 'onAccent', label: 'På aksent' },
+  { key: 'backgroundDefault', label: 'Bakgrunn standard' },
+  { key: 'backgroundRaised', label: 'Bakgrunn hevet' },
+  { key: 'backgroundIndent', label: 'Bakgrunn innrykk' },
+  { key: 'textDefault', label: 'Tekst standard' },
+  { key: 'textMuted', label: 'Tekst dempet' },
+  { key: 'textHint', label: 'Tekst hint' },
+  { key: 'shadowDefault', label: 'Skygge standard' },
+  { key: 'shadowBlank', label: 'Skygge blank' },
+  { key: 'borderDefault', label: 'Kantlinje standard' },
 ] as const
 
 type ColorKey = (typeof colorFields)[number]['key']
@@ -105,13 +105,13 @@ function importTheme() {
       }
 
       toast.add({
-        title: 'Theme imported',
+        title: 'Tema importert',
         color: 'success',
       })
     } catch (err) {
       toast.add({
-        title: 'Failed to import theme',
-        description: err instanceof Error ? err.message : 'Invalid JSON file',
+        title: 'Kunne ikke importere tema',
+        description: err instanceof Error ? err.message : 'Ugyldig JSON-fil',
         color: 'error',
       })
     }
@@ -175,8 +175,8 @@ function updateDarkColor(key: ColorKey, value: string) {
 </script>
 
 <template>
-  <UModal title="Theme Editor" fullscreen>
-    <UButton variant="soft" block>Open theme editor</UButton>
+  <UModal title="Temaredigering" fullscreen>
+    <UButton variant="soft" block>Åpne temaredigering</UButton>
 
     <template #body>
       <div class="flex flex-col gap-6">
@@ -197,11 +197,11 @@ function updateDarkColor(key: ColorKey, value: string) {
           </div>
           <div class="flex shrink-0 gap-4">
             <div class="text-center">
-              <p class="text-muted mb-2 text-sm">Light</p>
+              <p class="text-muted mb-2 text-sm">Lys</p>
               <AdminProjectThemePreview :style="lightStyles" />
             </div>
             <div class="text-center">
-              <p class="text-muted mb-2 text-sm">Dark</p>
+              <p class="text-muted mb-2 text-sm">Mørk</p>
               <AdminProjectThemePreview :style="darkStyles" />
             </div>
           </div>
@@ -222,10 +222,10 @@ function updateDarkColor(key: ColorKey, value: string) {
         </div>
         <div class="flex justify-center gap-2">
           <UButton variant="soft" icon="i-lucide-upload" @click="importTheme">
-            Import
+            Importer
           </UButton>
           <UButton variant="soft" icon="i-lucide-download" @click="exportTheme">
-            Export
+            Eksporter
           </UButton>
         </div>
       </div>

@@ -2,6 +2,14 @@
 const { data, error, executeQuery: refetch } = useConsentsPageQuery()
 const hasCompletedOnboarding = useLocalStorage('hasCompletedOnboarding', false)
 
+// Refresh consents when locale changes
+const { locale } = useI18n()
+watch(locale, (newLocale) => {
+  if (newLocale != locale.value) {
+    nextTick(() => refetch())
+  }
+})
+
 function finishOnboarding() {
   hasCompletedOnboarding.value = true
   navigateTo({ name: 'index' })

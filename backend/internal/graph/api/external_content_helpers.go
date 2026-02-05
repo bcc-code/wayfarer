@@ -29,10 +29,10 @@ func buildExternalContentFilterParams(filter model.ExternalContentFilter, sortBy
 		params["source"] = *filter.Source
 	}
 	if filter.PublishedAfter != nil {
-		params["publishedAfter"] = filter.PublishedAfter.Time.String()
+		params["publishedAfter"] = filter.PublishedAfter.String()
 	}
 	if filter.PublishedBefore != nil {
-		params["publishedBefore"] = filter.PublishedBefore.Time.String()
+		params["publishedBefore"] = filter.PublishedBefore.String()
 	}
 	if sortBy != nil {
 		params["sortBy"] = string(*sortBy)

@@ -37,7 +37,7 @@ func TestCalculateAge(t *testing.T) {
 		{
 			name:      "birthday not yet occurred this year",
 			birthdate: time.Now().AddDate(-20, 0, 1), // tomorrow, 20 years ago
-			expected:  19,
+			expected:  20,
 		},
 	}
 

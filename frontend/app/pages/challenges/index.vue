@@ -1,63 +1,108 @@
 <script setup lang="ts">
 const { isAuthReady } = useAuthReady()
 
-const { data, fetching, error } = useChallengesPageQuery({
+const {
+  data,
+  fetching,
+  error,
+  executeQuery: refresh,
+} = useChallengesPageQuery({
   pause: computed(() => !isAuthReady.value),
 })
 
-// Filter out completed quiz challenges that can't be retaken
-const visibleChallenges = computed(() => {
-  if (!data.value?.myCurrentProject.challenges) return []
+// Listen for Firestore realtime updates
+useFirestoreRefresh(['ChallengesPageDocument'], () => {
+  refresh({ requestPolicy: 'network-only' })
+})
 
-  return data.value.myCurrentProject.challenges.filter((challenge) => {
-    // Hide completed quiz challenges that don't allow retakes
+const isInitialLoading = computed(() => fetching.value && !data.value)
+
+const activeChallenges = computed(() =>
+  data.value?.myCurrentProject.challenges.filter((challenge) => {
     if (challenge.__typename === 'QuizChallenge') {
-      const isCompleted = !!challenge.userCompletedAt
-      const canStart = challenge.quiz.userCanStart
-      // Hide if completed and can't start again
-      if (isCompleted && !canStart) {
+      if (challenge.quiz.userActiveSession?.id) {
+        return true
+      }
+    }
+    return !challenge.userCompletedAt
+  }),
+)
+
+const completedChallenges = computed(() =>
+  data.value?.myCurrentProject.challenges.filter((challenge) => {
+    if (challenge.__typename === 'QuizChallenge') {
+      if (challenge.quiz.userActiveSession?.id) {
         return false
       }
     }
-    return true
-  })
-})
+    return (
+      !!challenge.userCompletedAt ||
+      new Date(challenge.endTime).getTime() < Date.now()
+    )
+  }),
+)
 
-// Staggered entrance animation for challenge cards
-const cardsContainer = ref<HTMLElement | null>(null)
-const { animate } = useStaggeredEntrance()
+const joinCode = computed(() =>
+  data.value?.myCurrentProject.myTeam?.joinCode.split(''),
+)
 
-watch(
-  () => visibleChallenges.value,
-  (challenges) => {
-    if (challenges.length > 0 && cardsContainer.value) {
-      nextTick(() => {
-        const cards = cardsContainer.value?.querySelectorAll('.challenge-card')
-        if (cards) {
-          animate(cards)
-        }
-      })
-    }
-  },
+const tab = ref<'active' | 'completed'>('active')
+const tabChallenges = computed(() =>
+  tab.value === 'active' ? activeChallenges.value : completedChallenges.value,
 )
 </script>
 
 <template>
   <PageLayout :title="$t('pages.challenges')">
-    <LoadingState v-if="fetching" />
-    <ErrorState v-else-if="error" :error />
-    <div
-      v-else-if="visibleChallenges.length"
-      ref="cardsContainer"
-      class="space-y-list-section-gap p-list-outside"
-    >
-      <ChallengeCard
-        v-for="challenge in visibleChallenges"
-        :key="challenge.id"
-        :challenge
-        class="challenge-card"
+    <div class="px-list-outside">
+      <DesignTabs
+        v-model="tab"
+        :tabs="[
+          { key: 'active', value: 'active', label: $t('challenges.active') },
+          {
+            key: 'completed',
+            value: 'completed',
+            label: $t('challenges.completed'),
+          },
+        ]"
       />
     </div>
-    <EmptyState v-else :title="$t('emptyStates.challenges')" />
+    <LoadingState v-if="isInitialLoading" />
+    <ErrorState v-else-if="error" :error />
+    <div v-else class="space-y-list-section-gap p-list-outside mt-3 grow">
+      <template v-for="challenge in tabChallenges" :key="challenge.id">
+        <!-- This is very specific for the Ladder to Heaven project, and should be more generic later on -->
+        <div
+          v-if="challenge.__typename === 'PluginChallenge'"
+          class="bg-accent text-on-accent rounded-card p-7 flex flex-col gap-default items-center"
+        >
+          <div
+            class="text-center flex flex-col items-center gap-small py-medium"
+          >
+            <h3 class="text-heading">pc26.bcc.media</h3>
+            <p class="text-label">
+              {{ $t('gameNights.yourCodeHint') }}
+            </p>
+          </div>
+          <p class="text-caption">
+            {{ $t('gameNights.yourCode') }}
+          </p>
+          <div v-if="joinCode" class="grid grid-cols-6 gap-list-section-inset">
+            <div
+              v-for="(char, index) in joinCode"
+              :key="index"
+              class="text-heading p-medium aspect-[1/1.3] flex items-center justify-center border-3 border-on-accent rounded-list-inset text-center"
+            >
+              {{ char }}
+            </div>
+          </div>
+        </div>
+        <ChallengeCard v-else :challenge />
+      </template>
+      <EmptyState
+        v-if="!tabChallenges?.length"
+        :title="$t('emptyStates.challenges')"
+      />
+    </div>
   </PageLayout>
 </template>

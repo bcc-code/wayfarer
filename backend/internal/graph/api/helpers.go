@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
@@ -10,6 +11,14 @@ import (
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
 )
+
+// timeToDateTime converts a *time.Time to *scalars.DateTime
+func timeToDateTime(t *time.Time) *scalars.DateTime {
+	if t == nil {
+		return nil
+	}
+	return &scalars.DateTime{Time: *t}
+}
 
 // resolveProjectByID is a helper function to load a project by ID using the dataloader
 // and applies translations for the requested language
@@ -52,6 +61,28 @@ func resolveAchievedAt(ctx context.Context, r *Resolver, achievementID string) (
 
 	if ts == nil {
 		return nil, nil // User hasn't achieved this
+	}
+
+	return &scalars.DateTime{Time: *ts}, nil
+}
+
+// resolveCelebratedAt is a helper function to load the celebratedAt timestamp for an achievement
+// for the current user using the dataloader
+func resolveCelebratedAt(ctx context.Context, r *Resolver, achievementID string) (*scalars.DateTime, error) {
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, nil // Return nil for unauthenticated users
+	}
+
+	key := loaders.UserAchievementKey{UserID: currentUserID, AchievementID: achievementID}
+	thunk := r.Loaders.UserAchievementCelebratedTimestampLoader.Load(ctx, key)
+	ts, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement celebrated timestamp: %w", err)
+	}
+
+	if ts == nil {
+		return nil, nil // User hasn't celebrated this
 	}
 
 	return &scalars.DateTime{Time: *ts}, nil
@@ -205,6 +236,7 @@ func buildLeaderboardConnection(
 				Rank:        &rank,
 				Tags:        tags,
 				Image:       entry.Image,
+				LastScoreAt: timeToDateTime(entry.LastScoreAt),
 			},
 		}
 	}
@@ -239,29 +271,7 @@ func buildLeaderboardConnection(
 			Rank:        &meRank,
 			Tags:        meTags,
 			Image:       meEntry.Image,
-		}
-	} else if entityType == model.LeaderboardEntityTypePersons {
-		// For person leaderboards, always return a "me" entry even if not ranked
-		// Fetch user info for the default entry
-		userThunk := ldrs.UserByIDLoader.Load(ctx, currentUserID)
-		user, err := userThunk()
-		if err != nil {
-			return nil, fmt.Errorf("failed to load user for me entry: %w", err)
-		}
-		if user != nil {
-			var description string
-			if user.Church != nil {
-				description = user.Church.Name
-			}
-			me = &model.LeaderboardEntry{
-				ID:          currentUserID,
-				Name:        user.Name,
-				Description: description,
-				Score:       0,
-				Rank:        nil,
-				Tags:        []model.LeaderboardEntryTag{model.LeaderboardEntryTagMe},
-				Image:       user.Image,
-			}
+			LastScoreAt: timeToDateTime(meEntry.LastScoreAt),
 		}
 	}
 
@@ -351,4 +361,39 @@ func parseRankCursor(cursor string) (int64, error) {
 	var rank int64
 	_, err := fmt.Sscanf(cursor, "%d", &rank)
 	return rank, err
+}
+
+// resolveImageByURL loads image metadata by URL using the dataloader.
+// If the URL is empty or nil, returns nil. If no metadata is found in file_uploads,
+// returns an Image object with just the URL.
+func resolveImageByURL(ctx context.Context, ldrs *loaders.Loaders, url *string) (*model.Image, error) {
+	if url == nil || *url == "" {
+		return nil, nil
+	}
+
+	thunk := ldrs.ImageMetadataByURLLoader.Load(ctx, *url)
+	image, err := thunk()
+	if err != nil {
+		// On error, return image with just the URL
+		return &model.Image{URL: *url}, nil
+	}
+
+	return image, nil
+}
+
+// resolveImageByURLNonNullable is like resolveImageByURL but for non-nullable fields.
+// It returns an Image with just the URL even if the URL is empty.
+func resolveImageByURLNonNullable(ctx context.Context, ldrs *loaders.Loaders, url string) (*model.Image, error) {
+	if url == "" {
+		return &model.Image{URL: ""}, nil
+	}
+
+	thunk := ldrs.ImageMetadataByURLLoader.Load(ctx, url)
+	image, err := thunk()
+	if err != nil {
+		// On error, return image with just the URL
+		return &model.Image{URL: url}, nil
+	}
+
+	return image, nil
 }

@@ -1,0 +1,38 @@
+type: http_request
+model: http_request
+id: rq_ZpBeb9z5xK
+createdAt: 2026-02-04T13:48:54.544028
+updatedAt: 2026-02-04T13:52:21.097844
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_nyjimFtHG9
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation CreateSuperTeam($projectId: ID!, $input: CreateSuperTeamInput!) {
+      createSuperTeam(projectId: $projectId, input: $input) {
+        id
+        name
+      }
+    }
+  variables: |-
+    {
+      "projectId": "PR01K9VZ8684DP9R4W3ZEV526E5X",
+      "input": {
+        "name": "Red",
+        "description": "Laget for Game Night 3",
+        "teamIds": []
+      }
+    }
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: HypZpnQJ42
+method: POST
+name: CreateSuperTeam
+sortPriority: 0.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

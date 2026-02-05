@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_LwBmpBDbPu
 createdAt: 2025-12-01T10:57:23.142038
-updatedAt: 2025-12-15T13:22:29.428398
+updatedAt: 2025-12-19T14:18:10.653632
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_WoXqzhPmBJ
 authentication: {}
@@ -11,6 +11,7 @@ body:
   query: |
     query Consents {
       me {
+        id
         consentStatus {
           pendingConsents {
             __typename

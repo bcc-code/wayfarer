@@ -57,6 +57,13 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 					points = &p
 				}
 
+				// Convert timeout_seconds from *int32 to *int
+				var timeoutSeconds *int
+				if row.TimeoutSeconds != nil {
+					ts := int(*row.TimeoutSeconds)
+					timeoutSeconds = &ts
+				}
+
 				switch row.QuestionType {
 				case "PREDEFINED":
 					allowMultiple := false
@@ -70,14 +77,16 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 						AllowMultipleSelection: allowMultiple,
 						QuizID:                 row.QuizID,
 						Points:                 points,
+						TimeoutSeconds:         timeoutSeconds,
 					}
 				case "FREE_TEXT":
 					question = &model.FreeTextQuestion{
-						ID:            row.ID,
-						QuestionText:  row.QuestionText,
-						QuestionOrder: int(row.QuestionOrder),
-						QuizID:        row.QuizID,
-						Points:        points,
+						ID:             row.ID,
+						QuestionText:   row.QuestionText,
+						QuestionOrder:  int(row.QuestionOrder),
+						QuizID:         row.QuizID,
+						Points:         points,
+						TimeoutSeconds: timeoutSeconds,
 					}
 				case "NUMBER":
 					var minValue, maxValue, stepValue *float64
@@ -97,31 +106,43 @@ func quizQuestionsByQuizBatchFunc(db *database.DB, c *cache.CacheWithRegistry) f
 						stepValue = &fv
 					}
 					question = &model.NumberQuestion{
-						ID:            row.ID,
-						QuestionText:  row.QuestionText,
-						QuestionOrder: int(row.QuestionOrder),
-						MinValue:      minValue,
-						MaxValue:      maxValue,
-						StepValue:     stepValue,
-						QuizID:        row.QuizID,
-						Points:        points,
+						ID:             row.ID,
+						QuestionText:   row.QuestionText,
+						QuestionOrder:  int(row.QuestionOrder),
+						MinValue:       minValue,
+						MaxValue:       maxValue,
+						StepValue:      stepValue,
+						QuizID:         row.QuizID,
+						Points:         points,
+						TimeoutSeconds: timeoutSeconds,
 					}
 				case "JSON":
 					question = &model.JSONQuestion{
-						ID:            row.ID,
-						QuestionText:  row.QuestionText,
-						QuestionOrder: int(row.QuestionOrder),
-						QuizID:        row.QuizID,
-						Points:        points,
+						ID:             row.ID,
+						QuestionText:   row.QuestionText,
+						QuestionOrder:  int(row.QuestionOrder),
+						QuizID:         row.QuizID,
+						Points:         points,
+						TimeoutSeconds: timeoutSeconds,
+					}
+				case "ORDERING":
+					question = &model.OrderingQuestion{
+						ID:             row.ID,
+						QuestionText:   row.QuestionText,
+						QuestionOrder:  int(row.QuestionOrder),
+						QuizID:         row.QuizID,
+						Points:         points,
+						TimeoutSeconds: timeoutSeconds,
 					}
 				default:
 					// Default to FreeTextQuestion for unknown types
 					question = &model.FreeTextQuestion{
-						ID:            row.ID,
-						QuestionText:  row.QuestionText,
-						QuestionOrder: int(row.QuestionOrder),
-						QuizID:        row.QuizID,
-						Points:        points,
+						ID:             row.ID,
+						QuestionText:   row.QuestionText,
+						QuestionOrder:  int(row.QuestionOrder),
+						QuizID:         row.QuizID,
+						Points:         points,
+						TimeoutSeconds: timeoutSeconds,
 					}
 				}
 

@@ -1,0 +1,38 @@
+<script setup lang="ts">
+defineProps<{
+  feedbackEntries: Array<{
+    id: string
+    message: string
+    createdAt: string
+    user: { id: string; name: string }
+  }>
+}>()
+</script>
+
+<template>
+  <UCard>
+    <template #header>
+      <h3 class="font-semibold">Siste tilbakemeldinger</h3>
+    </template>
+
+    <div class="space-y-3">
+      <div
+        v-for="entry in feedbackEntries"
+        :key="entry.id"
+        class="border-default rounded-lg border p-3"
+      >
+        <p class="line-clamp-2 text-sm">{{ entry.message }}</p>
+        <p class="text-muted mt-1 text-xs">
+          {{ entry.user.name }} &middot;
+          {{ formatRelativeTime(entry.createdAt) }}
+        </p>
+      </div>
+      <p v-if="!feedbackEntries.length" class="text-muted text-center text-sm">
+        Ingen nye tilbakemeldinger
+      </p>
+      <UButton variant="ghost" size="sm" to="/admin/feedback" class="w-full">
+        Se alle tilbakemeldinger
+      </UButton>
+    </div>
+  </UCard>
+</template>

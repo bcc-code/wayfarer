@@ -13,7 +13,8 @@ const schema = z.object({
   startDate: z.string().nonempty({ error: 'Start date is required' }),
   endDate: z.string().nonempty({ error: 'End date is required' }),
   branding: z.object({
-    logo: z.string().optional(),
+    logo: z.string().nullish(),
+    banner: z.string().nullish(),
     colors: z.object({
       light: z.object({
         accent: z.string(),
@@ -55,12 +56,13 @@ const state = reactive<Schema>({
   endDate: '',
   branding: {
     logo: undefined,
+    banner: undefined,
     rounding: 0,
     colors: {
       light: {
-        accent: '#ffaedf',
-        accentContrast: '#5d0045',
-        onAccent: '#5d0045',
+        accent: '#222222',
+        accentContrast: '#222222',
+        onAccent: '#ffffff',
         backgroundDefault: '#efefef',
         backgroundRaised: '#ffffff',
         backgroundIndent: 'rgb(0 0 0 / 0.05)',
@@ -72,15 +74,15 @@ const state = reactive<Schema>({
         borderDefault: 'rgb(0 0 0 / 0.15)',
       },
       dark: {
-        accent: '#ffaedf',
-        accentContrast: '#ffaedf',
-        onAccent: '#5d0045',
+        accent: '#ffffff',
+        accentContrast: '#ffffff',
+        onAccent: '#222222',
         backgroundDefault: '#222222',
         backgroundRaised: '#343434',
         backgroundIndent: 'rgb(0 0 0 / 0.25)',
         textDefault: '#f5f5f5',
-        textMuted: 'rgb(255 255 255 / 0.7)',
-        textHint: 'rgb(255 255 255 / 0.4)',
+        textMuted: 'rgb(255 255 255 / 0.70)',
+        textHint: 'rgb(255 255 255 / 0.40)',
         shadowDefault: 'rgb(0 0 0 / 0.3)',
         shadowBlank: 'rgb(0 0 0 / 0)',
         borderDefault: 'rgb(255 255 255 / 0.09)',
@@ -123,9 +125,9 @@ async function createProject(event: FormSubmitEvent<Schema>) {
       <UContainer>
         <UBreadcrumb
           :items="[
-            { label: 'Projects', to: { name: 'admin-projects' } },
+            { label: 'Prosjekter', to: { name: 'admin-projects' } },
             {
-              label: state.name || 'New project',
+              label: state.name || 'Nytt prosjekt',
             },
           ]"
         />
@@ -138,28 +140,36 @@ async function createProject(event: FormSubmitEvent<Schema>) {
         class="flex max-w-md flex-col gap-6"
         @submit.prevent="createProject"
       >
-        <UFormField name="name" label="Name">
+        <UFormField name="branding.logo" label="Logo" hint="(valgfritt)">
+          <AdminFileUpload v-model="state.branding.logo" />
+        </UFormField>
+        <UFormField name="branding.banner" label="Banner" hint="(valgfritt)">
+          <AdminFileUpload v-model="state.branding.banner" />
+        </UFormField>
+        <UFormField name="name" label="Navn">
           <UInput v-model="state.name" size="xl" required class="w-full" />
         </UFormField>
         <UFormField
           name="description"
-          label="Description"
-          hint="(optional)"
-          help="This is only for admins to have better context"
+          label="Beskrivelse"
+          hint="(valgfritt)"
+          help="Dette er kun for at admins skal ha bedre kontekst"
         >
           <UTextarea v-model="state.description" class="w-full" autoresize />
         </UFormField>
-        <DateRangeField
-          v-model:start="state.startDate"
-          v-model:end="state.endDate"
-        />
-        <UFormField label="Color Theme">
-          <AdminProjectThemeEditor
-            v-model="state.branding.colors"
-            :project-name="state.name || 'New Project'"
+        <UFormField label="Prosjektvarighet">
+          <DateRangeField
+            v-model:start="state.startDate"
+            v-model:end="state.endDate"
           />
         </UFormField>
-        <UButton type="submit" size="lg" block>Create project</UButton>
+        <UFormField label="Fargetema">
+          <AdminProjectThemeEditor
+            v-model="state.branding.colors"
+            :project-name="state.name || 'Nytt prosjekt'"
+          />
+        </UFormField>
+        <UButton type="submit" size="lg" block>Opprett prosjekt</UButton>
       </UForm>
     </UContainer>
   </div>

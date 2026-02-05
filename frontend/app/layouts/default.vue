@@ -1,8 +1,82 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { gsap } from 'gsap'
 import '~/assets/styles/user.css'
 
 const { t } = useI18n()
+
+// Theme caching to prevent flash of default theme
+const cachedTheme = useLocalStorage<BrandingColorsFieldsFragment | null>(
+  'projectTheme',
+  null,
+  {
+    serializer: {
+      read: (v) => (v ? JSON.parse(v) : null),
+      write: (v) => JSON.stringify(v),
+    },
+  },
+)
+
+function isValidTheme(colors: unknown): colors is BrandingColorsFieldsFragment {
+  return (
+    typeof colors === 'object' &&
+    colors !== null &&
+    'light' in colors &&
+    'dark' in colors &&
+    typeof (colors as BrandingColorsFieldsFragment).light?.accent === 'string'
+  )
+}
+
+function applyTheme(colors: BrandingColorsFieldsFragment) {
+  document.getElementById('theme')?.remove()
+
+  const style = `
+  <style id="theme">
+  :root {
+    --color-accent: ${colors.light.accent};
+    --color-accent-contrast: ${colors.light.accentContrast};
+    --color-on-accent: ${colors.light.onAccent};
+    --color-background-default: ${colors.light.backgroundDefault};
+    --color-background-raised: ${colors.light.backgroundRaised};
+    --color-background-indent: ${colors.light.backgroundIndent};
+    --color-text-default: ${colors.light.textDefault};
+    --color-text-muted: ${colors.light.textMuted};
+    --color-text-hint: ${colors.light.textHint};
+    --color-shadow-default: ${colors.light.shadowDefault};
+    --color-shadow-blank: ${colors.light.shadowBlank};
+    --color-border-default: ${colors.light.borderDefault};
+  }
+
+  .dark {
+    --color-accent: ${colors.dark.accent};
+    --color-accent-contrast: ${colors.dark.accentContrast};
+    --color-on-accent: ${colors.dark.onAccent};
+    --color-background-default: ${colors.dark.backgroundDefault};
+    --color-background-raised: ${colors.dark.backgroundRaised};
+    --color-background-indent: ${colors.dark.backgroundIndent};
+    --color-text-default: ${colors.dark.textDefault};
+    --color-text-muted: ${colors.dark.textMuted};
+    --color-text-hint: ${colors.dark.textHint};
+    --color-shadow-default: ${colors.dark.shadowDefault};
+    --color-shadow-blank: ${colors.dark.shadowBlank};
+    --color-border-default: ${colors.dark.borderDefault};
+  }
+  </style>
+  `
+
+  document.head.insertAdjacentHTML('beforeend', style)
+}
+
+// Initialize Firestore sync for realtime updates
+const { initialize: initFirestoreSync } = useFirestoreSync()
+onMounted(() => {
+  initFirestoreSync()
+
+  // Apply cached theme immediately to prevent flash
+  if (isValidTheme(cachedTheme.value)) {
+    applyTheme(cachedTheme.value)
+  }
+})
 
 const links = computed<NavigationMenuItem[]>(() => [
   {
@@ -41,75 +115,66 @@ const { data } = useCurrentProjectQuery({
 watch(data, (newData) => {
   if (!newData) return
 
-  const style = `
-  <style id="theme">
-  :root {
-    --color-accent: ${newData.myCurrentProject.branding.colors.light.accent};
-    --color-accent-contrast: ${newData.myCurrentProject.branding.colors.light.accentContrast};
-    --color-on-accent: ${newData.myCurrentProject.branding.colors.light.onAccent};
-    --color-background-default: ${newData.myCurrentProject.branding.colors.light.backgroundDefault};
-    --color-background-raised: ${newData.myCurrentProject.branding.colors.light.backgroundRaised};
-    --color-background-indent: ${newData.myCurrentProject.branding.colors.light.backgroundIndent};
-    --color-text-default: ${newData.myCurrentProject.branding.colors.light.textDefault};
-    --color-text-muted: ${newData.myCurrentProject.branding.colors.light.textMuted};
-    --color-text-hint: ${newData.myCurrentProject.branding.colors.light.textHint};
-    --color-shadow-default: ${newData.myCurrentProject.branding.colors.light.shadowDefault};
-    --color-shadow-blank: ${newData.myCurrentProject.branding.colors.light.shadowBlank};
-    --color-border-default: ${newData.myCurrentProject.branding.colors.light.borderDefault};
-  }
-
-  .dark {
-    --color-accent: ${newData.myCurrentProject.branding.colors.dark.accent};
-    --color-accent-contrast: ${newData.myCurrentProject.branding.colors.dark.accentContrast};
-    --color-on-accent: ${newData.myCurrentProject.branding.colors.dark.onAccent};
-    --color-background-default: ${newData.myCurrentProject.branding.colors.dark.backgroundDefault};
-    --color-background-raised: ${newData.myCurrentProject.branding.colors.dark.backgroundRaised};
-    --color-background-indent: ${newData.myCurrentProject.branding.colors.dark.backgroundIndent};
-    --color-text-default: ${newData.myCurrentProject.branding.colors.dark.textDefault};
-    --color-text-muted: ${newData.myCurrentProject.branding.colors.dark.textMuted};
-    --color-text-hint: ${newData.myCurrentProject.branding.colors.dark.textHint};
-    --color-shadow-default: ${newData.myCurrentProject.branding.colors.dark.shadowDefault};
-    --color-shadow-blank: ${newData.myCurrentProject.branding.colors.dark.shadowBlank};
-    --color-border-default: ${newData.myCurrentProject.branding.colors.dark.borderDefault};
-  }
-  </style>
-  `
-
-  document.head.insertAdjacentHTML('beforeend', style)
+  const colors = newData.myCurrentProject.branding.colors
+  applyTheme(colors)
+  cachedTheme.value = JSON.parse(JSON.stringify(colors))
 })
 
 const route = useRoute()
-const activeMenuItem = ref<HTMLElement | null>(null)
+const navRef = ref<HTMLElement | null>(null)
+const indicatorRef = ref<HTMLElement | null>(null)
+const isFirstRender = ref(true)
 
-// Find the active menu item after route changes or on mount
-// Uses a small delay to ensure NuxtLink has set aria-current="page"
-function updateActiveMenuItem() {
-  const el = document.querySelector<HTMLElement>(`[aria-current="page"]`)
-  if (el) {
-    activeMenuItem.value = el
+function updateIndicator() {
+  if (!navRef.value || !indicatorRef.value) return
+
+  const activeLink = navRef.value.querySelector<HTMLElement>(
+    '[aria-current="page"]',
+  )
+  if (!activeLink) return
+
+  const targetLeft = activeLink.offsetLeft
+  const targetTop = activeLink.offsetTop
+  const targetWidth = activeLink.offsetWidth
+  const targetHeight = activeLink.offsetHeight
+
+  const prefersReducedMotion = window.matchMedia(
+    '(prefers-reduced-motion: reduce)',
+  ).matches
+
+  if (isFirstRender.value || prefersReducedMotion) {
+    gsap.set(indicatorRef.value, {
+      left: targetLeft,
+      top: targetTop,
+      width: targetWidth,
+      height: targetHeight,
+    })
+    isFirstRender.value = false
   } else {
-    // Retry after a short delay if not found (initial hydration)
-    setTimeout(() => {
-      activeMenuItem.value = document.querySelector<HTMLElement>(
-        `[aria-current="page"]`,
-      )
-    }, 50)
+    gsap.to(indicatorRef.value, {
+      left: targetLeft,
+      top: targetTop,
+      width: targetWidth,
+      height: targetHeight,
+      duration: 0.3,
+      ease: 'power2.out',
+    })
   }
 }
 
-watch(() => route.path, updateActiveMenuItem)
+watch(
+  () => route.path,
+  () => {
+    nextTick(() => {
+      // Small delay to ensure aria-current is set
+      setTimeout(updateIndicator, 10)
+    })
+  },
+)
 
 onMounted(() => {
-  updateActiveMenuItem()
+  setTimeout(updateIndicator, 50)
 })
-
-const navRef = ref<HTMLElement | null>(null)
-const { left: navLeft, top: navTop } = useElementBounding(navRef)
-const { left, height, width, top } = useElementBounding(activeMenuItem)
-
-// Calculate position relative to the nav container
-const relativeLeft = computed(() => left.value - navLeft.value)
-const relativeTop = computed(() => top.value - navTop.value)
 
 const showNavigation = computed(() => {
   const path = route.path
@@ -118,6 +183,8 @@ const showNavigation = computed(() => {
   if (path.startsWith('/challenges/')) return false
   return true
 })
+
+const { $pwa } = useNuxtApp()
 </script>
 
 <template>
@@ -125,7 +192,13 @@ const showNavigation = computed(() => {
     <div class="h-full">
       <slot />
     </div>
-    <div v-if="showNavigation" class="fixed inset-x-0 bottom-0">
+    <div v-if="showNavigation" class="fixed inset-x-0 bottom-0 flex flex-col">
+      <Transition
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="opacity-0 translate-y-4"
+      >
+        <PwaUpdateBanner v-if="$pwa?.needRefresh" />
+      </Transition>
       <ProgressiveBlur
         class="p-navigation-outside pb-[max(var(--spacing-navigation-outside),env(safe-area-inset-bottom))] from-shadow-blank/0 to-shadow-default bg-linear-to-b"
       >
@@ -136,7 +209,7 @@ const showNavigation = computed(() => {
           <li v-for="link in links" :key="link.label" class="grow z-10">
             <NuxtLink
               :to="link.to"
-              class="px-default rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5 transition-all duration-150 ease-out"
+              class="px-default text-center rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5"
               active-class="text-accent-contrast"
             >
               <UIcon
@@ -148,13 +221,8 @@ const showNavigation = computed(() => {
             </NuxtLink>
           </li>
           <div
-            class="rounded-navigation-inset bg-background-indent absolute aspect-square transition-all duration-150 ease-out"
-            :style="{
-              left: relativeLeft + 'px',
-              top: relativeTop + 'px',
-              height: height + 'px',
-              width: width + 'px',
-            }"
+            ref="indicatorRef"
+            class="rounded-navigation-inset bg-background-indent absolute top-0 left-0"
           />
         </ul>
       </ProgressiveBlur>

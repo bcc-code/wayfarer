@@ -24,6 +24,7 @@ type RoleQuerier interface {
 	HasRoleInTeam(ctx context.Context, arg sqlc.HasRoleInTeamParams) (bool, error)
 	HasTeamMemberFromChurch(ctx context.Context, arg sqlc.HasTeamMemberFromChurchParams) (bool, error)
 	GetTeamProjectID(ctx context.Context, teamid string) (string, error)
+	GetTeamCreatorChurchID(ctx context.Context, teamid string) (string, error)
 }
 
 // RoleType represents the available roles in the system
@@ -230,7 +231,7 @@ func (s *RoleService) RevokeRole(ctx context.Context, revokerID, userID string, 
 // Permission hierarchy:
 // - SUPERADMIN can assign all roles
 // - ADMIN can assign CHURCH_ADMIN, PROJECT_ADMIN, TEAM_LEAD
-// - CHURCH_ADMIN can assign TEAM_LEAD (only within their church)
+// - CHURCH_ADMIN can assign CHURCH_ADMIN (only within their own church) and TEAM_LEAD
 func (s *RoleService) CanAssignRole(ctx context.Context, assignerID string, roleToAssign RoleType, churchID, projectID, teamID *string) (bool, error) {
 	// Check if assigner is a superadmin
 	if s.IsSuperAdmin(ctx, assignerID) {
@@ -244,8 +245,15 @@ func (s *RoleService) CanAssignRole(ctx context.Context, assignerID string, role
 	}
 
 	// Check if assigner is a church admin
+	// Church admins can assign CHURCH_ADMIN role to users within their own church
+	if roleToAssign == RoleChurchAdmin && churchID != nil {
+		if s.HasRoleInChurch(ctx, assignerID, RoleChurchAdmin, *churchID) {
+			return true, nil
+		}
+	}
+
+	// Church admins can assign team lead roles
 	if roleToAssign == RoleTeamLead && teamID != nil {
-		// Church admins can only assign team lead roles
 		// We need to check if the team belongs to a church where the assigner is a church admin
 		// For now, we'll check if the assigner is a church admin in any church
 		// A more sophisticated check would verify the team's church relationship
@@ -294,6 +302,34 @@ func (s *RoleService) CanManageProject(ctx context.Context, userID, projectID st
 	return s.HasRoleInProject(ctx, userID, RoleProjectAdmin, projectID)
 }
 
+// CanCreateTeamInProject checks if a user can create a team in a project
+// Returns true if user is:
+// - superadmin
+// - admin
+// - project admin for this project
+// - church admin (any church)
+func (s *RoleService) CanCreateTeamInProject(ctx context.Context, userID, projectID string) bool {
+	// Check existing CanManageProject permissions
+	if s.CanManageProject(ctx, userID, projectID) {
+		return true
+	}
+
+	// Check if user is a church admin (any church)
+	roles, err := s.LoadUserRoles(ctx, userID)
+	if err != nil {
+		slog.Error("error loading user roles", "userID", userID, "error", err)
+		return false
+	}
+
+	for _, role := range roles {
+		if role.Role == string(RoleChurchAdmin) && role.ChurchID != nil {
+			return true
+		}
+	}
+
+	return false
+}
+
 // CanManageChurch checks if a user can manage a specific church
 // Returns true if user is:
 // - superadmin
@@ -314,7 +350,7 @@ func (s *RoleService) CanManageChurch(ctx context.Context, userID, churchID stri
 // - superadmin
 // - admin
 // - project admin for the team's project
-// - church admin (if any team member is from their church)
+// - church admin (if any team member is from their church, or team creator is from their church)
 // - team lead for this team
 func (s *RoleService) CanManageTeam(ctx context.Context, userID, teamID string) bool {
 	// Check if user is superadmin or admin
@@ -361,6 +397,16 @@ func (s *RoleService) CanManageTeam(ctx context.Context, userID, teamID string) 
 			if hasMember {
 				return true
 			}
+
+			// Also check if team creator is from this church (for empty teams)
+			creatorChurchID, err := s.queries.GetTeamCreatorChurchID(ctx, teamID)
+			if err != nil {
+				// Team might not have a creator recorded, continue checking
+				continue
+			}
+			if creatorChurchID == *role.ChurchID {
+				return true
+			}
 		}
 	}
 
@@ -374,4 +420,83 @@ func (s *RoleService) CanManageTeam(ctx context.Context, userID, teamID string) 
 // - admin
 func (s *RoleService) CanDeleteTeam(ctx context.Context, userID string) bool {
 	return s.IsAdmin(ctx, userID)
+}
+
+// CanDeleteTeamByID checks if a user can delete a specific team by ID
+// Returns true if user is:
+// - superadmin
+// - admin
+// - church admin (if the team creator is from their church)
+func (s *RoleService) CanDeleteTeamByID(ctx context.Context, userID, teamID string) bool {
+	// Admins and superadmins can always delete
+	if s.IsAdmin(ctx, userID) {
+		return true
+	}
+
+	// Check if user is church admin and team creator is from their church
+	roles, err := s.LoadUserRoles(ctx, userID)
+	if err != nil {
+		slog.Error("error loading user roles", "userID", userID, "error", err)
+		return false
+	}
+
+	for _, role := range roles {
+		if role.Role == string(RoleChurchAdmin) && role.ChurchID != nil {
+			// Get team creator's church ID
+			creatorChurchID, err := s.queries.GetTeamCreatorChurchID(ctx, teamID)
+			if err != nil {
+				slog.Error("error getting team creator church ID", "teamID", teamID, "error", err)
+				continue
+			}
+			if creatorChurchID == *role.ChurchID {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// IsProjectAdmin checks if a user has project admin role for any project
+func (s *RoleService) IsProjectAdmin(ctx context.Context, userID string) bool {
+	return s.HasRole(ctx, userID, RoleProjectAdmin)
+}
+
+// CanAccessUser checks if currentUserID can access targetUserID's User object.
+//
+// Returns true if any of these conditions are met:
+//   - currentUserID is the target user (self-access)
+//   - currentUserID has M2M role (for system integration)
+//   - currentUserID has admin or superadmin role
+//   - currentUserID has project admin role (for any project)
+//   - currentUserID is church admin for targetChurchID
+//
+// Returns false otherwise.
+func (s *RoleService) CanAccessUser(ctx context.Context, currentUserID, targetUserID, targetChurchID string) bool {
+	// Self-access always allowed
+	if currentUserID == targetUserID {
+		return true
+	}
+
+	// M2M service accounts can access any user
+	if s.HasRole(ctx, currentUserID, RoleM2M) {
+		return true
+	}
+
+	// Admins and superadmins can access any user
+	if s.IsAdmin(ctx, currentUserID) {
+		return true
+	}
+
+	// Project admins can access any user
+	if s.IsProjectAdmin(ctx, currentUserID) {
+		return true
+	}
+
+	// Church admins can access users in their church
+	if s.CanManageChurch(ctx, currentUserID, targetChurchID) {
+		return true
+	}
+
+	return false
 }

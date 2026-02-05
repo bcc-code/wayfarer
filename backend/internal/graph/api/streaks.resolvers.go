@@ -7,10 +7,14 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
+	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/loaders"
+	"github.com/bcc-media/wayfarer/internal/middleware"
 )
 
 // CreateStreak is the resolver for the createStreak field.
@@ -148,3 +152,175 @@ func (r *queryResolver) Streaks(ctx context.Context, filter *model.StreakFilter,
 
 	return connection, nil
 }
+
+// Status is the resolver for the status field.
+func (r *streakResolver) Status(ctx context.Context, obj *model.Streak) (int, error) {
+	// Get current user ID
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return 0, nil // Return 0 for unauthenticated users
+	}
+
+	// Load user's activity for this streak
+	key := loaders.UserStreakActivityKey{UserID: currentUserID, StreakID: obj.ID}
+	thunk := r.Loaders.UserStreakActivityLoader.Load(ctx, key)
+	activities, err := thunk()
+	if err != nil {
+		return 0, fmt.Errorf("failed to load user streak activity: %w", err)
+	}
+
+	// If no activities, streak is 0
+	if len(activities) == 0 {
+		return 0, nil
+	}
+
+	// Load relevant days for this streak
+	relevantDaysThunk := r.Loaders.RelevantDaysByStreakLoader.Load(ctx, obj.ID)
+	relevantDays, err := relevantDaysThunk()
+	if err != nil {
+		return 0, fmt.Errorf("failed to load relevant days: %w", err)
+	}
+
+	// Build a set of activity dates for fast lookup (truncate to midnight for comparison)
+	activityDateSet := make(map[time.Time]bool)
+	for _, activity := range activities {
+		if activity.ActivityDate.Valid {
+			activityDateSet[activity.ActivityDate.Time.Truncate(24*time.Hour)] = true
+		}
+	}
+
+	// Calculate current streak by counting consecutive relevant days with activity
+	// Start from today and work backwards
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	streakCount := 0
+	currentDate := today
+
+	// Iterate backwards through dates to find consecutive activity
+	for {
+		// Check if current date is in any relevant range
+		isRelevant := false
+		for _, dr := range relevantDays {
+			start := dr.Start.Time.Truncate(24 * time.Hour)
+			end := dr.End.Time.Truncate(24 * time.Hour)
+			if !currentDate.Before(start) && !currentDate.After(end) {
+				isRelevant = true
+				break
+			}
+		}
+
+		// If date is relevant, check if user was active
+		if isRelevant {
+			if activityDateSet[currentDate] {
+				streakCount++
+			} else {
+				// Streak is broken
+				break
+			}
+		}
+
+		// Move to previous day
+		currentDate = currentDate.AddDate(0, 0, -1)
+
+		// Stop if we go back too far (e.g., 1 year)
+		if today.Sub(currentDate) > 365*24*time.Hour {
+			break
+		}
+	}
+
+	return streakCount, nil
+}
+
+// RelevantDays is the resolver for the relevantDays field.
+func (r *streakResolver) RelevantDays(ctx context.Context, obj *model.Streak) ([]model.DateRange, error) {
+	thunk := r.Loaders.RelevantDaysByStreakLoader.Load(ctx, obj.ID)
+	relevantDays, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load relevant days: %w", err)
+	}
+	return relevantDays, nil
+}
+
+// ListenedDays is the resolver for the listenedDays field.
+func (r *streakResolver) ListenedDays(ctx context.Context, obj *model.Streak, last int) ([]model.StreakDay, error) {
+	// Get current user ID
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return []model.StreakDay{}, nil // Return empty for unauthenticated users
+	}
+
+	// Load relevant days for this streak
+	relevantDaysThunk := r.Loaders.RelevantDaysByStreakLoader.Load(ctx, obj.ID)
+	relevantDays, err := relevantDaysThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load relevant days: %w", err)
+	}
+
+	// Load user's activity for this streak
+	key := loaders.UserStreakActivityKey{UserID: currentUserID, StreakID: obj.ID}
+	thunk := r.Loaders.UserStreakActivityLoader.Load(ctx, key)
+	activities, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user streak activity: %w", err)
+	}
+
+	// Build a set of activity dates for fast lookup
+	activityDateSet := make(map[time.Time]bool)
+	for _, activity := range activities {
+		if activity.ActivityDate.Valid {
+			activityDateSet[activity.ActivityDate.Time.Truncate(24*time.Hour)] = true
+		}
+	}
+
+	// Collect all relevant dates from today backwards (no future dates)
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	var allRelevantDates []time.Time
+	for _, dr := range relevantDays {
+		start := dr.Start.Time.Truncate(24 * time.Hour)
+		end := dr.End.Time.Truncate(24 * time.Hour)
+
+		// Add all dates in this range, but only up to today
+		for d := start; !d.After(end); d = d.AddDate(0, 0, 1) {
+			if !d.After(today) {
+				allRelevantDates = append(allRelevantDates, d)
+			}
+		}
+	}
+
+	// Sort dates in descending order (most recent first)
+	// Use a simple bubble sort for small arrays or implement a proper sort
+	for i := 0; i < len(allRelevantDates)-1; i++ {
+		for j := i + 1; j < len(allRelevantDates); j++ {
+			if allRelevantDates[i].Before(allRelevantDates[j]) {
+				allRelevantDates[i], allRelevantDates[j] = allRelevantDates[j], allRelevantDates[i]
+			}
+		}
+	}
+
+	// Take the last N dates
+	numToTake := last
+	if numToTake > len(allRelevantDates) {
+		numToTake = len(allRelevantDates)
+	}
+
+	// Build the result with activity status
+	result := make([]model.StreakDay, numToTake)
+	for i := 0; i < numToTake; i++ {
+		date := allRelevantDates[i]
+		result[i] = model.StreakDay{
+			Date:   scalars.Date{Time: date},
+			Active: activityDateSet[date],
+		}
+	}
+
+	return result, nil
+}
+
+// Project is the resolver for the project field.
+func (r *streakResolver) Project(ctx context.Context, obj *model.Streak) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Streak returns StreakResolver implementation.
+func (r *Resolver) Streak() StreakResolver { return &streakResolver{r} }
+
+type streakResolver struct{ *Resolver }

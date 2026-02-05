@@ -1,0 +1,17 @@
+extend type Query {
+    fileUpload(id: ID!): FileUpload
+}
+
+type FileUpload {
+    id: ID!
+    filename: String!
+    storedFilename: String!
+    fileSize: Int!
+    mimeType: String!
+    publicUrl: String!
+    uploadedBy: ID!
+    width: Int
+    height: Int
+    blurhash: String
+    createdAt: DateTime!
+}

@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_GetQuiz
 createdAt: 2025-12-08T12:00:00
-updatedAt: 2025-12-14T20:38:56.587476
+updatedAt: 2026-01-28T08:38:36.126789
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Quizzes
 authentication: {}
@@ -14,15 +14,21 @@ body:
         id
         name
         description
-        image
         timeoutSeconds
         randomizeQuestions
         revealCorrectAnswers
         allowRetakes
         completionPoints
-        publishedAt
         endTime
         userCanStart
+        sessions {
+          id
+          name
+          state
+          finishAt
+          openAt
+          lockAt
+        }
         userActiveSubmission {
           id
           startedAt
@@ -34,6 +40,12 @@ body:
           questionText
           questionOrder
           timeoutSeconds
+          ... on OrderingQuestion {
+            orderingItems {
+              id
+              itemText
+            }
+          }
           ... on PredefinedQuestion {
             allowMultipleSelection
             predefinedAnswers {
@@ -61,7 +73,7 @@ body:
     }
   variables: |
     {
-      "id": "QZ01KCF91CSRSGJWA3JKYHR587GS"
+      "id": "QZ01KCKBKDX498QPVFRCSAKNSDEN"
     }
 bodyType: graphql
 description: Get a quiz by ID with all questions

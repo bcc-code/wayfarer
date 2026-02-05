@@ -19,8 +19,33 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// ImageObject is the resolver for the imageObject field.
+func (r *externalChallengeResolver) ImageObject(ctx context.Context, obj *model.ExternalChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
+// Project is the resolver for the project field.
+func (r *externalChallengeResolver) Project(ctx context.Context, obj *model.ExternalChallenge) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *externalChallengeResolver) Event(ctx context.Context, obj *model.ExternalChallenge) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *externalChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *externalChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.ExternalChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
+}
+
 // CreateChallenge is the resolver for the createChallenge field.
-func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string, eventID string, input model.CreateChallengeInput) (model.Challenge, error) {
+func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string, eventID *string, input model.CreateChallengeInput) (model.Challenge, error) {
 	// Get authenticated user ID from context
 	userID, ok := middleware.GetUserID(ctx)
 	if !ok || userID == "" {
@@ -41,6 +66,10 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 	challengeID := ulid.NewChallengeID()
 
 	// Build database params
+	buttonText := ""
+	if input.ButtonText != nil {
+		buttonText = *input.ButtonText
+	}
 	params := sqlc.CreateChallengeParams{
 		ID:            challengeID,
 		Projectid:     projectID,
@@ -49,7 +78,7 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 		Name:          input.Name,
 		Description:   "", // Will be set below
 		Imageurl:      input.Image,
-		Buttontext:    input.ButtonText,
+		Buttontext:    buttonText,
 	}
 
 	// Set description
@@ -58,6 +87,9 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 	}
 
 	// Set optional timestamps
+	if input.PublishedAt != nil {
+		params.Publishedat = pgtype.Timestamptz{Time: input.PublishedAt.Time, Valid: true}
+	}
 	if input.VisibleAt != nil {
 		params.Visibleat = pgtype.Timestamptz{Time: input.VisibleAt.Time, Valid: true}
 	}
@@ -83,6 +115,8 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 		params.Url = input.URL
 	case model.ChallengeTypeQuiz:
 		// No type-specific fields for quiz challenges
+	case model.ChallengeTypePlugin:
+		params.Pluginchallengeid = input.PluginChallengeID
 	}
 
 	// Create challenge in database
@@ -93,8 +127,10 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 
 	// Invalidate cache
 	r.Cache.InvalidateProject(projectID)
-	if eventID != "" {
-		r.Cache.InvalidateEvent(eventID)
+	r.Cache.DeletePrefix(cache.PrefixChallengesFilter)
+	r.Cache.DeletePrefix(cache.PrefixChallengesCount)
+	if eventID != nil && *eventID != "" {
+		r.Cache.InvalidateEvent(*eventID)
 	}
 
 	// Convert to GraphQL model
@@ -144,6 +180,9 @@ func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input
 	params.Buttontext = input.ButtonText
 
 	// Set optional timestamps
+	if input.PublishedAt != nil {
+		params.Publishedat = pgtype.Timestamptz{Time: input.PublishedAt.Time, Valid: true}
+	}
 	if input.VisibleAt != nil {
 		params.Visibleat = pgtype.Timestamptz{Time: input.VisibleAt.Time, Valid: true}
 	}
@@ -166,6 +205,8 @@ func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input
 		params.Url = input.URL
 	case model.ChallengeTypeQuiz:
 		// No type-specific fields for quiz challenges
+	case model.ChallengeTypePlugin:
+		params.Pluginchallengeid = input.PluginChallengeID
 	}
 
 	// Update challenge in database
@@ -261,6 +302,9 @@ func (r *mutationResolver) PublishChallenge(ctx context.Context, id string, publ
 	eventID := getChallengeEventID(existingChallenge)
 	r.Cache.InvalidateChallenge(id, projectID, eventID)
 
+	// Notify Firestore listeners about project challenges
+	go r.FirebaseService.NotifyProjectChallenges(context.Background(), projectID)
+
 	// Convert to GraphQL model
 	return convertPublishChallengeRowToChallenge(row), nil
 }
@@ -355,11 +399,18 @@ func (r *mutationResolver) BulkPublishChallenges(ctx context.Context, ids []stri
 		return nil, fmt.Errorf("failed to bulk publish challenges: %w", err)
 	}
 
-	// Invalidate cache for all challenges
+	// Invalidate cache for all challenges and collect unique project IDs
+	notifiedProjects := make(map[string]bool)
 	for i, id := range ids {
 		projectID := getChallengeProjectID(challenges[i])
 		eventID := getChallengeEventID(challenges[i])
 		r.Cache.InvalidateChallenge(id, projectID, eventID)
+		notifiedProjects[projectID] = true
+	}
+
+	// Notify Firestore listeners for each unique project
+	for projectID := range notifiedProjects {
+		go r.FirebaseService.NotifyProjectChallenges(context.Background(), projectID)
 	}
 
 	// Convert to GraphQL models
@@ -467,13 +518,13 @@ func (r *mutationResolver) EnrollInChallenge(ctx context.Context, challengeID st
 
 	// Validation 1: Challenge must be published
 	publishedAt := getChallengePublishedAt(challenge)
-	if publishedAt == nil || publishedAt.Time.After(time.Now()) {
+	if publishedAt == nil || publishedAt.After(time.Now()) {
 		return nil, fmt.Errorf("challenge is not yet available for enrollment")
 	}
 
 	// Validation 2: Challenge must not be ended
 	endTime := getChallengeEndTime(challenge)
-	if endTime != nil && endTime.Time.Before(time.Now()) {
+	if endTime != nil && endTime.Before(time.Now()) {
 		return nil, fmt.Errorf("challenge enrollment has ended")
 	}
 
@@ -694,6 +745,11 @@ func (r *mutationResolver) BulkEnrollUsersInChallenge(ctx context.Context, targe
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
+	// Notify Firestore listeners
+	for _, userID := range userIds {
+		go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
+	}
+
 	// Return challenge for each user (same challenge, no dataloader needed)
 	translatedChallenge := r.ApplyTranslationToChallenge(ctx, challenge)
 	result := make([]model.Challenge, len(userIds))
@@ -743,6 +799,11 @@ func (r *mutationResolver) BulkUnenrollUsersFromChallenge(ctx context.Context, t
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
+	// Notify Firestore listeners
+	for _, userID := range userIds {
+		go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
+	}
+
 	return true, nil
 }
 
@@ -783,6 +844,9 @@ func (r *mutationResolver) CompleteChallenge(ctx context.Context, userID string,
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
+	// Notify Firestore listeners
+	go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
+
 	// Return challenge with translations
 	return r.ApplyTranslationToChallenge(ctx, challenge), nil
 }
@@ -816,6 +880,9 @@ func (r *mutationResolver) UncompleteChallenge(ctx context.Context, userID strin
 	projectID := getChallengeProjectID(challenge)
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
+
+	// Notify Firestore listeners
+	go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
 
 	return true, nil
 }
@@ -872,6 +939,11 @@ func (r *mutationResolver) BulkCompleteChallenges(ctx context.Context, target mo
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
+	// Notify Firestore listeners
+	for _, userID := range userIds {
+		go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
+	}
+
 	// Return challenge for each user (same challenge, no dataloader needed)
 	translatedChallenge := r.ApplyTranslationToChallenge(ctx, challenge)
 	result := make([]model.Challenge, len(userIds))
@@ -880,6 +952,31 @@ func (r *mutationResolver) BulkCompleteChallenges(ctx context.Context, target mo
 	}
 
 	return result, nil
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *pluginChallengeResolver) ImageObject(ctx context.Context, obj *model.PluginChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
+// Project is the resolver for the project field.
+func (r *pluginChallengeResolver) Project(ctx context.Context, obj *model.PluginChallenge) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *pluginChallengeResolver) Event(ctx context.Context, obj *model.PluginChallenge) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *pluginChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.PluginChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *pluginChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.PluginChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
 }
 
 // Challenge is the resolver for the challenge field.
@@ -1002,3 +1099,83 @@ func (r *queryResolver) Challenges(ctx context.Context, filter *model.ChallengeF
 
 	return connection, nil
 }
+
+// ImageObject is the resolver for the imageObject field.
+func (r *quizChallengeResolver) ImageObject(ctx context.Context, obj *model.QuizChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
+// Project is the resolver for the project field.
+func (r *quizChallengeResolver) Project(ctx context.Context, obj *model.QuizChallenge) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *quizChallengeResolver) Event(ctx context.Context, obj *model.QuizChallenge) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *quizChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *quizChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.QuizChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
+}
+
+// Quiz is the resolver for the quiz field.
+// Visibility is controlled by the challenge's publishedAt and session access.
+func (r *quizChallengeResolver) Quiz(ctx context.Context, obj *model.QuizChallenge) (*model.Quiz, error) {
+	thunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, obj.ID)
+	quiz, err := thunk()
+	if err != nil {
+		return nil, err
+	}
+	return quiz, nil
+}
+
+// ImageObject is the resolver for the imageObject field.
+func (r *simpleChallengeResolver) ImageObject(ctx context.Context, obj *model.SimpleChallenge) (*model.Image, error) {
+	return resolveImageByURL(ctx, r.Loaders, obj.Image)
+}
+
+// Project is the resolver for the project field.
+func (r *simpleChallengeResolver) Project(ctx context.Context, obj *model.SimpleChallenge) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// Event is the resolver for the event field.
+func (r *simpleChallengeResolver) Event(ctx context.Context, obj *model.SimpleChallenge) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// UserCompletedAt is the resolver for the userCompletedAt field.
+func (r *simpleChallengeResolver) UserCompletedAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeCompletedAt(ctx, obj.ID)
+}
+
+// UserEnrolledAt is the resolver for the userEnrolledAt field.
+func (r *simpleChallengeResolver) UserEnrolledAt(ctx context.Context, obj *model.SimpleChallenge) (*scalars.DateTime, error) {
+	return r.getUserChallengeEnrolledAt(ctx, obj.ID)
+}
+
+// ExternalChallenge returns ExternalChallengeResolver implementation.
+func (r *Resolver) ExternalChallenge() ExternalChallengeResolver {
+	return &externalChallengeResolver{r}
+}
+
+// PluginChallenge returns PluginChallengeResolver implementation.
+func (r *Resolver) PluginChallenge() PluginChallengeResolver { return &pluginChallengeResolver{r} }
+
+// QuizChallenge returns QuizChallengeResolver implementation.
+func (r *Resolver) QuizChallenge() QuizChallengeResolver { return &quizChallengeResolver{r} }
+
+// SimpleChallenge returns SimpleChallengeResolver implementation.
+func (r *Resolver) SimpleChallenge() SimpleChallengeResolver { return &simpleChallengeResolver{r} }
+
+type externalChallengeResolver struct{ *Resolver }
+type pluginChallengeResolver struct{ *Resolver }
+type quizChallengeResolver struct{ *Resolver }
+type simpleChallengeResolver struct{ *Resolver }

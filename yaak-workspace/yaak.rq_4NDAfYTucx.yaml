@@ -1,0 +1,34 @@
+type: http_request
+model: http_request
+id: rq_4NDAfYTucx
+createdAt: 2026-01-22T11:08:31.396917
+updatedAt: 2026-01-22T18:42:12.199663
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_U4FqjQ2Ma5
+authentication: {}
+authenticationType: null
+body:
+  query: |-
+    mutation {
+      bulkEnrollUsersInChallenge(
+        target: {
+          userIds: ["US01KEHNK1AQ69YJWHYWJ1SYR5B1"]
+        },
+        challengeId: "CL01KFJP3VKRCQ5RJJN5J80WASPW"
+      ){
+        id
+      }
+    }
+  variables: ''
+bodyType: graphql
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: xraigN0HxK
+method: POST
+name: Enroll users to challenge
+sortPriority: 1000.0019
+url: ${[ HOST ]}/graphql
+urlParameters: []

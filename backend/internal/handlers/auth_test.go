@@ -8,9 +8,11 @@ import (
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/services/mocks"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -106,7 +108,7 @@ func TestNormalizeGender(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := normalizeGender(tt.input)
+			result := members.NormalizeGender(tt.input)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -369,4 +371,237 @@ func splitToken(token string) []string {
 		parts = append(parts, token[start:])
 	}
 	return parts
+}
+
+func TestAuth0Claims_ParseNamespacedClaims(t *testing.T) {
+	// Create a test token with Auth0 namespaced claims
+	secret := []byte("test-secret")
+	now := time.Now()
+
+	// Create claims with namespaced fields
+	claims := jwt.MapClaims{
+		"https://login.bcc.no/claims/churchId":  69,
+		"https://login.bcc.no/claims/personId":  19254,
+		"https://login.bcc.no/claims/personUid": "5e7016ac-999e-4e87-b84b-13642d863d01",
+		"iss":                                   "https://login.bcc.no/",
+		"sub":                                   "auth0|28cd3814-049f-4bb6-b8f6-3e0f2b25fe6b",
+		"iat":                                   now.Unix(),
+		"exp":                                   now.Add(24 * time.Hour).Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedToken, err := token.SignedString(secret)
+	require.NoError(t, err)
+
+	// Parse the token with Auth0Claims struct
+	parsedToken, err := jwt.ParseWithClaims(signedToken, &Auth0Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return secret, nil
+	})
+	require.NoError(t, err)
+	require.True(t, parsedToken.Valid)
+
+	auth0Claims, ok := parsedToken.Claims.(*Auth0Claims)
+	require.True(t, ok)
+
+	// Verify claims were parsed correctly
+	assert.Equal(t, 69, auth0Claims.ChurchID)
+	assert.Equal(t, 19254, auth0Claims.PersonID)
+	assert.Equal(t, "5e7016ac-999e-4e87-b84b-13642d863d01", auth0Claims.PersonUUID)
+	assert.Equal(t, "https://login.bcc.no/", auth0Claims.Issuer)
+	assert.Equal(t, "auth0|28cd3814-049f-4bb6-b8f6-3e0f2b25fe6b", auth0Claims.Subject)
+}
+
+func TestAuth0Claims_ParseAppMetadata(t *testing.T) {
+	// Create a test token with Auth0 namespaced claims including app_metadata
+	secret := []byte("test-secret")
+	now := time.Now()
+
+	tests := []struct {
+		name               string
+		hasMembership      bool
+		expectedMembership bool
+	}{
+		{
+			name:               "user with membership",
+			hasMembership:      true,
+			expectedMembership: true,
+		},
+		{
+			name:               "user without membership",
+			hasMembership:      false,
+			expectedMembership: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			claims := jwt.MapClaims{
+				"https://login.bcc.no/claims/churchId":  69,
+				"https://login.bcc.no/claims/personId":  13036,
+				"https://login.bcc.no/claims/personUid": "0d6655c1-fe3a-4d82-a6ed-1846655259b2",
+				"https://members.bcc.no/app_metadata": map[string]interface{}{
+					"hasMembership": tt.hasMembership,
+					"personId":      13036,
+				},
+				"iss": "https://login.bcc.no/",
+				"sub": "auth0|92f6cf12-4c14-4077-b3b8-9944539528ee",
+				"iat": now.Unix(),
+				"exp": now.Add(24 * time.Hour).Unix(),
+			}
+
+			token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+			signedToken, err := token.SignedString(secret)
+			require.NoError(t, err)
+
+			parsedToken, err := jwt.ParseWithClaims(signedToken, &Auth0Claims{}, func(token *jwt.Token) (interface{}, error) {
+				return secret, nil
+			})
+			require.NoError(t, err)
+			require.True(t, parsedToken.Valid)
+
+			auth0Claims, ok := parsedToken.Claims.(*Auth0Claims)
+			require.True(t, ok)
+
+			assert.Equal(t, tt.expectedMembership, auth0Claims.AppMetadata.HasMembership)
+			assert.Equal(t, 13036, auth0Claims.AppMetadata.PersonID)
+		})
+	}
+}
+
+func TestAuth0Claims_ConvertToBrunstadTVClaims(t *testing.T) {
+	// Test that Auth0Claims can be converted to BrunstadTVClaims for downstream processing
+	auth0Claims := &Auth0Claims{
+		ChurchID:   69,
+		PersonID:   19254,
+		PersonUUID: "5e7016ac-999e-4e87-b84b-13642d863d01",
+		AppMetadata: Auth0AppMetadata{
+			HasMembership: true,
+			PersonID:      19254,
+		},
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    "https://login.bcc.no/",
+			Subject:   "auth0|28cd3814-049f-4bb6-b8f6-3e0f2b25fe6b",
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+		},
+	}
+
+	// Convert to BrunstadTVClaims format (as done in Callback handler)
+	brunstadClaims := &BrunstadTVClaims{
+		ChurchID:         auth0Claims.ChurchID,
+		PersonID:         "19254", // PersonID converted to string
+		PersonUUID:       auth0Claims.PersonUUID,
+		FirstName:        "", // Not provided in Auth0 token
+		Gender:           "", // Not provided in Auth0 token
+		RegisteredClaims: auth0Claims.RegisteredClaims,
+	}
+
+	// Verify conversion
+	assert.Equal(t, 69, brunstadClaims.ChurchID)
+	assert.Equal(t, "19254", brunstadClaims.PersonID)
+	assert.Equal(t, "5e7016ac-999e-4e87-b84b-13642d863d01", brunstadClaims.PersonUUID)
+	assert.Empty(t, brunstadClaims.FirstName)
+	assert.Empty(t, brunstadClaims.Gender)
+}
+
+func TestGetActiveAffiliationOrgUIDs(t *testing.T) {
+	testOrgUID1 := uuid.New()
+	testOrgUID2 := uuid.New()
+	now := time.Now()
+	pastTime := now.Add(-24 * time.Hour)
+	futureTime := now.Add(24 * time.Hour)
+
+	tests := []struct {
+		name         string
+		affiliations []members.Affiliation
+		wantOrgUIDs  []uuid.UUID
+	}{
+		{
+			name:         "empty affiliations returns nil",
+			affiliations: []members.Affiliation{},
+			wantOrgUIDs:  nil,
+		},
+		{
+			name: "single active affiliation",
+			affiliations: []members.Affiliation{
+				{
+					Active: true,
+					OrgUid: testOrgUID1,
+					Type:   "Church",
+				},
+			},
+			wantOrgUIDs: []uuid.UUID{testOrgUID1},
+		},
+		{
+			name: "multiple active affiliations are returned",
+			affiliations: []members.Affiliation{
+				{
+					Active: true,
+					OrgUid: testOrgUID1,
+					Type:   "Church",
+				},
+				{
+					Active: true,
+					OrgUid: testOrgUID2,
+					Type:   "Region",
+				},
+			},
+			wantOrgUIDs: []uuid.UUID{testOrgUID1, testOrgUID2},
+		},
+		{
+			name: "affiliation with ValidFrom in future is skipped",
+			affiliations: []members.Affiliation{
+				{
+					Active:    true,
+					OrgUid:    testOrgUID1,
+					Type:      "Church",
+					ValidFrom: &futureTime,
+				},
+			},
+			wantOrgUIDs: nil,
+		},
+		{
+			name: "affiliation with ValidTo in past is skipped",
+			affiliations: []members.Affiliation{
+				{
+					Active:  true,
+					OrgUid:  testOrgUID1,
+					Type:    "Church",
+					ValidTo: &pastTime,
+				},
+			},
+			wantOrgUIDs: nil,
+		},
+		{
+			name: "affiliation with valid time range is returned",
+			affiliations: []members.Affiliation{
+				{
+					Active:    true,
+					OrgUid:    testOrgUID1,
+					Type:      "Church",
+					ValidFrom: &pastTime,
+					ValidTo:   &futureTime,
+				},
+			},
+			wantOrgUIDs: []uuid.UUID{testOrgUID1},
+		},
+		{
+			name: "inactive affiliation is skipped",
+			affiliations: []members.Affiliation{
+				{
+					Active: false,
+					OrgUid: testOrgUID1,
+					Type:   "Church",
+				},
+			},
+			wantOrgUIDs: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := members.GetActiveAffiliationOrgUIDs(tt.affiliations)
+			assert.Equal(t, tt.wantOrgUIDs, result)
+		})
+	}
 }

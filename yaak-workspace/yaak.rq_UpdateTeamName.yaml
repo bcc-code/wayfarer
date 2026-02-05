@@ -1,0 +1,37 @@
+type: http_request
+model: http_request
+id: rq_UpdateTeamName
+createdAt: 2026-01-22T12:00:00
+updatedAt: 2026-01-22T15:39:55.912175
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Teams
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation UpdateTeamName($id: ID!, $input: UpdateTeamInput!) {
+      updateTeam(id: $id, input: $input) {
+        id
+        name
+        description
+      }
+    }
+  variables: |
+    {
+      "id": "TM01KFFSQA2GJVS4BBNZ8CMK1FRC",
+      "input": {
+        "name": "Newest Team Name"
+      }
+    }
+bodyType: graphql
+description: Update a team's name
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_UpdateTeamName
+method: POST
+name: Update Team Name
+sortPriority: 0.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

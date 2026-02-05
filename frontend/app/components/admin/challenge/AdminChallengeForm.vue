@@ -11,10 +11,12 @@ const props = defineProps<{
     image?: string
     url?: string
     buttonText: string
+    publishedAt?: string
     endTime?: string
     visibleAt?: string
     startedAt?: string
     allowSelfCompletion?: boolean
+    pluginChallengeId?: string
   }
   quizData?: QuizFormData
   projectId?: string
@@ -34,26 +36,49 @@ export interface ChallengeFormData {
   description?: string
   image?: string
   url?: string
-  buttonText: string
+  buttonText?: string
+  publishedAt?: string
   endTime?: string
   visibleAt?: string
   startedAt?: string
   allowSelfCompletion?: boolean
+  pluginChallengeId?: string
   quiz?: QuizFormData
 }
 
-const schema = z.object({
-  type: z.nativeEnum(ChallengeType),
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().optional(),
-  image: z.string().optional(),
-  url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  buttonText: z.string().min(1, 'Button text is required'),
-  endTime: z.string().optional(),
-  visibleAt: z.string().optional(),
-  startedAt: z.string().optional(),
-  allowSelfCompletion: z.boolean().optional(),
-})
+const schema = z
+  .object({
+    type: z.nativeEnum(ChallengeType),
+    name: z.string().min(1, 'Name is required'),
+    description: z.string().optional(),
+    image: z.string().optional(),
+    url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+    buttonText: z.string().optional(),
+    publishedAt: z.string().optional(),
+    endTime: z.string().optional(),
+    visibleAt: z.string().optional(),
+    startedAt: z.string().optional(),
+    allowSelfCompletion: z.boolean().optional(),
+    pluginChallengeId: z.string().optional(),
+  })
+  .refine(
+    (data) =>
+      data.type === ChallengeType.Plugin ||
+      (data.buttonText && data.buttonText.length > 0),
+    {
+      message: 'Button text is required',
+      path: ['buttonText'],
+    },
+  )
+  .refine(
+    (data) =>
+      data.type !== ChallengeType.Plugin ||
+      (data.pluginChallengeId && data.pluginChallengeId.length > 0),
+    {
+      message: 'Plugin Challenge ID is required',
+      path: ['pluginChallengeId'],
+    },
+  )
 
 type Schema = z.infer<typeof schema>
 
@@ -64,10 +89,12 @@ const state = reactive<Schema>({
   image: props.initialData?.image,
   url: props.initialData?.url,
   buttonText: props.initialData?.buttonText ?? '',
+  publishedAt: props.initialData?.publishedAt,
   endTime: props.initialData?.endTime,
   visibleAt: props.initialData?.visibleAt,
   startedAt: props.initialData?.startedAt,
   allowSelfCompletion: props.initialData?.allowSelfCompletion ?? false,
+  pluginChallengeId: props.initialData?.pluginChallengeId,
 })
 
 const quizFormData = ref<QuizFormData | undefined>(props.quizData)
@@ -83,10 +110,12 @@ watch(
       state.image = data.image
       state.url = data.url
       state.buttonText = data.buttonText
+      state.publishedAt = data.publishedAt
       state.endTime = data.endTime
       state.visibleAt = data.visibleAt
       state.startedAt = data.startedAt
       state.allowSelfCompletion = data.allowSelfCompletion ?? false
+      state.pluginChallengeId = data.pluginChallengeId
     }
   },
   { once: true },
@@ -103,9 +132,10 @@ watch(
 )
 
 const challengeTypeOptions = [
-  { value: ChallengeType.Simple, label: 'Simple' },
-  { value: ChallengeType.External, label: 'External' },
+  { value: ChallengeType.Simple, label: 'Enkel' },
+  { value: ChallengeType.External, label: 'Ekstern' },
   { value: ChallengeType.Quiz, label: 'Quiz' },
+  { value: ChallengeType.Plugin, label: 'Plugin' },
 ]
 
 function handleQuizSave(data: QuizFormData) {
@@ -133,7 +163,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         @submit.prevent="handleSubmit"
       >
         <slot name="before-type" />
-        <UFormField name="type" label="Challenge Type">
+        <UFormField name="type" label="Utfordringstype">
           <USelect
             v-model="state.type"
             :items="challengeTypeOptions"
@@ -141,57 +171,84 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             class="w-full"
           />
         </UFormField>
-        <UFormField name="name" label="Name">
+        <UFormField name="name" label="Navn">
           <UInput v-model="state.name" size="xl" required class="w-full" />
         </UFormField>
         <UFormField
           name="description"
-          label="Description"
-          hint="(optional)"
-          help="Supports HTML formatting"
+          label="Beskrivelse"
+          hint="(valgfritt)"
+          help="Støtter HTML-formatering"
         >
           <UTextarea v-model="state.description" class="w-full" autoresize />
         </UFormField>
-        <UFormField
-          name="image"
-          label="Image URL"
-          hint="(optional)"
-          help="URL to an image for this challenge"
-        >
-          <UInput v-model="state.image" size="xl" class="w-full" />
+        <UFormField name="image" label="Bilde" hint="(valgfritt)">
+          <AdminFileUpload v-model="state.image" />
         </UFormField>
         <UFormField
           v-if="state.type === ChallengeType.External"
           name="url"
-          label="External URL"
-          help="The URL users will be redirected to"
+          label="Ekstern URL"
+          help="URL-en brukere vil bli sendt til"
         >
           <UInput v-model="state.url" size="xl" required class="w-full" />
         </UFormField>
         <UFormField
           v-if="state.type === ChallengeType.Simple"
           name="allowSelfCompletion"
-          label="Self Completion"
+          label="Selvfullføring"
         >
           <UCheckbox
             v-model="state.allowSelfCompletion"
-            label="Allow users to mark this challenge as completed"
+            label="Tillat brukere å markere denne utfordringen som fullført"
           />
         </UFormField>
-        <UFormField name="buttonText" label="Button Text">
+        <UFormField
+          v-if="state.type === ChallengeType.Plugin"
+          name="pluginChallengeId"
+          label="Plugin Challenge ID"
+          help="Unik identifikator for plugin-utfordringen"
+        >
           <UInput
-            v-model="state.buttonText"
+            v-model="state.pluginChallengeId"
             size="xl"
             required
             class="w-full"
           />
         </UFormField>
         <UFormField
+          name="buttonText"
+          label="Knappetekst"
+          :hint="
+            state.type === ChallengeType.Plugin ? '(valgfritt)' : undefined
+          "
+        >
+          <UInput
+            v-model="state.buttonText"
+            size="xl"
+            :required="state.type !== ChallengeType.Plugin"
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField
+          name="publishedAt"
+          label="Publiseringstidspunkt"
+          hint="(valgfritt - standard: nå)"
+          help="Når utfordringen blir tilgjengelig for brukere"
+        >
+          <UInput
+            v-model="state.publishedAt"
+            type="datetime-local"
+            size="xl"
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField
           v-if="isEditMode"
           name="visibleAt"
-          label="Visible At"
-          hint="(optional)"
-          help="When this challenge becomes visible to users"
+          label="Synlig fra"
+          hint="(valgfritt)"
+          help="Når denne utfordringen blir synlig for brukere"
         >
           <UInput
             v-model="state.visibleAt"
@@ -200,12 +257,12 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             class="w-full"
           />
         </UFormField>
-        <UFormField
+        <!-- <UFormField
           v-if="isEditMode"
           name="startedAt"
-          label="Started At"
-          hint="(optional)"
-          help="When this challenge started"
+          label="Startet"
+          hint="(valgfritt)"
+          help="Når denne utfordringen startet"
         >
           <UInput
             v-model="state.startedAt"
@@ -216,9 +273,9 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         </UFormField>
         <UFormField
           name="endTime"
-          label="End Time"
-          hint="(optional)"
-          help="When this challenge expires"
+          label="Sluttid"
+          hint="(valgfritt)"
+          help="Når denne utfordringen utløper"
         >
           <UInput
             v-model="state.endTime"
@@ -226,7 +283,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             size="xl"
             class="w-full"
           />
-        </UFormField>
+        </UFormField> -->
         <UButton type="submit" size="lg" block>{{ submitLabel }}</UButton>
         <UButton
           v-if="onDelete"
@@ -236,7 +293,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           block
           @click="onDelete"
         >
-          Delete Challenge
+          Slett utfordring
         </UButton>
       </UForm>
 

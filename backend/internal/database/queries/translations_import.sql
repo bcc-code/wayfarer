@@ -1,36 +1,19 @@
 -- Import queries - upsert translated content
 
 -- name: UpsertProjectTranslation :exec
-INSERT INTO project_translations (project_id, language_code, name, description, updated_at)
-VALUES (@project_id::text, @language_code::text, @name::text, @description::text, now())
+INSERT INTO project_translations (project_id, language_code, name, description, rules, updated_at)
+VALUES (@project_id::text, @language_code::text, @name::text, @description::text, @rules::text, now())
 ON CONFLICT (project_id, language_code)
 DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
+    rules = EXCLUDED.rules,
     updated_at = now();
 
 -- name: UpsertEventTranslation :exec
 INSERT INTO event_translations (event_id, language_code, name, description, updated_at)
 VALUES (@event_id::text, @language_code::text, @name::text, @description::text, now())
 ON CONFLICT (event_id, language_code)
-DO UPDATE SET
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    updated_at = now();
-
--- name: UpsertTeamTranslation :exec
-INSERT INTO team_translations (team_id, language_code, name, description, updated_at)
-VALUES (@team_id::text, @language_code::text, @name::text, @description::text, now())
-ON CONFLICT (team_id, language_code)
-DO UPDATE SET
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    updated_at = now();
-
--- name: UpsertSuperTeamTranslation :exec
-INSERT INTO super_team_translations (super_team_id, language_code, name, description, updated_at)
-VALUES (@super_team_id::text, @language_code::text, @name::text, @description::text, now())
-ON CONFLICT (super_team_id, language_code)
 DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,

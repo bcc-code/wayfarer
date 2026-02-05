@@ -1,0 +1,20 @@
+mutation SubmitFeedback($input: SubmitFeedbackInput!) {
+  submitFeedback(input: $input) {
+    id
+  }
+}
+
+mutation DeleteFeedback($id: ID!) {
+  deleteFeedback(id: $id)
+}
+
+mutation ForwardFeedbackToDesk($feedbackId: ID!, $destination: ForwardDestination!) {
+  forwardFeedbackToDesk(feedbackId: $feedbackId, destination: $destination)
+}
+
+mutation MarkFeedbackHandled($feedbackId: ID!) {
+  markFeedbackHandled(feedbackId: $feedbackId) {
+    id
+    handledAt
+  }
+}

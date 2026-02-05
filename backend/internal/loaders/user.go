@@ -9,6 +9,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/google/uuid"
 	"github.com/graph-gophers/dataloader/v7"
 )
 
@@ -59,16 +60,33 @@ func userByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 					displayName = *row.DisplayName
 				}
 
+				// Convert PersonUuid if valid
+				var personUUID *string
+				if row.PersonUuid.Valid {
+					s := uuid.UUID(row.PersonUuid.Bytes).String()
+					personUUID = &s
+				}
+
+				var churchLockedUntil *scalars.DateTime
+				if row.ChurchLockedUntil.Valid {
+					dt := scalars.DateTime{Time: row.ChurchLockedUntil.Time}
+					churchLockedUntil = &dt
+				}
+
 				user := &model.User{
-					ID:            row.ID,
-					MembersID:     row.MembersID,
-					Gender:        model.Gender(row.Gender),
-					ChurchID:      row.ChurchID,
-					Birthdate:     birthdateStr,
-					Email:         row.Email,
-					Name:          displayName,
-					Image:         row.AvatarUrl,
-					ConsentStatus: consentStatus,
+					ID:                row.ID,
+					MembersID:         row.MembersID,
+					PersonUUID:        personUUID,
+					Gender:            model.Gender(row.Gender),
+					ChurchID:          row.ChurchID,
+					ChurchLockedUntil: churchLockedUntil,
+					Birthdate:         birthdateStr,
+					Email:             row.Email,
+					Name:              displayName,
+					Image:             row.AvatarUrl,
+					ConsentStatus:     consentStatus,
+					Language:          row.Language,
+					CreatedAt:         scalars.DateTime{Time: row.CreatedAt.Time},
 				}
 
 				userMap[row.ID] = user
@@ -168,17 +186,9 @@ func fetchConsentDataForUsers(ctx context.Context, db *database.DB, c *cache.Cac
 	return latestConsents, userConsentsMap
 }
 
-// calculateAge returns the age in years based on a birthdate
+// calculateAge returns the age in years based on a birthdate (year difference)
 func calculateAge(birthdate time.Time) int {
-	now := time.Now()
-	age := now.Year() - birthdate.Year()
-	// Adjust if birthday hasn't occurred yet this year
-	// Compare month and day directly to handle leap years correctly
-	if now.Month() < birthdate.Month() ||
-		(now.Month() == birthdate.Month() && now.Day() < birthdate.Day()) {
-		age--
-	}
-	return age
+	return time.Now().Year() - birthdate.Year()
 }
 
 // buildConsentStatus builds the ConsentStatus for a user
@@ -204,9 +214,10 @@ func buildConsentStatus(userID string, birthdate time.Time, latestConsents map[s
 		// Check by consent key (to handle rejection persistence across versions)
 		if userConsent, hasAction := userConsents[consent.Key]; hasAction {
 			// User has taken action on this consent
-			if userConsent.Action == model.ConsentActionAccepted {
+			switch userConsent.Action {
+			case model.ConsentActionAccepted:
 				acceptedConsents = append(acceptedConsents, *userConsent)
-			} else if userConsent.Action == model.ConsentActionRejected {
+			case model.ConsentActionRejected:
 				rejectedConsents = append(rejectedConsents, *userConsent)
 			}
 		} else {

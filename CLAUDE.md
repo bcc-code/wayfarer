@@ -100,8 +100,10 @@ The system exposes a unified GraphQL API defined in the `gql/` directory:
 - **Schema Files**:
   - `shared.graphqls` - Type definitions, enums, inputs, interfaces
   - `schema.graphqls` - Query and Mutation root types
-- **Access Control**: Role-based authorization using `@requireRole` directive
+- **Access Control**: Role-based authorization using `@requireRole` directive on mutations only
 - **Roles**: `user`, `admin`, `m2m`, `superadmin`
+- **Important**: Never use `@requireRole` on queries - only on mutations
+- **Important**: Do not add custom functions to generated resolver files - they will be overwritten by `make generate`
 
 Different consumers (end users, administrators, external systems) access the same endpoint with different authentication tokens that grant appropriate role-based permissions.
 
@@ -128,3 +130,4 @@ Each project can contain multiple events, which usually is some form of in-perso
 - Do not EVER automatically run the seed script!
 - NEVER SEED WITHOUT EXPLICIT PERMISSION
 - Do not run migration without explicit aproval!
+- To run codegen in the backend, run `make generate`

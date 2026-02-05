@@ -6,10 +6,45 @@ package api
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 )
 
 // ClearAllCache is the resolver for the clearAllCache field.
 func (r *mutationResolver) ClearAllCache(ctx context.Context) (bool, error) {
 	r.Cache.Clear()
 	return true, nil
+}
+
+// AdminDashboardStats is the resolver for the adminDashboardStats field.
+func (r *queryResolver) AdminDashboardStats(ctx context.Context) (*model.AdminDashboardStats, error) {
+	cacheKey := "admin:dashboard:stats"
+
+	// Check cache first
+	if cached, ok := r.Cache.Get(cacheKey); ok {
+		if stats, ok := cached.(*model.AdminDashboardStats); ok {
+			return stats, nil
+		}
+	}
+
+	// Fetch from database
+	row, err := r.DB.Queries.GetDashboardStats(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dashboard stats: %w", err)
+	}
+
+	stats := &model.AdminDashboardStats{
+		TotalUsers:          int(row.TotalUsers),
+		TotalProjects:       int(row.TotalProjects),
+		TotalChallenges:     int(row.TotalChallenges),
+		TotalPointsAwarded:  int(row.TotalPointsAwarded),
+		NewUsersLast7Days:   int(row.NewUsersLast7Days),
+		ActiveProjectsCount: int(row.ActiveProjectsCount),
+	}
+
+	// Cache the result
+	r.Cache.Set(cacheKey, stats)
+
+	return stats, nil
 }

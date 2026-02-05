@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_UoznZfyyMQ
 createdAt: 2025-12-02T17:09:43.355455
-updatedAt: 2025-12-18T13:30:00.730595
+updatedAt: 2026-01-09T14:39:58.763995
 workspaceId: wk_XKsmbMdFg7
 folderId: null
 authentication: {}
@@ -14,6 +14,7 @@ body:
         id
         membersId
         name
+        language
         church{
           id
           name
@@ -98,6 +99,6 @@ headers:
   id: 5iyGku050S
 method: POST
 name: ME
-sortPriority: 15000.0
+sortPriority: 20000.0
 url: ${[ HOST ]}/graphql
 urlParameters: []

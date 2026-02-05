@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"bytes"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 	"time"
@@ -27,7 +29,7 @@ type ConsentEventRequest struct {
 	MembersID  string    `json:"members_id" binding:"required"`
 	ConsentKey string    `json:"consent_key" binding:"required"`
 	Action     string    `json:"action" binding:"required,oneof=ACCEPTED REJECTED"`
-	Timestamp  time.Time `json:"timestamp" binding:"required"`
+	Timestamp  time.Time `json:"timestamp"`
 }
 
 // ConsentEventResponse represents the response for a consent event
@@ -49,10 +51,19 @@ func (h *ConsentWebhookHandler) HandleConsentEvent(c *gin.Context) {
 	}
 	sourceStr := source.(string)
 
+	// Read raw body first for logging on error
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		slog.Error("consent_webhook: failed to read request body", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
+		return
+	}
+	c.Request.Body = io.NopCloser(bytes.NewReader(body))
+
 	// Parse request body
 	var req ConsentEventRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		slog.Warn("consent_webhook: invalid request body", "error", err)
+		slog.Warn("consent_webhook: invalid request body", "error", err, "body", string(body))
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid request body",
 			"details": err.Error(),
@@ -60,22 +71,24 @@ func (h *ConsentWebhookHandler) HandleConsentEvent(c *gin.Context) {
 		return
 	}
 
-	// Validate members_id as UUID
-	if _, err := uuid.Parse(req.MembersID); err != nil {
+	// Validate and parse members_id as UUID (this is the person_uuid)
+	parsedUUID, err := uuid.Parse(req.MembersID)
+	if err != nil {
 		slog.Warn("consent_webhook: invalid members_id UUID", "members_id", req.MembersID, "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid members_id format, must be a valid UUID"})
 		return
 	}
+	personUUID := pgtype.UUID{Bytes: parsedUUID, Valid: true}
 
 	slog.Info("consent_webhook: processing consent event",
-		"members_id", req.MembersID,
+		"person_uuid", req.MembersID,
 		"consent_key", req.ConsentKey,
 		"action", req.Action,
 		"source", sourceStr,
 	)
 
-	// Try to get user by members_id
-	user, err := h.DB.Queries.GetUserByMembersID(ctx, req.MembersID)
+	// Try to get user by person_uuid first (preferred)
+	user, err := h.DB.Queries.GetUserByPersonUUID(ctx, personUUID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			// User not found - store as pending consent event
@@ -109,11 +122,9 @@ func (h *ConsentWebhookHandler) HandleConsentEvent(c *gin.Context) {
 	// Create consent history record
 	historyID := ulid.NewUserConsentHistoryID()
 
-	var occurredAt pgtype.Timestamptz
-	if err := occurredAt.Scan(req.Timestamp); err != nil {
-		slog.Error("consent_webhook: failed to convert timestamp", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-		return
+	occurredAt := req.Timestamp
+	if occurredAt.IsZero() {
+		occurredAt = time.Now()
 	}
 
 	_, err = h.DB.Queries.CreateUserConsentHistory(ctx, sqlc.CreateUserConsentHistoryParams{
@@ -122,7 +133,7 @@ func (h *ConsentWebhookHandler) HandleConsentEvent(c *gin.Context) {
 		ConsentID:  consent.ID,
 		ConsentKey: req.ConsentKey,
 		Action:     req.Action,
-		OccurredAt: occurredAt,
+		OccurredAt: pgtype.Timestamptz{Time: occurredAt, Valid: true},
 		Source:     &sourceStr,
 	})
 	if err != nil {
@@ -135,8 +146,8 @@ func (h *ConsentWebhookHandler) HandleConsentEvent(c *gin.Context) {
 		return
 	}
 
-	// Invalidate user consent cache
-	h.Cache.Delete(cache.UserConsentsKey(user.ID))
+	// Invalidate user cache (consent status is part of the cached User object)
+	h.Cache.Delete(cache.UserKey(user.ID))
 
 	slog.Info("consent_webhook: consent event created successfully",
 		"history_id", historyID,
@@ -158,11 +169,9 @@ func (h *ConsentWebhookHandler) storePendingConsentEvent(c *gin.Context, req Con
 
 	pendingID := ulid.NewPendingConsentEventID()
 
-	var occurredAt pgtype.Timestamptz
-	if err := occurredAt.Scan(req.Timestamp); err != nil {
-		slog.Error("consent_webhook: failed to convert timestamp for pending event", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-		return
+	occurredAt := req.Timestamp
+	if occurredAt.IsZero() {
+		occurredAt = time.Now()
 	}
 
 	_, err := h.DB.Queries.CreatePendingConsentEvent(ctx, sqlc.CreatePendingConsentEventParams{
@@ -170,7 +179,7 @@ func (h *ConsentWebhookHandler) storePendingConsentEvent(c *gin.Context, req Con
 		MembersID:  req.MembersID,
 		ConsentKey: req.ConsentKey,
 		Action:     req.Action,
-		OccurredAt: occurredAt,
+		OccurredAt: pgtype.Timestamptz{Time: occurredAt, Valid: true},
 		Source:     &source,
 	})
 	if err != nil {

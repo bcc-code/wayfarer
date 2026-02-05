@@ -41,8 +41,9 @@ const (
 	PrefixLeaderboard         = "leaderboard:"
 	PrefixLeaderboardPosition = "leaderboard:position:"
 	PrefixLeaderboardCount    = "leaderboard:count:"
-	PrefixTeamLeaderboardTags = "team:leaderboard:tags:"
-	PrefixScore               = "score:"
+	PrefixTeamMemberLeaderboard = "team:leaderboard:"
+	PrefixTeamLeaderboardTags   = "team:leaderboard:tags:"
+	PrefixScore                 = "score:"
 
 	// Query results
 	PrefixUsersFilter           = "usersfilter:"
@@ -82,10 +83,17 @@ const (
 	PrefixUserConsents   = "userconsents:"
 	PrefixLatestConsents = "latestconsents"
 
+	// Reverse lookups
+	PrefixUserByPersonUUID = "user:personuuid:"
+
 	// External content
 	PrefixExternalContent        = "externalcontent:"
 	PrefixExternalContentsFilter = "externalcontentsfilter:"
 	PrefixExternalContentsCount  = "externalcontentscount:"
+
+	// File uploads
+	PrefixFileUpload         = "fileupload:"
+	PrefixImageMetadataByURL = "imagemetadata:url:"
 )
 
 // Key builders for different entity types
@@ -93,6 +101,11 @@ const (
 // UserKey builds a cache key for a user by ID
 func UserKey(userID string) string {
 	return PrefixUser + userID
+}
+
+// UserByPersonUUIDKey builds a cache key for looking up a user by person UUID
+func UserByPersonUUIDKey(personUUID string) string {
+	return PrefixUserByPersonUUID + personUUID
 }
 
 // ChurchKey builds a cache key for a church by ID
@@ -122,7 +135,7 @@ func TeamsByUserKey(userID string) string {
 
 // TeamMemberLeaderboardKey builds a cache key for team member leaderboard
 func TeamMemberLeaderboardKey(teamID string) string {
-	return fmt.Sprintf("%s:leaderboard:%s", PrefixTeam, teamID)
+	return PrefixTeamMemberLeaderboard + teamID
 }
 
 // TeamMemberLeaderboardTagsKey builds a cache key for user-specific leaderboard tags
@@ -207,6 +220,11 @@ func ContentItemsByAchievementKey(achievementID string) string {
 	return fmt.Sprintf("%s:items:%s", PrefixAchievement, achievementID)
 }
 
+// ContentItemCountKey builds a cache key for content item count by achievement ID
+func ContentItemCountKey(achievementID string) string {
+	return fmt.Sprintf("%s:itemcount:%s", PrefixAchievement, achievementID)
+}
+
 // UserContentProgressKey builds a cache key for user content progress
 func UserContentProgressKey(userID, achievementID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixUserContentProgress, userID, achievementID)
@@ -287,6 +305,11 @@ func UserAchievementTimestampKey(userID string, achievementID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixUserAchievements, userID, achievementID)
 }
 
+// UserAchievementCelebratedTimestampKey builds a cache key for user achievement celebrated timestamp (celebratedAt)
+func UserAchievementCelebratedTimestampKey(userID string, achievementID string) string {
+	return fmt.Sprintf("%scelebrated:%s:%s", PrefixUserAchievements, userID, achievementID)
+}
+
 // UserChallengeEnrollmentKey builds a cache key for user challenge enrollment timestamp
 func UserChallengeEnrollmentKey(userID string, challengeID string) string {
 	return fmt.Sprintf("%s%s:%s", PrefixUserChallengeEnrollments, userID, challengeID)
@@ -312,14 +335,28 @@ func UserRolesKey(userID string) string {
 	return PrefixUserRoles + userID
 }
 
+// FileUploadKey builds a cache key for a file upload by ID
+func FileUploadKey(fileUploadID string) string {
+	return PrefixFileUpload + fileUploadID
+}
+
+// ImageMetadataByURLKey builds a cache key for image metadata by URL
+func ImageMetadataByURLKey(url string) string {
+	return PrefixImageMetadataByURL + url
+}
+
 // Tag extraction helpers for invalidation
 
 // ExtractProjectTag extracts project ID from a key for tag-based invalidation
+// For keys like "challenge:project:PROJ123:CH456", extracts "PROJ123"
 func ExtractProjectTag(key string) (string, bool) {
 	if strings.Contains(key, ":project:") {
 		parts := strings.Split(key, ":project:")
 		if len(parts) == 2 {
-			return parts[1], true
+			// parts[1] may contain more segments (e.g., "PROJ123:CH456")
+			// Extract just the project ID (first segment)
+			idParts := strings.SplitN(parts[1], ":", 2)
+			return idParts[0], true
 		}
 	}
 	// Check if key is a direct project key
@@ -330,11 +367,15 @@ func ExtractProjectTag(key string) (string, bool) {
 }
 
 // ExtractEventTag extracts event ID from a key for tag-based invalidation
+// For keys like "challenge:event:EV123:CH456", extracts "EV123"
 func ExtractEventTag(key string) (string, bool) {
 	if strings.Contains(key, ":event:") {
 		parts := strings.Split(key, ":event:")
 		if len(parts) == 2 {
-			return parts[1], true
+			// parts[1] may contain more segments (e.g., "EV123:CH456")
+			// Extract just the event ID (first segment)
+			idParts := strings.SplitN(parts[1], ":", 2)
+			return idParts[0], true
 		}
 	}
 	if strings.HasPrefix(key, PrefixEvent) {
@@ -349,11 +390,22 @@ func ExtractUserTag(key string) (string, bool) {
 	if strings.HasPrefix(key, PrefixUser) {
 		return strings.TrimPrefix(key, PrefixUser), true
 	}
-	// Check for user-prefixed relationship keys
-	prefixes := []string{PrefixUserProjects, PrefixUserEvents, PrefixUserRoles}
+	// Check for user-prefixed relationship and progress keys
+	// For composite keys like "usercontent:{userID}:{achievementID}", extract just the userID
+	prefixes := []string{
+		PrefixUserProjects, PrefixUserEvents, PrefixUserRoles,
+		PrefixUserContentProgress, PrefixUserAchievements,
+		PrefixUserStreakActivity, PrefixUserChallengeEnrollments,
+		PrefixUserChallengeCompletions, PrefixUserConsents,
+	}
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(key, prefix) {
-			return strings.TrimPrefix(key, prefix), true
+			remainder := strings.TrimPrefix(key, prefix)
+			// For composite keys, extract just the user ID (first segment)
+			if idx := strings.Index(remainder, ":"); idx > 0 {
+				return remainder[:idx], true
+			}
+			return remainder, true
 		}
 	}
 	return "", false

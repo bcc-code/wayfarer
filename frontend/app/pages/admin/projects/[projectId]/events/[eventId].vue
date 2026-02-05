@@ -34,10 +34,10 @@ const { data, fetching, error } = useAdminProjectEventPageQuery({
 })
 
 const schema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
-  startDate: z.string().min(1, 'Start date is required'),
-  endDate: z.string().min(1, 'End date is required'),
+  name: z.string().min(1, 'Navn er påkrevd'),
+  description: z.string().min(1, 'Beskrivelse er påkrevd'),
+  startDate: z.string().min(1, 'Startdato er påkrevd'),
+  endDate: z.string().min(1, 'Sluttdato er påkrevd'),
 })
 type Schema = z.infer<typeof schema>
 const state = reactive<Schema>({
@@ -83,8 +83,8 @@ async function updateEvent(event: FormSubmitEvent<Schema>) {
         return
       }
       toast.add({
-        title: 'Success',
-        description: 'Event updated successfully',
+        title: 'Suksess',
+        description: 'Arrangement oppdatert',
         color: 'success',
       })
       navigateTo({
@@ -97,7 +97,7 @@ async function updateEvent(event: FormSubmitEvent<Schema>) {
 
 async function deleteEvent() {
   const confirmed = confirm(
-    `Are you sure you want to delete "${state.name}"? This action cannot be undone.`,
+    `Er du sikker på at du vil slette "${state.name}"? Denne handlingen kan ikke angres.`,
   )
 
   if (!confirmed) {
@@ -114,8 +114,8 @@ async function deleteEvent() {
     return
   }
   toast.add({
-    title: 'Success',
-    description: 'Event deleted successfully',
+    title: 'Suksess',
+    description: 'Arrangement slettet',
     color: 'success',
   })
   navigateTo({
@@ -132,7 +132,7 @@ async function deleteEvent() {
         <UBreadcrumb
           :items="[
             {
-              label: 'Projects',
+              label: 'Prosjekter',
               to: { name: 'admin-projects' },
             },
             {
@@ -143,7 +143,7 @@ async function deleteEvent() {
               },
             },
             {
-              label: 'Events',
+              label: 'Arrangementer',
             },
             {
               label: data?.event.name ?? route.params.eventId,
@@ -170,10 +170,10 @@ async function deleteEvent() {
           class="flex max-w-md flex-col gap-6"
           @submit.prevent="updateEvent"
         >
-          <UFormField name="name" label="Name">
+          <UFormField name="name" label="Navn">
             <UInput v-model="state.name" size="xl" required class="w-full" />
           </UFormField>
-          <UFormField name="description" label="Description">
+          <UFormField name="description" label="Beskrivelse">
             <UTextarea
               v-model="state.description"
               class="w-full"
@@ -185,7 +185,7 @@ async function deleteEvent() {
             v-model:start="state.startDate"
             v-model:end="state.endDate"
           />
-          <UButton type="submit" size="lg" block>Save changes</UButton>
+          <UButton type="submit" size="lg" block>Lagre endringer</UButton>
           <UButton
             color="error"
             variant="ghost"
@@ -193,7 +193,7 @@ async function deleteEvent() {
             block
             @click="deleteEvent"
           >
-            Delete Event
+            Slett arrangement
           </UButton>
         </UForm>
       </template>

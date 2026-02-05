@@ -12,18 +12,21 @@ body:
     mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
       submitQuizAnswer(submissionId: $submissionId, input: $input) {
         id
-        selectedAnswerIds
-        selectedAnswers {
-          id
-          answerText
-          isCorrect
-        }
-        isCorrect
         answeredAt
         timeSpentSeconds
         question {
           id
           questionText
+        }
+        ... on PredefinedResponse {
+          selectedAnswerIds
+          selectedAnswers {
+            id
+            answerText
+            isCorrect
+          }
+          isCorrect
+          pointsEarned
         }
       }
     }

@@ -13,6 +13,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.created_at,
     a.updated_at,
     -- Content achievement data
@@ -52,6 +53,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.created_at,
     a.updated_at,
     -- Type-specific fields needed for model construction
@@ -81,6 +83,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.sort_order,
     a.created_at,
     a.updated_at,
@@ -108,6 +111,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.sort_order,
     a.created_at,
     a.updated_at,
@@ -158,6 +162,34 @@ FROM content_achievement_items
 WHERE achievement_id = ANY(@achievement_ids::text[])
 ORDER BY achievement_id, sort_order;
 
+-- name: GetAchievementCompletionStatus :many
+SELECT
+    cai.achievement_id,
+    COUNT(DISTINCT cai.external_content_id)::int AS item_count,
+    COUNT(DISTINCT ucp.external_content_id)::int AS progress_count
+FROM content_achievement_items cai
+LEFT JOIN user_content_progress ucp
+    ON ucp.achievement_id = cai.achievement_id
+    AND ucp.user_id = @user_id::text
+    AND ucp.external_content_id = cai.external_content_id
+WHERE cai.achievement_id = ANY(@achievement_ids::text[])
+GROUP BY cai.achievement_id;
+
+-- name: GetContentItemCounts :many
+-- Get content item counts per achievement (for caching)
+SELECT achievement_id, COUNT(*)::int AS item_count
+FROM content_achievement_items
+WHERE achievement_id = ANY(@achievement_ids::text[])
+GROUP BY achievement_id;
+
+-- name: GetUserProgressCounts :many
+-- Get user progress counts per achievement
+SELECT achievement_id, COUNT(*)::int AS progress_count
+FROM user_content_progress
+WHERE user_id = @user_id::text
+  AND achievement_id = ANY(@achievement_ids::text[])
+GROUP BY achievement_id;
+
 -- ==================== Create Operations ====================
 
 -- name: CreateAchievement :one
@@ -174,7 +206,8 @@ INSERT INTO achievements (
     image_pending,
     image_completed,
     points,
-    hidden
+    hidden,
+    awardable_from
 ) VALUES (
     @id::text,
     @achievement_type::text,
@@ -188,7 +221,8 @@ INSERT INTO achievements (
     @image_pending::text,
     @image_completed::text,
     @points::int,
-    @hidden::bool
+    @hidden::bool,
+    sqlc.narg('awardable_from')::timestamptz
 ) RETURNING *;
 
 -- name: CreateContentAchievementJunction :exec
@@ -234,6 +268,7 @@ SET
     challenge_id = CASE WHEN sqlc.narg('challenge_id')::text IS NOT NULL THEN sqlc.narg('challenge_id')::text ELSE challenge_id END,
     points = CASE WHEN sqlc.narg('points')::int IS NOT NULL THEN sqlc.narg('points')::int ELSE points END,
     hidden = CASE WHEN sqlc.narg('hidden')::bool IS NOT NULL THEN sqlc.narg('hidden')::bool ELSE hidden END,
+    awardable_from = CASE WHEN sqlc.narg('awardable_from')::timestamptz IS NOT NULL THEN sqlc.narg('awardable_from')::timestamptz ELSE awardable_from END,
     updated_at = now()
 WHERE id = @id::text
 RETURNING *;
@@ -278,6 +313,13 @@ SELECT EXISTS(
     SELECT 1 FROM user_achievements
     WHERE user_id = @user_id::text AND achievement_id = @achievement_id::text
 ) AS has_achievement;
+
+-- name: GetUserAwardedAchievementIDs :many
+-- Get which achievements from a list the user already has
+SELECT achievement_id
+FROM user_achievements
+WHERE user_id = @user_id::text
+  AND achievement_id = ANY(@achievement_ids::text[]);
 
 -- name: AwardTeamAchievementBatch :exec
 -- Award achievement to all members of a team in a single query
@@ -342,19 +384,34 @@ WHERE (user_id, achievement_id) IN (
     SELECT unnest(@user_ids::text[]), unnest(@achievement_ids::text[])
 );
 
+-- name: GetBulkUserAchievementCelebratedTimestamps :many
+SELECT user_id, achievement_id, celebrated_at
+FROM user_achievements
+WHERE (user_id, achievement_id) IN (
+    SELECT unnest(@user_ids::text[]), unnest(@achievement_ids::text[])
+);
+
+-- name: MarkAchievementCelebrated :exec
+UPDATE user_achievements
+SET celebrated_at = now()
+WHERE user_id = @user_id::text
+  AND achievement_id = @achievement_id::text
+  AND celebrated_at IS NULL;
+
 -- ==================== Content Progress Operations ====================
+
+-- name: GetBulkUserContentProgress :many
+SELECT user_id, achievement_id, external_content_id, completed_at
+FROM user_content_progress
+WHERE (user_id, achievement_id) IN (
+    SELECT unnest(@user_ids::text[]), unnest(@achievement_ids::text[])
+);
 
 -- name: GetUserContentProgress :many
 SELECT user_id, achievement_id, external_content_id, completed_at
 FROM user_content_progress
 WHERE user_id = @user_id::text
   AND achievement_id = ANY(@achievement_ids::text[]);
-
--- name: GetUserContentProgressForAchievement :many
-SELECT user_id, achievement_id, external_content_id, completed_at
-FROM user_content_progress
-WHERE user_id = @user_id::text
-  AND achievement_id = @achievement_id::text;
 
 -- name: MarkContentItemCompleted :exec
 INSERT INTO user_content_progress (user_id, achievement_id, external_content_id, completed_at)
@@ -368,7 +425,7 @@ WHERE user_id = @user_id::text
   AND external_content_id = @external_content_id::text;
 
 -- name: GetPublishedContentAchievementsByExternalContent :many
--- Get all published (non-hidden) content achievements that contain a specific external content
+-- Get all content achievements that contain a specific external content
 SELECT DISTINCT
     a.id,
     a.achievement_type,
@@ -383,6 +440,7 @@ SELECT DISTINCT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.created_at,
     a.updated_at,
     COALESCE(
@@ -400,18 +458,15 @@ SELECT DISTINCT
 FROM achievements a
 INNER JOIN content_achievements ca ON a.id = ca.achievement_id
 INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
-WHERE cai.external_content_id = @external_content_id::text
-  AND (a.hidden IS NULL OR a.hidden = false);
+WHERE cai.external_content_id = @external_content_id::text;
 
 -- name: MarkContentItemCompletedForAllAchievements :exec
--- Mark content completed for a user across all published achievements containing this content
+-- Mark content completed for a user across all achievements containing this content
 INSERT INTO user_content_progress (user_id, achievement_id, external_content_id, completed_at)
 SELECT @user_id::text, ca.achievement_id, @external_content_id::text, now()
 FROM content_achievements ca
 INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
-INNER JOIN achievements a ON ca.achievement_id = a.id
 WHERE cai.external_content_id = @external_content_id::text
-  AND (a.hidden IS NULL OR a.hidden = false)
 ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING;
 
 -- name: UnmarkContentItemCompletedForAllAchievements :exec
@@ -437,3 +492,34 @@ FROM content_achievement_items cai
 INNER JOIN external_content ec ON cai.external_content_id = ec.id
 WHERE cai.achievement_id = ANY(@achievementids::text[])
 ORDER BY cai.achievement_id, cai.sort_order;
+
+-- name: CheckContentItemInAchievement :one
+-- Check if a content item exists in a specific achievement
+SELECT EXISTS(
+    SELECT 1 FROM content_achievement_items
+    WHERE achievement_id = @achievement_id::text
+      AND external_content_id = @external_content_id::text
+) AS exists;
+
+-- name: GetAchievementByID :one
+-- Get a single achievement by ID with all details
+SELECT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description_pending,
+    a.description_completed,
+    a.notification_text,
+    a.image_pending,
+    a.image_completed,
+    a.points,
+    a.hidden,
+    a.awardable_from,
+    a.sort_order,
+    a.created_at,
+    a.updated_at
+FROM achievements a
+WHERE a.id = @id::text;

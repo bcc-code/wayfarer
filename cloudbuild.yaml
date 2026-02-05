@@ -1,45 +1,98 @@
 steps:
   - name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - docker pull $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:latest || exit 0
+    id: Pull-Cache
+  - name: gcr.io/cloud-builders/docker
+    env:
+      - "DOCKER_BUILDKIT=1"
     args:
       - build
-      - '--no-cache'
-      - '--build-arg=NUXT_PUBLIC_API_URL=${_NUXT_PUBLIC_API_URL}'
-      - '--build-arg=NUXT_PUBLIC_TOKEN_URL=${_NUXT_PUBLIC_TOKEN_URL}'
-      - '--build-arg=NUXT_PUBLIC_LOGIN_URL=${_NUXT_PUBLIC_LOGIN_URL}'
-      - '--build-arg=NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY=${_NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY}'
-      - '--build-arg=NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL=${_NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL}'
-      - '--build-arg=NUXT_PUBLIC_VAPID_PUBLIC_KEY=${_NUXT_PUBLIC_VAPID_PUBLIC_KEY}'
-      - '-t'
+      - "--build-arg=BUILDKIT_INLINE_CACHE=1"
+      - "--cache-from=$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:latest"
+      - "--build-arg=NUXT_PUBLIC_API_URL=${_NUXT_PUBLIC_API_URL}"
+      - "--build-arg=NUXT_PUBLIC_TOKEN_URL=${_NUXT_PUBLIC_TOKEN_URL}"
+      - "--build-arg=NUXT_PUBLIC_AUTH0_DOMAIN=${_NUXT_PUBLIC_AUTH0_DOMAIN}"
+      - "--build-arg=NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY=${_NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY}"
+      - "--build-arg=NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL=${_NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL}"
+      - "--build-arg=NUXT_PUBLIC_VAPID_PUBLIC_KEY=${_NUXT_PUBLIC_VAPID_PUBLIC_KEY}"
+      - "--build-arg=NUXT_PUBLIC_IS_STAGING=${_NUXT_PUBLIC_IS_STAGING}"
+      - "--build-arg=NUXT_PUBLIC_AUTH0_CLIENT_ID=${_NUXT_PUBLIC_AUTH0_CLIENT_ID}"
+      - "--build-arg=NUXT_PUBLIC_AUTH0_AUDIENCE=${_NUXT_PUBLIC_AUTH0_AUDIENCE}"
+      - "--build-arg=NUXT_PUBLIC_FIREBASE_DATABASE=${_NUXT_PUBLIC_FIREBASE_DATABASE}"
+      - "--build-arg=NUXT_PUBLIC_FIREBASE_API_KEY=${_NUXT_PUBLIC_FIREBASE_API_KEY}"
+      - "--build-arg=NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN}"
+      - "--build-arg=NUXT_PUBLIC_FIREBASE_PROJECT_ID=${_NUXT_PUBLIC_FIREBASE_PROJECT_ID}"
+      - "--build-arg=APP_VERSION=$SHORT_SHA"
+      - "-t"
       - >-
         $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+      - "-t"
+      - >-
+        $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:latest
       - .
-      - '-f'
+      - "-f"
       - Dockerfile
     id: Build
+    waitFor:
+      - Pull-Cache
   - name: gcr.io/cloud-builders/docker
     args:
       - push
+      - --all-tags
       - >-
-        $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+        $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME
     id: Push
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        if [ -n "$_STATIC_BUCKET" ]; then
+          docker create --name static-extract $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+          docker cp static-extract:/static /workspace/static-files
+          docker rm static-extract
+          echo "Extracted static files to /workspace/static-files"
+        fi
+    id: Extract-Static
+    waitFor:
+      - Build
+  - name: gcr.io/cloud-builders/gsutil
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        if [ -n "$_STATIC_BUCKET" ]; then
+          gsutil -m rsync -r /workspace/static-files $_STATIC_BUCKET
+          echo "Synced static files to $_STATIC_BUCKET"
+        else
+          echo "Skipping bucket sync: _STATIC_BUCKET not configured"
+        fi
+    id: Sync-Static-To-Bucket
+    waitFor:
+      - Extract-Static
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
     args:
       - run
       - services
       - update
       - $_SERVICE_NAME
-      - '--platform=managed'
+      - "--platform=managed"
       - >-
         --image=$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
       - >-
         --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
-      - '--region=$_DEPLOY_REGION'
-      - '--quiet'
+      - "--region=$_DEPLOY_REGION"
+      - "--quiet"
     id: Deploy
     entrypoint: gcloud
 images:
   - >-
     $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+  - >-
+    $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:latest
 options:
   substitutionOption: ALLOW_LOOSE
   logging: CLOUD_LOGGING_ONLY
@@ -51,12 +104,20 @@ substitutions:
   _PLATFORM: managed
   _SERVICE_NAME: wayfarer
   _DEPLOY_REGION: europe-west3
-  _NUXT_PUBLIC_API_URL: ''
-  _NUXT_PUBLIC_TOKEN_URL: ''
-  _NUXT_PUBLIC_LOGIN_URL: ''
-  _NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY: ''
-  _NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL: ''
-  _NUXT_PUBLIC_VAPID_PUBLIC_KEY: ''
+  _NUXT_PUBLIC_API_URL: ""
+  _NUXT_PUBLIC_TOKEN_URL: ""
+  _NUXT_PUBLIC_AUTH0_DOMAIN: "login.bcc.no"
+  _NUXT_PUBLIC_RUDDERSTACK_WRITE_KEY: ""
+  _NUXT_PUBLIC_RUDDERSTACK_DATA_PLANE_URL: ""
+  _NUXT_PUBLIC_VAPID_PUBLIC_KEY: ""
+  _NUXT_PUBLIC_IS_STAGING: ""
+  _NUXT_PUBLIC_AUTH0_CLIENT_ID: ""
+  _NUXT_PUBLIC_AUTH0_AUDIENCE: ""
+  _STATIC_BUCKET: ""
+  _NUXT_PUBLIC_FIREBASE_DATABASE: ""
+  _NUXT_PUBLIC_FIREBASE_API_KEY: ""
+  _NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ""
+  _NUXT_PUBLIC_FIREBASE_PROJECT_ID: ""
 tags:
   - gcp-cloud-build-deploy-cloud-run
   - gcp-cloud-build-deploy-cloud-run-managed

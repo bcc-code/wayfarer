@@ -44,14 +44,15 @@ func (s *Seeder) SeedAchievements(stats *Stats) error {
 
 func (s *Seeder) seedSimpleAchievements(projectID string, count int, stats *Stats) error {
 	query := `
-		INSERT INTO achievements (id, achievement_type, project_id, event_id, challenge_id, name, description, image_url, points)
-		VALUES ($1, 'SIMPLE', $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO achievements (id, achievement_type, project_id, event_id, challenge_id, name, description_pending, description_completed, image_pending, image_completed, points)
+		VALUES ($1, 'SIMPLE', $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
 
 	for i := 0; i < count; i++ {
 		achievementID := ulid.NewAchievementID()
 		name := s.Fake.Lorem().Word() + " Achievement"
-		description := s.Fake.Lorem().Sentence(10)
+		descriptionPending := s.Fake.Lorem().Sentence(10)
+		descriptionCompleted := "You earned the " + name + "!"
 		imageURL := fmt.Sprintf("https://placecats.com/%d/%d", 300+rand.Intn(100), 300+rand.Intn(100))
 		points := (1 + rand.Intn(20)) * 5
 
@@ -75,7 +76,9 @@ func (s *Seeder) seedSimpleAchievements(projectID string, count int, stats *Stat
 			eventID,
 			challengeID,
 			name,
-			description,
+			descriptionPending,
+			descriptionCompleted,
+			imageURL,
 			imageURL,
 			points,
 		)
@@ -92,8 +95,8 @@ func (s *Seeder) seedSimpleAchievements(projectID string, count int, stats *Stat
 
 func (s *Seeder) seedContentAchievements(projectID string, count int, stats *Stats) error {
 	achievementQuery := `
-		INSERT INTO achievements (id, achievement_type, project_id, event_id, challenge_id, name, description, image_url, points)
-		VALUES ($1, 'CONTENT', $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO achievements (id, achievement_type, project_id, event_id, challenge_id, name, description_pending, description_completed, image_pending, image_completed, points)
+		VALUES ($1, 'CONTENT', $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
 
 	contentQuery := `
@@ -122,7 +125,8 @@ func (s *Seeder) seedContentAchievements(projectID string, count int, stats *Sta
 	for i := 0; i < count; i++ {
 		achievementID := ulid.NewAchievementID()
 		name := "Complete: " + s.Fake.Lorem().Word()
-		description := "Complete all content items to earn this achievement."
+		descriptionPending := "Complete all content items to earn this achievement."
+		descriptionCompleted := "You completed all content items!"
 		imageURL := fmt.Sprintf("https://placecats.com/g/%d/%d", 300+rand.Intn(100), 300+rand.Intn(100))
 		points := 50 + rand.Intn(100)
 
@@ -138,7 +142,9 @@ func (s *Seeder) seedContentAchievements(projectID string, count int, stats *Sta
 			eventID,
 			nil,
 			name,
-			description,
+			descriptionPending,
+			descriptionCompleted,
+			imageURL,
 			imageURL,
 			points,
 		)
@@ -210,8 +216,8 @@ func (s *Seeder) seedContentAchievements(projectID string, count int, stats *Sta
 
 func (s *Seeder) seedStreakAchievements(projectID string, stats *Stats) error {
 	achievementQuery := `
-		INSERT INTO achievements (id, achievement_type, project_id, event_id, challenge_id, name, description, image_url, points)
-		VALUES ($1, 'STREAK', $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO achievements (id, achievement_type, project_id, event_id, challenge_id, name, description_pending, description_completed, image_pending, image_completed, points)
+		VALUES ($1, 'STREAK', $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
 
 	streakQuery := `
@@ -223,7 +229,8 @@ func (s *Seeder) seedStreakAchievements(projectID string, stats *Stats) error {
 	for _, streakID := range s.Data.StreakIDs[projectID] {
 		achievementID := ulid.NewAchievementID()
 		name := "Streak Master"
-		description := "Maintain your streak to earn this achievement."
+		descriptionPending := "Maintain your streak to earn this achievement."
+		descriptionCompleted := "You maintained your streak and earned this achievement!"
 		imageURL := fmt.Sprintf("https://placecats.com/bella/%d/%d", 300+rand.Intn(100), 300+rand.Intn(100))
 		points := 100 + rand.Intn(200)
 
@@ -233,7 +240,9 @@ func (s *Seeder) seedStreakAchievements(projectID string, stats *Stats) error {
 			nil,
 			nil,
 			name,
-			description,
+			descriptionPending,
+			descriptionCompleted,
+			imageURL,
 			imageURL,
 			points,
 		)

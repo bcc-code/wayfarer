@@ -6,15 +6,20 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/loaders"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/ulid"
+	pgx "github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -47,6 +52,9 @@ func (r *mutationResolver) JoinProject(ctx context.Context, projectID string) (*
 		return nil, fmt.Errorf("failed to join project: %w", err)
 	}
 
+	// Notify Firestore listeners about user projects
+	go r.FirebaseService.NotifyUserProjects(context.Background(), userID)
+
 	// Apply translations to the returned project
 	return r.ApplyTranslationToProject(ctx, project), nil
 }
@@ -67,15 +75,28 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.Create
 		description = *input.Description
 	}
 
+	// Build info message visibility params
+	var infoMessageStart, infoMessageEnd pgtype.Timestamptz
+	if input.InfoMessageStart != nil {
+		infoMessageStart = pgtype.Timestamptz{Time: input.InfoMessageStart.Time, Valid: true}
+	}
+	if input.InfoMessageEnd != nil {
+		infoMessageEnd = pgtype.Timestamptz{Time: input.InfoMessageEnd.Time, Valid: true}
+	}
+
 	// Create project in database
 	row, err := r.DB.Queries.CreateProject(ctx, sqlc.CreateProjectParams{
 		ID:                          projectID,
 		Name:                        input.Name,
 		Description:                 description,
 		Rules:                       input.Rules,
+		Infomessage:                 input.InfoMessage,
+		Infomessagestart:            infoMessageStart,
+		Infomessageend:              infoMessageEnd,
 		Startdate:                   pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true},
 		Enddate:                     pgtype.Timestamptz{Time: input.EndDate.Time, Valid: true},
 		Logourl:                     input.Branding.Logo,
+		Bannerurl:                   input.Branding.Banner,
 		Colorlightaccent:            input.Branding.Colors.Light.Accent,
 		Colorlightaccentcontrast:    input.Branding.Colors.Light.AccentContrast,
 		Colorlightonaccent:          input.Branding.Colors.Light.OnAccent,
@@ -111,16 +132,24 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.Create
 	if row.LogoUrl != nil {
 		logo = row.LogoUrl
 	}
+	var banner *string
+	if row.BannerUrl != nil {
+		banner = row.BannerUrl
+	}
 
 	project := &model.Project{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: row.Description,
-		RulesRaw:    row.Rules,
-		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
-		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+		ID:               row.ID,
+		Name:             row.Name,
+		Description:      row.Description,
+		RulesRaw:         row.Rules,
+		InfoMessageRaw:   row.InfoMessage,
+		InfoMessageStart: scalars.ToDateTimePointer(row.InfoMessageStart),
+		InfoMessageEnd:   scalars.ToDateTimePointer(row.InfoMessageEnd),
+		StartDate:        scalars.DateTime{Time: row.StartDate.Time},
+		EndDate:          scalars.DateTime{Time: row.EndDate.Time},
 		Branding: &model.Branding{
-			Logo: logo,
+			Logo:   logo,
+			Banner: banner,
 			Colors: &model.Colors{
 				Light: &model.ColorSet{
 					Accent:            row.ColorLightAccent,
@@ -201,6 +230,15 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 	if input.Rules != nil {
 		params.Rules = input.Rules
 	}
+	if input.InfoMessage != nil {
+		params.Infomessage = input.InfoMessage
+	}
+	if input.InfoMessageStart != nil {
+		params.Infomessagestart = pgtype.Timestamptz{Time: input.InfoMessageStart.Time, Valid: true}
+	}
+	if input.InfoMessageEnd != nil {
+		params.Infomessageend = pgtype.Timestamptz{Time: input.InfoMessageEnd.Time, Valid: true}
+	}
 	if input.StartDate != nil {
 		params.Startdate = pgtype.Timestamptz{Time: input.StartDate.Time, Valid: true}
 	}
@@ -210,6 +248,9 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 	if input.Branding != nil {
 		if input.Branding.Logo != nil {
 			params.Logourl = input.Branding.Logo
+		}
+		if input.Branding.Banner != nil {
+			params.Bannerurl = input.Branding.Banner
 		}
 		if input.Branding.Colors != nil {
 			if input.Branding.Colors.Light != nil {
@@ -256,27 +297,29 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 	// Invalidate cache
 	r.Cache.InvalidateProject(id)
 
-	// Delete translations when translatable fields are updated
-	if input.Name != nil || input.Description != nil || input.Rules != nil {
-		_ = r.DB.Queries.DeleteProjectTranslations(ctx, id)
-		r.Cache.DeletePrefix(cache.PrefixTranslation + "project:" + id)
-	}
-
 	// Convert to GraphQL model
 	var logo *string
 	if row.LogoUrl != nil {
 		logo = row.LogoUrl
 	}
+	var banner *string
+	if row.BannerUrl != nil {
+		banner = row.BannerUrl
+	}
 
 	project := &model.Project{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: row.Description,
-		RulesRaw:    row.Rules,
-		StartDate:   scalars.DateTime{Time: row.StartDate.Time},
-		EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+		ID:               row.ID,
+		Name:             row.Name,
+		Description:      row.Description,
+		RulesRaw:         row.Rules,
+		InfoMessageRaw:   row.InfoMessage,
+		InfoMessageStart: scalars.ToDateTimePointer(row.InfoMessageStart),
+		InfoMessageEnd:   scalars.ToDateTimePointer(row.InfoMessageEnd),
+		StartDate:        scalars.DateTime{Time: row.StartDate.Time},
+		EndDate:          scalars.DateTime{Time: row.EndDate.Time},
 		Branding: &model.Branding{
-			Logo: logo,
+			Logo:   logo,
+			Banner: banner,
 			Colors: &model.Colors{
 				Light: &model.ColorSet{
 					Accent:            row.ColorLightAccent,
@@ -341,6 +384,305 @@ func (r *mutationResolver) ArchiveProject(ctx context.Context, id string) (bool,
 	r.Cache.InvalidateProject(id)
 
 	return true, nil
+}
+
+// Rules is the resolver for the rules field.
+func (r *projectResolver) Rules(ctx context.Context, obj *model.Project) (*model.MarkdownText, error) {
+	// Get base rules from the raw field
+	rules := obj.RulesRaw
+	if rules == nil || *rules == "" {
+		return nil, nil
+	}
+
+	// Apply translation if needed
+	lang := middleware.GetLanguage(ctx)
+	if lang != middleware.DefaultLanguage {
+		trans, _ := r.Loaders.TranslationLoader.Load(ctx, loaders.TranslationKey{
+			EntityType: "project",
+			EntityID:   obj.ID,
+			LangCode:   lang,
+		})()
+
+		if trans != nil && trans.Rules != nil && *trans.Rules != "" {
+			rules = trans.Rules
+		}
+	}
+
+	return &model.MarkdownText{Markdown: *rules}, nil
+}
+
+// InfoMessage is the resolver for the infoMessage field.
+// Note: InfoMessage is intentionally not translated - it's only shown in the source language.
+func (r *projectResolver) InfoMessage(ctx context.Context, obj *model.Project) (*model.MarkdownText, error) {
+	if obj.InfoMessageRaw == nil || *obj.InfoMessageRaw == "" {
+		return nil, nil
+	}
+	return &model.MarkdownText{Markdown: *obj.InfoMessageRaw}, nil
+}
+
+// Challenges is the resolver for the challenges field.
+func (r *projectResolver) Challenges(ctx context.Context, obj *model.Project) ([]model.Challenge, error) {
+	thunk := r.Loaders.ChallengesByProjectLoader.Load(ctx, obj.ID)
+	challenges, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load challenges: %w", err)
+	}
+
+	userID, _ := middleware.GetUserID(ctx)
+
+	result := make([]model.Challenge, 0, len(challenges))
+	for _, ch := range challenges {
+		// For quiz challenges, check session access first
+		if _, ok := ch.(*model.QuizChallenge); ok && userID != "" {
+			quizThunk := r.Loaders.QuizByChallengeIDLoader.Load(ctx, ch.GetID())
+			quiz, err := quizThunk()
+			if err == nil && quiz != nil {
+				hasAccess, err := r.DB.Queries.UserHasAccessToOpenSession(ctx, sqlc.UserHasAccessToOpenSessionParams{
+					Quizid: quiz.ID,
+					Userid: userID,
+				})
+				if err == nil && hasAccess {
+					// Session access grants visibility regardless of publishedAt
+					result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
+					continue
+				}
+			}
+			// Quiz without session access: skip this challenge entirely
+			continue
+		}
+
+		// Check publishedAt
+		publishedAt := getChallengePublishedAt(ch)
+		if publishedAt == nil || publishedAt.After(time.Now()) {
+			continue // Skip unpublished
+		}
+
+		// Check visibility (enrolled OR visible_at in past)
+		visibleAt := getChallengeVisibleAt(ch)
+		isVisible := visibleAt != nil && !visibleAt.After(time.Now())
+
+		if !isVisible && userID != "" {
+			enrolled, err := r.DB.Queries.IsUserEnrolledInChallenge(ctx, sqlc.IsUserEnrolledInChallengeParams{
+				Userid:      userID,
+				Challengeid: ch.GetID(),
+			})
+			if err != nil || !enrolled {
+				continue // Skip not enrolled
+			}
+		} else if !isVisible {
+			continue // Skip not visible
+		}
+
+		result = append(result, r.ApplyTranslationToChallenge(ctx, ch))
+	}
+
+	return result, nil
+}
+
+// Leaderboard is the resolver for the leaderboard field.
+func (r *projectResolver) Leaderboard(ctx context.Context, obj *model.Project, entityType model.LeaderboardEntityType, filter *model.LeaderboardFilter, first *int, after *string, last *int, before *string) (*model.LeaderboardConnection, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Build params for leaderboard service
+	params := services.LeaderboardParams{
+		ContextID:  obj.ID,
+		EntityType: entityType,
+		Filter:     filter,
+		First:      first,
+		After:      after,
+		Last:       last,
+		Before:     before,
+		UserID:     currentUserID,
+	}
+
+	// Get leaderboard from service
+	entries, meEntry, totalCount, err := r.LeaderboardService.GetProjectLeaderboard(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project leaderboard: %w", err)
+	}
+
+	// Apply PERSONS leaderboard restrictions - dynamic limit based on totalCount
+	if entityType == model.LeaderboardEntityTypePersons {
+		result := FilterPersonLeaderboardEntries(entries, totalCount, first, after)
+		entries = result.Entries
+		first = result.AdjustedFirst
+	}
+
+	// Build connection
+	connection, err := buildLeaderboardConnection(ctx, entries, meEntry, totalCount, currentUserID, entityType, obj.ID, r.Loaders, first, last, after, before)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build leaderboard connection: %w", err)
+	}
+
+	return connection, nil
+}
+
+// Events is the resolver for the events field.
+func (r *projectResolver) Events(ctx context.Context, obj *model.Project) ([]model.Event, error) {
+	thunk := r.Loaders.EventsByProjectLoader.Load(ctx, obj.ID)
+	events, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load events: %w", err)
+	}
+
+	result := make([]model.Event, len(events))
+	for i, e := range events {
+		translated := r.ApplyTranslationToEvent(ctx, e)
+		result[i] = *translated
+	}
+
+	return result, nil
+}
+
+// Teams is the resolver for the teams field.
+func (r *projectResolver) Teams(ctx context.Context, obj *model.Project) ([]model.Team, error) {
+	thunk := r.Loaders.TeamsByProjectLoader.Load(ctx, obj.ID)
+	teams, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load teams: %w", err)
+	}
+
+	result := make([]model.Team, len(teams))
+	for i, t := range teams {
+		result[i] = *t
+	}
+
+	return result, nil
+}
+
+// MyChurchTeams is the resolver for the myChurchTeams field.
+func (r *projectResolver) MyChurchTeams(ctx context.Context, obj *model.Project) ([]model.Team, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load current user to get their church ID
+	userThunk := r.Loaders.UserByIDLoader.Load(ctx, currentUserID)
+	user, err := userThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	// Query teams filtered by project and church
+	rows, err := r.DB.Queries.GetTeamsByProjectIDAndChurchID(ctx, sqlc.GetTeamsByProjectIDAndChurchIDParams{
+		Projectid: obj.ID,
+		Churchid:  user.ChurchID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load teams: %w", err)
+	}
+
+	// Convert to GraphQL models
+	result := make([]model.Team, len(rows))
+	for i, row := range rows {
+		description := ""
+		if row.Description != nil {
+			description = *row.Description
+		}
+
+		result[i] = model.Team{
+			ID:                  row.ID,
+			ProjectID:           row.ProjectID,
+			Name:                row.Name,
+			Description:         description,
+			JoinCode:            row.JoinCode,
+			SuperTeamID:         row.SuperTeamID,
+			LeaderboardExcluded: row.LeaderboardExcluded,
+		}
+	}
+
+	return result, nil
+}
+
+// MyTeam is the resolver for the myTeam field.
+func (r *projectResolver) MyTeam(ctx context.Context, obj *model.Project) (*model.Team, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Query user's team in this project
+	row, err := r.DB.Queries.GetUserTeamByProjectID(ctx, sqlc.GetUserTeamByProjectIDParams{
+		Userid:    currentUserID,
+		Projectid: obj.ID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil // User not in any team in this project
+		}
+		return nil, fmt.Errorf("failed to fetch user's team: %w", err)
+	}
+
+	// Convert to GraphQL model
+	description := ""
+	if row.Description != nil {
+		description = *row.Description
+	}
+
+	var superTeamID *string
+	if row.SuperTeamID != nil {
+		superTeamID = row.SuperTeamID
+	}
+
+	return &model.Team{
+		ID:          row.ID,
+		ProjectID:   row.ProjectID,
+		Name:        row.Name,
+		Description: description,
+		SuperTeamID: superTeamID,
+		JoinCode:    row.JoinCode,
+	}, nil
+}
+
+// Achievements is the resolver for the achievements field.
+func (r *projectResolver) Achievements(ctx context.Context, obj *model.Project) ([]model.Achievement, error) {
+	thunk := r.Loaders.AchievementsByProjectLoader.Load(ctx, obj.ID)
+	achievements, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievements: %w", err)
+	}
+
+	// Apply translations to each achievement
+	result := make([]model.Achievement, len(achievements))
+	for i, a := range achievements {
+		result[i] = r.ApplyTranslationToAchievement(ctx, a)
+	}
+
+	return result, nil
+}
+
+// Streaks is the resolver for the streaks field.
+func (r *projectResolver) Streaks(ctx context.Context, obj *model.Project) ([]model.Streak, error) {
+	thunk := r.Loaders.StreaksByProjectLoader.Load(ctx, obj.ID)
+	streaks, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load streaks: %w", err)
+	}
+
+	result := make([]model.Streak, len(streaks))
+	for i, s := range streaks {
+		translated := r.ApplyTranslationToStreak(ctx, s)
+		result[i] = *translated
+	}
+
+	return result, nil
+}
+
+// Journal is the resolver for the journal field.
+// User-facing: returns the current user's score journal for this project
+func (r *projectResolver) Journal(ctx context.Context, obj *model.Project, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+	return r.getScoreJournal(ctx, obj.ID, userID, filter, first, after, last, before)
 }
 
 // Project is the resolver for the project field.
@@ -440,12 +782,15 @@ func (r *queryResolver) Projects(ctx context.Context, filter *model.ProjectFilte
 	modelProjects := make([]model.Project, len(projects))
 	for i, row := range projects {
 		modelProjects[i] = model.Project{
-			ID:          row.ID,
-			Name:        row.Name,
-			Description: row.Description,
-			RulesRaw:    row.Rules,
-			StartDate:   scalars.DateTime{Time: row.StartDate.Time},
-			EndDate:     scalars.DateTime{Time: row.EndDate.Time},
+			ID:               row.ID,
+			Name:             row.Name,
+			Description:      row.Description,
+			RulesRaw:         row.Rules,
+			InfoMessageRaw:   row.InfoMessage,
+			InfoMessageStart: scalars.ToDateTimePointer(row.InfoMessageStart),
+			InfoMessageEnd:   scalars.ToDateTimePointer(row.InfoMessageEnd),
+			StartDate:        scalars.DateTime{Time: row.StartDate.Time},
+			EndDate:          scalars.DateTime{Time: row.EndDate.Time},
 			Branding: &model.Branding{
 				Logo: row.LogoUrl,
 				Colors: &model.Colors{
@@ -537,3 +882,8 @@ func (r *queryResolver) CurrentProject(ctx context.Context) (*model.Project, err
 	// Use translation-aware wrapper to fetch project
 	return r.LoadProjectWithTranslation(ctx, projectID)
 }
+
+// Project returns ProjectResolver implementation.
+func (r *Resolver) Project() ProjectResolver { return &projectResolver{r} }
+
+type projectResolver struct{ *Resolver }

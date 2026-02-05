@@ -1,14 +1,37 @@
 package api
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/services"
 )
+
+// mockTeamUpdateRoleChecker is a mock implementation of teamUpdateRoleChecker
+type mockTeamUpdateRoleChecker struct {
+	mock.Mock
+}
+
+func (m *mockTeamUpdateRoleChecker) IsAdmin(ctx context.Context, userID string) bool {
+	args := m.Called(ctx, userID)
+	return args.Bool(0)
+}
+
+func (m *mockTeamUpdateRoleChecker) CanManageProject(ctx context.Context, userID, projectID string) bool {
+	args := m.Called(ctx, userID, projectID)
+	return args.Bool(0)
+}
+
+func (m *mockTeamUpdateRoleChecker) LoadUserRoles(ctx context.Context, userID string) ([]*sqlc.UserRole, error) {
+	args := m.Called(ctx, userID)
+	return args.Get(0).([]*sqlc.UserRole), args.Error(1)
+}
 
 // TestBuildTeamFilterParamsCursor tests the buildTeamFilterParamsCursor function
 func TestBuildTeamFilterParamsCursor(t *testing.T) {
@@ -537,6 +560,131 @@ func TestBuildTeamCacheKeyParams(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := buildTeamCacheKeyParams(tt.filter, tt.first, tt.after, tt.last, tt.before)
 			tt.check(t, result)
+		})
+	}
+}
+
+func TestValidateTeamUpdateInput(t *testing.T) {
+	ctx := context.Background()
+	userID := "US01ARZ3NDEKTSV4RRFFQ69G5FAV"
+	projectID := "PR01ARZ3NDEKTSV4RRFFQ69G5FAV"
+
+	// teamLeadChecker returns a mock where the user is only a team lead (not admin/project admin/church admin).
+	teamLeadChecker := func() *mockTeamUpdateRoleChecker {
+		m := new(mockTeamUpdateRoleChecker)
+		m.On("IsAdmin", mock.Anything, userID).Return(false)
+		m.On("CanManageProject", mock.Anything, userID, projectID).Return(false)
+		m.On("LoadUserRoles", mock.Anything, userID).Return([]*sqlc.UserRole{
+			{Role: string(services.RoleTeamLead)},
+		}, nil)
+		return m
+	}
+
+	tests := []struct {
+		name        string
+		input       model.UpdateTeamInput
+		setup       func() *mockTeamUpdateRoleChecker
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:  "team lead can update name",
+			input: model.UpdateTeamInput{Name: stringPtr("New Name")},
+			setup: func() *mockTeamUpdateRoleChecker {
+				// No role checks needed — guard is not triggered for name-only updates
+				return new(mockTeamUpdateRoleChecker)
+			},
+			expectError: false,
+		},
+		{
+			name:        "team lead cannot update description",
+			input:       model.UpdateTeamInput{Description: stringPtr("New Desc")},
+			setup:       teamLeadChecker,
+			expectError: true,
+			errorMsg:    "unauthorized: team leads can only update team name",
+		},
+		{
+			name:        "team lead cannot update leaderboardExcluded",
+			input:       model.UpdateTeamInput{LeaderboardExcluded: boolPtr(true)},
+			setup:       teamLeadChecker,
+			expectError: true,
+			errorMsg:    "unauthorized: team leads can only update team name",
+		},
+		{
+			name: "team lead cannot update name and description together",
+			input: model.UpdateTeamInput{
+				Name:        stringPtr("New Name"),
+				Description: stringPtr("New Desc"),
+			},
+			setup:       teamLeadChecker,
+			expectError: true,
+			errorMsg:    "unauthorized: team leads can only update team name",
+		},
+		{
+			name: "admin can update all fields",
+			input: model.UpdateTeamInput{
+				Name:                stringPtr("New Name"),
+				Description:         stringPtr("New Desc"),
+				LeaderboardExcluded: boolPtr(true),
+			},
+			setup: func() *mockTeamUpdateRoleChecker {
+				m := new(mockTeamUpdateRoleChecker)
+				m.On("IsAdmin", mock.Anything, userID).Return(true)
+				return m
+			},
+			expectError: false,
+		},
+		{
+			name: "project admin can update all fields",
+			input: model.UpdateTeamInput{
+				Description:         stringPtr("New Desc"),
+				LeaderboardExcluded: boolPtr(false),
+			},
+			setup: func() *mockTeamUpdateRoleChecker {
+				m := new(mockTeamUpdateRoleChecker)
+				m.On("IsAdmin", mock.Anything, userID).Return(false)
+				m.On("CanManageProject", mock.Anything, userID, projectID).Return(true)
+				return m
+			},
+			expectError: false,
+		},
+		{
+			name:  "church admin can update description",
+			input: model.UpdateTeamInput{Description: stringPtr("New Desc")},
+			setup: func() *mockTeamUpdateRoleChecker {
+				m := new(mockTeamUpdateRoleChecker)
+				m.On("IsAdmin", mock.Anything, userID).Return(false)
+				m.On("CanManageProject", mock.Anything, userID, projectID).Return(false)
+				m.On("LoadUserRoles", mock.Anything, userID).Return([]*sqlc.UserRole{
+					{Role: string(services.RoleChurchAdmin)},
+				}, nil)
+				return m
+			},
+			expectError: false,
+		},
+		{
+			name:  "empty input is allowed for any role",
+			input: model.UpdateTeamInput{},
+			setup: func() *mockTeamUpdateRoleChecker {
+				return new(mockTeamUpdateRoleChecker)
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			checker := tt.setup()
+			err := validateTeamUpdateInput(ctx, checker, userID, projectID, tt.input)
+
+			if tt.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorMsg)
+			} else {
+				require.NoError(t, err)
+			}
+
+			checker.AssertExpectations(t)
 		})
 	}
 }

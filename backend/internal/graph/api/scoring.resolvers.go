@@ -62,6 +62,116 @@ func (r *mutationResolver) CreateScoreAdjustment(ctx context.Context, input mode
 	}, nil
 }
 
+// CreateTeamScoreAdjustment is the resolver for the createTeamScoreAdjustment field.
+func (r *mutationResolver) CreateTeamScoreAdjustment(ctx context.Context, input model.CreateTeamScoreAdjustmentInput) ([]model.ScoreJournal, error) {
+	// Get authenticated user
+	awardedByUserID, ok := middleware.GetUserID(ctx)
+	if !ok || awardedByUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Verify the team exists
+	teams, err := r.DB.Queries.GetTeamsByIDs(ctx, []string{input.TeamID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch team: %w", err)
+	}
+	if len(teams) == 0 {
+		return nil, fmt.Errorf("team not found: %s", input.TeamID)
+	}
+	team := teams[0]
+
+	// Verify the team belongs to the specified project
+	if team.ProjectID != input.ProjectID {
+		return nil, fmt.Errorf("team does not belong to specified project")
+	}
+
+	// Get all team member user IDs
+	memberUserIDs, err := r.DB.Queries.GetUserIDsInTeams(ctx, []string{input.TeamID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch team members: %w", err)
+	}
+	if len(memberUserIDs) == 0 {
+		return nil, fmt.Errorf("team has no members")
+	}
+
+	// Calculate points per member based on distribution mode
+	pointsArray := make([]int32, len(memberUserIDs))
+	switch input.DistributionMode {
+	case model.TeamScoreDistributionModeSplit:
+		basePoints := int32(input.Points / len(memberUserIDs))
+		remainder := input.Points % len(memberUserIDs)
+		for i := range pointsArray {
+			pointsArray[i] = basePoints
+			if i < remainder {
+				pointsArray[i]++
+			}
+		}
+	case model.TeamScoreDistributionModeEach:
+		for i := range pointsArray {
+			pointsArray[i] = int32(input.Points)
+		}
+	default:
+		return nil, fmt.Errorf("invalid distribution mode: %s", input.DistributionMode)
+	}
+
+	// Generate IDs for each entry
+	ids := make([]string, len(memberUserIDs))
+	for i := range ids {
+		ids[i] = ulid.NewScoreJournalID()
+	}
+
+	// Build reason with distribution mode info
+	var reason *string
+	if input.Reason != nil {
+		reasonWithMode := fmt.Sprintf("%s (team: %s, mode: %s)", *input.Reason, input.TeamID, input.DistributionMode)
+		reason = &reasonWithMode
+	} else {
+		reasonWithMode := fmt.Sprintf("Team score adjustment (team: %s, mode: %s)", input.TeamID, input.DistributionMode)
+		reason = &reasonWithMode
+	}
+
+	// Create batch params
+	params := sqlc.CreateTeamScoreAdjustmentBatchParams{
+		Ids:       ids,
+		ProjectID: input.ProjectID,
+		UserIds:   memberUserIDs,
+		EventID:   input.EventID,
+		Points:    pointsArray,
+		Reason:    reason,
+		AwardedBy: &awardedByUserID,
+	}
+
+	// Create entries
+	entries, err := r.DB.Queries.CreateTeamScoreAdjustmentBatch(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create team score adjustment: %w", err)
+	}
+
+	// Invalidate caches
+	for _, userID := range memberUserIDs {
+		r.Cache.InvalidateUser(userID)
+	}
+	r.Cache.InvalidateProject(input.ProjectID)
+	r.Cache.InvalidateTeam(input.TeamID)
+	if input.EventID != nil {
+		r.Cache.InvalidateEvent(*input.EventID)
+	}
+
+	// Convert to GraphQL model
+	result := make([]model.ScoreJournal, len(entries))
+	for i, entry := range entries {
+		result[i] = model.ScoreJournal{
+			ID:         entry.ID,
+			Points:     int(entry.Points),
+			SourceType: model.ScoreSourceTypeManual,
+			Reason:     entry.Reason,
+			CreatedAt:  scalars.DateTime{Time: entry.CreatedAt.Time},
+		}
+	}
+
+	return result, nil
+}
+
 // DeleteScoreJournalEntry is the resolver for the deleteScoreJournalEntry field.
 func (r *mutationResolver) DeleteScoreJournalEntry(ctx context.Context, id string) (bool, error) {
 	err := r.DB.Queries.DeleteScoreJournalEntry(ctx, id)
@@ -73,11 +183,141 @@ func (r *mutationResolver) DeleteScoreJournalEntry(ctx context.Context, id strin
 
 // ScoreJournal is the resolver for the scoreJournal field.
 func (r *queryResolver) ScoreJournal(ctx context.Context, projectID string, userID string, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
-	return r.Resolver.getScoreJournal(ctx, projectID, userID, filter, first, after, last, before)
+	return r.getScoreJournal(ctx, projectID, userID, filter, first, after, last, before)
 }
 
 // AdminScoreJournal is the resolver for the adminScoreJournal field.
 func (r *queryResolver) AdminScoreJournal(ctx context.Context, filter *model.ScoreJournalFilter, first *int, after *string, last *int, before *string) (*model.ScoreJournalConnection, error) {
 	// Pass empty strings for projectID and userID - they will be read from filter if provided
-	return r.Resolver.getScoreJournal(ctx, "", "", filter, first, after, last, before)
+	return r.getScoreJournal(ctx, "", "", filter, first, after, last, before)
 }
+
+// Project is the resolver for the project field.
+func (r *scoreJournalResolver) Project(ctx context.Context, obj *model.ScoreJournal) (*model.Project, error) {
+	return resolveProjectByID(ctx, r.Resolver, obj.ProjectID)
+}
+
+// User is the resolver for the user field.
+func (r *scoreJournalResolver) User(ctx context.Context, obj *model.ScoreJournal) (*model.User, error) {
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load user first to get churchId for authorization
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, obj.UserID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	// Check authorization with user's church
+	if !r.RoleService.CanAccessUser(ctx, currentUserID, obj.UserID, user.ChurchID) {
+		return nil, fmt.Errorf("permission denied")
+	}
+
+	return user, nil
+}
+
+// Event is the resolver for the event field.
+func (r *scoreJournalResolver) Event(ctx context.Context, obj *model.ScoreJournal) (*model.Event, error) {
+	return resolveEventByID(ctx, r.Resolver, obj.EventID)
+}
+
+// Challenge is the resolver for the challenge field.
+func (r *scoreJournalResolver) Challenge(ctx context.Context, obj *model.ScoreJournal) (model.Challenge, error) {
+	return resolveChallengeByID(ctx, r.Resolver, obj.ChallengeID)
+}
+
+// Source is the resolver for the source field.
+func (r *scoreJournalResolver) Source(ctx context.Context, obj *model.ScoreJournal) (model.ScoreSource, error) {
+	// Return nil if no source ID
+	if obj.SourceID == nil {
+		return nil, nil
+	}
+
+	// Load appropriate source based on sourceType
+	switch obj.SourceType {
+	case model.ScoreSourceTypeAchievement:
+		achievement, err := r.LoadAchievementWithTranslation(ctx, *obj.SourceID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load achievement: %w", err)
+		}
+		// Type switch to return the concrete achievement type
+		switch ach := achievement.(type) {
+		case *model.SimpleAchievement:
+			return ach, nil
+		case *model.ContentAchievement:
+			return ach, nil
+		case *model.StreakAchievement:
+			return ach, nil
+		default:
+			return nil, fmt.Errorf("unexpected achievement type: %T", achievement)
+		}
+
+	case model.ScoreSourceTypeChallenge:
+		challenge, err := r.LoadChallengeWithTranslation(ctx, *obj.SourceID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load challenge: %w", err)
+		}
+		// Type switch to return the concrete challenge type that implements ScoreSource
+		switch ch := challenge.(type) {
+		case *model.SimpleChallenge:
+			return ch, nil
+		case *model.QuizChallenge:
+			return ch, nil
+		case *model.ExternalChallenge:
+			return ch, nil
+		default:
+			return nil, fmt.Errorf("unexpected challenge type: %T", challenge)
+		}
+
+	case model.ScoreSourceTypeEvent:
+		event, err := r.LoadEventWithTranslation(ctx, *obj.SourceID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load event: %w", err)
+		}
+		return event, nil
+
+	case model.ScoreSourceTypeManual:
+		// Manual adjustments don't have a source entity
+		return nil, nil
+
+	default:
+		return nil, fmt.Errorf("unknown source type: %s", obj.SourceType)
+	}
+}
+
+// AwardedBy is the resolver for the awardedBy field.
+func (r *scoreJournalResolver) AwardedBy(ctx context.Context, obj *model.ScoreJournal) (*model.User, error) {
+	// Only return user if source_type is MANUAL
+	if obj.SourceType != model.ScoreSourceTypeManual || obj.AwardedByID == nil {
+		return nil, nil
+	}
+
+	// Get current user ID from context
+	currentUserID, ok := middleware.GetUserID(ctx)
+	if !ok || currentUserID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load user first to get churchId for authorization
+	thunk := r.Loaders.UserByIDLoader.Load(ctx, *obj.AwardedByID)
+	user, err := thunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user: %w", err)
+	}
+
+	// Check authorization with user's church
+	if !r.RoleService.CanAccessUser(ctx, currentUserID, *obj.AwardedByID, user.ChurchID) {
+		return nil, fmt.Errorf("permission denied")
+	}
+
+	return user, nil
+}
+
+// ScoreJournal returns ScoreJournalResolver implementation.
+func (r *Resolver) ScoreJournal() ScoreJournalResolver { return &scoreJournalResolver{r} }
+
+type scoreJournalResolver struct{ *Resolver }

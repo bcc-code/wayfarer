@@ -16,8 +16,8 @@ const state = ref<'pending' | 'completed'>('pending')
       <USelect
         v-model="state"
         :items="[
-          { value: 'pending', label: 'Not Completed' },
-          { value: 'completed', label: 'Completed' },
+          { value: 'pending', label: 'Ikke fullført' },
+          { value: 'completed', label: 'Fullført' },
         ]"
         class="absolute top-0"
       />
@@ -59,20 +59,24 @@ const state = ref<'pending' | 'completed'>('pending')
         >
           {{ achievement.descriptionPending }}
         </p>
-        <p v-else class="text-label text-text-muted">No description</p>
+        <p v-else class="text-label text-text-muted">Ingen beskrivelse</p>
       </div>
       <template v-if="achievement.points">
         <div
           v-if="state === 'completed'"
           class="rounded-full bg-background-indent py-2 px-3 text-label text-accent-contrast"
         >
-          +{{ achievement.points ?? 0 }} {{ $t('points') }}
+          +{{ formatNumber(achievement.points ?? 0) }} {{ $t('points') }}
         </div>
         <div
           v-else
           class="rounded-full bg-background-indent py-2 px-3 text-label text-text-muted"
         >
-          {{ $t('givesYouXPoints', { points: achievement.points ?? 0 }) }}
+          {{
+            $t('givesYouXPoints', {
+              points: formatNumber(achievement.points ?? 0),
+            })
+          }}
         </div>
       </template>
     </div>

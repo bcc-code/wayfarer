@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { RoleType, ScopeType } from '~/api/generated'
+import {
+  ConsentAction,
+  ConsentManagementType,
+  RoleType,
+  ScopeType,
+} from '~/api/generated'
 
 definePageMeta({
   layout: 'admin',
@@ -10,6 +15,8 @@ gql(`
 	query AdminUserPage($id: ID!) {
 		user(id: $id) {
 			id
+      personUuid
+      createdAt
 			name
 			email
 			membersId
@@ -17,6 +24,7 @@ gql(`
 			birthdate
 			age
 			image
+			churchLockedUntil
 			church {
 				id
 				name
@@ -39,6 +47,7 @@ gql(`
 						key
 						title
 						version
+						managementType
 					}
 				}
 				rejectedConsents {
@@ -80,6 +89,80 @@ gql(`
 				}
 			}
 		}
+		feedback(filter: { userId: $id }, first: 10) {
+			totalCount
+			edges {
+				node {
+					id
+					message
+					canContactMe
+					userAgent
+					platform
+					screenWidth
+					screenHeight
+					appVersion
+					createdAt
+				}
+			}
+		}
+	}
+`)
+
+gql(`
+	mutation AdminSetUserConsent($userId: ID!, $consentId: ID!, $action: ConsentAction!) {
+		adminSetUserConsent(userId: $userId, consentId: $consentId, action: $action) {
+			id
+			action
+		}
+	}
+`)
+
+gql(`
+	mutation SyncUser($userId: ID!) {
+		syncUser(userId: $userId) {
+			user {
+				id
+				name
+				gender
+				personUuid
+				churchLockedUntil
+				church {
+					id
+					name
+				}
+			}
+			contentEventsProcessed
+			genderUpdated
+			churchUpdated
+			churchLockSkipped
+			personUuidUpdated
+		}
+	}
+`)
+
+gql(`
+	mutation LockUserChurch($userId: ID!) {
+		lockUserChurch(userId: $userId) {
+			id
+			churchLockedUntil
+			church {
+				id
+				name
+			}
+		}
+	}
+`)
+
+gql(`
+	mutation UnlockUserChurch($userId: ID!) {
+		unlockUserChurch(userId: $userId) {
+			id
+			churchLockedUntil
+			church {
+				id
+				name
+			}
+		}
 	}
 `)
 
@@ -100,23 +183,42 @@ const {
 
 const { executeMutation: assignRole } = useAssignRoleMutation()
 const { executeMutation: revokeRole } = useRevokeRoleMutation()
+const { executeMutation: adminSetUserConsent } =
+  useAdminSetUserConsentMutation()
+const { executeMutation: syncUserMutation } = useSyncUserMutation()
+const { executeMutation: lockUserChurchMutation } =
+  useLockUserChurchMutation()
+const { executeMutation: unlockUserChurchMutation } =
+  useUnlockUserChurchMutation()
 const toast = useToast()
+const syncing = ref(false)
+const locking = ref(false)
+const unlocking = ref(false)
+
+const isChurchLocked = computed(() => {
+  const lockedUntil = data.value?.user.churchLockedUntil
+  if (!lockedUntil) return false
+  return new Date(lockedUntil) > new Date()
+})
+
+// Permissions
+const { canAssignRoles } = usePermissions()
 
 const roleOptions = [
-  { label: 'User', value: RoleType.User },
+  { label: 'Bruker', value: RoleType.User },
   { label: 'Admin', value: RoleType.Admin },
   { label: 'Superadmin', value: RoleType.Superadmin },
-  { label: 'Church Admin', value: RoleType.ChurchAdmin },
-  { label: 'Project Admin', value: RoleType.ProjectAdmin },
-  { label: 'Team Lead', value: RoleType.TeamLead },
+  { label: 'Menighetsadmin', value: RoleType.ChurchAdmin },
+  { label: 'Prosjektadmin', value: RoleType.ProjectAdmin },
+  { label: 'Lagleder', value: RoleType.TeamLead },
   { label: 'M2M', value: RoleType.M2M },
 ]
 
 const scopeTypeOptions = [
-  { label: 'None (Global)', value: null },
-  { label: 'Church', value: ScopeType.Church },
-  { label: 'Project', value: ScopeType.Project },
-  { label: 'Team', value: ScopeType.Team },
+  { label: 'Ingen (Global)', value: null },
+  { label: 'Menighet', value: ScopeType.Church },
+  { label: 'Prosjekt', value: ScopeType.Project },
+  { label: 'Lag', value: ScopeType.Team },
 ]
 
 const showAddRoleModal = ref(false)
@@ -125,6 +227,14 @@ const newRole = reactive({
   scopeType: null as ScopeType | null,
   scopeId: '',
 })
+
+const showRemoveConsentModal = ref(false)
+const consentToRemove = ref<{ id: string; title: string } | null>(null)
+
+function openRemoveConsentModal(consentId: string, consentTitle: string) {
+  consentToRemove.value = { id: consentId, title: consentTitle }
+  showRemoveConsentModal.value = true
+}
 
 function resetNewRoleForm() {
   newRole.role = RoleType.User
@@ -138,13 +248,14 @@ async function handleAssignRole() {
       userId: route.params.userId,
       role: newRole.role,
       scopeType: newRole.scopeType,
-      scopeId: newRole.scopeType && newRole.scopeId ? newRole.scopeId : undefined,
+      scopeId:
+        newRole.scopeType && newRole.scopeId ? newRole.scopeId : undefined,
     },
   })
 
   if (result.error) {
     toast.add({
-      title: 'Failed to assign role',
+      title: 'Kunne ikke tildele rolle',
       description: result.error.message,
       color: 'error',
     })
@@ -152,8 +263,8 @@ async function handleAssignRole() {
   }
 
   toast.add({
-    title: 'Role assigned',
-    description: `Successfully assigned ${newRole.role} role`,
+    title: 'Rolle tildelt',
+    description: `Tildelte rollen ${newRole.role}`,
     color: 'success',
   })
 
@@ -162,7 +273,12 @@ async function handleAssignRole() {
   refetch({ requestPolicy: 'network-only' })
 }
 
-async function handleRevokeRole(roleId: string, role: RoleType, scopeType?: ScopeType | null, scopeId?: string | null) {
+async function handleRevokeRole(
+  roleId: string,
+  role: RoleType,
+  scopeType?: ScopeType | null,
+  scopeId?: string | null,
+) {
   const result = await revokeRole({
     input: {
       userId: route.params.userId,
@@ -174,7 +290,7 @@ async function handleRevokeRole(roleId: string, role: RoleType, scopeType?: Scop
 
   if (result.error) {
     toast.add({
-      title: 'Failed to revoke role',
+      title: 'Kunne ikke fjerne rolle',
       description: result.error.message,
       color: 'error',
     })
@@ -182,8 +298,124 @@ async function handleRevokeRole(roleId: string, role: RoleType, scopeType?: Scop
   }
 
   toast.add({
-    title: 'Role revoked',
-    description: `Successfully revoked ${role} role`,
+    title: 'Rolle fjernet',
+    description: `Fjernet rollen ${role}`,
+    color: 'success',
+  })
+
+  refetch({ requestPolicy: 'network-only' })
+}
+
+async function handleRemoveConsent() {
+  if (!consentToRemove.value) return
+
+  const { id, title } = consentToRemove.value
+  const result = await adminSetUserConsent({
+    userId: route.params.userId,
+    consentId: id,
+    action: ConsentAction.Rejected,
+  })
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke fjerne samtykke',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({
+    title: 'Samtykke fjernet',
+    description: `Fjernet samtykke for "${title}"`,
+    color: 'success',
+  })
+
+  showRemoveConsentModal.value = false
+  consentToRemove.value = null
+  refetch()
+}
+
+async function handleSyncUser() {
+  syncing.value = true
+  const result = await syncUserMutation({
+    userId: route.params.userId,
+  })
+  syncing.value = false
+
+  if (result.error) {
+    toast.add({
+      title: 'Synkronisering feilet',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  const syncResult = result.data?.syncUser
+  const details: string[] = []
+  if (syncResult) {
+    if (syncResult.contentEventsProcessed > 0)
+      details.push(`${syncResult.contentEventsProcessed} innholdseventer`)
+    if (syncResult.genderUpdated) details.push('kjønn oppdatert')
+    if (syncResult.churchUpdated) details.push('menighet oppdatert')
+    if (syncResult.churchLockSkipped) details.push('menighet hoppet over (last)')
+    if (syncResult.personUuidUpdated) details.push('person-UUID oppdatert')
+  }
+
+  toast.add({
+    title: 'Synkronisering fullført',
+    description: details.length > 0 ? details.join(', ') : 'Ingen endringer',
+    color: 'success',
+  })
+
+  refetch({ requestPolicy: 'network-only' })
+}
+
+async function handleLockChurch() {
+  locking.value = true
+  const result = await lockUserChurchMutation({
+    userId: route.params.userId,
+  })
+  locking.value = false
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke låse menighet',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({
+    title: 'Menighet låst',
+    description: 'Menigheten er låst i 6 måneder',
+    color: 'success',
+  })
+
+  refetch({ requestPolicy: 'network-only' })
+}
+
+async function handleUnlockChurch() {
+  unlocking.value = true
+  const result = await unlockUserChurchMutation({
+    userId: route.params.userId,
+  })
+  unlocking.value = false
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke låse opp menighet',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({
+    title: 'Menighet låst opp',
+    description: 'Menighetslåsing er fjernet',
     color: 'success',
   })
 
@@ -199,17 +431,20 @@ const scoreTotalCount = computed(
   () => data.value?.adminScoreJournal.totalCount ?? 0,
 )
 
+const scoreTotal = computed(() =>
+  scoreEntries.value.reduce((acc, entry) => acc + entry.points, 0),
+)
+
 function formatSourceType(type: string) {
   return type.charAt(0) + type.slice(1).toLowerCase()
 }
 
-function formatScoreDate(date: string) {
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
+// Feedback helpers
+const feedbackEntries = computed(
+  () => data.value?.feedback.edges.map((edge) => edge.node) ?? [],
+)
+
+const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
 </script>
 
 <template>
@@ -218,7 +453,7 @@ function formatScoreDate(date: string) {
       <UContainer>
         <UBreadcrumb
           :items="[
-            { label: 'Users', to: { name: 'admin-users' } },
+            { label: 'Brukere', to: { name: 'admin-users' } },
             {
               label: data?.user.name ?? route.params.userId,
               to: {
@@ -235,107 +470,197 @@ function formatScoreDate(date: string) {
       <ErrorState v-else-if="error" :error />
       <div v-else-if="data" class="space-y-6">
         <!-- User Header -->
-        <div class="flex items-center gap-6">
-          <UAvatar
-            :src="data.user.image ?? ''"
-            :text="getInitials(data.user.name)"
-            size="2xl"
-          />
+        <div class="flex items-start justify-between">
           <div>
             <h1 class="text-3xl font-bold">{{ data.user.name }}</h1>
             <p class="text-dimmed text-lg">{{ data.user.email }}</p>
           </div>
+          <UButton
+            icon="i-lucide-refresh-cw"
+            variant="soft"
+            :loading="syncing"
+            @click="handleSyncUser"
+          >
+            Synkroniser
+          </UButton>
         </div>
 
         <!-- User Info -->
-        <dl class="text-sm">
-          <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Members ID</dt>
-            <dd class="font-medium">{{ data.user.membersId }}</dd>
+        <div class="space-y-6">
+          <!-- Identity -->
+          <div>
+            <h3 class="mb-2 text-xs font-medium uppercase tracking-wide">
+              Identitet
+            </h3>
+            <dl
+              class="text-sm grid grid-cols-[auto_1fr] gap-x-6 divide-y divide-default"
+            >
+              <div class="py-2 grid grid-cols-subgrid col-span-full">
+                <dt class="text-muted w-36 shrink-0">ID</dt>
+                <dd class="font-mono">{{ data.user.id }}</dd>
+              </div>
+              <div class="py-2 grid grid-cols-subgrid col-span-full">
+                <dt class="text-muted w-36 shrink-0">Members-ID</dt>
+                <dd class="font-medium">{{ data.user.membersId }}</dd>
+              </div>
+              <div class="py-2 grid grid-cols-subgrid col-span-full">
+                <dt class="text-muted w-36 shrink-0">Members-UUID</dt>
+                <dd class="font-medium">{{ data.user.personUuid }}</dd>
+              </div>
+              <div class="py-2 grid grid-cols-subgrid col-span-full">
+                <dt class="text-muted w-36 shrink-0">Bruker opprettet</dt>
+                <dd class="font-medium">
+                  {{ formatDateTime(data.user.createdAt) }}
+                </dd>
+              </div>
+            </dl>
           </div>
-          <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">User ID</dt>
-            <dd class="font-mono">{{ data.user.id }}</dd>
+
+          <!-- Personal -->
+          <div>
+            <h3 class="mb-2 text-xs font-medium uppercase tracking-wide">
+              Personlig
+            </h3>
+            <dl
+              class="text-sm grid grid-cols-[auto_1fr] gap-x-6 divide-y divide-default"
+            >
+              <div class="py-2 grid grid-cols-subgrid col-span-full">
+                <dt class="text-muted w-36 shrink-0">Kjønn</dt>
+                <dd class="font-medium">
+                  {{ capitalizeFirst(data.user.gender) }}
+                </dd>
+              </div>
+              <div class="py-2 grid grid-cols-subgrid col-span-full">
+                <dt class="text-muted w-36 shrink-0">Alder</dt>
+                <dd class="font-medium">{{ data.user.age }} år</dd>
+              </div>
+              <div class="py-2 grid grid-cols-subgrid col-span-full">
+                <dt class="text-muted w-36 shrink-0">Fødselsdato</dt>
+                <dd class="font-medium">
+                  {{ formatDate(data.user.birthdate) }}
+                </dd>
+              </div>
+            </dl>
           </div>
-          <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Gender</dt>
-            <dd class="font-medium">{{ capitalizeFirst(data.user.gender) }}</dd>
+
+          <!-- Church -->
+          <div>
+            <h3 class="mb-2 text-xs font-medium uppercase tracking-wide">
+              Menighet
+            </h3>
+            <dl
+              class="text-sm grid grid-cols-[auto_1fr] gap-x-6 divide-y divide-default"
+            >
+              <div class="py-2 grid grid-cols-subgrid col-span-full">
+                <dt class="text-muted w-36 shrink-0">Navn</dt>
+                <dd class="font-medium">{{ data.user.church.name }}</dd>
+              </div>
+              <div class="py-2 grid grid-cols-subgrid col-span-full">
+                <dt class="text-muted w-36 shrink-0">ID</dt>
+                <dd class="font-mono">{{ data.user.church.id }}</dd>
+              </div>
+              <div class="py-2 grid grid-cols-subgrid col-span-full">
+                <dt class="text-muted w-36 shrink-0">Synk-lås</dt>
+                <dd class="flex items-center gap-2">
+                  <template v-if="isChurchLocked">
+                    <UBadge color="warning" variant="soft">
+                      Låst til
+                      {{ formatDateTime(data.user.churchLockedUntil!) }}
+                    </UBadge>
+                    <UButton
+                      size="xs"
+                      variant="soft"
+                      color="neutral"
+                      :loading="unlocking"
+                      @click="handleUnlockChurch"
+                    >
+                      Lås opp
+                    </UButton>
+                  </template>
+                  <template v-else>
+                    <span class="text-dimmed text-sm">Ikke låst</span>
+                    <UButton
+                      size="xs"
+                      variant="soft"
+                      color="neutral"
+                      :loading="locking"
+                      @click="handleLockChurch"
+                    >
+                      Lås i 6 måneder
+                    </UButton>
+                  </template>
+                </dd>
+              </div>
+            </dl>
           </div>
-          <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Age</dt>
-            <dd class="font-medium">{{ data.user.age }} years</dd>
-          </div>
-          <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Birthdate</dt>
-            <dd class="font-medium">{{ formatDate(data.user.birthdate) }}</dd>
-          </div>
-          <div class="flex gap-6 border-b border-default py-2">
-            <dt class="text-muted w-24 shrink-0">Church</dt>
-            <dd class="font-medium">{{ data.user.church.name }}</dd>
-          </div>
-          <div class="flex gap-6 py-2">
-            <dt class="text-muted w-24 shrink-0">Church ID</dt>
-            <dd class="font-mono">{{ data.user.church.id }}</dd>
-          </div>
-        </dl>
+        </div>
 
         <!-- Roles Card -->
         <UCard>
-            <template #header>
-              <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold">Roles & Permissions</h2>
-                <UButton
-                  icon="i-lucide-plus"
-                  size="sm"
-                  @click="showAddRoleModal = true"
-                >
-                  Add Role
-                </UButton>
-              </div>
-            </template>
-
-            <div v-if="data.user.roles.length > 0" class="space-y-3">
-              <div
-                v-for="role in data.user.roles"
-                :key="role.id"
-                class="border-default flex items-center justify-between rounded-md border p-3"
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-semibold">Roller og tillatelser</h2>
+              <UButton
+                v-if="canAssignRoles"
+                icon="i-lucide-plus"
+                size="sm"
+                @click="showAddRoleModal = true"
               >
-                <div class="flex items-center gap-3">
-                  <UBadge variant="soft" size="lg">
-                    {{ role.role }}
-                  </UBadge>
-                  <div v-if="role.scope">
-                    <span class="text-dimmed text-sm">Scope: </span>
-                    <span class="text-sm font-medium">
-                      {{ capitalizeFirst(role.scope.type) }}
-                    </span>
-                    <span class="text-dimmed ml-2 text-xs">
-                      ({{ role.scope.id }})
-                    </span>
-                  </div>
-                </div>
-                <UButton
-                  icon="i-lucide-trash-2"
-                  color="error"
-                  variant="ghost"
-                  size="sm"
-                  @click="handleRevokeRole(role.id, role.role, role.scope?.type, role.scope?.id)"
-                />
-              </div>
+                Legg til rolle
+              </UButton>
             </div>
-            <div v-else class="text-dimmed">No roles assigned</div>
+          </template>
+
+          <div v-if="data.user.roles.length > 0" class="space-y-3">
+            <div
+              v-for="role in data.user.roles"
+              :key="role.id"
+              class="border-default flex items-center justify-between rounded-md border p-3"
+            >
+              <div class="flex items-center gap-3">
+                <UBadge variant="soft" size="lg">
+                  {{ role.role }}
+                </UBadge>
+                <div v-if="role.scope">
+                  <span class="text-dimmed text-sm">Omfang: </span>
+                  <span class="text-sm font-medium">
+                    {{ capitalizeFirst(role.scope.type) }}
+                  </span>
+                  <span class="text-dimmed ml-2 text-xs">
+                    ({{ role.scope.id }})
+                  </span>
+                </div>
+              </div>
+              <UButton
+                v-if="canAssignRoles"
+                icon="i-lucide-trash-2"
+                color="error"
+                variant="ghost"
+                size="sm"
+                @click="
+                  handleRevokeRole(
+                    role.id,
+                    role.role,
+                    role.scope?.type,
+                    role.scope?.id,
+                  )
+                "
+              />
+            </div>
+          </div>
+          <div v-else class="text-dimmed">Ingen roller tildelt</div>
         </UCard>
 
         <!-- Consents Card -->
         <UCard>
           <template #header>
-            <h2 class="text-xl font-semibold">Consents</h2>
+            <h2 class="text-xl font-semibold">Samtykker</h2>
           </template>
 
           <div class="space-y-4">
             <!-- Pending Consents -->
             <div v-if="data.user.consentStatus.pendingConsents.length > 0">
-              <h3 class="text-muted mb-2 text-sm font-medium">Pending</h3>
+              <h3 class="text-muted mb-2 text-sm font-medium">Ventende</h3>
               <div class="space-y-2">
                 <div
                   v-for="consent in data.user.consentStatus.pendingConsents"
@@ -343,10 +668,12 @@ function formatScoreDate(date: string) {
                   class="border-default flex items-center justify-between rounded-md border p-3"
                 >
                   <div class="flex items-center gap-3">
-                    <UBadge variant="soft" color="warning">Pending</UBadge>
+                    <UBadge variant="soft" color="warning">Ventende</UBadge>
                     <div>
                       <span class="font-medium">{{ consent.title }}</span>
-                      <span class="text-dimmed ml-2 text-xs">v{{ consent.version }}</span>
+                      <span class="text-dimmed ml-2 text-xs"
+                        >v{{ consent.version }}</span
+                      >
                     </div>
                   </div>
                   <code class="text-dimmed text-xs">{{ consent.key }}</code>
@@ -356,23 +683,47 @@ function formatScoreDate(date: string) {
 
             <!-- Accepted Consents -->
             <div v-if="data.user.consentStatus.acceptedConsents.length > 0">
-              <h3 class="text-muted mb-2 text-sm font-medium">Accepted</h3>
+              <h3 class="text-muted mb-2 text-sm font-medium">Akseptert</h3>
               <div class="space-y-2">
                 <div
                   v-for="item in data.user.consentStatus.acceptedConsents"
                   :key="item.id"
-                  class="border-default flex items-center justify-between rounded-md border p-3"
+                  class="border-default flex items-center justify-between gap-4 rounded-md border p-3"
                 >
                   <div class="flex items-center gap-3">
-                    <UBadge variant="soft" color="success">Accepted</UBadge>
+                    <UBadge variant="soft" color="success">Akseptert</UBadge>
                     <div>
                       <span class="font-medium">{{ item.consent.title }}</span>
-                      <span class="text-dimmed ml-2 text-xs">v{{ item.consent.version }}</span>
+                      <span class="text-dimmed ml-2 text-xs">
+                        v{{ item.consent.version }}
+                      </span>
                     </div>
                   </div>
+                  <UButton
+                    v-if="
+                      item.consent.managementType ===
+                      ConsentManagementType.Local
+                    "
+                    color="neutral"
+                    variant="soft"
+                    size="sm"
+                    class="ml-auto"
+                    @click="
+                      openRemoveConsentModal(
+                        item.consent.id,
+                        item.consent.title,
+                      )
+                    "
+                  >
+                    Fjern samtykke
+                  </UButton>
                   <div class="text-right">
-                    <code class="text-dimmed text-xs">{{ item.consent.key }}</code>
-                    <div class="text-dimmed text-xs">{{ formatDateTime(item.actionDate) }}</div>
+                    <code class="text-dimmed text-xs">
+                      {{ item.consent.key }}
+                    </code>
+                    <div class="text-dimmed text-xs">
+                      {{ formatDateTime(item.actionDate) }}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -380,7 +731,7 @@ function formatScoreDate(date: string) {
 
             <!-- Rejected Consents -->
             <div v-if="data.user.consentStatus.rejectedConsents.length > 0">
-              <h3 class="text-muted mb-2 text-sm font-medium">Rejected</h3>
+              <h3 class="text-muted mb-2 text-sm font-medium">Avvist</h3>
               <div class="space-y-2">
                 <div
                   v-for="item in data.user.consentStatus.rejectedConsents"
@@ -388,15 +739,21 @@ function formatScoreDate(date: string) {
                   class="border-default flex items-center justify-between rounded-md border p-3"
                 >
                   <div class="flex items-center gap-3">
-                    <UBadge variant="soft" color="error">Rejected</UBadge>
+                    <UBadge variant="soft" color="error">Avvist</UBadge>
                     <div>
                       <span class="font-medium">{{ item.consent.title }}</span>
-                      <span class="text-dimmed ml-2 text-xs">v{{ item.consent.version }}</span>
+                      <span class="text-dimmed ml-2 text-xs"
+                        >v{{ item.consent.version }}</span
+                      >
                     </div>
                   </div>
                   <div class="text-right">
-                    <code class="text-dimmed text-xs">{{ item.consent.key }}</code>
-                    <div class="text-dimmed text-xs">{{ formatDateTime(item.actionDate) }}</div>
+                    <code class="text-dimmed text-xs">{{
+                      item.consent.key
+                    }}</code>
+                    <div class="text-dimmed text-xs">
+                      {{ formatDateTime(item.actionDate) }}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -411,7 +768,7 @@ function formatScoreDate(date: string) {
               "
               class="text-dimmed"
             >
-              No consent activity
+              Ingen samtykkeaktivitet
             </div>
           </div>
         </UCard>
@@ -421,17 +778,18 @@ function formatScoreDate(date: string) {
           <template #header>
             <div class="flex items-center justify-between">
               <h2 class="text-xl font-semibold">
-                Score Journal
-                <span v-if="scoreTotalCount > 0" class="text-dimmed text-sm font-normal">
-                  ({{ scoreTotalCount }} entries)
-                </span>
+                Poenglogg
+                <template v-if="scoreTotalCount > 0">
+                  <UBadge color="neutral" variant="soft">
+                    {{ scoreTotal }} poeng
+                  </UBadge>
+                  <span class="text-dimmed text-sm font-normal">
+                    ({{ scoreTotalCount }} oppføringer)
+                  </span>
+                </template>
               </h2>
-              <UButton
-                variant="ghost"
-                size="sm"
-                :to="{ name: 'admin-scores' }"
-              >
-                View All
+              <UButton variant="ghost" size="sm" :to="{ name: 'admin-scores' }">
+                Vis alle
               </UButton>
             </div>
           </template>
@@ -447,7 +805,8 @@ function formatScoreDate(date: string) {
                   :color="entry.points >= 0 ? 'success' : 'error'"
                   variant="soft"
                 >
-                  {{ entry.points >= 0 ? '+' : '' }}{{ entry.points }}
+                  {{ entry.points >= 0 ? '+' : ''
+                  }}{{ formatNumber(entry.points) }}
                 </UBadge>
                 <div>
                   <span class="font-medium">{{ entry.project.name }}</span>
@@ -457,19 +816,86 @@ function formatScoreDate(date: string) {
                 </div>
               </div>
               <div class="text-right">
-                <div v-if="entry.reason" class="text-dimmed max-w-xs truncate text-sm">
+                <div
+                  v-if="entry.reason"
+                  class="text-dimmed max-w-xs truncate text-sm"
+                >
                   {{ entry.reason }}
                 </div>
                 <div class="text-dimmed text-xs">
-                  {{ formatScoreDate(entry.createdAt) }}
+                  {{ formatDateTime(entry.createdAt) }}
                 </div>
               </div>
             </div>
-            <div v-if="scoreTotalCount > 20" class="text-dimmed pt-2 text-center text-sm">
-              Showing 20 of {{ scoreTotalCount }} entries
+            <div
+              v-if="scoreTotalCount > 20"
+              class="text-dimmed pt-2 text-center text-sm"
+            >
+              Viser 20 av {{ scoreTotalCount }} oppføringer
             </div>
           </div>
-          <div v-else class="text-dimmed">No score entries</div>
+          <div v-else class="text-dimmed">Ingen poengoppføringer</div>
+        </UCard>
+
+        <!-- Feedback Card -->
+        <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-semibold">
+                Tilbakemeldinger
+                <span
+                  v-if="feedbackTotalCount > 0"
+                  class="text-dimmed text-sm font-normal"
+                >
+                  ({{ feedbackTotalCount }}
+                  {{ feedbackTotalCount === 1 ? 'oppføring' : 'oppføringer' }})
+                </span>
+              </h2>
+              <UButton
+                variant="ghost"
+                size="sm"
+                :to="{ name: 'admin-feedback' }"
+              >
+                Vis alle
+              </UButton>
+            </div>
+          </template>
+
+          <div v-if="feedbackEntries.length > 0" class="space-y-3">
+            <div
+              v-for="entry in feedbackEntries"
+              :key="entry.id"
+              class="border-default rounded-md border p-3"
+            >
+              <div class="flex items-start justify-between gap-4">
+                <p class="text-sm whitespace-pre-wrap">{{ entry.message }}</p>
+                <UBadge
+                  :color="entry.canContactMe ? 'success' : 'neutral'"
+                  variant="soft"
+                  class="shrink-0"
+                >
+                  {{ entry.canContactMe ? 'Kan kontaktes' : 'Ikke kontakt' }}
+                </UBadge>
+              </div>
+              <div
+                class="text-dimmed mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs"
+              >
+                <span>{{ formatDateTime(entry.createdAt) }}</span>
+                <span v-if="entry.platform">{{ entry.platform }}</span>
+                <span v-if="entry.screenWidth && entry.screenHeight">
+                  {{ entry.screenWidth }}x{{ entry.screenHeight }}
+                </span>
+                <code v-if="entry.appVersion">v{{ entry.appVersion }}</code>
+              </div>
+            </div>
+            <div
+              v-if="feedbackTotalCount > 10"
+              class="text-dimmed pt-2 text-center text-sm"
+            >
+              Viser 10 av {{ feedbackTotalCount }} oppføringer
+            </div>
+          </div>
+          <div v-else class="text-dimmed">Ingen tilbakemeldinger</div>
         </UCard>
       </div>
     </UContainer>
@@ -477,12 +903,12 @@ function formatScoreDate(date: string) {
     <!-- Add Role Modal -->
     <UModal v-model:open="showAddRoleModal">
       <template #header>
-        <h3 class="text-lg font-semibold">Add Role</h3>
+        <h3 class="text-lg font-semibold">Legg til rolle</h3>
       </template>
 
       <template #body>
         <div class="space-y-4">
-          <UFormField label="Role">
+          <UFormField label="Rolle">
             <USelect
               v-model="newRole.role"
               :items="roleOptions"
@@ -491,7 +917,7 @@ function formatScoreDate(date: string) {
             />
           </UFormField>
 
-          <UFormField label="Scope Type">
+          <UFormField label="Omfangstype">
             <USelect
               v-model="newRole.scopeType"
               :items="scopeTypeOptions"
@@ -500,10 +926,10 @@ function formatScoreDate(date: string) {
             />
           </UFormField>
 
-          <UFormField v-if="newRole.scopeType" label="Scope ID">
+          <UFormField v-if="newRole.scopeType" label="Omfangs-ID">
             <UInput
               v-model="newRole.scopeId"
-              :placeholder="`Enter ${newRole.scopeType.toLowerCase()} ID`"
+              :placeholder="`Skriv inn ${newRole.scopeType.toLowerCase()}-ID`"
               class="w-full"
             />
           </UFormField>
@@ -514,12 +940,53 @@ function formatScoreDate(date: string) {
         <div class="flex justify-end gap-3">
           <UButton
             variant="ghost"
-            @click="showAddRoleModal = false; resetNewRoleForm()"
+            @click="
+              () => {
+                showAddRoleModal = false
+                resetNewRoleForm()
+              }
+            "
           >
-            Cancel
+            Avbryt
           </UButton>
-          <UButton @click="handleAssignRole">
-            Assign Role
+          <UButton @click="handleAssignRole"> Tildel rolle </UButton>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Remove Consent Confirmation Modal -->
+    <UModal v-model:open="showRemoveConsentModal">
+      <template #header>
+        <h3 class="text-lg font-semibold">Fjern samtykke</h3>
+      </template>
+
+      <template #body>
+        <p>
+          Er du sikker på at du vil fjerne samtykke for
+          <strong>{{ consentToRemove?.title }}</strong
+          >?
+        </p>
+        <p class="text-dimmed mt-2 text-sm">
+          Samtykket vil bli markert som avvist.
+        </p>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-3 w-full">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            @click="
+              () => {
+                showRemoveConsentModal = false
+                consentToRemove = null
+              }
+            "
+          >
+            Avbryt
+          </UButton>
+          <UButton color="error" @click="handleRemoveConsent">
+            Fjern samtykke
           </UButton>
         </div>
       </template>

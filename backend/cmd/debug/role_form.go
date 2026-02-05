@@ -278,10 +278,11 @@ func (m model) updateRoleForm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case "ctrl+d": // Clear filter
 		field := form.fields[form.cursor]
-		if field == "user" {
+		switch field {
+		case "user":
 			form.userFilter = ""
 			form.applyUserFilter()
-		} else if field == "assigned_by" {
+		case "assigned_by":
 			form.assignerFilter = ""
 			form.applyAssignerFilter()
 		}
@@ -494,10 +495,11 @@ func (m model) updateRoleForm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			field := form.fields[form.cursor]
 			if (field == "user" || field == "assigned_by") && len(msg.String()) == 1 {
 				char := msg.String()
-				if field == "user" {
+				switch field {
+				case "user":
 					form.userFilter += char
 					form.applyUserFilter()
-				} else if field == "assigned_by" {
+				case "assigned_by":
 					form.assignerFilter += char
 					form.applyAssignerFilter()
 				}

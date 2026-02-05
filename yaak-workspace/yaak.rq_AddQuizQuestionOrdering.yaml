@@ -1,0 +1,67 @@
+type: http_request
+model: http_request
+id: rq_AddQuizQuestionOrdering
+createdAt: 2026-01-26T12:00:00
+updatedAt: 2026-01-26T14:02:27.519042
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation AddQuizQuestion($quizId: ID!, $input: CreateQuizQuestionInput!) {
+      addQuizQuestion(quizId: $quizId, input: $input) {
+        id
+        questionText
+        questionOrder
+        timeoutSeconds
+        points
+        ... on OrderingQuestion {
+          orderingItems {
+            id
+            itemText
+          }
+        }
+      }
+    }
+  variables: |
+    {
+      "quizId": "QZ01KCKBKDX498QPVFRCSAKNSDEN",
+      "input": {
+        "questionType": "ORDERING",
+        "questionText": "Put these events in chronological order:",
+        "questionOrder": 9,
+        "timeoutSeconds": 60,
+        "points": 5,
+        "orderingItems": [
+          {
+            "itemText": "Creation",
+            "correctOrder": 1
+          },
+          {
+            "itemText": "The Flood",
+            "correctOrder": 2
+          },
+          {
+            "itemText": "Exodus from Egypt",
+            "correctOrder": 3
+          },
+          {
+            "itemText": "Temple Built",
+            "correctOrder": 4
+          }
+        ]
+      }
+    }
+bodyType: graphql
+description: Add an ordering question to a quiz (admin only). Items are displayed to users without correctOrder to prevent cheating.
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_AddQuizQuestionOrdering
+method: POST
+name: Add Quiz Question (Ordering)
+sortPriority: 3233.3333333333335
+url: ${[ HOST ]}/graphql
+urlParameters: []

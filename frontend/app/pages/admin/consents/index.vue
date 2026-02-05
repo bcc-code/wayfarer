@@ -28,13 +28,15 @@ const { data, fetching, error } = useAdminConsentsPageQuery({
 
 const consents = computed(() => data.value?.consents ?? [])
 
+const { canManageConsents } = usePermissions()
+
 type ConsentRow = AdminConsentsPageQuery['consents'][number]
 
 const columns: TableColumn<ConsentRow>[] = [
-  { accessorKey: 'key', header: 'Key' },
-  { accessorKey: 'title', header: 'Title' },
-  { accessorKey: 'version', header: 'Version' },
-  { accessorKey: 'publishedAt', header: 'Published' },
+  { accessorKey: 'key', header: 'Nøkkel' },
+  { accessorKey: 'title', header: 'Tittel' },
+  { accessorKey: 'version', header: 'Versjon' },
+  { accessorKey: 'publishedAt', header: 'Publiseringsdato' },
   { accessorKey: 'managementType', header: 'Type' },
   { id: 'actions' },
 ]
@@ -43,9 +45,13 @@ const columns: TableColumn<ConsentRow>[] = [
 <template>
   <UContainer class="py-12">
     <div class="mb-6 flex flex-col items-start gap-8">
-      <h1 class="text-3xl">Consents</h1>
-      <UButton icon="i-lucide-plus" :to="{ name: 'admin-consents-new' }">
-        New Consent
+      <h1 class="text-3xl">Samtykker</h1>
+      <UButton
+        v-if="canManageConsents"
+        icon="i-lucide-plus"
+        :to="{ name: 'admin-consents-new' }"
+      >
+        Nytt samtykke
       </UButton>
     </div>
     <ErrorState v-if="error" :error />
@@ -66,7 +72,7 @@ const columns: TableColumn<ConsentRow>[] = [
           <span v-if="row.original.publishedAt">
             {{ formatDateTime(row.original.publishedAt) }}
           </span>
-          <UBadge v-else variant="soft" color="warning"> Draft </UBadge>
+          <UBadge v-else variant="soft" color="warning">Utkast</UBadge>
         </template>
         <template #managementType-cell="{ row }">
           <UBadge
@@ -87,7 +93,7 @@ const columns: TableColumn<ConsentRow>[] = [
                 params: { consentId: row.original.id },
               }"
             >
-              Edit
+              Rediger
             </UButton>
           </div>
         </template>
@@ -96,7 +102,7 @@ const columns: TableColumn<ConsentRow>[] = [
         v-if="consents.length === 0 && !fetching"
         class="text-dimmed py-12 text-center"
       >
-        No consents found. Create your first consent to get started.
+        Ingen samtykker funnet. Opprett ditt første samtykke for å komme i gang.
       </div>
     </div>
   </UContainer>

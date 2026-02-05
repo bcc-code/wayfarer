@@ -95,56 +95,6 @@ func TestChallengeCacheExpiry(t *testing.T) {
 	assert.False(t, ok, "challenge should not be in cache after deletion")
 }
 
-func TestChallengeModel(t *testing.T) {
-	publishedAt := time.Now().Add(-48 * time.Hour)
-	endTime := time.Now().Add(14 * 24 * time.Hour)
-	eventID := "EV01K8XV6VK9ED2GBZSQ2VDTAT8T"
-
-	challenge := &model.ExternalChallenge{
-		ID:          "CL01K8XV6VK9ED2GBZSQ2VDTAT8T",
-		Name:        "Daily Bible Reading",
-		Description: scalars.HTML("<p>Read the daily passage</p>"),
-		Image:       stringPtr("https://example.com/bible.png"),
-		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-		EventID:     &eventID,
-		URL:         "https://example.com/bible-reading",
-		ButtonText:  "Read Now",
-		PublishedAt: &scalars.DateTime{Time: publishedAt},
-		EndTime:     &scalars.DateTime{Time: endTime},
-	}
-
-	assert.Equal(t, "CL01K8XV6VK9ED2GBZSQ2VDTAT8T", challenge.ID)
-	assert.Equal(t, "Daily Bible Reading", challenge.Name)
-	assert.Equal(t, scalars.HTML("<p>Read the daily passage</p>"), challenge.Description)
-	assert.Equal(t, "https://example.com/bible-reading", challenge.URL)
-	assert.Equal(t, "Read Now", challenge.ButtonText)
-	assert.NotNil(t, challenge.EventID)
-	assert.Equal(t, "EV01K8XV6VK9ED2GBZSQ2VDTAT8T", *challenge.EventID)
-	assert.NotNil(t, challenge.EndTime)
-}
-
-func TestChallengeModelWithoutEndTime(t *testing.T) {
-	publishedAt := time.Now().Add(-24 * time.Hour)
-
-	challenge := &model.SimpleChallenge{
-		ID:                  "CL01K8XV6VK9ED2GBZSQ2VDTAT8T",
-		Name:                "Ongoing Challenge",
-		Description:         scalars.HTML("Challenge with no end time"),
-		Image:               stringPtr("https://example.com/ongoing.png"),
-		ProjectID:           "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-		EventID:             nil,
-		ButtonText:          "Participate",
-		PublishedAt:         &scalars.DateTime{Time: publishedAt},
-		EndTime:             nil,
-		AllowSelfCompletion: true,
-	}
-
-	assert.Equal(t, "CL01K8XV6VK9ED2GBZSQ2VDTAT8T", challenge.ID)
-	assert.Equal(t, "Ongoing Challenge", challenge.Name)
-	assert.Nil(t, challenge.EventID)
-	assert.Nil(t, challenge.EndTime)
-}
-
 func TestMultipleChallengesInCache(t *testing.T) {
 	c, err := cache.NewCacheWithRegistry(cache.DefaultConfig())
 	require.NoError(t, err)

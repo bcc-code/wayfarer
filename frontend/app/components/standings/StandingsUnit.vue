@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { findTeamLeader, findMemberById, isMemberTeamLead } from '~/utils/teams'
+
 const { isTeamLead } = useAuth()
 const { isAuthReady } = useAuthReady()
 const {
@@ -10,14 +12,14 @@ const {
   pause: computed(() => !isAuthReady.value),
 })
 
-const teamLeader = computed(() => {
-  return data.value?.myCurrentProject.myTeam?.memberLeaderboard.find((entry) =>
-    entry.tags?.includes(LeaderboardEntryTag.TeamLead),
-  )
-})
+const isInitialLoading = computed(() => fetching.value && !data.value)
 
 const teamMembers = computed(() => {
   return data.value?.myCurrentProject.myTeam?.memberLeaderboard ?? []
+})
+
+const teamLeader = computed(() => {
+  return findTeamLeader(teamMembers.value)
 })
 
 // Update team
@@ -38,13 +40,41 @@ watch(
 
 const selectedTeamLeader = computed(() => {
   if (!form.teamLeadId) return null
-  return teamMembers.value.find((m) => m.id === form.teamLeadId)
+  return findMemberById(teamMembers.value, form.teamLeadId)
 })
 
 const { executeMutation } = useUpdateTeamMutation()
 const { executeMutation: assignTeamLead } = useAssignTeamLeadMutation()
 
+// Drawer state - sync showEditDrawer to URL query param
+const route = useRoute()
+const router = useRouter()
+
+const showEditDrawer = computed({
+  get() {
+    return route.query.edit === 'true'
+  },
+  set(value: boolean) {
+    const newQuery = { ...route.query }
+    if (value) {
+      newQuery.edit = 'true'
+    } else {
+      delete newQuery.edit
+    }
+    router.replace({ query: newQuery })
+  },
+})
+const showLeadSelector = ref(false)
+
+function selectTeamLead(userId: string) {
+  form.teamLeadId = userId
+  showLeadSelector.value = false
+}
+
+// Saving changes
+const saving = ref(false)
 async function saveChanges() {
+  saving.value = true
   const id = data.value?.myCurrentProject.myTeam?.id
   if (!id) return
 
@@ -60,20 +90,19 @@ async function saveChanges() {
   }
 
   refetch()
+  showEditDrawer.value = false
+  saving.value = false
 }
 
-// Team lead selector
-const showLeadSelector = ref(false)
-
-function selectTeamLead(userId: string) {
-  form.teamLeadId = userId
-  showLeadSelector.value = false
-}
+const now = useNow({ interval: 60000 })
+const showEditButton = computed(
+  () => now.value >= new Date('2026-02-19T11:00:00Z'),
+)
 </script>
 
 <template>
   <div>
-    <LoadingState v-if="fetching" />
+    <StandingsListSkeleton v-if="isInitialLoading" />
     <ErrorState v-else-if="error" :error />
     <template v-else-if="data">
       <div
@@ -83,8 +112,12 @@ function selectTeamLead(userId: string) {
         <h2 class="text-heading text-balance">
           {{ data.myCurrentProject.myTeam.name }}
         </h2>
-        <DesignDrawer v-if="isTeamLead" :title="$t('unit.editUnit')">
-          <DesignButton variant="secondary" size="medium">
+        <DesignDrawer
+          v-if="isTeamLead"
+          v-model:open="showEditDrawer"
+          :title="$t('unit.editUnit')"
+        >
+          <DesignButton v-if="showEditButton" variant="secondary" size="medium">
             {{ $t('unit.editUnit') }}
           </DesignButton>
           <template #content>
@@ -92,7 +125,7 @@ function selectTeamLead(userId: string) {
               <DesignInput v-model="form.name" :label="$t('unit.unitName')" />
               <DesignPanel>
                 <div class="flex items-center gap-2.5 px-3 py-2">
-                  <Icon name="IconVerified" class="size-6" />
+                  <IconVerified class="size-6" />
                   <span class="text-label">{{ $t('unit.unitLeader') }}</span>
                   <DesignButton
                     variant="secondary"
@@ -136,7 +169,12 @@ function selectTeamLead(userId: string) {
                 </template>
               </DesignDrawer>
               <div class="p-default flex grow flex-col justify-end">
-                <DesignButton size="large" class="grow-0" @click="saveChanges">
+                <DesignButton
+                  size="large"
+                  class="grow-0"
+                  :loading="saving"
+                  @click="saveChanges"
+                >
                   {{ $t('unit.saveChanges') }}
                 </DesignButton>
               </div>
@@ -149,9 +187,7 @@ function selectTeamLead(userId: string) {
         :leaderboard="data.myCurrentProject.myTeam.memberLeaderboard"
         :badge="
           (entry) =>
-            entry.tags?.includes(LeaderboardEntryTag.TeamLead)
-              ? $t('unit.unitLeader')
-              : undefined
+            isMemberTeamLead(entry) ? $t('unit.unitLeader') : undefined
         "
         hide-medals
       />

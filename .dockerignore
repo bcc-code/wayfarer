@@ -1,0 +1,48 @@
+# Git
+.git
+.gitignore
+
+# Dependencies (will be installed fresh in container)
+node_modules
+.pnpm-store
+
+# Build artifacts
+.output
+.nuxt
+dist
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Documentation
+*.md
+docs/
+notes/
+
+# Test files
+**/*.test.*
+**/*.spec.*
+**/test/
+**/tests/
+**/__tests__/
+
+# Development files
+.dockerignore
+Dockerfile
+cloudbuild.yaml
+docker-compose*.yml
+Makefile
+
+# Misc
+.DS_Store
+*.log
+coverage/
+.nyc_output/

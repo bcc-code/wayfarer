@@ -1,0 +1,73 @@
+# ==================== User Feedback ====================
+
+enum ForwardDestination {
+    BCC_MEDIA_SUPPORT
+    SSF_TICKET
+}
+
+type UserFeedback {
+    id: ID!
+    userId: ID!
+    user: User!
+    message: String!
+    canContactMe: Boolean!
+    userAgent: String
+    platform: String
+    screenWidth: Int
+    screenHeight: Int
+    appVersion: String
+    locale: String
+    projectId: ID
+    timezone: String
+    contextUrl: String
+    tags: [String!]!
+    createdAt: DateTime!
+    handledAt: DateTime
+}
+
+input DeviceMetadata {
+    userAgent: String!
+    platform: String!
+    screenWidth: Int!
+    screenHeight: Int!
+    appVersion: String
+    locale: String
+    timezone: String
+    contextUrl: String
+}
+
+input SubmitFeedbackInput {
+    message: String!
+    canContactMe: Boolean!
+    device: DeviceMetadata!
+    projectId: ID
+    tags: [String!]
+}
+
+type FeedbackConnection {
+    edges: [FeedbackEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type FeedbackEdge {
+    cursor: String!
+    node: UserFeedback!
+}
+
+input FeedbackFilter {
+    userId: ID
+    tags: [String!]
+}
+
+extend type Query {
+    feedback(filter: FeedbackFilter, first: Int, after: String, last: Int, before: String): FeedbackConnection! @requireRole(roles: ["admin", "superadmin"])
+}
+
+extend type Mutation {
+    submitFeedback(input: SubmitFeedbackInput!): UserFeedback!
+    deleteFeedback(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    forwardFeedbackToDesk(feedbackId: ID!, destination: ForwardDestination!): Boolean! @requireRole(roles: ["admin", "superadmin"])
+    markFeedbackHandled(feedbackId: ID!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
+    updateFeedbackTags(feedbackId: ID!, tags: [String!]!): UserFeedback! @requireRole(roles: ["admin", "superadmin"])
+}

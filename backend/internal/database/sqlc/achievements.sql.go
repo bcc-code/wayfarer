@@ -94,6 +94,27 @@ func (q *Queries) AwardUserAchievementIdempotent(ctx context.Context, arg AwardU
 	return err
 }
 
+const CheckContentItemInAchievement = `-- name: CheckContentItemInAchievement :one
+SELECT EXISTS(
+    SELECT 1 FROM content_achievement_items
+    WHERE achievement_id = $1::text
+      AND external_content_id = $2::text
+) AS exists
+`
+
+type CheckContentItemInAchievementParams struct {
+	AchievementID     string `json:"achievement_id"`
+	ExternalContentID string `json:"external_content_id"`
+}
+
+// Check if a content item exists in a specific achievement
+func (q *Queries) CheckContentItemInAchievement(ctx context.Context, arg CheckContentItemInAchievementParams) (bool, error) {
+	row := q.db.QueryRow(ctx, CheckContentItemInAchievement, arg.AchievementID, arg.ExternalContentID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const CheckUserHasAchievement = `-- name: CheckUserHasAchievement :one
 SELECT EXISTS(
     SELECT 1 FROM user_achievements
@@ -151,7 +172,8 @@ INSERT INTO achievements (
     image_pending,
     image_completed,
     points,
-    hidden
+    hidden,
+    awardable_from
 ) VALUES (
     $1::text,
     $2::text,
@@ -165,24 +187,26 @@ INSERT INTO achievements (
     $10::text,
     $11::text,
     $12::int,
-    $13::bool
-) RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed, notification_text, sort_order
+    $13::bool,
+    $14::timestamptz
+) RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed, notification_text, sort_order, awardable_from
 `
 
 type CreateAchievementParams struct {
-	ID                   string `json:"id"`
-	AchievementType      string `json:"achievement_type"`
-	ProjectID            string `json:"project_id"`
-	EventID              string `json:"event_id"`
-	ChallengeID          string `json:"challenge_id"`
-	Name                 string `json:"name"`
-	DescriptionPending   string `json:"description_pending"`
-	DescriptionCompleted string `json:"description_completed"`
-	NotificationText     string `json:"notification_text"`
-	ImagePending         string `json:"image_pending"`
-	ImageCompleted       string `json:"image_completed"`
-	Points               int32  `json:"points"`
-	Hidden               bool   `json:"hidden"`
+	ID                   string             `json:"id"`
+	AchievementType      string             `json:"achievement_type"`
+	ProjectID            string             `json:"project_id"`
+	EventID              string             `json:"event_id"`
+	ChallengeID          string             `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	DescriptionPending   string             `json:"description_pending"`
+	DescriptionCompleted string             `json:"description_completed"`
+	NotificationText     string             `json:"notification_text"`
+	ImagePending         string             `json:"image_pending"`
+	ImageCompleted       string             `json:"image_completed"`
+	Points               int32              `json:"points"`
+	Hidden               bool               `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
 }
 
 // ==================== Create Operations ====================
@@ -201,6 +225,7 @@ func (q *Queries) CreateAchievement(ctx context.Context, arg CreateAchievementPa
 		arg.ImageCompleted,
 		arg.Points,
 		arg.Hidden,
+		arg.AwardableFrom,
 	)
 	var i Achievement
 	err := row.Scan(
@@ -220,6 +245,7 @@ func (q *Queries) CreateAchievement(ctx context.Context, arg CreateAchievementPa
 		&i.ImageCompleted,
 		&i.NotificationText,
 		&i.SortOrder,
+		&i.AwardableFrom,
 	)
 	return &i, err
 }
@@ -317,6 +343,120 @@ func (q *Queries) DeleteContentAchievementItems(ctx context.Context, achievement
 	return err
 }
 
+const GetAchievementByID = `-- name: GetAchievementByID :one
+SELECT
+    a.id,
+    a.achievement_type,
+    a.project_id,
+    a.event_id,
+    a.challenge_id,
+    a.name,
+    a.description_pending,
+    a.description_completed,
+    a.notification_text,
+    a.image_pending,
+    a.image_completed,
+    a.points,
+    a.hidden,
+    a.awardable_from,
+    a.sort_order,
+    a.created_at,
+    a.updated_at
+FROM achievements a
+WHERE a.id = $1::text
+`
+
+type GetAchievementByIDRow struct {
+	ID                   string             `json:"id"`
+	AchievementType      string             `json:"achievement_type"`
+	ProjectID            string             `json:"project_id"`
+	EventID              *string            `json:"event_id"`
+	ChallengeID          *string            `json:"challenge_id"`
+	Name                 string             `json:"name"`
+	DescriptionPending   string             `json:"description_pending"`
+	DescriptionCompleted string             `json:"description_completed"`
+	NotificationText     string             `json:"notification_text"`
+	ImagePending         string             `json:"image_pending"`
+	ImageCompleted       string             `json:"image_completed"`
+	Points               int32              `json:"points"`
+	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
+	SortOrder            int32              `json:"sort_order"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
+// Get a single achievement by ID with all details
+func (q *Queries) GetAchievementByID(ctx context.Context, id string) (*GetAchievementByIDRow, error) {
+	row := q.db.QueryRow(ctx, GetAchievementByID, id)
+	var i GetAchievementByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.AchievementType,
+		&i.ProjectID,
+		&i.EventID,
+		&i.ChallengeID,
+		&i.Name,
+		&i.DescriptionPending,
+		&i.DescriptionCompleted,
+		&i.NotificationText,
+		&i.ImagePending,
+		&i.ImageCompleted,
+		&i.Points,
+		&i.Hidden,
+		&i.AwardableFrom,
+		&i.SortOrder,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const GetAchievementCompletionStatus = `-- name: GetAchievementCompletionStatus :many
+SELECT
+    cai.achievement_id,
+    COUNT(DISTINCT cai.external_content_id)::int AS item_count,
+    COUNT(DISTINCT ucp.external_content_id)::int AS progress_count
+FROM content_achievement_items cai
+LEFT JOIN user_content_progress ucp
+    ON ucp.achievement_id = cai.achievement_id
+    AND ucp.user_id = $1::text
+    AND ucp.external_content_id = cai.external_content_id
+WHERE cai.achievement_id = ANY($2::text[])
+GROUP BY cai.achievement_id
+`
+
+type GetAchievementCompletionStatusParams struct {
+	UserID         string   `json:"user_id"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+type GetAchievementCompletionStatusRow struct {
+	AchievementID string `json:"achievement_id"`
+	ItemCount     int32  `json:"item_count"`
+	ProgressCount int32  `json:"progress_count"`
+}
+
+func (q *Queries) GetAchievementCompletionStatus(ctx context.Context, arg GetAchievementCompletionStatusParams) ([]*GetAchievementCompletionStatusRow, error) {
+	rows, err := q.db.Query(ctx, GetAchievementCompletionStatus, arg.UserID, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetAchievementCompletionStatusRow{}
+	for rows.Next() {
+		var i GetAchievementCompletionStatusRow
+		if err := rows.Scan(&i.AchievementID, &i.ItemCount, &i.ProgressCount); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetAchievementsByIDs = `-- name: GetAchievementsByIDs :many
 SELECT
     a.id,
@@ -332,6 +472,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.created_at,
     a.updated_at,
     -- Content achievement data
@@ -371,6 +512,7 @@ type GetAchievementsByIDsRow struct {
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
 	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	ContentAchievementID *string            `json:"content_achievement_id"`
@@ -402,6 +544,7 @@ func (q *Queries) GetAchievementsByIDs(ctx context.Context, ids []string) ([]*Ge
 			&i.ImageCompleted,
 			&i.Points,
 			&i.Hidden,
+			&i.AwardableFrom,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ContentAchievementID,
@@ -434,6 +577,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.created_at,
     a.updated_at,
     -- Type-specific fields needed for model construction
@@ -462,6 +606,7 @@ type GetAchievementsByProjectIDsRow struct {
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
 	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	ContentAchievementID *string            `json:"content_achievement_id"`
@@ -492,6 +637,7 @@ func (q *Queries) GetAchievementsByProjectIDs(ctx context.Context, projectIds []
 			&i.ImageCompleted,
 			&i.Points,
 			&i.Hidden,
+			&i.AwardableFrom,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ContentAchievementID,
@@ -523,6 +669,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.sort_order,
     a.created_at,
     a.updated_at,
@@ -584,6 +731,7 @@ type GetAchievementsFilteredCursorRow struct {
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
 	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
 	SortOrder            int32              `json:"sort_order"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
@@ -624,6 +772,7 @@ func (q *Queries) GetAchievementsFilteredCursor(ctx context.Context, arg GetAchi
 			&i.ImageCompleted,
 			&i.Points,
 			&i.Hidden,
+			&i.AwardableFrom,
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -657,6 +806,7 @@ SELECT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.sort_order,
     a.created_at,
     a.updated_at,
@@ -684,6 +834,7 @@ type GetAllAchievementsByProjectIDRow struct {
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
 	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
 	SortOrder            int32              `json:"sort_order"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
@@ -716,6 +867,7 @@ func (q *Queries) GetAllAchievementsByProjectID(ctx context.Context, projectID s
 			&i.ImageCompleted,
 			&i.Points,
 			&i.Hidden,
+			&i.AwardableFrom,
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -723,6 +875,45 @@ func (q *Queries) GetAllAchievementsByProjectID(ctx context.Context, projectID s
 			&i.StreakID,
 			&i.NeededStreak,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetBulkUserAchievementCelebratedTimestamps = `-- name: GetBulkUserAchievementCelebratedTimestamps :many
+SELECT user_id, achievement_id, celebrated_at
+FROM user_achievements
+WHERE (user_id, achievement_id) IN (
+    SELECT unnest($1::text[]), unnest($2::text[])
+)
+`
+
+type GetBulkUserAchievementCelebratedTimestampsParams struct {
+	UserIds        []string `json:"user_ids"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+type GetBulkUserAchievementCelebratedTimestampsRow struct {
+	UserID        string             `json:"user_id"`
+	AchievementID string             `json:"achievement_id"`
+	CelebratedAt  pgtype.Timestamptz `json:"celebrated_at"`
+}
+
+func (q *Queries) GetBulkUserAchievementCelebratedTimestamps(ctx context.Context, arg GetBulkUserAchievementCelebratedTimestampsParams) ([]*GetBulkUserAchievementCelebratedTimestampsRow, error) {
+	rows, err := q.db.Query(ctx, GetBulkUserAchievementCelebratedTimestamps, arg.UserIds, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetBulkUserAchievementCelebratedTimestampsRow{}
+	for rows.Next() {
+		var i GetBulkUserAchievementCelebratedTimestampsRow
+		if err := rows.Scan(&i.UserID, &i.AchievementID, &i.CelebratedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)
@@ -746,16 +937,95 @@ type GetBulkUserAchievementTimestampsParams struct {
 	AchievementIds []string `json:"achievement_ids"`
 }
 
-func (q *Queries) GetBulkUserAchievementTimestamps(ctx context.Context, arg GetBulkUserAchievementTimestampsParams) ([]*UserAchievement, error) {
+type GetBulkUserAchievementTimestampsRow struct {
+	UserID        string             `json:"user_id"`
+	AchievementID string             `json:"achievement_id"`
+	AchievedAt    pgtype.Timestamptz `json:"achieved_at"`
+}
+
+func (q *Queries) GetBulkUserAchievementTimestamps(ctx context.Context, arg GetBulkUserAchievementTimestampsParams) ([]*GetBulkUserAchievementTimestampsRow, error) {
 	rows, err := q.db.Query(ctx, GetBulkUserAchievementTimestamps, arg.UserIds, arg.AchievementIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*UserAchievement{}
+	items := []*GetBulkUserAchievementTimestampsRow{}
 	for rows.Next() {
-		var i UserAchievement
+		var i GetBulkUserAchievementTimestampsRow
 		if err := rows.Scan(&i.UserID, &i.AchievementID, &i.AchievedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetBulkUserContentProgress = `-- name: GetBulkUserContentProgress :many
+
+SELECT user_id, achievement_id, external_content_id, completed_at
+FROM user_content_progress
+WHERE (user_id, achievement_id) IN (
+    SELECT unnest($1::text[]), unnest($2::text[])
+)
+`
+
+type GetBulkUserContentProgressParams struct {
+	UserIds        []string `json:"user_ids"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+// ==================== Content Progress Operations ====================
+func (q *Queries) GetBulkUserContentProgress(ctx context.Context, arg GetBulkUserContentProgressParams) ([]*UserContentProgress, error) {
+	rows, err := q.db.Query(ctx, GetBulkUserContentProgress, arg.UserIds, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*UserContentProgress{}
+	for rows.Next() {
+		var i UserContentProgress
+		if err := rows.Scan(
+			&i.UserID,
+			&i.AchievementID,
+			&i.ExternalContentID,
+			&i.CompletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetContentItemCounts = `-- name: GetContentItemCounts :many
+SELECT achievement_id, COUNT(*)::int AS item_count
+FROM content_achievement_items
+WHERE achievement_id = ANY($1::text[])
+GROUP BY achievement_id
+`
+
+type GetContentItemCountsRow struct {
+	AchievementID string `json:"achievement_id"`
+	ItemCount     int32  `json:"item_count"`
+}
+
+// Get content item counts per achievement (for caching)
+func (q *Queries) GetContentItemCounts(ctx context.Context, achievementIds []string) ([]*GetContentItemCountsRow, error) {
+	rows, err := q.db.Query(ctx, GetContentItemCounts, achievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetContentItemCountsRow{}
+	for rows.Next() {
+		var i GetContentItemCountsRow
+		if err := rows.Scan(&i.AchievementID, &i.ItemCount); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)
@@ -876,6 +1146,7 @@ SELECT DISTINCT
     a.image_completed,
     a.points,
     a.hidden,
+    a.awardable_from,
     a.created_at,
     a.updated_at,
     COALESCE(
@@ -894,7 +1165,6 @@ FROM achievements a
 INNER JOIN content_achievements ca ON a.id = ca.achievement_id
 INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
 WHERE cai.external_content_id = $1::text
-  AND (a.hidden IS NULL OR a.hidden = false)
 `
 
 type GetPublishedContentAchievementsByExternalContentRow struct {
@@ -911,12 +1181,13 @@ type GetPublishedContentAchievementsByExternalContentRow struct {
 	ImageCompleted       string             `json:"image_completed"`
 	Points               int32              `json:"points"`
 	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	ContentItems         interface{}        `json:"content_items"`
 }
 
-// Get all published (non-hidden) content achievements that contain a specific external content
+// Get all content achievements that contain a specific external content
 func (q *Queries) GetPublishedContentAchievementsByExternalContent(ctx context.Context, externalContentID string) ([]*GetPublishedContentAchievementsByExternalContentRow, error) {
 	rows, err := q.db.Query(ctx, GetPublishedContentAchievementsByExternalContent, externalContentID)
 	if err != nil {
@@ -940,6 +1211,7 @@ func (q *Queries) GetPublishedContentAchievementsByExternalContent(ctx context.C
 			&i.ImageCompleted,
 			&i.Points,
 			&i.Hidden,
+			&i.AwardableFrom,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ContentItems,
@@ -992,8 +1264,40 @@ func (q *Queries) GetUserAchievementTimestamps(ctx context.Context, arg GetUserA
 	return items, nil
 }
 
-const GetUserContentProgress = `-- name: GetUserContentProgress :many
+const GetUserAwardedAchievementIDs = `-- name: GetUserAwardedAchievementIDs :many
+SELECT achievement_id
+FROM user_achievements
+WHERE user_id = $1::text
+  AND achievement_id = ANY($2::text[])
+`
 
+type GetUserAwardedAchievementIDsParams struct {
+	UserID         string   `json:"user_id"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+// Get which achievements from a list the user already has
+func (q *Queries) GetUserAwardedAchievementIDs(ctx context.Context, arg GetUserAwardedAchievementIDsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetUserAwardedAchievementIDs, arg.UserID, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var achievement_id string
+		if err := rows.Scan(&achievement_id); err != nil {
+			return nil, err
+		}
+		items = append(items, achievement_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUserContentProgress = `-- name: GetUserContentProgress :many
 SELECT user_id, achievement_id, external_content_id, completed_at
 FROM user_content_progress
 WHERE user_id = $1::text
@@ -1005,7 +1309,6 @@ type GetUserContentProgressParams struct {
 	AchievementIds []string `json:"achievement_ids"`
 }
 
-// ==================== Content Progress Operations ====================
 func (q *Queries) GetUserContentProgress(ctx context.Context, arg GetUserContentProgressParams) ([]*UserContentProgress, error) {
 	rows, err := q.db.Query(ctx, GetUserContentProgress, arg.UserID, arg.AchievementIds)
 	if err != nil {
@@ -1031,33 +1334,35 @@ func (q *Queries) GetUserContentProgress(ctx context.Context, arg GetUserContent
 	return items, nil
 }
 
-const GetUserContentProgressForAchievement = `-- name: GetUserContentProgressForAchievement :many
-SELECT user_id, achievement_id, external_content_id, completed_at
+const GetUserProgressCounts = `-- name: GetUserProgressCounts :many
+SELECT achievement_id, COUNT(*)::int AS progress_count
 FROM user_content_progress
 WHERE user_id = $1::text
-  AND achievement_id = $2::text
+  AND achievement_id = ANY($2::text[])
+GROUP BY achievement_id
 `
 
-type GetUserContentProgressForAchievementParams struct {
-	UserID        string `json:"user_id"`
-	AchievementID string `json:"achievement_id"`
+type GetUserProgressCountsParams struct {
+	UserID         string   `json:"user_id"`
+	AchievementIds []string `json:"achievement_ids"`
 }
 
-func (q *Queries) GetUserContentProgressForAchievement(ctx context.Context, arg GetUserContentProgressForAchievementParams) ([]*UserContentProgress, error) {
-	rows, err := q.db.Query(ctx, GetUserContentProgressForAchievement, arg.UserID, arg.AchievementID)
+type GetUserProgressCountsRow struct {
+	AchievementID string `json:"achievement_id"`
+	ProgressCount int32  `json:"progress_count"`
+}
+
+// Get user progress counts per achievement
+func (q *Queries) GetUserProgressCounts(ctx context.Context, arg GetUserProgressCountsParams) ([]*GetUserProgressCountsRow, error) {
+	rows, err := q.db.Query(ctx, GetUserProgressCounts, arg.UserID, arg.AchievementIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*UserContentProgress{}
+	items := []*GetUserProgressCountsRow{}
 	for rows.Next() {
-		var i UserContentProgress
-		if err := rows.Scan(
-			&i.UserID,
-			&i.AchievementID,
-			&i.ExternalContentID,
-			&i.CompletedAt,
-		); err != nil {
+		var i GetUserProgressCountsRow
+		if err := rows.Scan(&i.AchievementID, &i.ProgressCount); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)
@@ -1066,6 +1371,24 @@ func (q *Queries) GetUserContentProgressForAchievement(ctx context.Context, arg 
 		return nil, err
 	}
 	return items, nil
+}
+
+const MarkAchievementCelebrated = `-- name: MarkAchievementCelebrated :exec
+UPDATE user_achievements
+SET celebrated_at = now()
+WHERE user_id = $1::text
+  AND achievement_id = $2::text
+  AND celebrated_at IS NULL
+`
+
+type MarkAchievementCelebratedParams struct {
+	UserID        string `json:"user_id"`
+	AchievementID string `json:"achievement_id"`
+}
+
+func (q *Queries) MarkAchievementCelebrated(ctx context.Context, arg MarkAchievementCelebratedParams) error {
+	_, err := q.db.Exec(ctx, MarkAchievementCelebrated, arg.UserID, arg.AchievementID)
+	return err
 }
 
 const MarkContentItemCompleted = `-- name: MarkContentItemCompleted :exec
@@ -1096,9 +1419,7 @@ INSERT INTO user_content_progress (user_id, achievement_id, external_content_id,
 SELECT $1::text, ca.achievement_id, $2::text, now()
 FROM content_achievements ca
 INNER JOIN content_achievement_items cai ON ca.achievement_id = cai.achievement_id
-INNER JOIN achievements a ON ca.achievement_id = a.id
 WHERE cai.external_content_id = $2::text
-  AND (a.hidden IS NULL OR a.hidden = false)
 ON CONFLICT (user_id, achievement_id, external_content_id) DO NOTHING
 `
 
@@ -1107,7 +1428,7 @@ type MarkContentItemCompletedForAllAchievementsParams struct {
 	ExternalContentID string `json:"external_content_id"`
 }
 
-// Mark content completed for a user across all published achievements containing this content
+// Mark content completed for a user across all achievements containing this content
 func (q *Queries) MarkContentItemCompletedForAllAchievements(ctx context.Context, arg MarkContentItemCompletedForAllAchievementsParams) error {
 	_, err := q.db.Exec(ctx, MarkContentItemCompletedForAllAchievements, arg.UserID, arg.ExternalContentID)
 	return err
@@ -1221,23 +1542,25 @@ SET
     challenge_id = CASE WHEN $8::text IS NOT NULL THEN $8::text ELSE challenge_id END,
     points = CASE WHEN $9::int IS NOT NULL THEN $9::int ELSE points END,
     hidden = CASE WHEN $10::bool IS NOT NULL THEN $10::bool ELSE hidden END,
+    awardable_from = CASE WHEN $11::timestamptz IS NOT NULL THEN $11::timestamptz ELSE awardable_from END,
     updated_at = now()
-WHERE id = $11::text
-RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed, notification_text, sort_order
+WHERE id = $12::text
+RETURNING id, achievement_type, project_id, event_id, challenge_id, name, points, hidden, created_at, updated_at, description_pending, description_completed, image_pending, image_completed, notification_text, sort_order, awardable_from
 `
 
 type UpdateAchievementParams struct {
-	Name                 *string `json:"name"`
-	DescriptionPending   *string `json:"description_pending"`
-	DescriptionCompleted *string `json:"description_completed"`
-	NotificationText     *string `json:"notification_text"`
-	ImagePending         *string `json:"image_pending"`
-	ImageCompleted       *string `json:"image_completed"`
-	EventID              *string `json:"event_id"`
-	ChallengeID          *string `json:"challenge_id"`
-	Points               *int32  `json:"points"`
-	Hidden               *bool   `json:"hidden"`
-	ID                   string  `json:"id"`
+	Name                 *string            `json:"name"`
+	DescriptionPending   *string            `json:"description_pending"`
+	DescriptionCompleted *string            `json:"description_completed"`
+	NotificationText     *string            `json:"notification_text"`
+	ImagePending         *string            `json:"image_pending"`
+	ImageCompleted       *string            `json:"image_completed"`
+	EventID              *string            `json:"event_id"`
+	ChallengeID          *string            `json:"challenge_id"`
+	Points               *int32             `json:"points"`
+	Hidden               *bool              `json:"hidden"`
+	AwardableFrom        pgtype.Timestamptz `json:"awardable_from"`
+	ID                   string             `json:"id"`
 }
 
 // ==================== Update Operations ====================
@@ -1253,6 +1576,7 @@ func (q *Queries) UpdateAchievement(ctx context.Context, arg UpdateAchievementPa
 		arg.ChallengeID,
 		arg.Points,
 		arg.Hidden,
+		arg.AwardableFrom,
 		arg.ID,
 	)
 	var i Achievement
@@ -1273,6 +1597,7 @@ func (q *Queries) UpdateAchievement(ctx context.Context, arg UpdateAchievementPa
 		&i.ImageCompleted,
 		&i.NotificationText,
 		&i.SortOrder,
+		&i.AwardableFrom,
 	)
 	return &i, err
 }

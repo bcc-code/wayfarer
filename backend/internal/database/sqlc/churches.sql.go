@@ -233,6 +233,78 @@ func (q *Queries) GetChurchesFilteredCursor(ctx context.Context, arg GetChurches
 	return items, nil
 }
 
+const GetDefaultChurch = `-- name: GetDefaultChurch :one
+SELECT id, external_id, name, country, category
+FROM churches
+WHERE external_id IS NULL
+LIMIT 1
+`
+
+type GetDefaultChurchRow struct {
+	ID         string `json:"id"`
+	ExternalID *int32 `json:"external_id"`
+	Name       string `json:"name"`
+	Country    string `json:"country"`
+	Category   string `json:"category"`
+}
+
+func (q *Queries) GetDefaultChurch(ctx context.Context) (*GetDefaultChurchRow, error) {
+	row := q.db.QueryRow(ctx, GetDefaultChurch)
+	var i GetDefaultChurchRow
+	err := row.Scan(
+		&i.ID,
+		&i.ExternalID,
+		&i.Name,
+		&i.Country,
+		&i.Category,
+	)
+	return &i, err
+}
+
+const UpdateChurch = `-- name: UpdateChurch :one
+UPDATE churches
+SET
+    name = COALESCE(NULLIF($1::text, ''), name),
+    country = COALESCE(NULLIF($2::text, ''), country),
+    category = COALESCE(NULLIF($3::text, ''), category),
+    updated_at = NOW()
+WHERE id = $4
+RETURNING id, external_id, name, country, category
+`
+
+type UpdateChurchParams struct {
+	Name     string `json:"name"`
+	Country  string `json:"country"`
+	Category string `json:"category"`
+	ID       string `json:"id"`
+}
+
+type UpdateChurchRow struct {
+	ID         string `json:"id"`
+	ExternalID *int32 `json:"external_id"`
+	Name       string `json:"name"`
+	Country    string `json:"country"`
+	Category   string `json:"category"`
+}
+
+func (q *Queries) UpdateChurch(ctx context.Context, arg UpdateChurchParams) (*UpdateChurchRow, error) {
+	row := q.db.QueryRow(ctx, UpdateChurch,
+		arg.Name,
+		arg.Country,
+		arg.Category,
+		arg.ID,
+	)
+	var i UpdateChurchRow
+	err := row.Scan(
+		&i.ID,
+		&i.ExternalID,
+		&i.Name,
+		&i.Country,
+		&i.Category,
+	)
+	return &i, err
+}
+
 const UpsertChurch = `-- name: UpsertChurch :one
 INSERT INTO churches (id, external_id, name, country, category)
 VALUES ($1, $2, $3, $4, $5)

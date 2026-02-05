@@ -22,7 +22,6 @@ type quizRow interface {
 	GetRevealCorrectAnswers() bool
 	GetAllowRetakes() bool
 	GetCompletionPoints() int32
-	GetPublishedAt() pgtype.Timestamptz
 	GetEndTime() pgtype.Timestamptz
 }
 
@@ -31,83 +30,56 @@ type createQuizRowAdapter struct {
 	*sqlc.CreateQuizRow
 }
 
-func (r createQuizRowAdapter) GetID() string                      { return r.ID }
-func (r createQuizRowAdapter) GetProjectID() string               { return r.ProjectID }
-func (r createQuizRowAdapter) GetChallengeID() string             { return r.ChallengeID }
-func (r createQuizRowAdapter) GetName() string                    { return r.Name }
-func (r createQuizRowAdapter) GetDescription() string             { return r.Description }
-func (r createQuizRowAdapter) GetImageUrl() *string               { return r.ImageUrl }
-func (r createQuizRowAdapter) GetTimeoutSeconds() *int32          { return r.TimeoutSeconds }
-func (r createQuizRowAdapter) GetRandomizeQuestions() bool        { return r.RandomizeQuestions }
-func (r createQuizRowAdapter) GetRevealCorrectAnswers() bool      { return r.RevealCorrectAnswers }
-func (r createQuizRowAdapter) GetAllowRetakes() bool              { return r.AllowRetakes }
-func (r createQuizRowAdapter) GetCompletionPoints() int32         { return r.CompletionPoints }
-func (r createQuizRowAdapter) GetPublishedAt() pgtype.Timestamptz { return r.PublishedAt }
-func (r createQuizRowAdapter) GetEndTime() pgtype.Timestamptz     { return r.EndTime }
+func (r createQuizRowAdapter) GetID() string                  { return r.ID }
+func (r createQuizRowAdapter) GetProjectID() string           { return r.ProjectID }
+func (r createQuizRowAdapter) GetChallengeID() string         { return r.ChallengeID }
+func (r createQuizRowAdapter) GetName() string                { return r.Name }
+func (r createQuizRowAdapter) GetDescription() string         { return r.Description }
+func (r createQuizRowAdapter) GetImageUrl() *string           { return r.ImageUrl }
+func (r createQuizRowAdapter) GetTimeoutSeconds() *int32      { return r.TimeoutSeconds }
+func (r createQuizRowAdapter) GetRandomizeQuestions() bool    { return r.RandomizeQuestions }
+func (r createQuizRowAdapter) GetRevealCorrectAnswers() bool  { return r.RevealCorrectAnswers }
+func (r createQuizRowAdapter) GetAllowRetakes() bool          { return r.AllowRetakes }
+func (r createQuizRowAdapter) GetCompletionPoints() int32     { return r.CompletionPoints }
+func (r createQuizRowAdapter) GetEndTime() pgtype.Timestamptz { return r.EndTime }
 
 // Adapter for sqlc.UpdateQuizRow
 type updateQuizRowAdapter struct {
 	*sqlc.UpdateQuizRow
 }
 
-func (r updateQuizRowAdapter) GetID() string                      { return r.ID }
-func (r updateQuizRowAdapter) GetProjectID() string               { return r.ProjectID }
-func (r updateQuizRowAdapter) GetChallengeID() string             { return r.ChallengeID }
-func (r updateQuizRowAdapter) GetName() string                    { return r.Name }
-func (r updateQuizRowAdapter) GetDescription() string             { return r.Description }
-func (r updateQuizRowAdapter) GetImageUrl() *string               { return r.ImageUrl }
-func (r updateQuizRowAdapter) GetTimeoutSeconds() *int32          { return r.TimeoutSeconds }
-func (r updateQuizRowAdapter) GetRandomizeQuestions() bool        { return r.RandomizeQuestions }
-func (r updateQuizRowAdapter) GetRevealCorrectAnswers() bool      { return r.RevealCorrectAnswers }
-func (r updateQuizRowAdapter) GetAllowRetakes() bool              { return r.AllowRetakes }
-func (r updateQuizRowAdapter) GetCompletionPoints() int32         { return r.CompletionPoints }
-func (r updateQuizRowAdapter) GetPublishedAt() pgtype.Timestamptz { return r.PublishedAt }
-func (r updateQuizRowAdapter) GetEndTime() pgtype.Timestamptz     { return r.EndTime }
-
-// Adapter for sqlc.PublishQuizRow
-type publishQuizRowAdapter struct {
-	*sqlc.PublishQuizRow
-}
-
-func (r publishQuizRowAdapter) GetID() string                      { return r.ID }
-func (r publishQuizRowAdapter) GetProjectID() string               { return r.ProjectID }
-func (r publishQuizRowAdapter) GetChallengeID() string             { return r.ChallengeID }
-func (r publishQuizRowAdapter) GetName() string                    { return r.Name }
-func (r publishQuizRowAdapter) GetDescription() string             { return r.Description }
-func (r publishQuizRowAdapter) GetImageUrl() *string               { return r.ImageUrl }
-func (r publishQuizRowAdapter) GetTimeoutSeconds() *int32          { return r.TimeoutSeconds }
-func (r publishQuizRowAdapter) GetRandomizeQuestions() bool        { return r.RandomizeQuestions }
-func (r publishQuizRowAdapter) GetRevealCorrectAnswers() bool      { return r.RevealCorrectAnswers }
-func (r publishQuizRowAdapter) GetAllowRetakes() bool              { return r.AllowRetakes }
-func (r publishQuizRowAdapter) GetCompletionPoints() int32         { return r.CompletionPoints }
-func (r publishQuizRowAdapter) GetPublishedAt() pgtype.Timestamptz { return r.PublishedAt }
-func (r publishQuizRowAdapter) GetEndTime() pgtype.Timestamptz     { return r.EndTime }
+func (r updateQuizRowAdapter) GetID() string                  { return r.ID }
+func (r updateQuizRowAdapter) GetProjectID() string           { return r.ProjectID }
+func (r updateQuizRowAdapter) GetChallengeID() string         { return r.ChallengeID }
+func (r updateQuizRowAdapter) GetName() string                { return r.Name }
+func (r updateQuizRowAdapter) GetDescription() string         { return r.Description }
+func (r updateQuizRowAdapter) GetImageUrl() *string           { return r.ImageUrl }
+func (r updateQuizRowAdapter) GetTimeoutSeconds() *int32      { return r.TimeoutSeconds }
+func (r updateQuizRowAdapter) GetRandomizeQuestions() bool    { return r.RandomizeQuestions }
+func (r updateQuizRowAdapter) GetRevealCorrectAnswers() bool  { return r.RevealCorrectAnswers }
+func (r updateQuizRowAdapter) GetAllowRetakes() bool          { return r.AllowRetakes }
+func (r updateQuizRowAdapter) GetCompletionPoints() int32     { return r.CompletionPoints }
+func (r updateQuizRowAdapter) GetEndTime() pgtype.Timestamptz { return r.EndTime }
 
 // Adapter for sqlc.GetQuizzesFilteredCursorRow
 type filteredCursorQuizRowAdapter struct {
 	*sqlc.GetQuizzesFilteredCursorRow
 }
 
-func (r filteredCursorQuizRowAdapter) GetID() string                      { return r.ID }
-func (r filteredCursorQuizRowAdapter) GetProjectID() string               { return r.ProjectID }
-func (r filteredCursorQuizRowAdapter) GetChallengeID() string             { return r.ChallengeID }
-func (r filteredCursorQuizRowAdapter) GetName() string                    { return r.Name }
-func (r filteredCursorQuizRowAdapter) GetDescription() string             { return r.Description }
-func (r filteredCursorQuizRowAdapter) GetImageUrl() *string               { return r.ImageUrl }
-func (r filteredCursorQuizRowAdapter) GetTimeoutSeconds() *int32          { return r.TimeoutSeconds }
-func (r filteredCursorQuizRowAdapter) GetRandomizeQuestions() bool        { return r.RandomizeQuestions }
-func (r filteredCursorQuizRowAdapter) GetRevealCorrectAnswers() bool      { return r.RevealCorrectAnswers }
-func (r filteredCursorQuizRowAdapter) GetAllowRetakes() bool              { return r.AllowRetakes }
-func (r filteredCursorQuizRowAdapter) GetCompletionPoints() int32         { return r.CompletionPoints }
-func (r filteredCursorQuizRowAdapter) GetPublishedAt() pgtype.Timestamptz { return r.PublishedAt }
-func (r filteredCursorQuizRowAdapter) GetEndTime() pgtype.Timestamptz     { return r.EndTime }
+func (r filteredCursorQuizRowAdapter) GetID() string                  { return r.ID }
+func (r filteredCursorQuizRowAdapter) GetProjectID() string           { return r.ProjectID }
+func (r filteredCursorQuizRowAdapter) GetChallengeID() string         { return r.ChallengeID }
+func (r filteredCursorQuizRowAdapter) GetName() string                { return r.Name }
+func (r filteredCursorQuizRowAdapter) GetDescription() string         { return r.Description }
+func (r filteredCursorQuizRowAdapter) GetImageUrl() *string           { return r.ImageUrl }
+func (r filteredCursorQuizRowAdapter) GetTimeoutSeconds() *int32      { return r.TimeoutSeconds }
+func (r filteredCursorQuizRowAdapter) GetRandomizeQuestions() bool    { return r.RandomizeQuestions }
+func (r filteredCursorQuizRowAdapter) GetRevealCorrectAnswers() bool  { return r.RevealCorrectAnswers }
+func (r filteredCursorQuizRowAdapter) GetAllowRetakes() bool          { return r.AllowRetakes }
+func (r filteredCursorQuizRowAdapter) GetCompletionPoints() int32     { return r.CompletionPoints }
+func (r filteredCursorQuizRowAdapter) GetEndTime() pgtype.Timestamptz { return r.EndTime }
 
 func convertQuizRowToQuiz(row quizRow) *model.Quiz {
-	var publishedAt *scalars.DateTime
-	if row.GetPublishedAt().Valid {
-		publishedAt = &scalars.DateTime{Time: row.GetPublishedAt().Time}
-	}
-
 	var endTime *scalars.DateTime
 	if row.GetEndTime().Valid {
 		endTime = &scalars.DateTime{Time: row.GetEndTime().Time}
@@ -131,7 +103,6 @@ func convertQuizRowToQuiz(row quizRow) *model.Quiz {
 		RevealCorrectAnswers: row.GetRevealCorrectAnswers(),
 		AllowRetakes:         row.GetAllowRetakes(),
 		CompletionPoints:     int(row.GetCompletionPoints()),
-		PublishedAt:          publishedAt,
 		EndTime:              endTime,
 	}
 }
@@ -142,10 +113,6 @@ func convertCreateQuizRowToQuiz(row *sqlc.CreateQuizRow) *model.Quiz {
 
 func convertUpdateQuizRowToQuiz(row *sqlc.UpdateQuizRow) *model.Quiz {
 	return convertQuizRowToQuiz(updateQuizRowAdapter{row})
-}
-
-func convertPublishQuizRowToQuiz(row *sqlc.PublishQuizRow) *model.Quiz {
-	return convertQuizRowToQuiz(publishQuizRowAdapter{row})
 }
 
 func convertFilteredCursorQuizRowToQuiz(row *sqlc.GetQuizzesFilteredCursorRow) *model.Quiz {
@@ -224,63 +191,6 @@ func (r getQuizQuestionByIDRowAdapter) GetStepValue() pgtype.Numeric { return r.
 func (r getQuizQuestionByIDRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
 func (r getQuizQuestionByIDRowAdapter) GetPoints() *int32            { return r.Points }
 
-// Adapter for sqlc.GetQuizQuestionsByIDsRow
-type getQuizQuestionsByIDsRowAdapter struct {
-	*sqlc.GetQuizQuestionsByIDsRow
-}
-
-func (r getQuizQuestionsByIDsRowAdapter) GetID() string           { return r.ID }
-func (r getQuizQuestionsByIDsRowAdapter) GetQuizID() string       { return r.QuizID }
-func (r getQuizQuestionsByIDsRowAdapter) GetQuestionType() string { return r.QuestionType }
-func (r getQuizQuestionsByIDsRowAdapter) GetQuestionText() string { return r.QuestionText }
-func (r getQuizQuestionsByIDsRowAdapter) GetQuestionOrder() int32 { return r.QuestionOrder }
-func (r getQuizQuestionsByIDsRowAdapter) GetAllowMultipleSelection() *bool {
-	return r.AllowMultipleSelection
-}
-func (r getQuizQuestionsByIDsRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
-func (r getQuizQuestionsByIDsRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
-func (r getQuizQuestionsByIDsRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
-func (r getQuizQuestionsByIDsRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
-func (r getQuizQuestionsByIDsRowAdapter) GetPoints() *int32            { return r.Points }
-
-// Adapter for sqlc.GetQuizQuestionsByQuizIDRow
-type getQuizQuestionsByQuizIDRowAdapter struct {
-	*sqlc.GetQuizQuestionsByQuizIDRow
-}
-
-func (r getQuizQuestionsByQuizIDRowAdapter) GetID() string           { return r.ID }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetQuizID() string       { return r.QuizID }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetQuestionType() string { return r.QuestionType }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetQuestionText() string { return r.QuestionText }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetQuestionOrder() int32 { return r.QuestionOrder }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetAllowMultipleSelection() *bool {
-	return r.AllowMultipleSelection
-}
-func (r getQuizQuestionsByQuizIDRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
-func (r getQuizQuestionsByQuizIDRowAdapter) GetPoints() *int32            { return r.Points }
-
-// Adapter for sqlc.GetQuizQuestionsByQuizIDsRow
-type getQuizQuestionsByQuizIDsRowAdapter struct {
-	*sqlc.GetQuizQuestionsByQuizIDsRow
-}
-
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetID() string           { return r.ID }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuizID() string       { return r.QuizID }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuestionType() string { return r.QuestionType }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuestionText() string { return r.QuestionText }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetQuestionOrder() int32 { return r.QuestionOrder }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetAllowMultipleSelection() *bool {
-	return r.AllowMultipleSelection
-}
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetMinValue() pgtype.Numeric  { return r.MinValue }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetMaxValue() pgtype.Numeric  { return r.MaxValue }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
-func (r getQuizQuestionsByQuizIDsRowAdapter) GetPoints() *int32            { return r.Points }
-
 // convertQuizQuestionRowToInterface converts a database row to the appropriate QuizQuestion implementation
 func convertQuizQuestionRowToInterface(row quizQuestionRow) model.QuizQuestion {
 	switch row.GetQuestionType() {
@@ -292,6 +202,8 @@ func convertQuizQuestionRowToInterface(row quizQuestionRow) model.QuizQuestion {
 		return convertToNumberQuestion(row)
 	case "JSON":
 		return convertToJsonQuestion(row)
+	case "ORDERING":
+		return convertToOrderingQuestion(row)
 	default:
 		// Default to FreeTextQuestion for unknown types
 		return convertToFreeTextQuestion(row)
@@ -382,6 +294,17 @@ func convertToJsonQuestion(row quizQuestionRow) *model.JSONQuestion {
 	}
 }
 
+func convertToOrderingQuestion(row quizQuestionRow) *model.OrderingQuestion {
+	return &model.OrderingQuestion{
+		ID:             row.GetID(),
+		QuizID:         row.GetQuizID(),
+		QuestionText:   row.GetQuestionText(),
+		QuestionOrder:  int(row.GetQuestionOrder()),
+		TimeoutSeconds: convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
+		Points:         convertQuestionPoints(row.GetPoints()),
+	}
+}
+
 // Helper functions to convert specific row types
 func convertCreateQuizQuestionRowToInterface(row *sqlc.CreateQuizQuestionRow) model.QuizQuestion {
 	return convertQuizQuestionRowToInterface(createQuizQuestionRowAdapter{row})
@@ -395,19 +318,23 @@ func convertGetQuizQuestionByIDRowToInterface(row *sqlc.GetQuizQuestionByIDRow) 
 	return convertQuizQuestionRowToInterface(getQuizQuestionByIDRowAdapter{row})
 }
 
-func convertGetQuizQuestionsByIDsRowToInterface(row *sqlc.GetQuizQuestionsByIDsRow) model.QuizQuestion {
-	return convertQuizQuestionRowToInterface(getQuizQuestionsByIDsRowAdapter{row})
+// quizSubmissionRow defines the common fields for quiz submission row types
+type quizSubmissionRow struct {
+	ID            string
+	QuizID        string
+	UserID        string
+	SessionID     *string
+	StartedAt     pgtype.Timestamptz
+	CompletedAt   pgtype.Timestamptz
+	ExpiresAt     pgtype.Timestamptz
+	QuestionOrder []byte
+	Score         *int32
+	MaxScore      *int32
+	PointsAwarded *int32
+	AutoSubmitted bool
 }
 
-func convertGetQuizQuestionsByQuizIDRowToInterface(row *sqlc.GetQuizQuestionsByQuizIDRow) model.QuizQuestion {
-	return convertQuizQuestionRowToInterface(getQuizQuestionsByQuizIDRowAdapter{row})
-}
-
-func convertGetQuizQuestionsByQuizIDsRowToInterface(row *sqlc.GetQuizQuestionsByQuizIDsRow) model.QuizQuestion {
-	return convertQuizQuestionRowToInterface(getQuizQuestionsByQuizIDsRowAdapter{row})
-}
-
-func convertSubmissionRowToModel(row *sqlc.QuizSubmission) *model.QuizSubmission {
+func convertSubmissionRowToModel(row quizSubmissionRow) *model.QuizSubmission {
 	var completedAt *scalars.DateTime
 	if row.CompletedAt.Valid {
 		completedAt = &scalars.DateTime{Time: row.CompletedAt.Time}
@@ -443,6 +370,7 @@ func convertSubmissionRowToModel(row *sqlc.QuizSubmission) *model.QuizSubmission
 		ID:            row.ID,
 		QuizID:        row.QuizID,
 		UserID:        row.UserID,
+		SessionID:     row.SessionID,
 		StartedAt:     scalars.DateTime{Time: row.StartedAt.Time},
 		CompletedAt:   completedAt,
 		ExpiresAt:     expiresAt,
@@ -450,7 +378,46 @@ func convertSubmissionRowToModel(row *sqlc.QuizSubmission) *model.QuizSubmission
 		Score:         score,
 		MaxScore:      maxScore,
 		PointsAwarded: pointsAwarded,
+		AutoSubmitted: row.AutoSubmitted,
 	}
+}
+
+// Wrapper functions for each submission row type
+
+func convertCreateQuizSubmissionRow(row *sqlc.CreateQuizSubmissionRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertUpdateQuizSubmissionRow(row *sqlc.UpdateQuizSubmissionRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertGetQuizSubmissionByIDRow(row *sqlc.GetQuizSubmissionByIDRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+func convertGetQuizSubmissionsFilteredCursorRow(row *sqlc.GetQuizSubmissionsFilteredCursorRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
 }
 
 // convertResponseRowToInterface converts a database row to the appropriate QuizResponse implementation
@@ -482,6 +449,8 @@ func convertResponseRowToInterface(row *sqlc.QuizResponse, questionType string) 
 		return convertToNumberResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
 	case "JSON":
 		return convertToJsonResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
+	case "ORDERING":
+		return convertToOrderingResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
 	default:
 		// Default to FreeTextResponse for unknown types
 		return convertToFreeTextResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
@@ -551,5 +520,57 @@ func convertToJsonResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime,
 		AnsweredAt:       answeredAt,
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,
+	}
+}
+
+func convertToOrderingResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int) *model.OrderingResponse {
+	var submittedOrder []string
+	if row.JsonResponse != nil {
+		_ = json.Unmarshal(row.JsonResponse, &submittedOrder)
+	}
+	return &model.OrderingResponse{
+		ID:               row.ID,
+		SubmissionID:     row.SubmissionID,
+		QuestionID:       row.QuestionID,
+		SubmittedOrder:   submittedOrder,
+		IsCorrectValue:   row.IsCorrect, // Store actual value for resolver
+		AnsweredAt:       answeredAt,
+		TimeSpentSeconds: timeSpentSeconds,
+		PointsEarned:     pointsEarned,
+	}
+}
+
+func convertGetSubmissionByUserAndSessionRow(row *sqlc.GetSubmissionByUserAndSessionRow) *model.QuizSubmission {
+	return convertSubmissionRowToModel(quizSubmissionRow{
+		ID: row.ID, QuizID: row.QuizID, UserID: row.UserID, SessionID: row.SessionID,
+		StartedAt: row.StartedAt, CompletedAt: row.CompletedAt, ExpiresAt: row.ExpiresAt,
+		QuestionOrder: row.QuestionOrder, Score: row.Score, MaxScore: row.MaxScore,
+		PointsAwarded: row.PointsAwarded, AutoSubmitted: row.AutoSubmitted,
+	})
+}
+
+// convertQuizSessionToModel converts a sqlc.QuizSession to model.QuizSession
+func convertQuizSessionToModel(row *sqlc.QuizSession) *model.QuizSession {
+	var openAt, lockAt, finishAt *scalars.DateTime
+	if row.OpenAt.Valid {
+		openAt = &scalars.DateTime{Time: row.OpenAt.Time}
+	}
+	if row.LockAt.Valid {
+		lockAt = &scalars.DateTime{Time: row.LockAt.Time}
+	}
+	if row.FinishAt.Valid {
+		finishAt = &scalars.DateTime{Time: row.FinishAt.Time}
+	}
+
+	return &model.QuizSession{
+		ID:          row.ID,
+		QuizID:      row.QuizID,
+		Name:        row.Name,
+		State:       model.QuizSessionState(row.State),
+		OpenAt:      openAt,
+		LockAt:      lockAt,
+		FinishAt:    finishAt,
+		CreatedByID: row.CreatedBy,
+		CreatedAt:   scalars.DateTime{Time: row.CreatedAt.Time},
 	}
 }

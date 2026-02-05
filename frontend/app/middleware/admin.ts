@@ -3,38 +3,43 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
-  const token = useCookie('token')
-  const config = useRuntimeConfig()
-
-  // If no token, redirect to login
-  if (!token.value) {
-    return navigateTo(
-      `${config.public.loginUrl}?redirect=${to.path}`,
-      {
-        external: true,
-      },
-    )
-  }
-
   // Check if we already have user data
   const me = useState<any>('me', () => null)
 
-  // If we have user data, check roles
-  if (me.value) {
-    const isAdmin = me.value?.roles.some((role: any) => role.role === 'ADMIN')
-    const isSuperAdmin = me.value?.roles.some(
-      (role: any) => role.role === 'SUPERADMIN',
-    )
-
-    if (!isSuperAdmin && !isAdmin) {
-      return createError({
-        statusCode: 403,
-        statusMessage: 'Forbidden',
-        message: 'You do not have permission to access this page',
-      })
-    }
+  // If user data not loaded yet, let page render - layout will handle auth check after loading
+  if (!me.value) {
+    return
   }
 
-  // If we don't have user data yet, let it through and the page will handle loading
-  // The useAuth() composable will be called in the layout/page and will populate the data
+  // Check roles
+  const hasAdminRole = me.value?.roles.some((role: RoleLike) =>
+    [
+      RoleType.Admin,
+      RoleType.Superadmin,
+      RoleType.ProjectAdmin,
+      RoleType.ChurchAdmin,
+    ].includes(role.role),
+  )
+
+  if (!hasAdminRole) {
+    return createError({
+      statusCode: 403,
+      statusMessage: 'Forbidden',
+      message: 'You do not have permission to access this page',
+    })
+  }
+
+  // Check if user has full admin access or is church-admin-only
+  const hasFullAdminRole = me.value?.roles.some((role: RoleLike) =>
+    [RoleType.Admin, RoleType.Superadmin].includes(role.role),
+  )
+
+  const isChurchAdminOnly =
+    !hasFullAdminRole &&
+    me.value?.roles.some((role: RoleLike) => role.role === RoleType.ChurchAdmin)
+
+  // Restrict church-admin-only users to /admin/my-church routes
+  if (isChurchAdminOnly && !to.path.startsWith('/admin/my-church')) {
+    return navigateTo('/admin/my-church')
+  }
 })

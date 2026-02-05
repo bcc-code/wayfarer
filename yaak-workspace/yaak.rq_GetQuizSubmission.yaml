@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_GetQuizSubmission
 createdAt: 2025-12-08T12:00:00
-updatedAt: 2025-12-08T21:20:07.709469
+updatedAt: 2026-01-26T12:00:27.280528
 workspaceId: wk_XKsmbMdFg7
 folderId: fl_Quizzes
 authentication: {}
@@ -31,22 +31,39 @@ body:
         }
         responses {
           id
+          answeredAt
+          timeSpentSeconds
           question {
             id
             questionText
-            questionType
           }
-          selectedAnswers {
-            id
-            answerText
+          ... on PredefinedResponse {
+            selectedAnswerIds
+            selectedAnswers {
+              id
+              answerText
+              isCorrect
+            }
             isCorrect
+            pointsEarned
           }
-          textResponse
-          numberResponse
-          jsonResponse
-          isCorrect
-          answeredAt
-          timeSpentSeconds
+          ... on FreeTextResponse {
+            textResponse
+            pointsEarned
+          }
+          ... on NumberResponse {
+            numberResponse
+            pointsEarned
+          }
+          ... on JsonResponse {
+            jsonResponse
+            pointsEarned
+          }
+          ... on OrderingResponse {
+            submittedOrder
+            isCorrect
+            pointsEarned
+          }
         }
       }
     }

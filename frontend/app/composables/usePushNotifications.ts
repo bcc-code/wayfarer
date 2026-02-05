@@ -26,6 +26,7 @@ const isInitialized = ref(false)
 
 export function usePushNotifications() {
   const config = useRuntimeConfig()
+  const { track } = useAnalytics()
   const { executeMutation: registerSubscription } =
     useRegisterPushSubscriptionMutation()
   const { executeMutation: unregisterSubscription } =
@@ -49,12 +50,12 @@ export function usePushNotifications() {
     if (!isSupported.value) return null
 
     try {
-      const registration = await navigator.serviceWorker.ready
+      const registration = await getServiceWorkerRegistration()
       const sub = await registration.pushManager.getSubscription()
       subscription.value = sub
       return sub
-    } catch (err) {
-      console.error('[Push] Failed to get subscription:', err)
+    } catch {
+      // Don't log timeout errors during init - service worker may not be ready yet
       return null
     }
   }
@@ -67,6 +68,10 @@ export function usePushNotifications() {
 
     const result = await Notification.requestPermission()
     permission.value = result
+    track(AnalyticsEvent.PushPermissionRequested, {
+      permission_granted: result === 'granted',
+      permission_result: result,
+    })
     return result
   }
 
@@ -75,8 +80,6 @@ export function usePushNotifications() {
    * Returns the subscription object to send to your backend
    */
   async function subscribe(): Promise<PushSubscription | null> {
-    console.log('[Push] Subscribe called, isSupported:', isSupported.value)
-
     if (!isSupported.value) {
       error.value = new Error('Push notifications are not supported')
       return null
@@ -87,10 +90,8 @@ export function usePushNotifications() {
 
     try {
       // Request permission if not already granted
-      console.log('[Push] Current permission:', permission.value)
       if (permission.value !== 'granted') {
         const result = await requestPermission()
-        console.log('[Push] Permission result:', result)
         if (result !== 'granted') {
           error.value = new Error('Notification permission denied')
           isLoading.value = false
@@ -98,36 +99,33 @@ export function usePushNotifications() {
         }
       }
 
-      console.log('[Push] Getting service worker registration...')
-      const registration = await navigator.serviceWorker.ready
-      console.log('[Push] Service worker ready')
+      // Get service worker with timeout
+      const registration = await getServiceWorkerRegistration()
 
       // Check for existing subscription
       let sub = await registration.pushManager.getSubscription()
-      console.log('[Push] Existing subscription:', sub)
 
       if (!sub) {
         // Get VAPID public key from config
         const vapidPublicKey = config.public.vapidPublicKey as
           | string
           | undefined
-        console.log(
-          '[Push] VAPID public key:',
-          vapidPublicKey ? 'present' : 'missing',
-        )
 
         if (!vapidPublicKey) {
-          error.value = new Error('VAPID public key not configured')
+          error.value = new Error('Push notifications not configured')
           isLoading.value = false
           return null
         }
 
-        console.log('[Push] Creating new push subscription...')
-        sub = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-        })
-        console.log('[Push] New subscription created:', sub)
+        // Subscribe with timeout
+        sub = await withTimeout(
+          registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+          }),
+          PUSH_SUBSCRIBE_TIMEOUT,
+          'Push subscription timed out. Check your network connection.',
+        )
       }
 
       subscription.value = sub
@@ -138,21 +136,19 @@ export function usePushNotifications() {
         p256dh: arrayBufferToBase64(sub.getKey('p256dh')),
         auth: arrayBufferToBase64(sub.getKey('auth')),
       }
-      console.log('[Push] Registering subscription:', input)
 
       const result = await registerSubscription({ input })
-      console.log('[Push] Registration result:', result)
 
       if (result.error) {
-        console.error('[Push] Registration error:', result.error)
         throw new Error(result.error.message)
       }
+
+      track(AnalyticsEvent.PushSubscriptionEnabled)
 
       return sub
     } catch (err) {
       error.value =
         err instanceof Error ? err : new Error('Failed to subscribe')
-      console.error('[Push] Subscribe error:', err)
       return null
     } finally {
       isLoading.value = false
@@ -168,37 +164,44 @@ export function usePushNotifications() {
     isLoading.value = true
     error.value = null
 
+    const endpoint = subscription.value.endpoint
+
     try {
-      // Remove from backend via GraphQL
-      const result = await unregisterSubscription({
-        endpoint: subscription.value.endpoint,
-      })
-
-      if (result.error) {
-        throw new Error(result.error.message)
-      }
-
-      // Then unsubscribe locally
+      // Unsubscribe locally first - this is the critical operation
       await subscription.value.unsubscribe()
       subscription.value = null
+
+      // Then remove from backend (can be retried if it fails)
+      const result = await unregisterSubscription({ endpoint })
+
+      if (result.error) {
+        // Local unsubscribe succeeded, backend failed - not critical
+        // Backend will eventually clean up stale subscriptions
+        console.warn('[Push] Backend unsubscribe failed:', result.error.message)
+      }
+
+      track(AnalyticsEvent.PushSubscriptionDisabled)
 
       return true
     } catch (err) {
       error.value =
         err instanceof Error ? err : new Error('Failed to unsubscribe')
-      console.error('[Push] Unsubscribe error:', err)
       return false
     } finally {
       isLoading.value = false
     }
   }
 
-  // Initialize: check for existing subscription (only once)
+  // Initialize on mount
   onMounted(async () => {
-    if (isInitialized.value) return
-    if (isSupported.value && typeof Notification !== 'undefined') {
+    if (!isSupported.value || typeof Notification === 'undefined') return
+
+    // Always sync permission state (user may have changed in browser settings)
+    permission.value = Notification.permission
+
+    // Only fetch subscription once per app lifecycle (expensive operation)
+    if (!isInitialized.value) {
       isInitialized.value = true
-      permission.value = Notification.permission
       await getSubscription()
     }
   })
@@ -208,6 +211,7 @@ export function usePushNotifications() {
     permission,
     subscription: readonly(subscription),
     isSubscribed,
+    isInitialized: readonly(isInitialized),
     isLoading: readonly(isLoading),
     error: readonly(error),
     requestPermission,
@@ -215,6 +219,36 @@ export function usePushNotifications() {
     unsubscribe,
     getSubscription,
   }
+}
+
+const SW_READY_TIMEOUT = 10000 // 10 seconds
+const PUSH_SUBSCRIBE_TIMEOUT = 15000 // 15 seconds
+
+/**
+ * Promise wrapper with timeout
+ */
+function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  errorMessage: string,
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), ms),
+    ),
+  ])
+}
+
+/**
+ * Get service worker registration with timeout
+ */
+async function getServiceWorkerRegistration(): Promise<ServiceWorkerRegistration> {
+  return withTimeout(
+    navigator.serviceWorker.ready,
+    SW_READY_TIMEOUT,
+    'Service worker failed to activate. Try refreshing the page.',
+  )
 }
 
 /**

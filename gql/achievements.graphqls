@@ -1,9 +1,258 @@
 # Achievement queries and mutations
 
+# ==================== Achievement Interface ====================
+
+interface Achievement {
+    id: ID!
+    name: String!
+    descriptionPending: String!
+    descriptionCompleted: String!
+    notificationText: String!
+    imagePending: String! @deprecated(reason: "Use imagePendingObject instead")
+    imagePendingObject: Image!
+    imageCompleted: String! @deprecated(reason: "Use imageCompletedObject instead")
+    imageCompletedObject: Image!
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
+    achievedAt: DateTime @goField(forceResolver: true)
+    celebratedAt: DateTime @goField(forceResolver: true)
+    points: Int!
+    hidden: Boolean!
+    awardableFrom: DateTime
+}
+
+# ==================== Achievement Implementations ====================
+
+type SimpleAchievement implements Achievement {
+    id: ID!
+    name: String!
+    descriptionPending: String!
+    descriptionCompleted: String!
+    notificationText: String!
+    imagePending: String! @deprecated(reason: "Use imagePendingObject instead")
+    imagePendingObject: Image! @goField(forceResolver: true)
+    imageCompleted: String! @deprecated(reason: "Use imageCompletedObject instead")
+    imageCompletedObject: Image! @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
+    achievedAt: DateTime @goField(forceResolver: true)
+    celebratedAt: DateTime @goField(forceResolver: true)
+    points: Int!
+    hidden: Boolean!
+    awardableFrom: DateTime
+}
+
+type ContentAchievement implements Achievement {
+    id: ID!
+    name: String!
+    descriptionPending: String!
+    descriptionCompleted: String!
+    notificationText: String!
+    imagePending: String! @deprecated(reason: "Use imagePendingObject instead")
+    imagePendingObject: Image! @goField(forceResolver: true)
+    imageCompleted: String! @deprecated(reason: "Use imageCompletedObject instead")
+    imageCompletedObject: Image! @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
+    achievedAt: DateTime @goField(forceResolver: true)
+    celebratedAt: DateTime @goField(forceResolver: true)
+    points: Int!
+    hidden: Boolean!
+    awardableFrom: DateTime
+    # Content-specific fields
+    items: [ContentItem!]! @goField(forceResolver: true)
+    userCompletedItems: [ContentItem!]! @goField(forceResolver: true)
+    nextItem: ContentItem @goField(forceResolver: true)
+    totalItems: Int!
+    completedItemCount: Int! @goField(forceResolver: true)
+}
+
+type StreakAchievement implements Achievement {
+    id: ID!
+    name: String!
+    descriptionPending: String!
+    descriptionCompleted: String!
+    notificationText: String!
+    imagePending: String! @deprecated(reason: "Use imagePendingObject instead")
+    imagePendingObject: Image! @goField(forceResolver: true)
+    imageCompleted: String! @deprecated(reason: "Use imageCompletedObject instead")
+    imageCompletedObject: Image! @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
+    achievedAt: DateTime @goField(forceResolver: true)
+    celebratedAt: DateTime @goField(forceResolver: true)
+    neededStreak: Int!
+    points: Int!
+    hidden: Boolean!
+    awardableFrom: DateTime
+    streak: Streak! @goField(forceResolver: true)
+}
+
+type QuizAchievement implements Achievement {
+    id: ID!
+    name: String!
+    descriptionPending: String!
+    descriptionCompleted: String!
+    notificationText: String!
+    imagePending: String! @deprecated(reason: "Use imagePendingObject instead")
+    imagePendingObject: Image! @goField(forceResolver: true)
+    imageCompleted: String! @deprecated(reason: "Use imageCompletedObject instead")
+    imageCompletedObject: Image! @goField(forceResolver: true)
+    project: Project! @goField(forceResolver: true)
+    event: Event @goField(forceResolver: true)
+    challenge: Challenge @goField(forceResolver: true)
+    achievedAt: DateTime @goField(forceResolver: true)
+    celebratedAt: DateTime @goField(forceResolver: true)
+    points: Int!
+    hidden: Boolean!
+    awardableFrom: DateTime
+    quiz: Quiz! @goField(forceResolver: true)
+    minScorePercentage: Int
+    requireCompletion: Boolean!
+}
+
+# ==================== Achievement Input Types ====================
+
+input CreateSimpleAchievementInput {
+    name: String!
+    descriptionPending: String!
+    descriptionCompleted: String!
+    notificationText: String!
+    imagePending: String!
+    imageCompleted: String!
+    projectId: ID!
+    eventId: ID
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+    awardableFrom: DateTime
+}
+
+input CreateContentAchievementInput {
+    name: String!
+    descriptionPending: String!
+    descriptionCompleted: String!
+    notificationText: String!
+    imagePending: String!
+    imageCompleted: String!
+    projectId: ID!
+    eventId: ID
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+    awardableFrom: DateTime
+    items: [ContentItemInput!]!
+}
+
+input CreateStreakAchievementInput {
+    name: String!
+    descriptionPending: String!
+    descriptionCompleted: String!
+    notificationText: String!
+    imagePending: String!
+    imageCompleted: String!
+    projectId: ID!
+    eventId: ID
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+    awardableFrom: DateTime
+    neededStreak: Int!
+    streakId: ID!
+}
+
+input CreateQuizAchievementInput {
+    name: String!
+    descriptionPending: String!
+    descriptionCompleted: String!
+    notificationText: String!
+    imagePending: String!
+    imageCompleted: String!
+    projectId: ID!
+    challengeId: ID
+    points: Int!
+    hidden: Boolean!
+    quizId: ID!
+    minScorePercentage: Int
+    requireCompletion: Boolean!
+}
+
+input UpdateAchievementInput {
+    name: String
+    descriptionPending: String
+    descriptionCompleted: String
+    notificationText: String
+    imagePending: String
+    imageCompleted: String
+    eventId: ID
+    challengeId: ID
+    points: Int
+    hidden: Boolean
+    awardableFrom: DateTime
+}
+
+input UpdateContentAchievementInput {
+    name: String
+    descriptionPending: String
+    descriptionCompleted: String
+    notificationText: String
+    imagePending: String
+    imageCompleted: String
+    eventId: ID
+    challengeId: ID
+    points: Int
+    hidden: Boolean
+    awardableFrom: DateTime
+    items: [ContentItemInput!]
+}
+
+input UpdateStreakAchievementInput {
+    name: String
+    descriptionPending: String
+    descriptionCompleted: String
+    notificationText: String
+    imagePending: String
+    imageCompleted: String
+    eventId: ID
+    challengeId: ID
+    points: Int
+    hidden: Boolean
+    awardableFrom: DateTime
+    neededStreak: Int
+    streakId: ID
+}
+
+input AchievementFilter {
+    projectId: ID
+    eventId: ID
+    ids: [ID!]  # Support bulk ID lookup for M2M API
+}
+
+# ==================== Achievement Pagination ====================
+
+type AchievementEdge {
+    cursor: String!
+    node: Achievement!
+}
+
+type AchievementConnection {
+    edges: [AchievementEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+# ==================== Queries ====================
+
 extend type Query {
     achievement(id: ID!): Achievement!
     achievements(filter: AchievementFilter!, first: Int, after: String, last: Int, before: String): AchievementConnection!
 }
+
+# ==================== Mutations ====================
 
 extend type Mutation {
     # Create achievements
@@ -34,4 +283,7 @@ extend type Mutation {
 
     # Streak tracking (M2M)
     recordStreakActivity(userId: ID!, achievementId: ID!, currentStreak: Int!): StreakAchievement! @requireRole(roles: ["m2m", "admin", "superadmin"])
+
+    # Mark achievement as celebrated (any authenticated user)
+    markAchievementCelebrated(achievementId: ID!): Boolean!
 }

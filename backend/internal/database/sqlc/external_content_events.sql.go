@@ -53,6 +53,59 @@ func (q *Queries) CreateExternalContentEvent(ctx context.Context, arg CreateExte
 	return &i, err
 }
 
+const ExternalContentEventExists = `-- name: ExternalContentEventExists :one
+SELECT EXISTS(
+    SELECT 1 FROM external_content_events
+    WHERE person_id = $1::uuid AND task_id = $2::text
+) AS exists
+`
+
+type ExternalContentEventExistsParams struct {
+	Personid pgtype.UUID `json:"personid"`
+	Taskid   string      `json:"taskid"`
+}
+
+// Single-event check used by the webhook handler.
+func (q *Queries) ExternalContentEventExists(ctx context.Context, arg ExternalContentEventExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, ExternalContentEventExists, arg.Personid, arg.Taskid)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const GetExistingExternalContentEventTaskIDs = `-- name: GetExistingExternalContentEventTaskIDs :many
+SELECT DISTINCT task_id
+FROM external_content_events
+WHERE person_id = $1::uuid AND task_id = ANY($2::text[])
+`
+
+type GetExistingExternalContentEventTaskIDsParams struct {
+	Personid pgtype.UUID `json:"personid"`
+	Taskids  []string    `json:"taskids"`
+}
+
+// Batch check: given a person and a list of task_ids, return those that already have events.
+// Used by syncContentEvents to filter a whole page in one round-trip.
+func (q *Queries) GetExistingExternalContentEventTaskIDs(ctx context.Context, arg GetExistingExternalContentEventTaskIDsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetExistingExternalContentEventTaskIDs, arg.Personid, arg.Taskids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var task_id string
+		if err := rows.Scan(&task_id); err != nil {
+			return nil, err
+		}
+		items = append(items, task_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetExternalContentEventByID = `-- name: GetExternalContentEventByID :one
 SELECT id, person_id, task_id, plan_id, source, received_at, content_progress, consumed_at
 FROM external_content_events
@@ -150,6 +203,51 @@ func (q *Queries) GetExternalContentEventsBySource(ctx context.Context, arg GetE
 			&i.PlanID,
 			&i.Source,
 			&i.ReceivedAt,
+			&i.ContentProgress,
+			&i.ConsumedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetExternalContentEventsForProcessing = `-- name: GetExternalContentEventsForProcessing :many
+SELECT DISTINCT ON (task_id) id, person_id, task_id, plan_id, content_progress, consumed_at
+FROM external_content_events
+WHERE person_id = $1::uuid
+ORDER BY task_id, consumed_at DESC
+`
+
+type GetExternalContentEventsForProcessingRow struct {
+	ID              string             `json:"id"`
+	PersonID        pgtype.UUID        `json:"person_id"`
+	TaskID          string             `json:"task_id"`
+	PlanID          *string            `json:"plan_id"`
+	ContentProgress *float32           `json:"content_progress"`
+	ConsumedAt      pgtype.Timestamptz `json:"consumed_at"`
+}
+
+// Returns one event per task_id (most recent) for a person_id, used when processing
+// pending events for newly registered users.
+func (q *Queries) GetExternalContentEventsForProcessing(ctx context.Context, personid pgtype.UUID) ([]*GetExternalContentEventsForProcessingRow, error) {
+	rows, err := q.db.Query(ctx, GetExternalContentEventsForProcessing, personid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetExternalContentEventsForProcessingRow{}
+	for rows.Next() {
+		var i GetExternalContentEventsForProcessingRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PersonID,
+			&i.TaskID,
+			&i.PlanID,
 			&i.ContentProgress,
 			&i.ConsumedAt,
 		); err != nil {

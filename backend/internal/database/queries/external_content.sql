@@ -1,8 +1,8 @@
 -- name: UpsertExternalContent :one
 INSERT INTO external_content (
-    id, plan_id, task_id, content_id, content_type, published_at, synced_at, source
+    id, plan_id, task_id, content_id, content_type, published_at, synced_at, source, url, complete_by
 ) VALUES (
-    @id, @planid::text, @taskid::text, @contentid::text, @contenttype::text, @publishedat::timestamptz, @syncedat::timestamptz, @source::text
+    @id, @planid::text, @taskid::text, @contentid::text, @contenttype::text, @publishedat::timestamptz, @syncedat::timestamptz, @source::text, @url::text, @completeby::timestamptz
 )
 ON CONFLICT (plan_id, task_id) DO UPDATE SET
     content_id = EXCLUDED.content_id,
@@ -10,6 +10,8 @@ ON CONFLICT (plan_id, task_id) DO UPDATE SET
     published_at = EXCLUDED.published_at,
     synced_at = EXCLUDED.synced_at,
     source = EXCLUDED.source,
+    url = EXCLUDED.url,
+    complete_by = EXCLUDED.complete_by,
     updated_at = now()
 RETURNING *;
 
@@ -105,3 +107,38 @@ SELECT * FROM external_content WHERE id = ANY(@ids::text[]);
 -- name: GetExternalContentTranslationsByContentIDs :many
 SELECT * FROM external_content_translations
 WHERE external_content_id = ANY(@externalcontentids::text[]);
+
+-- ==================== Bulk Upsert Queries ====================
+
+-- name: BulkUpsertExternalContent :exec
+INSERT INTO external_content (id, plan_id, task_id, content_id, content_type, published_at, synced_at, source, url, complete_by)
+SELECT
+    UNNEST(@ids::text[]),
+    UNNEST(@planids::text[]),
+    UNNEST(@taskids::text[]),
+    UNNEST(@contentids::text[]),
+    UNNEST(@contenttypes::text[]),
+    UNNEST(@publishedats::timestamptz[]),
+    UNNEST(@syncedats::timestamptz[]),
+    UNNEST(@sources::text[]),
+    UNNEST(@urls::text[]),
+    UNNEST(@completebys::timestamptz[])
+ON CONFLICT (plan_id, task_id) DO UPDATE SET
+    content_id = EXCLUDED.content_id,
+    content_type = EXCLUDED.content_type,
+    published_at = EXCLUDED.published_at,
+    synced_at = EXCLUDED.synced_at,
+    source = EXCLUDED.source,
+    url = EXCLUDED.url,
+    complete_by = EXCLUDED.complete_by,
+    updated_at = now();
+
+-- name: BulkUpsertExternalContentTranslations :exec
+INSERT INTO external_content_translations (external_content_id, language_code, title)
+SELECT
+    UNNEST(@externalcontentids::text[]),
+    UNNEST(@languagecodes::text[]),
+    UNNEST(@titles::text[])
+ON CONFLICT (external_content_id, language_code) DO UPDATE SET
+    title = EXCLUDED.title,
+    updated_at = now();

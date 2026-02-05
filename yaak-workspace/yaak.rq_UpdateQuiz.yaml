@@ -8,7 +8,7 @@ folderId: fl_Quizzes
 authentication: {}
 authenticationType: null
 body:
-  query: "mutation UpdateQuiz {\n  updateQuiz(id: \"QZ01KCF91CSRSGJWA3JKYHR587GS\", input: {\n    \n  }) {\n    id\n    name\n    description\n    timeoutSeconds\n    randomizeQuestions\n    revealCorrectAnswers\n    allowRetakes\n    completionPoints\n    publishedAt\n    endTime\n  }\n}\n"
+  query: "mutation UpdateQuiz {\n  updateQuiz(id: \"QZ01KCF91CSRSGJWA3JKYHR587GS\", input: {\n    \n  }) {\n    id\n    name\n    description\n    timeoutSeconds\n    randomizeQuestions\n    revealCorrectAnswers\n    allowRetakes\n    completionPoints\n    endTime\n  }\n}\n"
 bodyType: graphql
 description: Update an existing quiz (admin only)
 headers:

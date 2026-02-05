@@ -13,6 +13,12 @@ SELECT id, external_id, name, country, category
 FROM churches
 WHERE external_id = @external_id;
 
+-- name: GetDefaultChurch :one
+SELECT id, external_id, name, country, category
+FROM churches
+WHERE external_id IS NULL
+LIMIT 1;
+
 -- name: GetChurchesFilteredCursor :many
 SELECT id, external_id, name, country, category
 FROM churches
@@ -48,4 +54,14 @@ DO UPDATE SET
     name = EXCLUDED.name,
     country = EXCLUDED.country,
     updated_at = NOW()
+RETURNING id, external_id, name, country, category;
+
+-- name: UpdateChurch :one
+UPDATE churches
+SET
+    name = COALESCE(NULLIF(@name::text, ''), name),
+    country = COALESCE(NULLIF(@country::text, ''), country),
+    category = COALESCE(NULLIF(@category::text, ''), category),
+    updated_at = NOW()
+WHERE id = @id
 RETURNING id, external_id, name, country, category;

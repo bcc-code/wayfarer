@@ -39,6 +39,11 @@ const (
 	PrefixPendingConsentEvent = "PC" // Pending Consent Events (for users not yet registered)
 	PrefixPushSubscription    = "PS" // Push Subscriptions
 	PrefixPushNotification    = "PN" // Push Notification Log
+	PrefixUserFeedback        = "FB" // User Feedback
+	PrefixWebhook             = "WH" // Webhooks
+	PrefixWebhookLog          = "WL" // Webhook Logs
+	PrefixQuizSession         = "QN" // Quiz Sessions (QS taken by submissions)
+	PrefixQuizSessionAccess   = "QX" // Quiz Session Access
 )
 
 // Total ID length: 2 (prefix) + 26 (ULID) = 28 characters
@@ -202,6 +207,11 @@ func NewPushSubscriptionID() string {
 // NewPushNotificationID generates a new ID for a push notification log entry (PN prefix)
 func NewPushNotificationID() string {
 	return newID(PrefixPushNotification)
+}
+
+// NewUserFeedbackID generates a new ID for user feedback (FB prefix)
+func NewUserFeedbackID() string {
+	return newID(PrefixUserFeedback)
 }
 
 // Validation functions
@@ -371,4 +381,49 @@ func IsPushSubscriptionID(id string) bool {
 // IsPushNotificationID validates a push notification log ID
 func IsPushNotificationID(id string) bool {
 	return IsValidID(id, PrefixPushNotification)
+}
+
+// IsUserFeedbackID validates a user feedback ID
+func IsUserFeedbackID(id string) bool {
+	return IsValidID(id, PrefixUserFeedback)
+}
+
+// NewWebhookID generates a new ID for a webhook (WH prefix)
+func NewWebhookID() string {
+	return newID(PrefixWebhook)
+}
+
+// NewWebhookLogID generates a new ID for a webhook log entry (WL prefix)
+func NewWebhookLogID() string {
+	return newID(PrefixWebhookLog)
+}
+
+// IsWebhookID validates a webhook ID
+func IsWebhookID(id string) bool {
+	return IsValidID(id, PrefixWebhook)
+}
+
+// IsWebhookLogID validates a webhook log ID
+func IsWebhookLogID(id string) bool {
+	return IsValidID(id, PrefixWebhookLog)
+}
+
+// NewQuizSessionID generates a new ID for a quiz session (QN prefix)
+func NewQuizSessionID() string {
+	return newID(PrefixQuizSession)
+}
+
+// NewQuizSessionAccessID generates a new ID for a quiz session access entry (QX prefix)
+func NewQuizSessionAccessID() string {
+	return newID(PrefixQuizSessionAccess)
+}
+
+// IsQuizSessionID validates a quiz session ID
+func IsQuizSessionID(id string) bool {
+	return IsValidID(id, PrefixQuizSession)
+}
+
+// IsQuizSessionAccessID validates a quiz session access ID
+func IsQuizSessionAccessID(id string) bool {
+	return IsValidID(id, PrefixQuizSessionAccess)
 }

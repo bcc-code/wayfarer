@@ -25,6 +25,8 @@ type Achievement struct {
 	ImageCompleted       string             `json:"image_completed"`
 	NotificationText     string             `json:"notification_text"`
 	SortOrder            int32              `json:"sort_order"`
+	// Earliest time the achievement can be awarded. NULL means always awardable.
+	AwardableFrom pgtype.Timestamptz `json:"awardable_from"`
 }
 
 type AchievementTranslation struct {
@@ -57,6 +59,8 @@ type Challenge struct {
 	RequiresSuperTeamMembership bool               `json:"requires_super_team_membership"`
 	ChallengeType               string             `json:"challenge_type"`
 	AllowSelfCompletion         bool               `json:"allow_self_completion"`
+	PluginChallengeID           *string            `json:"plugin_challenge_id"`
+	PluginData                  []byte             `json:"plugin_data"`
 }
 
 type ChallengeTranslation struct {
@@ -152,7 +156,10 @@ type ExternalContent struct {
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 	// Content source identifier (e.g., ssf)
-	Source string `json:"source"`
+	Source string  `json:"source"`
+	Url    *string `json:"url"`
+	// Deadline for completing the content (calculated from completion_mode during SSF sync)
+	CompleteBy pgtype.Timestamptz `json:"complete_by"`
 }
 
 // Stores content completion events from external systems
@@ -196,20 +203,30 @@ type FileUpload struct {
 	// User ID of admin who uploaded the file
 	UploadedBy string             `json:"uploaded_by"`
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	// Image width in pixels (null for non-images)
+	Width *int32 `json:"width"`
+	// Image height in pixels (null for non-images)
+	Height *int32 `json:"height"`
+	// Blurhash placeholder string (null for non-images)
+	Blurhash *string `json:"blurhash"`
 }
 
 type LeaderboardEventChurch struct {
-	EventID   string             `json:"event_id"`
-	ChurchID  string             `json:"church_id"`
-	Score     int64              `json:"score"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	EventID     string             `json:"event_id"`
+	ChurchID    string             `json:"church_id"`
+	Score       int64              `json:"score"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+	TotalPoints int64              `json:"total_points"`
+	MemberCount int32              `json:"member_count"`
 }
 
 type LeaderboardEventPerson struct {
-	EventID   string             `json:"event_id"`
-	UserID    string             `json:"user_id"`
-	Score     int64              `json:"score"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	EventID     string             `json:"event_id"`
+	UserID      string             `json:"user_id"`
+	Score       int64              `json:"score"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 type LeaderboardEventSuperteam struct {
@@ -217,27 +234,37 @@ type LeaderboardEventSuperteam struct {
 	SuperTeamID string             `json:"super_team_id"`
 	Score       int64              `json:"score"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+	TotalPoints int64              `json:"total_points"`
+	MemberCount int32              `json:"member_count"`
 }
 
 type LeaderboardEventTeam struct {
-	EventID   string             `json:"event_id"`
-	TeamID    string             `json:"team_id"`
-	Score     int64              `json:"score"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	EventID     string             `json:"event_id"`
+	TeamID      string             `json:"team_id"`
+	Score       int64              `json:"score"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+	TotalPoints int64              `json:"total_points"`
+	MemberCount int32              `json:"member_count"`
 }
 
 type LeaderboardProjectChurch struct {
-	ProjectID string             `json:"project_id"`
-	ChurchID  string             `json:"church_id"`
-	Score     int64              `json:"score"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ProjectID   string             `json:"project_id"`
+	ChurchID    string             `json:"church_id"`
+	Score       int64              `json:"score"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+	TotalPoints int64              `json:"total_points"`
+	MemberCount int32              `json:"member_count"`
 }
 
 type LeaderboardProjectPerson struct {
-	ProjectID string             `json:"project_id"`
-	UserID    string             `json:"user_id"`
-	Score     int64              `json:"score"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ProjectID   string             `json:"project_id"`
+	UserID      string             `json:"user_id"`
+	Score       int64              `json:"score"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
 }
 
 type LeaderboardProjectSuperteam struct {
@@ -245,13 +272,19 @@ type LeaderboardProjectSuperteam struct {
 	SuperTeamID string             `json:"super_team_id"`
 	Score       int64              `json:"score"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+	TotalPoints int64              `json:"total_points"`
+	MemberCount int32              `json:"member_count"`
 }
 
 type LeaderboardProjectTeam struct {
-	ProjectID string             `json:"project_id"`
-	TeamID    string             `json:"team_id"`
-	Score     int64              `json:"score"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ProjectID   string             `json:"project_id"`
+	TeamID      string             `json:"team_id"`
+	Score       int64              `json:"score"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	LastScoreAt pgtype.Timestamptz `json:"last_score_at"`
+	TotalPoints int64              `json:"total_points"`
+	MemberCount int32              `json:"member_count"`
 }
 
 // Stores consent events for users not yet registered in Wayfarer
@@ -312,6 +345,10 @@ type Project struct {
 	ColorDarkShadowBlank        string             `json:"color_dark_shadow_blank"`
 	ColorDarkBorderDefault      string             `json:"color_dark_border_default"`
 	Rules                       *string            `json:"rules"`
+	BannerUrl                   *string            `json:"banner_url"`
+	InfoMessage                 *string            `json:"info_message"`
+	InfoMessageStart            pgtype.Timestamptz `json:"info_message_start"`
+	InfoMessageEnd              pgtype.Timestamptz `json:"info_message_end"`
 }
 
 type ProjectTranslation struct {
@@ -368,7 +405,6 @@ type Quiz struct {
 	RevealCorrectAnswers bool               `json:"reveal_correct_answers"`
 	AllowRetakes         bool               `json:"allow_retakes"`
 	CompletionPoints     int32              `json:"completion_points"`
-	PublishedAt          pgtype.Timestamptz `json:"published_at"`
 	EndTime              pgtype.Timestamptz `json:"end_time"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
@@ -437,6 +473,29 @@ type QuizResponse struct {
 	PointsEarned      *int32             `json:"points_earned"`
 }
 
+type QuizSession struct {
+	ID        string             `json:"id"`
+	QuizID    string             `json:"quiz_id"`
+	Name      *string            `json:"name"`
+	State     string             `json:"state"`
+	OpenAt    pgtype.Timestamptz `json:"open_at"`
+	LockAt    pgtype.Timestamptz `json:"lock_at"`
+	FinishAt  pgtype.Timestamptz `json:"finish_at"`
+	CreatedBy string             `json:"created_by"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type QuizSessionAccess struct {
+	ID         string             `json:"id"`
+	SessionID  string             `json:"session_id"`
+	UserID     string             `json:"user_id"`
+	GrantedBy  string             `json:"granted_by"`
+	GrantedAt  pgtype.Timestamptz `json:"granted_at"`
+	SourceType string             `json:"source_type"`
+	SourceID   *string            `json:"source_id"`
+}
+
 type QuizSubmission struct {
 	ID            string             `json:"id"`
 	QuizID        string             `json:"quiz_id"`
@@ -449,6 +508,8 @@ type QuizSubmission struct {
 	MaxScore      *int32             `json:"max_score"`
 	PointsAwarded *int32             `json:"points_awarded"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	SessionID     *string            `json:"session_id"`
+	AutoSubmitted bool               `json:"auto_submitted"`
 }
 
 type QuizTranslation struct {
@@ -531,39 +592,23 @@ type SuperTeam struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
-type SuperTeamTranslation struct {
-	SuperTeamID  string             `json:"super_team_id"`
-	LanguageCode string             `json:"language_code"`
-	Name         *string            `json:"name"`
-	Description  *string            `json:"description"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-}
-
 type Team struct {
-	ID          string             `json:"id"`
-	ProjectID   string             `json:"project_id"`
-	Name        string             `json:"name"`
-	Description *string            `json:"description"`
-	JoinCode    string             `json:"join_code"`
-	SuperTeamID *string            `json:"super_team_id"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID                  string             `json:"id"`
+	ProjectID           string             `json:"project_id"`
+	Name                string             `json:"name"`
+	Description         *string            `json:"description"`
+	JoinCode            string             `json:"join_code"`
+	SuperTeamID         *string            `json:"super_team_id"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	LeaderboardExcluded bool               `json:"leaderboard_excluded"`
+	CreatedByUserID     *string            `json:"created_by_user_id"`
 }
 
 type TeamMember struct {
 	TeamID   string             `json:"team_id"`
 	UserID   string             `json:"user_id"`
 	JoinedAt pgtype.Timestamptz `json:"joined_at"`
-}
-
-type TeamTranslation struct {
-	TeamID       string             `json:"team_id"`
-	LanguageCode string             `json:"language_code"`
-	Name         *string            `json:"name"`
-	Description  *string            `json:"description"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 type TranslationHash struct {
@@ -573,26 +618,30 @@ type TranslationHash struct {
 }
 
 type User struct {
-	ID          string             `json:"id"`
-	MembersID   string             `json:"members_id"`
-	Email       string             `json:"email"`
-	Name        string             `json:"name"`
-	Gender      string             `json:"gender"`
-	ChurchID    string             `json:"church_id"`
-	AvatarUrl   *string            `json:"avatar_url"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-	Birthdate   pgtype.Date        `json:"birthdate"`
-	FirstName   *string            `json:"first_name"`
-	LastName    *string            `json:"last_name"`
-	MiddleName  *string            `json:"middle_name"`
-	DisplayName *string            `json:"display_name"`
+	ID                string             `json:"id"`
+	MembersID         string             `json:"members_id"`
+	Email             string             `json:"email"`
+	Name              string             `json:"name"`
+	Gender            string             `json:"gender"`
+	ChurchID          string             `json:"church_id"`
+	AvatarUrl         *string            `json:"avatar_url"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	Birthdate         pgtype.Date        `json:"birthdate"`
+	FirstName         *string            `json:"first_name"`
+	LastName          *string            `json:"last_name"`
+	MiddleName        *string            `json:"middle_name"`
+	DisplayName       *string            `json:"display_name"`
+	PersonUuid        pgtype.UUID        `json:"person_uuid"`
+	Language          string             `json:"language"`
+	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
 }
 
 type UserAchievement struct {
 	UserID        string             `json:"user_id"`
 	AchievementID string             `json:"achievement_id"`
 	AchievedAt    pgtype.Timestamptz `json:"achieved_at"`
+	CelebratedAt  pgtype.Timestamptz `json:"celebrated_at"`
 }
 
 type UserChallengeCompletion struct {
@@ -632,6 +681,25 @@ type UserEvent struct {
 	JoinedAt pgtype.Timestamptz `json:"joined_at"`
 }
 
+type UserFeedback struct {
+	ID           string             `json:"id"`
+	UserID       string             `json:"user_id"`
+	Message      string             `json:"message"`
+	CanContactMe bool               `json:"can_contact_me"`
+	UserAgent    *string            `json:"user_agent"`
+	Platform     *string            `json:"platform"`
+	ScreenWidth  *int32             `json:"screen_width"`
+	ScreenHeight *int32             `json:"screen_height"`
+	AppVersion   *string            `json:"app_version"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	Locale       *string            `json:"locale"`
+	ProjectID    *string            `json:"project_id"`
+	Timezone     *string            `json:"timezone"`
+	HandledAt    pgtype.Timestamptz `json:"handled_at"`
+	ContextUrl   *string            `json:"context_url"`
+	Tags         []string           `json:"tags"`
+}
+
 type UserProject struct {
 	UserID    string             `json:"user_id"`
 	ProjectID string             `json:"project_id"`
@@ -654,4 +722,30 @@ type UserStreakActivity struct {
 	StreakID     string             `json:"streak_id"`
 	ActivityDate pgtype.Date        `json:"activity_date"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
+type Webhook struct {
+	ID               string             `json:"id"`
+	ProjectID        string             `json:"project_id"`
+	Name             string             `json:"name"`
+	Url              string             `json:"url"`
+	EventType        string             `json:"event_type"`
+	IncludeUserData  bool               `json:"include_user_data"`
+	IncludeEventData bool               `json:"include_event_data"`
+	Active           bool               `json:"active"`
+	Secret           *string            `json:"secret"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+type WebhookLog struct {
+	ID                 string             `json:"id"`
+	WebhookID          string             `json:"webhook_id"`
+	EventType          string             `json:"event_type"`
+	RequestPayload     []byte             `json:"request_payload"`
+	ResponseStatusCode *int32             `json:"response_status_code"`
+	ResponseBody       *string            `json:"response_body"`
+	DurationMs         int32              `json:"duration_ms"`
+	ErrorMessage       *string            `json:"error_message"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 }

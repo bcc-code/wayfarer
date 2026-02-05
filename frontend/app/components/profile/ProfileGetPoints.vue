@@ -24,13 +24,15 @@ const { isAuthReady } = useAuthReady()
 const { data, fetching, error } = useProjectRulesQuery({
   pause: computed(() => !isAuthReady.value),
 })
+
+const isInitialLoading = computed(() => fetching.value && !data.value)
 </script>
 
 <template>
   <DesignDrawer v-model:open="open" :title="$t('pages.rules')">
     <slot />
     <template #content>
-      <LoadingState v-if="fetching" />
+      <LoadingState v-if="isInitialLoading" />
       <ErrorState v-else-if="error" :error />
       <div
         v-else-if="data?.myCurrentProject.rules"

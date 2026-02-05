@@ -62,9 +62,7 @@ func NewClient(queries *sqlc.Queries, config Config, languages []string) *Client
 		baseURL = "https://cloud.memsource.com/web/api2"
 	}
 
-	if strings.HasSuffix(baseURL, "/") {
-		baseURL = baseURL[:len(baseURL)-1]
-	}
+	baseURL = strings.TrimSuffix(baseURL, "/")
 
 	r := resty.New()
 	r.BaseURL = baseURL
@@ -124,8 +122,7 @@ func (m *Client) SendToTranslation(ctx context.Context, collection string, data 
 
 	errList := []error{}
 	if len(existingJobs) > 0 {
-		jobIDs := lo.Map(existingJobs, func(j Job, _ int) string { return j.UID })
-		err = m.UpdateSource(jobIDs, filename, outputData)
+		err = m.UpdateSource(existingJobs, filename, outputData)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to update jobs in Phrase")
 			errList = append(errList, err)
@@ -373,21 +370,23 @@ func (c *Client) CreateJob(targetLanguages []string, path, filename string, data
 
 }
 
-func (c *Client) UpdateSource(jobs []string, filename string, data []byte) error {
+func (c *Client) UpdateSource(jobs []Job, filename string, data []byte) error {
 	err := c.Authenticate()
 	if err != nil {
 		return err
 	}
 
-	meta := UpdateSourceRequest{
-		Jobs:                       lo.Map(jobs, func(j string, _ int) JobOnlyUID { return JobOnlyUID{UID: j} }),
-		PreTranslate:               false,
-		AllowAutomaticPostAnalysis: false,
-	}
+	jobUIDs := lo.Map(jobs, func(j Job, _ int) JobOnlyUID { return JobOnlyUID{UID: j.UID} })
 
-	err = c.updateJobsStatus(meta.Jobs, StatusNew)
+	err = c.updateJobsStatus(jobUIDs, StatusNew)
 	if err != nil {
 		return err
+	}
+
+	meta := UpdateSourceRequest{
+		Jobs:                       jobUIDs,
+		PreTranslate:               false,
+		AllowAutomaticPostAnalysis: false,
 	}
 
 	metaJson, err := json.Marshal(meta)
@@ -609,7 +608,7 @@ func (c *Client) NotifyAssignedJobs(projectUID string, jobUIDs []string, emailTe
 	}
 	if resp.StatusCode() >= 300 {
 		log.Error().Str("projectUID", projectUID).Int("status", resp.StatusCode()).Str("body", resp.String()).Msg("Phrase notifyAssigned failed")
-		return fmt.Errorf("Phrase notifyAssigned failed: %s", resp.String())
+		return fmt.Errorf("phrase notifyAssigned failed: %s", resp.String())
 	}
 	return nil
 }

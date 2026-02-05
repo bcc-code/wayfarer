@@ -17,9 +17,10 @@ func (s *Service) getDataForProjects(ctx context.Context) ([]common.TranslationD
 
 	toSend := []common.TranslationData{}
 	for _, row := range rows {
-		value := NameDescriptionTranslation{
+		value := ProjectTranslation{
 			Name:        row.Name,
-			Description: null.StringFrom(row.Description),
+			Description: splitLines(row.Description),
+			Rules:       splitLinesPtr(row.Rules),
 		}
 		toSend = append(toSend, common.TranslationData{
 			Language: "no", // Base language is Norwegian
@@ -47,50 +48,6 @@ func (s *Service) getDataForEvents(ctx context.Context) ([]common.TranslationDat
 			Language: "no",
 			Value:    mustToJSON(value),
 			ID:       row.ID, // ULID with EV prefix
-		})
-	}
-
-	return toSend, nil
-}
-
-func (s *Service) getDataForTeams(ctx context.Context) ([]common.TranslationData, error) {
-	rows, err := s.queries.GetTeamsForTranslation(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	toSend := []common.TranslationData{}
-	for _, row := range rows {
-		value := NameDescriptionTranslation{
-			Name:        row.Name,
-			Description: null.StringFromPtr(row.Description),
-		}
-		toSend = append(toSend, common.TranslationData{
-			Language: "no",
-			Value:    mustToJSON(value),
-			ID:       row.ID, // ULID with TM prefix
-		})
-	}
-
-	return toSend, nil
-}
-
-func (s *Service) getDataForSuperTeams(ctx context.Context) ([]common.TranslationData, error) {
-	rows, err := s.queries.GetSuperTeamsForTranslation(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	toSend := []common.TranslationData{}
-	for _, row := range rows {
-		value := NameDescriptionTranslation{
-			Name:        row.Name,
-			Description: null.StringFromPtr(row.Description),
-		}
-		toSend = append(toSend, common.TranslationData{
-			Language: "no",
-			Value:    mustToJSON(value),
-			ID:       row.ID, // ULID with ST prefix
 		})
 	}
 
@@ -230,7 +187,7 @@ func (s *Service) getDataForConsents(ctx context.Context) ([]common.TranslationD
 		value := ConsentTranslation{
 			Title:     row.Title,
 			ShortText: row.ShortText,
-			Body:      row.Body,
+			Body:      splitLines(row.Body),
 		}
 		toSend = append(toSend, common.TranslationData{
 			Language: "no",

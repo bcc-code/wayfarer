@@ -18,11 +18,13 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/MicahParks/jwkset"
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/bcc-media/wayfarer/internal/auth0"
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/config"
 	"github.com/bcc-media/wayfarer/internal/database"
+	"github.com/bcc-media/wayfarer/internal/firebase"
 	"github.com/bcc-media/wayfarer/internal/graph/api"
 	"github.com/bcc-media/wayfarer/internal/graph/directives"
 	"github.com/bcc-media/wayfarer/internal/handlers"
@@ -31,8 +33,12 @@ import (
 	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/otel"
+	"github.com/bcc-media/wayfarer/internal/plugins"
+	"github.com/bcc-media/wayfarer/internal/plugins/ladder_to_heaven"
 	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/services/email"
 	"github.com/bcc-media/wayfarer/internal/services/push"
+	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ssf"
 	"github.com/bcc-media/wayfarer/translations"
 	"github.com/bcc-media/wayfarer/translations/phrase"
@@ -80,6 +86,12 @@ func main() {
 		}()
 	}
 
+	// Run database migrations
+	if err := database.Migrate(ctx, cfg.Database.URL); err != nil {
+		slog.Error("Failed to run migrations", "error", err)
+		os.Exit(1)
+	}
+
 	// Connect to database
 	db, err := database.Connect(ctx, cfg.Database)
 	if err != nil {
@@ -91,12 +103,36 @@ func main() {
 	slog.Info("Connected to database successfully")
 
 	// Initialize JWKS for Brunstad TV JWT validation
-	jwks, err := keyfunc.NewDefault([]string{cfg.JWT.BrunstadTVJWKSURL})
+	// Use background context to avoid request context deadline issues
+	jwks, err := keyfunc.NewDefaultCtx(ctx, []string{cfg.JWT.BrunstadTVJWKSURL})
 	if err != nil {
-		slog.Error("Failed to initialize JWKS", "error", err)
+		slog.Error("Failed to initialize Brunstad TV JWKS", "error", err)
 		os.Exit(1)
 	}
-	slog.Info("JWKS initialized successfully", "url", cfg.JWT.BrunstadTVJWKSURL)
+	slog.Info("Brunstad TV JWKS initialized successfully", "url", cfg.JWT.BrunstadTVJWKSURL)
+
+	// Initialize JWKS for Auth0 (login.bcc.no) JWT validation
+	// Use custom storage with SkipAll to handle X5T validation issues in Auth0's JWKS
+	// Core security (RSA signature verification, expiration) is still enforced by JWT parsing
+	auth0Storage, err := jwkset.NewStorageFromHTTP(cfg.JWT.Auth0JWKSURL, jwkset.HTTPClientStorageOptions{
+		Ctx: ctx,
+		ValidateOptions: jwkset.JWKValidateOptions{
+			SkipAll: true, // Skip JWK validation that fails with Auth0's X5T mismatch
+		},
+	})
+	if err != nil {
+		slog.Error("Failed to create Auth0 JWKS storage", "error", err)
+		os.Exit(1)
+	}
+	auth0JWKS, err := keyfunc.New(keyfunc.Options{
+		Ctx:     ctx,
+		Storage: auth0Storage,
+	})
+	if err != nil {
+		slog.Error("Failed to initialize Auth0 JWKS", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("Auth0 JWKS initialized successfully", "url", cfg.JWT.Auth0JWKSURL)
 
 	// Initialize Auth0 client for Members API token management
 	var membersClient *members.Client
@@ -125,9 +161,10 @@ func main() {
 	}
 
 	// Initialize SSF client and sync service
+	var ssfClient *ssf.Client
 	var ssfSyncService *ssf.SyncService
 	if cfg.SSF.APIKey != "" {
-		ssfClient := ssf.New(ssf.Config{
+		ssfClient = ssf.New(ssf.Config{
 			BaseURL:   cfg.SSF.BaseURL,
 			APIKey:    cfg.SSF.APIKey,
 			DebugMode: cfg.SSF.DebugMode,
@@ -138,7 +175,7 @@ func main() {
 			"debug_mode", cfg.SSF.DebugMode,
 		)
 
-		ssfSyncService = ssf.NewSyncService(ssfClient, db.Queries, lgr)
+		ssfSyncService = ssf.NewSyncService(ssfClient, db.Queries, db.Pool, lgr)
 	} else {
 		slog.Warn("SSF API client not initialized - missing API key")
 	}
@@ -200,7 +237,7 @@ func main() {
 	slog.Info("RoleService initialized with caching")
 
 	// Initialize LeaderboardService
-	leaderboardService := services.NewLeaderboardService(db.Queries, cacheInstance.Cache, dataLoaders)
+	leaderboardService := services.NewLeaderboardService(db.Queries, cacheInstance, dataLoaders)
 	slog.Info("LeaderboardService initialized with caching and loaders")
 
 	// Initialize SettingsService
@@ -213,7 +250,7 @@ func main() {
 	slog.Info("SettingsService initialized with background refresh")
 
 	// Initialize S3 upload service
-	s3Service, err := services.NewS3Service(ctx, cfg.S3)
+	s3Service, err := services.NewS3Service(cfg.S3)
 	if err != nil {
 		slog.Error("Failed to initialize S3 service", "error", err)
 		os.Exit(1)
@@ -229,6 +266,62 @@ func main() {
 		slog.Warn("Push notification service not initialized - VAPID keys not configured")
 	}
 
+	// Initialize LanguageService
+	languageService := services.NewLanguageService(db.Queries, cacheInstance, dataLoaders.UserByIDLoader, lgr)
+	slog.Info("LanguageService initialized")
+
+	// Initialize WebhookService
+	webhookService := webhooks.NewService(db.Queries)
+	slog.Info("WebhookService initialized")
+
+	// Initialize Firebase service (optional)
+	var firebaseService *firebase.Service
+	if cfg.Firebase.ServiceAccountJSON != "" {
+		var err error
+		firebaseService, err = firebase.New(ctx, cfg.Firebase)
+		if err != nil {
+			slog.Error("Failed to initialize Firebase service", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("Firebase service initialized")
+	} else {
+		slog.Warn("Firebase service not initialized - missing configuration")
+	}
+
+	// Initialize Email service for feedback forwarding
+	var emailService *email.Service
+	if cfg.Resend.APIKey != "" {
+		emailService = email.NewService(cfg.Resend.APIKey, cfg.Resend.AdminBaseURL, cfg.Resend.SSFTicketEmail)
+		slog.Info("Email service initialized")
+	} else {
+		slog.Warn("Email service not configured - RESEND_API_KEY not set")
+	}
+
+	// Content achievement service (shared between auth and webhook handlers)
+	contentAchievementService := &services.ContentAchievementService{
+		DB:             db,
+		Cache:          cacheInstance,
+		PushService:    pushService,
+		Loaders:        dataLoaders,
+		WebhookService: webhookService,
+	}
+
+	// Church resolver (shared between auth, maintenance, and sync)
+	churchResolver := &services.ChurchResolver{
+		DB:            db,
+		MembersClient: membersClient,
+	}
+
+	// User sync service
+	userSyncService := &services.UserSyncService{
+		DB:                        db,
+		Cache:                     cacheInstance,
+		SSFClient:                 ssfClient,
+		MembersClient:             membersClient,
+		ChurchResolver:            churchResolver,
+		ContentAchievementService: contentAchievementService,
+	}
+
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{
 		DB:                 db,
@@ -238,13 +331,17 @@ func main() {
 		LeaderboardService: leaderboardService,
 		Settings:           settingsService,
 		PushService:        pushService,
+		WebhookService:     webhookService,
+		FirebaseService:    firebaseService,
+		EmailService:       emailService,
+		UserSyncService:    userSyncService,
 		InstanceID:         cacheSync.InstanceID(),
 	}
 
 	apiHandler := handler.New(api.NewExecutableSchema(api.Config{
 		Resolvers: apiResolver,
 		Directives: api.DirectiveRoot{
-			RequireRole: directives.RequireRole,
+			RequireRole: directives.NewRequireRole(dataLoaders.RolesByUserLoader),
 		},
 	}))
 
@@ -340,18 +437,22 @@ func main() {
 
 	// Authentication token endpoint (no JWT middleware)
 	authHandler := &handlers.AuthHandler{
-		DB:            db,
-		Cfg:           cfg,
-		JWKS:          jwks,
-		MembersClient: membersClient,
-		RoleService:   roleService,
+		DB:                        db,
+		Cfg:                       cfg,
+		JWKS:                      jwks,
+		Auth0JWKS:                 auth0JWKS,
+		MembersClient:             membersClient,
+		RoleService:               roleService,
+		ContentAchievementService: contentAchievementService,
+		ChurchResolver:            churchResolver,
 	}
 	router.GET("/token", authHandler.Callback)
 
 	// Webhook handler for external content events
 	webhookHandler := &handlers.WebhookHandler{
-		DB:    db,
-		Cache: cacheInstance,
+		DB:                        db,
+		WebhookService:            webhookService,
+		ContentAchievementService: contentAchievementService,
 	}
 	router.POST("/api/v1/content-events", middleware.APIKeyAuth(cfg.APIKey), webhookHandler.HandleContentEvent)
 
@@ -361,6 +462,56 @@ func main() {
 		Cache: cacheInstance,
 	}
 	router.POST("/api/v1/consent-events", middleware.APIKeyAuth(cfg.APIKey), consentWebhookHandler.HandleConsentEvent)
+
+	// Register plugins
+	pluginDeps := plugins.Dependencies{
+		DB:              db,
+		Cache:           cacheInstance,
+		SettingsService: settingsService,
+		JWTConfig:       cfg.JWT,
+		Firebase:        firebaseService,
+	}
+	apiKeyAuth := middleware.APIKeyAuth(cfg.APIKey)
+
+	plugins.RegisterPlugin(router, pluginDeps, apiKeyAuth,
+		ladder_to_heaven.NewPlugin(ladder_to_heaven.Config{
+			AchievementID:         cfg.Plugin.LadderToHeavenAchievementID,
+			SecretKey:             cfg.Plugin.LadderToHeavenSecretKey,
+			TeamRenameChallengeID: cfg.Plugin.LadderToHeavenTeamRenameChallengeID,
+			CryptexSecretKey:      cfg.Plugin.LadderToHeavenCryptexSecretKey,
+			CryptexBaseURL:        cfg.Plugin.LadderToHeavenCryptexBaseURL,
+		}),
+	)
+
+	// Maintenance handler for syncing user data from Members API
+	maintenanceHandler := &handlers.MaintenanceHandler{
+		DB:                        db,
+		Cache:                     cacheInstance,
+		MembersClient:             membersClient,
+		ChurchResolver:            churchResolver,
+		AuthHandler:               authHandler,
+		ContentAchievementService: contentAchievementService,
+		SSFClient:                 ssfClient,
+	}
+	router.POST("/api/maintenance/sync-user-data", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncUserData)
+	router.POST("/api/maintenance/sync-user/:user_id", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncSingleUser)
+	router.POST("/api/maintenance/backfill-ssf-events", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.BackfillSSFEvents)
+	slog.Info("Maintenance endpoints registered",
+		"batch_sync", "POST /api/maintenance/sync-user-data",
+		"single_sync", "POST /api/maintenance/sync-user/:user_id",
+		"backfill_ssf", "POST /api/maintenance/backfill-ssf-events",
+	)
+
+	// Quiz scheduler handler for timed session state transitions
+	quizSchedulerHandler := &handlers.QuizSchedulerHandler{
+		DB:              db,
+		FirebaseService: firebaseService,
+		WebhookService:  webhookService,
+	}
+	router.POST("/api/scheduler/quiz-session-transitions", middleware.APIKeyAuth(cfg.APIKey), quizSchedulerHandler.ProcessScheduledTransitions)
+	slog.Info("Quiz scheduler endpoint registered",
+		"endpoint", "POST /api/scheduler/quiz-session-transitions",
+	)
 
 	// File upload handler
 	uploadHandler := &handlers.UploadHandler{
@@ -393,7 +544,7 @@ func main() {
 	}
 
 	// GraphQL API endpoint
-	router.POST("/graphql", middleware.LanguageExtractor(), middleware.JWTAuth(cfg.JWT), graphqlHandler(apiHandler))
+	router.POST("/graphql", middleware.LanguageExtractor(), middleware.JWTAuth(cfg.JWT), graphqlHandler(apiHandler, languageService))
 	if cfg.Server.Environment != "production" {
 		router.GET("/graphql", gin.WrapH(playground.Handler("GraphQL API", "/graphql")))
 	}
@@ -421,6 +572,7 @@ func main() {
 			router.StaticFile("/pwa-192x192.png", filepath.Join(staticPath, "pwa-192x192.png"))
 			router.StaticFile("/pwa-512x512.png", filepath.Join(staticPath, "pwa-512x512.png"))
 			router.StaticFile("/maskable-icon-512x512.png", filepath.Join(staticPath, "maskable-icon-512x512.png"))
+			router.StaticFile("/service-worker.js", filepath.Join(staticPath, "service-worker.js"))
 
 			// SPA fallback: serve index.html for unmatched routes
 			router.NoRoute(func(c *gin.Context) {
@@ -494,29 +646,48 @@ func main() {
 }
 
 // graphqlHandler wraps a GraphQL handler for use with Gin
-func graphqlHandler(h *handler.Server) gin.HandlerFunc {
+func graphqlHandler(h *handler.Server, languageService *services.LanguageService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Transfer Gin context values to request context for GraphQL resolvers
 		ctx := c.Request.Context()
 
 		// Transfer user_id if present
-		if userID, exists := c.Get("user_id"); exists {
-			ctx = context.WithValue(ctx, middleware.UserIDKey, userID)
+		var userID string
+		if uid, exists := c.Get("user_id"); exists {
+			userID = uid.(string)
+			ctx = context.WithValue(ctx, middleware.UserIDKey, uid)
 		}
 
 		// Transfer user_roles if present
-		if userRoles, exists := c.Get("user_roles"); exists {
-			ctx = context.WithValue(ctx, middleware.UserRolesKey, userRoles)
+		var userRoles []string
+		if roles, exists := c.Get("user_roles"); exists {
+			userRoles = roles.([]string)
+			ctx = context.WithValue(ctx, middleware.UserRolesKey, roles)
 		}
 
 		// Transfer language if present
+		var requestedLang string
 		if language, exists := c.Get("language"); exists {
+			requestedLang = language.(string)
 			ctx = context.WithValue(ctx, middleware.LanguageKey, language)
 		}
 
 		// Transfer User-Agent header
 		userAgent := c.GetHeader("User-Agent")
 		ctx = context.WithValue(ctx, middleware.UserAgentKey, userAgent)
+
+		// Sync language preference asynchronously (fire-and-forget)
+		// Skip M2M users as they don't exist in the database
+		isM2MUser := false
+		for _, role := range userRoles {
+			if role == "m2m" {
+				isM2MUser = true
+				break
+			}
+		}
+		if userID != "" && requestedLang != "" && languageService != nil && !isM2MUser {
+			go languageService.SyncUserLanguage(context.Background(), userID, requestedLang)
+		}
 
 		// Create new request with updated context
 		r := c.Request.WithContext(ctx)

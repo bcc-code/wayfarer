@@ -6,9 +6,19 @@ type SimpleChallengeData = Extract<
   { __typename: 'SimpleChallenge' }
 >
 
-defineProps<{
+const props = defineProps<{
   challenge: SimpleChallengeData
 }>()
+
+const { track } = useAnalytics()
+
+onMounted(() => {
+  track(AnalyticsEvent.ChallengeOpened, {
+    challenge_id: props.challenge.id,
+    challenge_name: props.challenge.name,
+    challenge_type: 'simple',
+  })
+})
 </script>
 
 <template>

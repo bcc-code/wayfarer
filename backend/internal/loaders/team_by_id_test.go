@@ -77,32 +77,6 @@ func TestTeamCacheExpiry(t *testing.T) {
 	assert.False(t, ok, "team should not be in cache after deletion")
 }
 
-func TestTeamModel(t *testing.T) {
-	team := &model.Team{
-		ID:          "TM01K8XV6VK9ED2GBZSQ2VDTAT8T",
-		Name:        "Team Alpha",
-		Description: "First team description",
-		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-	}
-
-	assert.Equal(t, "TM01K8XV6VK9ED2GBZSQ2VDTAT8T", team.ID)
-	assert.Equal(t, "Team Alpha", team.Name)
-	assert.Equal(t, "First team description", team.Description)
-	assert.Equal(t, "PR01K8XV6J9H7BAEV49ZFVYS8R1K", team.ProjectID)
-}
-
-func TestTeamModelWithEmptyDescription(t *testing.T) {
-	team := &model.Team{
-		ID:          "TM01K8XV6VK9ED2GBZSQ2VDTAT8T",
-		Name:        "Team Alpha",
-		Description: "",
-		ProjectID:   "PR01K8XV6J9H7BAEV49ZFVYS8R1K",
-	}
-
-	assert.Equal(t, "", team.Description)
-	assert.NotNil(t, team.Description) // Should be empty string, not nil
-}
-
 func TestMultipleTeamsInCache(t *testing.T) {
 	c, err := cache.NewCacheWithRegistry(cache.DefaultConfig())
 	require.NoError(t, err)

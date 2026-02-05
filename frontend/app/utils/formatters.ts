@@ -65,3 +65,79 @@ export function formatDateRange(startDate: string, endDate: string) {
   })
   return formatter.formatRange(start, end)
 }
+
+export function formatNumber(value: number): string {
+  return value.toLocaleString(getLocale())
+}
+
+/**
+ * Format a date as a relative time string (e.g., "2 hours ago", "yesterday")
+ * @param dateString - The date string to format
+ * @returns A localized relative time string
+ */
+export function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+  const rtf = new Intl.RelativeTimeFormat(getLocale(), { numeric: 'auto' })
+
+  if (diffInSeconds < 60) {
+    return rtf.format(-diffInSeconds, 'second')
+  }
+  if (diffInSeconds < 3600) {
+    return rtf.format(-Math.floor(diffInSeconds / 60), 'minute')
+  }
+  if (diffInSeconds < 86400) {
+    return rtf.format(-Math.floor(diffInSeconds / 3600), 'hour')
+  }
+  if (diffInSeconds < 2592000) {
+    return rtf.format(-Math.floor(diffInSeconds / 86400), 'day')
+  }
+  if (diffInSeconds < 31536000) {
+    return rtf.format(-Math.floor(diffInSeconds / 2592000), 'month')
+  }
+  return rtf.format(-Math.floor(diffInSeconds / 31536000), 'year')
+}
+
+/**
+ * Parse a user agent string into a readable summary
+ * @param ua - The user agent string
+ * @returns A human-readable summary (e.g., "Chrome 120 / macOS")
+ */
+export function parseUserAgent(ua: string): string {
+  // Detect browser
+  let browser = ''
+  if (ua.includes('Firefox/')) {
+    const match = ua.match(/Firefox\/(\d+)/)
+    browser = `Firefox ${match?.[1] ?? ''}`
+  } else if (ua.includes('Edg/')) {
+    const match = ua.match(/Edg\/(\d+)/)
+    browser = `Edge ${match?.[1] ?? ''}`
+  } else if (ua.includes('Chrome/')) {
+    const match = ua.match(/Chrome\/(\d+)/)
+    browser = `Chrome ${match?.[1] ?? ''}`
+  } else if (ua.includes('Safari/') && !ua.includes('Chrome')) {
+    const match = ua.match(/Version\/(\d+)/)
+    browser = `Safari ${match?.[1] ?? ''}`
+  }
+
+  // Detect OS
+  let os = ''
+  if (ua.includes('iPhone') || ua.includes('iPad')) {
+    os = 'iOS'
+  } else if (ua.includes('Android')) {
+    os = 'Android'
+  } else if (ua.includes('Mac OS X')) {
+    os = 'macOS'
+  } else if (ua.includes('Windows')) {
+    os = 'Windows'
+  } else if (ua.includes('Linux')) {
+    os = 'Linux'
+  }
+
+  if (browser && os) {
+    return `${browser} / ${os}`
+  }
+  return browser || os || ua.slice(0, 30) + '...'
+}
