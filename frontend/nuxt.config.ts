@@ -34,6 +34,14 @@ export default defineNuxtConfig({
   ssr: false,
   css: ['~/assets/styles/main.css'],
 
+  typescript: {
+    tsConfig: {
+      compilerOptions: {
+        allowSyntheticDefaultImports: true,
+      },
+    },
+  },
+
   app: {
     rootAttrs: {
       'data-vaul-drawer-wrapper': '',
@@ -141,6 +149,7 @@ export default defineNuxtConfig({
         '@zag-js/vue',
         '@zag-js/slider',
         '@neoconfetti/vue',
+        '@unovis/vue',
       ],
     },
   },

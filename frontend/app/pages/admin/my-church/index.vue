@@ -21,7 +21,7 @@ async function copyLink() {
 <template>
   <UContainer class="py-12 flex flex-col items-center justify-center xl:h-3/4">
     <template v-if="canManageChurchAdmins">
-      <div class="grid xl:grid-cols-2 gap-12 text-4xl *:aspect-video">
+      <div class="flex flex-wrap gap-12 text-4xl *:grow">
         <NuxtLink
           :to="{ name: 'admin-my-church-admins' }"
           class="rounded-2xl bg-muted p-12 gap-2 flex flex-col items-center justify-center text-center hover:bg-accented"
@@ -35,6 +35,16 @@ async function copyLink() {
         >
           <Icon name="lucide:users" class="size-8 text-dimmed shrink-0" />
           {{ $t('admin.churchHome.unitsAndPeople') }}
+        </NuxtLink>
+        <NuxtLink
+          :to="{ name: 'admin-my-church-statistics' }"
+          class="rounded-2xl bg-muted p-12 gap-2 flex flex-col items-center justify-center text-center hover:bg-accented"
+        >
+          <Icon
+            name="lucide:chart-column"
+            class="size-8 text-dimmed shrink-0"
+          />
+          {{ $t('admin.churchHome.statistics') }}
         </NuxtLink>
         <NuxtLink
           :to="{ name: 'admin-my-church-kickoff' }"

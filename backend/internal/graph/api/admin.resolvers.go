@@ -7,8 +7,13 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services"
 )
 
 // ClearAllCache is the resolver for the clearAllCache field.
@@ -41,6 +46,128 @@ func (r *queryResolver) AdminDashboardStats(ctx context.Context) (*model.AdminDa
 		TotalPointsAwarded:  int(row.TotalPointsAwarded),
 		NewUsersLast7Days:   int(row.NewUsersLast7Days),
 		ActiveProjectsCount: int(row.ActiveProjectsCount),
+	}
+
+	// Cache the result
+	r.Cache.Set(cacheKey, stats)
+
+	return stats, nil
+}
+
+// ChurchAdminStatistics is the resolver for the churchAdminStatistics field.
+func (r *queryResolver) ChurchAdminStatistics(ctx context.Context) (*model.ChurchAdminStatistics, error) {
+	// Get user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		return nil, fmt.Errorf("unauthorized: user not authenticated")
+	}
+
+	// Load user roles to find CHURCH_ADMIN role with church ID
+	roles, err := r.RoleService.LoadUserRoles(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user roles: %w", err)
+	}
+
+	// Find the church admin role
+	var churchID string
+	for _, role := range roles {
+		if role.Role == string(services.RoleChurchAdmin) && role.ChurchID != nil {
+			churchID = *role.ChurchID
+			break
+		}
+	}
+
+	if churchID == "" {
+		return nil, fmt.Errorf("unauthorized: user is not a church admin")
+	}
+
+	// Get current project ID
+	projectID, err := r.Settings.GetCurrentProjectID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current project: %w", err)
+	}
+
+	// Check cache first
+	cacheKey := fmt.Sprintf("church:stats:%s:%s", churchID, projectID)
+	if cached, ok := r.Cache.Get(cacheKey); ok {
+		if stats, ok := cached.(*model.ChurchAdminStatistics); ok {
+			return stats, nil
+		}
+	}
+
+	// Load church name
+	churchThunk := r.Loaders.ChurchLoader.Load(ctx, churchID)
+	church, err := churchThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load church: %w", err)
+	}
+
+	// Load project name
+	projectThunk := r.Loaders.ProjectByIDLoader.Load(ctx, projectID)
+	project, err := projectThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load project: %w", err)
+	}
+
+	// Get age group statistics
+	ageGroupRows, err := r.DB.Queries.GetChurchAgeGroupStats(ctx, sqlc.GetChurchAgeGroupStatsParams{
+		Churchid:  churchID,
+		Projectid: projectID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get age group stats: %w", err)
+	}
+
+	// Convert to model
+	ageGroups := make([]model.AgeGroupStats, len(ageGroupRows))
+	for i, row := range ageGroupRows {
+		ageGroup := ""
+		if row.AgeGroup != nil {
+			ageGroup = fmt.Sprintf("%v", row.AgeGroup)
+		}
+		ageGroups[i] = model.AgeGroupStats{
+			AgeGroup:     ageGroup,
+			UserCount:    int(row.UserCount),
+			AverageScore: row.AverageScore,
+		}
+	}
+
+	// Get total users in teams
+	totalUsers, err := r.DB.Queries.CountChurchUsersInTeams(ctx, sqlc.CountChurchUsersInTeamsParams{
+		Churchid:  churchID,
+		Projectid: projectID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to count users in teams: %w", err)
+	}
+
+	// Get user scores
+	userScoreRows, err := r.DB.Queries.GetChurchUserScores(ctx, sqlc.GetChurchUserScoresParams{
+		Churchid:  churchID,
+		Projectid: projectID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user scores: %w", err)
+	}
+
+	userScores := make([]model.UserScore, len(userScoreRows))
+	for i, row := range userScoreRows {
+		userScores[i] = model.UserScore{
+			UserID:     row.UserID,
+			Name:       row.Name,
+			TotalScore: int(row.TotalScore),
+		}
+	}
+
+	stats := &model.ChurchAdminStatistics{
+		ChurchID:          churchID,
+		ChurchName:        church.Name,
+		ProjectID:         projectID,
+		ProjectName:       project.Name,
+		AgeGroups:         ageGroups,
+		TotalUsersInTeams: int(totalUsers),
+		UserScores:        userScores,
+		LastUpdatedAt:     scalars.DateTime{Time: time.Now()},
 	}
 
 	// Cache the result
