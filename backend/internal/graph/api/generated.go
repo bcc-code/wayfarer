@@ -8534,7 +8534,7 @@ extend type Mutation {
     unenrollUserFromChallenge(userId: ID!, challengeId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "m2m"])
 
     # Bulk enrollment
-    bulkEnrollUsersInChallenge(target: EnrollmentTargetInput!, challengeId: ID!): [Challenge!]! @requireRole(roles: ["admin", "superadmin", "m2m"])
+    bulkEnrollUsersInChallenge(target: EnrollmentTargetInput!, challengeId: ID!): [Challenge!]! @requireRole(roles: ["admin", "superadmin", "m2m", "church_admin"])
     bulkUnenrollUsersFromChallenge(target: EnrollmentTargetInput!, challengeId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "m2m"])
 
     # Completion tracking (M2M / Admin) - Works for ExternalChallenge and SimpleChallenge
@@ -23215,7 +23215,7 @@ func (ec *executionContext) _Mutation_bulkEnrollUsersInChallenge(ctx context.Con
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "m2m"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin", "m2m", "church_admin"})
 				if err != nil {
 					var zeroVal []model.Challenge
 					return zeroVal, err
