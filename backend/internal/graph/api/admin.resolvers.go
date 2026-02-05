@@ -77,8 +77,29 @@ func (r *queryResolver) ChurchAdminStatistics(ctx context.Context) (*model.Churc
 		}
 	}
 
+	// If no church_admin role, check if user is admin or superadmin and use their own church
 	if churchID == "" {
-		return nil, fmt.Errorf("unauthorized: user is not a church admin")
+		isAdminOrSuperadmin := false
+		for _, role := range roles {
+			if role.Role == string(services.RoleAdmin) || role.Role == string(services.RoleSuperAdmin) {
+				isAdminOrSuperadmin = true
+				break
+			}
+		}
+
+		if isAdminOrSuperadmin {
+			// Load user to get their church ID
+			userThunk := r.Loaders.UserByIDLoader.Load(ctx, userID)
+			user, err := userThunk()
+			if err != nil {
+				return nil, fmt.Errorf("failed to load user: %w", err)
+			}
+			churchID = user.ChurchID
+		}
+	}
+
+	if churchID == "" {
+		return nil, fmt.Errorf("unauthorized: user does not have access to church statistics")
 	}
 
 	// Get current project ID

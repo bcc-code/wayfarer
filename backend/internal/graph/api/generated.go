@@ -9717,7 +9717,7 @@ extend type Mutation {
 `, BuiltIn: false},
 	{Name: "../../../../gql/admin.graphqls", Input: `extend type Query {
     adminDashboardStats: AdminDashboardStats! @requireRole(roles: ["admin", "superadmin"])
-    churchAdminStatistics: ChurchAdminStatistics! @requireRole(roles: ["church_admin"])
+    churchAdminStatistics: ChurchAdminStatistics! @requireRole(roles: ["church_admin", "admin", "superadmin"])
 }
 
 extend type Mutation {
@@ -34370,7 +34370,7 @@ func (ec *executionContext) _Query_churchAdminStatistics(ctx context.Context, fi
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"church_admin"})
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"church_admin", "admin", "superadmin"})
 				if err != nil {
 					var zeroVal *model.ChurchAdminStatistics
 					return zeroVal, err
