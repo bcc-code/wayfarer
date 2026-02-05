@@ -143,11 +143,6 @@ func (s *Service) SendNotification(ctx context.Context, payload PushPayload, cri
 	criteriaJSON, _ := json.Marshal(criteria)
 	dataJSON, _ := json.Marshal(payload.Data)
 
-	sentBy := ""
-	if senderID != nil {
-		sentBy = *senderID
-	}
-
 	_, logErr := s.queries.CreatePushNotificationLog(ctx, sqlc.CreatePushNotificationLogParams{
 		ID:                   ulid.NewPushNotificationID(),
 		Notificationtype:     string(payload.Type),
@@ -156,7 +151,7 @@ func (s *Service) SendNotification(ctx context.Context, payload PushPayload, cri
 		Url:                  payload.URL,
 		Data:                 dataJSON,
 		Targetcriteria:       criteriaJSON,
-		Sentby:               sentBy,
+		Sentby:               senderID,
 		Totalrecipients:      int32(result.TotalRecipients),
 		Successfuldeliveries: int32(result.SuccessfulDeliveries),
 		Faileddeliveries:     int32(result.FailedDeliveries),
