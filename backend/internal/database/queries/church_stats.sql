@@ -26,7 +26,7 @@ age_groups AS (
         us.user_id,
         us.total_score,
         CASE
-            WHEN us.age >= 12 AND us.age <= 18 THEN '12 - 18'
+            WHEN us.age >= 13 AND us.age <= 18 THEN '13 - 18'
             WHEN us.age >= 19 AND us.age <= 25 THEN '19 - 25'
             WHEN us.age >= 26 AND us.age <= 36 THEN '26 - 36'
             WHEN us.age >= 37 AND us.age <= 59 THEN '37 - 59'
@@ -44,7 +44,7 @@ WHERE age_group IS NOT NULL
 GROUP BY age_group
 ORDER BY
     CASE age_group
-        WHEN '12 - 18' THEN 1
+        WHEN '13 - 18' THEN 1
         WHEN '19 - 25' THEN 2
         WHEN '26 - 36' THEN 3
         WHEN '37 - 59' THEN 4

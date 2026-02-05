@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { VisXYContainer, VisGroupedBar, VisAxis } from '@unovis/vue'
-import { formatTimeAgo, formatTimeAgoIntl } from '@vueuse/core'
-import { locale } from 'dayjs'
+import { VisAxis, VisGroupedBar, VisXYContainer } from '@unovis/vue'
+import { formatTimeAgoIntl } from '@vueuse/core'
 
 definePageMeta({
   layout: 'church-admin',
@@ -42,7 +41,7 @@ watch(data, (newData) => {
 })
 
 // All age groups in order
-const allAgeGroups = ['12 - 18', '19 - 25', '26 - 36', '37 - 59', '60+']
+const allAgeGroups = ['13 - 18', '19 - 25', '26 - 36', '37 - 59', '60+']
 
 // Ensure all age groups are shown, even if they have no data
 const ageGroupsWithDefaults = computed(() => {
