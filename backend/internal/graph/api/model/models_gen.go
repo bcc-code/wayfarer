@@ -175,6 +175,7 @@ type ChurchAdminStatistics struct {
 	ProjectName       string          `json:"projectName"`
 	AgeGroups         []AgeGroupStats `json:"ageGroups"`
 	TotalUsersInTeams int             `json:"totalUsersInTeams"`
+	UserScores        []UserScore     `json:"userScores"`
 }
 
 type ChurchConnection struct {
@@ -1888,6 +1889,12 @@ type UserRole struct {
 	User  *User      `json:"user"`
 	Role  RoleType   `json:"role"`
 	Scope *RoleScope `json:"scope,omitempty"`
+}
+
+type UserScore struct {
+	UserID     string `json:"userId"`
+	Name       string `json:"name"`
+	TotalScore int    `json:"totalScore"`
 }
 
 type Webhook struct {

@@ -139,6 +139,24 @@ func (r *queryResolver) ChurchAdminStatistics(ctx context.Context) (*model.Churc
 		return nil, fmt.Errorf("failed to count users in teams: %w", err)
 	}
 
+	// Get user scores
+	userScoreRows, err := r.DB.Queries.GetChurchUserScores(ctx, sqlc.GetChurchUserScoresParams{
+		Churchid:  churchID,
+		Projectid: projectID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user scores: %w", err)
+	}
+
+	userScores := make([]model.UserScore, len(userScoreRows))
+	for i, row := range userScoreRows {
+		userScores[i] = model.UserScore{
+			UserID:     row.UserID,
+			Name:       row.Name,
+			TotalScore: int(row.TotalScore),
+		}
+	}
+
 	stats := &model.ChurchAdminStatistics{
 		ChurchID:          churchID,
 		ChurchName:        church.Name,
@@ -146,6 +164,7 @@ func (r *queryResolver) ChurchAdminStatistics(ctx context.Context) (*model.Churc
 		ProjectName:       project.Name,
 		AgeGroups:         ageGroups,
 		TotalUsersInTeams: int(totalUsers),
+		UserScores:        userScores,
 	}
 
 	// Cache the result

@@ -156,6 +156,7 @@ type ComplexityRoot struct {
 		ProjectID         func(childComplexity int) int
 		ProjectName       func(childComplexity int) int
 		TotalUsersInTeams func(childComplexity int) int
+		UserScores        func(childComplexity int) int
 	}
 
 	ChurchConnection struct {
@@ -1146,6 +1147,12 @@ type ComplexityRoot struct {
 		User  func(childComplexity int) int
 	}
 
+	UserScore struct {
+		Name       func(childComplexity int) int
+		TotalScore func(childComplexity int) int
+		UserID     func(childComplexity int) int
+	}
+
 	Webhook struct {
 		Active           func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
@@ -1886,6 +1893,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ChurchAdminStatistics.TotalUsersInTeams(childComplexity), true
+	case "ChurchAdminStatistics.userScores":
+		if e.complexity.ChurchAdminStatistics.UserScores == nil {
+			break
+		}
+
+		return e.complexity.ChurchAdminStatistics.UserScores(childComplexity), true
 
 	case "ChurchConnection.edges":
 		if e.complexity.ChurchConnection.Edges == nil {
@@ -7214,6 +7227,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UserRole.User(childComplexity), true
 
+	case "UserScore.name":
+		if e.complexity.UserScore.Name == nil {
+			break
+		}
+
+		return e.complexity.UserScore.Name(childComplexity), true
+	case "UserScore.totalScore":
+		if e.complexity.UserScore.TotalScore == nil {
+			break
+		}
+
+		return e.complexity.UserScore.TotalScore(childComplexity), true
+	case "UserScore.userId":
+		if e.complexity.UserScore.UserID == nil {
+			break
+		}
+
+		return e.complexity.UserScore.UserID(childComplexity), true
+
 	case "Webhook.active":
 		if e.complexity.Webhook.Active == nil {
 			break
@@ -9701,6 +9733,12 @@ type AgeGroupStats {
     averageScore: Float!
 }
 
+type UserScore {
+    userId: ID!
+    name: String!
+    totalScore: Int!
+}
+
 type ChurchAdminStatistics {
     churchId: ID!
     churchName: String!
@@ -9708,6 +9746,7 @@ type ChurchAdminStatistics {
     projectName: String!
     ageGroups: [AgeGroupStats!]!
     totalUsersInTeams: Int!
+    userScores: [UserScore!]!
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/push_notifications.graphqls", Input: `# ==================== Push Notification Types ====================
@@ -13803,6 +13842,43 @@ func (ec *executionContext) fieldContext_ChurchAdminStatistics_totalUsersInTeams
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChurchAdminStatistics_userScores(ctx context.Context, field graphql.CollectedField, obj *model.ChurchAdminStatistics) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChurchAdminStatistics_userScores,
+		func(ctx context.Context) (any, error) {
+			return obj.UserScores, nil
+		},
+		nil,
+		ec.marshalNUserScore2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserScoreᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChurchAdminStatistics_userScores(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChurchAdminStatistics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "userId":
+				return ec.fieldContext_UserScore_userId(ctx, field)
+			case "name":
+				return ec.fieldContext_UserScore_name(ctx, field)
+			case "totalScore":
+				return ec.fieldContext_UserScore_totalScore(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserScore", field.Name)
 		},
 	}
 	return fc, nil
@@ -34281,6 +34357,8 @@ func (ec *executionContext) fieldContext_Query_churchAdminStatistics(_ context.C
 				return ec.fieldContext_ChurchAdminStatistics_ageGroups(ctx, field)
 			case "totalUsersInTeams":
 				return ec.fieldContext_ChurchAdminStatistics_totalUsersInTeams(ctx, field)
+			case "userScores":
+				return ec.fieldContext_ChurchAdminStatistics_userScores(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ChurchAdminStatistics", field.Name)
 		},
@@ -45297,6 +45375,93 @@ func (ec *executionContext) fieldContext_UserRole_scope(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _UserScore_userId(ctx context.Context, field graphql.CollectedField, obj *model.UserScore) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserScore_userId,
+		func(ctx context.Context) (any, error) {
+			return obj.UserID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserScore_userId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserScore",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserScore_name(ctx context.Context, field graphql.CollectedField, obj *model.UserScore) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserScore_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserScore_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserScore",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserScore_totalScore(ctx context.Context, field graphql.CollectedField, obj *model.UserScore) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UserScore_totalScore,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalScore, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UserScore_totalScore(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserScore",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Webhook_id(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -52438,6 +52603,11 @@ func (ec *executionContext) _ChurchAdminStatistics(ctx context.Context, sel ast.
 			}
 		case "totalUsersInTeams":
 			out.Values[i] = ec._ChurchAdminStatistics_totalUsersInTeams(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "userScores":
+			out.Values[i] = ec._ChurchAdminStatistics_userScores(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -64477,6 +64647,55 @@ func (ec *executionContext) _UserRole(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var userScoreImplementors = []string{"UserScore"}
+
+func (ec *executionContext) _UserScore(ctx context.Context, sel ast.SelectionSet, obj *model.UserScore) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userScoreImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserScore")
+		case "userId":
+			out.Values[i] = ec._UserScore_userId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._UserScore_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalScore":
+			out.Values[i] = ec._UserScore_totalScore(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var webhookImplementors = []string{"Webhook"}
 
 func (ec *executionContext) _Webhook(ctx context.Context, sel ast.SelectionSet, obj *model.Webhook) graphql.Marshaler {
@@ -68515,6 +68734,54 @@ func (ec *executionContext) marshalNUserRole2ᚖgithubᚗcomᚋbccᚑmediaᚋway
 		return graphql.Null
 	}
 	return ec._UserRole(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUserScore2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserScore(ctx context.Context, sel ast.SelectionSet, v model.UserScore) graphql.Marshaler {
+	return ec._UserScore(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUserScore2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserScoreᚄ(ctx context.Context, sel ast.SelectionSet, v []model.UserScore) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUserScore2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUserScore(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNWebhook2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐWebhook(ctx context.Context, sel ast.SelectionSet, v model.Webhook) graphql.Marshaler {

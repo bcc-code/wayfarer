@@ -23,6 +23,12 @@ type AgeGroupStats {
     averageScore: Float!
 }
 
+type UserScore {
+    userId: ID!
+    name: String!
+    totalScore: Int!
+}
+
 type ChurchAdminStatistics {
     churchId: ID!
     churchName: String!
@@ -30,4 +36,5 @@ type ChurchAdminStatistics {
     projectName: String!
     ageGroups: [AgeGroupStats!]!
     totalUsersInTeams: Int!
+    userScores: [UserScore!]!
 }

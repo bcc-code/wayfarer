@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { VisXYContainer, VisGroupedBar, VisAxis } from '@unovis/vue'
+
 definePageMeta({
   layout: 'church-admin',
   middleware: ['admin'],
@@ -17,6 +19,10 @@ gql(`
         userCount
         averageScore
       }
+      userScores {
+        userId
+        totalScore
+      }
     }
   }
 `)
@@ -32,13 +38,42 @@ watch(data, (newData) => {
   hasLoadedOnce.value = true
 })
 
+// All age groups in order
+const allAgeGroups = ['12 - 18', '19 - 25', '26 - 36', '37 - 59', '60+']
+
+// Ensure all age groups are shown, even if they have no data
+const ageGroupsWithDefaults = computed(() => {
+  const apiGroups = data.value?.churchAdminStatistics?.ageGroups ?? []
+  const groupMap = new Map(apiGroups.map((g) => [g.ageGroup, g]))
+
+  return allAgeGroups.map((ageGroup) => {
+    const existing = groupMap.get(ageGroup)
+    return {
+      ageGroup,
+      userCount: existing?.userCount ?? 0,
+      averageScore: existing?.averageScore ?? 0,
+    }
+  })
+})
+
 function formatAgeGroup(ageGroup: string): string {
   return `${ageGroup} ${t('admin.statistics.yearsOld')}`
 }
 
 function formatScore(score: number): string {
-  return Math.round(score).toLocaleString()
+  return formatNumber(Math.round(score))
 }
+
+// User scores for bar chart
+const userScores = computed(() => {
+  return data.value?.churchAdminStatistics?.userScores ?? []
+})
+
+type UserScoreData = (typeof userScores.value)[number]
+
+// Bar chart configuration
+const barX = (_d: UserScoreData, i: number) => i
+const barY = (d: UserScoreData) => d.totalScore
 </script>
 
 <template>
@@ -68,52 +103,75 @@ function formatScore(score: number): string {
         <Icon name="lucide:arrow-left" />
         {{ $t('admin.common.back') }}
       </UButton>
-
       <LoadingState v-if="fetching && !hasLoadedOnce" />
       <ErrorState v-else-if="error" :error />
       <div v-else-if="data?.churchAdminStatistics" class="mt-12 w-full">
         <h2 class="text-3xl font-semibold mb-2">
           {{ $t('admin.churchHome.statistics') }}
         </h2>
-        <p class="text-dimmed mb-8">
+        <p class="text-muted">
           {{ data.churchAdminStatistics.churchName }} -
           {{ data.churchAdminStatistics.projectName }}
         </p>
 
         <!-- Age group statistics -->
-        <h3 class="text-xl font-semibold mb-4">
+        <h3 class="mb-4 mt-16">
           {{ $t('admin.statistics.averageScoresByAgeGroup') }}
         </h3>
-
-        <div
-          v-if="data.churchAdminStatistics.ageGroups.length === 0"
-          class="text-dimmed text-center py-8"
+        <section
+          id="averages"
+          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 w-full"
         >
-          {{ $t('admin.statistics.noData') }}
-        </div>
-
-        <div
-          v-else
-          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 w-full"
-        >
-          <div
-            v-for="group in data.churchAdminStatistics.ageGroups"
+          <AdminStatisticCard
+            v-for="group in ageGroupsWithDefaults"
             :key="group.ageGroup"
-            class="p-6 rounded-xl border border-default bg-elevated/50 flex flex-col gap-2"
+            :title="formatAgeGroup(group.ageGroup)"
+            :value="formatScore(group.averageScore)"
+            :subtitle="`${group.userCount} ${$t('admin.statistics.users').toLocaleLowerCase()}`"
+          />
+        </section>
+
+        <!-- Points distribution chart -->
+        <h3 class="mt-16">
+          {{ $t('admin.statistics.pointsDistribution') }}
+        </h3>
+        <p class="text-muted text-sm mb-4">
+          {{ $t('admin.statistics.pointsDistributionDescription') }}
+        </p>
+        <section id="points" class="w-full">
+          <VisXYContainer
+            v-if="userScores.length > 0"
+            :data="userScores"
+            :height="300"
           >
-            <div class="text-sm text-muted">
-              {{ formatAgeGroup(group.ageGroup) }}
-            </div>
-            <div class="text-4xl font-bold tabular-nums">
-              {{ formatScore(group.averageScore) }}
-            </div>
-            <div class="text-xs text-dimmed">
-              {{ group.userCount }}
-              {{ $t('admin.statistics.users').toLowerCase() }}
-            </div>
-          </div>
-        </div>
+            <VisGroupedBar
+              :x="barX"
+              :y="barY"
+              color="var(--ui-primary)"
+              :rounded-corners="false"
+            />
+            <VisAxis
+              type="y"
+              :label="$t('admin.statistics.points')"
+              :tick-format="(v: number) => formatScore(v)"
+            />
+            <VisAxis
+              type="x"
+              :label="$t('admin.statistics.peopleInAUnit')"
+              :tick-format="(i: number) => ''"
+            />
+          </VisXYContainer>
+          <p v-else class="text-muted">
+            {{ $t('admin.statistics.noData') }}
+          </p>
+        </section>
       </div>
     </UContainer>
   </div>
 </template>
+
+<style scoped>
+.dark #points {
+  --vis-axis-grid-color: #333;
+}
+</style>

@@ -274,9 +274,13 @@
       "averageScoresByAgeGroup": "Gjennomsnittlig poengsum per aldersgruppe",
       "ageGroup": "Aldersgruppe",
       "users": "Brukere",
-      "averageScore": "Gj.snitt poeng",
+      "averageScore": "Gjennomsnittlig poengsum",
       "yearsOld": "år",
-      "noData": "Ingen data tilgjengelig"
+      "noData": "Ingen data tilgjengelig",
+      "pointsDistribution": "Poengfordeling",
+      "pointsDistributionDescription": "Her har du en oversikt over poengsummen til alle personer i din lokalmenighet som er medlem av en unit.",
+      "points": "Poeng",
+      "peopleInAUnit": "Personer i en unit"
     }
   }
 }

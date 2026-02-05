@@ -115,3 +115,50 @@ func (q *Queries) GetChurchAgeGroupStats(ctx context.Context, arg GetChurchAgeGr
 	}
 	return items, nil
 }
+
+const GetChurchUserScores = `-- name: GetChurchUserScores :many
+SELECT
+    u.id AS user_id,
+    COALESCE(u.display_name, u.name) AS name,
+    COALESCE(SUM(sj.points), 0)::bigint AS total_score
+FROM users u
+INNER JOIN team_members tm ON u.id = tm.user_id
+INNER JOIN teams t ON tm.team_id = t.id
+LEFT JOIN score_journal sj ON sj.user_id = u.id AND sj.project_id = $1::text
+WHERE u.church_id = $2::text
+  AND t.project_id = $1::text
+GROUP BY u.id, u.display_name, u.name
+ORDER BY total_score ASC
+`
+
+type GetChurchUserScoresParams struct {
+	Projectid string `json:"projectid"`
+	Churchid  string `json:"churchid"`
+}
+
+type GetChurchUserScoresRow struct {
+	UserID     string `json:"user_id"`
+	Name       string `json:"name"`
+	TotalScore int64  `json:"total_score"`
+}
+
+// Get scores for all users from a church who are in teams for a specific project
+func (q *Queries) GetChurchUserScores(ctx context.Context, arg GetChurchUserScoresParams) ([]*GetChurchUserScoresRow, error) {
+	rows, err := q.db.Query(ctx, GetChurchUserScores, arg.Projectid, arg.Churchid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetChurchUserScoresRow{}
+	for rows.Next() {
+		var i GetChurchUserScoresRow
+		if err := rows.Scan(&i.UserID, &i.Name, &i.TotalScore); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

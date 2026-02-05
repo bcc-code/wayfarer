@@ -183,6 +183,7 @@ export type ChurchAdminStatistics = {
   projectId: Scalars['ID']['output'];
   projectName: Scalars['String']['output'];
   totalUsersInTeams: Scalars['Int']['output'];
+  userScores: Array<UserScore>;
 };
 
 export enum ChurchCategory {
@@ -2971,6 +2972,13 @@ export type UserRole = {
   user: User;
 };
 
+export type UserScore = {
+  __typename?: 'UserScore';
+  name: Scalars['String']['output'];
+  totalScore: Scalars['Int']['output'];
+  userId: Scalars['ID']['output'];
+};
+
 export type Webhook = {
   __typename?: 'Webhook';
   active: Scalars['Boolean']['output'];
@@ -3779,7 +3787,7 @@ export type AdminKickOffPageQuery = { __typename?: 'Query', frontendConfig: any,
 export type ChurchAdminStatisticsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ChurchAdminStatisticsPageQuery = { __typename?: 'Query', churchAdminStatistics: { __typename?: 'ChurchAdminStatistics', churchId: string, churchName: string, projectId: string, projectName: string, totalUsersInTeams: number, ageGroups: Array<{ __typename?: 'AgeGroupStats', ageGroup: string, userCount: number, averageScore: number }> } };
+export type ChurchAdminStatisticsPageQuery = { __typename?: 'Query', churchAdminStatistics: { __typename?: 'ChurchAdminStatistics', churchId: string, churchName: string, projectId: string, projectName: string, totalUsersInTeams: number, ageGroups: Array<{ __typename?: 'AgeGroupStats', ageGroup: string, userCount: number, averageScore: number }>, userScores: Array<{ __typename?: 'UserScore', userId: string, totalScore: number }> } };
 
 export type MyChurchUnitsPageQueryVariables = Exact<{
   filter?: InputMaybe<UserFilter>;
@@ -5519,6 +5527,10 @@ export const ChurchAdminStatisticsPageDocument = gql`
       ageGroup
       userCount
       averageScore
+    }
+    userScores {
+      userId
+      totalScore
     }
   }
 }
