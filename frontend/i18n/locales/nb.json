@@ -280,7 +280,8 @@
       "pointsDistribution": "Poengfordeling",
       "pointsDistributionDescription": "Her har du en oversikt over poengsummen til alle personer i din lokalmenighet som er medlem av en unit.",
       "points": "Poeng",
-      "peopleInAUnit": "Personer i en unit"
+      "peopleInAUnit": "Personer i en unit",
+      "lastUpdated": "Sist oppdatert"
     }
   }
 }

@@ -37,4 +37,5 @@ type ChurchAdminStatistics {
     ageGroups: [AgeGroupStats!]!
     totalUsersInTeams: Int!
     userScores: [UserScore!]!
+    lastUpdatedAt: DateTime!
 }

@@ -169,13 +169,14 @@ type Church struct {
 }
 
 type ChurchAdminStatistics struct {
-	ChurchID          string          `json:"churchId"`
-	ChurchName        string          `json:"churchName"`
-	ProjectID         string          `json:"projectId"`
-	ProjectName       string          `json:"projectName"`
-	AgeGroups         []AgeGroupStats `json:"ageGroups"`
-	TotalUsersInTeams int             `json:"totalUsersInTeams"`
-	UserScores        []UserScore     `json:"userScores"`
+	ChurchID          string           `json:"churchId"`
+	ChurchName        string           `json:"churchName"`
+	ProjectID         string           `json:"projectId"`
+	ProjectName       string           `json:"projectName"`
+	AgeGroups         []AgeGroupStats  `json:"ageGroups"`
+	TotalUsersInTeams int              `json:"totalUsersInTeams"`
+	UserScores        []UserScore      `json:"userScores"`
+	LastUpdatedAt     scalars.DateTime `json:"lastUpdatedAt"`
 }
 
 type ChurchConnection struct {

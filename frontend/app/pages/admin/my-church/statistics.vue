@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { VisXYContainer, VisGroupedBar, VisAxis } from '@unovis/vue'
+import { formatTimeAgo, formatTimeAgoIntl } from '@vueuse/core'
+import { locale } from 'dayjs'
 
 definePageMeta({
   layout: 'church-admin',
@@ -14,6 +16,7 @@ gql(`
       projectId
       projectName
       totalUsersInTeams
+      lastUpdatedAt
       ageGroups {
         ageGroup
         userCount
@@ -74,6 +77,19 @@ type UserScoreData = (typeof userScores.value)[number]
 // Bar chart configuration
 const barX = (_d: UserScoreData, i: number) => i
 const barY = (d: UserScoreData) => d.totalScore
+
+// Format last updated time
+const { locale } = useI18n()
+const lastUpdatedFormatted = computed(() => {
+  const lastUpdated = data.value?.churchAdminStatistics?.lastUpdatedAt
+  if (!lastUpdated) return ''
+  const timeAgo = formatTimeAgoIntl(
+    new Date(lastUpdated),
+    { locale: locale.value },
+    Date.now(),
+  )
+  return timeAgo
+})
 </script>
 
 <template>
@@ -110,8 +126,7 @@ const barY = (d: UserScoreData) => d.totalScore
           {{ $t('admin.churchHome.statistics') }}
         </h2>
         <p class="text-muted">
-          {{ data.churchAdminStatistics.churchName }} -
-          {{ data.churchAdminStatistics.projectName }}
+          {{ $t('admin.statistics.lastUpdated') }}: {{ lastUpdatedFormatted }}
         </p>
 
         <!-- Age group statistics -->

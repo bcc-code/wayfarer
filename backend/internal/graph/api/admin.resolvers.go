@@ -7,9 +7,11 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/services"
 )
@@ -165,6 +167,7 @@ func (r *queryResolver) ChurchAdminStatistics(ctx context.Context) (*model.Churc
 		AgeGroups:         ageGroups,
 		TotalUsersInTeams: int(totalUsers),
 		UserScores:        userScores,
+		LastUpdatedAt:     scalars.DateTime{Time: time.Now()},
 	}
 
 	// Cache the result

@@ -153,6 +153,7 @@ type ComplexityRoot struct {
 		AgeGroups         func(childComplexity int) int
 		ChurchID          func(childComplexity int) int
 		ChurchName        func(childComplexity int) int
+		LastUpdatedAt     func(childComplexity int) int
 		ProjectID         func(childComplexity int) int
 		ProjectName       func(childComplexity int) int
 		TotalUsersInTeams func(childComplexity int) int
@@ -1875,6 +1876,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ChurchAdminStatistics.ChurchName(childComplexity), true
+	case "ChurchAdminStatistics.lastUpdatedAt":
+		if e.complexity.ChurchAdminStatistics.LastUpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.ChurchAdminStatistics.LastUpdatedAt(childComplexity), true
 	case "ChurchAdminStatistics.projectId":
 		if e.complexity.ChurchAdminStatistics.ProjectID == nil {
 			break
@@ -9747,6 +9754,7 @@ type ChurchAdminStatistics {
     ageGroups: [AgeGroupStats!]!
     totalUsersInTeams: Int!
     userScores: [UserScore!]!
+    lastUpdatedAt: DateTime!
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/push_notifications.graphqls", Input: `# ==================== Push Notification Types ====================
@@ -13879,6 +13887,35 @@ func (ec *executionContext) fieldContext_ChurchAdminStatistics_userScores(_ cont
 				return ec.fieldContext_UserScore_totalScore(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserScore", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChurchAdminStatistics_lastUpdatedAt(ctx context.Context, field graphql.CollectedField, obj *model.ChurchAdminStatistics) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChurchAdminStatistics_lastUpdatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.LastUpdatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChurchAdminStatistics_lastUpdatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChurchAdminStatistics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
 		},
 	}
 	return fc, nil
@@ -34359,6 +34396,8 @@ func (ec *executionContext) fieldContext_Query_churchAdminStatistics(_ context.C
 				return ec.fieldContext_ChurchAdminStatistics_totalUsersInTeams(ctx, field)
 			case "userScores":
 				return ec.fieldContext_ChurchAdminStatistics_userScores(ctx, field)
+			case "lastUpdatedAt":
+				return ec.fieldContext_ChurchAdminStatistics_lastUpdatedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ChurchAdminStatistics", field.Name)
 		},
@@ -52608,6 +52647,11 @@ func (ec *executionContext) _ChurchAdminStatistics(ctx context.Context, sel ast.
 			}
 		case "userScores":
 			out.Values[i] = ec._ChurchAdminStatistics_userScores(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastUpdatedAt":
+			out.Values[i] = ec._ChurchAdminStatistics_lastUpdatedAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
