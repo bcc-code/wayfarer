@@ -9716,9 +9716,8 @@ extend type Mutation {
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/admin.graphqls", Input: `extend type Query {
-    adminDashboardStats: AdminDashboardStats!
-        @requireRole(roles: ["admin", "superadmin"])
-    churchAdminStatistics: ChurchAdminStatistics!
+    adminDashboardStats: AdminDashboardStats! @requireRole(roles: ["admin", "superadmin"])
+    churchAdminStatistics: ChurchAdminStatistics! @requireRole(roles: ["church_admin"])
 }
 
 extend type Mutation {
@@ -34367,7 +34366,25 @@ func (ec *executionContext) _Query_churchAdminStatistics(ctx context.Context, fi
 		func(ctx context.Context) (any, error) {
 			return ec.resolvers.Query().ChurchAdminStatistics(ctx)
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"church_admin"})
+				if err != nil {
+					var zeroVal *model.ChurchAdminStatistics
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.ChurchAdminStatistics
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNChurchAdminStatistics2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchAdminStatistics,
 		true,
 		true,
