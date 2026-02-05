@@ -129,9 +129,12 @@ const lastUpdatedFormatted = computed(() => {
         </p>
 
         <!-- Age group statistics -->
-        <h3 class="mb-4 mt-16">
+        <h3 class="mt-16">
           {{ $t('admin.statistics.averageScoresByAgeGroup') }}
         </h3>
+        <p class="text-muted text-sm mb-4">
+          {{ $t('admin.statistics.averageScoresByAgeGroupDescription') }}
+        </p>
         <section
           id="averages"
           class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 w-full"

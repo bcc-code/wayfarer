@@ -272,6 +272,7 @@
     "statistics": {
       "totalUsersInTeams": "Personer i units",
       "averageScoresByAgeGroup": "Gjennomsnittlig poengsum per aldersgruppe",
+      "averageScoresByAgeGroupDescription": "Her har du en oversikt over gjennomsnittlig poengsum per aldersgruppe. Kun personer som er i en unit regnes med.",
       "ageGroup": "Aldersgruppe",
       "users": "Brukere",
       "averageScore": "Gjennomsnittlig poengsum",
