@@ -1,6 +1,7 @@
 extend type Query {
     adminDashboardStats: AdminDashboardStats!
         @requireRole(roles: ["admin", "superadmin"])
+    churchAdminStatistics: ChurchAdminStatistics!
 }
 
 extend type Mutation {
@@ -14,4 +15,19 @@ type AdminDashboardStats {
     totalPointsAwarded: Int!
     newUsersLast7Days: Int!
     activeProjectsCount: Int!
+}
+
+type AgeGroupStats {
+    ageGroup: String!
+    userCount: Int!
+    averageScore: Float!
+}
+
+type ChurchAdminStatistics {
+    churchId: ID!
+    churchName: String!
+    projectId: ID!
+    projectName: String!
+    ageGroups: [AgeGroupStats!]!
+    totalUsersInTeams: Int!
 }

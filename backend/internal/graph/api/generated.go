@@ -111,6 +111,12 @@ type ComplexityRoot struct {
 		TotalUsers          func(childComplexity int) int
 	}
 
+	AgeGroupStats struct {
+		AgeGroup     func(childComplexity int) int
+		AverageScore func(childComplexity int) int
+		UserCount    func(childComplexity int) int
+	}
+
 	AgeRange struct {
 		Max func(childComplexity int) int
 		Min func(childComplexity int) int
@@ -141,6 +147,15 @@ type ComplexityRoot struct {
 		Country  func(childComplexity int) int
 		ID       func(childComplexity int) int
 		Name     func(childComplexity int) int
+	}
+
+	ChurchAdminStatistics struct {
+		AgeGroups         func(childComplexity int) int
+		ChurchID          func(childComplexity int) int
+		ChurchName        func(childComplexity int) int
+		ProjectID         func(childComplexity int) int
+		ProjectName       func(childComplexity int) int
+		TotalUsersInTeams func(childComplexity int) int
 	}
 
 	ChurchConnection struct {
@@ -678,6 +693,7 @@ type ComplexityRoot struct {
 		Challenge                     func(childComplexity int, id string) int
 		Challenges                    func(childComplexity int, filter *model.ChallengeFilter, first *int, after *string, last *int, before *string) int
 		Church                        func(childComplexity int, id string) int
+		ChurchAdminStatistics         func(childComplexity int) int
 		Churches                      func(childComplexity int, filter *model.ChurchFilter, first *int, after *string, last *int, before *string) int
 		Consent                       func(childComplexity int, id string) int
 		Consents                      func(childComplexity int) int
@@ -1444,6 +1460,7 @@ type QueryResolver interface {
 	ExternalContent(ctx context.Context, id string) (*model.ExternalContent, error)
 	ExternalContents(ctx context.Context, filter model.ExternalContentFilter, sortBy *model.ExternalContentSortBy, first *int, after *string, last *int, before *string) (*model.ExternalContentConnection, error)
 	AdminDashboardStats(ctx context.Context) (*model.AdminDashboardStats, error)
+	ChurchAdminStatistics(ctx context.Context) (*model.ChurchAdminStatistics, error)
 	MyPushNotificationPreferences(ctx context.Context) ([]model.PushNotificationPreference, error)
 	PushNotificationsEnabled(ctx context.Context) (bool, error)
 	VapidPublicKey(ctx context.Context) (string, error)
@@ -1707,6 +1724,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminDashboardStats.TotalUsers(childComplexity), true
 
+	case "AgeGroupStats.ageGroup":
+		if e.complexity.AgeGroupStats.AgeGroup == nil {
+			break
+		}
+
+		return e.complexity.AgeGroupStats.AgeGroup(childComplexity), true
+	case "AgeGroupStats.averageScore":
+		if e.complexity.AgeGroupStats.AverageScore == nil {
+			break
+		}
+
+		return e.complexity.AgeGroupStats.AverageScore(childComplexity), true
+	case "AgeGroupStats.userCount":
+		if e.complexity.AgeGroupStats.UserCount == nil {
+			break
+		}
+
+		return e.complexity.AgeGroupStats.UserCount(childComplexity), true
+
 	case "AgeRange.max":
 		if e.complexity.AgeRange.Max == nil {
 			break
@@ -1813,6 +1849,43 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Church.Name(childComplexity), true
+
+	case "ChurchAdminStatistics.ageGroups":
+		if e.complexity.ChurchAdminStatistics.AgeGroups == nil {
+			break
+		}
+
+		return e.complexity.ChurchAdminStatistics.AgeGroups(childComplexity), true
+	case "ChurchAdminStatistics.churchId":
+		if e.complexity.ChurchAdminStatistics.ChurchID == nil {
+			break
+		}
+
+		return e.complexity.ChurchAdminStatistics.ChurchID(childComplexity), true
+	case "ChurchAdminStatistics.churchName":
+		if e.complexity.ChurchAdminStatistics.ChurchName == nil {
+			break
+		}
+
+		return e.complexity.ChurchAdminStatistics.ChurchName(childComplexity), true
+	case "ChurchAdminStatistics.projectId":
+		if e.complexity.ChurchAdminStatistics.ProjectID == nil {
+			break
+		}
+
+		return e.complexity.ChurchAdminStatistics.ProjectID(childComplexity), true
+	case "ChurchAdminStatistics.projectName":
+		if e.complexity.ChurchAdminStatistics.ProjectName == nil {
+			break
+		}
+
+		return e.complexity.ChurchAdminStatistics.ProjectName(childComplexity), true
+	case "ChurchAdminStatistics.totalUsersInTeams":
+		if e.complexity.ChurchAdminStatistics.TotalUsersInTeams == nil {
+			break
+		}
+
+		return e.complexity.ChurchAdminStatistics.TotalUsersInTeams(childComplexity), true
 
 	case "ChurchConnection.edges":
 		if e.complexity.ChurchConnection.Edges == nil {
@@ -4910,6 +4983,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Church(childComplexity, args["id"].(string)), true
+	case "Query.churchAdminStatistics":
+		if e.complexity.Query.ChurchAdminStatistics == nil {
+			break
+		}
+
+		return e.complexity.Query.ChurchAdminStatistics(childComplexity), true
 	case "Query.churches":
 		if e.complexity.Query.Churches == nil {
 			break
@@ -9600,6 +9679,7 @@ extend type Mutation {
 	{Name: "../../../../gql/admin.graphqls", Input: `extend type Query {
     adminDashboardStats: AdminDashboardStats!
         @requireRole(roles: ["admin", "superadmin"])
+    churchAdminStatistics: ChurchAdminStatistics!
 }
 
 extend type Mutation {
@@ -9613,6 +9693,21 @@ type AdminDashboardStats {
     totalPointsAwarded: Int!
     newUsersLast7Days: Int!
     activeProjectsCount: Int!
+}
+
+type AgeGroupStats {
+    ageGroup: String!
+    userCount: Int!
+    averageScore: Float!
+}
+
+type ChurchAdminStatistics {
+    churchId: ID!
+    churchName: String!
+    projectId: ID!
+    projectName: String!
+    ageGroups: [AgeGroupStats!]!
+    totalUsersInTeams: Int!
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/push_notifications.graphqls", Input: `# ==================== Push Notification Types ====================
@@ -12909,6 +13004,93 @@ func (ec *executionContext) fieldContext_AdminDashboardStats_activeProjectsCount
 	return fc, nil
 }
 
+func (ec *executionContext) _AgeGroupStats_ageGroup(ctx context.Context, field graphql.CollectedField, obj *model.AgeGroupStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AgeGroupStats_ageGroup,
+		func(ctx context.Context) (any, error) {
+			return obj.AgeGroup, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AgeGroupStats_ageGroup(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AgeGroupStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AgeGroupStats_userCount(ctx context.Context, field graphql.CollectedField, obj *model.AgeGroupStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AgeGroupStats_userCount,
+		func(ctx context.Context) (any, error) {
+			return obj.UserCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AgeGroupStats_userCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AgeGroupStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AgeGroupStats_averageScore(ctx context.Context, field graphql.CollectedField, obj *model.AgeGroupStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AgeGroupStats_averageScore,
+		func(ctx context.Context) (any, error) {
+			return obj.AverageScore, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AgeGroupStats_averageScore(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AgeGroupStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AgeRange_min(ctx context.Context, field graphql.CollectedField, obj *model.AgeRange) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -13439,6 +13621,188 @@ func (ec *executionContext) fieldContext_Church_category(_ context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ChurchCategory does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChurchAdminStatistics_churchId(ctx context.Context, field graphql.CollectedField, obj *model.ChurchAdminStatistics) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChurchAdminStatistics_churchId,
+		func(ctx context.Context) (any, error) {
+			return obj.ChurchID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChurchAdminStatistics_churchId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChurchAdminStatistics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChurchAdminStatistics_churchName(ctx context.Context, field graphql.CollectedField, obj *model.ChurchAdminStatistics) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChurchAdminStatistics_churchName,
+		func(ctx context.Context) (any, error) {
+			return obj.ChurchName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChurchAdminStatistics_churchName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChurchAdminStatistics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChurchAdminStatistics_projectId(ctx context.Context, field graphql.CollectedField, obj *model.ChurchAdminStatistics) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChurchAdminStatistics_projectId,
+		func(ctx context.Context) (any, error) {
+			return obj.ProjectID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChurchAdminStatistics_projectId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChurchAdminStatistics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChurchAdminStatistics_projectName(ctx context.Context, field graphql.CollectedField, obj *model.ChurchAdminStatistics) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChurchAdminStatistics_projectName,
+		func(ctx context.Context) (any, error) {
+			return obj.ProjectName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChurchAdminStatistics_projectName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChurchAdminStatistics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChurchAdminStatistics_ageGroups(ctx context.Context, field graphql.CollectedField, obj *model.ChurchAdminStatistics) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChurchAdminStatistics_ageGroups,
+		func(ctx context.Context) (any, error) {
+			return obj.AgeGroups, nil
+		},
+		nil,
+		ec.marshalNAgeGroupStats2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAgeGroupStatsᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChurchAdminStatistics_ageGroups(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChurchAdminStatistics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "ageGroup":
+				return ec.fieldContext_AgeGroupStats_ageGroup(ctx, field)
+			case "userCount":
+				return ec.fieldContext_AgeGroupStats_userCount(ctx, field)
+			case "averageScore":
+				return ec.fieldContext_AgeGroupStats_averageScore(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AgeGroupStats", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChurchAdminStatistics_totalUsersInTeams(ctx context.Context, field graphql.CollectedField, obj *model.ChurchAdminStatistics) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChurchAdminStatistics_totalUsersInTeams,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalUsersInTeams, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChurchAdminStatistics_totalUsersInTeams(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChurchAdminStatistics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -33881,6 +34245,49 @@ func (ec *executionContext) fieldContext_Query_adminDashboardStats(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_churchAdminStatistics(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_churchAdminStatistics,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().ChurchAdminStatistics(ctx)
+		},
+		nil,
+		ec.marshalNChurchAdminStatistics2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchAdminStatistics,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_churchAdminStatistics(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "churchId":
+				return ec.fieldContext_ChurchAdminStatistics_churchId(ctx, field)
+			case "churchName":
+				return ec.fieldContext_ChurchAdminStatistics_churchName(ctx, field)
+			case "projectId":
+				return ec.fieldContext_ChurchAdminStatistics_projectId(ctx, field)
+			case "projectName":
+				return ec.fieldContext_ChurchAdminStatistics_projectName(ctx, field)
+			case "ageGroups":
+				return ec.fieldContext_ChurchAdminStatistics_ageGroups(ctx, field)
+			case "totalUsersInTeams":
+				return ec.fieldContext_ChurchAdminStatistics_totalUsersInTeams(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ChurchAdminStatistics", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_myPushNotificationPreferences(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -51639,6 +52046,55 @@ func (ec *executionContext) _AdminDashboardStats(ctx context.Context, sel ast.Se
 	return out
 }
 
+var ageGroupStatsImplementors = []string{"AgeGroupStats"}
+
+func (ec *executionContext) _AgeGroupStats(ctx context.Context, sel ast.SelectionSet, obj *model.AgeGroupStats) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, ageGroupStatsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AgeGroupStats")
+		case "ageGroup":
+			out.Values[i] = ec._AgeGroupStats_ageGroup(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "userCount":
+			out.Values[i] = ec._AgeGroupStats_userCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "averageScore":
+			out.Values[i] = ec._AgeGroupStats_averageScore(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var ageRangeImplementors = []string{"AgeRange"}
 
 func (ec *executionContext) _AgeRange(ctx context.Context, sel ast.SelectionSet, obj *model.AgeRange) graphql.Marshaler {
@@ -51918,6 +52374,70 @@ func (ec *executionContext) _Church(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "category":
 			out.Values[i] = ec._Church_category(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var churchAdminStatisticsImplementors = []string{"ChurchAdminStatistics"}
+
+func (ec *executionContext) _ChurchAdminStatistics(ctx context.Context, sel ast.SelectionSet, obj *model.ChurchAdminStatistics) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, churchAdminStatisticsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChurchAdminStatistics")
+		case "churchId":
+			out.Values[i] = ec._ChurchAdminStatistics_churchId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "churchName":
+			out.Values[i] = ec._ChurchAdminStatistics_churchName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "projectId":
+			out.Values[i] = ec._ChurchAdminStatistics_projectId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "projectName":
+			out.Values[i] = ec._ChurchAdminStatistics_projectName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ageGroups":
+			out.Values[i] = ec._ChurchAdminStatistics_ageGroups(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalUsersInTeams":
+			out.Values[i] = ec._ChurchAdminStatistics_totalUsersInTeams(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -58276,6 +58796,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_adminDashboardStats(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "churchAdminStatistics":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_churchAdminStatistics(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -64657,6 +65199,54 @@ func (ec *executionContext) marshalNAdminDashboardStats2ᚖgithubᚗcomᚋbccᚑ
 	return ec._AdminDashboardStats(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAgeGroupStats2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAgeGroupStats(ctx context.Context, sel ast.SelectionSet, v model.AgeGroupStats) graphql.Marshaler {
+	return ec._AgeGroupStats(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAgeGroupStats2ᚕgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAgeGroupStatsᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AgeGroupStats) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAgeGroupStats2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAgeGroupStats(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNAssignRoleInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐAssignRoleInput(ctx context.Context, v any) (model.AssignRoleInput, error) {
 	res, err := ec.unmarshalInputAssignRoleInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -64831,6 +65421,20 @@ func (ec *executionContext) marshalNChurch2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfa
 		return graphql.Null
 	}
 	return ec._Church(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNChurchAdminStatistics2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchAdminStatistics(ctx context.Context, sel ast.SelectionSet, v model.ChurchAdminStatistics) graphql.Marshaler {
+	return ec._ChurchAdminStatistics(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNChurchAdminStatistics2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchAdminStatistics(ctx context.Context, sel ast.SelectionSet, v *model.ChurchAdminStatistics) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ChurchAdminStatistics(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNChurchCategory2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐChurchCategory(ctx context.Context, v any) (model.ChurchCategory, error) {

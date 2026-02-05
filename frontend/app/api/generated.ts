@@ -74,6 +74,13 @@ export type AdminDashboardStats = {
   totalUsers: Scalars['Int']['output'];
 };
 
+export type AgeGroupStats = {
+  __typename?: 'AgeGroupStats';
+  ageGroup: Scalars['String']['output'];
+  averageScore: Scalars['Float']['output'];
+  userCount: Scalars['Int']['output'];
+};
+
 export type AgeRange = {
   __typename?: 'AgeRange';
   max: Scalars['Int']['output'];
@@ -166,6 +173,16 @@ export type Church = {
   country: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+};
+
+export type ChurchAdminStatistics = {
+  __typename?: 'ChurchAdminStatistics';
+  ageGroups: Array<AgeGroupStats>;
+  churchId: Scalars['ID']['output'];
+  churchName: Scalars['String']['output'];
+  projectId: Scalars['ID']['output'];
+  projectName: Scalars['String']['output'];
+  totalUsersInTeams: Scalars['Int']['output'];
 };
 
 export enum ChurchCategory {
@@ -1863,6 +1880,7 @@ export type Query = {
   challenge: Challenge;
   challenges: ChallengeConnection;
   church: Church;
+  churchAdminStatistics: ChurchAdminStatistics;
   churches: ChurchConnection;
   consent: Consent;
   consents: Array<Consent>;
@@ -3758,6 +3776,11 @@ export type AdminKickOffPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type AdminKickOffPageQuery = { __typename?: 'Query', frontendConfig: any, myCurrentProject: { __typename?: 'Project', teams: Array<{ __typename?: 'Team', members: Array<{ __typename?: 'TeamMember', id: string, isTeamLead: boolean }> }> } };
 
+export type ChurchAdminStatisticsPageQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ChurchAdminStatisticsPageQuery = { __typename?: 'Query', churchAdminStatistics: { __typename?: 'ChurchAdminStatistics', churchId: string, churchName: string, projectId: string, projectName: string, totalUsersInTeams: number, ageGroups: Array<{ __typename?: 'AgeGroupStats', ageGroup: string, userCount: number, averageScore: number }> } };
+
 export type MyChurchUnitsPageQueryVariables = Exact<{
   filter?: InputMaybe<UserFilter>;
 }>;
@@ -5483,6 +5506,26 @@ export const AdminKickOffPageDocument = gql`
 
 export function useAdminKickOffPageQuery(options?: Omit<Urql.UseQueryArgs<never, AdminKickOffPageQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminKickOffPageQuery, AdminKickOffPageQueryVariables | undefined>({ query: AdminKickOffPageDocument, variables: undefined, ...options });
+};
+export const ChurchAdminStatisticsPageDocument = gql`
+    query ChurchAdminStatisticsPage {
+  churchAdminStatistics {
+    churchId
+    churchName
+    projectId
+    projectName
+    totalUsersInTeams
+    ageGroups {
+      ageGroup
+      userCount
+      averageScore
+    }
+  }
+}
+    `;
+
+export function useChurchAdminStatisticsPageQuery(options?: Omit<Urql.UseQueryArgs<never, ChurchAdminStatisticsPageQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ChurchAdminStatisticsPageQuery, ChurchAdminStatisticsPageQueryVariables | undefined>({ query: ChurchAdminStatisticsPageDocument, variables: undefined, ...options });
 };
 export const MyChurchUnitsPageDocument = gql`
     query MyChurchUnitsPage($filter: UserFilter) {

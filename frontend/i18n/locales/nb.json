@@ -268,6 +268,15 @@
       "excludeFromLeaderboard": "Ekskluder fra toppliste",
       "excludeFromLeaderboardTooltip": "Når aktivert vil denne uniten ikke vises på topplisten",
       "excludedFromLeaderboard": "Skjult fra topplister"
+    },
+    "statistics": {
+      "totalUsersInTeams": "Personer i units",
+      "averageScoresByAgeGroup": "Gjennomsnittlig poengsum per aldersgruppe",
+      "ageGroup": "Aldersgruppe",
+      "users": "Brukere",
+      "averageScore": "Gj.snitt poeng",
+      "yearsOld": "år",
+      "noData": "Ingen data tilgjengelig"
     }
   }
 }

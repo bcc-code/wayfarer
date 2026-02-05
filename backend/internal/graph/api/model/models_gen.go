@@ -102,6 +102,12 @@ type AdminDashboardStats struct {
 	ActiveProjectsCount int `json:"activeProjectsCount"`
 }
 
+type AgeGroupStats struct {
+	AgeGroup     string  `json:"ageGroup"`
+	UserCount    int     `json:"userCount"`
+	AverageScore float64 `json:"averageScore"`
+}
+
 type AgeRange struct {
 	Min int `json:"min"`
 	Max int `json:"max"`
@@ -160,6 +166,15 @@ type Church struct {
 	Name     string         `json:"name"`
 	Country  string         `json:"country"`
 	Category ChurchCategory `json:"category"`
+}
+
+type ChurchAdminStatistics struct {
+	ChurchID          string          `json:"churchId"`
+	ChurchName        string          `json:"churchName"`
+	ProjectID         string          `json:"projectId"`
+	ProjectName       string          `json:"projectName"`
+	AgeGroups         []AgeGroupStats `json:"ageGroups"`
+	TotalUsersInTeams int             `json:"totalUsersInTeams"`
 }
 
 type ChurchConnection struct {
