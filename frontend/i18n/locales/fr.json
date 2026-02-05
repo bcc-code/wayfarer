@@ -42,6 +42,10 @@
       "perfect": "Parfait !"
     }
   },
+  "challenges": {
+    "active": "Actifs",
+    "completed": "Terminés"
+  },
   "pages": {
     "standings": "Classements",
     "challenges": "Défis",
@@ -165,7 +169,19 @@
       "administrators": "Administrateurs",
       "unitsAndPeople": "Unités et personnes",
       "gameNights": "Game Nights",
-      "comingSoon": "Bientôt disponible"
+      "comingSoon": "Bientôt disponible",
+      "kickOff": "Lancement",
+      "kickOffButton": "Débutez l’inscription des unités maintenant",
+      "kickOffOnboardingDescription": "Cette action marque le début de l'inscription des unités de l’assemblée locale.",
+      "kickOffOnboardingDescriptionWarning": "⚠ Ne démarrez pas si vous n'êtes pas prêts.",
+      "kickOffOnboardingExplanationTitle": "Que se passe-t-il lorsque tu démarres ?",
+      "kickOffOnboardingExplanation1": "Tous les responsables d'unité de l’assemblée locale reçoivent un défi dans Interact (application web).",
+      "kickOffOnboardingExplanation2": "Ils peuvent changer le nom de l'unité et obtenir 300 points une fois cette opération effectuée.",
+      "kickOffConfirmation": "Je confirme que nous en sommes au lancement et que nous sommes prêts à commencer.",
+      "kickOffOnboardingCountdown": "Démarrage dans {seconds} seconde | Démarrage dans {seconds} secondes",
+      "kickOffSuccessTitle": "L'inscription des unités est en cours !",
+      "kickOffSuccessDescription": "Tous les responsables d'unité ont désormais reçu une tâche dans l'application et peuvent modifier le nom de leur unité.",
+      "noAccess": "Tu n’as pas accès à cette page car tu n'es pas administrateur. Demande à un autre administrateur de te donner accès."
     },
     "admins": {
       "searchPlaceholder": "Rechercher des administrateurs...",
