@@ -67,7 +67,6 @@ func parseBirthdate(birthDate string) pgtype.Date {
 	}
 }
 
-
 // ptr returns a pointer to the given string, or nil if empty
 func ptr(s string) *string {
 	if s == "" {

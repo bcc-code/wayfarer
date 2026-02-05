@@ -150,8 +150,8 @@ type FirebaseConfig struct {
 
 // ResendConfig holds Resend email service configuration
 type ResendConfig struct {
-	APIKey        string // Resend API key for sending emails
-	AdminBaseURL  string // Base URL for admin panel links (e.g., "https://admin.example.com")
+	APIKey         string // Resend API key for sending emails
+	AdminBaseURL   string // Base URL for admin panel links (e.g., "https://admin.example.com")
 	SSFTicketEmail string // Email address for SSF ticket forwarding
 }
 
@@ -253,8 +253,8 @@ func Load() (*Config, error) {
 			DatabaseName:       getEnv("FIREBASE_DATABASE_NAME", "(default)"),
 		},
 		Resend: ResendConfig{
-			APIKey:        getEnv("RESEND_API_KEY", ""),
-			AdminBaseURL:  getEnv("ADMIN_BASE_URL", ""),
+			APIKey:         getEnv("RESEND_API_KEY", ""),
+			AdminBaseURL:   getEnv("ADMIN_BASE_URL", ""),
 			SSFTicketEmail: getEnv("SSF_TICKET_EMAIL", ""),
 		},
 	}

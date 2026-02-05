@@ -293,7 +293,6 @@ func (h *AuthHandler) validateAuth0Token(tokenString string) (*Auth0Claims, erro
 	return claims, nil
 }
 
-
 // findOrCreateUser finds an existing user by person_uuid or members_id, or creates a new one
 func (h *AuthHandler) findOrCreateUser(ctx context.Context, claims *BrunstadTVClaims, churchID string, member *members.Member, gender string) (*sqlc.GetUserByMembersIDRow, error) {
 	// Parse person_uuid from claims if present
@@ -585,7 +584,6 @@ func (h *AuthHandler) generateWayfarerToken(userID string) (string, error) {
 
 	return tokenString, nil
 }
-
 
 // DefaultChurchName is the name used for the fallback church
 const DefaultChurchName = "Unknown Church"
