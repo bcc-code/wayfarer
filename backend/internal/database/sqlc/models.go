@@ -61,16 +61,18 @@ type Challenge struct {
 	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 	PluginChallengeID           *string            `json:"plugin_challenge_id"`
 	PluginData                  []byte             `json:"plugin_data"`
+	NotificationText            string             `json:"notification_text"`
 }
 
 type ChallengeTranslation struct {
-	ChallengeID  string             `json:"challenge_id"`
-	LanguageCode string             `json:"language_code"`
-	Name         *string            `json:"name"`
-	Description  *string            `json:"description"`
-	ButtonText   *string            `json:"button_text"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	ChallengeID      string             `json:"challenge_id"`
+	LanguageCode     string             `json:"language_code"`
+	Name             *string            `json:"name"`
+	Description      *string            `json:"description"`
+	ButtonText       *string            `json:"button_text"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	NotificationText *string            `json:"notification_text"`
 }
 
 type Church struct {

@@ -7,6 +7,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
+	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -613,6 +614,50 @@ func getChallengeType(c model.Challenge) model.ChallengeType {
 	default:
 		return model.ChallengeTypeSimple
 	}
+}
+
+// getChallengePushInfo extracts the minimal information needed for push notifications from a Challenge
+func getChallengePushInfo(c model.Challenge) push.ChallengeInfo {
+	switch v := c.(type) {
+	case *model.SimpleChallenge:
+		return push.ChallengeInfo{
+			ID:               v.ID,
+			Name:             v.Name,
+			NotificationText: v.NotificationText,
+			Image:            derefString(v.Image),
+		}
+	case *model.QuizChallenge:
+		return push.ChallengeInfo{
+			ID:               v.ID,
+			Name:             v.Name,
+			NotificationText: v.NotificationText,
+			Image:            derefString(v.Image),
+		}
+	case *model.ExternalChallenge:
+		return push.ChallengeInfo{
+			ID:               v.ID,
+			Name:             v.Name,
+			NotificationText: v.NotificationText,
+			Image:            derefString(v.Image),
+		}
+	case *model.PluginChallenge:
+		return push.ChallengeInfo{
+			ID:               v.ID,
+			Name:             v.Name,
+			NotificationText: v.NotificationText,
+			Image:            derefString(v.Image),
+		}
+	default:
+		return push.ChallengeInfo{}
+	}
+}
+
+// derefString safely dereferences a string pointer, returning empty string if nil
+func derefString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 // validateCreateChallengeInput validates type-specific fields for CreateChallengeInput

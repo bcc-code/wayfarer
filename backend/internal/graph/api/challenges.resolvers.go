@@ -15,6 +15,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -669,6 +670,16 @@ func (r *mutationResolver) EnrollUserInChallenge(ctx context.Context, userID str
 	if enrolledAt.Valid {
 		ts := enrolledAt.Time
 		r.Cache.Set(cache.UserChallengeEnrollmentKey(userID, challengeID), &ts)
+	}
+
+	// Send translated push notification for admin enrollment (only if notification_text is defined)
+	if r.PushService != nil {
+		go push.SendTranslatedChallengeEnrollmentNotification(
+			r.PushService,
+			r.Loaders,
+			userID,
+			getChallengePushInfo(challenge),
+		)
 	}
 
 	return r.ApplyTranslationToChallenge(ctx, challenge), nil

@@ -20,7 +20,7 @@ WHERE streak_id = ANY(@entity_ids::text[])
   AND language_code = @language_code::text;
 
 -- name: GetChallengeTranslationsByIDs :many
-SELECT challenge_id, language_code, name, description, button_text
+SELECT challenge_id, language_code, name, description, button_text, notification_text
 FROM challenge_translations
 WHERE challenge_id = ANY(@entity_ids::text[])
   AND language_code = @language_code::text;

@@ -30,7 +30,7 @@ type Translation struct {
 	Description          *string // Used by most entity types
 	DescriptionPending   *string // Only for achievements
 	DescriptionCompleted *string // Only for achievements
-	NotificationText     *string // Only for achievements
+	NotificationText     *string // For achievements and challenges
 	Rules                *string // Only for projects
 	ButtonText           *string // Only for challenges
 	Title                *string // Only for articles and consents
@@ -184,11 +184,12 @@ func queryTranslations(ctx context.Context, db *database.DB, entityType string, 
 		translations := make([]*Translation, len(rows))
 		for i, row := range rows {
 			translations[i] = &Translation{
-				EntityID:    row.ChallengeID,
-				LangCode:    row.LanguageCode,
-				Name:        row.Name,
-				Description: row.Description,
-				ButtonText:  row.ButtonText,
+				EntityID:         row.ChallengeID,
+				LangCode:         row.LanguageCode,
+				Name:             row.Name,
+				Description:      row.Description,
+				ButtonText:       row.ButtonText,
+				NotificationText: row.NotificationText,
 			}
 		}
 		return translations, nil
