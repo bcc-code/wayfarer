@@ -765,6 +765,19 @@ func (r *mutationResolver) BulkEnrollUsersInChallenge(ctx context.Context, targe
 		go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
 	}
 
+	// Send push notifications for each enrolled user
+	if r.PushService != nil {
+		challengeInfo := getChallengePushInfo(challenge)
+		for _, userID := range userIds {
+			go push.SendTranslatedChallengeEnrollmentNotification(
+				r.PushService,
+				r.Loaders,
+				userID,
+				challengeInfo,
+			)
+		}
+	}
+
 	// Return challenge for each user (same challenge, no dataloader needed)
 	translatedChallenge := r.ApplyTranslationToChallenge(ctx, challenge)
 	result := make([]model.Challenge, len(userIds))
