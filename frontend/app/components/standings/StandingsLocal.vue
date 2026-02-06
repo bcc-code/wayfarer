@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { getExtraItems } from '~/utils/leaderboard'
 
-const entityType = ref(LeaderboardEntityType.Persons)
+const entityType = useLocalStorage<LeaderboardEntityType>(
+  'standings-local:entity-type',
+  LeaderboardEntityType.Persons,
+)
 
 const { me } = useAuth()
 const { isAuthReady } = useAuthReady()
