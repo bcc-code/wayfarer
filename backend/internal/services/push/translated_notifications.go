@@ -54,3 +54,53 @@ func SendTranslatedAchievementNotification(
 		ImageCompleted:   achievement.ImageCompleted,
 	})
 }
+
+// SendTranslatedChallengeEnrollmentNotification sends a push notification for challenge enrollment
+// with translated content based on the user's language preference.
+// This is fire-and-forget - errors are logged but do not propagate.
+// Only sends if notification_text is non-empty (either base or translated).
+// It should be called in a goroutine to avoid blocking the main flow.
+func SendTranslatedChallengeEnrollmentNotification(
+	pushService *Service,
+	loadersInstance *loaders.Loaders,
+	userID string,
+	challenge ChallengeInfo,
+) {
+	if pushService == nil || !pushService.IsConfigured() || loadersInstance == nil {
+		return
+	}
+
+	bgCtx := context.Background()
+
+	// Get user's language
+	userLang := "no" // default
+	userThunk := loadersInstance.UserByIDLoader.Load(bgCtx, userID)
+	if user, err := userThunk(); err == nil && user != nil {
+		userLang = user.Language
+	}
+
+	// Get challenge translation
+	name := challenge.Name
+	notificationText := challenge.NotificationText
+	transKey := loaders.TranslationKey{
+		EntityType: "challenge",
+		EntityID:   challenge.ID,
+		LangCode:   userLang,
+	}
+	transThunk := loadersInstance.TranslationLoader.Load(bgCtx, transKey)
+	if trans, err := transThunk(); err == nil && trans != nil {
+		if trans.Name != nil && *trans.Name != "" {
+			name = *trans.Name
+		}
+		if trans.NotificationText != nil && *trans.NotificationText != "" {
+			notificationText = *trans.NotificationText
+		}
+	}
+
+	pushService.SendChallengeEnrollmentNotification(bgCtx, userID, ChallengeInfo{
+		ID:               challenge.ID,
+		Name:             name,
+		NotificationText: notificationText,
+		Image:            challenge.Image,
+	})
+}

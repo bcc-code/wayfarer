@@ -196,6 +196,7 @@ CREATE TABLE challenges (
     requires_super_team_membership BOOLEAN DEFAULT false NOT NULL,
     plugin_challenge_id VARCHAR(100),
     plugin_data JSONB,
+    notification_text TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     -- Type constraints: EXTERNAL requires url, QUIZ must not have url, PLUGIN requires plugin_challenge_id
@@ -409,6 +410,7 @@ CREATE TABLE challenge_translations (
     name VARCHAR(255),
     description TEXT,
     button_text VARCHAR(100),
+    notification_text TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     PRIMARY KEY (challenge_id, language_code)

@@ -17,6 +17,7 @@ const props = defineProps<{
     startedAt?: string
     allowSelfCompletion?: boolean
     pluginChallengeId?: string
+    notificationText?: string
   }
   quizData?: QuizFormData
   projectId?: string
@@ -43,6 +44,7 @@ export interface ChallengeFormData {
   startedAt?: string
   allowSelfCompletion?: boolean
   pluginChallengeId?: string
+  notificationText?: string
   quiz?: QuizFormData
 }
 
@@ -60,6 +62,7 @@ const schema = z
     startedAt: z.string().optional(),
     allowSelfCompletion: z.boolean().optional(),
     pluginChallengeId: z.string().optional(),
+    notificationText: z.string().optional(),
   })
   .refine(
     (data) =>
@@ -95,6 +98,7 @@ const state = reactive<Schema>({
   startedAt: props.initialData?.startedAt,
   allowSelfCompletion: props.initialData?.allowSelfCompletion ?? false,
   pluginChallengeId: props.initialData?.pluginChallengeId,
+  notificationText: props.initialData?.notificationText ?? '',
 })
 
 const quizFormData = ref<QuizFormData | undefined>(props.quizData)
@@ -116,6 +120,7 @@ watch(
       state.startedAt = data.startedAt
       state.allowSelfCompletion = data.allowSelfCompletion ?? false
       state.pluginChallengeId = data.pluginChallengeId
+      state.notificationText = data.notificationText ?? ''
     }
   },
   { once: true },
@@ -227,6 +232,18 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             v-model="state.buttonText"
             size="xl"
             :required="state.type !== ChallengeType.Plugin"
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField
+          name="notificationText"
+          label="Varslingstekst"
+          hint="(valgfritt)"
+          help="Tekst som vises i push-varsler når admin melder bruker på utfordringen. La feltet stå tomt for ingen varsling."
+        >
+          <UInput
+            v-model="state.notificationText"
+            size="xl"
             class="w-full"
           />
         </UFormField>

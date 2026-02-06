@@ -15,6 +15,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -101,6 +102,9 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 	params.Requiresteammembership = input.RequiresTeamMembership
 	params.Requiressuperteammembership = input.RequiresSuperTeamMembership
 
+	// Set optional notification text (for push notifications when admin enrolls user)
+	params.Notificationtext = input.NotificationText
+
 	// Set type-specific fields
 	switch input.Type {
 	case model.ChallengeTypeSimple:
@@ -178,6 +182,7 @@ func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input
 	params.Imageurl = input.Image
 	params.Eventid = input.EventID
 	params.Buttontext = input.ButtonText
+	params.Notificationtext = input.NotificationText
 
 	// Set optional timestamps
 	if input.PublishedAt != nil {
@@ -669,6 +674,16 @@ func (r *mutationResolver) EnrollUserInChallenge(ctx context.Context, userID str
 	if enrolledAt.Valid {
 		ts := enrolledAt.Time
 		r.Cache.Set(cache.UserChallengeEnrollmentKey(userID, challengeID), &ts)
+	}
+
+	// Send translated push notification for admin enrollment (only if notification_text is defined)
+	if r.PushService != nil {
+		go push.SendTranslatedChallengeEnrollmentNotification(
+			r.PushService,
+			r.Loaders,
+			userID,
+			getChallengePushInfo(challenge),
+		)
 	}
 
 	return r.ApplyTranslationToChallenge(ctx, challenge), nil

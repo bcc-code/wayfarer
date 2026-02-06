@@ -42,6 +42,7 @@ type Challenge interface {
 	GetProject() *Project
 	GetEvent() *Event
 	GetButtonText() *string
+	GetNotificationText() string
 	GetPublishedAt() *scalars.DateTime
 	GetVisibleAt() *scalars.DateTime
 	GetStartedAt() *scalars.DateTime
@@ -328,6 +329,7 @@ type CreateChallengeInput struct {
 	Description                 *scalars.HTML     `json:"description,omitempty"`
 	Image                       *string           `json:"image,omitempty"`
 	ButtonText                  *string           `json:"buttonText,omitempty"`
+	NotificationText            *string           `json:"notificationText,omitempty"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
@@ -615,6 +617,7 @@ type ExternalChallenge struct {
 	Project                     *Project          `json:"project"`
 	Event                       *Event            `json:"event,omitempty"`
 	ButtonText                  string            `json:"buttonText"`
+	NotificationText            string            `json:"notificationText"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
@@ -637,6 +640,7 @@ func (this ExternalChallenge) GetImageObject() *Image            { return this.I
 func (this ExternalChallenge) GetProject() *Project              { return this.Project }
 func (this ExternalChallenge) GetEvent() *Event                  { return this.Event }
 func (this ExternalChallenge) GetButtonText() *string            { return &this.ButtonText }
+func (this ExternalChallenge) GetNotificationText() string       { return this.NotificationText }
 func (this ExternalChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
 func (this ExternalChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
 func (this ExternalChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
@@ -957,6 +961,7 @@ type PluginChallenge struct {
 	Project                     *Project          `json:"project"`
 	Event                       *Event            `json:"event,omitempty"`
 	ButtonText                  *string           `json:"buttonText,omitempty"`
+	NotificationText            string            `json:"notificationText"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
@@ -979,6 +984,7 @@ func (this PluginChallenge) GetImageObject() *Image            { return this.Ima
 func (this PluginChallenge) GetProject() *Project              { return this.Project }
 func (this PluginChallenge) GetEvent() *Event                  { return this.Event }
 func (this PluginChallenge) GetButtonText() *string            { return this.ButtonText }
+func (this PluginChallenge) GetNotificationText() string       { return this.NotificationText }
 func (this PluginChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
 func (this PluginChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
 func (this PluginChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
@@ -1175,6 +1181,7 @@ type QuizChallenge struct {
 	Project                     *Project          `json:"project"`
 	Event                       *Event            `json:"event,omitempty"`
 	ButtonText                  string            `json:"buttonText"`
+	NotificationText            string            `json:"notificationText"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
@@ -1197,6 +1204,7 @@ func (this QuizChallenge) GetImageObject() *Image            { return this.Image
 func (this QuizChallenge) GetProject() *Project              { return this.Project }
 func (this QuizChallenge) GetEvent() *Event                  { return this.Event }
 func (this QuizChallenge) GetButtonText() *string            { return &this.ButtonText }
+func (this QuizChallenge) GetNotificationText() string       { return this.NotificationText }
 func (this QuizChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
 func (this QuizChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
 func (this QuizChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
@@ -1434,6 +1442,7 @@ type SimpleChallenge struct {
 	Project                     *Project          `json:"project"`
 	Event                       *Event            `json:"event,omitempty"`
 	ButtonText                  string            `json:"buttonText"`
+	NotificationText            string            `json:"notificationText"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
@@ -1456,6 +1465,7 @@ func (this SimpleChallenge) GetImageObject() *Image            { return this.Ima
 func (this SimpleChallenge) GetProject() *Project              { return this.Project }
 func (this SimpleChallenge) GetEvent() *Event                  { return this.Event }
 func (this SimpleChallenge) GetButtonText() *string            { return &this.ButtonText }
+func (this SimpleChallenge) GetNotificationText() string       { return this.NotificationText }
 func (this SimpleChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
 func (this SimpleChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
 func (this SimpleChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
@@ -1671,6 +1681,7 @@ type UpdateChallengeInput struct {
 	Image                       *string           `json:"image,omitempty"`
 	EventID                     *string           `json:"eventId,omitempty"`
 	ButtonText                  *string           `json:"buttonText,omitempty"`
+	NotificationText            *string           `json:"notificationText,omitempty"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`

@@ -38,9 +38,9 @@ const (
 	PrefixUserStreakActivity       = "userstreak:"
 
 	// Computed data
-	PrefixLeaderboard         = "leaderboard:"
-	PrefixLeaderboardPosition = "leaderboard:position:"
-	PrefixLeaderboardCount    = "leaderboard:count:"
+	PrefixLeaderboard           = "leaderboard:"
+	PrefixLeaderboardPosition   = "leaderboard:position:"
+	PrefixLeaderboardCount      = "leaderboard:count:"
 	PrefixTeamMemberLeaderboard = "team:leaderboard:"
 	PrefixTeamLeaderboardTags   = "team:leaderboard:tags:"
 	PrefixScore                 = "score:"

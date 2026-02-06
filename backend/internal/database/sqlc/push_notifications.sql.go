@@ -73,17 +73,17 @@ INSERT INTO push_notification_log (
 `
 
 type CreatePushNotificationLogParams struct {
-	ID                   string `json:"id"`
-	Notificationtype     string `json:"notificationtype"`
-	Title                string `json:"title"`
-	Body                 string `json:"body"`
-	Url                  string `json:"url"`
-	Data                 []byte `json:"data"`
-	Targetcriteria       []byte `json:"targetcriteria"`
-	Sentby               string `json:"sentby"`
-	Totalrecipients      int32  `json:"totalrecipients"`
-	Successfuldeliveries int32  `json:"successfuldeliveries"`
-	Faileddeliveries     int32  `json:"faileddeliveries"`
+	ID                   string  `json:"id"`
+	Notificationtype     string  `json:"notificationtype"`
+	Title                string  `json:"title"`
+	Body                 string  `json:"body"`
+	Url                  string  `json:"url"`
+	Data                 []byte  `json:"data"`
+	Targetcriteria       []byte  `json:"targetcriteria"`
+	Sentby               *string `json:"sentby"`
+	Totalrecipients      int32   `json:"totalrecipients"`
+	Successfuldeliveries int32   `json:"successfuldeliveries"`
+	Faileddeliveries     int32   `json:"faileddeliveries"`
 }
 
 // Notification Log

@@ -278,6 +278,7 @@ type ComplexityRoot struct {
 		Image                       func(childComplexity int) int
 		ImageObject                 func(childComplexity int) int
 		Name                        func(childComplexity int) int
+		NotificationText            func(childComplexity int) int
 		Project                     func(childComplexity int) int
 		PublishedAt                 func(childComplexity int) int
 		RequiresSuperTeamMembership func(childComplexity int) int
@@ -608,6 +609,7 @@ type ComplexityRoot struct {
 		Image                       func(childComplexity int) int
 		ImageObject                 func(childComplexity int) int
 		Name                        func(childComplexity int) int
+		NotificationText            func(childComplexity int) int
 		PluginChallengeID           func(childComplexity int) int
 		Project                     func(childComplexity int) int
 		PublishedAt                 func(childComplexity int) int
@@ -798,6 +800,7 @@ type ComplexityRoot struct {
 		Image                       func(childComplexity int) int
 		ImageObject                 func(childComplexity int) int
 		Name                        func(childComplexity int) int
+		NotificationText            func(childComplexity int) int
 		Project                     func(childComplexity int) int
 		PublishedAt                 func(childComplexity int) int
 		Quiz                        func(childComplexity int) int
@@ -949,6 +952,7 @@ type ComplexityRoot struct {
 		Image                       func(childComplexity int) int
 		ImageObject                 func(childComplexity int) int
 		Name                        func(childComplexity int) int
+		NotificationText            func(childComplexity int) int
 		Project                     func(childComplexity int) int
 		PublishedAt                 func(childComplexity int) int
 		RequiresSuperTeamMembership func(childComplexity int) int
@@ -2410,6 +2414,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ExternalChallenge.Name(childComplexity), true
+	case "ExternalChallenge.notificationText":
+		if e.complexity.ExternalChallenge.NotificationText == nil {
+			break
+		}
+
+		return e.complexity.ExternalChallenge.NotificationText(childComplexity), true
 	case "ExternalChallenge.project":
 		if e.complexity.ExternalChallenge.Project == nil {
 			break
@@ -4577,6 +4587,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PluginChallenge.Name(childComplexity), true
+	case "PluginChallenge.notificationText":
+		if e.complexity.PluginChallenge.NotificationText == nil {
+			break
+		}
+
+		return e.complexity.PluginChallenge.NotificationText(childComplexity), true
 	case "PluginChallenge.pluginChallengeId":
 		if e.complexity.PluginChallenge.PluginChallengeID == nil {
 			break
@@ -5730,6 +5746,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuizChallenge.Name(childComplexity), true
+	case "QuizChallenge.notificationText":
+		if e.complexity.QuizChallenge.NotificationText == nil {
+			break
+		}
+
+		return e.complexity.QuizChallenge.NotificationText(childComplexity), true
 	case "QuizChallenge.project":
 		if e.complexity.QuizChallenge.Project == nil {
 			break
@@ -6381,6 +6403,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SimpleChallenge.Name(childComplexity), true
+	case "SimpleChallenge.notificationText":
+		if e.complexity.SimpleChallenge.NotificationText == nil {
+			break
+		}
+
+		return e.complexity.SimpleChallenge.NotificationText(childComplexity), true
 	case "SimpleChallenge.project":
 		if e.complexity.SimpleChallenge.Project == nil {
 			break
@@ -8447,6 +8475,7 @@ interface Challenge {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String
+    notificationText: String!
     publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
@@ -8468,6 +8497,7 @@ type SimpleChallenge implements Challenge {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
+    notificationText: String!
     publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
@@ -8489,6 +8519,7 @@ type QuizChallenge implements Challenge {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
+    notificationText: String!
     publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
@@ -8510,6 +8541,7 @@ type ExternalChallenge implements Challenge {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
+    notificationText: String!
     publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
@@ -8531,6 +8563,7 @@ type PluginChallenge implements Challenge {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String
+    notificationText: String!
     publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
@@ -8551,6 +8584,7 @@ input CreateChallengeInput {
     description: HTML
     image: String
     buttonText: String            # Required for all types except PLUGIN
+    notificationText: String      # Optional text for push notifications when admin enrolls user
     publishedAt: DateTime         # Optional, defaults to NOW() if not provided
     visibleAt: DateTime
     endTime: DateTime
@@ -8568,6 +8602,7 @@ input UpdateChallengeInput {
     image: String
     eventId: ID
     buttonText: String
+    notificationText: String
     publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
@@ -16713,6 +16748,35 @@ func (ec *executionContext) fieldContext_ExternalChallenge_buttonText(_ context.
 	return fc, nil
 }
 
+func (ec *executionContext) _ExternalChallenge_notificationText(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExternalChallenge_notificationText,
+		func(ctx context.Context) (any, error) {
+			return obj.NotificationText, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExternalChallenge_notificationText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ExternalChallenge_publishedAt(ctx context.Context, field graphql.CollectedField, obj *model.ExternalChallenge) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -23441,6 +23505,8 @@ func (ec *executionContext) fieldContext_Mutation_selfCompleteChallenge(ctx cont
 				return ec.fieldContext_SimpleChallenge_event(ctx, field)
 			case "buttonText":
 				return ec.fieldContext_SimpleChallenge_buttonText(ctx, field)
+			case "notificationText":
+				return ec.fieldContext_SimpleChallenge_notificationText(ctx, field)
 			case "publishedAt":
 				return ec.fieldContext_SimpleChallenge_publishedAt(ctx, field)
 			case "visibleAt":
@@ -29717,6 +29783,35 @@ func (ec *executionContext) _PluginChallenge_buttonText(ctx context.Context, fie
 }
 
 func (ec *executionContext) fieldContext_PluginChallenge_buttonText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PluginChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PluginChallenge_notificationText(ctx context.Context, field graphql.CollectedField, obj *model.PluginChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PluginChallenge_notificationText,
+		func(ctx context.Context) (any, error) {
+			return obj.NotificationText, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PluginChallenge_notificationText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PluginChallenge",
 		Field:      field,
@@ -36714,6 +36809,35 @@ func (ec *executionContext) fieldContext_QuizChallenge_buttonText(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _QuizChallenge_notificationText(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuizChallenge_notificationText,
+		func(ctx context.Context) (any, error) {
+			return obj.NotificationText, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuizChallenge_notificationText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuizChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _QuizChallenge_publishedAt(ctx context.Context, field graphql.CollectedField, obj *model.QuizChallenge) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -40541,6 +40665,35 @@ func (ec *executionContext) _SimpleChallenge_buttonText(ctx context.Context, fie
 }
 
 func (ec *executionContext) fieldContext_SimpleChallenge_buttonText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SimpleChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SimpleChallenge_notificationText(ctx context.Context, field graphql.CollectedField, obj *model.SimpleChallenge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SimpleChallenge_notificationText,
+		func(ctx context.Context) (any, error) {
+			return obj.NotificationText, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SimpleChallenge_notificationText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SimpleChallenge",
 		Field:      field,
@@ -48096,7 +48249,7 @@ func (ec *executionContext) unmarshalInputCreateChallengeInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"type", "name", "description", "image", "buttonText", "publishedAt", "visibleAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership", "allowSelfCompletion", "url", "pluginChallengeId"}
+	fieldsInOrder := [...]string{"type", "name", "description", "image", "buttonText", "notificationText", "publishedAt", "visibleAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership", "allowSelfCompletion", "url", "pluginChallengeId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -48138,6 +48291,13 @@ func (ec *executionContext) unmarshalInputCreateChallengeInput(ctx context.Conte
 				return it, err
 			}
 			it.ButtonText = data
+		case "notificationText":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("notificationText"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NotificationText = data
 		case "publishedAt":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedAt"))
 			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
@@ -50861,7 +51021,7 @@ func (ec *executionContext) unmarshalInputUpdateChallengeInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "image", "eventId", "buttonText", "publishedAt", "visibleAt", "startedAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership", "allowSelfCompletion", "url", "pluginChallengeId"}
+	fieldsInOrder := [...]string{"name", "description", "image", "eventId", "buttonText", "notificationText", "publishedAt", "visibleAt", "startedAt", "endTime", "requiresTeamMembership", "requiresSuperTeamMembership", "allowSelfCompletion", "url", "pluginChallengeId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -50903,6 +51063,13 @@ func (ec *executionContext) unmarshalInputUpdateChallengeInput(ctx context.Conte
 				return it, err
 			}
 			it.ButtonText = data
+		case "notificationText":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("notificationText"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NotificationText = data
 		case "publishedAt":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedAt"))
 			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
@@ -54103,6 +54270,11 @@ func (ec *executionContext) _ExternalChallenge(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "notificationText":
+			out.Values[i] = ec._ExternalChallenge_notificationText(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "publishedAt":
 			out.Values[i] = ec._ExternalChallenge_publishedAt(ctx, field, obj)
 		case "visibleAt":
@@ -57013,6 +57185,11 @@ func (ec *executionContext) _PluginChallenge(ctx context.Context, sel ast.Select
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "buttonText":
 			out.Values[i] = ec._PluginChallenge_buttonText(ctx, field, obj)
+		case "notificationText":
+			out.Values[i] = ec._PluginChallenge_notificationText(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "publishedAt":
 			out.Values[i] = ec._PluginChallenge_publishedAt(ctx, field, obj)
 		case "visibleAt":
@@ -60187,6 +60364,11 @@ func (ec *executionContext) _QuizChallenge(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "notificationText":
+			out.Values[i] = ec._QuizChallenge_notificationText(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "publishedAt":
 			out.Values[i] = ec._QuizChallenge_publishedAt(ctx, field, obj)
 		case "visibleAt":
@@ -62261,6 +62443,11 @@ func (ec *executionContext) _SimpleChallenge(ctx context.Context, sel ast.Select
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "buttonText":
 			out.Values[i] = ec._SimpleChallenge_buttonText(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "notificationText":
+			out.Values[i] = ec._SimpleChallenge_notificationText(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

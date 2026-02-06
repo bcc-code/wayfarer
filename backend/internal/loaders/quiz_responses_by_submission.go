@@ -133,7 +133,7 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						SubmissionID:     row.SubmissionID,
 						QuestionID:       row.QuestionID,
 						SubmittedOrder:   submittedOrder,
-						IsCorrect:        row.IsCorrect,
+						IsCorrectValue:   row.IsCorrect, // Store actual value for resolver
 						AnsweredAt:       answeredAt,
 						TimeSpentSeconds: timeSpentSeconds,
 						PointsEarned:     pointsEarned,
