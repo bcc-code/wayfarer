@@ -3783,7 +3783,7 @@ export type ChurchAdminsPageQuery = { __typename?: 'Query', usersWithRole: Array
 export type AdminKickOffPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminKickOffPageQuery = { __typename?: 'Query', frontendConfig: any, myCurrentProject: { __typename?: 'Project', teams: Array<{ __typename?: 'Team', members: Array<{ __typename?: 'TeamMember', id: string, isTeamLead: boolean }> }> } };
+export type AdminKickOffPageQuery = { __typename?: 'Query', frontendConfig: any, myCurrentProject: { __typename?: 'Project', myChurchTeams: Array<{ __typename?: 'Team', members: Array<{ __typename?: 'TeamMember', id: string, isTeamLead: boolean }> }> } };
 
 export type ChurchAdminStatisticsPageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -5503,7 +5503,7 @@ export const AdminKickOffPageDocument = gql`
     query AdminKickOffPage {
   frontendConfig
   myCurrentProject {
-    teams {
+    myChurchTeams {
       members {
         id
         isTeamLead

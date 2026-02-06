@@ -8,7 +8,7 @@ gql(`
   query AdminKickOffPage {
     frontendConfig
     myCurrentProject {
-      teams {
+      myChurchTeams {
         members {
           id
           isTeamLead
@@ -22,7 +22,7 @@ const { data } = useAdminKickOffPageQuery()
 const { executeMutation, fetching } = useBulkEnrollUsersInChallengeMutation()
 
 const teamLeads = computed(() =>
-  data.value?.myCurrentProject.teams.flatMap((team) =>
+  data.value?.myCurrentProject.myChurchTeams.flatMap((team) =>
     team.members.filter((member) => member.isTeamLead),
   ),
 )
