@@ -36,8 +36,8 @@ const completedChallenges = computed(() =>
       }
     }
     return (
-      !!challenge.userCompletedAt ||
-      new Date(challenge.endTime).getTime() < Date.now()
+      Boolean(challenge.userCompletedAt) ||
+      (challenge.endTime && new Date(challenge.endTime).getTime() < Date.now())
     )
   }),
 )
