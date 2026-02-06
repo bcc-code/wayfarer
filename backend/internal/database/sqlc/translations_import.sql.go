@@ -49,22 +49,24 @@ func (q *Queries) UpsertAchievementTranslation(ctx context.Context, arg UpsertAc
 }
 
 const UpsertChallengeTranslation = `-- name: UpsertChallengeTranslation :exec
-INSERT INTO challenge_translations (challenge_id, language_code, name, description, button_text, updated_at)
-VALUES ($1::text, $2::text, $3::text, $4::text, $5::text, now())
+INSERT INTO challenge_translations (challenge_id, language_code, name, description, button_text, notification_text, updated_at)
+VALUES ($1::text, $2::text, $3::text, $4::text, $5::text, $6::text, now())
 ON CONFLICT (challenge_id, language_code)
 DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
     button_text = EXCLUDED.button_text,
+    notification_text = EXCLUDED.notification_text,
     updated_at = now()
 `
 
 type UpsertChallengeTranslationParams struct {
-	ChallengeID  string `json:"challenge_id"`
-	LanguageCode string `json:"language_code"`
-	Name         string `json:"name"`
-	Description  string `json:"description"`
-	ButtonText   string `json:"button_text"`
+	ChallengeID      string `json:"challenge_id"`
+	LanguageCode     string `json:"language_code"`
+	Name             string `json:"name"`
+	Description      string `json:"description"`
+	ButtonText       string `json:"button_text"`
+	NotificationText string `json:"notification_text"`
 }
 
 func (q *Queries) UpsertChallengeTranslation(ctx context.Context, arg UpsertChallengeTranslationParams) error {
@@ -74,6 +76,7 @@ func (q *Queries) UpsertChallengeTranslation(ctx context.Context, arg UpsertChal
 		arg.Name,
 		arg.Description,
 		arg.ButtonText,
+		arg.NotificationText,
 	)
 	return err
 }

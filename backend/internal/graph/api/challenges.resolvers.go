@@ -102,6 +102,9 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 	params.Requiresteammembership = input.RequiresTeamMembership
 	params.Requiressuperteammembership = input.RequiresSuperTeamMembership
 
+	// Set optional notification text (for push notifications when admin enrolls user)
+	params.Notificationtext = input.NotificationText
+
 	// Set type-specific fields
 	switch input.Type {
 	case model.ChallengeTypeSimple:
@@ -179,6 +182,7 @@ func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input
 	params.Imageurl = input.Image
 	params.Eventid = input.EventID
 	params.Buttontext = input.ButtonText
+	params.Notificationtext = input.NotificationText
 
 	// Set optional timestamps
 	if input.PublishedAt != nil {

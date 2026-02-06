@@ -94,11 +94,12 @@ func (s *Service) updateChallenges(ctx context.Context, data []common.Translatio
 		}
 
 		err = s.queries.UpsertChallengeTranslation(ctx, sqlc.UpsertChallengeTranslationParams{
-			ChallengeID:  d.ID,
-			LanguageCode: d.Language,
-			Name:         value.Name,
-			Description:  value.Description.String,
-			ButtonText:   value.ButtonText,
+			ChallengeID:      d.ID,
+			LanguageCode:     d.Language,
+			Name:             value.Name,
+			Description:      value.Description.String,
+			ButtonText:       value.ButtonText,
+			NotificationText: value.NotificationText.String,
 		})
 		if err != nil {
 			errs = append(errs, err)

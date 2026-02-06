@@ -145,7 +145,7 @@ input UpdateChallengeInput {
     image: String
     eventId: ID
     buttonText: String
-    notificationText: String
+    notificationText: String  # Optional text for push notifications when admin enrolls user
     publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime

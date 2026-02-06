@@ -16,6 +16,7 @@ gql(`
       description
       image
       buttonText
+      notificationText
       publishedAt
       visibleAt
       startedAt
@@ -115,6 +116,7 @@ const initialData = computed(() => {
     image: c.image ?? undefined,
     url: c.__typename === 'ExternalChallenge' ? c.url : undefined,
     buttonText: c.buttonText,
+    notificationText: c.notificationText ?? undefined,
     publishedAt: toLocalDatetimeLocal(c.publishedAt),
     endTime: toLocalDatetimeLocal(c.endTime),
     visibleAt: toLocalDatetimeLocal(c.visibleAt),
