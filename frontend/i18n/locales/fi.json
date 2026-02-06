@@ -171,6 +171,7 @@
       "gameNights": "Game Nights",
       "comingSoon": "Tulossa pian",
       "kickOff": "Kick-off",
+      "statistics": "Tilastot",
       "kickOffButton": "Aloita yksikköjen perehdytys",
       "kickOffOnboardingDescription": "Tämä toimenpide käynnistää yksikön perehdyttämisen koko paikallisessa seurakunnassa.",
       "kickOffOnboardingDescriptionWarning": "⚠ Älä aloita, jos ette ole valmiina.",
@@ -267,6 +268,21 @@
       "excludeFromLeaderboard": "Piilota listoilta",
       "excludeFromLeaderboardTooltip": "Kun tämä on aktivoitu, ei yksikkö näy tuloslistoilla.",
       "excludedFromLeaderboard": "Piilotettu listoilta"
+    },
+    "statistics": {
+      "totalUsersInTeams": "Yksiköiden jäsenet",
+      "averageScoresByAgeGroup": "Keskimääräinen pisteet ikäryhmää kohti",
+      "averageScoresByAgeGroupDescription": "Tässä on yleiskatsaus ikäryhmäkohtaisista keskiarvoista. Vain yksikössä olevat henkilöt lasketaan mukaan.",
+      "ageGroup": "Ikäryhmä",
+      "users": "Käyttäjät",
+      "averageScore": "Keskimääräinen pisteet",
+      "yearsOld": "vuosi",
+      "noData": "Ei tietoja saatavilla",
+      "pointsDistribution": "Pisteiden jakautuminen",
+      "pointsDistributionDescription": "Tässä on yleiskatsaus kaikkien paikallisen seurakuntasi jäsenten pisteistä, jotka ovat yksikön jäseniä.",
+      "points": "Pisteet",
+      "peopleInAUnit": "Yksikön jäsenet",
+      "lastUpdated": "Viimeksi päivitetty"
     }
   }
 }

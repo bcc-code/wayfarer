@@ -171,6 +171,7 @@
       "gameNights": "Game Nights",
       "comingSoon": "Kommt bald",
       "kickOff": "Kick-Off",
+      "statistics": "Statistik",
       "kickOffButton": "Unit-Onboarding jetzt starten",
       "kickOffOnboardingDescription": "Diese Aktion startet das Unit-Onboarding für die ganze Ortsgemeinde.",
       "kickOffOnboardingDescriptionWarning": "⚠ Nicht starten, wenn ihr noch nicht bereit seid.",
@@ -267,6 +268,21 @@
       "excludeFromLeaderboard": "Aus Bestenliste ausschließen",
       "excludeFromLeaderboardTooltip": "Wenn aktiviert, wird diese Unit nicht in der Bestenliste angezeigt",
       "excludedFromLeaderboard": "Aus Bestenlisten ausgeblendet"
+    },
+    "statistics": {
+      "totalUsersInTeams": "Personen in Units",
+      "averageScoresByAgeGroup": "Durchschnittliche Punktzahl pro Altersgruppe",
+      "averageScoresByAgeGroupDescription": "Hier ist eine Übersicht über die durchschnittliche Punktzahl pro Altersgruppe. Nur Personen, die in einer Unit sind, werden mitgezählt.",
+      "ageGroup": "Altersgruppe",
+      "users": "Benutzer",
+      "averageScore": "Durchschnittliche Punktzahl",
+      "yearsOld": "Jahr",
+      "noData": "Keine Daten verfügbar",
+      "pointsDistribution": "Punkteverteilung",
+      "pointsDistributionDescription": "Hier findest du eine Übersicht über die Punktzahl aller Personen in deiner Ortsgemeinde, die Mitglied einer Unit sind.",
+      "points": "Punkte",
+      "peopleInAUnit": "Personen in einer Unit",
+      "lastUpdated": "Zuletzt aktualisiert"
     }
   }
 }

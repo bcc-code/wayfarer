@@ -171,6 +171,7 @@
       "gameNights": "Mänguõhtud",
       "comingSoon": "Peagi saadaval",
       "kickOff": "Avaüritus",
+      "statistics": "Statistika",
       "kickOffButton": "Käivita üksuste registreerimine nüüd",
       "kickOffOnboardingDescription": "See tegevus käivitab üksuste registreerimise kogu kohalikule kogudusele.",
       "kickOffOnboardingDescriptionWarning": "⚠ Ära käivita, kui te pole valmis.",
@@ -267,6 +268,21 @@
       "excludeFromLeaderboard": "Jäta edetabelist välja",
       "excludeFromLeaderboardTooltip": "Kui see seade on aktiveeritud, siis seda üksust edetabelis ei kuvata.",
       "excludedFromLeaderboard": "Edetabelites peidetud"
+    },
+    "statistics": {
+      "totalUsersInTeams": "Isikud üksustes",
+      "averageScoresByAgeGroup": "Keskmine punktisumma vanuserühma kohta",
+      "averageScoresByAgeGroupDescription": "Siin on ülevaade keskmistest punktisummadest vanuserühmade kaupa. Arvesse võetakse ainult üksustes olevad isikud.",
+      "ageGroup": "Vanuserühm",
+      "users": "Kasutajad",
+      "averageScore": "Keskmine punktisumma",
+      "yearsOld": "aasta",
+      "noData": "Andmed puuduvad",
+      "pointsDistribution": "Punktide jaotus",
+      "pointsDistributionDescription": "Siin on ülevaade kõigi teie kohaliku koguduse liikmete punktisummadest, kes on üksuse liikmed.",
+      "points": "Punktid",
+      "peopleInAUnit": "Üksuses olevad isikud",
+      "lastUpdated": "Viimati uuendatud"
     }
   }
 }

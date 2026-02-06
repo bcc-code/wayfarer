@@ -171,6 +171,7 @@
       "gameNights": "Game Nights",
       "comingSoon": "Bientôt disponible",
       "kickOff": "Lancement",
+      "statistics": "Statistiques",
       "kickOffButton": "Débutez l’inscription des unités maintenant",
       "kickOffOnboardingDescription": "Cette action marque le début de l'inscription des unités de l’assemblée locale.",
       "kickOffOnboardingDescriptionWarning": "⚠ Ne démarrez pas si vous n'êtes pas prêts.",
@@ -267,6 +268,21 @@
       "excludeFromLeaderboard": "Exclure de la liste des classements",
       "excludeFromLeaderboardTooltip": "Une fois activé, cette unité n'apparaîtra pas dans la liste des classements",
       "excludedFromLeaderboard": "Masquée dans les classements"
+    },
+    "statistics": {
+      "totalUsersInTeams": "Personnes dans les unités",
+      "averageScoresByAgeGroup": "Moyenne des points par tranche d'âge",
+      "averageScoresByAgeGroupDescription": "Voici un aperçu des scores moyens par tranche d'âge. Seules les personnes faisant partie d'une unité sont prises en compte.",
+      "ageGroup": "Tranche d'âge",
+      "users": "Utilisateurs",
+      "averageScore": "Score moyen",
+      "yearsOld": "ans",
+      "noData": "Aucune donnée disponible",
+      "pointsDistribution": "Répartition des points",
+      "pointsDistributionDescription": "Voici un aperçu des scores de toutes les personnes de ton assemblée locale qui sont membres d'une unité.",
+      "points": "Points",
+      "peopleInAUnit": "Personnes dans une unité",
+      "lastUpdated": "Dernière mise à jour"
     }
   }
 }
