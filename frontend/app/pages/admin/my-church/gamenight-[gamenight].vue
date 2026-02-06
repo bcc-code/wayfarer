@@ -6,6 +6,20 @@ definePageMeta({
 
 const route = useRoute('admin-my-church-gamenight-gamenight')
 const gamenight = computed(() => route.params.gamenight)
+
+const { getAccessToken } = useAuth()
+const config = useRuntimeConfig()
+const { data: cryptexUrl, status: cryptexUrlStatus } = useFetch<{
+  url: string
+}>(
+  `${config.public.apiUrl.replace('/graphql', '')}/plugins/ladder-to-heaven/cryptex-admin-url`,
+  {
+    method: 'get',
+    headers: {
+      Authorization: `Bearer ${await getAccessToken()}`,
+    },
+  },
+)
 </script>
 
 <template>
@@ -43,6 +57,14 @@ const gamenight = computed(() => route.params.gamenight)
       <h1 class="text-3xl font-semibold mt-12">
         {{ $t('admin.churchHome.gameNight', { number: gamenight }) }}
       </h1>
+
+      <UButton
+        :loading="cryptexUrlStatus !== 'success'"
+        size="xl"
+        :to="cryptexUrl?.url"
+      >
+        Gå til Game Night kontrollpanel
+      </UButton>
     </UContainer>
   </div>
 </template>
