@@ -253,6 +253,28 @@ func TestOrderingQuestions(t *testing.T) {
 		return result.StartQuizSession.ID
 	}
 
+	// Helper to lock a session (hides isCorrect while OPEN, reveals after LOCKED)
+	lockSession := func(t *testing.T, sessionID string) {
+		resp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation LockSession($id: ID!) {
+				lockQuizSession(id: $id) {
+					id
+					state
+				}
+			}
+		`, map[string]any{"id": sessionID})
+		require.False(t, resp.HasErrors(), "failed to lock session: %s", resp.ErrorMessage())
+
+		var result struct {
+			LockQuizSession struct {
+				ID    string `json:"id"`
+				State string `json:"state"`
+			} `json:"lockQuizSession"`
+		}
+		require.NoError(t, resp.UnmarshalData(&result))
+		assert.Equal(t, "LOCKED", result.LockQuizSession.State, "session should be LOCKED after lockQuizSession")
+	}
+
 	// ==================== QUESTION CREATION TESTS ====================
 
 	t.Run("Question Creation", func(t *testing.T) {
@@ -438,8 +460,6 @@ func TestOrderingQuestions(t *testing.T) {
 						... on OrderingResponse {
 							id
 							submittedOrder
-							isCorrect
-							pointsEarned
 						}
 					}
 				}
@@ -453,21 +473,48 @@ func TestOrderingQuestions(t *testing.T) {
 			})
 			require.False(t, resp.HasErrors(), "failed to submit answer: %s", resp.ErrorMessage())
 
-			var result struct {
+			var submitResult struct {
 				SubmitQuizAnswer struct {
 					ID             string   `json:"id"`
 					SubmittedOrder []string `json:"submittedOrder"`
-					IsCorrect      *bool    `json:"isCorrect"`
-					PointsEarned   *int     `json:"pointsEarned"`
 				} `json:"submitQuizAnswer"`
 			}
-			require.NoError(t, resp.UnmarshalData(&result))
-			assert.NotEmpty(t, result.SubmitQuizAnswer.ID)
-			assert.Equal(t, correctOrder, result.SubmitQuizAnswer.SubmittedOrder)
-			assert.NotNil(t, result.SubmitQuizAnswer.IsCorrect)
-			assert.True(t, *result.SubmitQuizAnswer.IsCorrect)
-			assert.NotNil(t, result.SubmitQuizAnswer.PointsEarned)
-			assert.Equal(t, 5, *result.SubmitQuizAnswer.PointsEarned)
+			require.NoError(t, resp.UnmarshalData(&submitResult))
+			assert.NotEmpty(t, submitResult.SubmitQuizAnswer.ID)
+			assert.Equal(t, correctOrder, submitResult.SubmitQuizAnswer.SubmittedOrder)
+
+			// Lock session to reveal isCorrect (hidden while session is OPEN)
+			lockSession(t, sessionID)
+
+			// Query submission to verify isCorrect and pointsEarned
+			queryResp := client.WithAuth(userToken).MustExecute(t, `
+				query GetQuizSubmission($id: ID!) {
+					quizSubmission(id: $id) {
+						responses {
+							... on OrderingResponse {
+								isCorrect
+								pointsEarned
+							}
+						}
+					}
+				}
+			`, map[string]any{"id": submissionID})
+			require.False(t, queryResp.HasErrors(), "failed to query submission: %s", queryResp.ErrorMessage())
+
+			var queryResult struct {
+				QuizSubmission struct {
+					Responses []struct {
+						IsCorrect    *bool `json:"isCorrect"`
+						PointsEarned *int  `json:"pointsEarned"`
+					} `json:"responses"`
+				} `json:"quizSubmission"`
+			}
+			require.NoError(t, queryResp.UnmarshalData(&queryResult))
+			require.Len(t, queryResult.QuizSubmission.Responses, 1)
+			assert.NotNil(t, queryResult.QuizSubmission.Responses[0].IsCorrect)
+			assert.True(t, *queryResult.QuizSubmission.Responses[0].IsCorrect)
+			assert.NotNil(t, queryResult.QuizSubmission.Responses[0].PointsEarned)
+			assert.Equal(t, 5, *queryResult.QuizSubmission.Responses[0].PointsEarned)
 		})
 
 		t.Run("incorrect order is marked incorrect", func(t *testing.T) {
