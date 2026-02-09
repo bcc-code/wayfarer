@@ -7,6 +7,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
@@ -23,6 +24,13 @@ func (r *mutationResolver) CreateScoreAdjustment(ctx context.Context, input mode
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
+	// M2M services don't have a real user in the database, so awarded_by should be NULL
+	var awardedByPtr *string
+	roles := middleware.GetUserRoles(ctx)
+	if !slices.Contains(roles, "m2m") {
+		awardedByPtr = &awardedByUserID
+	}
+
 	// Generate new score journal entry ID
 	journalID := ulid.NewScoreJournalID()
 
@@ -33,7 +41,7 @@ func (r *mutationResolver) CreateScoreAdjustment(ctx context.Context, input mode
 		UserID:      input.UserID,
 		Points:      int32(input.Points),
 		SourceType:  "MANUAL",
-		AwardedBy:   &awardedByUserID,
+		AwardedBy:   awardedByPtr,
 		EventID:     input.EventID,
 		ChallengeID: input.ChallengeID,
 		Reason:      input.Reason,
@@ -68,6 +76,13 @@ func (r *mutationResolver) CreateTeamScoreAdjustment(ctx context.Context, input 
 	awardedByUserID, ok := middleware.GetUserID(ctx)
 	if !ok || awardedByUserID == "" {
 		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// M2M services don't have a real user in the database, so awarded_by should be NULL
+	var awardedByPtr *string
+	roles := middleware.GetUserRoles(ctx)
+	if !slices.Contains(roles, "m2m") {
+		awardedByPtr = &awardedByUserID
 	}
 
 	// Verify the team exists
@@ -138,7 +153,7 @@ func (r *mutationResolver) CreateTeamScoreAdjustment(ctx context.Context, input 
 		EventID:   input.EventID,
 		Points:    pointsArray,
 		Reason:    reason,
-		AwardedBy: &awardedByUserID,
+		AwardedBy: awardedByPtr,
 	}
 
 	// Create entries
