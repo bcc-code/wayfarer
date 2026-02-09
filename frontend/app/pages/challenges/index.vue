@@ -19,26 +19,41 @@ const isInitialLoading = computed(() => fetching.value && !data.value)
 
 const activeChallenges = computed(() =>
   data.value?.myCurrentProject.challenges.filter((challenge) => {
+    const challengePastEndTime =
+      challenge.endTime && new Date(challenge.endTime).getTime() < Date.now()
+
     if (challenge.__typename === 'QuizChallenge') {
-      if (challenge.quiz.userActiveSession?.id) {
-        return true
-      }
+      const quizPastEndTime =
+        challenge.quiz.endTime &&
+        new Date(challenge.quiz.endTime).getTime() < Date.now()
+      const quizCompleted = challenge.quiz.userSubmissions?.some(
+        (s) => s.completedAt,
+      )
+
+      return !quizCompleted && !challengePastEndTime && !quizPastEndTime
     }
-    return !challenge.userCompletedAt
+
+    return !challenge.userCompletedAt && !challengePastEndTime
   }),
 )
 
 const completedChallenges = computed(() =>
   data.value?.myCurrentProject.challenges.filter((challenge) => {
+    const challengePastEndTime =
+      challenge.endTime && new Date(challenge.endTime).getTime() < Date.now()
+
     if (challenge.__typename === 'QuizChallenge') {
-      if (challenge.quiz.userActiveSession?.id) {
-        return false
-      }
+      const quizPastEndTime =
+        challenge.quiz.endTime &&
+        new Date(challenge.quiz.endTime).getTime() < Date.now()
+      const quizCompleted = challenge.quiz.userSubmissions?.some(
+        (s) => s.completedAt,
+      )
+
+      return quizCompleted || challengePastEndTime || quizPastEndTime
     }
-    return (
-      Boolean(challenge.userCompletedAt) ||
-      (challenge.endTime && new Date(challenge.endTime).getTime() < Date.now())
-    )
+
+    return Boolean(challenge.userCompletedAt) || challengePastEndTime
   }),
 )
 

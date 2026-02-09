@@ -3672,10 +3672,10 @@ export type ChallengesPageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type ChallengesPageQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', myTeam?: { __typename?: 'Team', joinCode: string } | null, challenges: Array<
-      | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
-      | { __typename: 'PluginChallenge', id: string, name: string, description: any, buttonText?: string | null, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
-      | { __typename: 'QuizChallenge', id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, quiz: { __typename?: 'Quiz', userCanStart: boolean, userActiveSession?: { __typename?: 'QuizSession', id: string } | null }, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
-      | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, buttonText: string, publishedAt?: any | null, endTime?: any | null, visibleAt?: any | null, userCompletedAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+      | { __typename: 'ExternalChallenge', url: string, id: string, name: string, description: any, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+      | { __typename: 'PluginChallenge', id: string, name: string, description: any, buttonText?: string | null, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+      | { __typename: 'QuizChallenge', id: string, name: string, description: any, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, quiz: { __typename?: 'Quiz', timeoutSeconds?: number | null, randomizeQuestions: boolean, revealCorrectAnswers: boolean, allowRetakes: boolean, completionPoints: number, endTime?: any | null, userCanStart: boolean, userActiveSubmission?: { __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, autoSubmitted: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null } | null, userActiveSession?: { __typename?: 'QuizSession', id: string, state: QuizSessionState, openAt?: any | null, lockAt?: any | null, finishAt?: any | null, userHasAccess: boolean } | null, userSubmissions: Array<{ __typename?: 'QuizSubmission', id: string, startedAt: any, completedAt?: any | null, expiresAt?: any | null, isExpired: boolean, autoSubmitted: boolean, score?: number | null, maxScore?: number | null, scorePercentage?: number | null, pointsAwarded?: number | null }> }, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
+      | { __typename: 'SimpleChallenge', allowSelfCompletion: boolean, id: string, name: string, description: any, buttonText: string, notificationText: string, publishedAt?: any | null, visibleAt?: any | null, startedAt?: any | null, endTime?: any | null, requiresTeamMembership: boolean, requiresSuperTeamMembership: boolean, userCompletedAt?: any | null, userEnrolledAt?: any | null, imageObject?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null }
     > } };
 
 export type ProfilePageQueryVariables = Exact<{
@@ -5035,10 +5035,15 @@ export const ChallengesPageDocument = gql`
         ...ImageFields
       }
       buttonText
+      notificationText
       publishedAt
-      endTime
       visibleAt
+      startedAt
+      endTime
+      requiresTeamMembership
+      requiresSuperTeamMembership
       userCompletedAt
+      userEnrolledAt
       ... on SimpleChallenge {
         allowSelfCompletion
       }
@@ -5047,9 +5052,44 @@ export const ChallengesPageDocument = gql`
       }
       ... on QuizChallenge {
         quiz {
+          timeoutSeconds
+          randomizeQuestions
+          revealCorrectAnswers
+          allowRetakes
+          completionPoints
+          endTime
           userCanStart
+          userActiveSubmission {
+            id
+            startedAt
+            completedAt
+            expiresAt
+            isExpired
+            autoSubmitted
+            score
+            maxScore
+            scorePercentage
+            pointsAwarded
+          }
           userActiveSession {
             id
+            state
+            openAt
+            lockAt
+            finishAt
+            userHasAccess
+          }
+          userSubmissions {
+            id
+            startedAt
+            completedAt
+            expiresAt
+            isExpired
+            autoSubmitted
+            score
+            maxScore
+            scorePercentage
+            pointsAwarded
           }
         }
       }
