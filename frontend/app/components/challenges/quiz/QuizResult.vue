@@ -85,8 +85,8 @@ onMounted(() => {
     <div class="grow flex flex-col items-center justify-center gap-default">
       <QuizProgress
         size="large"
-        :total-questions="maxScore"
-        :current-index="maxScore"
+        :total-questions="results.length"
+        :current-index="results.length"
         :results
       />
 
