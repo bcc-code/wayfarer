@@ -110,7 +110,7 @@ type QuizAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
-    quiz: Quiz! @goField(forceResolver: true)
+    quiz: Quiz @goField(forceResolver: true)
     minScorePercentage: Int
     requireCompletion: Boolean!
 }
@@ -227,6 +227,22 @@ input UpdateStreakAchievementInput {
     streakId: ID
 }
 
+input UpdateQuizAchievementInput {
+    name: String
+    descriptionPending: String
+    descriptionCompleted: String
+    notificationText: String
+    imagePending: String
+    imageCompleted: String
+    eventId: ID
+    points: Int
+    hidden: Boolean
+    awardableFrom: DateTime
+    quizId: ID
+    minScorePercentage: Int
+    requireCompletion: Boolean
+}
+
 input AchievementFilter {
     projectId: ID
     eventId: ID
@@ -265,6 +281,7 @@ extend type Mutation {
     updateAchievement(id: ID!, input: UpdateAchievementInput!): Achievement! @requireRole(roles: ["admin", "superadmin"])
     updateContentAchievement(id: ID!, input: UpdateContentAchievementInput!): ContentAchievement! @requireRole(roles: ["admin", "superadmin"])
     updateStreakAchievement(id: ID!, input: UpdateStreakAchievementInput!): StreakAchievement! @requireRole(roles: ["admin", "superadmin"])
+    updateQuizAchievement(id: ID!, input: UpdateQuizAchievementInput!): QuizAchievement! @requireRole(roles: ["admin", "superadmin"])
 
     # Delete achievement
     deleteAchievement(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])

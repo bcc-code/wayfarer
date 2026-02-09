@@ -150,10 +150,6 @@ func convertRowToAchievement(row *sqlc.GetAchievementsByProjectIDsRow) (model.Ac
 		}, nil
 
 	case "QUIZ":
-		if row.QuizID == nil {
-			return nil, fmt.Errorf("quiz achievement missing required fields: quiz_id")
-		}
-
 		var minScorePercentage *int
 		if row.MinScorePercentage != nil {
 			v := int(*row.MinScorePercentage)
@@ -163,6 +159,11 @@ func convertRowToAchievement(row *sqlc.GetAchievementsByProjectIDsRow) (model.Ac
 		requireCompletion := false
 		if row.RequireCompletion != nil {
 			requireCompletion = *row.RequireCompletion
+		}
+
+		var quizID string
+		if row.QuizID != nil {
+			quizID = *row.QuizID
 		}
 
 		return &model.QuizAchievement{
@@ -179,7 +180,7 @@ func convertRowToAchievement(row *sqlc.GetAchievementsByProjectIDsRow) (model.Ac
 			ProjectID:            row.ProjectID,
 			EventID:              row.EventID,
 			ChallengeID:          row.ChallengeID,
-			QuizID:               *row.QuizID,
+			QuizID:               quizID,
 			MinScorePercentage:   minScorePercentage,
 			RequireCompletion:    requireCompletion,
 		}, nil

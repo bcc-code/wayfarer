@@ -519,6 +519,9 @@ func (r *mutationResolver) UpdateAchievement(ctx context.Context, id string, inp
 	case *model.StreakAchievement:
 		projectID = ach.ProjectID
 		oldEventID = ach.EventID
+	case *model.QuizAchievement:
+		projectID = ach.ProjectID
+		oldEventID = ach.EventID
 	default:
 		return nil, fmt.Errorf("unknown achievement type")
 	}
@@ -863,6 +866,156 @@ func (r *mutationResolver) UpdateStreakAchievement(ctx context.Context, id strin
 	return streakAchievement, nil
 }
 
+// UpdateQuizAchievement is the resolver for the updateQuizAchievement field.
+func (r *mutationResolver) UpdateQuizAchievement(ctx context.Context, id string, input model.UpdateQuizAchievementInput) (*model.QuizAchievement, error) {
+	// Get authenticated user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok || userID == "" {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Load the achievement to verify it exists and get project ID
+	achievementThunk := r.Loaders.AchievementByIDLoader.Load(ctx, id)
+	existingAchievement, err := achievementThunk()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load achievement: %w", err)
+	}
+
+	// Verify it's a quiz achievement
+	quizAch, ok := existingAchievement.(*model.QuizAchievement)
+	if !ok {
+		return nil, fmt.Errorf("achievement is not a quiz achievement")
+	}
+
+	// Check authorization
+	if !r.RoleService.CanManageProject(ctx, userID, quizAch.ProjectID) {
+		return nil, fmt.Errorf("unauthorized to update achievements in this project")
+	}
+
+	// Start transaction if we need to update quiz data
+	if input.QuizID != nil || input.MinScorePercentage != nil || input.RequireCompletion != nil {
+		tx, err := r.DB.Pool.Begin(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to begin transaction: %w", err)
+		}
+		defer tx.Rollback(ctx)
+
+		qtx := r.DB.Queries.WithTx(tx)
+
+		// Update common fields if provided
+		if input.Name != nil || input.DescriptionPending != nil || input.DescriptionCompleted != nil || input.NotificationText != nil || input.ImagePending != nil || input.ImageCompleted != nil || input.EventID != nil || input.Points != nil || input.Hidden != nil || input.AwardableFrom != nil {
+			params := sqlc.UpdateAchievementParams{
+				ID:                   id,
+				Name:                 input.Name,
+				DescriptionPending:   input.DescriptionPending,
+				DescriptionCompleted: input.DescriptionCompleted,
+				NotificationText:     input.NotificationText,
+				ImagePending:         input.ImagePending,
+				ImageCompleted:       input.ImageCompleted,
+				EventID:              input.EventID,
+				Hidden:               input.Hidden,
+			}
+			if input.Points != nil {
+				points := int32(*input.Points)
+				params.Points = &points
+			}
+			if input.AwardableFrom != nil {
+				params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
+			}
+
+			if _, err := qtx.UpdateAchievement(ctx, params); err != nil {
+				return nil, fmt.Errorf("failed to update achievement: %w", err)
+			}
+		}
+
+		// Update quiz-specific data using upsert
+		quizID := quizAch.QuizID
+		if input.QuizID != nil {
+			quizID = *input.QuizID
+		}
+
+		requireCompletion := quizAch.RequireCompletion
+		if input.RequireCompletion != nil {
+			requireCompletion = *input.RequireCompletion
+		}
+
+		quizParams := sqlc.UpsertQuizAchievementParams{
+			Achievementid:     id,
+			Quizid:            quizID,
+			Requirecompletion: requireCompletion,
+		}
+		if input.MinScorePercentage != nil {
+			minScore := int32(*input.MinScorePercentage)
+			quizParams.Minscorepercentage = &minScore
+		} else if quizAch.MinScorePercentage != nil {
+			minScore := int32(*quizAch.MinScorePercentage)
+			quizParams.Minscorepercentage = &minScore
+		}
+
+		if _, err := qtx.UpsertQuizAchievement(ctx, quizParams); err != nil {
+			return nil, fmt.Errorf("failed to update quiz data: %w", err)
+		}
+
+		if err := tx.Commit(ctx); err != nil {
+			return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		}
+	} else {
+		// Just update common fields without transaction
+		params := sqlc.UpdateAchievementParams{
+			ID:                   id,
+			Name:                 input.Name,
+			DescriptionPending:   input.DescriptionPending,
+			DescriptionCompleted: input.DescriptionCompleted,
+			NotificationText:     input.NotificationText,
+			ImagePending:         input.ImagePending,
+			ImageCompleted:       input.ImageCompleted,
+			EventID:              input.EventID,
+			Hidden:               input.Hidden,
+		}
+		if input.Points != nil {
+			points := int32(*input.Points)
+			params.Points = &points
+		}
+		if input.AwardableFrom != nil {
+			params.AwardableFrom = pgtype.Timestamptz{Time: input.AwardableFrom.Time, Valid: true}
+		}
+
+		if _, err := r.DB.Queries.UpdateAchievement(ctx, params); err != nil {
+			return nil, fmt.Errorf("failed to update achievement: %w", err)
+		}
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateProject(quizAch.ProjectID)
+	r.Cache.InvalidateAchievement(id)
+	r.Loaders.AchievementByIDLoader.Clear(ctx, id)
+
+	// If eventID is being changed, invalidate both old and new events
+	if input.EventID != nil {
+		// Invalidate old event if it exists
+		if quizAch.EventID != nil {
+			r.Cache.InvalidateEvent(*quizAch.EventID)
+		}
+		// Invalidate new event if it's being set to a value
+		if *input.EventID != "" {
+			r.Cache.InvalidateEvent(*input.EventID)
+		}
+	}
+
+	// Reload and return updated achievement with translation
+	translated, err := r.LoadAchievementWithTranslation(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reload achievement: %w", err)
+	}
+
+	result, ok := translated.(*model.QuizAchievement)
+	if !ok {
+		return nil, fmt.Errorf("unexpected achievement type after update")
+	}
+
+	return result, nil
+}
+
 // DeleteAchievement is the resolver for the deleteAchievement field.
 func (r *mutationResolver) DeleteAchievement(ctx context.Context, id string) (bool, error) {
 	// Get authenticated user ID from context
@@ -886,6 +1039,8 @@ func (r *mutationResolver) DeleteAchievement(ctx context.Context, id string) (bo
 	case *model.ContentAchievement:
 		projectID = ach.ProjectID
 	case *model.StreakAchievement:
+		projectID = ach.ProjectID
+	case *model.QuizAchievement:
 		projectID = ach.ProjectID
 	default:
 		return false, fmt.Errorf("unknown achievement type")
@@ -1424,6 +1579,9 @@ func (r *quizAchievementResolver) CelebratedAt(ctx context.Context, obj *model.Q
 
 // Quiz is the resolver for the quiz field.
 func (r *quizAchievementResolver) Quiz(ctx context.Context, obj *model.QuizAchievement) (*model.Quiz, error) {
+	if obj.QuizID == "" {
+		return nil, nil
+	}
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
 	return thunk()
 }

@@ -1143,7 +1143,7 @@ type QuizAchievement struct {
 	Points               int               `json:"points"`
 	Hidden               bool              `json:"hidden"`
 	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
-	Quiz                 *Quiz             `json:"quiz"`
+	Quiz                 *Quiz             `json:"quiz,omitempty"`
 	MinScorePercentage   *int              `json:"minScorePercentage,omitempty"`
 	RequireCompletion    bool              `json:"requireCompletion"`
 	ChallengeID          *string           `json:"-"`
@@ -1732,6 +1732,22 @@ type UpdateProjectInput struct {
 	StartDate        *scalars.DateTime `json:"startDate,omitempty"`
 	EndDate          *scalars.DateTime `json:"endDate,omitempty"`
 	Branding         *BrandingInput    `json:"branding,omitempty"`
+}
+
+type UpdateQuizAchievementInput struct {
+	Name                 *string           `json:"name,omitempty"`
+	DescriptionPending   *string           `json:"descriptionPending,omitempty"`
+	DescriptionCompleted *string           `json:"descriptionCompleted,omitempty"`
+	NotificationText     *string           `json:"notificationText,omitempty"`
+	ImagePending         *string           `json:"imagePending,omitempty"`
+	ImageCompleted       *string           `json:"imageCompleted,omitempty"`
+	EventID              *string           `json:"eventId,omitempty"`
+	Points               *int              `json:"points,omitempty"`
+	Hidden               *bool             `json:"hidden,omitempty"`
+	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
+	QuizID               *string           `json:"quizId,omitempty"`
+	MinScorePercentage   *int              `json:"minScorePercentage,omitempty"`
+	RequireCompletion    *bool             `json:"requireCompletion,omitempty"`
 }
 
 type UpdateQuizAnswerInput struct {

@@ -415,6 +415,7 @@ export type CreateProjectInput = {
 };
 
 export type CreateQuizAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
   challengeId?: InputMaybe<Scalars['ID']['input']>;
   descriptionCompleted: Scalars['String']['input'];
   descriptionPending: Scalars['String']['input'];
@@ -1003,6 +1004,7 @@ export type Mutation = {
   updateFeedbackTags: UserFeedback;
   updateProject: Project;
   updateQuiz: Quiz;
+  updateQuizAchievement: QuizAchievement;
   updateQuizAnswer: QuizResponse;
   updateQuizQuestion: QuizQuestion;
   updateQuizSession: QuizSession;
@@ -1643,6 +1645,12 @@ export type MutationUpdateQuizArgs = {
 };
 
 
+export type MutationUpdateQuizAchievementArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateQuizAchievementInput;
+};
+
+
 export type MutationUpdateQuizAnswerArgs = {
   input: UpdateQuizAnswerInput;
   responseId: Scalars['ID']['input'];
@@ -2247,7 +2255,7 @@ export type QuizAchievement = Achievement & {
   notificationText: Scalars['String']['output'];
   points: Scalars['Int']['output'];
   project: Project;
-  quiz: Quiz;
+  quiz?: Maybe<Quiz>;
   requireCompletion: Scalars['Boolean']['output'];
 };
 
@@ -2803,6 +2811,22 @@ export type UpdateProjectInput = {
   startDate?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
+export type UpdateQuizAchievementInput = {
+  awardableFrom?: InputMaybe<Scalars['DateTime']['input']>;
+  descriptionCompleted?: InputMaybe<Scalars['String']['input']>;
+  descriptionPending?: InputMaybe<Scalars['String']['input']>;
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  hidden?: InputMaybe<Scalars['Boolean']['input']>;
+  imageCompleted?: InputMaybe<Scalars['String']['input']>;
+  imagePending?: InputMaybe<Scalars['String']['input']>;
+  minScorePercentage?: InputMaybe<Scalars['Int']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  notificationText?: InputMaybe<Scalars['String']['input']>;
+  points?: InputMaybe<Scalars['Int']['input']>;
+  quizId?: InputMaybe<Scalars['ID']['input']>;
+  requireCompletion?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 export type UpdateQuizAnswerInput = {
   submittedOrder?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
@@ -3141,6 +3165,14 @@ export type UpdateStreakAchievementMutationVariables = Exact<{
 
 
 export type UpdateStreakAchievementMutation = { __typename?: 'Mutation', updateStreakAchievement: { __typename?: 'StreakAchievement', id: string } };
+
+export type UpdateQuizAchievementMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateQuizAchievementInput;
+}>;
+
+
+export type UpdateQuizAchievementMutation = { __typename?: 'Mutation', updateQuizAchievement: { __typename?: 'QuizAchievement', id: string } };
 
 export type CreateContentAchievementMutationVariables = Exact<{
   input: CreateContentAchievementInput;
@@ -3811,7 +3843,7 @@ export type AdminProjectAchievementPageQueryVariables = Exact<{
 
 export type AdminProjectAchievementPageQuery = { __typename?: 'Query', achievement:
     | { __typename: 'ContentAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, items: Array<{ __typename?: 'ContentItem', id: string, sortOrder: number, externalContent: { __typename?: 'ExternalContent', id: string, planId: string, taskId: string, contentId?: string | null, contentType: ExternalContentType, publishedAt?: any | null, source: string, syncedAt: any, createdAt: any, updatedAt: any, title?: string | null, translations: Array<{ __typename?: 'ExternalContentTranslation', languageCode: string, title?: string | null }> } }>, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
-    | { __typename: 'QuizAchievement', minScorePercentage?: number | null, requireCompletion: boolean, id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, quiz: { __typename?: 'Quiz', id: string, name: string }, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
+    | { __typename: 'QuizAchievement', minScorePercentage?: number | null, requireCompletion: boolean, id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, quiz?: { __typename?: 'Quiz', id: string, name: string } | null, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
     | { __typename: 'SimpleAchievement', id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
     | { __typename: 'StreakAchievement', neededStreak: number, id: string, name: string, descriptionPending: string, descriptionCompleted: string, notificationText: string, achievedAt?: any | null, points: number, hidden: boolean, awardableFrom?: any | null, streak: { __typename?: 'Streak', id: string, name: string, description: string }, imagePendingObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, imageCompletedObject: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null }, project: { __typename?: 'Project', id: string, name: string, branding: { __typename?: 'Branding', colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } }
    };
@@ -4277,6 +4309,17 @@ export const UpdateStreakAchievementDocument = gql`
 
 export function useUpdateStreakAchievementMutation() {
   return Urql.useMutation<UpdateStreakAchievementMutation, UpdateStreakAchievementMutationVariables>(UpdateStreakAchievementDocument);
+};
+export const UpdateQuizAchievementDocument = gql`
+    mutation UpdateQuizAchievement($id: ID!, $input: UpdateQuizAchievementInput!) {
+  updateQuizAchievement(id: $id, input: $input) {
+    id
+  }
+}
+    `;
+
+export function useUpdateQuizAchievementMutation() {
+  return Urql.useMutation<UpdateQuizAchievementMutation, UpdateQuizAchievementMutationVariables>(UpdateQuizAchievementDocument);
 };
 export const CreateContentAchievementDocument = gql`
     mutation CreateContentAchievement($input: CreateContentAchievementInput!) {

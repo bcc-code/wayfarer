@@ -231,10 +231,6 @@ func convertRowToStreakAchievement(row *sqlc.GetAchievementsFilteredCursorRow, h
 }
 
 func convertRowToQuizAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hidden bool) (model.Achievement, error) {
-	if row.QuizID == nil {
-		return nil, fmt.Errorf("quiz achievement missing quiz data")
-	}
-
 	var awardableFrom *scalars.DateTime
 	if row.AwardableFrom.Valid {
 		awardableFrom = &scalars.DateTime{Time: row.AwardableFrom.Time}
@@ -251,6 +247,11 @@ func convertRowToQuizAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hid
 		requireCompletion = *row.RequireCompletion
 	}
 
+	var quizID string
+	if row.QuizID != nil {
+		quizID = *row.QuizID
+	}
+
 	return &model.QuizAchievement{
 		ID:                   row.ID,
 		Name:                 row.Name,
@@ -265,7 +266,7 @@ func convertRowToQuizAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hid
 		ProjectID:            row.ProjectID,
 		EventID:              row.EventID,
 		ChallengeID:          row.ChallengeID,
-		QuizID:               *row.QuizID,
+		QuizID:               quizID,
 		MinScorePercentage:   minScorePercentage,
 		RequireCompletion:    requireCompletion,
 	}, nil

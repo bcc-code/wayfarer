@@ -26,6 +26,15 @@ mutation UpdateStreakAchievement(
   }
 }
 
+mutation UpdateQuizAchievement(
+  $id: ID!
+  $input: UpdateQuizAchievementInput!
+) {
+  updateQuizAchievement(id: $id, input: $input) {
+    id
+  }
+}
+
 mutation CreateContentAchievement($input: CreateContentAchievementInput!) {
   createContentAchievement(input: $input) {
     id

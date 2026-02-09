@@ -540,6 +540,7 @@ type ComplexityRoot struct {
 		UpdateFeedbackTags                          func(childComplexity int, feedbackID string, tags []string) int
 		UpdateProject                               func(childComplexity int, id string, input model.UpdateProjectInput) int
 		UpdateQuiz                                  func(childComplexity int, id string, input model.UpdateQuizInput) int
+		UpdateQuizAchievement                       func(childComplexity int, id string, input model.UpdateQuizAchievementInput) int
 		UpdateQuizAnswer                            func(childComplexity int, responseID string, input model.UpdateQuizAnswerInput) int
 		UpdateQuizQuestion                          func(childComplexity int, id string, input model.UpdateQuizQuestionInput) int
 		UpdateQuizSession                           func(childComplexity int, id string, input model.UpdateQuizSessionInput) int
@@ -1286,6 +1287,7 @@ type MutationResolver interface {
 	UpdateAchievement(ctx context.Context, id string, input model.UpdateAchievementInput) (model.Achievement, error)
 	UpdateContentAchievement(ctx context.Context, id string, input model.UpdateContentAchievementInput) (*model.ContentAchievement, error)
 	UpdateStreakAchievement(ctx context.Context, id string, input model.UpdateStreakAchievementInput) (*model.StreakAchievement, error)
+	UpdateQuizAchievement(ctx context.Context, id string, input model.UpdateQuizAchievementInput) (*model.QuizAchievement, error)
 	DeleteAchievement(ctx context.Context, id string) (bool, error)
 	LinkAchievementToChallenge(ctx context.Context, achievementID string, challengeID string) (model.Achievement, error)
 	ReorderAchievements(ctx context.Context, projectID string, achievementIds []string) ([]model.Achievement, error)
@@ -4235,6 +4237,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateQuiz(childComplexity, args["id"].(string), args["input"].(model.UpdateQuizInput)), true
+	case "Mutation.updateQuizAchievement":
+		if e.complexity.Mutation.UpdateQuizAchievement == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateQuizAchievement_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateQuizAchievement(childComplexity, args["id"].(string), args["input"].(model.UpdateQuizAchievementInput)), true
 	case "Mutation.updateQuizAnswer":
 		if e.complexity.Mutation.UpdateQuizAnswer == nil {
 			break
@@ -7473,6 +7486,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateContentAchievementInput,
 		ec.unmarshalInputUpdateEventInput,
 		ec.unmarshalInputUpdateProjectInput,
+		ec.unmarshalInputUpdateQuizAchievementInput,
 		ec.unmarshalInputUpdateQuizAnswerInput,
 		ec.unmarshalInputUpdateQuizInput,
 		ec.unmarshalInputUpdateQuizQuestionInput,
@@ -8277,7 +8291,7 @@ type QuizAchievement implements Achievement {
     points: Int!
     hidden: Boolean!
     awardableFrom: DateTime
-    quiz: Quiz! @goField(forceResolver: true)
+    quiz: Quiz @goField(forceResolver: true)
     minScorePercentage: Int
     requireCompletion: Boolean!
 }
@@ -8394,6 +8408,22 @@ input UpdateStreakAchievementInput {
     streakId: ID
 }
 
+input UpdateQuizAchievementInput {
+    name: String
+    descriptionPending: String
+    descriptionCompleted: String
+    notificationText: String
+    imagePending: String
+    imageCompleted: String
+    eventId: ID
+    points: Int
+    hidden: Boolean
+    awardableFrom: DateTime
+    quizId: ID
+    minScorePercentage: Int
+    requireCompletion: Boolean
+}
+
 input AchievementFilter {
     projectId: ID
     eventId: ID
@@ -8432,6 +8462,7 @@ extend type Mutation {
     updateAchievement(id: ID!, input: UpdateAchievementInput!): Achievement! @requireRole(roles: ["admin", "superadmin"])
     updateContentAchievement(id: ID!, input: UpdateContentAchievementInput!): ContentAchievement! @requireRole(roles: ["admin", "superadmin"])
     updateStreakAchievement(id: ID!, input: UpdateStreakAchievementInput!): StreakAchievement! @requireRole(roles: ["admin", "superadmin"])
+    updateQuizAchievement(id: ID!, input: UpdateQuizAchievementInput!): QuizAchievement! @requireRole(roles: ["admin", "superadmin"])
 
     # Delete achievement
     deleteAchievement(id: ID!): Boolean! @requireRole(roles: ["admin", "superadmin"])
@@ -11664,6 +11695,22 @@ func (ec *executionContext) field_Mutation_updateProject_args(ctx context.Contex
 	}
 	args["id"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateProjectInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateProjectInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateQuizAchievement_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateQuizAchievementInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateQuizAchievementInput)
 	if err != nil {
 		return nil, err
 	}
@@ -22283,6 +22330,107 @@ func (ec *executionContext) fieldContext_Mutation_updateStreakAchievement(ctx co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_updateStreakAchievement_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateQuizAchievement(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateQuizAchievement,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateQuizAchievement(ctx, fc.Args["id"].(string), fc.Args["input"].(model.UpdateQuizAchievementInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"admin", "superadmin"})
+				if err != nil {
+					var zeroVal *model.QuizAchievement
+					return zeroVal, err
+				}
+				if ec.directives.RequireRole == nil {
+					var zeroVal *model.QuizAchievement
+					return zeroVal, errors.New("directive requireRole is not implemented")
+				}
+				return ec.directives.RequireRole(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNQuizAchievement2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizAchievement,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateQuizAchievement(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_QuizAchievement_id(ctx, field)
+			case "name":
+				return ec.fieldContext_QuizAchievement_name(ctx, field)
+			case "descriptionPending":
+				return ec.fieldContext_QuizAchievement_descriptionPending(ctx, field)
+			case "descriptionCompleted":
+				return ec.fieldContext_QuizAchievement_descriptionCompleted(ctx, field)
+			case "notificationText":
+				return ec.fieldContext_QuizAchievement_notificationText(ctx, field)
+			case "imagePending":
+				return ec.fieldContext_QuizAchievement_imagePending(ctx, field)
+			case "imagePendingObject":
+				return ec.fieldContext_QuizAchievement_imagePendingObject(ctx, field)
+			case "imageCompleted":
+				return ec.fieldContext_QuizAchievement_imageCompleted(ctx, field)
+			case "imageCompletedObject":
+				return ec.fieldContext_QuizAchievement_imageCompletedObject(ctx, field)
+			case "project":
+				return ec.fieldContext_QuizAchievement_project(ctx, field)
+			case "event":
+				return ec.fieldContext_QuizAchievement_event(ctx, field)
+			case "challenge":
+				return ec.fieldContext_QuizAchievement_challenge(ctx, field)
+			case "achievedAt":
+				return ec.fieldContext_QuizAchievement_achievedAt(ctx, field)
+			case "celebratedAt":
+				return ec.fieldContext_QuizAchievement_celebratedAt(ctx, field)
+			case "points":
+				return ec.fieldContext_QuizAchievement_points(ctx, field)
+			case "hidden":
+				return ec.fieldContext_QuizAchievement_hidden(ctx, field)
+			case "awardableFrom":
+				return ec.fieldContext_QuizAchievement_awardableFrom(ctx, field)
+			case "quiz":
+				return ec.fieldContext_QuizAchievement_quiz(ctx, field)
+			case "minScorePercentage":
+				return ec.fieldContext_QuizAchievement_minScorePercentage(ctx, field)
+			case "requireCompletion":
+				return ec.fieldContext_QuizAchievement_requireCompletion(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuizAchievement", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateQuizAchievement_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -36389,9 +36537,9 @@ func (ec *executionContext) _QuizAchievement_quiz(ctx context.Context, field gra
 			return ec.resolvers.QuizAchievement().Quiz(ctx, obj)
 		},
 		nil,
-		ec.marshalNQuiz2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuiz,
+		ec.marshalOQuiz2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuiz,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -51423,6 +51571,117 @@ func (ec *executionContext) unmarshalInputUpdateProjectInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateQuizAchievementInput(ctx context.Context, obj any) (model.UpdateQuizAchievementInput, error) {
+	var it model.UpdateQuizAchievementInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "eventId", "points", "hidden", "awardableFrom", "quizId", "minScorePercentage", "requireCompletion"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "descriptionPending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionPending"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DescriptionPending = data
+		case "descriptionCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("descriptionCompleted"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DescriptionCompleted = data
+		case "notificationText":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("notificationText"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NotificationText = data
+		case "imagePending":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imagePending"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImagePending = data
+		case "imageCompleted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageCompleted"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImageCompleted = data
+		case "eventId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("eventId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EventID = data
+		case "points":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("points"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Points = data
+		case "hidden":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hidden"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Hidden = data
+		case "awardableFrom":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awardableFrom"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwardableFrom = data
+		case "quizId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("quizId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.QuizID = data
+		case "minScorePercentage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minScorePercentage"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MinScorePercentage = data
+		case "requireCompletion":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requireCompletion"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequireCompletion = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateQuizAnswerInput(ctx context.Context, obj any) (model.UpdateQuizAnswerInput, error) {
 	var it model.UpdateQuizAnswerInput
 	asMap := map[string]any{}
@@ -55877,6 +56136,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updateQuizAchievement":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateQuizAchievement(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "deleteAchievement":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteAchievement(ctx, field)
@@ -60174,16 +60440,13 @@ func (ec *executionContext) _QuizAchievement(ctx context.Context, sel ast.Select
 		case "quiz":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._QuizAchievement_quiz(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
 				return res
 			}
 
@@ -68623,6 +68886,11 @@ func (ec *executionContext) unmarshalNUpdateProjectInput2githubᚗcomᚋbccᚑme
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNUpdateQuizAchievementInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateQuizAchievementInput(ctx context.Context, v any) (model.UpdateQuizAchievementInput, error) {
+	res, err := ec.unmarshalInputUpdateQuizAchievementInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNUpdateQuizAnswerInput2githubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐUpdateQuizAnswerInput(ctx context.Context, v any) (model.UpdateQuizAnswerInput, error) {
 	res, err := ec.unmarshalInputUpdateQuizAnswerInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -69873,6 +70141,13 @@ func (ec *executionContext) unmarshalOProjectFilter2ᚖgithubᚗcomᚋbccᚑmedi
 	}
 	res, err := ec.unmarshalInputProjectFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOQuiz2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuiz(ctx context.Context, sel ast.SelectionSet, v *model.Quiz) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Quiz(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOQuizFilter2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋapiᚋmodelᚐQuizFilter(ctx context.Context, v any) (*model.QuizFilter, error) {
