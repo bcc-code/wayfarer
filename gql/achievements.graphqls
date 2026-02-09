@@ -176,6 +176,7 @@ input CreateQuizAchievementInput {
     challengeId: ID
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     quizId: ID!
     minScorePercentage: Int
     requireCompletion: Boolean!

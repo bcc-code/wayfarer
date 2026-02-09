@@ -491,10 +491,15 @@ SELECT
     ) AS content_items,
     -- Streak achievement data
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE a.id = ANY($1::text[])
 `
 
@@ -519,6 +524,9 @@ type GetAchievementsByIDsRow struct {
 	ContentItems         interface{}        `json:"content_items"`
 	StreakID             *string            `json:"streak_id"`
 	NeededStreak         *int32             `json:"needed_streak"`
+	QuizID               *string            `json:"quiz_id"`
+	MinScorePercentage   *int32             `json:"min_score_percentage"`
+	RequireCompletion    *bool              `json:"require_completion"`
 }
 
 func (q *Queries) GetAchievementsByIDs(ctx context.Context, ids []string) ([]*GetAchievementsByIDsRow, error) {
@@ -551,6 +559,9 @@ func (q *Queries) GetAchievementsByIDs(ctx context.Context, ids []string) ([]*Ge
 			&i.ContentItems,
 			&i.StreakID,
 			&i.NeededStreak,
+			&i.QuizID,
+			&i.MinScorePercentage,
+			&i.RequireCompletion,
 		); err != nil {
 			return nil, err
 		}
@@ -583,10 +594,15 @@ SELECT
     -- Type-specific fields needed for model construction
     ca.achievement_id AS content_achievement_id,
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE a.project_id = ANY($1::text[])
     AND a.hidden = false
 ORDER BY a.project_id, a.sort_order, a.created_at DESC
@@ -612,6 +628,9 @@ type GetAchievementsByProjectIDsRow struct {
 	ContentAchievementID *string            `json:"content_achievement_id"`
 	StreakID             *string            `json:"streak_id"`
 	NeededStreak         *int32             `json:"needed_streak"`
+	QuizID               *string            `json:"quiz_id"`
+	MinScorePercentage   *int32             `json:"min_score_percentage"`
+	RequireCompletion    *bool              `json:"require_completion"`
 }
 
 func (q *Queries) GetAchievementsByProjectIDs(ctx context.Context, projectIds []string) ([]*GetAchievementsByProjectIDsRow, error) {
@@ -643,6 +662,9 @@ func (q *Queries) GetAchievementsByProjectIDs(ctx context.Context, projectIds []
 			&i.ContentAchievementID,
 			&i.StreakID,
 			&i.NeededStreak,
+			&i.QuizID,
+			&i.MinScorePercentage,
+			&i.RequireCompletion,
 		); err != nil {
 			return nil, err
 		}
@@ -689,10 +711,15 @@ SELECT
     ) AS content_items,
     -- Streak achievement data
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE
     ($1::text[] IS NULL OR a.id = ANY($1::text[]))
     AND ($2::text = '' OR a.project_id = $2::text)
@@ -739,6 +766,9 @@ type GetAchievementsFilteredCursorRow struct {
 	ContentItems         interface{}        `json:"content_items"`
 	StreakID             *string            `json:"streak_id"`
 	NeededStreak         *int32             `json:"needed_streak"`
+	QuizID               *string            `json:"quiz_id"`
+	MinScorePercentage   *int32             `json:"min_score_percentage"`
+	RequireCompletion    *bool              `json:"require_completion"`
 }
 
 func (q *Queries) GetAchievementsFilteredCursor(ctx context.Context, arg GetAchievementsFilteredCursorParams) ([]*GetAchievementsFilteredCursorRow, error) {
@@ -780,6 +810,9 @@ func (q *Queries) GetAchievementsFilteredCursor(ctx context.Context, arg GetAchi
 			&i.ContentItems,
 			&i.StreakID,
 			&i.NeededStreak,
+			&i.QuizID,
+			&i.MinScorePercentage,
+			&i.RequireCompletion,
 		); err != nil {
 			return nil, err
 		}
@@ -812,10 +845,15 @@ SELECT
     a.updated_at,
     ca.achievement_id AS content_achievement_id,
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE a.project_id = $1::text
 ORDER BY a.sort_order, a.created_at DESC
 `
@@ -841,6 +879,9 @@ type GetAllAchievementsByProjectIDRow struct {
 	ContentAchievementID *string            `json:"content_achievement_id"`
 	StreakID             *string            `json:"streak_id"`
 	NeededStreak         *int32             `json:"needed_streak"`
+	QuizID               *string            `json:"quiz_id"`
+	MinScorePercentage   *int32             `json:"min_score_percentage"`
+	RequireCompletion    *bool              `json:"require_completion"`
 }
 
 // Returns all achievements for a project including hidden ones, ordered by sort_order
@@ -874,6 +915,9 @@ func (q *Queries) GetAllAchievementsByProjectID(ctx context.Context, projectID s
 			&i.ContentAchievementID,
 			&i.StreakID,
 			&i.NeededStreak,
+			&i.QuizID,
+			&i.MinScorePercentage,
+			&i.RequireCompletion,
 		); err != nil {
 			return nil, err
 		}

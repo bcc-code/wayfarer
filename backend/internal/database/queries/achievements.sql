@@ -32,10 +32,15 @@ SELECT
     ) AS content_items,
     -- Streak achievement data
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE a.id = ANY(@ids::text[]);
 
 -- name: GetAchievementsByProjectIDs :many
@@ -59,10 +64,15 @@ SELECT
     -- Type-specific fields needed for model construction
     ca.achievement_id AS content_achievement_id,
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE a.project_id = ANY(@project_ids::text[])
     AND a.hidden = false
 ORDER BY a.project_id, a.sort_order, a.created_at DESC;
@@ -89,10 +99,15 @@ SELECT
     a.updated_at,
     ca.achievement_id AS content_achievement_id,
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE a.project_id = @project_id::text
 ORDER BY a.sort_order, a.created_at DESC;
 
@@ -131,10 +146,15 @@ SELECT
     ) AS content_items,
     -- Streak achievement data
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE
     (@ids::text[] IS NULL OR a.id = ANY(@ids::text[]))
     AND (@projectid::text = '' OR a.project_id = @projectid::text)

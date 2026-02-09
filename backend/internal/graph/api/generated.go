@@ -8343,6 +8343,7 @@ input CreateQuizAchievementInput {
     challengeId: ID
     points: Int!
     hidden: Boolean!
+    awardableFrom: DateTime
     quizId: ID!
     minScorePercentage: Int
     requireCompletion: Boolean!
@@ -8602,7 +8603,7 @@ input UpdateChallengeInput {
     image: String
     eventId: ID
     buttonText: String
-    notificationText: String
+    notificationText: String  # Optional text for push notifications when admin enrolls user
     publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
@@ -48822,7 +48823,7 @@ func (ec *executionContext) unmarshalInputCreateQuizAchievementInput(ctx context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "challengeId", "points", "hidden", "quizId", "minScorePercentage", "requireCompletion"}
+	fieldsInOrder := [...]string{"name", "descriptionPending", "descriptionCompleted", "notificationText", "imagePending", "imageCompleted", "projectId", "challengeId", "points", "hidden", "awardableFrom", "quizId", "minScorePercentage", "requireCompletion"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -48899,6 +48900,13 @@ func (ec *executionContext) unmarshalInputCreateQuizAchievementInput(ctx context
 				return it, err
 			}
 			it.Hidden = data
+		case "awardableFrom":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("awardableFrom"))
+			data, err := ec.unmarshalODateTime2ᚖgithubᚗcomᚋbccᚑmediaᚋwayfarerᚋinternalᚋgraphᚋscalarsᚐDateTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AwardableFrom = data
 		case "quizId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("quizId"))
 			data, err := ec.unmarshalNID2string(ctx, v)

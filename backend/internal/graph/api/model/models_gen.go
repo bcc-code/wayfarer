@@ -407,19 +407,20 @@ type CreateProjectInput struct {
 }
 
 type CreateQuizAchievementInput struct {
-	Name                 string  `json:"name"`
-	DescriptionPending   string  `json:"descriptionPending"`
-	DescriptionCompleted string  `json:"descriptionCompleted"`
-	NotificationText     string  `json:"notificationText"`
-	ImagePending         string  `json:"imagePending"`
-	ImageCompleted       string  `json:"imageCompleted"`
-	ProjectID            string  `json:"projectId"`
-	ChallengeID          *string `json:"challengeId,omitempty"`
-	Points               int     `json:"points"`
-	Hidden               bool    `json:"hidden"`
-	QuizID               string  `json:"quizId"`
-	MinScorePercentage   *int    `json:"minScorePercentage,omitempty"`
-	RequireCompletion    bool    `json:"requireCompletion"`
+	Name                 string            `json:"name"`
+	DescriptionPending   string            `json:"descriptionPending"`
+	DescriptionCompleted string            `json:"descriptionCompleted"`
+	NotificationText     string            `json:"notificationText"`
+	ImagePending         string            `json:"imagePending"`
+	ImageCompleted       string            `json:"imageCompleted"`
+	ProjectID            string            `json:"projectId"`
+	ChallengeID          *string           `json:"challengeId,omitempty"`
+	Points               int               `json:"points"`
+	Hidden               bool              `json:"hidden"`
+	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
+	QuizID               string            `json:"quizId"`
+	MinScorePercentage   *int              `json:"minScorePercentage,omitempty"`
+	RequireCompletion    bool              `json:"requireCompletion"`
 }
 
 type CreateQuizInput struct {

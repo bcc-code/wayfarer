@@ -8,6 +8,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/graph-gophers/dataloader/v7"
 )
 
@@ -84,6 +85,11 @@ func convertRowToAchievement(row *sqlc.GetAchievementsByProjectIDsRow) (model.Ac
 		hidden = *row.Hidden
 	}
 
+	var awardableFrom *scalars.DateTime
+	if row.AwardableFrom.Valid {
+		awardableFrom = &scalars.DateTime{Time: row.AwardableFrom.Time}
+	}
+
 	switch row.AchievementType {
 	case "SIMPLE":
 		return &model.SimpleAchievement{
@@ -96,6 +102,7 @@ func convertRowToAchievement(row *sqlc.GetAchievementsByProjectIDsRow) (model.Ac
 			ImageCompleted:       row.ImageCompleted,
 			Points:               int(row.Points),
 			Hidden:               hidden,
+			AwardableFrom:        awardableFrom,
 			ProjectID:            row.ProjectID,
 			EventID:              row.EventID,
 			ChallengeID:          row.ChallengeID,
@@ -112,6 +119,7 @@ func convertRowToAchievement(row *sqlc.GetAchievementsByProjectIDsRow) (model.Ac
 			ImageCompleted:       row.ImageCompleted,
 			Points:               int(row.Points),
 			Hidden:               hidden,
+			AwardableFrom:        awardableFrom,
 			ProjectID:            row.ProjectID,
 			EventID:              row.EventID,
 			ChallengeID:          row.ChallengeID,
@@ -132,12 +140,48 @@ func convertRowToAchievement(row *sqlc.GetAchievementsByProjectIDsRow) (model.Ac
 			ImageCompleted:       row.ImageCompleted,
 			Points:               int(row.Points),
 			Hidden:               hidden,
+			AwardableFrom:        awardableFrom,
 			ProjectID:            row.ProjectID,
 			EventID:              row.EventID,
 			ChallengeID:          row.ChallengeID,
 			StreakID:             *row.StreakID,
 			NeededStreak:         int(*row.NeededStreak),
 			Streak:               nil, // Will be populated by resolver
+		}, nil
+
+	case "QUIZ":
+		if row.QuizID == nil {
+			return nil, fmt.Errorf("quiz achievement missing required fields: quiz_id")
+		}
+
+		var minScorePercentage *int
+		if row.MinScorePercentage != nil {
+			v := int(*row.MinScorePercentage)
+			minScorePercentage = &v
+		}
+
+		requireCompletion := false
+		if row.RequireCompletion != nil {
+			requireCompletion = *row.RequireCompletion
+		}
+
+		return &model.QuizAchievement{
+			ID:                   row.ID,
+			Name:                 row.Name,
+			DescriptionPending:   row.DescriptionPending,
+			DescriptionCompleted: row.DescriptionCompleted,
+			NotificationText:     row.NotificationText,
+			ImagePending:         row.ImagePending,
+			ImageCompleted:       row.ImageCompleted,
+			Points:               int(row.Points),
+			Hidden:               hidden,
+			AwardableFrom:        awardableFrom,
+			ProjectID:            row.ProjectID,
+			EventID:              row.EventID,
+			ChallengeID:          row.ChallengeID,
+			QuizID:               *row.QuizID,
+			MinScorePercentage:   minScorePercentage,
+			RequireCompletion:    requireCompletion,
 		}, nil
 
 	default:

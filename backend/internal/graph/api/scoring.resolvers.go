@@ -267,6 +267,8 @@ func (r *scoreJournalResolver) Source(ctx context.Context, obj *model.ScoreJourn
 			return ach, nil
 		case *model.StreakAchievement:
 			return ach, nil
+		case *model.QuizAchievement:
+			return ach, nil
 		default:
 			return nil, fmt.Errorf("unexpected achievement type: %T", achievement)
 		}

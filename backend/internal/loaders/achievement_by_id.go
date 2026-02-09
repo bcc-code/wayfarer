@@ -60,6 +60,8 @@ func achievementByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(
 					achievement, err = convertToContentAchievement(row, hidden)
 				case "STREAK":
 					achievement, err = convertToStreakAchievement(row, hidden)
+				case "QUIZ":
+					achievement, err = convertToQuizAchievement(row, hidden)
 				default:
 					err = fmt.Errorf("unknown achievement type: %s", row.AchievementType)
 				}
@@ -185,5 +187,46 @@ func convertToStreakAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool) 
 		StreakID:             *row.StreakID,
 		NeededStreak:         int(*row.NeededStreak),
 		Streak:               nil, // Will be populated by resolver
+	}, nil
+}
+
+func convertToQuizAchievement(row *sqlc.GetAchievementsByIDsRow, hidden bool) (model.Achievement, error) {
+	if row.QuizID == nil {
+		return nil, fmt.Errorf("quiz achievement missing required fields: quiz_id")
+	}
+
+	var awardableFrom *scalars.DateTime
+	if row.AwardableFrom.Valid {
+		awardableFrom = &scalars.DateTime{Time: row.AwardableFrom.Time}
+	}
+
+	var minScorePercentage *int
+	if row.MinScorePercentage != nil {
+		v := int(*row.MinScorePercentage)
+		minScorePercentage = &v
+	}
+
+	requireCompletion := false
+	if row.RequireCompletion != nil {
+		requireCompletion = *row.RequireCompletion
+	}
+
+	return &model.QuizAchievement{
+		ID:                   row.ID,
+		Name:                 row.Name,
+		DescriptionPending:   row.DescriptionPending,
+		DescriptionCompleted: row.DescriptionCompleted,
+		NotificationText:     row.NotificationText,
+		ImagePending:         row.ImagePending,
+		ImageCompleted:       row.ImageCompleted,
+		Points:               int(row.Points),
+		Hidden:               hidden,
+		AwardableFrom:        awardableFrom,
+		ProjectID:            row.ProjectID,
+		EventID:              row.EventID,
+		ChallengeID:          row.ChallengeID,
+		QuizID:               *row.QuizID,
+		MinScorePercentage:   minScorePercentage,
+		RequireCompletion:    requireCompletion,
 	}, nil
 }
