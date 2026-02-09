@@ -847,6 +847,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 				return nil, fmt.Errorf("failed to fetch existing response: %w", fetchErr)
 			}
 			r.Cache.InvalidateQuizSubmission(submissionID)
+			r.Cache.InvalidateUserQuizSubmissions(userID)
 			// Convert existing response to QuizResponse model
 			existingAsModel := &sqlc.QuizResponse{
 				ID:                existing.ID,
@@ -867,6 +868,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 	}
 
 	r.Cache.InvalidateQuizSubmission(submissionID)
+	r.Cache.InvalidateUserQuizSubmissions(userID)
 
 	// Convert response to QuizResponse model
 	responseAsModel := &sqlc.QuizResponse{
@@ -982,6 +984,7 @@ func (r *mutationResolver) UpdateQuizAnswer(ctx context.Context, responseID stri
 	}
 
 	r.Cache.InvalidateQuizSubmission(submission.ID)
+	r.Cache.InvalidateUserQuizSubmissions(userID)
 
 	// Convert to QuizResponse model
 	responseAsModel := &sqlc.QuizResponse{
@@ -1235,6 +1238,7 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	// Invalidate caches
 	ctx, cacheSpan := otel.StartSpan(ctx, "quiz.finalize.cache_invalidation")
 	r.Cache.InvalidateQuizSubmission(submissionID)
+	r.Cache.InvalidateUserQuizSubmissions(userID)
 	r.Cache.InvalidateProject(quiz.ProjectID)
 
 	// Load challenge to get eventID for cache invalidation
@@ -1526,6 +1530,7 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 
 	// Invalidate caches
 	r.Cache.InvalidateQuizSubmission(submissionID)
+	r.Cache.InvalidateUserQuizSubmissions(userID)
 	r.Cache.InvalidateProject(quiz.ProjectID)
 
 	return submission, nil

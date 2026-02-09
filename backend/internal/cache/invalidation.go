@@ -412,6 +412,11 @@ func (c *CacheWithRegistry) InvalidateQuizSubmission(submissionID string) {
 	c.DeletePrefix(PrefixQuizSubmissionsCount)
 }
 
+// InvalidateUserQuizSubmissions invalidates cached quiz submissions for a user
+func (c *CacheWithRegistry) InvalidateUserQuizSubmissions(userID string) {
+	c.Delete(QuizSubmissionsByUserKey(userID))
+}
+
 // InvalidateTeamMemberLeaderboardTags invalidates all tag caches for team member leaderboards.
 // Call this when user roles change, as TEAM_LEAD tags depend on role assignments.
 // Note: TEAM_LEAD tags are cached per team (viewer-independent), ME tags are computed on-the-fly.

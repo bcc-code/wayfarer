@@ -9,6 +9,7 @@ const props = defineProps<{
   pointsAwarded: number
   results: QuestionResult[]
   canReview?: boolean
+  completedAt?: string | null
 }>()
 
 const emit = defineEmits<{
