@@ -75,7 +75,7 @@ const currentQuestionRef = ref<QuizQuestionExposed | null>(null)
 
 // Forward the action state from the current question component
 const actionState = computed<QuizActionState | undefined>(() => {
-  return currentQuestionRef.value?.actionState.value
+  return currentQuestionRef.value?.actionState
 })
 
 // Forward the handlers from the current question component
@@ -103,9 +103,11 @@ defineExpose({ actionState, handlers })
 
 <template>
   <QuizPredefinedQuestion
-    v-if="currentQuestion && currentQuestion.__typename === 'PredefinedQuestion'"
+    v-if="
+      currentQuestion && currentQuestion.__typename === 'PredefinedQuestion'
+    "
     ref="currentQuestionRef"
-    :key="currentQuestion.id"
+    :key="`predefined:${currentQuestion.id}`"
     :question="currentQuestion"
     :total-questions="questions.length"
     :current-index="currentQuestionIndex"
@@ -119,9 +121,11 @@ defineExpose({ actionState, handlers })
     @next="handleNext"
   />
   <QuizOrderingQuestion
-    v-else-if="currentQuestion && currentQuestion.__typename === 'OrderingQuestion'"
+    v-else-if="
+      currentQuestion && currentQuestion.__typename === 'OrderingQuestion'
+    "
     ref="currentQuestionRef"
-    :key="currentQuestion.id"
+    :key="`ordering:${currentQuestion.id}`"
     :question="currentQuestion"
     :total-questions="questions.length"
     :current-index="currentQuestionIndex"
