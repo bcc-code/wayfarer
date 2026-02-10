@@ -103,12 +103,6 @@ debug: ## Run debug TUI tool
 	@echo "Starting debug tool..."
 	@go run ./cmd/debug
 
-update-db-url: ## Update DATABASE_URL in .env with current Neon branch
-	@echo "Getting connection string for current branch..."
-	@CONNECTION=$$(./scripts/neon-branch.sh) && \
-		sed -i "s|^DATABASE_URL=.*|DATABASE_URL=$$CONNECTION|" .env && \
-		echo "Updated DATABASE_URL in .env"
-
 ## Token Generation Commands
 
 m2m-token: ## Generate an M2M token (default: 1 year validity)
