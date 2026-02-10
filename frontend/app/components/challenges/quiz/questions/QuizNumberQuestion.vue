@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {
   NumberQuestionData,
+  NumberResponseData,
   QuestionResult,
   QuizActionHandlers,
   QuizActionState,
@@ -13,6 +14,8 @@ const props = defineProps<{
   submissionId: string
   // Controls whether to show correct/incorrect after answering
   revealCorrectAnswers?: boolean
+  // Existing response (for resuming quiz)
+  existingResponse?: NumberResponseData
   // Review mode props
   readonly?: boolean
   preSelectedAnswer?: number
@@ -30,11 +33,15 @@ const emit = defineEmits<{
 const { track } = useAnalytics()
 const { executeMutation: submitAnswer } = useSubmitQuizAnswerMutation()
 
-// Initialize with pre-selected value in review mode, otherwise start at 0
-const currentValue = ref(props.preSelectedAnswer ?? 0)
+// Pre-populate from existing response (resuming quiz) or review mode props
+const currentValue = ref(
+  props.existingResponse?.numberResponse ?? props.preSelectedAnswer ?? 0,
+)
 const isSubmitting = ref(false)
-const isAnswerConfirmed = ref(false)
-const submittedResult = ref<{ isCorrect: boolean | null } | null>(null)
+const isAnswerConfirmed = ref(!!props.existingResponse)
+const submittedResult = ref<{ isCorrect: boolean | null } | null>(
+  props.existingResponse ? { isCorrect: null } : null,
+)
 
 async function handleLockAnswer() {
   if (!currentValue.value || isSubmitting.value) return
