@@ -19,8 +19,9 @@ import (
 	"github.com/bcc-media/wayfarer/internal/middleware"
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/services/push"
+	"github.com/bcc-media/wayfarer/internal/services/webhooks"
 	"github.com/bcc-media/wayfarer/internal/ulid"
-	"github.com/jackc/pgx/v5"
+	pgx "github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"go.opentelemetry.io/otel/attribute"
@@ -1367,6 +1368,46 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 	if len(awardedAchievementIDs) > 0 {
 		go r.FirebaseService.NotifyUserAchievements(context.Background(), userID)
 	}
+
+	// Dispatch quiz_finalized webhook
+	go func(projectID string, targetUserID string, data webhooks.QuizFinalizedData) {
+		bgCtx := context.Background()
+		user, err := r.DB.Queries.GetUserByID(bgCtx, targetUserID)
+		if err != nil {
+			fmt.Printf("warning: failed to load user for quiz_finalized webhook: %v\n", err)
+			return
+		}
+		r.WebhookService.DispatchQuizFinalized(bgCtx, projectID, webhooks.NewUserData(user), data)
+	}(quiz.ProjectID, userID, webhooks.QuizFinalizedData{
+		SubmissionID: submissionID,
+		QuizID:       quiz.ID,
+		QuizName:     quiz.Name,
+		ChallengeID:  quiz.ChallengeID,
+		ChallengeName: func() string {
+			if challengeErr == nil {
+				return challenge.GetName()
+			}
+			return ""
+		}(),
+		EventID: func() *string {
+			if challengeErr == nil {
+				return getChallengeEventID(challenge)
+			}
+			return nil
+		}(),
+		SessionID: updatedSubmission.SessionID,
+		Score:     scoreVal,
+		MaxScore:  int32(maxScore),
+		ScorePercentage: func() float64 {
+			if maxScore > 0 {
+				return (float64(score) / float64(maxScore)) * 100
+			}
+			return 0
+		}(),
+		PointsAwarded:       totalPoints,
+		AchievementsAwarded: awardedAchievementIDs,
+		CompletedAt:         now,
+	})
 
 	return convertUpdateQuizSubmissionRow(updatedSubmission), nil
 }

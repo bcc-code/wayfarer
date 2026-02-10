@@ -10334,6 +10334,7 @@ enum WebhookEventType {
     POINTS_AWARDED
     QUIZ_SESSION_FINISHED
     TEAM_NAME_CHANGED
+    QUIZ_FINALIZED
 }
 
 type Webhook {

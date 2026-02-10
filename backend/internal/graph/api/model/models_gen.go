@@ -3172,6 +3172,7 @@ const (
 	WebhookEventTypePointsAwarded        WebhookEventType = "POINTS_AWARDED"
 	WebhookEventTypeQuizSessionFinished  WebhookEventType = "QUIZ_SESSION_FINISHED"
 	WebhookEventTypeTeamNameChanged      WebhookEventType = "TEAM_NAME_CHANGED"
+	WebhookEventTypeQuizFinalized        WebhookEventType = "QUIZ_FINALIZED"
 )
 
 var AllWebhookEventType = []WebhookEventType{
@@ -3179,11 +3180,12 @@ var AllWebhookEventType = []WebhookEventType{
 	WebhookEventTypePointsAwarded,
 	WebhookEventTypeQuizSessionFinished,
 	WebhookEventTypeTeamNameChanged,
+	WebhookEventTypeQuizFinalized,
 }
 
 func (e WebhookEventType) IsValid() bool {
 	switch e {
-	case WebhookEventTypeExternalContentEvent, WebhookEventTypePointsAwarded, WebhookEventTypeQuizSessionFinished, WebhookEventTypeTeamNameChanged:
+	case WebhookEventTypeExternalContentEvent, WebhookEventTypePointsAwarded, WebhookEventTypeQuizSessionFinished, WebhookEventTypeTeamNameChanged, WebhookEventTypeQuizFinalized:
 		return true
 	}
 	return false
