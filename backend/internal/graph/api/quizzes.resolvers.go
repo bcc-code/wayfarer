@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
@@ -854,7 +855,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		// FREE_TEXT is not graded - leave is_correct NULL
 	case "NUMBER":
 		if input.NumberResponse != nil {
-			_ = params.Numberresponse.Scan(*input.NumberResponse)
+			_ = params.Numberresponse.Scan(strconv.FormatFloat(*input.NumberResponse, 'f', -1, 64))
 		}
 		// NUMBER could be graded if we stored correct answer, but for now leave NULL
 	case "JSON":
