@@ -50,7 +50,8 @@ func (r *freeTextResponseResolver) Question(ctx context.Context, obj *model.Free
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertGetQuizQuestionByIDRowToInterface(row), nil
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
 }
 
 // Quiz is the resolver for the quiz field.
@@ -78,7 +79,8 @@ func (r *jsonResponseResolver) Question(ctx context.Context, obj *model.JSONResp
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertGetQuizQuestionByIDRowToInterface(row), nil
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
 }
 
 // CreateQuiz is the resolver for the createQuiz field.
@@ -1648,7 +1650,8 @@ func (r *numberResponseResolver) Question(ctx context.Context, obj *model.Number
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertGetQuizQuestionByIDRowToInterface(row), nil
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
 }
 
 // Quiz is the resolver for the quiz field.
@@ -1698,7 +1701,8 @@ func (r *orderingResponseResolver) Question(ctx context.Context, obj *model.Orde
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertGetQuizQuestionByIDRowToInterface(row), nil
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
 }
 
 // IsCorrect is the resolver for the isCorrect field on OrderingResponse.
@@ -1768,7 +1772,8 @@ func (r *predefinedResponseResolver) Question(ctx context.Context, obj *model.Pr
 	if err != nil {
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
-	return convertGetQuizQuestionByIDRowToInterface(row), nil
+	question := convertGetQuizQuestionByIDRowToInterface(row)
+	return r.ApplyTranslationToQuizQuestion(ctx, question), nil
 }
 
 // SelectedAnswers is the resolver for the selectedAnswers field.
