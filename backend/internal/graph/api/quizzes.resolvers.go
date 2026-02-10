@@ -1250,6 +1250,20 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 
 		// Award achievement if criteria met
 		if shouldAward {
+			// Check if user already has this achievement to avoid duplicate key errors
+			// which would abort the entire transaction
+			alreadyHas, checkErr := qtx.CheckUserHasAchievement(ctx, sqlc.CheckUserHasAchievementParams{
+				UserID:        userID,
+				AchievementID: ach.AchievementID,
+			})
+			if checkErr != nil {
+				fmt.Printf("warning: failed to check achievement %s for user %s: %v\n", ach.AchievementID, userID, checkErr)
+				continue
+			}
+			if alreadyHas {
+				continue
+			}
+
 			err = qtx.AwardUserAchievement(ctx, sqlc.AwardUserAchievementParams{
 				UserID:        userID,
 				AchievementID: ach.AchievementID,
