@@ -206,7 +206,7 @@
     },
     "units": {
       "title": "Units",
-      "people": "<b>Personen</b>",
+      "people": "Personen",
       "filter": {
         "title": "Filteren",
         "all": "Alle",
