@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { ChallengeFormData } from '~/components/admin/challenge/AdminChallengeForm.vue'
 import type { QuizFormData } from '~/components/admin/quiz/AdminQuizForm.vue'
 
 definePageMeta({
@@ -8,33 +7,14 @@ definePageMeta({
 })
 
 gql(`
-  query AdminProjectChallengePage($challengeId: ID!) {
+  query AdminChallengeQuizPage($challengeId: ID!) {
     challenge(id: $challengeId) {
       __typename
       id
       name
-      description
-      image
-      buttonText
-      notificationText
-      publishedAt
-      visibleAt
-      startedAt
-      endTime
       project {
         id
         name
-        branding {
-          colors {
-            ...BrandingColorsFields
-          }
-        }
-      }
-      ... on SimpleChallenge {
-        allowSelfCompletion
-      }
-      ... on ExternalChallenge {
-        url
       }
       ... on QuizChallenge {
         quiz {
@@ -52,44 +32,26 @@ gql(`
           }
         }
       }
-      ... on PluginChallenge {
-        pluginChallengeId
-      }
     }
   }
 `)
 
-const route = useRoute('admin-projects-projectId-challenges-challengeId')
+const route = useRoute('admin-projects-projectId-challenges-challengeId-quiz')
 const toast = useToast()
 
 const { isAuthReady } = useAuthReady()
-const { data, fetching, error } = useAdminProjectChallengePageQuery({
+const { data, fetching, error, executeQuery: refetchQuiz } = useAdminChallengeQuizPageQuery({
   variables: {
     challengeId: route.params.challengeId,
   },
   pause: computed(() => !isAuthReady.value),
 })
 
-const { executeMutation } = useUpdateChallengeMutation()
-const { executeMutation: executeDelete } = useDeleteChallengeMutation()
 const { executeMutation: createQuiz } = useCreateQuizMutation()
 const { executeMutation: updateQuiz } = useUpdateQuizMutation()
 const { executeMutation: addQuizQuestion } = useAddQuizQuestionMutation()
 const { executeMutation: updateQuizQuestion } = useUpdateQuizQuestionMutation()
 const { executeMutation: deleteQuizQuestion } = useDeleteQuizQuestionMutation()
-
-function getChallengeType(typename: string): ChallengeType {
-  switch (typename) {
-    case 'ExternalChallenge':
-      return ChallengeType.External
-    case 'QuizChallenge':
-      return ChallengeType.Quiz
-    case 'PluginChallenge':
-      return ChallengeType.Plugin
-    default:
-      return ChallengeType.Simple
-  }
-}
 
 function getQuestionType(typename: string): QuizQuestionType {
   switch (typename) {
@@ -105,28 +67,6 @@ function getQuestionType(typename: string): QuizQuestionType {
       return QuizQuestionType.Predefined
   }
 }
-
-const initialData = computed(() => {
-  if (!data.value) return undefined
-  const c = data.value.challenge
-  return {
-    type: getChallengeType(c.__typename ?? 'SimpleChallenge'),
-    name: c.name,
-    description: c.description ?? undefined,
-    image: c.image ?? undefined,
-    url: c.__typename === 'ExternalChallenge' ? c.url : undefined,
-    buttonText: c.buttonText,
-    notificationText: c.notificationText ?? undefined,
-    publishedAt: toLocalDatetimeLocal(c.publishedAt),
-    endTime: toLocalDatetimeLocal(c.endTime),
-    visibleAt: toLocalDatetimeLocal(c.visibleAt),
-    startedAt: toLocalDatetimeLocal(c.startedAt),
-    allowSelfCompletion:
-      c.__typename === 'SimpleChallenge' ? c.allowSelfCompletion : undefined,
-    pluginChallengeId:
-      c.__typename === 'PluginChallenge' ? c.pluginChallengeId : undefined,
-  }
-})
 
 const quizData = computed<QuizFormData | undefined>(() => {
   if (!data.value) return undefined
@@ -187,7 +127,9 @@ const quizData = computed<QuizFormData | undefined>(() => {
   }
 })
 
-async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
+const isNewQuiz = computed(() => !quizData.value?.id)
+
+async function saveQuiz(quizFormData: QuizFormData) {
   if (quizFormData.id) {
     // Update existing quiz
     const updateResult = await updateQuiz({
@@ -205,7 +147,12 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
     })
 
     if (updateResult.error) {
-      throw new Error(updateResult.error.message)
+      toast.add({
+        title: 'Feil',
+        description: updateResult.error.message,
+        color: 'error',
+      })
+      return
     }
 
     // Handle questions - delete removed, update existing, add new
@@ -277,7 +224,7 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
     const createResult = await createQuiz({
       input: {
         projectId: route.params.projectId,
-        challengeId,
+        challengeId: route.params.challengeId,
         name: quizFormData.name,
         description: quizFormData.description,
         image: quizFormData.image,
@@ -290,12 +237,22 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
     })
 
     if (createResult.error) {
-      throw new Error(createResult.error.message)
+      toast.add({
+        title: 'Feil',
+        description: createResult.error.message,
+        color: 'error',
+      })
+      return
     }
 
     const quizId = createResult.data?.createQuiz.id
     if (!quizId) {
-      throw new Error('Failed to create quiz')
+      toast.add({
+        title: 'Feil',
+        description: 'Kunne ikke opprette quiz',
+        color: 'error',
+      })
+      return
     }
 
     // Add questions
@@ -325,101 +282,29 @@ async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
       })
     }
   }
-}
 
-async function handleSubmit(formData: ChallengeFormData) {
-  const {
-    type,
-    allowSelfCompletion,
-    url,
-    quiz,
-    publishedAt,
-    endTime,
-    visibleAt,
-    startedAt,
-    pluginChallengeId,
-    ...rest
-  } = formData
-
-  // Only include type-specific fields
-  const input = {
-    ...rest,
-    publishedAt: toISOString(publishedAt),
-    endTime: toISOString(endTime),
-    visibleAt: toISOString(visibleAt),
-    startedAt: toISOString(startedAt),
-    ...(type === ChallengeType.Simple && { allowSelfCompletion }),
-    ...(type === ChallengeType.External && { url }),
-    ...(type === ChallengeType.Plugin && { pluginChallengeId }),
-  }
-
-  const response = await executeMutation({
-    id: route.params.challengeId,
-    input,
-  })
-
-  if (response.error) {
-    toast.add({
-      title: response.error.name,
-      description: response.error.message,
-      color: 'error',
-    })
-    return
-  }
-
-  // Handle quiz if this is a quiz challenge
-  if (type === ChallengeType.Quiz && quiz) {
-    try {
-      await saveQuiz(quiz, route.params.challengeId)
-    } catch (err) {
-      toast.add({
-        title: 'Feil',
-        description:
-          err instanceof Error ? err.message : 'Kunne ikke lagre quiz',
-        color: 'error',
-      })
-      return
-    }
-  }
+  // Refetch to update cache before navigating
+  await refetchQuiz({ requestPolicy: 'network-only' })
 
   toast.add({
     title: 'Suksess',
-    description: 'Utfordring oppdatert',
+    description: isNewQuiz.value ? 'Quiz opprettet' : 'Quiz oppdatert',
     color: 'success',
   })
+
   navigateTo({
-    name: 'admin-projects-projectId',
-    params: { projectId: route.params.projectId },
+    name: 'admin-projects-projectId-challenges-challengeId',
+    params: {
+      projectId: route.params.projectId,
+      challengeId: route.params.challengeId,
+    },
   })
 }
 
-async function handleDelete() {
-  const confirmed = confirm(
-    `Er du sikker på at du vil slette "${data.value?.challenge.name}"? Denne handlingen kan ikke angres.`,
-  )
-
-  if (!confirmed) return
-
-  const response = await executeDelete({ id: route.params.challengeId })
-  if (response.error) {
-    toast.add({
-      title: response.error.name,
-      description: response.error.message,
-      color: 'error',
-    })
-    return
-  }
-
-  toast.add({
-    title: 'Suksess',
-    description: 'Utfordring slettet',
-    color: 'success',
-  })
-  navigateTo({
-    name: 'admin-projects-projectId',
-    params: { projectId: route.params.projectId },
-  })
-}
+// Check if challenge is a quiz challenge
+const isQuizChallenge = computed(() => {
+  return data.value?.challenge.__typename === 'QuizChallenge'
+})
 </script>
 
 <template>
@@ -440,10 +325,7 @@ async function handleDelete() {
               },
             },
             {
-              label: 'Utfordringer',
-            },
-            {
-              label: data?.challenge.name ?? route.params.challengeId,
+              label: data?.challenge.name ?? 'Utfordring',
               to: {
                 name: 'admin-projects-projectId-challenges-challengeId',
                 params: {
@@ -452,6 +334,9 @@ async function handleDelete() {
                 },
               },
             },
+            {
+              label: 'Quiz',
+            },
           ]"
         />
       </UContainer>
@@ -459,17 +344,36 @@ async function handleDelete() {
     <UContainer class="py-12">
       <LoadingState v-if="fetching" />
       <ErrorState v-else-if="error" :error />
-      <AdminChallengeForm
-        v-else-if="initialData"
-        :initial-data="initialData"
-        :quiz-data="quizData"
-        :project-id="route.params.projectId"
-        :colors="data?.challenge.project.branding.colors"
-        submit-label="Lagre endringer"
-        is-edit-mode
-        :on-delete="handleDelete"
-        @submit="handleSubmit"
-      />
+      <template v-else-if="data">
+        <div v-if="!isQuizChallenge" class="text-center py-12">
+          <p class="text-text-muted">
+            Denne utfordringen er ikke en quiz-utfordring.
+          </p>
+          <UButton
+            class="mt-4"
+            :to="{
+              name: 'admin-projects-projectId-challenges-challengeId',
+              params: {
+                projectId: route.params.projectId,
+                challengeId: route.params.challengeId,
+              },
+            }"
+          >
+            Tilbake til utfordring
+          </UButton>
+        </div>
+        <template v-else>
+          <h1 class="mb-6 text-2xl font-bold">
+            {{ isNewQuiz ? 'Opprett quiz' : 'Rediger quiz' }}
+          </h1>
+          <AdminQuizForm
+            :quiz-data="quizData"
+            :project-id="route.params.projectId"
+            :challenge-id="route.params.challengeId"
+            @save="saveQuiz"
+          />
+        </template>
+      </template>
     </UContainer>
   </div>
 </template>
