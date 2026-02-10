@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { ChallengeFormData } from '~/components/admin/challenge/AdminChallengeForm.vue'
-import type { QuizFormData } from '~/components/admin/quiz/AdminQuizForm.vue'
 
 definePageMeta({
   layout: 'admin',
@@ -42,7 +41,6 @@ const { data } = useAdminProjectChallengeNewPageQuery({
 
 const { executeMutation } = useCreateChallengeMutation()
 const { executeMutation: createQuiz } = useCreateQuizMutation()
-const { executeMutation: addQuizQuestion } = useAddQuizQuestionMutation()
 
 const eventId = ref('')
 
@@ -55,61 +53,8 @@ const eventOptions = computed(() => {
   )
 })
 
-async function saveQuiz(quizFormData: QuizFormData, challengeId: string) {
-  const createResult = await createQuiz({
-    input: {
-      projectId: route.params.projectId,
-      challengeId,
-      name: quizFormData.name,
-      description: quizFormData.description,
-      image: quizFormData.image,
-      timeoutSeconds: quizFormData.timeoutSeconds,
-      randomizeQuestions: quizFormData.randomizeQuestions,
-      revealCorrectAnswers: quizFormData.revealCorrectAnswers,
-      allowRetakes: quizFormData.allowRetakes,
-      completionPoints: quizFormData.completionPoints,
-    },
-  })
-
-  if (createResult.error) {
-    throw new Error(createResult.error.message)
-  }
-
-  const quizId = createResult.data?.createQuiz.id
-  if (!quizId) {
-    throw new Error('Failed to create quiz')
-  }
-
-  // Add questions
-  for (const question of quizFormData.questions) {
-    await addQuizQuestion({
-      quizId,
-      input: {
-        questionType: question.questionType,
-        questionText: question.questionText,
-        questionOrder: question.questionOrder,
-        timeoutSeconds: question.timeoutSeconds,
-        points: question.points,
-        allowMultipleSelection: question.allowMultipleSelection,
-        predefinedAnswers: question.predefinedAnswers?.map((a) => ({
-          answerText: a.answerText,
-          isCorrect: a.isCorrect,
-          answerOrder: a.answerOrder,
-        })),
-        orderingItems: question.orderingItems?.map((item) => ({
-          itemText: item.itemText,
-          correctOrder: item.correctOrder,
-        })),
-        minValue: question.minValue,
-        maxValue: question.maxValue,
-        stepValue: question.stepValue,
-      },
-    })
-  }
-}
-
 async function handleSubmit(formData: ChallengeFormData) {
-  const { type, allowSelfCompletion, url, quiz, publishedAt, pluginChallengeId, ...rest } =
+  const { type, allowSelfCompletion, url, publishedAt, pluginChallengeId, ...rest } =
     formData
 
   // Only include type-specific fields
@@ -137,30 +82,57 @@ async function handleSubmit(formData: ChallengeFormData) {
     return
   }
 
-  // Handle quiz if this is a quiz challenge
   const challengeId = response.data?.createChallenge.id
-  if (type === ChallengeType.Quiz && quiz && challengeId) {
-    try {
-      await saveQuiz(quiz, challengeId)
-    } catch (err) {
+
+  // For quiz challenges, create an empty quiz immediately (required by schema)
+  if (type === ChallengeType.Quiz && challengeId) {
+    const quizResult = await createQuiz({
+      input: {
+        projectId: route.params.projectId,
+        challengeId,
+        name: formData.name,
+        description: '',
+        randomizeQuestions: false,
+        revealCorrectAnswers: true,
+        allowRetakes: false,
+        completionPoints: 0,
+      },
+    })
+
+    if (quizResult.error) {
       toast.add({
         title: 'Feil',
-        description: err instanceof Error ? err.message : 'Kunne ikke lagre quiz',
+        description: quizResult.error.message,
         color: 'error',
       })
       return
     }
-  }
 
-  toast.add({
-    title: 'Suksess',
-    description: 'Utfordring opprettet',
-    color: 'success',
-  })
-  navigateTo({
-    name: 'admin-projects-projectId',
-    params: { projectId: route.params.projectId },
-  })
+    toast.add({
+      title: 'Suksess',
+      description: 'Utfordring opprettet',
+      color: 'success',
+    })
+
+    navigateTo({
+      name: 'admin-projects-projectId-challenges-challengeId-quiz',
+      params: {
+        projectId: route.params.projectId,
+        challengeId,
+      },
+    })
+  } else {
+    toast.add({
+      title: 'Suksess',
+      description: 'Utfordring opprettet',
+      color: 'success',
+    })
+
+    navigateTo({
+      name: 'admin-projects-projectId',
+      params: { projectId: route.params.projectId },
+    })
+  }
 }
 </script>
 

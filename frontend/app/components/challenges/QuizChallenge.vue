@@ -6,6 +6,10 @@ import type {
   PredefinedResponseData,
   OrderingQuestionData,
   OrderingResponseData,
+  NumberQuestionData,
+  NumberResponseData,
+  FreeTextQuestionData,
+  FreeTextResponseData,
   QuizQuestionExposed,
 } from './quiz/types'
 import type {
@@ -63,37 +67,65 @@ const completedSubmissionResults = computed<QuestionResult[]>(() => {
   }))
 })
 
-// Check if user can review their answers (has PredefinedResponse or OrderingResponse answers)
+// Check if user can review their answers (has reviewable responses)
 const canReview = computed(() => {
   if (!completedSubmission.value) return false
   return completedSubmission.value.responses.some(
     (r) =>
       r.__typename === 'PredefinedResponse' ||
-      r.__typename === 'OrderingResponse',
+      r.__typename === 'OrderingResponse' ||
+      r.__typename === 'NumberResponse' ||
+      r.__typename === 'FreeTextResponse',
   )
 })
 
-// Get questions for review mode (PredefinedQuestion and OrderingQuestion types)
+// Get questions for review mode
 const reviewQuestions = computed<
-  (PredefinedQuestionData | OrderingQuestionData)[]
+  (
+    | PredefinedQuestionData
+    | OrderingQuestionData
+    | NumberQuestionData
+    | FreeTextQuestionData
+  )[]
 >(() => {
   if (!completedSubmission.value) return []
   return completedSubmission.value.orderedQuestions.filter(
-    (q): q is PredefinedQuestionData | OrderingQuestionData =>
+    (
+      q,
+    ): q is
+      | PredefinedQuestionData
+      | OrderingQuestionData
+      | NumberQuestionData
+      | FreeTextQuestionData =>
       q.__typename === 'PredefinedQuestion' ||
-      q.__typename === 'OrderingQuestion',
+      q.__typename === 'OrderingQuestion' ||
+      q.__typename === 'NumberQuestion' ||
+      q.__typename === 'FreeTextQuestion',
   )
 })
 
-// Get responses for review mode (PredefinedResponse and OrderingResponse types)
+// Get responses for review mode
 const reviewResponses = computed<
-  (PredefinedResponseData | OrderingResponseData)[]
+  (
+    | PredefinedResponseData
+    | OrderingResponseData
+    | NumberResponseData
+    | FreeTextResponseData
+  )[]
 >(() => {
   if (!completedSubmission.value) return []
   return completedSubmission.value.responses.filter(
-    (r): r is PredefinedResponseData | OrderingResponseData =>
+    (
+      r,
+    ): r is
+      | PredefinedResponseData
+      | OrderingResponseData
+      | NumberResponseData
+      | FreeTextResponseData =>
       r.__typename === 'PredefinedResponse' ||
-      r.__typename === 'OrderingResponse',
+      r.__typename === 'OrderingResponse' ||
+      r.__typename === 'NumberResponse' ||
+      r.__typename === 'FreeTextResponse',
   )
 })
 
@@ -242,6 +274,22 @@ const activeRef = computed(() =>
 const actionState = computed(() => activeRef.value?.actionState)
 const handlers = computed(() => activeRef.value?.handlers)
 
+// Auto-advance when revealCorrectAnswers is false (skip showing the locked state)
+// Don't auto-advance on the last question - let the user click "Finish"
+watch(
+  () => actionState.value?.isAnswerLocked,
+  (isLocked) => {
+    if (
+      isLocked &&
+      actionState.value?.mode === 'normal' &&
+      !props.challenge.quiz.revealCorrectAnswers &&
+      !isLastQuestion.value
+    ) {
+      handlers.value?.continue()
+    }
+  },
+)
+
 // Determine button text for continue action
 const { t } = useI18n()
 const continueButtonText = computed(() => {
@@ -258,6 +306,53 @@ const nextButtonText = computed(() => {
   }
   return t('quiz.nextQuestion')
 })
+
+// QuizProgress visibility and props for both active quiz and review mode
+const showQuizProgress = computed(() => {
+  // Show during active quiz (multiple questions, not completed)
+  if (
+    activeSubmission.value &&
+    !quizCompleted.value &&
+    questions.value.length > 1
+  ) {
+    return true
+  }
+  // Show during review mode (multiple questions)
+  if (isReviewMode.value && reviewQuestions.value.length > 1) {
+    return true
+  }
+  return false
+})
+
+const progressCurrentIndex = computed(() => {
+  if (isReviewMode.value) {
+    const idx = reviewModeRef.value?.currentQuestionIndex
+    return idx !== undefined ? unref(idx) : 0
+  }
+  return currentQuestionIndex.value
+})
+
+const progressTotalQuestions = computed(() => {
+  if (isReviewMode.value) {
+    return reviewQuestions.value.length
+  }
+  return questions.value.length
+})
+
+const progressResults = computed(() => {
+  if (isReviewMode.value) {
+    // Build results aligned with reviewQuestions order
+    // Each result at index i corresponds to reviewQuestions[i]
+    const responseMap = new Map(
+      completedSubmissionResults.value.map((r) => [r.questionId, r]),
+    )
+    return reviewQuestions.value.map((q) => {
+      const result = responseMap.get(q.id)
+      return result ?? { questionId: q.id, isCorrect: null }
+    })
+  }
+  return questionResults.value
+})
 </script>
 
 <template>
@@ -269,11 +364,11 @@ const nextButtonText = computed(() => {
     </template>
     <template #title>
       <QuizProgress
-        v-if="activeSubmission && !quizCompleted && questions.length > 1"
-        :question="currentQuestion"
-        :current-index="currentQuestionIndex"
-        :total-questions="questions.length"
-        :results="questionResults"
+        v-if="showQuizProgress"
+        :current-index="progressCurrentIndex"
+        :total-questions="progressTotalQuestions"
+        :results="progressResults"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
       />
     </template>
 
@@ -290,6 +385,7 @@ const nextButtonText = computed(() => {
         :points-awarded="finalResult.pointsAwarded ?? 0"
         :results="questionResults"
         :completed-at="finalResult.completedAt"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
       />
     </template>
 
@@ -310,6 +406,7 @@ const nextButtonText = computed(() => {
         :results="completedSubmissionResults"
         :can-review="canReview"
         :completed-at="completedSubmission.completedAt"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @start-review="handleStartReview"
       />
     </template>
@@ -340,6 +437,7 @@ const nextButtonText = computed(() => {
         :current-index="currentQuestionIndex"
         :submission-id="activeSubmission?.id ?? ''"
         :is-last-question="isLastQuestion"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @answer-submitted="handleAnswerSubmitted"
       />
       <QuizOrderingQuestion
@@ -357,6 +455,7 @@ const nextButtonText = computed(() => {
             : undefined
         "
         :is-last-question="isLastQuestion"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @answer-submitted="handleAnswerSubmitted"
       />
       <QuizNumberQuestion
@@ -368,6 +467,7 @@ const nextButtonText = computed(() => {
         :current-index="currentQuestionIndex"
         :submission-id="activeSubmission?.id ?? ''"
         :is-last-question="isLastQuestion"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @answer-submitted="handleAnswerSubmitted"
       />
       <QuizJsonQuestion
@@ -379,6 +479,7 @@ const nextButtonText = computed(() => {
         :current-index="currentQuestionIndex"
         :submission-id="activeSubmission?.id ?? ''"
         :is-last-question="isLastQuestion"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @answer-submitted="handleAnswerSubmitted"
       />
       <QuizFreeTextQuestion
@@ -390,6 +491,7 @@ const nextButtonText = computed(() => {
         :current-index="currentQuestionIndex"
         :submission-id="activeSubmission?.id ?? ''"
         :is-last-question="isLastQuestion"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @answer-submitted="handleAnswerSubmitted"
       />
     </template>
@@ -412,6 +514,7 @@ const nextButtonText = computed(() => {
         :results="completedSubmissionResults"
         :can-review="canReview"
         :completed-at="completedSubmission.completedAt"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @start-review="handleStartReview"
       />
     </template>
@@ -446,7 +549,11 @@ const nextButtonText = computed(() => {
             :loading="actionState.isSubmitting"
             @click="handlers?.submit"
           >
-            {{ $t('quiz.lockAnswer') }}
+            {{
+              challenge.quiz.revealCorrectAnswers
+                ? $t('quiz.lockAnswer')
+                : continueButtonText
+            }}
           </DesignButton>
           <DesignButton v-else size="large" @click="handlers?.continue">
             {{ continueButtonText }}

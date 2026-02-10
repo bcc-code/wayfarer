@@ -376,13 +376,24 @@ func (c *CacheWithRegistry) invalidateAchievementLocal(achievementID string) {
 
 // InvalidateQuiz invalidates all cache entries related to a quiz and broadcasts to other instances
 func (c *CacheWithRegistry) InvalidateQuiz(quizID string) {
-	c.invalidateQuizLocal(quizID)
+	c.invalidateQuizLocal(quizID, "")
 	c.broadcast(InvalidationMessage{Type: InvalidationTypeQuiz, ID: quizID})
 }
 
+// InvalidateQuizWithChallenge invalidates all cache entries related to a quiz including the challenge lookup cache
+func (c *CacheWithRegistry) InvalidateQuizWithChallenge(quizID, challengeID string) {
+	c.invalidateQuizLocal(quizID, challengeID)
+	c.broadcast(InvalidationMessage{Type: InvalidationTypeQuiz, ID: quizID, ChallengeID: challengeID})
+}
+
 // invalidateQuizLocal invalidates quiz cache entries on this instance only
-func (c *CacheWithRegistry) invalidateQuizLocal(quizID string) {
+func (c *CacheWithRegistry) invalidateQuizLocal(quizID, challengeID string) {
 	c.Delete(QuizKey(quizID))
+
+	// Invalidate quiz by challenge lookup if challenge ID is provided
+	if challengeID != "" {
+		c.Delete(QuizByChallengeKey(challengeID))
+	}
 
 	// All quiz list/filter queries
 	c.DeletePrefix(PrefixQuizzesFilter)

@@ -39,7 +39,9 @@
       "receivedPoints": "You received {points} points.",
       "betterLuckNextTime": "Better luck next time!",
       "wellDone": "Well done!",
-      "perfect": "Perfect!"
+      "perfect": "Perfect!",
+      "thanksForAnswers": "Thanks for your answers!",
+      "resultsRevealedLater": "The results will be revealed later."
     }
   },
   "challenges": {

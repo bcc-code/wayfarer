@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/bcc-media/wayfarer/internal/cache"
@@ -212,7 +213,7 @@ func (r *mutationResolver) UpdateQuiz(ctx context.Context, id string, input mode
 	}
 
 	// Invalidate caches
-	r.Cache.InvalidateQuiz(id)
+	r.Cache.InvalidateQuizWithChallenge(id, existingQuiz.ChallengeID)
 	r.Cache.InvalidateProject(existingQuiz.ProjectID)
 
 	// Convert to GraphQL model
@@ -246,7 +247,7 @@ func (r *mutationResolver) DeleteQuiz(ctx context.Context, id string) (bool, err
 	}
 
 	// Invalidate caches
-	r.Cache.InvalidateQuiz(id)
+	r.Cache.InvalidateQuizWithChallenge(id, existingQuiz.ChallengeID)
 	r.Cache.InvalidateProject(existingQuiz.ProjectID)
 
 	return true, nil
@@ -301,14 +302,15 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 	if input.AllowMultipleSelection != nil {
 		params.Allowmultipleselection = input.AllowMultipleSelection
 	}
+	// pgtype.Numeric.Scan() requires a string representation to properly set Valid=true
 	if input.MinValue != nil {
-		_ = params.Minvalue.Scan(*input.MinValue)
+		_ = params.Minvalue.Scan(fmt.Sprintf("%f", *input.MinValue))
 	}
 	if input.MaxValue != nil {
-		_ = params.Maxvalue.Scan(*input.MaxValue)
+		_ = params.Maxvalue.Scan(fmt.Sprintf("%f", *input.MaxValue))
 	}
 	if input.StepValue != nil {
-		_ = params.Stepvalue.Scan(*input.StepValue)
+		_ = params.Stepvalue.Scan(fmt.Sprintf("%f", *input.StepValue))
 	}
 	if input.TimeoutSeconds != nil {
 		ts := int32(*input.TimeoutSeconds)
@@ -384,7 +386,7 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 	}
 
 	// Invalidate caches
-	r.Cache.InvalidateQuiz(quizID)
+	r.Cache.InvalidateQuizWithChallenge(quizID, quiz.ChallengeID)
 
 	// Convert to GraphQL model
 	return convertCreateQuizQuestionRowToInterface(questionRow), nil
@@ -436,14 +438,15 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	if input.AllowMultipleSelection != nil {
 		params.Allowmultipleselection = input.AllowMultipleSelection
 	}
+	// pgtype.Numeric.Scan() requires a string representation to properly set Valid=true
 	if input.MinValue != nil {
-		_ = params.Minvalue.Scan(*input.MinValue)
+		_ = params.Minvalue.Scan(fmt.Sprintf("%f", *input.MinValue))
 	}
 	if input.MaxValue != nil {
-		_ = params.Maxvalue.Scan(*input.MaxValue)
+		_ = params.Maxvalue.Scan(fmt.Sprintf("%f", *input.MaxValue))
 	}
 	if input.StepValue != nil {
-		_ = params.Stepvalue.Scan(*input.StepValue)
+		_ = params.Stepvalue.Scan(fmt.Sprintf("%f", *input.StepValue))
 	}
 	if input.TimeoutSeconds != nil {
 		ts := int32(*input.TimeoutSeconds)
@@ -531,7 +534,7 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	r.Cache.InvalidateQuiz(question.QuizID)
+	r.Cache.InvalidateQuizWithChallenge(question.QuizID, quiz.ChallengeID)
 	// Also invalidate answers cache if answers or ordering items were updated
 	if len(input.PredefinedAnswers) > 0 || len(input.OrderingItems) > 0 {
 		r.Cache.InvalidateQuizAnswers(id)
@@ -570,7 +573,7 @@ func (r *mutationResolver) DeleteQuizQuestion(ctx context.Context, id string) (b
 		return false, fmt.Errorf("failed to delete question: %w", err)
 	}
 
-	r.Cache.InvalidateQuiz(question.QuizID)
+	r.Cache.InvalidateQuizWithChallenge(question.QuizID, quiz.ChallengeID)
 
 	return true, nil
 }
@@ -604,7 +607,7 @@ func (r *mutationResolver) ReorderQuizQuestions(ctx context.Context, quizID stri
 		}
 	}
 
-	r.Cache.InvalidateQuiz(quizID)
+	r.Cache.InvalidateQuizWithChallenge(quizID, quiz.ChallengeID)
 
 	// Load and return reordered questions
 	thunk2 := r.Loaders.QuizQuestionsByQuizLoader.Load(ctx, quizID)
@@ -871,7 +874,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		// FREE_TEXT is not graded - leave is_correct NULL
 	case "NUMBER":
 		if input.NumberResponse != nil {
-			_ = params.Numberresponse.Scan(*input.NumberResponse)
+			_ = params.Numberresponse.Scan(strconv.FormatFloat(*input.NumberResponse, 'f', -1, 64))
 		}
 		// NUMBER could be graded if we stored correct answer, but for now leave NULL
 	case "JSON":
@@ -1267,6 +1270,20 @@ func (r *mutationResolver) FinalizeQuiz(ctx context.Context, submissionID string
 
 		// Award achievement if criteria met
 		if shouldAward {
+			// Check if user already has this achievement to avoid duplicate key errors
+			// which would abort the entire transaction
+			alreadyHas, checkErr := qtx.CheckUserHasAchievement(ctx, sqlc.CheckUserHasAchievementParams{
+				UserID:        userID,
+				AchievementID: ach.AchievementID,
+			})
+			if checkErr != nil {
+				fmt.Printf("warning: failed to check achievement %s for user %s: %v\n", ach.AchievementID, userID, checkErr)
+				continue
+			}
+			if alreadyHas {
+				continue
+			}
+
 			err = qtx.AwardUserAchievement(ctx, sqlc.AwardUserAchievementParams{
 				UserID:        userID,
 				AchievementID: ach.AchievementID,

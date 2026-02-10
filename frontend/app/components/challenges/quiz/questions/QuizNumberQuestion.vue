@@ -11,6 +11,8 @@ const props = defineProps<{
   totalQuestions: number
   currentIndex: number
   submissionId: string
+  // Controls whether to show correct/incorrect after answering
+  revealCorrectAnswers?: boolean
   // Review mode props
   readonly?: boolean
   preSelectedAnswer?: number
@@ -28,7 +30,8 @@ const emit = defineEmits<{
 const { track } = useAnalytics()
 const { executeMutation: submitAnswer } = useSubmitQuizAnswerMutation()
 
-const currentValue = ref(0)
+// Initialize with pre-selected value in review mode, otherwise start at 0
+const currentValue = ref(props.preSelectedAnswer ?? 0)
 const isSubmitting = ref(false)
 const isAnswerConfirmed = ref(false)
 const submittedResult = ref<{ isCorrect: boolean | null } | null>(null)
@@ -118,6 +121,7 @@ defineExpose({ actionState, handlers })
       :min="question.minValue ?? 0"
       :max="question.maxValue ?? 100"
       :step="question.stepValue ?? 1"
+      :disabled="readonly"
     />
   </div>
 </template>

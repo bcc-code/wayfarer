@@ -75,8 +75,18 @@ const classes = cva(
         correct: true,
         class: 'border-accent-positive',
       },
+      // Selected answer when not showing correct/wrong
       {
         confirmed: true,
+        highlighted: true,
+        wrong: false,
+        correct: false,
+        class: 'border-accent-contrast text-accent-contrast',
+      },
+      // Non-selected answers when not showing correct/wrong
+      {
+        confirmed: true,
+        highlighted: false,
         wrong: false,
         correct: false,
         class: 'border-border-default opacity-50',
@@ -114,6 +124,12 @@ const classes = cva(
     >
       <IconCheck class="size-6" />
       {{ $t('quiz.correctAnswer') }}
+    </span>
+    <span
+      v-if="confirmed && selected && !correct && !wrong"
+      class="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 text-label text-on-accent bg-accent-contrast rounded-full px-3 py-1 flex gap-1 items-center"
+    >
+      {{ $t('quiz.yourAnswer') }}
     </span>
   </button>
 </template>

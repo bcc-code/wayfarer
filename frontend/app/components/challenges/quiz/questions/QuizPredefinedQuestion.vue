@@ -11,6 +11,8 @@ const props = defineProps<{
   totalQuestions: number
   currentIndex: number
   submissionId: string
+  // Controls whether to show correct/incorrect after answering
+  revealCorrectAnswers?: boolean
   // Review mode props
   readonly?: boolean
   preSelectedAnswerIds?: string[]
@@ -102,11 +104,12 @@ function handleNext() {
 }
 
 // Determine if we should show correct/wrong highlighting
-// In normal mode: always show after confirmation
+// In normal mode: only show if revealCorrectAnswers is true (defaults to true)
 // In readonly mode: only show if showCorrectAnswers is true
 function shouldShowCorrect(alternative: { isCorrect: boolean | null }) {
   if (!isAnswerConfirmed.value) return false
   if (props.readonly && !props.showCorrectAnswers) return false
+  if (!props.readonly && props.revealCorrectAnswers === false) return false
   return alternative.isCorrect === true
 }
 
@@ -116,6 +119,7 @@ function shouldShowWrong(alternative: {
 }) {
   if (!isAnswerConfirmed.value) return false
   if (props.readonly && !props.showCorrectAnswers) return false
+  if (!props.readonly && props.revealCorrectAnswers === false) return false
   return (
     selectedAnswer.value === alternative.id && alternative.isCorrect === false
   )

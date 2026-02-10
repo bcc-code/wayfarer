@@ -178,7 +178,7 @@ const questionTypeOptions = [
     <UForm
       :state
       :schema="schema"
-      class="flex max-w-md flex-col gap-6"
+      class="flex max-w-3xl flex-col gap-6"
       @submit.prevent="handleSubmit"
     >
       <h3 class="text-lg font-semibold">Quiz-innstillinger</h3>

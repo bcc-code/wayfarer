@@ -3,6 +3,7 @@ const props = defineProps<{
   label?: string
   placeholder?: string
   maxlength?: number
+  disabled?: boolean
 }>()
 
 const modelValue = defineModel<string>()
@@ -33,6 +34,7 @@ const isOverLimit = computed(
       }"
       :rows="8"
       :placeholder
+      :disabled
       autoresize
       class="w-full"
     />

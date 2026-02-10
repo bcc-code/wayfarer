@@ -1,4 +1,4 @@
-import type { ComputedRef } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import type {
   ChallengePageQuery,
   SubmitQuizAnswerMutation,
@@ -16,11 +16,6 @@ export type OrderedQuestion = QuizSubmission['orderedQuestions'][number]
 
 export type QuizResponseData = QuizSubmission['responses'][number]
 
-export type PredefinedResponseData = Extract<
-  QuizResponseData,
-  { __typename: 'PredefinedResponse' }
->
-
 export type SubmitAnswerResponse = SubmitQuizAnswerMutation['submitQuizAnswer']
 
 export type PredefinedQuestionData = Extract<
@@ -28,9 +23,19 @@ export type PredefinedQuestionData = Extract<
   { __typename: 'PredefinedQuestion' }
 >
 
+export type PredefinedResponseData = Extract<
+  QuizResponseData,
+  { __typename: 'PredefinedResponse' }
+>
+
 export type NumberQuestionData = Extract<
   OrderedQuestion,
   { __typename: 'NumberQuestion' }
+>
+
+export type NumberResponseData = Extract<
+  QuizResponseData,
+  { __typename: 'NumberResponse' }
 >
 
 export type JsonQuestionData = Extract<
@@ -38,9 +43,19 @@ export type JsonQuestionData = Extract<
   { __typename: 'JsonQuestion' }
 >
 
+export type JsonResponseData = Extract<
+  QuizResponseData,
+  { __typename: 'JsonResponse' }
+>
+
 export type FreeTextQuestionData = Extract<
   OrderedQuestion,
   { __typename: 'FreeTextQuestion' }
+>
+
+export type FreeTextResponseData = Extract<
+  QuizResponseData,
+  { __typename: 'FreeTextResponse' }
 >
 
 export type OrderingQuestionData = Extract<
@@ -86,4 +101,5 @@ export interface QuizActionHandlers {
 export interface QuizQuestionExposed {
   actionState: ComputedRef<QuizActionState>
   handlers: QuizActionHandlers
+  currentQuestionIndex?: Ref<number> // For review mode navigation tracking
 }

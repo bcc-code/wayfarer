@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
-import type { QuizFormData } from '../quiz/AdminQuizForm.vue'
 import z from 'zod'
 
 const props = defineProps<{
@@ -19,8 +18,8 @@ const props = defineProps<{
     pluginChallengeId?: string
     notificationText?: string
   }
-  quizData?: QuizFormData
   projectId?: string
+  challengeId?: string
   colors?: Colors
   submitLabel: string
   isEditMode?: boolean
@@ -45,7 +44,6 @@ export interface ChallengeFormData {
   allowSelfCompletion?: boolean
   pluginChallengeId?: string
   notificationText?: string
-  quiz?: QuizFormData
 }
 
 const schema = z
@@ -101,7 +99,6 @@ const state = reactive<Schema>({
   notificationText: props.initialData?.notificationText ?? '',
 })
 
-const quizFormData = ref<QuizFormData | undefined>(props.quizData)
 
 // Update state when initialData changes (for edit mode after data loads)
 watch(
@@ -126,16 +123,6 @@ watch(
   { once: true },
 )
 
-watch(
-  () => props.quizData,
-  (data) => {
-    if (data) {
-      quizFormData.value = data
-    }
-  },
-  { once: true },
-)
-
 const challengeTypeOptions = [
   { value: ChallengeType.Simple, label: 'Enkel' },
   { value: ChallengeType.External, label: 'Ekstern' },
@@ -143,15 +130,10 @@ const challengeTypeOptions = [
   { value: ChallengeType.Plugin, label: 'Plugin' },
 ]
 
-function handleQuizSave(data: QuizFormData) {
-  quizFormData.value = data
-}
-
 function handleSubmit(event: FormSubmitEvent<Schema>) {
   if (event.data) {
     emit('submit', {
       ...event.data,
-      quiz: state.type === ChallengeType.Quiz ? quizFormData.value : undefined,
     })
   }
 }
@@ -314,13 +296,33 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
         </UButton>
       </UForm>
 
-      <!-- Quiz Form (shown when Quiz type is selected) -->
+      <!-- Quiz section (shown when Quiz type is selected) -->
       <div v-if="state.type === ChallengeType.Quiz" class="border-t pt-6">
-        <AdminQuizForm
-          :quiz-data="quizFormData"
-          :project-id="projectId ?? ''"
-          @save="handleQuizSave"
-        />
+        <h3 class="text-lg font-semibold mb-4">Quiz</h3>
+        <template v-if="isEditMode && projectId && challengeId">
+          <div class="border border-default rounded-lg p-4 space-y-3">
+            <p class="text-text-muted">
+              Konfigurer quiz-innstillinger og spørsmål.
+            </p>
+            <UButton
+              :to="{
+                name: 'admin-projects-projectId-challenges-challengeId-quiz',
+                params: { projectId, challengeId },
+              }"
+            >
+              Rediger quiz
+            </UButton>
+          </div>
+        </template>
+        <div
+          v-else
+          class="border border-dashed border-default rounded-lg p-4 text-center"
+        >
+          <p class="text-text-muted">
+            Quiz-innstillinger blir tilgjengelig etter at utfordringen er
+            opprettet.
+          </p>
+        </div>
       </div>
     </div>
 
