@@ -39,7 +39,7 @@ const resultText = computed(() => {
 
 // Use computed to reactively update the translated text with animated value
 const pointsText = computed(() => {
-  if (props.score === 0) {
+  if (props.pointsAwarded === 0) {
     return t('quiz.result.receivedNoPoints')
   }
   return t('quiz.result.receivedPoints', { points: animatedPoints.value })
