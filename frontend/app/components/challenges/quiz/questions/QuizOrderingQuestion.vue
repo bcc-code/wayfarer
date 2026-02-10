@@ -14,6 +14,8 @@ const props = defineProps<{
   totalQuestions: number
   currentIndex: number
   submissionId: string
+  // Controls whether to show correct/incorrect after answering
+  revealCorrectAnswers?: boolean
   // Session-based betting props
   sessionState?: QuizSessionState
   existingResponse?: OrderingResponseData
@@ -198,8 +200,8 @@ async function handleLockAnswer() {
     submittedResult.value = { isCorrect }
     isAnswerConfirmed.value = true
 
-    // Trigger animation
-    if (containerRef.value) {
+    // Trigger animation only if revealing correct answers
+    if (containerRef.value && props.revealCorrectAnswers !== false) {
       if (isCorrect === true) {
         pulse(containerRef.value)
       } else if (isCorrect === false) {

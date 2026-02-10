@@ -11,6 +11,8 @@ const props = defineProps<{
   totalQuestions: number
   currentIndex: number
   submissionId: string
+  // Controls whether to show correct/incorrect after answering
+  revealCorrectAnswers?: boolean
   // Review mode props
   readonly?: boolean
   preSelectedAnswer?: number

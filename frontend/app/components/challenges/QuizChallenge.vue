@@ -274,6 +274,22 @@ const activeRef = computed(() =>
 const actionState = computed(() => activeRef.value?.actionState)
 const handlers = computed(() => activeRef.value?.handlers)
 
+// Auto-advance when revealCorrectAnswers is false (skip showing the locked state)
+// Don't auto-advance on the last question - let the user click "Finish"
+watch(
+  () => actionState.value?.isAnswerLocked,
+  (isLocked) => {
+    if (
+      isLocked &&
+      actionState.value?.mode === 'normal' &&
+      !props.challenge.quiz.revealCorrectAnswers &&
+      !isLastQuestion.value
+    ) {
+      handlers.value?.continue()
+    }
+  },
+)
+
 // Determine button text for continue action
 const { t } = useI18n()
 const continueButtonText = computed(() => {
@@ -352,6 +368,7 @@ const progressResults = computed(() => {
         :current-index="progressCurrentIndex"
         :total-questions="progressTotalQuestions"
         :results="progressResults"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
       />
     </template>
 
@@ -418,6 +435,7 @@ const progressResults = computed(() => {
         :current-index="currentQuestionIndex"
         :submission-id="activeSubmission?.id ?? ''"
         :is-last-question="isLastQuestion"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @answer-submitted="handleAnswerSubmitted"
       />
       <QuizOrderingQuestion
@@ -435,6 +453,7 @@ const progressResults = computed(() => {
             : undefined
         "
         :is-last-question="isLastQuestion"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @answer-submitted="handleAnswerSubmitted"
       />
       <QuizNumberQuestion
@@ -446,6 +465,7 @@ const progressResults = computed(() => {
         :current-index="currentQuestionIndex"
         :submission-id="activeSubmission?.id ?? ''"
         :is-last-question="isLastQuestion"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @answer-submitted="handleAnswerSubmitted"
       />
       <QuizJsonQuestion
@@ -457,6 +477,7 @@ const progressResults = computed(() => {
         :current-index="currentQuestionIndex"
         :submission-id="activeSubmission?.id ?? ''"
         :is-last-question="isLastQuestion"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @answer-submitted="handleAnswerSubmitted"
       />
       <QuizFreeTextQuestion
@@ -468,6 +489,7 @@ const progressResults = computed(() => {
         :current-index="currentQuestionIndex"
         :submission-id="activeSubmission?.id ?? ''"
         :is-last-question="isLastQuestion"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @answer-submitted="handleAnswerSubmitted"
       />
     </template>
@@ -524,7 +546,11 @@ const progressResults = computed(() => {
             :loading="actionState.isSubmitting"
             @click="handlers?.submit"
           >
-            {{ $t('quiz.lockAnswer') }}
+            {{
+              challenge.quiz.revealCorrectAnswers
+                ? $t('quiz.lockAnswer')
+                : continueButtonText
+            }}
           </DesignButton>
           <DesignButton v-else size="large" @click="handlers?.continue">
             {{ continueButtonText }}
