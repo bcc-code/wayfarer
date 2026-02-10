@@ -70,6 +70,18 @@ const preSubmittedOrder = computed(() => {
   return response.submittedOrder
 })
 
+const preSelectedNumber = computed(() => {
+  const response = currentResponse.value
+  if (!response || response.__typename !== 'NumberResponse') return undefined
+  return response.numberResponse ?? undefined
+})
+
+const preSelectedText = computed(() => {
+  const response = currentResponse.value
+  if (!response || response.__typename !== 'FreeTextResponse') return undefined
+  return response.textResponse ?? undefined
+})
+
 const isFirstQuestion = computed(() => currentQuestionIndex.value === 0)
 const isLastQuestion = computed(
   () => currentQuestionIndex.value === props.questions.length - 1,
@@ -184,6 +196,7 @@ defineExpose({ actionState, handlers, currentQuestionIndex })
       :current-index="currentQuestionIndex"
       submission-id=""
       :readonly="true"
+      :pre-selected-answer="preSelectedNumber"
       :show-previous-button="!isFirstQuestion"
       :is-last-question="isLastQuestion"
       @previous="handlePrevious"
@@ -200,6 +213,7 @@ defineExpose({ actionState, handlers, currentQuestionIndex })
       :current-index="currentQuestionIndex"
       submission-id=""
       :readonly="true"
+      :pre-selected-answer="preSelectedText"
       :show-previous-button="!isFirstQuestion"
       :is-last-question="isLastQuestion"
       @previous="handlePrevious"

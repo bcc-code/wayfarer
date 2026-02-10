@@ -13,7 +13,7 @@ const props = defineProps<{
   submissionId: string
   // Review mode props
   readonly?: boolean
-  preSelectedAnswer?: number
+  preSelectedAnswer?: string
   showCorrectAnswers?: boolean
   showPreviousButton?: boolean
   isLastQuestion?: boolean
@@ -28,7 +28,8 @@ const emit = defineEmits<{
 const { track } = useAnalytics()
 const { executeMutation: submitAnswer } = useSubmitQuizAnswerMutation()
 
-const currentValue = ref('')
+// Initialize with pre-selected value in review mode, otherwise start empty
+const currentValue = ref(props.preSelectedAnswer ?? '')
 const isSubmitting = ref(false)
 const isAnswerConfirmed = ref(false)
 const submittedResult = ref<{ isCorrect: boolean | null } | null>(null)
@@ -108,6 +109,7 @@ defineExpose({ actionState, handlers })
     <DesignTextarea
       v-model="currentValue"
       :placeholder="$t('quiz.writeYourAnswer')"
+      :disabled="readonly"
     />
   </div>
 </template>
