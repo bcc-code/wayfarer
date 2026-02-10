@@ -6,6 +6,10 @@ import type {
   PredefinedResponseData,
   OrderingQuestionData,
   OrderingResponseData,
+  NumberQuestionData,
+  NumberResponseData,
+  FreeTextQuestionData,
+  FreeTextResponseData,
   QuizQuestionExposed,
 } from './quiz/types'
 import type {
@@ -63,37 +67,65 @@ const completedSubmissionResults = computed<QuestionResult[]>(() => {
   }))
 })
 
-// Check if user can review their answers (has PredefinedResponse or OrderingResponse answers)
+// Check if user can review their answers (has reviewable responses)
 const canReview = computed(() => {
   if (!completedSubmission.value) return false
   return completedSubmission.value.responses.some(
     (r) =>
       r.__typename === 'PredefinedResponse' ||
-      r.__typename === 'OrderingResponse',
+      r.__typename === 'OrderingResponse' ||
+      r.__typename === 'NumberResponse' ||
+      r.__typename === 'FreeTextResponse',
   )
 })
 
-// Get questions for review mode (PredefinedQuestion and OrderingQuestion types)
+// Get questions for review mode
 const reviewQuestions = computed<
-  (PredefinedQuestionData | OrderingQuestionData)[]
+  (
+    | PredefinedQuestionData
+    | OrderingQuestionData
+    | NumberQuestionData
+    | FreeTextQuestionData
+  )[]
 >(() => {
   if (!completedSubmission.value) return []
   return completedSubmission.value.orderedQuestions.filter(
-    (q): q is PredefinedQuestionData | OrderingQuestionData =>
+    (
+      q,
+    ): q is
+      | PredefinedQuestionData
+      | OrderingQuestionData
+      | NumberQuestionData
+      | FreeTextQuestionData =>
       q.__typename === 'PredefinedQuestion' ||
-      q.__typename === 'OrderingQuestion',
+      q.__typename === 'OrderingQuestion' ||
+      q.__typename === 'NumberQuestion' ||
+      q.__typename === 'FreeTextQuestion',
   )
 })
 
-// Get responses for review mode (PredefinedResponse and OrderingResponse types)
+// Get responses for review mode
 const reviewResponses = computed<
-  (PredefinedResponseData | OrderingResponseData)[]
+  (
+    | PredefinedResponseData
+    | OrderingResponseData
+    | NumberResponseData
+    | FreeTextResponseData
+  )[]
 >(() => {
   if (!completedSubmission.value) return []
   return completedSubmission.value.responses.filter(
-    (r): r is PredefinedResponseData | OrderingResponseData =>
+    (
+      r,
+    ): r is
+      | PredefinedResponseData
+      | OrderingResponseData
+      | NumberResponseData
+      | FreeTextResponseData =>
       r.__typename === 'PredefinedResponse' ||
-      r.__typename === 'OrderingResponse',
+      r.__typename === 'OrderingResponse' ||
+      r.__typename === 'NumberResponse' ||
+      r.__typename === 'FreeTextResponse',
   )
 })
 
