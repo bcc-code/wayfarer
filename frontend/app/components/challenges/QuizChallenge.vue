@@ -385,6 +385,7 @@ const progressResults = computed(() => {
         :points-awarded="finalResult.pointsAwarded ?? 0"
         :results="questionResults"
         :completed-at="finalResult.completedAt"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
       />
     </template>
 
@@ -405,6 +406,7 @@ const progressResults = computed(() => {
         :results="completedSubmissionResults"
         :can-review="canReview"
         :completed-at="completedSubmission.completedAt"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @start-review="handleStartReview"
       />
     </template>
@@ -512,6 +514,7 @@ const progressResults = computed(() => {
         :results="completedSubmissionResults"
         :can-review="canReview"
         :completed-at="completedSubmission.completedAt"
+        :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @start-review="handleStartReview"
       />
     </template>

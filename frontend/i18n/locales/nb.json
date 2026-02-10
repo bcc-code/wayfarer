@@ -39,7 +39,9 @@
       "receivedPoints": "Du samlet {points} poeng.",
       "betterLuckNextTime": "Bedre lykke neste gang!",
       "wellDone": "Bra jobbet!",
-      "perfect": "Perfekt!"
+      "perfect": "Perfekt!",
+      "thanksForAnswers": "Takk for svarene dine!",
+      "resultsRevealedLater": "Resultatene avsløres senere."
     }
   },
   "challenges": {

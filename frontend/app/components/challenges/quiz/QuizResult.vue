@@ -10,6 +10,7 @@ const props = defineProps<{
   results: QuestionResult[]
   canReview?: boolean
   completedAt?: string | null
+  revealCorrectAnswers?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -82,38 +83,75 @@ onMounted(() => {
     ref="containerRef"
     class="text-center p-default flex flex-col gap-large grow relative overflow-hidden"
   >
-    <div v-if="showConfetti" v-confetti />
-    <div class="grow flex flex-col items-center justify-center gap-default">
-      <QuizProgress
-        size="large"
-        :total-questions="results.length"
-        :current-index="results.length"
-        :results
-      />
+    <!-- Results hidden - show thank you message -->
+    <template v-if="revealCorrectAnswers === false">
+      <div class="grow flex flex-col items-center justify-center gap-default">
+        <div
+          class="rounded-full bg-accent-positive/10 p-6 flex items-center justify-center"
+        >
+          <UIcon name="lucide:check" class="size-12 text-accent-positive" />
+        </div>
+        <h1 class="text-heading text-text-default">
+          {{ $t('quiz.result.thanksForAnswers') }}
+        </h1>
+        <p class="text-body text-text-secondary">
+          {{ $t('quiz.result.resultsRevealedLater') }}
+        </p>
+      </div>
 
-      <h1 class="text-heading text-text-default tabular-nums">
-        {{ resultText }}
-        <br />
-        {{ pointsText }}
-      </h1>
-    </div>
-
-    <div class="flex flex-col gap-small">
-      <DesignButton
-        v-if="canReview"
-        size="large"
-        variant="secondary"
-        class="w-full"
-        @click="emit('startReview')"
-      >
-        {{ $t('quiz.reviewAnswers') }}
-      </DesignButton>
-
-      <NuxtLink :to="{ name: 'challenges' }">
-        <DesignButton size="large" class="w-full">
-          {{ $t('quiz.done') }}
+      <div class="flex flex-col gap-small">
+        <DesignButton
+          v-if="canReview"
+          size="large"
+          variant="secondary"
+          class="w-full"
+          @click="emit('startReview')"
+        >
+          {{ $t('quiz.reviewAnswers') }}
         </DesignButton>
-      </NuxtLink>
-    </div>
+        <NuxtLink :to="{ name: 'challenges' }">
+          <DesignButton size="large" class="w-full">
+            {{ $t('quiz.done') }}
+          </DesignButton>
+        </NuxtLink>
+      </div>
+    </template>
+
+    <!-- Normal results view -->
+    <template v-else>
+      <div v-if="showConfetti" v-confetti />
+      <div class="grow flex flex-col items-center justify-center gap-default">
+        <QuizProgress
+          size="large"
+          :total-questions="results.length"
+          :current-index="results.length"
+          :results
+        />
+
+        <h1 class="text-heading text-text-default tabular-nums">
+          {{ resultText }}
+          <br />
+          {{ pointsText }}
+        </h1>
+      </div>
+
+      <div class="flex flex-col gap-small">
+        <DesignButton
+          v-if="canReview"
+          size="large"
+          variant="secondary"
+          class="w-full"
+          @click="emit('startReview')"
+        >
+          {{ $t('quiz.reviewAnswers') }}
+        </DesignButton>
+
+        <NuxtLink :to="{ name: 'challenges' }">
+          <DesignButton size="large" class="w-full">
+            {{ $t('quiz.done') }}
+          </DesignButton>
+        </NuxtLink>
+      </div>
+    </template>
   </div>
 </template>
