@@ -353,16 +353,22 @@ type ComplexityRoot struct {
 	}
 
 	FreeTextQuestion struct {
-		ID             func(childComplexity int) int
-		Points         func(childComplexity int) int
-		QuestionOrder  func(childComplexity int) int
-		QuestionText   func(childComplexity int) int
-		Quiz           func(childComplexity int) int
-		TimeoutSeconds func(childComplexity int) int
+		BettingEnabled       func(childComplexity int) int
+		BettingMaxAbsolute   func(childComplexity int) int
+		BettingMaxPercentage func(childComplexity int) int
+		BettingMinAbsolute   func(childComplexity int) int
+		BettingMinPercentage func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		Points               func(childComplexity int) int
+		QuestionOrder        func(childComplexity int) int
+		QuestionText         func(childComplexity int) int
+		Quiz                 func(childComplexity int) int
+		TimeoutSeconds       func(childComplexity int) int
 	}
 
 	FreeTextResponse struct {
 		AnsweredAt       func(childComplexity int) int
+		BetAmount        func(childComplexity int) int
 		ID               func(childComplexity int) int
 		PointsEarned     func(childComplexity int) int
 		Question         func(childComplexity int) int
@@ -379,16 +385,22 @@ type ComplexityRoot struct {
 	}
 
 	JsonQuestion struct {
-		ID             func(childComplexity int) int
-		Points         func(childComplexity int) int
-		QuestionOrder  func(childComplexity int) int
-		QuestionText   func(childComplexity int) int
-		Quiz           func(childComplexity int) int
-		TimeoutSeconds func(childComplexity int) int
+		BettingEnabled       func(childComplexity int) int
+		BettingMaxAbsolute   func(childComplexity int) int
+		BettingMaxPercentage func(childComplexity int) int
+		BettingMinAbsolute   func(childComplexity int) int
+		BettingMinPercentage func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		Points               func(childComplexity int) int
+		QuestionOrder        func(childComplexity int) int
+		QuestionText         func(childComplexity int) int
+		Quiz                 func(childComplexity int) int
+		TimeoutSeconds       func(childComplexity int) int
 	}
 
 	JsonResponse struct {
 		AnsweredAt       func(childComplexity int) int
+		BetAmount        func(childComplexity int) int
 		ID               func(childComplexity int) int
 		JSONResponse     func(childComplexity int) int
 		PointsEarned     func(childComplexity int) int
@@ -552,19 +564,25 @@ type ComplexityRoot struct {
 	}
 
 	NumberQuestion struct {
-		ID             func(childComplexity int) int
-		MaxValue       func(childComplexity int) int
-		MinValue       func(childComplexity int) int
-		Points         func(childComplexity int) int
-		QuestionOrder  func(childComplexity int) int
-		QuestionText   func(childComplexity int) int
-		Quiz           func(childComplexity int) int
-		StepValue      func(childComplexity int) int
-		TimeoutSeconds func(childComplexity int) int
+		BettingEnabled       func(childComplexity int) int
+		BettingMaxAbsolute   func(childComplexity int) int
+		BettingMaxPercentage func(childComplexity int) int
+		BettingMinAbsolute   func(childComplexity int) int
+		BettingMinPercentage func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		MaxValue             func(childComplexity int) int
+		MinValue             func(childComplexity int) int
+		Points               func(childComplexity int) int
+		QuestionOrder        func(childComplexity int) int
+		QuestionText         func(childComplexity int) int
+		Quiz                 func(childComplexity int) int
+		StepValue            func(childComplexity int) int
+		TimeoutSeconds       func(childComplexity int) int
 	}
 
 	NumberResponse struct {
 		AnsweredAt       func(childComplexity int) int
+		BetAmount        func(childComplexity int) int
 		ID               func(childComplexity int) int
 		NumberResponse   func(childComplexity int) int
 		PointsEarned     func(childComplexity int) int
@@ -574,17 +592,23 @@ type ComplexityRoot struct {
 	}
 
 	OrderingQuestion struct {
-		ID             func(childComplexity int) int
-		OrderingItems  func(childComplexity int) int
-		Points         func(childComplexity int) int
-		QuestionOrder  func(childComplexity int) int
-		QuestionText   func(childComplexity int) int
-		Quiz           func(childComplexity int) int
-		TimeoutSeconds func(childComplexity int) int
+		BettingEnabled       func(childComplexity int) int
+		BettingMaxAbsolute   func(childComplexity int) int
+		BettingMaxPercentage func(childComplexity int) int
+		BettingMinAbsolute   func(childComplexity int) int
+		BettingMinPercentage func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		OrderingItems        func(childComplexity int) int
+		Points               func(childComplexity int) int
+		QuestionOrder        func(childComplexity int) int
+		QuestionText         func(childComplexity int) int
+		Quiz                 func(childComplexity int) int
+		TimeoutSeconds       func(childComplexity int) int
 	}
 
 	OrderingResponse struct {
 		AnsweredAt       func(childComplexity int) int
+		BetAmount        func(childComplexity int) int
 		ID               func(childComplexity int) int
 		IsCorrect        func(childComplexity int) int
 		PointsEarned     func(childComplexity int) int
@@ -624,6 +648,11 @@ type ComplexityRoot struct {
 
 	PredefinedQuestion struct {
 		AllowMultipleSelection func(childComplexity int) int
+		BettingEnabled         func(childComplexity int) int
+		BettingMaxAbsolute     func(childComplexity int) int
+		BettingMaxPercentage   func(childComplexity int) int
+		BettingMinAbsolute     func(childComplexity int) int
+		BettingMinPercentage   func(childComplexity int) int
 		ID                     func(childComplexity int) int
 		Points                 func(childComplexity int) int
 		PredefinedAnswers      func(childComplexity int) int
@@ -635,6 +664,7 @@ type ComplexityRoot struct {
 
 	PredefinedResponse struct {
 		AnsweredAt        func(childComplexity int) int
+		BetAmount         func(childComplexity int) int
 		ID                func(childComplexity int) int
 		IsCorrect         func(childComplexity int) int
 		PointsEarned      func(childComplexity int) int
@@ -2713,6 +2743,36 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.FirebaseTokenResponse.Token(childComplexity), true
 
+	case "FreeTextQuestion.bettingEnabled":
+		if e.complexity.FreeTextQuestion.BettingEnabled == nil {
+			break
+		}
+
+		return e.complexity.FreeTextQuestion.BettingEnabled(childComplexity), true
+	case "FreeTextQuestion.bettingMaxAbsolute":
+		if e.complexity.FreeTextQuestion.BettingMaxAbsolute == nil {
+			break
+		}
+
+		return e.complexity.FreeTextQuestion.BettingMaxAbsolute(childComplexity), true
+	case "FreeTextQuestion.bettingMaxPercentage":
+		if e.complexity.FreeTextQuestion.BettingMaxPercentage == nil {
+			break
+		}
+
+		return e.complexity.FreeTextQuestion.BettingMaxPercentage(childComplexity), true
+	case "FreeTextQuestion.bettingMinAbsolute":
+		if e.complexity.FreeTextQuestion.BettingMinAbsolute == nil {
+			break
+		}
+
+		return e.complexity.FreeTextQuestion.BettingMinAbsolute(childComplexity), true
+	case "FreeTextQuestion.bettingMinPercentage":
+		if e.complexity.FreeTextQuestion.BettingMinPercentage == nil {
+			break
+		}
+
+		return e.complexity.FreeTextQuestion.BettingMinPercentage(childComplexity), true
 	case "FreeTextQuestion.id":
 		if e.complexity.FreeTextQuestion.ID == nil {
 			break
@@ -2756,6 +2816,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FreeTextResponse.AnsweredAt(childComplexity), true
+	case "FreeTextResponse.betAmount":
+		if e.complexity.FreeTextResponse.BetAmount == nil {
+			break
+		}
+
+		return e.complexity.FreeTextResponse.BetAmount(childComplexity), true
 	case "FreeTextResponse.id":
 		if e.complexity.FreeTextResponse.ID == nil {
 			break
@@ -2818,6 +2884,36 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Image.Width(childComplexity), true
 
+	case "JsonQuestion.bettingEnabled":
+		if e.complexity.JsonQuestion.BettingEnabled == nil {
+			break
+		}
+
+		return e.complexity.JsonQuestion.BettingEnabled(childComplexity), true
+	case "JsonQuestion.bettingMaxAbsolute":
+		if e.complexity.JsonQuestion.BettingMaxAbsolute == nil {
+			break
+		}
+
+		return e.complexity.JsonQuestion.BettingMaxAbsolute(childComplexity), true
+	case "JsonQuestion.bettingMaxPercentage":
+		if e.complexity.JsonQuestion.BettingMaxPercentage == nil {
+			break
+		}
+
+		return e.complexity.JsonQuestion.BettingMaxPercentage(childComplexity), true
+	case "JsonQuestion.bettingMinAbsolute":
+		if e.complexity.JsonQuestion.BettingMinAbsolute == nil {
+			break
+		}
+
+		return e.complexity.JsonQuestion.BettingMinAbsolute(childComplexity), true
+	case "JsonQuestion.bettingMinPercentage":
+		if e.complexity.JsonQuestion.BettingMinPercentage == nil {
+			break
+		}
+
+		return e.complexity.JsonQuestion.BettingMinPercentage(childComplexity), true
 	case "JsonQuestion.id":
 		if e.complexity.JsonQuestion.ID == nil {
 			break
@@ -2861,6 +2957,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JsonResponse.AnsweredAt(childComplexity), true
+	case "JsonResponse.betAmount":
+		if e.complexity.JsonResponse.BetAmount == nil {
+			break
+		}
+
+		return e.complexity.JsonResponse.BetAmount(childComplexity), true
 	case "JsonResponse.id":
 		if e.complexity.JsonResponse.ID == nil {
 			break
@@ -4337,6 +4439,36 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.UpdateWebhook(childComplexity, args["id"].(string), args["input"].(model.UpdateWebhookInput)), true
 
+	case "NumberQuestion.bettingEnabled":
+		if e.complexity.NumberQuestion.BettingEnabled == nil {
+			break
+		}
+
+		return e.complexity.NumberQuestion.BettingEnabled(childComplexity), true
+	case "NumberQuestion.bettingMaxAbsolute":
+		if e.complexity.NumberQuestion.BettingMaxAbsolute == nil {
+			break
+		}
+
+		return e.complexity.NumberQuestion.BettingMaxAbsolute(childComplexity), true
+	case "NumberQuestion.bettingMaxPercentage":
+		if e.complexity.NumberQuestion.BettingMaxPercentage == nil {
+			break
+		}
+
+		return e.complexity.NumberQuestion.BettingMaxPercentage(childComplexity), true
+	case "NumberQuestion.bettingMinAbsolute":
+		if e.complexity.NumberQuestion.BettingMinAbsolute == nil {
+			break
+		}
+
+		return e.complexity.NumberQuestion.BettingMinAbsolute(childComplexity), true
+	case "NumberQuestion.bettingMinPercentage":
+		if e.complexity.NumberQuestion.BettingMinPercentage == nil {
+			break
+		}
+
+		return e.complexity.NumberQuestion.BettingMinPercentage(childComplexity), true
 	case "NumberQuestion.id":
 		if e.complexity.NumberQuestion.ID == nil {
 			break
@@ -4398,6 +4530,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NumberResponse.AnsweredAt(childComplexity), true
+	case "NumberResponse.betAmount":
+		if e.complexity.NumberResponse.BetAmount == nil {
+			break
+		}
+
+		return e.complexity.NumberResponse.BetAmount(childComplexity), true
 	case "NumberResponse.id":
 		if e.complexity.NumberResponse.ID == nil {
 			break
@@ -4435,6 +4573,36 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.NumberResponse.TimeSpentSeconds(childComplexity), true
 
+	case "OrderingQuestion.bettingEnabled":
+		if e.complexity.OrderingQuestion.BettingEnabled == nil {
+			break
+		}
+
+		return e.complexity.OrderingQuestion.BettingEnabled(childComplexity), true
+	case "OrderingQuestion.bettingMaxAbsolute":
+		if e.complexity.OrderingQuestion.BettingMaxAbsolute == nil {
+			break
+		}
+
+		return e.complexity.OrderingQuestion.BettingMaxAbsolute(childComplexity), true
+	case "OrderingQuestion.bettingMaxPercentage":
+		if e.complexity.OrderingQuestion.BettingMaxPercentage == nil {
+			break
+		}
+
+		return e.complexity.OrderingQuestion.BettingMaxPercentage(childComplexity), true
+	case "OrderingQuestion.bettingMinAbsolute":
+		if e.complexity.OrderingQuestion.BettingMinAbsolute == nil {
+			break
+		}
+
+		return e.complexity.OrderingQuestion.BettingMinAbsolute(childComplexity), true
+	case "OrderingQuestion.bettingMinPercentage":
+		if e.complexity.OrderingQuestion.BettingMinPercentage == nil {
+			break
+		}
+
+		return e.complexity.OrderingQuestion.BettingMinPercentage(childComplexity), true
 	case "OrderingQuestion.id":
 		if e.complexity.OrderingQuestion.ID == nil {
 			break
@@ -4484,6 +4652,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.OrderingResponse.AnsweredAt(childComplexity), true
+	case "OrderingResponse.betAmount":
+		if e.complexity.OrderingResponse.BetAmount == nil {
+			break
+		}
+
+		return e.complexity.OrderingResponse.BetAmount(childComplexity), true
 	case "OrderingResponse.id":
 		if e.complexity.OrderingResponse.ID == nil {
 			break
@@ -4667,6 +4841,36 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PredefinedQuestion.AllowMultipleSelection(childComplexity), true
+	case "PredefinedQuestion.bettingEnabled":
+		if e.complexity.PredefinedQuestion.BettingEnabled == nil {
+			break
+		}
+
+		return e.complexity.PredefinedQuestion.BettingEnabled(childComplexity), true
+	case "PredefinedQuestion.bettingMaxAbsolute":
+		if e.complexity.PredefinedQuestion.BettingMaxAbsolute == nil {
+			break
+		}
+
+		return e.complexity.PredefinedQuestion.BettingMaxAbsolute(childComplexity), true
+	case "PredefinedQuestion.bettingMaxPercentage":
+		if e.complexity.PredefinedQuestion.BettingMaxPercentage == nil {
+			break
+		}
+
+		return e.complexity.PredefinedQuestion.BettingMaxPercentage(childComplexity), true
+	case "PredefinedQuestion.bettingMinAbsolute":
+		if e.complexity.PredefinedQuestion.BettingMinAbsolute == nil {
+			break
+		}
+
+		return e.complexity.PredefinedQuestion.BettingMinAbsolute(childComplexity), true
+	case "PredefinedQuestion.bettingMinPercentage":
+		if e.complexity.PredefinedQuestion.BettingMinPercentage == nil {
+			break
+		}
+
+		return e.complexity.PredefinedQuestion.BettingMinPercentage(childComplexity), true
 	case "PredefinedQuestion.id":
 		if e.complexity.PredefinedQuestion.ID == nil {
 			break
@@ -4716,6 +4920,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PredefinedResponse.AnsweredAt(childComplexity), true
+	case "PredefinedResponse.betAmount":
+		if e.complexity.PredefinedResponse.BetAmount == nil {
+			break
+		}
+
+		return e.complexity.PredefinedResponse.BetAmount(childComplexity), true
 	case "PredefinedResponse.id":
 		if e.complexity.PredefinedResponse.ID == nil {
 			break
@@ -9239,6 +9449,11 @@ interface QuizQuestion {
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
+    bettingEnabled: Boolean!
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
 }
 
 type PredefinedQuestion implements QuizQuestion {
@@ -9248,6 +9463,11 @@ type PredefinedQuestion implements QuizQuestion {
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
+    bettingEnabled: Boolean!
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
     allowMultipleSelection: Boolean!
     predefinedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
 }
@@ -9259,6 +9479,11 @@ type FreeTextQuestion implements QuizQuestion {
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
+    bettingEnabled: Boolean!
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
 }
 
 type NumberQuestion implements QuizQuestion {
@@ -9268,6 +9493,11 @@ type NumberQuestion implements QuizQuestion {
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
+    bettingEnabled: Boolean!
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
     minValue: Float
     maxValue: Float
     stepValue: Float
@@ -9280,6 +9510,11 @@ type JsonQuestion implements QuizQuestion {
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
+    bettingEnabled: Boolean!
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
 }
 
 type OrderingQuestion implements QuizQuestion {
@@ -9289,6 +9524,11 @@ type OrderingQuestion implements QuizQuestion {
     questionOrder: Int!
     timeoutSeconds: Int
     points: Int
+    bettingEnabled: Boolean!
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
     orderingItems: [QuizOrderingItem!]! @goField(forceResolver: true)
 }
 
@@ -9339,6 +9579,7 @@ interface QuizResponse {
     answeredAt: DateTime
     timeSpentSeconds: Int
     pointsEarned: Int
+    betAmount: Int
 }
 
 type PredefinedResponse implements QuizResponse {
@@ -9348,6 +9589,7 @@ type PredefinedResponse implements QuizResponse {
     answeredAt: DateTime
     timeSpentSeconds: Int
     pointsEarned: Int
+    betAmount: Int
     selectedAnswerIds: [ID!]!
     selectedAnswers: [QuizPredefinedAnswer!]! @goField(forceResolver: true)
     isCorrect: Boolean
@@ -9360,6 +9602,7 @@ type FreeTextResponse implements QuizResponse {
     answeredAt: DateTime
     timeSpentSeconds: Int
     pointsEarned: Int
+    betAmount: Int
     textResponse: String!
 }
 
@@ -9370,6 +9613,7 @@ type NumberResponse implements QuizResponse {
     answeredAt: DateTime
     timeSpentSeconds: Int
     pointsEarned: Int
+    betAmount: Int
     numberResponse: Float!
 }
 
@@ -9380,6 +9624,7 @@ type JsonResponse implements QuizResponse {
     answeredAt: DateTime
     timeSpentSeconds: Int
     pointsEarned: Int
+    betAmount: Int
     jsonResponse: JSON!
 }
 
@@ -9390,6 +9635,7 @@ type OrderingResponse implements QuizResponse {
     answeredAt: DateTime
     timeSpentSeconds: Int
     pointsEarned: Int
+    betAmount: Int
     submittedOrder: [ID!]!
     isCorrect: Boolean @goField(forceResolver: true)
 }
@@ -9435,6 +9681,12 @@ input CreateQuizQuestionInput {
     timeoutSeconds: Int
     points: Int
 
+    bettingEnabled: Boolean
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
+
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]
 
@@ -9462,6 +9714,12 @@ input UpdateQuizQuestionInput {
     timeoutSeconds: Int
     points: Int
 
+    bettingEnabled: Boolean
+    bettingMinPercentage: Float
+    bettingMaxPercentage: Float
+    bettingMinAbsolute: Int
+    bettingMaxAbsolute: Int
+
     allowMultipleSelection: Boolean
     predefinedAnswers: [CreatePredefinedAnswerInput!]
 
@@ -9482,6 +9740,7 @@ input SubmitQuizAnswerInput {
     submittedOrder: [ID!]
 
     timeSpentSeconds: Int
+    betAmount: Int
 }
 
 input UpdateQuizAnswerInput {
@@ -18506,6 +18765,151 @@ func (ec *executionContext) fieldContext_FreeTextQuestion_points(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _FreeTextQuestion_bettingEnabled(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextQuestion_bettingEnabled,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingEnabled, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextQuestion_bettingEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FreeTextQuestion_bettingMinPercentage(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextQuestion_bettingMinPercentage,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMinPercentage, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextQuestion_bettingMinPercentage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FreeTextQuestion_bettingMaxPercentage(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextQuestion_bettingMaxPercentage,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMaxPercentage, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextQuestion_bettingMaxPercentage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FreeTextQuestion_bettingMinAbsolute(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextQuestion_bettingMinAbsolute,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMinAbsolute, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextQuestion_bettingMinAbsolute(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FreeTextQuestion_bettingMaxAbsolute(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextQuestion_bettingMaxAbsolute,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMaxAbsolute, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextQuestion_bettingMaxAbsolute(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FreeTextResponse_id(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextResponse) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -18702,6 +19106,35 @@ func (ec *executionContext) _FreeTextResponse_pointsEarned(ctx context.Context, 
 }
 
 func (ec *executionContext) fieldContext_FreeTextResponse_pointsEarned(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FreeTextResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FreeTextResponse_betAmount(ctx context.Context, field graphql.CollectedField, obj *model.FreeTextResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FreeTextResponse_betAmount,
+		func(ctx context.Context) (any, error) {
+			return obj.BetAmount, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FreeTextResponse_betAmount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "FreeTextResponse",
 		Field:      field,
@@ -19075,6 +19508,151 @@ func (ec *executionContext) fieldContext_JsonQuestion_points(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _JsonQuestion_bettingEnabled(ctx context.Context, field graphql.CollectedField, obj *model.JSONQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonQuestion_bettingEnabled,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingEnabled, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonQuestion_bettingEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JsonQuestion_bettingMinPercentage(ctx context.Context, field graphql.CollectedField, obj *model.JSONQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonQuestion_bettingMinPercentage,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMinPercentage, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonQuestion_bettingMinPercentage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JsonQuestion_bettingMaxPercentage(ctx context.Context, field graphql.CollectedField, obj *model.JSONQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonQuestion_bettingMaxPercentage,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMaxPercentage, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonQuestion_bettingMaxPercentage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JsonQuestion_bettingMinAbsolute(ctx context.Context, field graphql.CollectedField, obj *model.JSONQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonQuestion_bettingMinAbsolute,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMinAbsolute, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonQuestion_bettingMinAbsolute(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JsonQuestion_bettingMaxAbsolute(ctx context.Context, field graphql.CollectedField, obj *model.JSONQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonQuestion_bettingMaxAbsolute,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMaxAbsolute, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonQuestion_bettingMaxAbsolute(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _JsonResponse_id(ctx context.Context, field graphql.CollectedField, obj *model.JSONResponse) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -19271,6 +19849,35 @@ func (ec *executionContext) _JsonResponse_pointsEarned(ctx context.Context, fiel
 }
 
 func (ec *executionContext) fieldContext_JsonResponse_pointsEarned(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JsonResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JsonResponse_betAmount(ctx context.Context, field graphql.CollectedField, obj *model.JSONResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_JsonResponse_betAmount,
+		func(ctx context.Context) (any, error) {
+			return obj.BetAmount, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_JsonResponse_betAmount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "JsonResponse",
 		Field:      field,
@@ -28683,6 +29290,151 @@ func (ec *executionContext) fieldContext_NumberQuestion_points(_ context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _NumberQuestion_bettingEnabled(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberQuestion_bettingEnabled,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingEnabled, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberQuestion_bettingEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberQuestion_bettingMinPercentage(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberQuestion_bettingMinPercentage,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMinPercentage, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberQuestion_bettingMinPercentage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberQuestion_bettingMaxPercentage(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberQuestion_bettingMaxPercentage,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMaxPercentage, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberQuestion_bettingMaxPercentage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberQuestion_bettingMinAbsolute(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberQuestion_bettingMinAbsolute,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMinAbsolute, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberQuestion_bettingMinAbsolute(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberQuestion_bettingMaxAbsolute(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberQuestion_bettingMaxAbsolute,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMaxAbsolute, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberQuestion_bettingMaxAbsolute(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NumberQuestion_minValue(ctx context.Context, field graphql.CollectedField, obj *model.NumberQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -28978,6 +29730,35 @@ func (ec *executionContext) fieldContext_NumberResponse_pointsEarned(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _NumberResponse_betAmount(ctx context.Context, field graphql.CollectedField, obj *model.NumberResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberResponse_betAmount,
+		func(ctx context.Context) (any, error) {
+			return obj.BetAmount, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberResponse_betAmount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NumberResponse_numberResponse(ctx context.Context, field graphql.CollectedField, obj *model.NumberResponse) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -29223,6 +30004,151 @@ func (ec *executionContext) fieldContext_OrderingQuestion_points(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _OrderingQuestion_bettingEnabled(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingQuestion_bettingEnabled,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingEnabled, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingQuestion_bettingEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingQuestion_bettingMinPercentage(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingQuestion_bettingMinPercentage,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMinPercentage, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingQuestion_bettingMinPercentage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingQuestion_bettingMaxPercentage(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingQuestion_bettingMaxPercentage,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMaxPercentage, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingQuestion_bettingMaxPercentage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingQuestion_bettingMinAbsolute(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingQuestion_bettingMinAbsolute,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMinAbsolute, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingQuestion_bettingMinAbsolute(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingQuestion_bettingMaxAbsolute(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingQuestion_bettingMaxAbsolute,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMaxAbsolute, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingQuestion_bettingMaxAbsolute(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _OrderingQuestion_orderingItems(ctx context.Context, field graphql.CollectedField, obj *model.OrderingQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -29456,6 +30382,35 @@ func (ec *executionContext) _OrderingResponse_pointsEarned(ctx context.Context, 
 }
 
 func (ec *executionContext) fieldContext_OrderingResponse_pointsEarned(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrderingResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrderingResponse_betAmount(ctx context.Context, field graphql.CollectedField, obj *model.OrderingResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OrderingResponse_betAmount,
+		func(ctx context.Context) (any, error) {
+			return obj.BetAmount, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OrderingResponse_betAmount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "OrderingResponse",
 		Field:      field,
@@ -30450,6 +31405,151 @@ func (ec *executionContext) fieldContext_PredefinedQuestion_points(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _PredefinedQuestion_bettingEnabled(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedQuestion_bettingEnabled,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingEnabled, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedQuestion_bettingEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PredefinedQuestion_bettingMinPercentage(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedQuestion_bettingMinPercentage,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMinPercentage, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedQuestion_bettingMinPercentage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PredefinedQuestion_bettingMaxPercentage(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedQuestion_bettingMaxPercentage,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMaxPercentage, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedQuestion_bettingMaxPercentage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PredefinedQuestion_bettingMinAbsolute(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedQuestion_bettingMinAbsolute,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMinAbsolute, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedQuestion_bettingMinAbsolute(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PredefinedQuestion_bettingMaxAbsolute(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedQuestion_bettingMaxAbsolute,
+		func(ctx context.Context) (any, error) {
+			return obj.BettingMaxAbsolute, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedQuestion_bettingMaxAbsolute(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedQuestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PredefinedQuestion_allowMultipleSelection(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedQuestion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -30716,6 +31816,35 @@ func (ec *executionContext) _PredefinedResponse_pointsEarned(ctx context.Context
 }
 
 func (ec *executionContext) fieldContext_PredefinedResponse_pointsEarned(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PredefinedResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PredefinedResponse_betAmount(ctx context.Context, field graphql.CollectedField, obj *model.PredefinedResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PredefinedResponse_betAmount,
+		func(ctx context.Context) (any, error) {
+			return obj.BetAmount, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PredefinedResponse_betAmount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PredefinedResponse",
 		Field:      field,
@@ -49186,7 +50315,7 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionType", "questionText", "questionOrder", "timeoutSeconds", "points", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
+	fieldsInOrder := [...]string{"questionType", "questionText", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -49228,6 +50357,41 @@ func (ec *executionContext) unmarshalInputCreateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.Points = data
+		case "bettingEnabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bettingEnabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BettingEnabled = data
+		case "bettingMinPercentage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bettingMinPercentage"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BettingMinPercentage = data
+		case "bettingMaxPercentage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bettingMaxPercentage"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BettingMaxPercentage = data
+		case "bettingMinAbsolute":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bettingMinAbsolute"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BettingMinAbsolute = data
+		case "bettingMaxAbsolute":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bettingMaxAbsolute"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BettingMaxAbsolute = data
 		case "allowMultipleSelection":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowMultipleSelection"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -50887,7 +52051,7 @@ func (ec *executionContext) unmarshalInputSubmitQuizAnswerInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionId", "selectedAnswerIds", "textResponse", "numberResponse", "jsonResponse", "submittedOrder", "timeSpentSeconds"}
+	fieldsInOrder := [...]string{"questionId", "selectedAnswerIds", "textResponse", "numberResponse", "jsonResponse", "submittedOrder", "timeSpentSeconds", "betAmount"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -50943,6 +52107,13 @@ func (ec *executionContext) unmarshalInputSubmitQuizAnswerInput(ctx context.Cont
 				return it, err
 			}
 			it.TimeSpentSeconds = data
+		case "betAmount":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("betAmount"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BetAmount = data
 		}
 	}
 
@@ -51799,7 +52970,7 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"questionText", "questionOrder", "timeoutSeconds", "points", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
+	fieldsInOrder := [...]string{"questionText", "questionOrder", "timeoutSeconds", "points", "bettingEnabled", "bettingMinPercentage", "bettingMaxPercentage", "bettingMinAbsolute", "bettingMaxAbsolute", "allowMultipleSelection", "predefinedAnswers", "minValue", "maxValue", "stepValue", "orderingItems"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -51834,6 +53005,41 @@ func (ec *executionContext) unmarshalInputUpdateQuizQuestionInput(ctx context.Co
 				return it, err
 			}
 			it.Points = data
+		case "bettingEnabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bettingEnabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BettingEnabled = data
+		case "bettingMinPercentage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bettingMinPercentage"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BettingMinPercentage = data
+		case "bettingMaxPercentage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bettingMaxPercentage"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BettingMaxPercentage = data
+		case "bettingMinAbsolute":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bettingMinAbsolute"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BettingMinAbsolute = data
+		case "bettingMaxAbsolute":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bettingMaxAbsolute"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BettingMaxAbsolute = data
 		case "allowMultipleSelection":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowMultipleSelection"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -55220,6 +56426,19 @@ func (ec *executionContext) _FreeTextQuestion(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._FreeTextQuestion_timeoutSeconds(ctx, field, obj)
 		case "points":
 			out.Values[i] = ec._FreeTextQuestion_points(ctx, field, obj)
+		case "bettingEnabled":
+			out.Values[i] = ec._FreeTextQuestion_bettingEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "bettingMinPercentage":
+			out.Values[i] = ec._FreeTextQuestion_bettingMinPercentage(ctx, field, obj)
+		case "bettingMaxPercentage":
+			out.Values[i] = ec._FreeTextQuestion_bettingMaxPercentage(ctx, field, obj)
+		case "bettingMinAbsolute":
+			out.Values[i] = ec._FreeTextQuestion_bettingMinAbsolute(ctx, field, obj)
+		case "bettingMaxAbsolute":
+			out.Values[i] = ec._FreeTextQuestion_bettingMaxAbsolute(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -55337,6 +56556,8 @@ func (ec *executionContext) _FreeTextResponse(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._FreeTextResponse_timeSpentSeconds(ctx, field, obj)
 		case "pointsEarned":
 			out.Values[i] = ec._FreeTextResponse_pointsEarned(ctx, field, obj)
+		case "betAmount":
+			out.Values[i] = ec._FreeTextResponse_betAmount(ctx, field, obj)
 		case "textResponse":
 			out.Values[i] = ec._FreeTextResponse_textResponse(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -55476,6 +56697,19 @@ func (ec *executionContext) _JsonQuestion(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._JsonQuestion_timeoutSeconds(ctx, field, obj)
 		case "points":
 			out.Values[i] = ec._JsonQuestion_points(ctx, field, obj)
+		case "bettingEnabled":
+			out.Values[i] = ec._JsonQuestion_bettingEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "bettingMinPercentage":
+			out.Values[i] = ec._JsonQuestion_bettingMinPercentage(ctx, field, obj)
+		case "bettingMaxPercentage":
+			out.Values[i] = ec._JsonQuestion_bettingMaxPercentage(ctx, field, obj)
+		case "bettingMinAbsolute":
+			out.Values[i] = ec._JsonQuestion_bettingMinAbsolute(ctx, field, obj)
+		case "bettingMaxAbsolute":
+			out.Values[i] = ec._JsonQuestion_bettingMaxAbsolute(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -55593,6 +56827,8 @@ func (ec *executionContext) _JsonResponse(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._JsonResponse_timeSpentSeconds(ctx, field, obj)
 		case "pointsEarned":
 			out.Values[i] = ec._JsonResponse_pointsEarned(ctx, field, obj)
+		case "betAmount":
+			out.Values[i] = ec._JsonResponse_betAmount(ctx, field, obj)
 		case "jsonResponse":
 			out.Values[i] = ec._JsonResponse_jsonResponse(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -56848,6 +58084,19 @@ func (ec *executionContext) _NumberQuestion(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._NumberQuestion_timeoutSeconds(ctx, field, obj)
 		case "points":
 			out.Values[i] = ec._NumberQuestion_points(ctx, field, obj)
+		case "bettingEnabled":
+			out.Values[i] = ec._NumberQuestion_bettingEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "bettingMinPercentage":
+			out.Values[i] = ec._NumberQuestion_bettingMinPercentage(ctx, field, obj)
+		case "bettingMaxPercentage":
+			out.Values[i] = ec._NumberQuestion_bettingMaxPercentage(ctx, field, obj)
+		case "bettingMinAbsolute":
+			out.Values[i] = ec._NumberQuestion_bettingMinAbsolute(ctx, field, obj)
+		case "bettingMaxAbsolute":
+			out.Values[i] = ec._NumberQuestion_bettingMaxAbsolute(ctx, field, obj)
 		case "minValue":
 			out.Values[i] = ec._NumberQuestion_minValue(ctx, field, obj)
 		case "maxValue":
@@ -56971,6 +58220,8 @@ func (ec *executionContext) _NumberResponse(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._NumberResponse_timeSpentSeconds(ctx, field, obj)
 		case "pointsEarned":
 			out.Values[i] = ec._NumberResponse_pointsEarned(ctx, field, obj)
+		case "betAmount":
+			out.Values[i] = ec._NumberResponse_betAmount(ctx, field, obj)
 		case "numberResponse":
 			out.Values[i] = ec._NumberResponse_numberResponse(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -57065,6 +58316,19 @@ func (ec *executionContext) _OrderingQuestion(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._OrderingQuestion_timeoutSeconds(ctx, field, obj)
 		case "points":
 			out.Values[i] = ec._OrderingQuestion_points(ctx, field, obj)
+		case "bettingEnabled":
+			out.Values[i] = ec._OrderingQuestion_bettingEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "bettingMinPercentage":
+			out.Values[i] = ec._OrderingQuestion_bettingMinPercentage(ctx, field, obj)
+		case "bettingMaxPercentage":
+			out.Values[i] = ec._OrderingQuestion_bettingMaxPercentage(ctx, field, obj)
+		case "bettingMinAbsolute":
+			out.Values[i] = ec._OrderingQuestion_bettingMinAbsolute(ctx, field, obj)
+		case "bettingMaxAbsolute":
+			out.Values[i] = ec._OrderingQuestion_bettingMaxAbsolute(ctx, field, obj)
 		case "orderingItems":
 			field := field
 
@@ -57218,6 +58482,8 @@ func (ec *executionContext) _OrderingResponse(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._OrderingResponse_timeSpentSeconds(ctx, field, obj)
 		case "pointsEarned":
 			out.Values[i] = ec._OrderingResponse_pointsEarned(ctx, field, obj)
+		case "betAmount":
+			out.Values[i] = ec._OrderingResponse_betAmount(ctx, field, obj)
 		case "submittedOrder":
 			out.Values[i] = ec._OrderingResponse_submittedOrder(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -57642,6 +58908,19 @@ func (ec *executionContext) _PredefinedQuestion(ctx context.Context, sel ast.Sel
 			out.Values[i] = ec._PredefinedQuestion_timeoutSeconds(ctx, field, obj)
 		case "points":
 			out.Values[i] = ec._PredefinedQuestion_points(ctx, field, obj)
+		case "bettingEnabled":
+			out.Values[i] = ec._PredefinedQuestion_bettingEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "bettingMinPercentage":
+			out.Values[i] = ec._PredefinedQuestion_bettingMinPercentage(ctx, field, obj)
+		case "bettingMaxPercentage":
+			out.Values[i] = ec._PredefinedQuestion_bettingMaxPercentage(ctx, field, obj)
+		case "bettingMinAbsolute":
+			out.Values[i] = ec._PredefinedQuestion_bettingMinAbsolute(ctx, field, obj)
+		case "bettingMaxAbsolute":
+			out.Values[i] = ec._PredefinedQuestion_bettingMaxAbsolute(ctx, field, obj)
 		case "allowMultipleSelection":
 			out.Values[i] = ec._PredefinedQuestion_allowMultipleSelection(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -57800,6 +59079,8 @@ func (ec *executionContext) _PredefinedResponse(ctx context.Context, sel ast.Sel
 			out.Values[i] = ec._PredefinedResponse_timeSpentSeconds(ctx, field, obj)
 		case "pointsEarned":
 			out.Values[i] = ec._PredefinedResponse_pointsEarned(ctx, field, obj)
+		case "betAmount":
+			out.Values[i] = ec._PredefinedResponse_betAmount(ctx, field, obj)
 		case "selectedAnswerIds":
 			out.Values[i] = ec._PredefinedResponse_selectedAnswerIds(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

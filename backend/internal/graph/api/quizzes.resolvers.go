@@ -300,6 +300,25 @@ func (r *mutationResolver) AddQuizQuestion(ctx context.Context, quizID string, i
 		params.Points = &pts
 	}
 
+	// Set betting configuration
+	if input.BettingEnabled != nil {
+		params.Bettingenabled = input.BettingEnabled
+	}
+	if input.BettingMinPercentage != nil {
+		_ = params.Bettingminpercentage.Scan(fmt.Sprintf("%f", *input.BettingMinPercentage))
+	}
+	if input.BettingMaxPercentage != nil {
+		_ = params.Bettingmaxpercentage.Scan(fmt.Sprintf("%f", *input.BettingMaxPercentage))
+	}
+	if input.BettingMinAbsolute != nil {
+		minAbs := int32(*input.BettingMinAbsolute)
+		params.Bettingminabsolute = &minAbs
+	}
+	if input.BettingMaxAbsolute != nil {
+		maxAbs := int32(*input.BettingMaxAbsolute)
+		params.Bettingmaxabsolute = &maxAbs
+	}
+
 	// Create question
 	questionRow, err := qtx.CreateQuizQuestion(ctx, params)
 	if err != nil {
@@ -414,6 +433,25 @@ func (r *mutationResolver) UpdateQuizQuestion(ctx context.Context, id string, in
 	if input.Points != nil {
 		pts := int32(*input.Points)
 		params.Points = &pts
+	}
+
+	// Set betting configuration
+	if input.BettingEnabled != nil {
+		params.Bettingenabled = input.BettingEnabled
+	}
+	if input.BettingMinPercentage != nil {
+		_ = params.Bettingminpercentage.Scan(fmt.Sprintf("%f", *input.BettingMinPercentage))
+	}
+	if input.BettingMaxPercentage != nil {
+		_ = params.Bettingmaxpercentage.Scan(fmt.Sprintf("%f", *input.BettingMaxPercentage))
+	}
+	if input.BettingMinAbsolute != nil {
+		minAbs := int32(*input.BettingMinAbsolute)
+		params.Bettingminabsolute = &minAbs
+	}
+	if input.BettingMaxAbsolute != nil {
+		maxAbs := int32(*input.BettingMaxAbsolute)
+		params.Bettingmaxabsolute = &maxAbs
 	}
 
 	// Update question
@@ -744,6 +782,30 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		return nil, fmt.Errorf("question does not belong to this quiz")
 	}
 
+	// Validate bet - always validate when betting is enabled to enforce required bets
+	if question.BettingEnabled || (input.BetAmount != nil && *input.BetAmount > 0) {
+		// Load quiz to get project ID for score lookup
+		quizThunk := r.Loaders.QuizByIDLoader.Load(ctx, submission.QuizID)
+		quiz, quizErr := quizThunk()
+		if quizErr != nil {
+			otel.RecordError(span, quizErr)
+			return nil, fmt.Errorf("failed to load quiz for bet validation: %w", quizErr)
+		}
+
+		betConfig := BetValidationConfig{
+			BettingEnabled:       question.BettingEnabled,
+			BettingMinPercentage: question.BettingMinPercentage,
+			BettingMaxPercentage: question.BettingMaxPercentage,
+			BettingMinAbsolute:   question.BettingMinAbsolute,
+			BettingMaxAbsolute:   question.BettingMaxAbsolute,
+		}
+
+		if err := ValidateBet(ctx, r.DB.Queries, userID, quiz.ProjectID, betConfig, input.BetAmount); err != nil {
+			otel.RecordError(span, err)
+			return nil, fmt.Errorf("invalid bet: %w", err)
+		}
+	}
+
 	// Build response params
 	responseID := ulid.NewQuizResponseID()
 	params := sqlc.CreateQuizResponseParams{
@@ -831,6 +893,12 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		params.Timespentseconds = &tss
 	}
 
+	// Set bet amount if provided
+	if input.BetAmount != nil {
+		ba := int32(*input.BetAmount)
+		params.Betamount = &ba
+	}
+
 	// Try to create new response
 	response, err := r.DB.Queries.CreateQuizResponse(ctx, params)
 	if err != nil {
@@ -861,6 +929,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 				PointsEarned:      existing.PointsEarned,
 				AnsweredAt:        existing.AnsweredAt,
 				TimeSpentSeconds:  existing.TimeSpentSeconds,
+				BetAmount:         existing.BetAmount,
 			}
 			return convertResponseRowToInterface(existingAsModel, question.QuestionType), nil
 		}
@@ -883,6 +952,7 @@ func (r *mutationResolver) SubmitQuizAnswer(ctx context.Context, submissionID st
 		PointsEarned:      response.PointsEarned,
 		AnsweredAt:        response.AnsweredAt,
 		TimeSpentSeconds:  response.TimeSpentSeconds,
+		BetAmount:         response.BetAmount,
 	}
 	return convertResponseRowToInterface(responseAsModel, question.QuestionType), nil
 }

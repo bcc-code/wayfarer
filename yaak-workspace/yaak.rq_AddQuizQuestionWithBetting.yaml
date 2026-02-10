@@ -1,0 +1,93 @@
+type: http_request
+model: http_request
+id: rq_AddQuizQuestionWithBetting
+createdAt: 2026-01-27T12:00:00
+updatedAt: 2026-01-27T13:47:21.137978
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation AddQuizQuestion($quizId: ID!, $input: CreateQuizQuestionInput!) {
+      addQuizQuestion(quizId: $quizId, input: $input) {
+        id
+        questionText
+        questionOrder
+        points
+        ... on PredefinedQuestion {
+          bettingEnabled
+          bettingMinPercentage
+          bettingMaxPercentage
+          bettingMinAbsolute
+          bettingMaxAbsolute
+          allowMultipleSelection
+          predefinedAnswers {
+            id
+            answerText
+            answerOrder
+            isCorrect
+          }
+        }
+      }
+    }
+  variables: |
+    {
+      "quizId": "QZ01KCKBKDX498QPVFRCSAKNSDEN",
+      "input": {
+        "questionType": "PREDEFINED",
+        "questionText": "What year was the first Bible printed?",
+        "questionOrder": 10,
+        "points": 10,
+        "bettingEnabled": true,
+        "bettingMinPercentage": 5,
+        "bettingMaxPercentage": 50,
+        "bettingMinAbsolute": 10,
+        "bettingMaxAbsolute": 500,
+        "allowMultipleSelection": false,
+        "predefinedAnswers": [
+          {
+            "answerText": "1455",
+            "isCorrect": true,
+            "answerOrder": 1
+          },
+          {
+            "answerText": "1492",
+            "isCorrect": false,
+            "answerOrder": 2
+          },
+          {
+            "answerText": "1517",
+            "isCorrect": false,
+            "answerOrder": 3
+          },
+          {
+            "answerText": "1611",
+            "isCorrect": false,
+            "answerOrder": 4
+          }
+        ]
+      }
+    }
+bodyType: graphql
+description: |
+  Add a quiz question with betting enabled (admin only).
+
+  Betting configuration:
+  - bettingEnabled: Enable/disable betting for this question
+  - bettingMinPercentage: Minimum bet as percentage of user's score (0-100)
+  - bettingMaxPercentage: Maximum bet as percentage of user's score (0-100)
+  - bettingMinAbsolute: Minimum bet amount in absolute points
+  - bettingMaxAbsolute: Maximum bet amount in absolute points
+
+  When both percentage and absolute limits are set, the bet must satisfy BOTH.
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_AddQuizQuestionWithBetting
+method: POST
+name: Add Quiz Question (With Betting)
+sortPriority: 3050.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

@@ -132,6 +132,11 @@ type quizQuestionRow interface {
 	GetStepValue() pgtype.Numeric
 	GetTimeoutSeconds() *int32
 	GetPoints() *int32
+	GetBettingEnabled() bool
+	GetBettingMinPercentage() pgtype.Numeric
+	GetBettingMaxPercentage() pgtype.Numeric
+	GetBettingMinAbsolute() *int32
+	GetBettingMaxAbsolute() *int32
 }
 
 // Adapter for sqlc.CreateQuizQuestionRow
@@ -152,6 +157,15 @@ func (r createQuizQuestionRowAdapter) GetMaxValue() pgtype.Numeric  { return r.M
 func (r createQuizQuestionRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
 func (r createQuizQuestionRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
 func (r createQuizQuestionRowAdapter) GetPoints() *int32            { return r.Points }
+func (r createQuizQuestionRowAdapter) GetBettingEnabled() bool      { return r.BettingEnabled }
+func (r createQuizQuestionRowAdapter) GetBettingMinPercentage() pgtype.Numeric {
+	return r.BettingMinPercentage
+}
+func (r createQuizQuestionRowAdapter) GetBettingMaxPercentage() pgtype.Numeric {
+	return r.BettingMaxPercentage
+}
+func (r createQuizQuestionRowAdapter) GetBettingMinAbsolute() *int32 { return r.BettingMinAbsolute }
+func (r createQuizQuestionRowAdapter) GetBettingMaxAbsolute() *int32 { return r.BettingMaxAbsolute }
 
 // Adapter for sqlc.UpdateQuizQuestionRow
 type updateQuizQuestionRowAdapter struct {
@@ -171,6 +185,15 @@ func (r updateQuizQuestionRowAdapter) GetMaxValue() pgtype.Numeric  { return r.M
 func (r updateQuizQuestionRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
 func (r updateQuizQuestionRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
 func (r updateQuizQuestionRowAdapter) GetPoints() *int32            { return r.Points }
+func (r updateQuizQuestionRowAdapter) GetBettingEnabled() bool      { return r.BettingEnabled }
+func (r updateQuizQuestionRowAdapter) GetBettingMinPercentage() pgtype.Numeric {
+	return r.BettingMinPercentage
+}
+func (r updateQuizQuestionRowAdapter) GetBettingMaxPercentage() pgtype.Numeric {
+	return r.BettingMaxPercentage
+}
+func (r updateQuizQuestionRowAdapter) GetBettingMinAbsolute() *int32 { return r.BettingMinAbsolute }
+func (r updateQuizQuestionRowAdapter) GetBettingMaxAbsolute() *int32 { return r.BettingMaxAbsolute }
 
 // Adapter for sqlc.GetQuizQuestionByIDRow
 type getQuizQuestionByIDRowAdapter struct {
@@ -190,6 +213,15 @@ func (r getQuizQuestionByIDRowAdapter) GetMaxValue() pgtype.Numeric  { return r.
 func (r getQuizQuestionByIDRowAdapter) GetStepValue() pgtype.Numeric { return r.StepValue }
 func (r getQuizQuestionByIDRowAdapter) GetTimeoutSeconds() *int32    { return r.TimeoutSeconds }
 func (r getQuizQuestionByIDRowAdapter) GetPoints() *int32            { return r.Points }
+func (r getQuizQuestionByIDRowAdapter) GetBettingEnabled() bool      { return r.BettingEnabled }
+func (r getQuizQuestionByIDRowAdapter) GetBettingMinPercentage() pgtype.Numeric {
+	return r.BettingMinPercentage
+}
+func (r getQuizQuestionByIDRowAdapter) GetBettingMaxPercentage() pgtype.Numeric {
+	return r.BettingMaxPercentage
+}
+func (r getQuizQuestionByIDRowAdapter) GetBettingMinAbsolute() *int32 { return r.BettingMinAbsolute }
+func (r getQuizQuestionByIDRowAdapter) GetBettingMaxAbsolute() *int32 { return r.BettingMaxAbsolute }
 
 // convertQuizQuestionRowToInterface converts a database row to the appropriate QuizQuestion implementation
 func convertQuizQuestionRowToInterface(row quizQuestionRow) model.QuizQuestion {
@@ -226,6 +258,22 @@ func convertQuestionPoints(pts *int32) *int {
 	return &v
 }
 
+func convertBettingPercentage(n pgtype.Numeric) *float64 {
+	if !n.Valid {
+		return nil
+	}
+	val, _ := n.Float64Value()
+	return &val.Float64
+}
+
+func convertBettingAbsolute(v *int32) *int {
+	if v == nil {
+		return nil
+	}
+	iv := int(*v)
+	return &iv
+}
+
 func convertToPredefinedQuestion(row quizQuestionRow) *model.PredefinedQuestion {
 	allowMultiple := false
 	if row.GetAllowMultipleSelection() != nil {
@@ -238,18 +286,28 @@ func convertToPredefinedQuestion(row quizQuestionRow) *model.PredefinedQuestion 
 		QuestionOrder:          int(row.GetQuestionOrder()),
 		TimeoutSeconds:         convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
 		Points:                 convertQuestionPoints(row.GetPoints()),
+		BettingEnabled:         row.GetBettingEnabled(),
+		BettingMinPercentage:   convertBettingPercentage(row.GetBettingMinPercentage()),
+		BettingMaxPercentage:   convertBettingPercentage(row.GetBettingMaxPercentage()),
+		BettingMinAbsolute:     convertBettingAbsolute(row.GetBettingMinAbsolute()),
+		BettingMaxAbsolute:     convertBettingAbsolute(row.GetBettingMaxAbsolute()),
 		AllowMultipleSelection: allowMultiple,
 	}
 }
 
 func convertToFreeTextQuestion(row quizQuestionRow) *model.FreeTextQuestion {
 	return &model.FreeTextQuestion{
-		ID:             row.GetID(),
-		QuizID:         row.GetQuizID(),
-		QuestionText:   row.GetQuestionText(),
-		QuestionOrder:  int(row.GetQuestionOrder()),
-		TimeoutSeconds: convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
-		Points:         convertQuestionPoints(row.GetPoints()),
+		ID:                   row.GetID(),
+		QuizID:               row.GetQuizID(),
+		QuestionText:         row.GetQuestionText(),
+		QuestionOrder:        int(row.GetQuestionOrder()),
+		TimeoutSeconds:       convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
+		Points:               convertQuestionPoints(row.GetPoints()),
+		BettingEnabled:       row.GetBettingEnabled(),
+		BettingMinPercentage: convertBettingPercentage(row.GetBettingMinPercentage()),
+		BettingMaxPercentage: convertBettingPercentage(row.GetBettingMaxPercentage()),
+		BettingMinAbsolute:   convertBettingAbsolute(row.GetBettingMinAbsolute()),
+		BettingMaxAbsolute:   convertBettingAbsolute(row.GetBettingMaxAbsolute()),
 	}
 }
 
@@ -271,37 +329,52 @@ func convertToNumberQuestion(row quizQuestionRow) *model.NumberQuestion {
 		stepValue = &fv
 	}
 	return &model.NumberQuestion{
-		ID:             row.GetID(),
-		QuizID:         row.GetQuizID(),
-		QuestionText:   row.GetQuestionText(),
-		QuestionOrder:  int(row.GetQuestionOrder()),
-		TimeoutSeconds: convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
-		Points:         convertQuestionPoints(row.GetPoints()),
-		MinValue:       minValue,
-		MaxValue:       maxValue,
-		StepValue:      stepValue,
+		ID:                   row.GetID(),
+		QuizID:               row.GetQuizID(),
+		QuestionText:         row.GetQuestionText(),
+		QuestionOrder:        int(row.GetQuestionOrder()),
+		TimeoutSeconds:       convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
+		Points:               convertQuestionPoints(row.GetPoints()),
+		BettingEnabled:       row.GetBettingEnabled(),
+		BettingMinPercentage: convertBettingPercentage(row.GetBettingMinPercentage()),
+		BettingMaxPercentage: convertBettingPercentage(row.GetBettingMaxPercentage()),
+		BettingMinAbsolute:   convertBettingAbsolute(row.GetBettingMinAbsolute()),
+		BettingMaxAbsolute:   convertBettingAbsolute(row.GetBettingMaxAbsolute()),
+		MinValue:             minValue,
+		MaxValue:             maxValue,
+		StepValue:            stepValue,
 	}
 }
 
 func convertToJsonQuestion(row quizQuestionRow) *model.JSONQuestion {
 	return &model.JSONQuestion{
-		ID:             row.GetID(),
-		QuizID:         row.GetQuizID(),
-		QuestionText:   row.GetQuestionText(),
-		QuestionOrder:  int(row.GetQuestionOrder()),
-		TimeoutSeconds: convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
-		Points:         convertQuestionPoints(row.GetPoints()),
+		ID:                   row.GetID(),
+		QuizID:               row.GetQuizID(),
+		QuestionText:         row.GetQuestionText(),
+		QuestionOrder:        int(row.GetQuestionOrder()),
+		TimeoutSeconds:       convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
+		Points:               convertQuestionPoints(row.GetPoints()),
+		BettingEnabled:       row.GetBettingEnabled(),
+		BettingMinPercentage: convertBettingPercentage(row.GetBettingMinPercentage()),
+		BettingMaxPercentage: convertBettingPercentage(row.GetBettingMaxPercentage()),
+		BettingMinAbsolute:   convertBettingAbsolute(row.GetBettingMinAbsolute()),
+		BettingMaxAbsolute:   convertBettingAbsolute(row.GetBettingMaxAbsolute()),
 	}
 }
 
 func convertToOrderingQuestion(row quizQuestionRow) *model.OrderingQuestion {
 	return &model.OrderingQuestion{
-		ID:             row.GetID(),
-		QuizID:         row.GetQuizID(),
-		QuestionText:   row.GetQuestionText(),
-		QuestionOrder:  int(row.GetQuestionOrder()),
-		TimeoutSeconds: convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
-		Points:         convertQuestionPoints(row.GetPoints()),
+		ID:                   row.GetID(),
+		QuizID:               row.GetQuizID(),
+		QuestionText:         row.GetQuestionText(),
+		QuestionOrder:        int(row.GetQuestionOrder()),
+		TimeoutSeconds:       convertQuestionTimeoutSeconds(row.GetTimeoutSeconds()),
+		Points:               convertQuestionPoints(row.GetPoints()),
+		BettingEnabled:       row.GetBettingEnabled(),
+		BettingMinPercentage: convertBettingPercentage(row.GetBettingMinPercentage()),
+		BettingMaxPercentage: convertBettingPercentage(row.GetBettingMaxPercentage()),
+		BettingMinAbsolute:   convertBettingAbsolute(row.GetBettingMinAbsolute()),
+		BettingMaxAbsolute:   convertBettingAbsolute(row.GetBettingMaxAbsolute()),
 	}
 }
 
@@ -440,24 +513,30 @@ func convertResponseRowToInterface(row *sqlc.QuizResponse, questionType string) 
 		pointsEarned = &pe
 	}
 
+	var betAmount *int
+	if row.BetAmount != nil {
+		ba := int(*row.BetAmount)
+		betAmount = &ba
+	}
+
 	switch questionType {
 	case "PREDEFINED":
-		return convertToPredefinedResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
+		return convertToPredefinedResponse(row, answeredAt, timeSpentSeconds, pointsEarned, betAmount)
 	case "FREE_TEXT":
-		return convertToFreeTextResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
+		return convertToFreeTextResponse(row, answeredAt, timeSpentSeconds, pointsEarned, betAmount)
 	case "NUMBER":
-		return convertToNumberResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
+		return convertToNumberResponse(row, answeredAt, timeSpentSeconds, pointsEarned, betAmount)
 	case "JSON":
-		return convertToJsonResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
+		return convertToJsonResponse(row, answeredAt, timeSpentSeconds, pointsEarned, betAmount)
 	case "ORDERING":
-		return convertToOrderingResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
+		return convertToOrderingResponse(row, answeredAt, timeSpentSeconds, pointsEarned, betAmount)
 	default:
 		// Default to FreeTextResponse for unknown types
-		return convertToFreeTextResponse(row, answeredAt, timeSpentSeconds, pointsEarned)
+		return convertToFreeTextResponse(row, answeredAt, timeSpentSeconds, pointsEarned, betAmount)
 	}
 }
 
-func convertToPredefinedResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int) *model.PredefinedResponse {
+func convertToPredefinedResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int, betAmount *int) *model.PredefinedResponse {
 	var selectedAnswerIDs []string
 	if row.SelectedAnswerIds != nil {
 		_ = json.Unmarshal(row.SelectedAnswerIds, &selectedAnswerIDs)
@@ -471,10 +550,11 @@ func convertToPredefinedResponse(row *sqlc.QuizResponse, answeredAt *scalars.Dat
 		AnsweredAt:        answeredAt,
 		TimeSpentSeconds:  timeSpentSeconds,
 		PointsEarned:      pointsEarned,
+		BetAmount:         betAmount,
 	}
 }
 
-func convertToFreeTextResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int) *model.FreeTextResponse {
+func convertToFreeTextResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int, betAmount *int) *model.FreeTextResponse {
 	textResponse := ""
 	if row.TextResponse != nil {
 		textResponse = *row.TextResponse
@@ -487,10 +567,11 @@ func convertToFreeTextResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateT
 		AnsweredAt:       answeredAt,
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,
+		BetAmount:        betAmount,
 	}
 }
 
-func convertToNumberResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int) *model.NumberResponse {
+func convertToNumberResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int, betAmount *int) *model.NumberResponse {
 	var numberResponse float64
 	if row.NumberResponse.Valid {
 		val, _ := row.NumberResponse.Float64Value()
@@ -504,10 +585,11 @@ func convertToNumberResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTim
 		AnsweredAt:       answeredAt,
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,
+		BetAmount:        betAmount,
 	}
 }
 
-func convertToJsonResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int) *model.JSONResponse {
+func convertToJsonResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int, betAmount *int) *model.JSONResponse {
 	jsonResponse := ""
 	if row.JsonResponse != nil {
 		jsonResponse = string(row.JsonResponse)
@@ -520,10 +602,11 @@ func convertToJsonResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime,
 		AnsweredAt:       answeredAt,
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,
+		BetAmount:        betAmount,
 	}
 }
 
-func convertToOrderingResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int) *model.OrderingResponse {
+func convertToOrderingResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateTime, timeSpentSeconds *int, pointsEarned *int, betAmount *int) *model.OrderingResponse {
 	var submittedOrder []string
 	if row.JsonResponse != nil {
 		_ = json.Unmarshal(row.JsonResponse, &submittedOrder)
@@ -537,6 +620,7 @@ func convertToOrderingResponse(row *sqlc.QuizResponse, answeredAt *scalars.DateT
 		AnsweredAt:       answeredAt,
 		TimeSpentSeconds: timeSpentSeconds,
 		PointsEarned:     pointsEarned,
+		BetAmount:        betAmount,
 	}
 }
 

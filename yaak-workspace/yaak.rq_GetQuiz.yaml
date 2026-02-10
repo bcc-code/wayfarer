@@ -40,6 +40,11 @@ body:
           questionText
           questionOrder
           timeoutSeconds
+          bettingEnabled
+          bettingMinPercentage
+          bettingMaxPercentage
+          bettingMinAbsolute
+          bettingMaxAbsolute
           ... on OrderingQuestion {
             orderingItems {
               id

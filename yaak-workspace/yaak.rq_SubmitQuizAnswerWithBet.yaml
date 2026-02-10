@@ -1,0 +1,72 @@
+type: http_request
+model: http_request
+id: rq_SubmitQuizAnswerWithBet
+createdAt: 2026-01-27T12:00:00
+updatedAt: 2026-01-27T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation SubmitQuizAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+      submitQuizAnswer(submissionId: $submissionId, input: $input) {
+        id
+        answeredAt
+        timeSpentSeconds
+        pointsEarned
+        betAmount
+        question {
+          id
+          questionText
+          ... on PredefinedQuestion {
+            bettingEnabled
+            bettingMinPercentage
+            bettingMaxPercentage
+            bettingMinAbsolute
+            bettingMaxAbsolute
+          }
+        }
+        ... on PredefinedResponse {
+          selectedAnswerIds
+          isCorrect
+        }
+      }
+    }
+  variables: |
+    {
+      "submissionId": "QS01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "input": {
+        "questionId": "QQ01ARZ3NDEKTSV4RRFFQ69G5FAV",
+        "selectedAnswerIds": ["QA01ARZ3NDEKTSV4RRFFQ69G5FA1"],
+        "timeSpentSeconds": 15,
+        "betAmount": 50
+      }
+    }
+bodyType: graphql
+description: |
+  Submit a quiz answer with a bet (user).
+
+  betAmount: The amount of points the user wants to wager on this answer.
+
+  Validation rules:
+  - If betAmount is null or 0, no bet is placed (always valid)
+  - If betting is disabled on the question, any non-zero bet is rejected
+  - betAmount must be >= 0
+  - betAmount must not exceed the user's current project score
+  - If bettingMinAbsolute is set, betAmount must be >= that value
+  - If bettingMaxAbsolute is set, betAmount must be <= that value
+  - If bettingMinPercentage is set and score > 0, betAmount must be >= (score * minPct / 100)
+  - If bettingMaxPercentage is set and score > 0, betAmount must be <= (score * maxPct / 100)
+
+  Note: The bet is stored but no actual point rewards are calculated based on the bet yet.
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_SubmitQuizAnswerWithBet
+method: POST
+name: Submit Quiz Answer (With Bet)
+sortPriority: 4050.0
+url: ${[ HOST ]}/graphql
+urlParameters: []
