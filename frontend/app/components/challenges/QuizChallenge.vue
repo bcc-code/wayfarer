@@ -192,6 +192,54 @@ const questions = computed(() => {
   return activeSubmission.value?.orderedQuestions ?? []
 })
 
+// Initialize from existing responses when resuming a quiz
+function initializeFromExistingResponses() {
+  const submission = activeSubmission.value
+  if (!submission || !('responses' in submission)) return
+
+  const responses = submission.responses
+  if (responses.length === 0) return
+
+  // Build question results from existing responses
+  const existingResults: QuestionResult[] = []
+  for (const question of questions.value) {
+    const response = responses.find((r) => r.question.id === question.id)
+    if (response) {
+      const isCorrect =
+        response.__typename === 'PredefinedResponse' ||
+        response.__typename === 'OrderingResponse'
+          ? (response.isCorrect ?? null)
+          : null
+      existingResults.push({ questionId: question.id, isCorrect })
+    }
+  }
+
+  // Set question results for progress display
+  questionResults.value = existingResults
+
+  // Skip to first unanswered question
+  const firstUnansweredIndex = questions.value.findIndex(
+    (q) => !responses.some((r) => r.question.id === q.id),
+  )
+  if (firstUnansweredIndex !== -1) {
+    currentQuestionIndex.value = firstUnansweredIndex
+  } else if (responses.length === questions.value.length) {
+    // All questions answered, stay on last question
+    currentQuestionIndex.value = questions.value.length - 1
+  }
+}
+
+// Initialize when component mounts if we have an existing submission with responses
+watch(
+  activeSubmission,
+  (submission) => {
+    if (submission && 'responses' in submission && submission.responses.length > 0) {
+      initializeFromExistingResponses()
+    }
+  },
+  { immediate: true },
+)
+
 const currentQuestion = computed(() => {
   return questions.value[currentQuestionIndex.value]
 })
@@ -222,7 +270,15 @@ const currentResponse = computed(() => {
 })
 
 async function handleAnswerSubmitted(result: QuestionResult) {
-  questionResults.value.push(result)
+  // Update existing result or add new one (avoid duplicates when resuming)
+  const existingIndex = questionResults.value.findIndex(
+    (r) => r.questionId === result.questionId,
+  )
+  if (existingIndex !== -1) {
+    questionResults.value[existingIndex] = result
+  } else {
+    questionResults.value.push(result)
+  }
 
   if (isLastQuestion.value) {
     if (activeSubmission.value) {
@@ -436,6 +492,11 @@ const progressResults = computed(() => {
         :total-questions="questions.length"
         :current-index="currentQuestionIndex"
         :submission-id="activeSubmission?.id ?? ''"
+        :existing-response="
+          currentResponse?.__typename === 'PredefinedResponse'
+            ? currentResponse
+            : undefined
+        "
         :is-last-question="isLastQuestion"
         :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @answer-submitted="handleAnswerSubmitted"
@@ -466,6 +527,11 @@ const progressResults = computed(() => {
         :total-questions="questions.length"
         :current-index="currentQuestionIndex"
         :submission-id="activeSubmission?.id ?? ''"
+        :existing-response="
+          currentResponse?.__typename === 'NumberResponse'
+            ? currentResponse
+            : undefined
+        "
         :is-last-question="isLastQuestion"
         :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @answer-submitted="handleAnswerSubmitted"
@@ -490,6 +556,11 @@ const progressResults = computed(() => {
         :total-questions="questions.length"
         :current-index="currentQuestionIndex"
         :submission-id="activeSubmission?.id ?? ''"
+        :existing-response="
+          currentResponse?.__typename === 'FreeTextResponse'
+            ? currentResponse
+            : undefined
+        "
         :is-last-question="isLastQuestion"
         :reveal-correct-answers="challenge.quiz.revealCorrectAnswers"
         @answer-submitted="handleAnswerSubmitted"

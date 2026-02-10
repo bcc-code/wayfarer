@@ -110,7 +110,28 @@ function handleSave() {
     }
   }
 
-  emit('save', { ...localQuestion })
+  // Clean up data based on question type - only include relevant fields
+  const cleanedQuestion: QuizQuestionFormData = {
+    id: localQuestion.id,
+    questionType: localQuestion.questionType,
+    questionText: localQuestion.questionText,
+    questionOrder: localQuestion.questionOrder,
+    timeoutSeconds: localQuestion.timeoutSeconds,
+    points: localQuestion.points,
+  }
+
+  if (localQuestion.questionType === QuizQuestionType.Predefined) {
+    cleanedQuestion.allowMultipleSelection = localQuestion.allowMultipleSelection
+    cleanedQuestion.predefinedAnswers = localQuestion.predefinedAnswers
+  } else if (localQuestion.questionType === QuizQuestionType.Number) {
+    cleanedQuestion.minValue = localQuestion.minValue
+    cleanedQuestion.maxValue = localQuestion.maxValue
+    cleanedQuestion.stepValue = localQuestion.stepValue
+  } else if (localQuestion.questionType === QuizQuestionType.Ordering) {
+    cleanedQuestion.orderingItems = localQuestion.orderingItems
+  }
+
+  emit('save', cleanedQuestion)
 }
 </script>
 

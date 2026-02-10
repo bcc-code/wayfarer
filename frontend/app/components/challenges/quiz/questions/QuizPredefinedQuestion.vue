@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {
   PredefinedQuestionData,
+  PredefinedResponseData,
   QuestionResult,
   QuizActionState,
   QuizActionHandlers,
@@ -13,6 +14,8 @@ const props = defineProps<{
   submissionId: string
   // Controls whether to show correct/incorrect after answering
   revealCorrectAnswers?: boolean
+  // Existing response (for resuming quiz)
+  existingResponse?: PredefinedResponseData
   // Review mode props
   readonly?: boolean
   preSelectedAnswerIds?: string[]
@@ -30,11 +33,19 @@ const emit = defineEmits<{
 const { track } = useAnalytics()
 const { executeMutation: submitAnswer } = useSubmitQuizAnswerMutation()
 
-// In readonly mode, pre-populate selected answer from props
-const selectedAnswer = ref<string | undefined>(props.preSelectedAnswerIds?.[0])
-const isAnswerConfirmed = ref(props.readonly ?? false)
+// Pre-populate from existing response (resuming quiz) or review mode props
+const selectedAnswer = ref<string | undefined>(
+  props.existingResponse?.selectedAnswers[0]?.id ?? props.preSelectedAnswerIds?.[0],
+)
+const isAnswerConfirmed = ref(
+  props.readonly ?? !!props.existingResponse,
+)
 const isSubmitting = ref(false)
-const submittedResult = ref<{ isCorrect: boolean | null } | null>(null)
+const submittedResult = ref<{ isCorrect: boolean | null } | null>(
+  props.existingResponse
+    ? { isCorrect: props.existingResponse.isCorrect ?? null }
+    : null,
+)
 
 async function handleLockAnswer() {
   if (!selectedAnswer.value || isSubmitting.value) return
