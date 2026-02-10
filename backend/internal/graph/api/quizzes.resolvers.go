@@ -2392,7 +2392,7 @@ func (r *quizSubmissionResolver) OrderedQuestions(ctx context.Context, obj *mode
 	orderedQuestions := make([]model.QuizQuestion, 0, len(obj.QuestionOrder))
 	for _, questionID := range obj.QuestionOrder {
 		if q, ok := questionMap[questionID]; ok {
-			orderedQuestions = append(orderedQuestions, q)
+			orderedQuestions = append(orderedQuestions, r.ApplyTranslationToQuizQuestion(ctx, q))
 		}
 	}
 
