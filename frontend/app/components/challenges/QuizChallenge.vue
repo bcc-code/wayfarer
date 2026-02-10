@@ -258,6 +258,49 @@ const nextButtonText = computed(() => {
   }
   return t('quiz.nextQuestion')
 })
+
+// QuizProgress visibility and props for both active quiz and review mode
+const showQuizProgress = computed(() => {
+  // Show during active quiz (multiple questions, not completed)
+  if (activeSubmission.value && !quizCompleted.value && questions.value.length > 1) {
+    return true
+  }
+  // Show during review mode (multiple questions)
+  if (isReviewMode.value && reviewQuestions.value.length > 1) {
+    return true
+  }
+  return false
+})
+
+const progressCurrentIndex = computed(() => {
+  if (isReviewMode.value) {
+    const idx = reviewModeRef.value?.currentQuestionIndex
+    return idx !== undefined ? unref(idx) : 0
+  }
+  return currentQuestionIndex.value
+})
+
+const progressTotalQuestions = computed(() => {
+  if (isReviewMode.value) {
+    return reviewQuestions.value.length
+  }
+  return questions.value.length
+})
+
+const progressResults = computed(() => {
+  if (isReviewMode.value) {
+    // Build results aligned with reviewQuestions order
+    // Each result at index i corresponds to reviewQuestions[i]
+    const responseMap = new Map(
+      completedSubmissionResults.value.map((r) => [r.questionId, r]),
+    )
+    return reviewQuestions.value.map((q) => {
+      const result = responseMap.get(q.id)
+      return result ?? { questionId: q.id, isCorrect: null }
+    })
+  }
+  return questionResults.value
+})
 </script>
 
 <template>
@@ -269,11 +312,10 @@ const nextButtonText = computed(() => {
     </template>
     <template #title>
       <QuizProgress
-        v-if="activeSubmission && !quizCompleted && questions.length > 1"
-        :question="currentQuestion"
-        :current-index="currentQuestionIndex"
-        :total-questions="questions.length"
-        :results="questionResults"
+        v-if="showQuizProgress"
+        :current-index="progressCurrentIndex"
+        :total-questions="progressTotalQuestions"
+        :results="progressResults"
       />
     </template>
 

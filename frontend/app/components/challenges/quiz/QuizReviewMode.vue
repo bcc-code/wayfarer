@@ -98,7 +98,7 @@ const handlers: QuizActionHandlers = {
   },
 }
 
-defineExpose({ actionState, handlers })
+defineExpose({ actionState, handlers, currentQuestionIndex })
 </script>
 
 <template>

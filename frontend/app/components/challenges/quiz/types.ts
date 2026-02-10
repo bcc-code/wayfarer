@@ -1,4 +1,4 @@
-import type { ComputedRef } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import type {
   ChallengePageQuery,
   SubmitQuizAnswerMutation,
@@ -86,4 +86,5 @@ export interface QuizActionHandlers {
 export interface QuizQuestionExposed {
   actionState: ComputedRef<QuizActionState>
   handlers: QuizActionHandlers
+  currentQuestionIndex?: Ref<number> // For review mode navigation tracking
 }
