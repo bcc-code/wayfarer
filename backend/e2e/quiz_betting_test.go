@@ -845,4 +845,798 @@ func TestQuizBetting(t *testing.T) {
 		assert.True(t, result.AddQuizQuestion.BettingEnabled)
 		assert.Equal(t, 15.0, *result.AddQuizQuestion.BettingMinPercentage)
 	})
+
+	// ==================== RECORD BET RESULT TESTS ====================
+
+	t.Run("m2m can record bet result", func(t *testing.T) {
+		m2mToken, err := testutil.GenerateM2MToken()
+		require.NoError(t, err)
+
+		challengeID := createChallenge(t, "Record Bet Challenge")
+		publishChallenge(t, challengeID)
+		makeChallengeVisible(t, challengeID)
+		quizID := createQuiz(t, "Record Bet Quiz", challengeID)
+		questionID := addQuestionWithBetting(t, quizID, "Record bet test?", map[string]any{
+			"bettingEnabled": true,
+		})
+
+		// Give user some points
+		giveUserPoints(t, userID, 500)
+
+		// Start quiz and submit answer with bet
+		submissionID := startQuiz(t, quizID, userID, userToken)
+
+		submitResp := client.WithAuth(userToken).MustExecute(t, `
+			mutation SubmitAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+				submitQuizAnswer(submissionId: $submissionId, input: $input) {
+					id
+					betAmount
+					pointsEarned
+					... on PredefinedResponse {
+						selectedAnswerIds
+					}
+				}
+			}
+		`, map[string]any{
+			"submissionId": submissionID,
+			"input": map[string]any{
+				"questionId":        questionID,
+				"selectedAnswerIds": []string{},
+				"timeSpentSeconds":  10,
+				"betAmount":         50,
+			},
+		})
+		require.False(t, submitResp.HasErrors(), "failed to submit answer: %s", submitResp.ErrorMessage())
+
+		var submitResult struct {
+			SubmitQuizAnswer struct {
+				ID           string `json:"id"`
+				BetAmount    *int   `json:"betAmount"`
+				PointsEarned *int   `json:"pointsEarned"`
+			} `json:"submitQuizAnswer"`
+		}
+		require.NoError(t, submitResp.UnmarshalData(&submitResult))
+		responseID := submitResult.SubmitQuizAnswer.ID
+
+		// M2M records the bet result
+		recordResp := client.WithAuth(m2mToken).MustExecute(t, `
+			mutation RecordBetResult($input: RecordBetResultInput!) {
+				recordBetResult(input: $input) {
+					id
+					pointsEarned
+					betAmount
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"responseId":   responseID,
+				"pointsEarned": 75,
+			},
+		})
+		require.False(t, recordResp.HasErrors(), "failed to record bet result: %s", recordResp.ErrorMessage())
+
+		var recordResult struct {
+			RecordBetResult struct {
+				ID           string `json:"id"`
+				PointsEarned *int   `json:"pointsEarned"`
+				BetAmount    *int   `json:"betAmount"`
+			} `json:"recordBetResult"`
+		}
+		require.NoError(t, recordResp.UnmarshalData(&recordResult))
+
+		assert.Equal(t, responseID, recordResult.RecordBetResult.ID)
+		assert.NotNil(t, recordResult.RecordBetResult.PointsEarned)
+		assert.Equal(t, 75, *recordResult.RecordBetResult.PointsEarned)
+		assert.NotNil(t, recordResult.RecordBetResult.BetAmount)
+		assert.Equal(t, 50, *recordResult.RecordBetResult.BetAmount)
+	})
+
+	t.Run("m2m can record multiple bet results", func(t *testing.T) {
+		m2mToken, err := testutil.GenerateM2MToken()
+		require.NoError(t, err)
+
+		challengeID := createChallenge(t, "Bulk Record Bet Challenge")
+		publishChallenge(t, challengeID)
+		makeChallengeVisible(t, challengeID)
+		quizID := createQuiz(t, "Bulk Record Bet Quiz", challengeID)
+
+		// Add two questions
+		question1ID := addQuestionWithBetting(t, quizID, "Bulk bet test 1?", map[string]any{
+			"bettingEnabled": true,
+		})
+		resp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation AddQuestion($quizId: ID!, $input: CreateQuizQuestionInput!) {
+				addQuizQuestion(quizId: $quizId, input: $input) {
+					... on PredefinedQuestion {
+						id
+					}
+				}
+			}
+		`, map[string]any{
+			"quizId": quizID,
+			"input": map[string]any{
+				"questionType":   "PREDEFINED",
+				"questionText":   "Bulk bet test 2?",
+				"questionOrder":  1,
+				"points":         10,
+				"bettingEnabled": true,
+				"predefinedAnswers": []map[string]any{
+					{"answerText": "Yes", "isCorrect": true, "answerOrder": 0},
+					{"answerText": "No", "isCorrect": false, "answerOrder": 1},
+				},
+			},
+		})
+		require.False(t, resp.HasErrors())
+		var q2Result struct {
+			AddQuizQuestion struct{ ID string } `json:"addQuizQuestion"`
+		}
+		require.NoError(t, resp.UnmarshalData(&q2Result))
+		question2ID := q2Result.AddQuizQuestion.ID
+
+		// Give user points and start quiz
+		giveUserPoints(t, userID, 500)
+		submissionID := startQuiz(t, quizID, userID, userToken)
+
+		// Submit first answer
+		submit1Resp := client.WithAuth(userToken).MustExecute(t, `
+			mutation SubmitAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+				submitQuizAnswer(submissionId: $submissionId, input: $input) { id }
+			}
+		`, map[string]any{
+			"submissionId": submissionID,
+			"input": map[string]any{
+				"questionId":        question1ID,
+				"selectedAnswerIds": []string{},
+				"timeSpentSeconds":  10,
+				"betAmount":         30,
+			},
+		})
+		require.False(t, submit1Resp.HasErrors())
+		var sub1Result struct {
+			SubmitQuizAnswer struct{ ID string } `json:"submitQuizAnswer"`
+		}
+		require.NoError(t, submit1Resp.UnmarshalData(&sub1Result))
+		response1ID := sub1Result.SubmitQuizAnswer.ID
+
+		// Submit second answer
+		submit2Resp := client.WithAuth(userToken).MustExecute(t, `
+			mutation SubmitAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+				submitQuizAnswer(submissionId: $submissionId, input: $input) { id }
+			}
+		`, map[string]any{
+			"submissionId": submissionID,
+			"input": map[string]any{
+				"questionId":        question2ID,
+				"selectedAnswerIds": []string{},
+				"timeSpentSeconds":  10,
+				"betAmount":         40,
+			},
+		})
+		require.False(t, submit2Resp.HasErrors())
+		var sub2Result struct {
+			SubmitQuizAnswer struct{ ID string } `json:"submitQuizAnswer"`
+		}
+		require.NoError(t, submit2Resp.UnmarshalData(&sub2Result))
+		response2ID := sub2Result.SubmitQuizAnswer.ID
+
+		// M2M records both bet results at once
+		recordResp := client.WithAuth(m2mToken).MustExecute(t, `
+			mutation RecordBetResults($inputs: [RecordBetResultInput!]!) {
+				recordBetResults(inputs: $inputs) {
+					id
+					pointsEarned
+				}
+			}
+		`, map[string]any{
+			"inputs": []map[string]any{
+				{"responseId": response1ID, "pointsEarned": 60},
+				{"responseId": response2ID, "pointsEarned": 80},
+			},
+		})
+		require.False(t, recordResp.HasErrors(), "failed to record bet results: %s", recordResp.ErrorMessage())
+
+		var recordResult struct {
+			RecordBetResults []struct {
+				ID           string `json:"id"`
+				PointsEarned *int   `json:"pointsEarned"`
+			} `json:"recordBetResults"`
+		}
+		require.NoError(t, recordResp.UnmarshalData(&recordResult))
+
+		assert.Len(t, recordResult.RecordBetResults, 2)
+
+		// Find results by ID (order may not be guaranteed)
+		pointsMap := make(map[string]int)
+		for _, r := range recordResult.RecordBetResults {
+			if r.PointsEarned != nil {
+				pointsMap[r.ID] = *r.PointsEarned
+			}
+		}
+
+		assert.Equal(t, 60, pointsMap[response1ID])
+		assert.Equal(t, 80, pointsMap[response2ID])
+	})
+
+	t.Run("admin can record bet result", func(t *testing.T) {
+		challengeID := createChallenge(t, "Admin Record Bet Challenge")
+		publishChallenge(t, challengeID)
+		makeChallengeVisible(t, challengeID)
+		quizID := createQuiz(t, "Admin Record Bet Quiz", challengeID)
+		questionID := addQuestionWithBetting(t, quizID, "Admin record bet?", map[string]any{
+			"bettingEnabled": true,
+		})
+
+		// Give user some points
+		giveUserPoints(t, userID, 500)
+
+		// Start quiz and submit answer
+		submissionID := startQuiz(t, quizID, userID, userToken)
+
+		submitResp := client.WithAuth(userToken).MustExecute(t, `
+			mutation SubmitAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+				submitQuizAnswer(submissionId: $submissionId, input: $input) { id }
+			}
+		`, map[string]any{
+			"submissionId": submissionID,
+			"input": map[string]any{
+				"questionId":        questionID,
+				"selectedAnswerIds": []string{},
+				"timeSpentSeconds":  10,
+				"betAmount":         25,
+			},
+		})
+		require.False(t, submitResp.HasErrors())
+
+		var submitResult struct {
+			SubmitQuizAnswer struct{ ID string } `json:"submitQuizAnswer"`
+		}
+		require.NoError(t, submitResp.UnmarshalData(&submitResult))
+		responseID := submitResult.SubmitQuizAnswer.ID
+
+		// Admin records the bet result
+		recordResp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation RecordBetResult($input: RecordBetResultInput!) {
+				recordBetResult(input: $input) {
+					id
+					pointsEarned
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"responseId":   responseID,
+				"pointsEarned": 100,
+			},
+		})
+		require.False(t, recordResp.HasErrors(), "admin should be able to record bet result: %s", recordResp.ErrorMessage())
+
+		var recordResult struct {
+			RecordBetResult struct {
+				ID           string `json:"id"`
+				PointsEarned *int   `json:"pointsEarned"`
+			} `json:"recordBetResult"`
+		}
+		require.NoError(t, recordResp.UnmarshalData(&recordResult))
+
+		assert.Equal(t, 100, *recordResult.RecordBetResult.PointsEarned)
+	})
+
+	t.Run("user cannot record bet result", func(t *testing.T) {
+		challengeID := createChallenge(t, "User Record Bet Challenge")
+		publishChallenge(t, challengeID)
+		makeChallengeVisible(t, challengeID)
+		quizID := createQuiz(t, "User Record Bet Quiz", challengeID)
+		questionID := addQuestionWithBetting(t, quizID, "User record bet?", map[string]any{
+			"bettingEnabled": true,
+		})
+
+		giveUserPoints(t, userID, 500)
+		submissionID := startQuiz(t, quizID, userID, userToken)
+
+		submitResp := client.WithAuth(userToken).MustExecute(t, `
+			mutation SubmitAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+				submitQuizAnswer(submissionId: $submissionId, input: $input) { id }
+			}
+		`, map[string]any{
+			"submissionId": submissionID,
+			"input": map[string]any{
+				"questionId":        questionID,
+				"selectedAnswerIds": []string{},
+				"timeSpentSeconds":  10,
+				"betAmount":         25,
+			},
+		})
+		require.False(t, submitResp.HasErrors())
+
+		var submitResult struct {
+			SubmitQuizAnswer struct{ ID string } `json:"submitQuizAnswer"`
+		}
+		require.NoError(t, submitResp.UnmarshalData(&submitResult))
+		responseID := submitResult.SubmitQuizAnswer.ID
+
+		// User tries to record bet result - should fail
+		recordResp := client.WithAuth(userToken).MustExecute(t, `
+			mutation RecordBetResult($input: RecordBetResultInput!) {
+				recordBetResult(input: $input) {
+					id
+					pointsEarned
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"responseId":   responseID,
+				"pointsEarned": 100,
+			},
+		})
+		require.True(t, recordResp.HasErrors(), "user should not be able to record bet result")
+	})
+
+	// ==================== SCORE JOURNAL AND CACHE INVALIDATION TESTS ====================
+
+	t.Run("recording bet result creates score journal entry", func(t *testing.T) {
+		m2mToken, err := testutil.GenerateM2MToken()
+		require.NoError(t, err)
+
+		challengeID := createChallenge(t, "Journal Entry Challenge")
+		publishChallenge(t, challengeID)
+		makeChallengeVisible(t, challengeID)
+		quizID := createQuiz(t, "Journal Entry Quiz", challengeID)
+		questionID := addQuestionWithBetting(t, quizID, "Journal entry test?", map[string]any{
+			"bettingEnabled": true,
+		})
+
+		giveUserPoints(t, userID, 500)
+		submissionID := startQuiz(t, quizID, userID, userToken)
+
+		submitResp := client.WithAuth(userToken).MustExecute(t, `
+			mutation SubmitAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+				submitQuizAnswer(submissionId: $submissionId, input: $input) { id }
+			}
+		`, map[string]any{
+			"submissionId": submissionID,
+			"input": map[string]any{
+				"questionId":        questionID,
+				"selectedAnswerIds": []string{},
+				"timeSpentSeconds":  10,
+				"betAmount":         50,
+			},
+		})
+		require.False(t, submitResp.HasErrors())
+
+		var submitResult struct {
+			SubmitQuizAnswer struct{ ID string } `json:"submitQuizAnswer"`
+		}
+		require.NoError(t, submitResp.UnmarshalData(&submitResult))
+		responseID := submitResult.SubmitQuizAnswer.ID
+
+		// Record the bet result
+		recordResp := client.WithAuth(m2mToken).MustExecute(t, `
+			mutation RecordBetResult($input: RecordBetResultInput!) {
+				recordBetResult(input: $input) {
+					id
+					pointsEarned
+					... on PredefinedResponse {
+						journalEntry {
+							id
+							points
+							sourceType
+						}
+					}
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"responseId":   responseID,
+				"pointsEarned": 75,
+			},
+		})
+		require.False(t, recordResp.HasErrors(), "failed to record bet result: %s", recordResp.ErrorMessage())
+
+		var recordResult struct {
+			RecordBetResult struct {
+				ID           string `json:"id"`
+				PointsEarned *int   `json:"pointsEarned"`
+				JournalEntry *struct {
+					ID         string `json:"id"`
+					Points     int    `json:"points"`
+					SourceType string `json:"sourceType"`
+				} `json:"journalEntry"`
+			} `json:"recordBetResult"`
+		}
+		require.NoError(t, recordResp.UnmarshalData(&recordResult))
+
+		assert.Equal(t, 75, *recordResult.RecordBetResult.PointsEarned)
+		assert.NotNil(t, recordResult.RecordBetResult.JournalEntry, "journal entry should be created")
+		assert.Equal(t, 75, recordResult.RecordBetResult.JournalEntry.Points)
+		assert.Equal(t, "BET", recordResult.RecordBetResult.JournalEntry.SourceType)
+	})
+
+	t.Run("recording bet result with sendNotification flag succeeds", func(t *testing.T) {
+		m2mToken, err := testutil.GenerateM2MToken()
+		require.NoError(t, err)
+
+		challengeID := createChallenge(t, "Notification Challenge")
+		publishChallenge(t, challengeID)
+		makeChallengeVisible(t, challengeID)
+		quizID := createQuiz(t, "Notification Quiz", challengeID)
+		questionID := addQuestionWithBetting(t, quizID, "Notification test?", map[string]any{
+			"bettingEnabled": true,
+		})
+
+		giveUserPoints(t, userID, 500)
+		submissionID := startQuiz(t, quizID, userID, userToken)
+
+		submitResp := client.WithAuth(userToken).MustExecute(t, `
+			mutation SubmitAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+				submitQuizAnswer(submissionId: $submissionId, input: $input) { id }
+			}
+		`, map[string]any{
+			"submissionId": submissionID,
+			"input": map[string]any{
+				"questionId":        questionID,
+				"selectedAnswerIds": []string{},
+				"timeSpentSeconds":  10,
+				"betAmount":         30,
+			},
+		})
+		require.False(t, submitResp.HasErrors())
+
+		var submitResult struct {
+			SubmitQuizAnswer struct{ ID string } `json:"submitQuizAnswer"`
+		}
+		require.NoError(t, submitResp.UnmarshalData(&submitResult))
+		responseID := submitResult.SubmitQuizAnswer.ID
+
+		// Record bet result with sendNotification flag
+		recordResp := client.WithAuth(m2mToken).MustExecute(t, `
+			mutation RecordBetResult($input: RecordBetResultInput!) {
+				recordBetResult(input: $input) {
+					id
+					pointsEarned
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"responseId":       responseID,
+				"pointsEarned":     45,
+				"sendNotification": true,
+			},
+		})
+		require.False(t, recordResp.HasErrors(), "recording with sendNotification should succeed: %s", recordResp.ErrorMessage())
+
+		var recordResult struct {
+			RecordBetResult struct {
+				ID           string `json:"id"`
+				PointsEarned *int   `json:"pointsEarned"`
+			} `json:"recordBetResult"`
+		}
+		require.NoError(t, recordResp.UnmarshalData(&recordResult))
+		assert.Equal(t, 45, *recordResult.RecordBetResult.PointsEarned)
+	})
+
+	t.Run("bulk recording bet results creates journal entries for each", func(t *testing.T) {
+		m2mToken, err := testutil.GenerateM2MToken()
+		require.NoError(t, err)
+
+		challengeID := createChallenge(t, "Bulk Journal Challenge")
+		publishChallenge(t, challengeID)
+		makeChallengeVisible(t, challengeID)
+		quizID := createQuiz(t, "Bulk Journal Quiz", challengeID)
+
+		// Add two questions
+		question1ID := addQuestionWithBetting(t, quizID, "Bulk journal 1?", map[string]any{
+			"bettingEnabled": true,
+		})
+		resp := client.WithAuth(adminToken).MustExecute(t, `
+			mutation AddQuestion($quizId: ID!, $input: CreateQuizQuestionInput!) {
+				addQuizQuestion(quizId: $quizId, input: $input) {
+					... on PredefinedQuestion { id }
+				}
+			}
+		`, map[string]any{
+			"quizId": quizID,
+			"input": map[string]any{
+				"questionType":   "PREDEFINED",
+				"questionText":   "Bulk journal 2?",
+				"questionOrder":  1,
+				"points":         10,
+				"bettingEnabled": true,
+				"predefinedAnswers": []map[string]any{
+					{"answerText": "Yes", "isCorrect": true, "answerOrder": 0},
+					{"answerText": "No", "isCorrect": false, "answerOrder": 1},
+				},
+			},
+		})
+		require.False(t, resp.HasErrors())
+		var q2Result struct {
+			AddQuizQuestion struct{ ID string } `json:"addQuizQuestion"`
+		}
+		require.NoError(t, resp.UnmarshalData(&q2Result))
+		question2ID := q2Result.AddQuizQuestion.ID
+
+		giveUserPoints(t, userID, 500)
+		submissionID := startQuiz(t, quizID, userID, userToken)
+
+		// Submit both answers
+		submit1Resp := client.WithAuth(userToken).MustExecute(t, `
+			mutation SubmitAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+				submitQuizAnswer(submissionId: $submissionId, input: $input) { id }
+			}
+		`, map[string]any{
+			"submissionId": submissionID,
+			"input": map[string]any{
+				"questionId":        question1ID,
+				"selectedAnswerIds": []string{},
+				"timeSpentSeconds":  10,
+				"betAmount":         20,
+			},
+		})
+		require.False(t, submit1Resp.HasErrors())
+		var sub1Result struct {
+			SubmitQuizAnswer struct{ ID string } `json:"submitQuizAnswer"`
+		}
+		require.NoError(t, submit1Resp.UnmarshalData(&sub1Result))
+		response1ID := sub1Result.SubmitQuizAnswer.ID
+
+		submit2Resp := client.WithAuth(userToken).MustExecute(t, `
+			mutation SubmitAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+				submitQuizAnswer(submissionId: $submissionId, input: $input) { id }
+			}
+		`, map[string]any{
+			"submissionId": submissionID,
+			"input": map[string]any{
+				"questionId":        question2ID,
+				"selectedAnswerIds": []string{},
+				"timeSpentSeconds":  10,
+				"betAmount":         35,
+			},
+		})
+		require.False(t, submit2Resp.HasErrors())
+		var sub2Result struct {
+			SubmitQuizAnswer struct{ ID string } `json:"submitQuizAnswer"`
+		}
+		require.NoError(t, submit2Resp.UnmarshalData(&sub2Result))
+		response2ID := sub2Result.SubmitQuizAnswer.ID
+
+		// Bulk record bet results
+		recordResp := client.WithAuth(m2mToken).MustExecute(t, `
+			mutation RecordBetResults($inputs: [RecordBetResultInput!]!) {
+				recordBetResults(inputs: $inputs) {
+					id
+					pointsEarned
+					... on PredefinedResponse {
+						journalEntry {
+							id
+							points
+							sourceType
+						}
+					}
+				}
+			}
+		`, map[string]any{
+			"inputs": []map[string]any{
+				{"responseId": response1ID, "pointsEarned": 40},
+				{"responseId": response2ID, "pointsEarned": -10},
+			},
+		})
+		require.False(t, recordResp.HasErrors(), "failed to record bet results: %s", recordResp.ErrorMessage())
+
+		var recordResult struct {
+			RecordBetResults []struct {
+				ID           string `json:"id"`
+				PointsEarned *int   `json:"pointsEarned"`
+				JournalEntry *struct {
+					ID         string `json:"id"`
+					Points     int    `json:"points"`
+					SourceType string `json:"sourceType"`
+				} `json:"journalEntry"`
+			} `json:"recordBetResults"`
+		}
+		require.NoError(t, recordResp.UnmarshalData(&recordResult))
+
+		assert.Len(t, recordResult.RecordBetResults, 2)
+
+		// Both should have journal entries
+		for _, r := range recordResult.RecordBetResults {
+			assert.NotNil(t, r.JournalEntry, "each response should have a journal entry")
+			assert.Equal(t, "BET", r.JournalEntry.SourceType)
+		}
+
+		// Verify points match
+		journalMap := make(map[string]int)
+		for _, r := range recordResult.RecordBetResults {
+			if r.JournalEntry != nil {
+				journalMap[r.ID] = r.JournalEntry.Points
+			}
+		}
+		assert.Equal(t, 40, journalMap[response1ID])
+		assert.Equal(t, -10, journalMap[response2ID])
+	})
+
+	t.Run("bet result recorded successfully and response returns pointsEarned", func(t *testing.T) {
+		m2mToken, err := testutil.GenerateM2MToken()
+		require.NoError(t, err)
+
+		challengeID := createChallenge(t, "Points Earned Challenge")
+		publishChallenge(t, challengeID)
+		makeChallengeVisible(t, challengeID)
+		quizID := createQuiz(t, "Points Earned Quiz", challengeID)
+		questionID := addQuestionWithBetting(t, quizID, "Points earned test?", map[string]any{
+			"bettingEnabled": true,
+		})
+
+		// Give the user some points
+		giveUserPoints(t, userID, 200)
+
+		// Start quiz and submit answer
+		submissionID := startQuiz(t, quizID, userID, userToken)
+
+		submitResp := client.WithAuth(userToken).MustExecute(t, `
+			mutation SubmitAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+				submitQuizAnswer(submissionId: $submissionId, input: $input) { id }
+			}
+		`, map[string]any{
+			"submissionId": submissionID,
+			"input": map[string]any{
+				"questionId":        questionID,
+				"selectedAnswerIds": []string{},
+				"timeSpentSeconds":  10,
+				"betAmount":         50,
+			},
+		})
+		require.False(t, submitResp.HasErrors())
+
+		var submitResult struct {
+			SubmitQuizAnswer struct{ ID string } `json:"submitQuizAnswer"`
+		}
+		require.NoError(t, submitResp.UnmarshalData(&submitResult))
+		responseID := submitResult.SubmitQuizAnswer.ID
+
+		// Record bet result with specific points
+		recordResp := client.WithAuth(m2mToken).MustExecute(t, `
+			mutation RecordBetResult($input: RecordBetResultInput!) {
+				recordBetResult(input: $input) {
+					id
+					pointsEarned
+					... on PredefinedResponse {
+						journalEntry {
+							id
+							points
+							sourceType
+						}
+					}
+				}
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"responseId":   responseID,
+				"pointsEarned": 123,
+			},
+		})
+		require.False(t, recordResp.HasErrors(), "failed to record bet result: %s", recordResp.ErrorMessage())
+
+		var recordResult struct {
+			RecordBetResult struct {
+				ID           string `json:"id"`
+				PointsEarned *int   `json:"pointsEarned"`
+				JournalEntry *struct {
+					ID         string `json:"id"`
+					Points     int    `json:"points"`
+					SourceType string `json:"sourceType"`
+				} `json:"journalEntry"`
+			} `json:"recordBetResult"`
+		}
+		require.NoError(t, recordResp.UnmarshalData(&recordResult))
+
+		// Verify pointsEarned is set correctly
+		require.NotNil(t, recordResult.RecordBetResult.PointsEarned)
+		assert.Equal(t, 123, *recordResult.RecordBetResult.PointsEarned)
+
+		// Verify journal entry was created with correct values
+		require.NotNil(t, recordResult.RecordBetResult.JournalEntry)
+		assert.Equal(t, 123, recordResult.RecordBetResult.JournalEntry.Points)
+		assert.Equal(t, "BET", recordResult.RecordBetResult.JournalEntry.SourceType)
+	})
+
+	t.Run("query response with journalEntry returns linked journal", func(t *testing.T) {
+		m2mToken, err := testutil.GenerateM2MToken()
+		require.NoError(t, err)
+
+		challengeID := createChallenge(t, "Query Journal Challenge")
+		publishChallenge(t, challengeID)
+		makeChallengeVisible(t, challengeID)
+		quizID := createQuiz(t, "Query Journal Quiz", challengeID)
+		questionID := addQuestionWithBetting(t, quizID, "Query journal test?", map[string]any{
+			"bettingEnabled": true,
+		})
+
+		giveUserPoints(t, userID, 500)
+		submissionID := startQuiz(t, quizID, userID, userToken)
+
+		submitResp := client.WithAuth(userToken).MustExecute(t, `
+			mutation SubmitAnswer($submissionId: ID!, $input: SubmitQuizAnswerInput!) {
+				submitQuizAnswer(submissionId: $submissionId, input: $input) { id }
+			}
+		`, map[string]any{
+			"submissionId": submissionID,
+			"input": map[string]any{
+				"questionId":        questionID,
+				"selectedAnswerIds": []string{},
+				"timeSpentSeconds":  10,
+				"betAmount":         25,
+			},
+		})
+		require.False(t, submitResp.HasErrors())
+
+		var submitResult struct {
+			SubmitQuizAnswer struct{ ID string } `json:"submitQuizAnswer"`
+		}
+		require.NoError(t, submitResp.UnmarshalData(&submitResult))
+		responseID := submitResult.SubmitQuizAnswer.ID
+
+		// Record bet result
+		recordResp := client.WithAuth(m2mToken).MustExecute(t, `
+			mutation RecordBetResult($input: RecordBetResultInput!) {
+				recordBetResult(input: $input) { id }
+			}
+		`, map[string]any{
+			"input": map[string]any{
+				"responseId":   responseID,
+				"pointsEarned": 55,
+			},
+		})
+		require.False(t, recordResp.HasErrors())
+
+		// Query the submission to get responses with journal entries
+		queryResp := client.WithAuth(userToken).MustExecute(t, `
+			query GetSubmission($id: ID!) {
+				quizSubmission(id: $id) {
+					responses {
+						id
+						pointsEarned
+						... on PredefinedResponse {
+							journalEntry {
+								id
+								points
+								sourceType
+								createdAt
+							}
+						}
+					}
+				}
+			}
+		`, map[string]any{
+			"id": submissionID,
+		})
+		require.False(t, queryResp.HasErrors(), "failed to query submission: %s", queryResp.ErrorMessage())
+
+		var queryResult struct {
+			QuizSubmission struct {
+				Responses []struct {
+					ID           string `json:"id"`
+					PointsEarned *int   `json:"pointsEarned"`
+					JournalEntry *struct {
+						ID         string `json:"id"`
+						Points     int    `json:"points"`
+						SourceType string `json:"sourceType"`
+						CreatedAt  string `json:"createdAt"`
+					} `json:"journalEntry"`
+				} `json:"responses"`
+			} `json:"quizSubmission"`
+		}
+		require.NoError(t, queryResp.UnmarshalData(&queryResult))
+
+		// Find the response we submitted
+		var foundResponse bool
+		for _, r := range queryResult.QuizSubmission.Responses {
+			if r.ID == responseID {
+				foundResponse = true
+				assert.NotNil(t, r.JournalEntry, "response should have journal entry")
+				assert.Equal(t, 55, r.JournalEntry.Points)
+				assert.Equal(t, "BET", r.JournalEntry.SourceType)
+				assert.NotEmpty(t, r.JournalEntry.CreatedAt)
+				break
+			}
+		}
+		assert.True(t, foundResponse, "response should be in submission responses")
+	})
 }

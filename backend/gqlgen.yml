@@ -450,11 +450,15 @@ models:
         resolver: true
       selectedAnswers:
         resolver: true
+      journalEntry:
+        resolver: true
     extraFields:
       SubmissionID:
         type: string
       QuestionID:
         type: string
+      ScoreJournalID:
+        type: "*string"
 
   FreeTextResponse:
     fields:
@@ -462,11 +466,15 @@ models:
         resolver: true
       question:
         resolver: true
+      journalEntry:
+        resolver: true
     extraFields:
       SubmissionID:
         type: string
       QuestionID:
         type: string
+      ScoreJournalID:
+        type: "*string"
 
   NumberResponse:
     fields:
@@ -474,11 +482,15 @@ models:
         resolver: true
       question:
         resolver: true
+      journalEntry:
+        resolver: true
     extraFields:
       SubmissionID:
         type: string
       QuestionID:
         type: string
+      ScoreJournalID:
+        type: "*string"
 
   JsonResponse:
     fields:
@@ -486,11 +498,15 @@ models:
         resolver: true
       question:
         resolver: true
+      journalEntry:
+        resolver: true
     extraFields:
       SubmissionID:
         type: string
       QuestionID:
         type: string
+      ScoreJournalID:
+        type: "*string"
 
   OrderingResponse:
     fields:
@@ -500,6 +516,8 @@ models:
         resolver: true
       isCorrect:
         resolver: true
+      journalEntry:
+        resolver: true
     extraFields:
       SubmissionID:
         type: string
@@ -507,6 +525,8 @@ models:
         type: string
       IsCorrectValue:
         type: "*bool"
+      ScoreJournalID:
+        type: "*string"
 
   QuizAchievement:
     fields:

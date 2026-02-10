@@ -1,0 +1,72 @@
+type: http_request
+model: http_request
+id: rq_RecordBetResults
+createdAt: 2026-02-10T12:00:00
+updatedAt: 2026-02-10T12:00:00
+workspaceId: wk_XKsmbMdFg7
+folderId: fl_Quizzes
+authentication: {}
+authenticationType: null
+body:
+  query: |
+    mutation RecordBetResults($inputs: [RecordBetResultInput!]!) {
+      recordBetResults(inputs: $inputs) {
+        id
+        answeredAt
+        timeSpentSeconds
+        pointsEarned
+        betAmount
+        journalEntry {
+          id
+          sourceType
+          points
+          reason
+          createdAt
+        }
+        question {
+          id
+          questionText
+        }
+      }
+    }
+  variables: |
+    {
+      "inputs": [
+        {
+          "responseId": "QR01ARZ3NDEKTSV4RRFFQ69G5FA1",
+          "pointsEarned": 100,
+          "sendNotification": true
+        },
+        {
+          "responseId": "QR01ARZ3NDEKTSV4RRFFQ69G5FA2",
+          "pointsEarned": -50,
+          "sendNotification": true
+        },
+        {
+          "responseId": "QR01ARZ3NDEKTSV4RRFFQ69G5FA3",
+          "pointsEarned": 0,
+          "sendNotification": false
+        }
+      ]
+    }
+bodyType: graphql
+description: |
+  Record multiple bet results in bulk (M2M/Admin only).
+
+  Same as recordBetResult but processes multiple responses at once.
+  Each input creates a separate score journal entry.
+
+  Use this for batch processing bet results, e.g., after a quiz session ends.
+
+  Note: Notifications are sent in parallel goroutines (fire-and-forget).
+  No notification is sent for responses with pointsEarned=0.
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: hdr_RecordBetResults
+method: POST
+name: Record Bet Results (Bulk)
+sortPriority: 4061.0
+url: ${[ HOST ]}/graphql
+urlParameters: []

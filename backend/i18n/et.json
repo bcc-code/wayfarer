@@ -1,0 +1,7 @@
+{
+  "bet_result": {
+    "title": "Tulemus",
+    "won": "Voitsid {points} punkti!",
+    "lost": "Kaotasid {points} punkti."
+  }
+}

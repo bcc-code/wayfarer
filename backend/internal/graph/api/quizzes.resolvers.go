@@ -19,6 +19,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/otel"
 	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"go.opentelemetry.io/otel/attribute"
@@ -52,6 +53,15 @@ func (r *freeTextResponseResolver) Question(ctx context.Context, obj *model.Free
 	return convertGetQuizQuestionByIDRowToInterface(row), nil
 }
 
+// JournalEntry is the resolver for the journalEntry field.
+func (r *freeTextResponseResolver) JournalEntry(ctx context.Context, obj *model.FreeTextResponse) (*model.ScoreJournal, error) {
+	if obj.ScoreJournalID == nil {
+		return nil, nil
+	}
+	thunk := r.Loaders.ScoreJournalByIDLoader.Load(ctx, *obj.ScoreJournalID)
+	return thunk()
+}
+
 // Quiz is the resolver for the quiz field.
 func (r *jsonQuestionResolver) Quiz(ctx context.Context, obj *model.JSONQuestion) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
@@ -78,6 +88,15 @@ func (r *jsonResponseResolver) Question(ctx context.Context, obj *model.JSONResp
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
 	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// JournalEntry is the resolver for the journalEntry field.
+func (r *jsonResponseResolver) JournalEntry(ctx context.Context, obj *model.JSONResponse) (*model.ScoreJournal, error) {
+	if obj.ScoreJournalID == nil {
+		return nil, nil
+	}
+	thunk := r.Loaders.ScoreJournalByIDLoader.Load(ctx, *obj.ScoreJournalID)
+	return thunk()
 }
 
 // CreateQuiz is the resolver for the createQuiz field.
@@ -1606,6 +1625,230 @@ func (r *mutationResolver) CreateQuizSubmission(ctx context.Context, quizID stri
 	return submission, nil
 }
 
+// RecordBetResult is the resolver for the recordBetResult field.
+func (r *mutationResolver) RecordBetResult(ctx context.Context, input model.RecordBetResultInput) (model.QuizResponse, error) {
+	// Get response context for score journal entry
+	responseCtx, err := r.DB.Queries.GetQuizResponseWithContext(ctx, input.ResponseID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("quiz response not found: %s", input.ResponseID)
+		}
+		return nil, fmt.Errorf("failed to get response context: %w", err)
+	}
+
+	// Begin transaction
+	tx, err := r.DB.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.DB.Queries.WithTx(tx)
+
+	// Create score journal entry
+	journalID := ulid.NewScoreJournalID()
+	_, err = qtx.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
+		ID:          journalID,
+		ProjectID:   responseCtx.ProjectID,
+		UserID:      responseCtx.UserID,
+		EventID:     responseCtx.EventID,
+		ChallengeID: &responseCtx.ChallengeID,
+		Points:      int32(input.PointsEarned),
+		SourceType:  "BET",
+		SourceID:    &input.ResponseID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create score journal entry: %w", err)
+	}
+
+	// Update the bet result with journal link
+	row, err := qtx.UpdateBetResultWithJournal(ctx, sqlc.UpdateBetResultWithJournalParams{
+		ID:             input.ResponseID,
+		Pointsearned:   int32(input.PointsEarned),
+		Scorejournalid: journalID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update bet result: %w", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	// Invalidate caches
+	r.Cache.InvalidateUser(responseCtx.UserID)
+	r.Cache.InvalidateProject(responseCtx.ProjectID)
+	r.Cache.InvalidateQuizSubmission(responseCtx.SubmissionID)
+	r.Cache.InvalidateUserQuizSubmissions(responseCtx.UserID)
+
+	// Send notification if requested
+	if input.SendNotification != nil && *input.SendNotification {
+		go push.SendTranslatedBetResultNotification(
+			r.PushService,
+			r.Loaders,
+			responseCtx.UserID,
+			responseCtx.QuizID,
+			responseCtx.QuizName,
+			input.PointsEarned,
+		)
+	}
+
+	// Get the question to determine its type for proper response conversion
+	question, err := r.DB.Queries.GetQuizQuestionByID(ctx, row.QuestionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get question type: %w", err)
+	}
+
+	// Convert to the appropriate response type
+	response := convertUpdateBetResultWithJournalRowToQuizResponse(row)
+	return convertResponseRowToInterface(response, question.QuestionType), nil
+}
+
+// RecordBetResults is the resolver for the recordBetResults field.
+func (r *mutationResolver) RecordBetResults(ctx context.Context, inputs []model.RecordBetResultInput) ([]model.QuizResponse, error) {
+	if len(inputs) == 0 {
+		return []model.QuizResponse{}, nil
+	}
+
+	// Prepare the arrays for context lookup
+	responseIDs := make([]string, len(inputs))
+	for i, input := range inputs {
+		responseIDs[i] = input.ResponseID
+	}
+
+	// Get response contexts for score journal entries
+	responseContexts, err := r.DB.Queries.GetQuizResponsesWithContext(ctx, responseIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get response contexts: %w", err)
+	}
+
+	// Build a map of response ID to context
+	contextMap := make(map[string]*sqlc.GetQuizResponsesWithContextRow)
+	for _, rc := range responseContexts {
+		contextMap[rc.ID] = rc
+	}
+
+	// Begin transaction
+	tx, err := r.DB.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.DB.Queries.WithTx(tx)
+
+	// Prepare arrays for batch operations
+	ids := make([]string, len(inputs))
+	pointsEarned := make([]int32, len(inputs))
+	journalIDs := make([]string, len(inputs))
+	affectedUsers := make(map[string]bool)
+	affectedProjects := make(map[string]bool)
+	affectedSubmissions := make(map[string]bool)
+
+	// Create score journal entries for each response
+	for i, input := range inputs {
+		ids[i] = input.ResponseID
+		pointsEarned[i] = int32(input.PointsEarned)
+
+		rc, ok := contextMap[input.ResponseID]
+		if !ok {
+			return nil, fmt.Errorf("response context not found for response %s", input.ResponseID)
+		}
+
+		journalID := ulid.NewScoreJournalID()
+		journalIDs[i] = journalID
+
+		_, err = qtx.CreateScoreJournalEntry(ctx, sqlc.CreateScoreJournalEntryParams{
+			ID:          journalID,
+			ProjectID:   rc.ProjectID,
+			UserID:      rc.UserID,
+			EventID:     rc.EventID,
+			ChallengeID: &rc.ChallengeID,
+			Points:      int32(input.PointsEarned),
+			SourceType:  "BET",
+			SourceID:    &input.ResponseID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create score journal entry for response %s: %w", input.ResponseID, err)
+		}
+
+		affectedUsers[rc.UserID] = true
+		affectedProjects[rc.ProjectID] = true
+		affectedSubmissions[rc.SubmissionID] = true
+	}
+
+	// Update all responses with journal links
+	rows, err := qtx.UpdateBetResultsWithJournal(ctx, sqlc.UpdateBetResultsWithJournalParams{
+		Ids:             ids,
+		Pointsearned:    pointsEarned,
+		Scorejournalids: journalIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update bet results: %w", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	// Invalidate caches
+	for userID := range affectedUsers {
+		r.Cache.InvalidateUser(userID)
+		r.Cache.InvalidateUserQuizSubmissions(userID)
+	}
+	for projectID := range affectedProjects {
+		r.Cache.InvalidateProject(projectID)
+	}
+	for submissionID := range affectedSubmissions {
+		r.Cache.InvalidateQuizSubmission(submissionID)
+	}
+
+	// Send notifications if requested (in parallel goroutines)
+	for _, input := range inputs {
+		if input.SendNotification != nil && *input.SendNotification {
+			rc := contextMap[input.ResponseID]
+			if rc != nil {
+				go push.SendTranslatedBetResultNotification(
+					r.PushService,
+					r.Loaders,
+					rc.UserID,
+					rc.QuizID,
+					rc.QuizName,
+					input.PointsEarned,
+				)
+			}
+		}
+	}
+
+	// Collect question IDs for type lookup
+	questionIDs := make([]string, len(rows))
+	for i, row := range rows {
+		questionIDs[i] = row.QuestionID
+	}
+
+	// Get all questions to determine their types
+	questions, err := r.DB.Queries.GetQuizQuestionsByIDs(ctx, questionIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get question types: %w", err)
+	}
+
+	// Build a map of question ID to type
+	questionTypes := make(map[string]string)
+	for _, q := range questions {
+		questionTypes[q.ID] = q.QuestionType
+	}
+
+	// Convert all responses
+	results := make([]model.QuizResponse, len(rows))
+	for i, row := range rows {
+		response := convertUpdateBetResultsWithJournalRowToQuizResponse(row)
+		questionType := questionTypes[row.QuestionID]
+		results[i] = convertResponseRowToInterface(response, questionType)
+	}
+
+	return results, nil
+}
+
 // Quiz is the resolver for the quiz field.
 func (r *numberQuestionResolver) Quiz(ctx context.Context, obj *model.NumberQuestion) (*model.Quiz, error) {
 	thunk := r.Loaders.QuizByIDLoader.Load(ctx, obj.QuizID)
@@ -1632,6 +1875,15 @@ func (r *numberResponseResolver) Question(ctx context.Context, obj *model.Number
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
 	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// JournalEntry is the resolver for the journalEntry field.
+func (r *numberResponseResolver) JournalEntry(ctx context.Context, obj *model.NumberResponse) (*model.ScoreJournal, error) {
+	if obj.ScoreJournalID == nil {
+		return nil, nil
+	}
+	thunk := r.Loaders.ScoreJournalByIDLoader.Load(ctx, *obj.ScoreJournalID)
+	return thunk()
 }
 
 // Quiz is the resolver for the quiz field.
@@ -1682,6 +1934,15 @@ func (r *orderingResponseResolver) Question(ctx context.Context, obj *model.Orde
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
 	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// JournalEntry is the resolver for the journalEntry field.
+func (r *orderingResponseResolver) JournalEntry(ctx context.Context, obj *model.OrderingResponse) (*model.ScoreJournal, error) {
+	if obj.ScoreJournalID == nil {
+		return nil, nil
+	}
+	thunk := r.Loaders.ScoreJournalByIDLoader.Load(ctx, *obj.ScoreJournalID)
+	return thunk()
 }
 
 // IsCorrect is the resolver for the isCorrect field on OrderingResponse.
@@ -1752,6 +2013,15 @@ func (r *predefinedResponseResolver) Question(ctx context.Context, obj *model.Pr
 		return nil, fmt.Errorf("failed to load question: %w", err)
 	}
 	return convertGetQuizQuestionByIDRowToInterface(row), nil
+}
+
+// JournalEntry is the resolver for the journalEntry field.
+func (r *predefinedResponseResolver) JournalEntry(ctx context.Context, obj *model.PredefinedResponse) (*model.ScoreJournal, error) {
+	if obj.ScoreJournalID == nil {
+		return nil, nil
+	}
+	thunk := r.Loaders.ScoreJournalByIDLoader.Load(ctx, *obj.ScoreJournalID)
+	return thunk()
 }
 
 // SelectedAnswers is the resolver for the selectedAnswers field.

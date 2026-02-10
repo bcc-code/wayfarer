@@ -61,6 +61,18 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 					timeSpentSeconds = &tss
 				}
 
+				var pointsEarned *int
+				if row.PointsEarned != nil {
+					pe := int(*row.PointsEarned)
+					pointsEarned = &pe
+				}
+
+				var betAmount *int
+				if row.BetAmount != nil {
+					ba := int(*row.BetAmount)
+					betAmount = &ba
+				}
+
 				var response model.QuizResponse
 
 				switch row.QuestionType {
@@ -77,6 +89,9 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						IsCorrect:         row.IsCorrect,
 						AnsweredAt:        answeredAt,
 						TimeSpentSeconds:  timeSpentSeconds,
+						PointsEarned:      pointsEarned,
+						BetAmount:         betAmount,
+						ScoreJournalID:    row.ScoreJournalID,
 					}
 				case "FREE_TEXT":
 					textResponse := ""
@@ -90,6 +105,9 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						TextResponse:     textResponse,
 						AnsweredAt:       answeredAt,
 						TimeSpentSeconds: timeSpentSeconds,
+						PointsEarned:     pointsEarned,
+						BetAmount:        betAmount,
+						ScoreJournalID:   row.ScoreJournalID,
 					}
 				case "NUMBER":
 					var numberResponse float64
@@ -104,6 +122,9 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						NumberResponse:   numberResponse,
 						AnsweredAt:       answeredAt,
 						TimeSpentSeconds: timeSpentSeconds,
+						PointsEarned:     pointsEarned,
+						BetAmount:        betAmount,
+						ScoreJournalID:   row.ScoreJournalID,
 					}
 				case "JSON":
 					jsonResponse := ""
@@ -117,16 +138,14 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						JSONResponse:     jsonResponse,
 						AnsweredAt:       answeredAt,
 						TimeSpentSeconds: timeSpentSeconds,
+						PointsEarned:     pointsEarned,
+						BetAmount:        betAmount,
+						ScoreJournalID:   row.ScoreJournalID,
 					}
 				case "ORDERING":
 					var submittedOrder []string
 					if row.JsonResponse != nil {
 						_ = json.Unmarshal(row.JsonResponse, &submittedOrder)
-					}
-					var pointsEarned *int
-					if row.PointsEarned != nil {
-						pe := int(*row.PointsEarned)
-						pointsEarned = &pe
 					}
 					response = &model.OrderingResponse{
 						ID:               row.ID,
@@ -137,6 +156,8 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						AnsweredAt:       answeredAt,
 						TimeSpentSeconds: timeSpentSeconds,
 						PointsEarned:     pointsEarned,
+						BetAmount:        betAmount,
+						ScoreJournalID:   row.ScoreJournalID,
 					}
 				default:
 					// Default to FreeTextResponse for unknown types
@@ -151,6 +172,9 @@ func quizResponsesBySubmissionBatchFunc(db *database.DB, c *cache.CacheWithRegis
 						TextResponse:     textResponse,
 						AnsweredAt:       answeredAt,
 						TimeSpentSeconds: timeSpentSeconds,
+						PointsEarned:     pointsEarned,
+						BetAmount:        betAmount,
+						ScoreJournalID:   row.ScoreJournalID,
 					}
 				}
 

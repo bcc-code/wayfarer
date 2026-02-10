@@ -77,6 +77,7 @@ type QuizResponse interface {
 	GetTimeSpentSeconds() *int
 	GetPointsEarned() *int
 	GetBetAmount() *int
+	GetJournalEntry() *ScoreJournal
 }
 
 type ScoreSource interface {
@@ -780,8 +781,10 @@ type FreeTextResponse struct {
 	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
 	PointsEarned     *int              `json:"pointsEarned,omitempty"`
 	BetAmount        *int              `json:"betAmount,omitempty"`
+	JournalEntry     *ScoreJournal     `json:"journalEntry,omitempty"`
 	TextResponse     string            `json:"textResponse"`
 	QuestionID       string            `json:"-"`
+	ScoreJournalID   *string           `json:"-"`
 	SubmissionID     string            `json:"-"`
 }
 
@@ -793,6 +796,7 @@ func (this FreeTextResponse) GetAnsweredAt() *scalars.DateTime { return this.Ans
 func (this FreeTextResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
 func (this FreeTextResponse) GetPointsEarned() *int            { return this.PointsEarned }
 func (this FreeTextResponse) GetBetAmount() *int               { return this.BetAmount }
+func (this FreeTextResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type GrantQuizSessionAccessInput struct {
 	SessionID       string   `json:"sessionId"`
@@ -846,8 +850,10 @@ type JSONResponse struct {
 	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
 	PointsEarned     *int              `json:"pointsEarned,omitempty"`
 	BetAmount        *int              `json:"betAmount,omitempty"`
+	JournalEntry     *ScoreJournal     `json:"journalEntry,omitempty"`
 	JSONResponse     string            `json:"jsonResponse"`
 	QuestionID       string            `json:"-"`
+	ScoreJournalID   *string           `json:"-"`
 	SubmissionID     string            `json:"-"`
 }
 
@@ -859,6 +865,7 @@ func (this JSONResponse) GetAnsweredAt() *scalars.DateTime { return this.Answere
 func (this JSONResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
 func (this JSONResponse) GetPointsEarned() *int            { return this.PointsEarned }
 func (this JSONResponse) GetBetAmount() *int               { return this.BetAmount }
+func (this JSONResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type LeaderboardConnection struct {
 	Edges      []LeaderboardEdge `json:"edges"`
@@ -938,8 +945,10 @@ type NumberResponse struct {
 	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
 	PointsEarned     *int              `json:"pointsEarned,omitempty"`
 	BetAmount        *int              `json:"betAmount,omitempty"`
+	JournalEntry     *ScoreJournal     `json:"journalEntry,omitempty"`
 	NumberResponse   float64           `json:"numberResponse"`
 	QuestionID       string            `json:"-"`
+	ScoreJournalID   *string           `json:"-"`
 	SubmissionID     string            `json:"-"`
 }
 
@@ -951,6 +960,7 @@ func (this NumberResponse) GetAnsweredAt() *scalars.DateTime { return this.Answe
 func (this NumberResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
 func (this NumberResponse) GetPointsEarned() *int            { return this.PointsEarned }
 func (this NumberResponse) GetBetAmount() *int               { return this.BetAmount }
+func (this NumberResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type OrderingQuestion struct {
 	ID                   string             `json:"id"`
@@ -989,10 +999,12 @@ type OrderingResponse struct {
 	TimeSpentSeconds *int              `json:"timeSpentSeconds,omitempty"`
 	PointsEarned     *int              `json:"pointsEarned,omitempty"`
 	BetAmount        *int              `json:"betAmount,omitempty"`
+	JournalEntry     *ScoreJournal     `json:"journalEntry,omitempty"`
 	SubmittedOrder   []string          `json:"submittedOrder"`
 	IsCorrect        *bool             `json:"isCorrect,omitempty"`
 	IsCorrectValue   *bool             `json:"-"`
 	QuestionID       string            `json:"-"`
+	ScoreJournalID   *string           `json:"-"`
 	SubmissionID     string            `json:"-"`
 }
 
@@ -1004,6 +1016,7 @@ func (this OrderingResponse) GetAnsweredAt() *scalars.DateTime { return this.Ans
 func (this OrderingResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
 func (this OrderingResponse) GetPointsEarned() *int            { return this.PointsEarned }
 func (this OrderingResponse) GetBetAmount() *int               { return this.BetAmount }
+func (this OrderingResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type PageInfo struct {
 	HasNextPage     bool    `json:"hasNextPage"`
@@ -1096,10 +1109,12 @@ type PredefinedResponse struct {
 	TimeSpentSeconds  *int                   `json:"timeSpentSeconds,omitempty"`
 	PointsEarned      *int                   `json:"pointsEarned,omitempty"`
 	BetAmount         *int                   `json:"betAmount,omitempty"`
+	JournalEntry      *ScoreJournal          `json:"journalEntry,omitempty"`
 	SelectedAnswerIds []string               `json:"selectedAnswerIds"`
 	SelectedAnswers   []QuizPredefinedAnswer `json:"selectedAnswers"`
 	IsCorrect         *bool                  `json:"isCorrect,omitempty"`
 	QuestionID        string                 `json:"-"`
+	ScoreJournalID    *string                `json:"-"`
 	SubmissionID      string                 `json:"-"`
 }
 
@@ -1111,6 +1126,7 @@ func (this PredefinedResponse) GetAnsweredAt() *scalars.DateTime { return this.A
 func (this PredefinedResponse) GetTimeSpentSeconds() *int        { return this.TimeSpentSeconds }
 func (this PredefinedResponse) GetPointsEarned() *int            { return this.PointsEarned }
 func (this PredefinedResponse) GetBetAmount() *int               { return this.BetAmount }
+func (this PredefinedResponse) GetJournalEntry() *ScoreJournal   { return this.JournalEntry }
 
 type Project struct {
 	ID               string                  `json:"id"`
@@ -1373,6 +1389,12 @@ type QuizSubmissionConnection struct {
 type QuizSubmissionEdge struct {
 	Cursor string          `json:"cursor"`
 	Node   *QuizSubmission `json:"node"`
+}
+
+type RecordBetResultInput struct {
+	ResponseID       string `json:"responseId"`
+	PointsEarned     int    `json:"pointsEarned"`
+	SendNotification *bool  `json:"sendNotification,omitempty"`
 }
 
 type RegisterPushSubscriptionInput struct {
@@ -3034,6 +3056,7 @@ const (
 	ScoreSourceTypeChallenge   ScoreSourceType = "CHALLENGE"
 	ScoreSourceTypeEvent       ScoreSourceType = "EVENT"
 	ScoreSourceTypeManual      ScoreSourceType = "MANUAL"
+	ScoreSourceTypeBet         ScoreSourceType = "BET"
 )
 
 var AllScoreSourceType = []ScoreSourceType{
@@ -3041,11 +3064,12 @@ var AllScoreSourceType = []ScoreSourceType{
 	ScoreSourceTypeChallenge,
 	ScoreSourceTypeEvent,
 	ScoreSourceTypeManual,
+	ScoreSourceTypeBet,
 }
 
 func (e ScoreSourceType) IsValid() bool {
 	switch e {
-	case ScoreSourceTypeAchievement, ScoreSourceTypeChallenge, ScoreSourceTypeEvent, ScoreSourceTypeManual:
+	case ScoreSourceTypeAchievement, ScoreSourceTypeChallenge, ScoreSourceTypeEvent, ScoreSourceTypeManual, ScoreSourceTypeBet:
 		return true
 	}
 	return false

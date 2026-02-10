@@ -479,6 +479,7 @@ type QuizResponse struct {
 	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
 	PointsEarned      *int32             `json:"points_earned"`
 	BetAmount         *int32             `json:"bet_amount"`
+	ScoreJournalID    *string            `json:"score_journal_id"`
 }
 
 type QuizSession struct {

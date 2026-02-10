@@ -215,6 +215,65 @@ func (q *Queries) GetQuizResponseBySubmissionAndQuestion(ctx context.Context, ar
 	return &i, err
 }
 
+const GetQuizResponseScoreJournalID = `-- name: GetQuizResponseScoreJournalID :one
+SELECT score_journal_id FROM quiz_responses WHERE id = $1::text
+`
+
+func (q *Queries) GetQuizResponseScoreJournalID(ctx context.Context, id string) (*string, error) {
+	row := q.db.QueryRow(ctx, GetQuizResponseScoreJournalID, id)
+	var score_journal_id *string
+	err := row.Scan(&score_journal_id)
+	return score_journal_id, err
+}
+
+const GetQuizResponseWithContext = `-- name: GetQuizResponseWithContext :one
+SELECT
+    r.id, r.submission_id, r.question_id, r.points_earned, r.bet_amount, r.score_journal_id,
+    s.user_id, s.quiz_id,
+    q.project_id, q.name as quiz_name, q.challenge_id,
+    c.event_id
+FROM quiz_responses r
+JOIN quiz_submissions s ON r.submission_id = s.id
+JOIN quizzes q ON s.quiz_id = q.id
+LEFT JOIN challenges c ON q.challenge_id = c.id
+WHERE r.id = $1::text
+`
+
+type GetQuizResponseWithContextRow struct {
+	ID             string  `json:"id"`
+	SubmissionID   string  `json:"submission_id"`
+	QuestionID     string  `json:"question_id"`
+	PointsEarned   *int32  `json:"points_earned"`
+	BetAmount      *int32  `json:"bet_amount"`
+	ScoreJournalID *string `json:"score_journal_id"`
+	UserID         string  `json:"user_id"`
+	QuizID         string  `json:"quiz_id"`
+	ProjectID      string  `json:"project_id"`
+	QuizName       string  `json:"quiz_name"`
+	ChallengeID    string  `json:"challenge_id"`
+	EventID        *string `json:"event_id"`
+}
+
+func (q *Queries) GetQuizResponseWithContext(ctx context.Context, id string) (*GetQuizResponseWithContextRow, error) {
+	row := q.db.QueryRow(ctx, GetQuizResponseWithContext, id)
+	var i GetQuizResponseWithContextRow
+	err := row.Scan(
+		&i.ID,
+		&i.SubmissionID,
+		&i.QuestionID,
+		&i.PointsEarned,
+		&i.BetAmount,
+		&i.ScoreJournalID,
+		&i.UserID,
+		&i.QuizID,
+		&i.ProjectID,
+		&i.QuizName,
+		&i.ChallengeID,
+		&i.EventID,
+	)
+	return &i, err
+}
+
 const GetQuizResponsesBySubmissionID = `-- name: GetQuizResponsesBySubmissionID :many
 SELECT id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount
 FROM quiz_responses
@@ -274,7 +333,7 @@ SELECT
     r.id, r.submission_id, r.question_id, r.selected_answer_ids,
     r.text_response, r.number_response, r.json_response,
     r.is_correct, r.points_earned, r.answered_at, r.time_spent_seconds,
-    r.bet_amount, q.question_type
+    r.bet_amount, r.score_journal_id, q.question_type
 FROM quiz_responses r
 JOIN quiz_questions q ON r.question_id = q.id
 WHERE r.submission_id = ANY($1::text[])
@@ -294,6 +353,7 @@ type GetQuizResponsesBySubmissionIDsRow struct {
 	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
 	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
 	BetAmount         *int32             `json:"bet_amount"`
+	ScoreJournalID    *string            `json:"score_journal_id"`
 	QuestionType      string             `json:"question_type"`
 }
 
@@ -319,7 +379,302 @@ func (q *Queries) GetQuizResponsesBySubmissionIDs(ctx context.Context, submissio
 			&i.AnsweredAt,
 			&i.TimeSpentSeconds,
 			&i.BetAmount,
+			&i.ScoreJournalID,
 			&i.QuestionType,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetQuizResponsesWithContext = `-- name: GetQuizResponsesWithContext :many
+SELECT
+    r.id, r.submission_id, r.question_id, r.points_earned, r.bet_amount, r.score_journal_id,
+    s.user_id, s.quiz_id,
+    q.project_id, q.name as quiz_name, q.challenge_id,
+    c.event_id
+FROM quiz_responses r
+JOIN quiz_submissions s ON r.submission_id = s.id
+JOIN quizzes q ON s.quiz_id = q.id
+LEFT JOIN challenges c ON q.challenge_id = c.id
+WHERE r.id = ANY($1::text[])
+`
+
+type GetQuizResponsesWithContextRow struct {
+	ID             string  `json:"id"`
+	SubmissionID   string  `json:"submission_id"`
+	QuestionID     string  `json:"question_id"`
+	PointsEarned   *int32  `json:"points_earned"`
+	BetAmount      *int32  `json:"bet_amount"`
+	ScoreJournalID *string `json:"score_journal_id"`
+	UserID         string  `json:"user_id"`
+	QuizID         string  `json:"quiz_id"`
+	ProjectID      string  `json:"project_id"`
+	QuizName       string  `json:"quiz_name"`
+	ChallengeID    string  `json:"challenge_id"`
+	EventID        *string `json:"event_id"`
+}
+
+func (q *Queries) GetQuizResponsesWithContext(ctx context.Context, ids []string) ([]*GetQuizResponsesWithContextRow, error) {
+	rows, err := q.db.Query(ctx, GetQuizResponsesWithContext, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetQuizResponsesWithContextRow{}
+	for rows.Next() {
+		var i GetQuizResponsesWithContextRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SubmissionID,
+			&i.QuestionID,
+			&i.PointsEarned,
+			&i.BetAmount,
+			&i.ScoreJournalID,
+			&i.UserID,
+			&i.QuizID,
+			&i.ProjectID,
+			&i.QuizName,
+			&i.ChallengeID,
+			&i.EventID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const UpdateBetResult = `-- name: UpdateBetResult :one
+UPDATE quiz_responses
+SET points_earned = $1::int
+WHERE id = $2::text
+RETURNING id, submission_id, question_id, selected_answer_ids, text_response, number_response, json_response, is_correct, points_earned, answered_at, time_spent_seconds, bet_amount
+`
+
+type UpdateBetResultParams struct {
+	Pointsearned int32  `json:"pointsearned"`
+	ID           string `json:"id"`
+}
+
+type UpdateBetResultRow struct {
+	ID                string             `json:"id"`
+	SubmissionID      string             `json:"submission_id"`
+	QuestionID        string             `json:"question_id"`
+	SelectedAnswerIds []byte             `json:"selected_answer_ids"`
+	TextResponse      *string            `json:"text_response"`
+	NumberResponse    pgtype.Numeric     `json:"number_response"`
+	JsonResponse      []byte             `json:"json_response"`
+	IsCorrect         *bool              `json:"is_correct"`
+	PointsEarned      *int32             `json:"points_earned"`
+	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
+	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
+	BetAmount         *int32             `json:"bet_amount"`
+}
+
+func (q *Queries) UpdateBetResult(ctx context.Context, arg UpdateBetResultParams) (*UpdateBetResultRow, error) {
+	row := q.db.QueryRow(ctx, UpdateBetResult, arg.Pointsearned, arg.ID)
+	var i UpdateBetResultRow
+	err := row.Scan(
+		&i.ID,
+		&i.SubmissionID,
+		&i.QuestionID,
+		&i.SelectedAnswerIds,
+		&i.TextResponse,
+		&i.NumberResponse,
+		&i.JsonResponse,
+		&i.IsCorrect,
+		&i.PointsEarned,
+		&i.AnsweredAt,
+		&i.TimeSpentSeconds,
+		&i.BetAmount,
+	)
+	return &i, err
+}
+
+const UpdateBetResultWithJournal = `-- name: UpdateBetResultWithJournal :one
+UPDATE quiz_responses
+SET points_earned = $1::int,
+    score_journal_id = $2::text
+WHERE id = $3::text
+RETURNING id, submission_id, question_id, selected_answer_ids, text_response,
+          number_response, json_response, is_correct, points_earned, answered_at,
+          time_spent_seconds, bet_amount, score_journal_id
+`
+
+type UpdateBetResultWithJournalParams struct {
+	Pointsearned   int32  `json:"pointsearned"`
+	Scorejournalid string `json:"scorejournalid"`
+	ID             string `json:"id"`
+}
+
+type UpdateBetResultWithJournalRow struct {
+	ID                string             `json:"id"`
+	SubmissionID      string             `json:"submission_id"`
+	QuestionID        string             `json:"question_id"`
+	SelectedAnswerIds []byte             `json:"selected_answer_ids"`
+	TextResponse      *string            `json:"text_response"`
+	NumberResponse    pgtype.Numeric     `json:"number_response"`
+	JsonResponse      []byte             `json:"json_response"`
+	IsCorrect         *bool              `json:"is_correct"`
+	PointsEarned      *int32             `json:"points_earned"`
+	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
+	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
+	BetAmount         *int32             `json:"bet_amount"`
+	ScoreJournalID    *string            `json:"score_journal_id"`
+}
+
+func (q *Queries) UpdateBetResultWithJournal(ctx context.Context, arg UpdateBetResultWithJournalParams) (*UpdateBetResultWithJournalRow, error) {
+	row := q.db.QueryRow(ctx, UpdateBetResultWithJournal, arg.Pointsearned, arg.Scorejournalid, arg.ID)
+	var i UpdateBetResultWithJournalRow
+	err := row.Scan(
+		&i.ID,
+		&i.SubmissionID,
+		&i.QuestionID,
+		&i.SelectedAnswerIds,
+		&i.TextResponse,
+		&i.NumberResponse,
+		&i.JsonResponse,
+		&i.IsCorrect,
+		&i.PointsEarned,
+		&i.AnsweredAt,
+		&i.TimeSpentSeconds,
+		&i.BetAmount,
+		&i.ScoreJournalID,
+	)
+	return &i, err
+}
+
+const UpdateBetResults = `-- name: UpdateBetResults :many
+UPDATE quiz_responses
+SET points_earned = data.points_earned
+FROM (
+    SELECT unnest($1::text[]) AS id, unnest($2::int[]) AS points_earned
+) AS data
+WHERE quiz_responses.id = data.id
+RETURNING quiz_responses.id, quiz_responses.submission_id, quiz_responses.question_id, quiz_responses.selected_answer_ids, quiz_responses.text_response, quiz_responses.number_response, quiz_responses.json_response, quiz_responses.is_correct, quiz_responses.points_earned, quiz_responses.answered_at, quiz_responses.time_spent_seconds, quiz_responses.bet_amount
+`
+
+type UpdateBetResultsParams struct {
+	Ids          []string `json:"ids"`
+	Pointsearned []int32  `json:"pointsearned"`
+}
+
+type UpdateBetResultsRow struct {
+	ID                string             `json:"id"`
+	SubmissionID      string             `json:"submission_id"`
+	QuestionID        string             `json:"question_id"`
+	SelectedAnswerIds []byte             `json:"selected_answer_ids"`
+	TextResponse      *string            `json:"text_response"`
+	NumberResponse    pgtype.Numeric     `json:"number_response"`
+	JsonResponse      []byte             `json:"json_response"`
+	IsCorrect         *bool              `json:"is_correct"`
+	PointsEarned      *int32             `json:"points_earned"`
+	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
+	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
+	BetAmount         *int32             `json:"bet_amount"`
+}
+
+func (q *Queries) UpdateBetResults(ctx context.Context, arg UpdateBetResultsParams) ([]*UpdateBetResultsRow, error) {
+	rows, err := q.db.Query(ctx, UpdateBetResults, arg.Ids, arg.Pointsearned)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*UpdateBetResultsRow{}
+	for rows.Next() {
+		var i UpdateBetResultsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SubmissionID,
+			&i.QuestionID,
+			&i.SelectedAnswerIds,
+			&i.TextResponse,
+			&i.NumberResponse,
+			&i.JsonResponse,
+			&i.IsCorrect,
+			&i.PointsEarned,
+			&i.AnsweredAt,
+			&i.TimeSpentSeconds,
+			&i.BetAmount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const UpdateBetResultsWithJournal = `-- name: UpdateBetResultsWithJournal :many
+UPDATE quiz_responses
+SET points_earned = data.points_earned,
+    score_journal_id = data.score_journal_id
+FROM (
+    SELECT
+        unnest($1::text[]) AS id,
+        unnest($2::int[]) AS points_earned,
+        unnest($3::text[]) AS score_journal_id
+) AS data
+WHERE quiz_responses.id = data.id
+RETURNING quiz_responses.id, quiz_responses.submission_id, quiz_responses.question_id, quiz_responses.selected_answer_ids, quiz_responses.text_response, quiz_responses.number_response, quiz_responses.json_response, quiz_responses.is_correct, quiz_responses.points_earned, quiz_responses.answered_at, quiz_responses.time_spent_seconds, quiz_responses.bet_amount, quiz_responses.score_journal_id
+`
+
+type UpdateBetResultsWithJournalParams struct {
+	Ids             []string `json:"ids"`
+	Pointsearned    []int32  `json:"pointsearned"`
+	Scorejournalids []string `json:"scorejournalids"`
+}
+
+type UpdateBetResultsWithJournalRow struct {
+	ID                string             `json:"id"`
+	SubmissionID      string             `json:"submission_id"`
+	QuestionID        string             `json:"question_id"`
+	SelectedAnswerIds []byte             `json:"selected_answer_ids"`
+	TextResponse      *string            `json:"text_response"`
+	NumberResponse    pgtype.Numeric     `json:"number_response"`
+	JsonResponse      []byte             `json:"json_response"`
+	IsCorrect         *bool              `json:"is_correct"`
+	PointsEarned      *int32             `json:"points_earned"`
+	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
+	TimeSpentSeconds  *int32             `json:"time_spent_seconds"`
+	BetAmount         *int32             `json:"bet_amount"`
+	ScoreJournalID    *string            `json:"score_journal_id"`
+}
+
+func (q *Queries) UpdateBetResultsWithJournal(ctx context.Context, arg UpdateBetResultsWithJournalParams) ([]*UpdateBetResultsWithJournalRow, error) {
+	rows, err := q.db.Query(ctx, UpdateBetResultsWithJournal, arg.Ids, arg.Pointsearned, arg.Scorejournalids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*UpdateBetResultsWithJournalRow{}
+	for rows.Next() {
+		var i UpdateBetResultsWithJournalRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SubmissionID,
+			&i.QuestionID,
+			&i.SelectedAnswerIds,
+			&i.TextResponse,
+			&i.NumberResponse,
+			&i.JsonResponse,
+			&i.IsCorrect,
+			&i.PointsEarned,
+			&i.AnsweredAt,
+			&i.TimeSpentSeconds,
+			&i.BetAmount,
+			&i.ScoreJournalID,
 		); err != nil {
 			return nil, err
 		}

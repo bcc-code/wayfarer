@@ -1,0 +1,7 @@
+{
+  "bet_result": {
+    "title": "Rezultat",
+    "won": "Ai castigat {points} puncte!",
+    "lost": "Ai pierdut {points} puncte."
+  }
+}

@@ -94,6 +94,9 @@ const (
 	// File uploads
 	PrefixFileUpload         = "fileupload:"
 	PrefixImageMetadataByURL = "imagemetadata:url:"
+
+	// Score journal
+	PrefixScoreJournal = "scorejournal:"
 )
 
 // Key builders for different entity types
@@ -1228,4 +1231,9 @@ func ExternalContentsCountKey(params map[string]string) string {
 // ExternalContentTranslationsKey builds a cache key for external content translations
 func ExternalContentTranslationsKey(externalContentID string) string {
 	return fmt.Sprintf("%stranslations:%s", PrefixExternalContent, externalContentID)
+}
+
+// ScoreJournalKey builds a cache key for a score journal entry by ID
+func ScoreJournalKey(id string) string {
+	return PrefixScoreJournal + id
 }
