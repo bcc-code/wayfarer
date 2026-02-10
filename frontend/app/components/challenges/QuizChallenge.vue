@@ -262,7 +262,11 @@ const nextButtonText = computed(() => {
 // QuizProgress visibility and props for both active quiz and review mode
 const showQuizProgress = computed(() => {
   // Show during active quiz (multiple questions, not completed)
-  if (activeSubmission.value && !quizCompleted.value && questions.value.length > 1) {
+  if (
+    activeSubmission.value &&
+    !quizCompleted.value &&
+    questions.value.length > 1
+  ) {
     return true
   }
   // Show during review mode (multiple questions)
