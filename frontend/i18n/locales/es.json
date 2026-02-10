@@ -1,6 +1,11 @@
 {
   "error": {
-    "title": "¡Vaya! Algo salió mal"
+    "title": "¡Vaya! Algo salió mal",
+    "hint": "Por favor, inténtalo de nuevo. Si el problema persiste, intente actualizar la página.",
+    "networkHint": "Parece que tienes problemas de conexión. Comprueba tu conexión a Internet y vuelve a intentarlo.",
+    "retry": "Inténtalo de nuevo",
+    "showDetails": "Mostrar detalles técnicos",
+    "hideDetails": "Ocultar detalles técnicos"
   },
   "emptyStates": {
     "standings": "Aún no hay ninguna lista Los mejores.",
@@ -17,11 +22,18 @@
     "correctAnswer": "Respuesta correcta",
     "yourAnswer": "Tu respuesta",
     "lockAnswer": "Bloquear respuesta",
+    "saveAnswer": "Guardar respuesta",
+    "changeAnswer": "Cambiar respuesta",
     "questionNumber": "{current} de {total}",
     "continue": "Continúa.",
     "nextQuestion": "Siguiente pregunta",
+    "previousQuestion": "Anterior",
     "done": "Listo",
-    "unavailable": "",
+    "unavailable": "Este cuestionario no está disponible en este momento.",
+    "reviewAnswers": "Ver respuesta",
+    "finishReview": "Finalizar revisión",
+    "yourNumber": "Tu número",
+    "writeYourAnswer": "Escribe tu respuesta...",
     "result": {
       "receivedNoPoints": "No has sumado ningún punto.",
       "receivedPoints": "Has acumulado {points} puntos.",
@@ -29,6 +41,10 @@
       "wellDone": "¡Buen trabajo!",
       "perfect": "Sí, ¡perfecto!"
     }
+  },
+  "challenges": {
+    "active": "Activos",
+    "completed": "Terminado"
   },
   "pages": {
     "standings": "Listas de éxitos",
@@ -124,5 +140,149 @@
     "updateAvailableTitle": "Hay una actualización disponible.",
     "updateAvailableButton": "Actualizar ahora"
   },
-  "goToHiddenTreasures": "Ir al estudio bíblico"
+  "notifications": {
+    "promptTitle": "Añade todos tus logros, activa las notificaciones",
+    "promptDescription": "Recibirás una notificación cada vez que recibas un nuevo galardón o desafío.",
+    "turnOn": "Activar alertas",
+    "notNow": "Ahora no."
+  },
+  "goToHiddenTreasures": "Ir al estudio bíblico",
+  "gameNights": {
+    "yourCode": "Tu código de unidad para Game Night",
+    "yourCodeHint": "Abre la página en tu PC e introduce el código."
+  },
+  "admin": {
+    "common": {
+      "back": "Atrás",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "create": "Crear",
+      "delete": "Eliminar",
+      "deleteAll": "Borrar todo",
+      "copyLink": "Copiar enlace a la página de administración",
+      "linkCopied": "Enlace copiado"
+    },
+    "breadcrumb": {
+      "home": "Portada"
+    },
+    "churchHome": {
+      "administrators": "Administradores",
+      "unitsAndPeople": "Unidades y personas",
+      "gameNights": "Noches de juegos",
+      "comingSoon": "Próximamente",
+      "kickOff": "Inicio",
+      "statistics": "Estadísticas",
+      "kickOffButton": "Comience ahora la incorporación de la unidad",
+      "kickOffOnboardingDescription": "Esta acción inicia la incorporación de unidades para toda la iglesia local.",
+      "kickOffOnboardingDescriptionWarning": "⚠ No empiecen si no están listos.",
+      "kickOffOnboardingExplanationTitle": "¿Qué sucede cuando se inicia?",
+      "kickOffOnboardingExplanation1": "Todos los líderes de unidad de la iglesia local reciben un reto en Interact (aplicación web).",
+      "kickOffOnboardingExplanation2": "Pueden cambiar el nombre de la unidad y obtendrán 300 puntos cuando lo hagan.",
+      "kickOffConfirmation": "Confirmo que el inicio se llevará a cabo ahora y que estamos listos para comenzar.",
+      "kickOffOnboardingCountdown": "Comienza en {seconds} segundos | Comienza en {seconds} segundos",
+      "kickOffSuccessTitle": "¡La incorporación de unidades está en marcha!",
+      "kickOffSuccessDescription": "Todos los jefes de unidad han recibido una tarea en la aplicación y pueden cambiar el nombre de su unidad.",
+      "noAccess": "No tienes acceso a esta página porque no eres administrador. Pide a otro administrador que te dé acceso."
+    },
+    "admins": {
+      "searchPlaceholder": "Buscar administradores...",
+      "addPlaceholder": "Añadir administrador...",
+      "you": "Tú",
+      "noAdminsFound": "No se han encontrado administradores.",
+      "confirmRemove": {
+        "title": "¿Eliminar administrador?",
+        "message": "¿Está seguro de que desea eliminar « {name} » como administrador?",
+        "confirm": "Eliminar"
+      },
+      "success": {
+        "added": "Administrador añadido",
+        "removed": "Administrador eliminado"
+      },
+      "errors": {
+        "addFailed": "No se pudo añadir administrador",
+        "removeFailed": "No se pudo eliminar el administrador"
+      },
+      "copyLinkDescription": "Comparte el enlace con otros administradores"
+    },
+    "units": {
+      "title": "Unidades",
+      "people": "<b>Las personas:</b>",
+      "filter": {
+        "title": "Filtrar",
+        "all": "Todos",
+        "notInUnit": "No en una unidad",
+        "inUnit": "En una unidad",
+        "showO36": "Mostrar personas mayores de 36 años",
+        "showO36Description": "Las personas mayores de 36 años no aparecen en las listas de clasificación y no participan en la competición juvenil."
+      },
+      "searchPlaceholder": "Buscar unidades o personas...",
+      "searchPeoplePlaceholder": "Buscar personas...",
+      "expandAll": "Expandir todas las unidades",
+      "createOneUnit": "Crear una unidad",
+      "createMultipleUnits": "Crear más unidades",
+      "namePlaceholder": "Nombre de la unidad (opcional)",
+      "selectAll": "Seleccionar todo",
+      "noActiveProject": "Sin competencia activa",
+      "noUnitsFound": "No se han encontrado unidades",
+      "noPeopleFound": "No se han encontrado personas.",
+      "years": "22 años:",
+      "selectedCount": "{count} unidad seleccionada | {count} unidades seleccionadas",
+      "deleteSelected": "Borrar selección",
+      "bulkCreate": {
+        "countLabel": "Número de unidades",
+        "autoGenerateInfo": "Los nombres de las unidades se generan automáticamente y se pueden modificar posteriormente."
+      },
+      "confirmDelete": {
+        "title": "¿Borrar unidad?",
+        "message": "¿Estás seguro de que deseas eliminar « {name} »? Todos los miembros serán eliminados de la unidad."
+      },
+      "confirmBulkDelete": {
+        "title": "¿Eliminar varias unidades?",
+        "message": "¿Estás seguro de que deseas eliminar las unidades « {count} »? Todos los miembros serán eliminados de estas unidades."
+      },
+      "success": {
+        "created": "Unidad creada",
+        "bulkCreated": "{count} unidades creadas",
+        "deleted": "Unidad eliminada",
+        "bulkDeleted": "{count} unidades eliminadas"
+      },
+      "errors": {
+        "createFailed": "No se pudo crear la unidad.",
+        "bulkCreateFailed": "No se pudieron crear unidades",
+        "addMemberFailed": "No se pudo añadir miembro",
+        "removeMemberFailed": "No se pudo eliminar el miembro",
+        "assignLeaderFailed": "No se pudo establecer el líder.",
+        "deleteFailed": "No se pudo eliminar la unidad.",
+        "bulkDeleteFailed": "No se pudieron eliminar las unidades.",
+        "renameFailed": "No se pudo cambiar el nombre de la unidad.",
+        "exclusionToggleFailed": "No se pudo cambiar la visibilidad en la lista superior."
+      },
+      "ageWarning": "La edad media de esta unidad es superior a 36 años, por lo que no aparecerá en las listas de éxitos ni participará en el concurso para jóvenes. Si esto es incorrecto y debe participar en el concurso para jóvenes, háganoslo saber en {email}"
+    },
+    "unit": {
+      "noLeaderSelected": "No se ha elegido ningún líder.",
+      "members": "{count} persona | {count} personas",
+      "makeLead": "Conviértete en líder",
+      "dragPeopleHere": "No hay miembros - arrastrar una persona aquí",
+      "addPersonPlaceholder": "Añadir persona...",
+      "excludeFromLeaderboard": "Excluir de la lista superior",
+      "excludeFromLeaderboardTooltip": "Cuando esté activada, esta unidad no aparecerá en la lista superior.",
+      "excludedFromLeaderboard": "Oculto de las listas principales"
+    },
+    "statistics": {
+      "totalUsersInTeams": "Personas en unidades",
+      "averageScoresByAgeGroup": "Puntuación media por grupo de edad",
+      "averageScoresByAgeGroupDescription": "Aquí tienes un resumen de la puntuación media por grupo de edad. Solo se tienen en cuenta las personas que forman parte de una unidad.",
+      "ageGroup": "Grupo de edad",
+      "users": "Usuarios",
+      "averageScore": "Puntuación media",
+      "yearsOld": "22 años:",
+      "noData": "No hay datos disponibles.",
+      "pointsDistribution": "Distribución de puntos",
+      "pointsDistributionDescription": "Aquí tienes un resumen de la puntuación de todas las personas de tu congregación local que son miembros de una unidad.",
+      "points": "puntos",
+      "peopleInAUnit": "Personas en una unidad",
+      "lastUpdated": "Última actualización"
+    }
+  }
 }
