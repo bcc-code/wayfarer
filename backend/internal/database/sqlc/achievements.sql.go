@@ -412,6 +412,51 @@ func (q *Queries) GetAchievementByID(ctx context.Context, id string) (*GetAchiev
 	return &i, err
 }
 
+const GetAchievementCompletionStatus = `-- name: GetAchievementCompletionStatus :many
+SELECT
+    cai.achievement_id,
+    COUNT(DISTINCT cai.external_content_id)::int AS item_count,
+    COUNT(DISTINCT ucp.external_content_id)::int AS progress_count
+FROM content_achievement_items cai
+LEFT JOIN user_content_progress ucp
+    ON ucp.achievement_id = cai.achievement_id
+    AND ucp.user_id = $1::text
+    AND ucp.external_content_id = cai.external_content_id
+WHERE cai.achievement_id = ANY($2::text[])
+GROUP BY cai.achievement_id
+`
+
+type GetAchievementCompletionStatusParams struct {
+	UserID         string   `json:"user_id"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+type GetAchievementCompletionStatusRow struct {
+	AchievementID string `json:"achievement_id"`
+	ItemCount     int32  `json:"item_count"`
+	ProgressCount int32  `json:"progress_count"`
+}
+
+func (q *Queries) GetAchievementCompletionStatus(ctx context.Context, arg GetAchievementCompletionStatusParams) ([]*GetAchievementCompletionStatusRow, error) {
+	rows, err := q.db.Query(ctx, GetAchievementCompletionStatus, arg.UserID, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetAchievementCompletionStatusRow{}
+	for rows.Next() {
+		var i GetAchievementCompletionStatusRow
+		if err := rows.Scan(&i.AchievementID, &i.ItemCount, &i.ProgressCount); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetAchievementsByIDs = `-- name: GetAchievementsByIDs :many
 SELECT
     a.id,
@@ -446,10 +491,15 @@ SELECT
     ) AS content_items,
     -- Streak achievement data
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE a.id = ANY($1::text[])
 `
 
@@ -474,6 +524,9 @@ type GetAchievementsByIDsRow struct {
 	ContentItems         interface{}        `json:"content_items"`
 	StreakID             *string            `json:"streak_id"`
 	NeededStreak         *int32             `json:"needed_streak"`
+	QuizID               *string            `json:"quiz_id"`
+	MinScorePercentage   *int32             `json:"min_score_percentage"`
+	RequireCompletion    *bool              `json:"require_completion"`
 }
 
 func (q *Queries) GetAchievementsByIDs(ctx context.Context, ids []string) ([]*GetAchievementsByIDsRow, error) {
@@ -506,6 +559,9 @@ func (q *Queries) GetAchievementsByIDs(ctx context.Context, ids []string) ([]*Ge
 			&i.ContentItems,
 			&i.StreakID,
 			&i.NeededStreak,
+			&i.QuizID,
+			&i.MinScorePercentage,
+			&i.RequireCompletion,
 		); err != nil {
 			return nil, err
 		}
@@ -538,10 +594,15 @@ SELECT
     -- Type-specific fields needed for model construction
     ca.achievement_id AS content_achievement_id,
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE a.project_id = ANY($1::text[])
     AND a.hidden = false
 ORDER BY a.project_id, a.sort_order, a.created_at DESC
@@ -567,6 +628,9 @@ type GetAchievementsByProjectIDsRow struct {
 	ContentAchievementID *string            `json:"content_achievement_id"`
 	StreakID             *string            `json:"streak_id"`
 	NeededStreak         *int32             `json:"needed_streak"`
+	QuizID               *string            `json:"quiz_id"`
+	MinScorePercentage   *int32             `json:"min_score_percentage"`
+	RequireCompletion    *bool              `json:"require_completion"`
 }
 
 func (q *Queries) GetAchievementsByProjectIDs(ctx context.Context, projectIds []string) ([]*GetAchievementsByProjectIDsRow, error) {
@@ -598,6 +662,9 @@ func (q *Queries) GetAchievementsByProjectIDs(ctx context.Context, projectIds []
 			&i.ContentAchievementID,
 			&i.StreakID,
 			&i.NeededStreak,
+			&i.QuizID,
+			&i.MinScorePercentage,
+			&i.RequireCompletion,
 		); err != nil {
 			return nil, err
 		}
@@ -644,10 +711,15 @@ SELECT
     ) AS content_items,
     -- Streak achievement data
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE
     ($1::text[] IS NULL OR a.id = ANY($1::text[]))
     AND ($2::text = '' OR a.project_id = $2::text)
@@ -694,6 +766,9 @@ type GetAchievementsFilteredCursorRow struct {
 	ContentItems         interface{}        `json:"content_items"`
 	StreakID             *string            `json:"streak_id"`
 	NeededStreak         *int32             `json:"needed_streak"`
+	QuizID               *string            `json:"quiz_id"`
+	MinScorePercentage   *int32             `json:"min_score_percentage"`
+	RequireCompletion    *bool              `json:"require_completion"`
 }
 
 func (q *Queries) GetAchievementsFilteredCursor(ctx context.Context, arg GetAchievementsFilteredCursorParams) ([]*GetAchievementsFilteredCursorRow, error) {
@@ -735,6 +810,9 @@ func (q *Queries) GetAchievementsFilteredCursor(ctx context.Context, arg GetAchi
 			&i.ContentItems,
 			&i.StreakID,
 			&i.NeededStreak,
+			&i.QuizID,
+			&i.MinScorePercentage,
+			&i.RequireCompletion,
 		); err != nil {
 			return nil, err
 		}
@@ -767,10 +845,15 @@ SELECT
     a.updated_at,
     ca.achievement_id AS content_achievement_id,
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE a.project_id = $1::text
 ORDER BY a.sort_order, a.created_at DESC
 `
@@ -796,6 +879,9 @@ type GetAllAchievementsByProjectIDRow struct {
 	ContentAchievementID *string            `json:"content_achievement_id"`
 	StreakID             *string            `json:"streak_id"`
 	NeededStreak         *int32             `json:"needed_streak"`
+	QuizID               *string            `json:"quiz_id"`
+	MinScorePercentage   *int32             `json:"min_score_percentage"`
+	RequireCompletion    *bool              `json:"require_completion"`
 }
 
 // Returns all achievements for a project including hidden ones, ordered by sort_order
@@ -829,6 +915,9 @@ func (q *Queries) GetAllAchievementsByProjectID(ctx context.Context, projectID s
 			&i.ContentAchievementID,
 			&i.StreakID,
 			&i.NeededStreak,
+			&i.QuizID,
+			&i.MinScorePercentage,
+			&i.RequireCompletion,
 		); err != nil {
 			return nil, err
 		}
@@ -948,6 +1037,39 @@ func (q *Queries) GetBulkUserContentProgress(ctx context.Context, arg GetBulkUse
 			&i.ExternalContentID,
 			&i.CompletedAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetContentItemCounts = `-- name: GetContentItemCounts :many
+SELECT achievement_id, COUNT(*)::int AS item_count
+FROM content_achievement_items
+WHERE achievement_id = ANY($1::text[])
+GROUP BY achievement_id
+`
+
+type GetContentItemCountsRow struct {
+	AchievementID string `json:"achievement_id"`
+	ItemCount     int32  `json:"item_count"`
+}
+
+// Get content item counts per achievement (for caching)
+func (q *Queries) GetContentItemCounts(ctx context.Context, achievementIds []string) ([]*GetContentItemCountsRow, error) {
+	rows, err := q.db.Query(ctx, GetContentItemCounts, achievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetContentItemCountsRow{}
+	for rows.Next() {
+		var i GetContentItemCountsRow
+		if err := rows.Scan(&i.AchievementID, &i.ItemCount); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)
@@ -1186,6 +1308,39 @@ func (q *Queries) GetUserAchievementTimestamps(ctx context.Context, arg GetUserA
 	return items, nil
 }
 
+const GetUserAwardedAchievementIDs = `-- name: GetUserAwardedAchievementIDs :many
+SELECT achievement_id
+FROM user_achievements
+WHERE user_id = $1::text
+  AND achievement_id = ANY($2::text[])
+`
+
+type GetUserAwardedAchievementIDsParams struct {
+	UserID         string   `json:"user_id"`
+	AchievementIds []string `json:"achievement_ids"`
+}
+
+// Get which achievements from a list the user already has
+func (q *Queries) GetUserAwardedAchievementIDs(ctx context.Context, arg GetUserAwardedAchievementIDsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, GetUserAwardedAchievementIDs, arg.UserID, arg.AchievementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var achievement_id string
+		if err := rows.Scan(&achievement_id); err != nil {
+			return nil, err
+		}
+		items = append(items, achievement_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUserContentProgress = `-- name: GetUserContentProgress :many
 SELECT user_id, achievement_id, external_content_id, completed_at
 FROM user_content_progress
@@ -1223,33 +1378,35 @@ func (q *Queries) GetUserContentProgress(ctx context.Context, arg GetUserContent
 	return items, nil
 }
 
-const GetUserContentProgressForAchievement = `-- name: GetUserContentProgressForAchievement :many
-SELECT user_id, achievement_id, external_content_id, completed_at
+const GetUserProgressCounts = `-- name: GetUserProgressCounts :many
+SELECT achievement_id, COUNT(*)::int AS progress_count
 FROM user_content_progress
 WHERE user_id = $1::text
-  AND achievement_id = $2::text
+  AND achievement_id = ANY($2::text[])
+GROUP BY achievement_id
 `
 
-type GetUserContentProgressForAchievementParams struct {
-	UserID        string `json:"user_id"`
-	AchievementID string `json:"achievement_id"`
+type GetUserProgressCountsParams struct {
+	UserID         string   `json:"user_id"`
+	AchievementIds []string `json:"achievement_ids"`
 }
 
-func (q *Queries) GetUserContentProgressForAchievement(ctx context.Context, arg GetUserContentProgressForAchievementParams) ([]*UserContentProgress, error) {
-	rows, err := q.db.Query(ctx, GetUserContentProgressForAchievement, arg.UserID, arg.AchievementID)
+type GetUserProgressCountsRow struct {
+	AchievementID string `json:"achievement_id"`
+	ProgressCount int32  `json:"progress_count"`
+}
+
+// Get user progress counts per achievement
+func (q *Queries) GetUserProgressCounts(ctx context.Context, arg GetUserProgressCountsParams) ([]*GetUserProgressCountsRow, error) {
+	rows, err := q.db.Query(ctx, GetUserProgressCounts, arg.UserID, arg.AchievementIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*UserContentProgress{}
+	items := []*GetUserProgressCountsRow{}
 	for rows.Next() {
-		var i UserContentProgress
-		if err := rows.Scan(
-			&i.UserID,
-			&i.AchievementID,
-			&i.ExternalContentID,
-			&i.CompletedAt,
-		); err != nil {
+		var i GetUserProgressCountsRow
+		if err := rows.Scan(&i.AchievementID, &i.ProgressCount); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)

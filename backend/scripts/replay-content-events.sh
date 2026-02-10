@@ -166,12 +166,15 @@ EOF
         echo "DRY RUN"
         echo "  Payload: $(echo "$payload" | tr -d '\n' | tr -s ' ')"
     else
-        # Make the request
-        http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+        # Make the request, capturing both body and status code
+        response=$(curl -s -w "\n%{http_code}" \
             -X POST "$ENDPOINT" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $API_KEY" \
             -d "$payload")
+
+        http_code=$(echo "$response" | tail -n1)
+        response_body=$(echo "$response" | sed '$d')
 
         # Read current counts
         read succeeded failed < "$RESULT_FILE"
@@ -180,7 +183,7 @@ EOF
             echo "OK (201)"
             echo "$((succeeded + 1)) $failed" > "$RESULT_FILE"
         else
-            echo "FAILED (HTTP $http_code)"
+            echo "FAILED (HTTP $http_code): $response_body"
             echo "$succeeded $((failed + 1))" > "$RESULT_FILE"
         fi
     fi

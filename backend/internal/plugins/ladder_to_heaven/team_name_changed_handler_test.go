@@ -199,5 +199,5 @@ func TestTeamNameChangedRequest_ValidationErrors(t *testing.T) {
 
 func TestTeamRenamePointConstants(t *testing.T) {
 	assert.Equal(t, 300, pointsTeamRename, "Points for team rename should be 300")
-	assert.Equal(t, "TEAM_RENAME", sourceTypeTeamRename, "Source type for team rename should be TEAM_RENAME")
+	assert.Equal(t, "PLUGIN", sourceTypeTeamRename, "Source type for team rename should be PLUGIN")
 }

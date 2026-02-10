@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import type { ChallengeFormData } from '~/components/admin/challenge/AdminChallengeForm.vue'
-import type {
-  QuizFormData,
-  QuizQuestionFormData,
-} from '~/components/admin/quiz/AdminQuizForm.vue'
+import type { QuizFormData } from '~/components/admin/quiz/AdminQuizForm.vue'
 
 definePageMeta({
   layout: 'admin',
@@ -19,6 +16,8 @@ gql(`
       description
       image
       buttonText
+      notificationText
+      publishedAt
       visibleAt
       startedAt
       endTime
@@ -117,6 +116,8 @@ const initialData = computed(() => {
     image: c.image ?? undefined,
     url: c.__typename === 'ExternalChallenge' ? c.url : undefined,
     buttonText: c.buttonText,
+    notificationText: c.notificationText ?? undefined,
+    publishedAt: toLocalDatetimeLocal(c.publishedAt),
     endTime: toLocalDatetimeLocal(c.endTime),
     visibleAt: toLocalDatetimeLocal(c.visibleAt),
     startedAt: toLocalDatetimeLocal(c.startedAt),
@@ -332,6 +333,7 @@ async function handleSubmit(formData: ChallengeFormData) {
     allowSelfCompletion,
     url,
     quiz,
+    publishedAt,
     endTime,
     visibleAt,
     startedAt,
@@ -342,6 +344,7 @@ async function handleSubmit(formData: ChallengeFormData) {
   // Only include type-specific fields
   const input = {
     ...rest,
+    publishedAt: toISOString(publishedAt),
     endTime: toISOString(endTime),
     visibleAt: toISOString(visibleAt),
     startedAt: toISOString(startedAt),

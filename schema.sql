@@ -24,6 +24,7 @@ CREATE TABLE users (
     gender VARCHAR(10) NOT NULL CHECK (gender IN ('MALE', 'FEMALE', 'UNKNOWN')),
     birthdate DATE,
     church_id CHAR(28) NOT NULL REFERENCES churches(id) ON DELETE RESTRICT,
+    church_locked_until TIMESTAMPTZ,
     avatar_url VARCHAR(500),
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
@@ -195,6 +196,7 @@ CREATE TABLE challenges (
     requires_super_team_membership BOOLEAN DEFAULT false NOT NULL,
     plugin_challenge_id VARCHAR(100),
     plugin_data JSONB,
+    notification_text TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     -- Type constraints: EXTERNAL requires url, QUIZ must not have url, PLUGIN requires plugin_challenge_id
@@ -334,7 +336,8 @@ CREATE TABLE user_content_progress (
     PRIMARY KEY (user_id, achievement_id, external_content_id),
     INDEX idx_user_content_progress_user (user_id),
     INDEX idx_user_content_progress_achievement (achievement_id),
-    INDEX idx_user_content_progress_content (external_content_id)
+    INDEX idx_user_content_progress_content (external_content_id),
+    INDEX idx_user_content_progress_user_achievement (user_id, achievement_id)
 );
 
 CREATE TABLE user_streak_activity (
@@ -407,6 +410,7 @@ CREATE TABLE challenge_translations (
     name VARCHAR(255),
     description TEXT,
     button_text VARCHAR(100),
+    notification_text TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     PRIMARY KEY (challenge_id, language_code)

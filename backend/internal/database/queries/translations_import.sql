@@ -29,13 +29,14 @@ DO UPDATE SET
     updated_at = now();
 
 -- name: UpsertChallengeTranslation :exec
-INSERT INTO challenge_translations (challenge_id, language_code, name, description, button_text, updated_at)
-VALUES (@challenge_id::text, @language_code::text, @name::text, @description::text, @button_text::text, now())
+INSERT INTO challenge_translations (challenge_id, language_code, name, description, button_text, notification_text, updated_at)
+VALUES (@challenge_id::text, @language_code::text, @name::text, @description::text, @button_text::text, @notification_text::text, now())
 ON CONFLICT (challenge_id, language_code)
 DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
     button_text = EXCLUDED.button_text,
+    notification_text = EXCLUDED.notification_text,
     updated_at = now();
 
 -- name: UpsertAchievementTranslation :exec

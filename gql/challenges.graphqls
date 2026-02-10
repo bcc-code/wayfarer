@@ -18,6 +18,7 @@ interface Challenge {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String
+    notificationText: String!
     publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
@@ -39,6 +40,7 @@ type SimpleChallenge implements Challenge {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
+    notificationText: String!
     publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
@@ -60,6 +62,7 @@ type QuizChallenge implements Challenge {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
+    notificationText: String!
     publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
@@ -81,6 +84,7 @@ type ExternalChallenge implements Challenge {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String!
+    notificationText: String!
     publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
@@ -102,6 +106,7 @@ type PluginChallenge implements Challenge {
     project: Project! @goField(forceResolver: true)
     event: Event @goField(forceResolver: true)
     buttonText: String
+    notificationText: String!
     publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
@@ -122,6 +127,8 @@ input CreateChallengeInput {
     description: HTML
     image: String
     buttonText: String            # Required for all types except PLUGIN
+    notificationText: String      # Optional text for push notifications when admin enrolls user
+    publishedAt: DateTime         # Optional, defaults to NOW() if not provided
     visibleAt: DateTime
     endTime: DateTime
     requiresTeamMembership: Boolean
@@ -138,6 +145,8 @@ input UpdateChallengeInput {
     image: String
     eventId: ID
     buttonText: String
+    notificationText: String  # Optional text for push notifications when admin enrolls user
+    publishedAt: DateTime
     visibleAt: DateTime
     startedAt: DateTime
     endTime: DateTime
@@ -221,7 +230,7 @@ extend type Mutation {
     unenrollUserFromChallenge(userId: ID!, challengeId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "m2m"])
 
     # Bulk enrollment
-    bulkEnrollUsersInChallenge(target: EnrollmentTargetInput!, challengeId: ID!): [Challenge!]! @requireRole(roles: ["admin", "superadmin", "m2m"])
+    bulkEnrollUsersInChallenge(target: EnrollmentTargetInput!, challengeId: ID!): [Challenge!]! @requireRole(roles: ["admin", "superadmin", "m2m", "church_admin"])
     bulkUnenrollUsersFromChallenge(target: EnrollmentTargetInput!, challengeId: ID!): Boolean! @requireRole(roles: ["admin", "superadmin", "m2m"])
 
     # Completion tracking (M2M / Admin) - Works for ExternalChallenge and SimpleChallenge

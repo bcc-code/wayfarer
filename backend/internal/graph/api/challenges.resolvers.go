@@ -15,6 +15,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/graph/pagination"
 	"github.com/bcc-media/wayfarer/internal/graph/scalars"
 	"github.com/bcc-media/wayfarer/internal/middleware"
+	"github.com/bcc-media/wayfarer/internal/services/push"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -87,6 +88,9 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 	}
 
 	// Set optional timestamps
+	if input.PublishedAt != nil {
+		params.Publishedat = pgtype.Timestamptz{Time: input.PublishedAt.Time, Valid: true}
+	}
 	if input.VisibleAt != nil {
 		params.Visibleat = pgtype.Timestamptz{Time: input.VisibleAt.Time, Valid: true}
 	}
@@ -97,6 +101,9 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 	// Set optional requirements
 	params.Requiresteammembership = input.RequiresTeamMembership
 	params.Requiressuperteammembership = input.RequiresSuperTeamMembership
+
+	// Set optional notification text (for push notifications when admin enrolls user)
+	params.Notificationtext = input.NotificationText
 
 	// Set type-specific fields
 	switch input.Type {
@@ -124,6 +131,8 @@ func (r *mutationResolver) CreateChallenge(ctx context.Context, projectID string
 
 	// Invalidate cache
 	r.Cache.InvalidateProject(projectID)
+	r.Cache.DeletePrefix(cache.PrefixChallengesFilter)
+	r.Cache.DeletePrefix(cache.PrefixChallengesCount)
 	if eventID != nil && *eventID != "" {
 		r.Cache.InvalidateEvent(*eventID)
 	}
@@ -173,8 +182,12 @@ func (r *mutationResolver) UpdateChallenge(ctx context.Context, id string, input
 	params.Imageurl = input.Image
 	params.Eventid = input.EventID
 	params.Buttontext = input.ButtonText
+	params.Notificationtext = input.NotificationText
 
 	// Set optional timestamps
+	if input.PublishedAt != nil {
+		params.Publishedat = pgtype.Timestamptz{Time: input.PublishedAt.Time, Valid: true}
+	}
 	if input.VisibleAt != nil {
 		params.Visibleat = pgtype.Timestamptz{Time: input.VisibleAt.Time, Valid: true}
 	}
@@ -663,6 +676,16 @@ func (r *mutationResolver) EnrollUserInChallenge(ctx context.Context, userID str
 		r.Cache.Set(cache.UserChallengeEnrollmentKey(userID, challengeID), &ts)
 	}
 
+	// Send translated push notification for admin enrollment (only if notification_text is defined)
+	if r.PushService != nil {
+		go push.SendTranslatedChallengeEnrollmentNotification(
+			r.PushService,
+			r.Loaders,
+			userID,
+			getChallengePushInfo(challenge),
+		)
+	}
+
 	return r.ApplyTranslationToChallenge(ctx, challenge), nil
 }
 
@@ -737,6 +760,24 @@ func (r *mutationResolver) BulkEnrollUsersInChallenge(ctx context.Context, targe
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
 
+	// Notify Firestore listeners
+	for _, userID := range userIds {
+		go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
+	}
+
+	// Send push notifications for each enrolled user
+	if r.PushService != nil {
+		challengeInfo := getChallengePushInfo(challenge)
+		for _, userID := range userIds {
+			go push.SendTranslatedChallengeEnrollmentNotification(
+				r.PushService,
+				r.Loaders,
+				userID,
+				challengeInfo,
+			)
+		}
+	}
+
 	// Return challenge for each user (same challenge, no dataloader needed)
 	translatedChallenge := r.ApplyTranslationToChallenge(ctx, challenge)
 	result := make([]model.Challenge, len(userIds))
@@ -785,6 +826,11 @@ func (r *mutationResolver) BulkUnenrollUsersFromChallenge(ctx context.Context, t
 	projectID := getChallengeProjectID(challenge)
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
+
+	// Notify Firestore listeners
+	for _, userID := range userIds {
+		go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
+	}
 
 	return true, nil
 }
@@ -920,6 +966,11 @@ func (r *mutationResolver) BulkCompleteChallenges(ctx context.Context, target mo
 	projectID := getChallengeProjectID(challenge)
 	eventID := getChallengeEventID(challenge)
 	r.Cache.InvalidateChallenge(challengeID, projectID, eventID)
+
+	// Notify Firestore listeners
+	for _, userID := range userIds {
+		go r.FirebaseService.NotifyUserChallenges(context.Background(), userID)
+	}
 
 	// Return challenge for each user (same challenge, no dataloader needed)
 	translatedChallenge := r.ApplyTranslationToChallenge(ctx, challenge)

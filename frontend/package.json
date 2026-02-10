@@ -29,6 +29,8 @@
     "@tiptap/pm": "^3.17.1",
     "@tiptap/starter-kit": "^3.17.1",
     "@tiptap/vue-3": "^3.17.1",
+    "@unovis/ts": "^1.6.4",
+    "@unovis/vue": "^1.6.4",
     "@urql/exchange-auth": "^3.0.0",
     "@urql/vue": "^2.0.0",
     "@vite-pwa/nuxt": "^1.1.0",

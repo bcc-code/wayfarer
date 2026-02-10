@@ -143,11 +143,6 @@ func (s *Service) SendNotification(ctx context.Context, payload PushPayload, cri
 	criteriaJSON, _ := json.Marshal(criteria)
 	dataJSON, _ := json.Marshal(payload.Data)
 
-	sentBy := ""
-	if senderID != nil {
-		sentBy = *senderID
-	}
-
 	_, logErr := s.queries.CreatePushNotificationLog(ctx, sqlc.CreatePushNotificationLogParams{
 		ID:                   ulid.NewPushNotificationID(),
 		Notificationtype:     string(payload.Type),
@@ -156,7 +151,7 @@ func (s *Service) SendNotification(ctx context.Context, payload PushPayload, cri
 		Url:                  payload.URL,
 		Data:                 dataJSON,
 		Targetcriteria:       criteriaJSON,
-		Sentby:               sentBy,
+		Sentby:               senderID,
 		Totalrecipients:      int32(result.TotalRecipients),
 		Successfuldeliveries: int32(result.SuccessfulDeliveries),
 		Faileddeliveries:     int32(result.FailedDeliveries),
@@ -184,6 +179,14 @@ type AchievementInfo struct {
 	Name             string
 	NotificationText string
 	ImageCompleted   string
+}
+
+// ChallengeInfo contains the minimal information needed to send a challenge enrollment notification
+type ChallengeInfo struct {
+	ID               string
+	Name             string
+	NotificationText string
+	Image            string
 }
 
 // SendAchievementNotification sends a push notification for an achievement award.
@@ -227,6 +230,52 @@ func (s *Service) SendAchievementNotification(ctx context.Context, userID string
 	s.logger.Info("achievement notification sent",
 		"user_id", userID,
 		"achievement_id", achievement.ID,
+		"successful", result.SuccessfulDeliveries,
+		"failed", result.FailedDeliveries,
+	)
+}
+
+// SendChallengeEnrollmentNotification sends a push notification when an admin enrolls a user in a challenge.
+// This is fire-and-forget - errors are logged but do not propagate.
+// Only sends if notification_text is non-empty.
+// It should be called in a goroutine to avoid blocking the main flow.
+func (s *Service) SendChallengeEnrollmentNotification(ctx context.Context, userID string, challenge ChallengeInfo) {
+	if s == nil || !s.IsConfigured() {
+		return
+	}
+
+	// Only send notification if notification_text is defined
+	if challenge.NotificationText == "" {
+		return
+	}
+
+	payload := PushPayload{
+		Title: challenge.Name,
+		Body:  challenge.NotificationText,
+		Type:  NotificationTypeChallengeAvailable,
+		URL:   "/?challenge=" + challenge.ID,
+		Icon:  challenge.Image,
+		Data: map[string]interface{}{
+			"challengeId": challenge.ID,
+		},
+	}
+
+	// Use background context since this may outlive the request context
+	bgCtx := context.Background()
+
+	result, err := s.SendToUser(bgCtx, userID, payload)
+	if err != nil {
+		s.logger.Error("failed to send challenge enrollment notification",
+			"error", err,
+			"user_id", userID,
+			"challenge_id", challenge.ID,
+		)
+		return
+	}
+
+	s.logger.Info("challenge enrollment notification sent",
+		"user_id", userID,
+		"challenge_id", challenge.ID,
 		"successful", result.SuccessfulDeliveries,
 		"failed", result.FailedDeliveries,
 	)

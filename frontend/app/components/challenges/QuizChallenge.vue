@@ -289,6 +289,7 @@ const nextButtonText = computed(() => {
         :max-score="finalResult.maxScore ?? 0"
         :points-awarded="finalResult.pointsAwarded ?? 0"
         :results="questionResults"
+        :completed-at="finalResult.completedAt"
       />
     </template>
 
@@ -308,6 +309,7 @@ const nextButtonText = computed(() => {
         :points-awarded="completedSubmission.pointsAwarded ?? 0"
         :results="completedSubmissionResults"
         :can-review="canReview"
+        :completed-at="completedSubmission.completedAt"
         @start-review="handleStartReview"
       />
     </template>
@@ -409,6 +411,7 @@ const nextButtonText = computed(() => {
         :points-awarded="completedSubmission.pointsAwarded ?? 0"
         :results="completedSubmissionResults"
         :can-review="canReview"
+        :completed-at="completedSubmission.completedAt"
         @start-review="handleStartReview"
       />
     </template>

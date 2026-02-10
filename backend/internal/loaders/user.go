@@ -67,19 +67,26 @@ func userByIDBatchFunc(db *database.DB, c *cache.CacheWithRegistry) func(context
 					personUUID = &s
 				}
 
+				var churchLockedUntil *scalars.DateTime
+				if row.ChurchLockedUntil.Valid {
+					dt := scalars.DateTime{Time: row.ChurchLockedUntil.Time}
+					churchLockedUntil = &dt
+				}
+
 				user := &model.User{
-					ID:            row.ID,
-					MembersID:     row.MembersID,
-					PersonUUID:    personUUID,
-					Gender:        model.Gender(row.Gender),
-					ChurchID:      row.ChurchID,
-					Birthdate:     birthdateStr,
-					Email:         row.Email,
-					Name:          displayName,
-					Image:         row.AvatarUrl,
-					ConsentStatus: consentStatus,
-					Language:      row.Language,
-					CreatedAt:     scalars.DateTime{Time: row.CreatedAt.Time},
+					ID:                row.ID,
+					MembersID:         row.MembersID,
+					PersonUUID:        personUUID,
+					Gender:            model.Gender(row.Gender),
+					ChurchID:          row.ChurchID,
+					ChurchLockedUntil: churchLockedUntil,
+					Birthdate:         birthdateStr,
+					Email:             row.Email,
+					Name:              displayName,
+					Image:             row.AvatarUrl,
+					ConsentStatus:     consentStatus,
+					Language:          row.Language,
+					CreatedAt:         scalars.DateTime{Time: row.CreatedAt.Time},
 				}
 
 				userMap[row.ID] = user

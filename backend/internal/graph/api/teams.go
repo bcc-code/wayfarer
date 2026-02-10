@@ -1,11 +1,54 @@
 package api
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/graph/api/model"
+	"github.com/bcc-media/wayfarer/internal/services"
 )
+
+// teamUpdateRoleChecker is an interface for checking roles during team updates.
+type teamUpdateRoleChecker interface {
+	IsAdmin(ctx context.Context, userID string) bool
+	CanManageProject(ctx context.Context, userID, projectID string) bool
+	LoadUserRoles(ctx context.Context, userID string) ([]*sqlc.UserRole, error)
+}
+
+// canModifyAllTeamFields checks whether the user has permission to modify fields
+// beyond just the team name (e.g. description, leaderboardExcluded).
+// Team leads can only update the team name; admins, project admins, and church admins
+// can update all fields.
+func canModifyAllTeamFields(ctx context.Context, checker teamUpdateRoleChecker, userID, projectID string) bool {
+	if checker.IsAdmin(ctx, userID) {
+		return true
+	}
+	if checker.CanManageProject(ctx, userID, projectID) {
+		return true
+	}
+	if roles, err := checker.LoadUserRoles(ctx, userID); err == nil {
+		for _, role := range roles {
+			if role.Role == string(services.RoleChurchAdmin) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// validateTeamUpdateInput checks whether the given input is permitted for the user's role.
+// Team leads may only update the team name. If description or leaderboardExcluded is set,
+// the user must have admin, project admin, or church admin privileges.
+// Returns nil if the update is allowed, or an error describing the restriction.
+func validateTeamUpdateInput(ctx context.Context, checker teamUpdateRoleChecker, userID, projectID string, input model.UpdateTeamInput) error {
+	if input.Description != nil || input.LeaderboardExcluded != nil {
+		if !canModifyAllTeamFields(ctx, checker, userID, projectID) {
+			return fmt.Errorf("unauthorized: team leads can only update team name")
+		}
+	}
+	return nil
+}
 
 // buildTeamFilterParamsCursor converts GraphQL filter and cursor pagination params to database query parameters
 func buildTeamFilterParamsCursor(filter *model.TeamFilter, first *int, after *string, last *int, before *string) (sqlc.GetTeamsFilteredCursorParams, error) {

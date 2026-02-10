@@ -1,6 +1,11 @@
 {
   "error": {
-    "title": "Oops! Something went wrong"
+    "title": "Oops! Something went wrong",
+    "hint": "Please try again. If the problem persists, try refreshing the page.",
+    "networkHint": "It looks like you have connection issues. Check your internet connection and try again.",
+    "retry": "Try again",
+    "showDetails": "Show technical details",
+    "hideDetails": "Hide technical details"
   },
   "emptyStates": {
     "standings": "No leaderboard yet",
@@ -17,14 +22,18 @@
     "correctAnswer": "Correct answer",
     "yourAnswer": "Your answer",
     "lockAnswer": "Lock answer",
+    "saveAnswer": "Save answer",
+    "changeAnswer": "Change answer",
     "questionNumber": "{current} of {total}",
     "continue": "Continue",
     "nextQuestion": "Next question",
     "previousQuestion": "Previous",
     "done": "Done",
     "unavailable": "This quiz is not available at the moment.",
-    "reviewAnswers": "Review answers",
-    "finishReview": "Finish review",
+    "reviewAnswers": "See answers",
+    "finishReview": "End review",
+    "yourNumber": "Your number",
+    "writeYourAnswer": "Write your answer ...",
     "result": {
       "receivedNoPoints": "You did not receive any points.",
       "receivedPoints": "You received {points} points.",
@@ -32,6 +41,10 @@
       "wellDone": "Well done!",
       "perfect": "Perfect!"
     }
+  },
+  "challenges": {
+    "active": "Active",
+    "completed": "Finished"
   },
   "pages": {
     "standings": "Leaderboards",
@@ -127,7 +140,17 @@
     "updateAvailableTitle": "An update is available",
     "updateAvailableButton": "Update now"
   },
+  "notifications": {
+    "promptTitle": "Keep track of all your achievements; turn on notifications",
+    "promptDescription": "You'll receive a notification every time you receive a new achievement or challenge.",
+    "turnOn": "Turn on notifications",
+    "notNow": "Not now"
+  },
   "goToHiddenTreasures": "Go to Bible study",
+  "gameNights": {
+    "yourCode": "Your unit code for Game Night",
+    "yourCodeHint": "Open the page on your laptop and enter the code"
+  },
   "admin": {
     "common": {
       "back": "Back",
@@ -146,7 +169,19 @@
       "administrators": "Administrators",
       "unitsAndPeople": "Units and people",
       "gameNights": "Game Nights",
-      "comingSoon": "Coming soon"
+      "comingSoon": "Coming soon",
+      "kickOff": "Kickoff",
+      "kickOffButton": "Start unit onboarding now",
+      "kickOffOnboardingDescription": "This action starts unit onboarding for the entire local church.",
+      "kickOffOnboardingDescriptionWarning": "⚠ Don't start if you're not ready.",
+      "kickOffOnboardingExplanationTitle": "What happens when you start?",
+      "kickOffOnboardingExplanation1": "All unit leaders in the local church receive a challenge in Interact (web app).",
+      "kickOffOnboardingExplanation2": "They can change the name of the unit – and get 300 points when they do.",
+      "kickOffConfirmation": "I confirm that the kick-off is taking place now and that we are ready to start.",
+      "kickOffOnboardingCountdown": "Starting in {seconds} seconds | Starting in {seconds} seconds",
+      "kickOffSuccessTitle": "Unit onboarding is underway!",
+      "kickOffSuccessDescription": "All unit leaders have now been assigned a task in the app and can change the name of their unit.",
+      "noAccess": "You do not have access to this page because you are not an administrator. Ask another administrator to give you access."
     },
     "admins": {
       "searchPlaceholder": "Search for administrators ...",
@@ -194,7 +229,7 @@
       "deleteSelected": "Delete selected",
       "bulkCreate": {
         "countLabel": "Number of units",
-        "autoGenerateInfo": "Names are generated automatically"
+        "autoGenerateInfo": "The names of the units are generated automatically and can be changed afterwards."
       },
       "confirmDelete": {
         "title": "Delete unit?",

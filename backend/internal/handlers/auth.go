@@ -32,6 +32,8 @@ type AuthHandler struct {
 	MembersClient             *members.Client
 	RoleService               *services.RoleService
 	ContentAchievementService *services.ContentAchievementService
+	ChurchResolver            *services.ChurchResolver
+	UserSyncService           *services.UserSyncService
 }
 
 // BrunstadTVClaims represents the JWT claims from Brunstad TV
@@ -152,9 +154,9 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 
 	// 4. Determine gender
 	if member != nil && member.Gender != "" {
-		gender = normalizeGender(member.Gender)
+		gender = members.NormalizeGender(member.Gender)
 	} else if claims.Gender != "" {
-		gender = normalizeGender(claims.Gender)
+		gender = members.NormalizeGender(claims.Gender)
 	} else {
 		gender = "UNKNOWN"
 	}
@@ -166,7 +168,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 	if isAuth0Token && claims.ChurchID == 0 {
 		// Auth0 token without churchId - get from member affiliations
 		if member != nil {
-			church, err = h.findChurchFromAffiliations(ctx, member.Affiliations)
+			church, err = h.ChurchResolver.FindChurchFromAffiliations(ctx, member.Affiliations)
 			if err != nil {
 				slog.Warn("callback: failed to find church from affiliations, using default",
 					"person_id", claims.PersonID,
@@ -193,7 +195,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		}
 	} else {
 		// Brunstad TV token or Auth0 with churchId - use external_id from token
-		church, err = h.findChurchByExternalID(ctx, int32(claims.ChurchID))
+		church, err = h.ChurchResolver.FindChurchByExternalID(ctx, int32(claims.ChurchID))
 		if err != nil {
 			slog.Error("callback: failed to find church",
 				"church_id", claims.ChurchID,
@@ -290,70 +292,6 @@ func (h *AuthHandler) validateAuth0Token(tokenString string) (*Auth0Claims, erro
 	// Verify timestamps (exp and iat are automatically validated by jwt library)
 
 	return claims, nil
-}
-
-// findOrCreateChurch finds a church by its external ID, or creates it from the Members API if not found
-func (h *AuthHandler) findChurchByExternalID(ctx context.Context, externalID int32) (*sqlc.GetChurchByExternalIDRow, error) {
-	church, err := h.DB.Queries.GetChurchByExternalID(ctx, &externalID)
-	if err == nil {
-		return church, nil
-	}
-
-	if !errors.Is(err, pgx.ErrNoRows) {
-		return nil, fmt.Errorf("database error: %w", err)
-	}
-
-	// Church not found, try to create it from Members API
-	if h.MembersClient == nil {
-		return nil, fmt.Errorf("church with external_id %d not found and Members API not configured", externalID)
-	}
-
-	slog.Info("callback: church not found, fetching from Members API", "external_id", externalID)
-
-	org, err := h.MembersClient.GetOrganizationByOrgID(ctx, int(externalID))
-
-	var churchName, country, category string
-	if err != nil {
-		slog.Warn("callback: failed to fetch organization from Members API, creating placeholder",
-			"external_id", externalID,
-			"error", err,
-		)
-		churchName = fmt.Sprintf("Church %d", externalID)
-		country = "Unknown"
-		category = "S"
-	} else {
-		churchName = org.Name
-		country = org.VisitingAddress.CountryCode
-		if country == "" {
-			country = "Unknown"
-		}
-		category = "S"
-	}
-
-	newChurch, err := h.DB.Queries.CreateChurch(ctx, sqlc.CreateChurchParams{
-		ID:         ulid.NewChurchID(),
-		ExternalID: &externalID,
-		Name:       churchName,
-		Country:    country,
-		Category:   category,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create church: %w", err)
-	}
-
-	slog.Info("callback: created new church from Members API",
-		"church_id", newChurch.ID,
-		"name", newChurch.Name,
-		"external_id", externalID,
-	)
-
-	return &sqlc.GetChurchByExternalIDRow{
-		ID:         newChurch.ID,
-		ExternalID: newChurch.ExternalID,
-		Name:       newChurch.Name,
-		Country:    newChurch.Country,
-		Category:   newChurch.Category,
-	}, nil
 }
 
 // findOrCreateUser finds an existing user by person_uuid or members_id, or creates a new one
@@ -648,59 +586,6 @@ func (h *AuthHandler) generateWayfarerToken(userID string) (string, error) {
 	return tokenString, nil
 }
 
-// normalizeGender converts gender string to database format (MALE, FEMALE, UNKNOWN)
-func normalizeGender(gender string) string {
-	gender = strings.ToUpper(strings.TrimSpace(gender))
-	if gender == "MALE" || gender == "M" {
-		return "MALE"
-	}
-	if gender == "FEMALE" || gender == "F" {
-		return "FEMALE"
-	}
-	return "UNKNOWN"
-}
-
-// findChurchFromAffiliations finds the first valid non-excluded church from member affiliations.
-// It iterates through all active affiliations and returns the first one that is not excluded.
-func (h *AuthHandler) findChurchFromAffiliations(ctx context.Context, affiliations []members.Affiliation) (*sqlc.GetChurchByExternalIDRow, error) {
-	orgUIDs := members.GetActiveAffiliationOrgUIDs(affiliations)
-	if len(orgUIDs) == 0 {
-		return nil, fmt.Errorf("no active affiliations found")
-	}
-
-	for _, orgUID := range orgUIDs {
-		church, err := h.findChurchByOrgUID(ctx, orgUID)
-		if err != nil {
-			slog.Debug("findChurchFromAffiliations: skipping affiliation",
-				"org_uid", orgUID,
-				"error", err,
-			)
-			continue
-		}
-		return church, nil
-	}
-
-	return nil, fmt.Errorf("no valid church found from %d affiliations (all excluded or invalid)", len(orgUIDs))
-}
-
-// findChurchByOrgUID finds a church by looking up the org UUID in Members API first
-func (h *AuthHandler) findChurchByOrgUID(ctx context.Context, orgUID uuid.UUID) (*sqlc.GetChurchByExternalIDRow, error) {
-	if h.MembersClient == nil {
-		return nil, fmt.Errorf("members API not configured")
-	}
-
-	org, err := h.MembersClient.GetOrganizationByUID(ctx, orgUID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get organization from Members API: %w", err)
-	}
-
-	if members.ExcludedOrgNames[org.Name] {
-		return nil, fmt.Errorf("organization %q is excluded from church assignment", org.Name)
-	}
-
-	return h.findChurchByExternalID(ctx, int32(org.OrgID))
-}
-
 // DefaultChurchName is the name used for the fallback church
 const DefaultChurchName = "Unknown Church"
 
@@ -824,6 +709,22 @@ func (h *AuthHandler) ProcessPendingConsentEvents(ctx context.Context, userID, p
 			"consent_key", event.ConsentKey,
 			"action", event.Action,
 		)
+
+		// Trigger SSF backfill synchronously when SSF consent is granted
+		if event.ConsentKey == SSFConsentKey && event.Action == "ACCEPTED" && h.UserSyncService != nil {
+			processed, err := h.UserSyncService.SyncContentEventsFromSSF(ctx, userID)
+			if err != nil {
+				slog.Error("auth: SSF backfill failed for new user",
+					"user_id", userID,
+					"error", err,
+				)
+			} else {
+				slog.Info("auth: SSF backfill completed for new user",
+					"user_id", userID,
+					"events_processed", processed,
+				)
+			}
+		}
 	}
 
 	// Delete all processed pending events

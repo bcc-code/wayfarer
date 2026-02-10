@@ -42,6 +42,10 @@
       "perfect": "Perfekt!"
     }
   },
+  "challenges": {
+    "active": "Aktive",
+    "completed": "Ferdige"
+  },
   "pages": {
     "standings": "Topplister",
     "challenges": "Utfordringer",
@@ -165,7 +169,20 @@
       "administrators": "Administratorer",
       "unitsAndPeople": "Units og personer",
       "gameNights": "Game Nights",
-      "comingSoon": "Kommer snart"
+      "comingSoon": "Kommer snart",
+      "kickOff": "Kick-off",
+      "statistics": "Statistikk",
+      "kickOffButton": "Start unit-onboarding nå",
+      "kickOffOnboardingDescription": "Denne handlingen starter unit-onboarding for hele lokalmenigheten.",
+      "kickOffOnboardingDescriptionWarning": "⚠ Ikke start hvis dere ikke er klare.",
+      "kickOffOnboardingExplanationTitle": "Hva skjer når du starter?",
+      "kickOffOnboardingExplanation1": "Alle unit-ledere i lokalmenigheten får en utfordring i Interact (webapp).",
+      "kickOffOnboardingExplanation2": "De kan endre navn på uniten – og får 300 poeng når det er gjort.",
+      "kickOffConfirmation": "Jeg bekrefter at kick-off gjennomføres nå, og at vi er klare til å starte.",
+      "kickOffOnboardingCountdown": "Starter om {seconds} sekund | Starter om {seconds} sekunder",
+      "kickOffSuccessTitle": "Unit-onboardingen er i gang!",
+      "kickOffSuccessDescription": "Alle unitledere har nå fått tildelt en oppgave i appen, og kan endre navnet på sin unit.",
+      "noAccess": "Du har ikke tilgang til denne siden fordi du ikke er administrator. Be en annen administrator om å gi deg tilgang."
     },
     "admins": {
       "searchPlaceholder": "Søk på administratorer...",
@@ -251,6 +268,21 @@
       "excludeFromLeaderboard": "Ekskluder fra toppliste",
       "excludeFromLeaderboardTooltip": "Når aktivert vil denne uniten ikke vises på topplisten",
       "excludedFromLeaderboard": "Skjult fra topplister"
+    },
+    "statistics": {
+      "totalUsersInTeams": "Personer i units",
+      "averageScoresByAgeGroup": "Gjennomsnittlig poengsum per aldersgruppe",
+      "averageScoresByAgeGroupDescription": "Her har du en oversikt over gjennomsnittlig poengsum per aldersgruppe. Kun personer som er i en unit regnes med.",
+      "ageGroup": "Aldersgruppe",
+      "users": "Brukere",
+      "averageScore": "Gjennomsnittlig poengsum",
+      "yearsOld": "år",
+      "noData": "Ingen data tilgjengelig",
+      "pointsDistribution": "Poengfordeling",
+      "pointsDistributionDescription": "Her har du en oversikt over poengsummen til alle personer i din lokalmenighet som er medlem av en unit.",
+      "points": "Poeng",
+      "peopleInAUnit": "Personer i en unit",
+      "lastUpdated": "Sist oppdatert"
     }
   }
 }

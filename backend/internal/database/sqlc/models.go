@@ -61,16 +61,18 @@ type Challenge struct {
 	AllowSelfCompletion         bool               `json:"allow_self_completion"`
 	PluginChallengeID           *string            `json:"plugin_challenge_id"`
 	PluginData                  []byte             `json:"plugin_data"`
+	NotificationText            string             `json:"notification_text"`
 }
 
 type ChallengeTranslation struct {
-	ChallengeID  string             `json:"challenge_id"`
-	LanguageCode string             `json:"language_code"`
-	Name         *string            `json:"name"`
-	Description  *string            `json:"description"`
-	ButtonText   *string            `json:"button_text"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	ChallengeID      string             `json:"challenge_id"`
+	LanguageCode     string             `json:"language_code"`
+	Name             *string            `json:"name"`
+	Description      *string            `json:"description"`
+	ButtonText       *string            `json:"button_text"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	NotificationText *string            `json:"notification_text"`
 }
 
 type Church struct {
@@ -624,22 +626,23 @@ type TranslationHash struct {
 }
 
 type User struct {
-	ID          string             `json:"id"`
-	MembersID   string             `json:"members_id"`
-	Email       string             `json:"email"`
-	Name        string             `json:"name"`
-	Gender      string             `json:"gender"`
-	ChurchID    string             `json:"church_id"`
-	AvatarUrl   *string            `json:"avatar_url"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-	Birthdate   pgtype.Date        `json:"birthdate"`
-	FirstName   *string            `json:"first_name"`
-	LastName    *string            `json:"last_name"`
-	MiddleName  *string            `json:"middle_name"`
-	DisplayName *string            `json:"display_name"`
-	PersonUuid  pgtype.UUID        `json:"person_uuid"`
-	Language    string             `json:"language"`
+	ID                string             `json:"id"`
+	MembersID         string             `json:"members_id"`
+	Email             string             `json:"email"`
+	Name              string             `json:"name"`
+	Gender            string             `json:"gender"`
+	ChurchID          string             `json:"church_id"`
+	AvatarUrl         *string            `json:"avatar_url"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	Birthdate         pgtype.Date        `json:"birthdate"`
+	FirstName         *string            `json:"first_name"`
+	LastName          *string            `json:"last_name"`
+	MiddleName        *string            `json:"middle_name"`
+	DisplayName       *string            `json:"display_name"`
+	PersonUuid        pgtype.UUID        `json:"person_uuid"`
+	Language          string             `json:"language"`
+	ChurchLockedUntil pgtype.Timestamptz `json:"church_locked_until"`
 }
 
 type UserAchievement struct {

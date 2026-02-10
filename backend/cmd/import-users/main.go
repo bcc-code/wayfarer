@@ -15,6 +15,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/logger"
 	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/ulid"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -180,17 +181,6 @@ func resolveChurchID(affiliations []members.Affiliation, maps *churchMaps) strin
 	return maps.defaultChurchID
 }
 
-func normalizeGender(gender string) string {
-	switch gender {
-	case "Male", "male", "M":
-		return "MALE"
-	case "Female", "female", "F":
-		return "FEMALE"
-	default:
-		return "UNKNOWN"
-	}
-}
-
 func parseBirthdate(dateStr string) time.Time {
 	t, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
@@ -274,7 +264,7 @@ func importUsers(ctx context.Context, membersClient *members.Client, db *databas
 				lastName:    member.LastName,
 				middleName:  member.MiddleName,
 				displayName: member.DisplayName,
-				gender:      normalizeGender(member.Gender),
+				gender:      members.NormalizeGender(member.Gender),
 				birthdate:   parseBirthdate(member.BirthDate),
 				churchID:    churchID,
 			})

@@ -24,6 +24,7 @@ gql(`
 			birthdate
 			age
 			image
+			churchLockedUntil
 			church {
 				id
 				name
@@ -116,6 +117,55 @@ gql(`
 	}
 `)
 
+gql(`
+	mutation SyncUser($userId: ID!) {
+		syncUser(userId: $userId) {
+			user {
+				id
+				name
+				gender
+				personUuid
+				churchLockedUntil
+				church {
+					id
+					name
+				}
+			}
+			contentEventsProcessed
+			genderUpdated
+			churchUpdated
+			churchLockSkipped
+			personUuidUpdated
+		}
+	}
+`)
+
+gql(`
+	mutation LockUserChurch($userId: ID!) {
+		lockUserChurch(userId: $userId) {
+			id
+			churchLockedUntil
+			church {
+				id
+				name
+			}
+		}
+	}
+`)
+
+gql(`
+	mutation UnlockUserChurch($userId: ID!) {
+		unlockUserChurch(userId: $userId) {
+			id
+			churchLockedUntil
+			church {
+				id
+				name
+			}
+		}
+	}
+`)
+
 const route = useRoute('admin-users-userId')
 
 const { isAuthReady } = useAuthReady()
@@ -135,7 +185,21 @@ const { executeMutation: assignRole } = useAssignRoleMutation()
 const { executeMutation: revokeRole } = useRevokeRoleMutation()
 const { executeMutation: adminSetUserConsent } =
   useAdminSetUserConsentMutation()
+const { executeMutation: syncUserMutation } = useSyncUserMutation()
+const { executeMutation: lockUserChurchMutation } =
+  useLockUserChurchMutation()
+const { executeMutation: unlockUserChurchMutation } =
+  useUnlockUserChurchMutation()
 const toast = useToast()
+const syncing = ref(false)
+const locking = ref(false)
+const unlocking = ref(false)
+
+const isChurchLocked = computed(() => {
+  const lockedUntil = data.value?.user.churchLockedUntil
+  if (!lockedUntil) return false
+  return new Date(lockedUntil) > new Date()
+})
 
 // Permissions
 const { canAssignRoles } = usePermissions()
@@ -272,6 +336,92 @@ async function handleRemoveConsent() {
   refetch()
 }
 
+async function handleSyncUser() {
+  syncing.value = true
+  const result = await syncUserMutation({
+    userId: route.params.userId,
+  })
+  syncing.value = false
+
+  if (result.error) {
+    toast.add({
+      title: 'Synkronisering feilet',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  const syncResult = result.data?.syncUser
+  const details: string[] = []
+  if (syncResult) {
+    if (syncResult.contentEventsProcessed > 0)
+      details.push(`${syncResult.contentEventsProcessed} innholdseventer`)
+    if (syncResult.genderUpdated) details.push('kjønn oppdatert')
+    if (syncResult.churchUpdated) details.push('menighet oppdatert')
+    if (syncResult.churchLockSkipped) details.push('menighet hoppet over (last)')
+    if (syncResult.personUuidUpdated) details.push('person-UUID oppdatert')
+  }
+
+  toast.add({
+    title: 'Synkronisering fullført',
+    description: details.length > 0 ? details.join(', ') : 'Ingen endringer',
+    color: 'success',
+  })
+
+  refetch({ requestPolicy: 'network-only' })
+}
+
+async function handleLockChurch() {
+  locking.value = true
+  const result = await lockUserChurchMutation({
+    userId: route.params.userId,
+  })
+  locking.value = false
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke låse menighet',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({
+    title: 'Menighet låst',
+    description: 'Menigheten er låst i 6 måneder',
+    color: 'success',
+  })
+
+  refetch({ requestPolicy: 'network-only' })
+}
+
+async function handleUnlockChurch() {
+  unlocking.value = true
+  const result = await unlockUserChurchMutation({
+    userId: route.params.userId,
+  })
+  unlocking.value = false
+
+  if (result.error) {
+    toast.add({
+      title: 'Kunne ikke låse opp menighet',
+      description: result.error.message,
+      color: 'error',
+    })
+    return
+  }
+
+  toast.add({
+    title: 'Menighet låst opp',
+    description: 'Menighetslåsing er fjernet',
+    color: 'success',
+  })
+
+  refetch({ requestPolicy: 'network-only' })
+}
+
 // Score journal helpers
 const scoreEntries = computed(
   () => data.value?.adminScoreJournal.edges.map((edge) => edge.node) ?? [],
@@ -320,9 +470,19 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
       <ErrorState v-else-if="error" :error />
       <div v-else-if="data" class="space-y-6">
         <!-- User Header -->
-        <div>
-          <h1 class="text-3xl font-bold">{{ data.user.name }}</h1>
-          <p class="text-dimmed text-lg">{{ data.user.email }}</p>
+        <div class="flex items-start justify-between">
+          <div>
+            <h1 class="text-3xl font-bold">{{ data.user.name }}</h1>
+            <p class="text-dimmed text-lg">{{ data.user.email }}</p>
+          </div>
+          <UButton
+            icon="i-lucide-refresh-cw"
+            variant="soft"
+            :loading="syncing"
+            @click="handleSyncUser"
+          >
+            Synkroniser
+          </UButton>
         </div>
 
         <!-- User Info -->
@@ -398,6 +558,38 @@ const feedbackTotalCount = computed(() => data.value?.feedback.totalCount ?? 0)
               <div class="py-2 grid grid-cols-subgrid col-span-full">
                 <dt class="text-muted w-36 shrink-0">ID</dt>
                 <dd class="font-mono">{{ data.user.church.id }}</dd>
+              </div>
+              <div class="py-2 grid grid-cols-subgrid col-span-full">
+                <dt class="text-muted w-36 shrink-0">Synk-lås</dt>
+                <dd class="flex items-center gap-2">
+                  <template v-if="isChurchLocked">
+                    <UBadge color="warning" variant="soft">
+                      Låst til
+                      {{ formatDateTime(data.user.churchLockedUntil!) }}
+                    </UBadge>
+                    <UButton
+                      size="xs"
+                      variant="soft"
+                      color="neutral"
+                      :loading="unlocking"
+                      @click="handleUnlockChurch"
+                    >
+                      Lås opp
+                    </UButton>
+                  </template>
+                  <template v-else>
+                    <span class="text-dimmed text-sm">Ikke låst</span>
+                    <UButton
+                      size="xs"
+                      variant="soft"
+                      color="neutral"
+                      :loading="locking"
+                      @click="handleLockChurch"
+                    >
+                      Lås i 6 måneder
+                    </UButton>
+                  </template>
+                </dd>
               </div>
             </dl>
           </div>

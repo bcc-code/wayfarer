@@ -214,6 +214,22 @@ type AudioFile struct {
 	TimestampFile      string `json:"timestamp_file"`
 }
 
+// ContentEventsResponse represents a paginated response from the content-events API
+type ContentEventsResponse struct {
+	Items   []ContentEvent `json:"items"`
+	Page    int            `json:"page"`
+	HasMore bool           `json:"has_more"`
+}
+
+// ContentEvent represents a single content event from the SSF API
+type ContentEvent struct {
+	PersonID        string    `json:"person_id"`
+	TaskID          string    `json:"task_id"`
+	PlanID          string    `json:"plan_id"`
+	Timestamp       time.Time `json:"timestamp"`
+	ContentProgress float64   `json:"content_progress"`
+}
+
 // ContentData holds extracted content data for storage
 type ContentData struct {
 	PlanID      string

@@ -45,7 +45,7 @@ const (
 	// Points awarded to each team member when the team renames
 	pointsTeamRename = 300
 	// Source type for team rename entries in score_journal
-	sourceTypeTeamRename = "TEAM_RENAME"
+	sourceTypeTeamRename = "PLUGIN"
 )
 
 // handle processes incoming team name changed webhook requests
@@ -131,6 +131,8 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 
 	// Award points to each team member and complete the challenge
 	reason := "Team renamed: " + req.Data.NewName
+	successfulInserts := 0
+	successfulUserIDs := make([]string, 0, len(teamMembers))
 	for _, userID := range teamMembers {
 		// Create score journal entry for points
 		journalID := ulid.NewScoreJournalID()
@@ -153,6 +155,9 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 			continue
 		}
 
+		successfulInserts++
+		successfulUserIDs = append(successfulUserIDs, userID)
+
 		// Invalidate user cache
 		h.cache.InvalidateUser(userID)
 
@@ -162,9 +167,17 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 			"points", pointsTeamRename)
 	}
 
-	// Mark challenge as completed for all team members
+	// If all inserts failed, return an error
+	if successfulInserts == 0 {
+		slog.Error("ladder_to_heaven: all score journal inserts failed",
+			"team_id", req.Data.TeamID, "member_count", len(teamMembers))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to award points to any team members"})
+		return
+	}
+
+	// Mark challenge as completed for successfully processed members only
 	err = h.db.Queries.BulkCompleteChallenges(ctx, sqlc.BulkCompleteChallengesParams{
-		Userids:     teamMembers,
+		Userids:     successfulUserIDs,
 		Challengeid: h.challengeID,
 	})
 	if err != nil {
@@ -178,19 +191,19 @@ func (h *teamNameChangedHandler) handle(c *gin.Context) {
 
 	// Notify frontend via Firestore so real-time listeners trigger a refetch
 	if h.firebase != nil {
-		for _, userID := range teamMembers {
+		for _, userID := range successfulUserIDs {
 			go h.firebase.NotifyUserChallenges(context.Background(), userID)
 		}
 	}
 
 	slog.Info("ladder_to_heaven: team rename processed successfully",
 		"team_id", req.Data.TeamID,
-		"members_processed", len(teamMembers),
+		"members_processed", successfulInserts,
 		"points_per_member", pointsTeamRename)
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message":           "team rename processed",
-		"members_awarded":   len(teamMembers),
+		"members_awarded":   successfulInserts,
 		"points_per_member": pointsTeamRename,
 	})
 }

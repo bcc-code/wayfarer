@@ -2,54 +2,29 @@ type: http_request
 model: http_request
 id: rq_gfiimC53rL
 createdAt: 2025-12-08T21:20:37.260804
-updatedAt: 2026-01-09T14:39:58.761154
+updatedAt: 2026-02-04T13:50:32.394172
 workspaceId: wk_XKsmbMdFg7
-folderId: null
+folderId: fl_nyjimFtHG9
 authentication: {}
 authenticationType: null
 body:
-  query: |-
-    query AdminProjectAchievementPage($achievementId: ID!) {
-        achievement(id: $achievementId) {
-          __typename
-          id
-          name
-          descriptionPending
-          descriptionCompleted
-          imagePending
-          imageCompleted
-          notificationText
-          achievedAt
-          points
-          hidden
-          ... on ContentAchievement {
-            items {
+  query: |
+    query ProjectSuperTeams($projectId: ID!) {
+      superteams(filter: {projectId: $projectId}) {
+        edges {
+          node {
+            id
+            name
+            parentProject {
               id
-              sortOrder
-              externalContent {
-                id
-                planId
-                taskId
-                contentId
-                contentType
-                publishedAt
-                source
-                syncedAt
-                createdAt
-                updatedAt
-                title
-                translations {
-                  languageCode
-                  title
-                }
-              }
             }
           }
         }
       }
+    }
   variables: |-
     {
-      "achievementId": "AC01KCCM6A8A1TZ2KKQQVTGTPZW1"
+      "projectId": "PR01K9VZ8684DP9R4W3ZEV526E5X"
     }
 bodyType: graphql
 description: ''
@@ -59,7 +34,7 @@ headers:
   value: application/json
   id: YNmEv7zw36
 method: POST
-name: ''
-sortPriority: 16000.0
+name: ProjectSuperTeams
+sortPriority: 0.0
 url: ${[ HOST ]}/graphql
 urlParameters: []

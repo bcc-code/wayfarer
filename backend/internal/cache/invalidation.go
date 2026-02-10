@@ -113,11 +113,14 @@ func extractPrefixes(key string) []string {
 	// Add the main entity prefix
 	// Note: More specific prefixes must come before general ones (e.g., PrefixTeamLeaderboardTags before PrefixTeam)
 	for _, prefix := range []string{
-		PrefixTeamLeaderboardTags, // Must be before PrefixTeam
+		PrefixTeamLeaderboardTags,   // Must be before PrefixTeamMemberLeaderboard and PrefixTeam
+		PrefixTeamMemberLeaderboard, // Must be before PrefixTeam
 		PrefixUser, PrefixChurch, PrefixProject, PrefixEvent, PrefixTeam,
 		PrefixSuperTeam, PrefixChallenge, PrefixAchievement, PrefixStreak,
 		PrefixUserProjects, PrefixUserEvents, PrefixTeamMembers, PrefixUserRoles,
 		PrefixUserChallengeEnrollments, PrefixUserChallengeCompletions,
+		PrefixUserContentProgress, PrefixUserAchievements, PrefixUserStreakActivity,
+		PrefixUserConsents,
 		PrefixUsersFilter, PrefixUsersCount,
 		PrefixProjectsFilter, PrefixProjectsCount,
 		PrefixEventsFilter, PrefixEventsCount,
@@ -232,11 +235,19 @@ func (c *CacheWithRegistry) InvalidateUser(userID string) {
 func (c *CacheWithRegistry) invalidateUserLocal(userID string) {
 	c.Delete(UserKey(userID))
 	c.Delete(ProjectsByUserKey(userID))
+	c.Delete(EventsByUserKey(userID))
 	c.Delete(UserRolesKey(userID))
 	c.DeletePrefix("user:" + userID)
 	// Invalidate enrollment and completion data
 	c.DeletePrefix(PrefixUserChallengeEnrollments + userID)
 	c.DeletePrefix(PrefixUserChallengeCompletions + userID)
+	// Invalidate content progress, achievements, and streak activity
+	c.DeletePrefix(PrefixUserContentProgress + userID)
+	c.DeletePrefix(PrefixUserAchievements + userID)
+	c.DeletePrefix(PrefixUserStreakActivity + userID)
+	// Invalidate user filter/count queries (gender/church changes affect results)
+	c.DeletePrefix(PrefixUsersFilter)
+	c.DeletePrefix(PrefixUsersCount)
 }
 
 // InvalidateProject invalidates all cache entries related to a project and broadcasts to other instances
@@ -266,9 +277,8 @@ func (c *CacheWithRegistry) invalidateProjectLocal(projectID string) {
 	c.DeletePrefix("leaderboard:count:project:" + projectID)
 	c.DeletePrefix("leaderboard:full:project:" + projectID)
 
-	// Invalidate all team leaderboards in this project (scores changed)
-	// Team leaderboard keys are "team:leaderboard:{teamID}"
-	c.DeletePrefix("team:leaderboard:")
+	// Invalidate all team member leaderboards in this project (scores changed)
+	c.DeletePrefix(PrefixTeamMemberLeaderboard)
 }
 
 // InvalidateEvent invalidates all cache entries related to an event and broadcasts to other instances
@@ -299,6 +309,7 @@ func (c *CacheWithRegistry) invalidateTeamLocal(teamID string) {
 	c.Delete(TeamKey(teamID))
 	c.Delete(TeamMembersByTeamKey(teamID))
 	c.Delete(TeamMemberLeaderboardKey(teamID))
+	c.Delete(TeamMemberLeaderboardTeamLeadTagsKey(teamID))
 	c.Delete(UsersByTeamKey(teamID))
 	c.DeletePrefix("team:" + teamID)
 }
@@ -399,6 +410,11 @@ func (c *CacheWithRegistry) InvalidateQuizSubmission(submissionID string) {
 	// All quiz submission list/filter queries
 	c.DeletePrefix(PrefixQuizSubmissionsFilter)
 	c.DeletePrefix(PrefixQuizSubmissionsCount)
+}
+
+// InvalidateUserQuizSubmissions invalidates cached quiz submissions for a user
+func (c *CacheWithRegistry) InvalidateUserQuizSubmissions(userID string) {
+	c.Delete(QuizSubmissionsByUserKey(userID))
 }
 
 // InvalidateTeamMemberLeaderboardTags invalidates all tag caches for team member leaderboards.

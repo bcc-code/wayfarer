@@ -34,6 +34,7 @@ type Resolver struct {
 	WebhookService     *webhooks.Service
 	FirebaseService    *firebase.Service
 	EmailService       *email.Service
+	UserSyncService    *services.UserSyncService
 	InstanceID         string
 }
 

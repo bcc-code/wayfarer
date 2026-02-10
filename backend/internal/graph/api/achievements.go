@@ -132,6 +132,8 @@ func convertRowToAchievement(row *sqlc.GetAchievementsFilteredCursorRow) (model.
 		return convertRowToContentAchievement(row, hidden)
 	case "STREAK":
 		return convertRowToStreakAchievement(row, hidden)
+	case "QUIZ":
+		return convertRowToQuizAchievement(row, hidden)
 	default:
 		return nil, fmt.Errorf("unknown achievement type: %s", row.AchievementType)
 	}
@@ -225,6 +227,48 @@ func convertRowToStreakAchievement(row *sqlc.GetAchievementsFilteredCursorRow, h
 		ChallengeID:          row.ChallengeID,
 		NeededStreak:         int(*row.NeededStreak),
 		StreakID:             *row.StreakID,
+	}, nil
+}
+
+func convertRowToQuizAchievement(row *sqlc.GetAchievementsFilteredCursorRow, hidden bool) (model.Achievement, error) {
+	var awardableFrom *scalars.DateTime
+	if row.AwardableFrom.Valid {
+		awardableFrom = &scalars.DateTime{Time: row.AwardableFrom.Time}
+	}
+
+	var minScorePercentage *int
+	if row.MinScorePercentage != nil {
+		v := int(*row.MinScorePercentage)
+		minScorePercentage = &v
+	}
+
+	requireCompletion := false
+	if row.RequireCompletion != nil {
+		requireCompletion = *row.RequireCompletion
+	}
+
+	var quizID string
+	if row.QuizID != nil {
+		quizID = *row.QuizID
+	}
+
+	return &model.QuizAchievement{
+		ID:                   row.ID,
+		Name:                 row.Name,
+		DescriptionPending:   row.DescriptionPending,
+		DescriptionCompleted: row.DescriptionCompleted,
+		NotificationText:     row.NotificationText,
+		ImagePending:         row.ImagePending,
+		ImageCompleted:       row.ImageCompleted,
+		Points:               int(row.Points),
+		Hidden:               hidden,
+		AwardableFrom:        awardableFrom,
+		ProjectID:            row.ProjectID,
+		EventID:              row.EventID,
+		ChallengeID:          row.ChallengeID,
+		QuizID:               quizID,
+		MinScorePercentage:   minScorePercentage,
+		RequireCompletion:    requireCompletion,
 	}, nil
 }
 

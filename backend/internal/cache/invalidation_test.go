@@ -173,6 +173,205 @@ func TestExtractEventTag(t *testing.T) {
 	}
 }
 
+func TestExtractUserTag(t *testing.T) {
+	tests := []struct {
+		name   string
+		key    string
+		wantID string
+		wantOK bool
+	}{
+		{
+			name:   "direct user key",
+			key:    "user:US123",
+			wantID: "US123",
+			wantOK: true,
+		},
+		{
+			name:   "user projects key",
+			key:    "userprojects:US123",
+			wantID: "US123",
+			wantOK: true,
+		},
+		{
+			name:   "user events key",
+			key:    "userevents:US123",
+			wantID: "US123",
+			wantOK: true,
+		},
+		{
+			name:   "user content progress key",
+			key:    "usercontent:US123:AC456",
+			wantID: "US123",
+			wantOK: true,
+		},
+		{
+			name:   "user achievements key",
+			key:    "userachievements:US123:AC456",
+			wantID: "US123",
+			wantOK: true,
+		},
+		{
+			name:   "user streak activity key",
+			key:    "userstreak:US123:SK789",
+			wantID: "US123",
+			wantOK: true,
+		},
+		{
+			name:   "user challenge enrollments key",
+			key:    "userchallengeenrollments:US123:CL456",
+			wantID: "US123",
+			wantOK: true,
+		},
+		{
+			name:   "user challenge completions key",
+			key:    "userchallenges:US123:CL456",
+			wantID: "US123",
+			wantOK: true,
+		},
+		{
+			name:   "user consents key",
+			key:    "userconsents:US123",
+			wantID: "US123",
+			wantOK: true,
+		},
+		{
+			name:   "non-user key",
+			key:    "challenge:CL123",
+			wantID: "",
+			wantOK: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotID, gotOK := ExtractUserTag(tt.key)
+			assert.Equal(t, tt.wantID, gotID)
+			assert.Equal(t, tt.wantOK, gotOK)
+		})
+	}
+}
+
+func TestCacheWithRegistry_UserInvalidation(t *testing.T) {
+	c, err := NewCacheWithRegistry(DefaultConfig())
+	assert.NoError(t, err)
+	defer c.Close()
+
+	userID := "US123"
+
+	// Set various user-related cache entries
+	c.Set(UserKey(userID), "user-data")
+	c.Set(ProjectsByUserKey(userID), "projects")
+	c.Set(EventsByUserKey(userID), "events")
+	c.Set(UserRolesKey(userID), "roles")
+	c.Set(UserContentProgressKey(userID, "AC001"), "progress-1")
+	c.Set(UserContentProgressKey(userID, "AC002"), "progress-2")
+	c.Set(UserAchievementTimestampKey(userID, "AC001"), "timestamp")
+	c.Set(UserStreakActivityKey(userID, "SK001"), "streak")
+	c.Set(UserChallengeEnrollmentKey(userID, "CL001"), "enrolled")
+	c.Set(UserChallengeCompletionKey(userID, "CL001"), "completed")
+
+	// Set a different user's data (should not be affected)
+	c.Set(UserKey("US999"), "other-user")
+	c.Set(UserContentProgressKey("US999", "AC001"), "other-progress")
+
+	c.cache.Wait()
+
+	// Verify all keys are set
+	_, found := c.Get(UserKey(userID))
+	assert.True(t, found, "user key should exist before invalidation")
+	_, found = c.Get(UserContentProgressKey(userID, "AC001"))
+	assert.True(t, found, "content progress should exist before invalidation")
+	_, found = c.Get(UserAchievementTimestampKey(userID, "AC001"))
+	assert.True(t, found, "achievement timestamp should exist before invalidation")
+
+	// Invalidate user
+	c.invalidateUserLocal(userID)
+	c.cache.Wait()
+
+	// Verify all user keys are deleted
+	_, found = c.Get(UserKey(userID))
+	assert.False(t, found, "user key should be deleted")
+	_, found = c.Get(ProjectsByUserKey(userID))
+	assert.False(t, found, "projects key should be deleted")
+	_, found = c.Get(EventsByUserKey(userID))
+	assert.False(t, found, "events key should be deleted")
+	_, found = c.Get(UserRolesKey(userID))
+	assert.False(t, found, "roles key should be deleted")
+	_, found = c.Get(UserContentProgressKey(userID, "AC001"))
+	assert.False(t, found, "content progress 1 should be deleted")
+	_, found = c.Get(UserContentProgressKey(userID, "AC002"))
+	assert.False(t, found, "content progress 2 should be deleted")
+	_, found = c.Get(UserAchievementTimestampKey(userID, "AC001"))
+	assert.False(t, found, "achievement timestamp should be deleted")
+	_, found = c.Get(UserStreakActivityKey(userID, "SK001"))
+	assert.False(t, found, "streak activity should be deleted")
+	_, found = c.Get(UserChallengeEnrollmentKey(userID, "CL001"))
+	assert.False(t, found, "challenge enrollment should be deleted")
+	_, found = c.Get(UserChallengeCompletionKey(userID, "CL001"))
+	assert.False(t, found, "challenge completion should be deleted")
+
+	// Verify other user's data is NOT deleted
+	_, found = c.Get(UserKey("US999"))
+	assert.True(t, found, "other user's key should still exist")
+	_, found = c.Get(UserContentProgressKey("US999", "AC001"))
+	assert.True(t, found, "other user's content progress should still exist")
+}
+
+func TestCacheWithRegistry_TeamMemberLeaderboardInvalidationViaProject(t *testing.T) {
+	c, err := NewCacheWithRegistry(DefaultConfig())
+	assert.NoError(t, err)
+	defer c.Close()
+
+	teamID1 := "TM01AAAAAAAAAAAAAAAAAAAAAA01"
+	teamID2 := "TM01AAAAAAAAAAAAAAAAAAAAAA02"
+
+	// Set team member leaderboard entries for two teams
+	c.Set(TeamMemberLeaderboardKey(teamID1), "leaderboard-team1")
+	c.Set(TeamMemberLeaderboardKey(teamID2), "leaderboard-team2")
+	c.Set(TeamMemberLeaderboardTeamLeadTagsKey(teamID1), "tags-team1")
+
+	// Set an unrelated key that should not be affected
+	c.Set(TeamKey(teamID1), "team-data")
+
+	c.cache.Wait()
+
+	// Verify keys exist
+	_, found := c.Get(TeamMemberLeaderboardKey(teamID1))
+	assert.True(t, found, "team1 leaderboard should exist before invalidation")
+	_, found = c.Get(TeamMemberLeaderboardKey(teamID2))
+	assert.True(t, found, "team2 leaderboard should exist before invalidation")
+	_, found = c.Get(TeamMemberLeaderboardTeamLeadTagsKey(teamID1))
+	assert.True(t, found, "team1 lead tags should exist before invalidation")
+
+	// Simulate what invalidateProjectLocal does for team member leaderboards
+	c.DeletePrefix(PrefixTeamMemberLeaderboard)
+	c.cache.Wait()
+
+	// All team member leaderboard keys should be deleted
+	_, found = c.Get(TeamMemberLeaderboardKey(teamID1))
+	assert.False(t, found, "team1 leaderboard should be deleted after project invalidation")
+	_, found = c.Get(TeamMemberLeaderboardKey(teamID2))
+	assert.False(t, found, "team2 leaderboard should be deleted after project invalidation")
+	// Tags keys have a more specific prefix, so they are registered under PrefixTeamLeaderboardTags, not PrefixTeamMemberLeaderboard
+	_, found = c.Get(TeamMemberLeaderboardTeamLeadTagsKey(teamID1))
+	assert.True(t, found, "team1 lead tags should NOT be deleted by PrefixTeamMemberLeaderboard")
+
+	// Unrelated team key should still exist
+	_, found = c.Get(TeamKey(teamID1))
+	assert.True(t, found, "team data should still exist")
+}
+
+func TestExtractPrefixes_TeamMemberLeaderboardKey(t *testing.T) {
+	teamID := "TM01AAAAAAAAAAAAAAAAAAAAAA01"
+	key := TeamMemberLeaderboardKey(teamID)
+
+	// Key should be "team:leaderboard:TM01AAAAAAAAAAAAAAAAAAAAAA01"
+	assert.Equal(t, "team:leaderboard:"+teamID, key)
+
+	prefixes := extractPrefixes(key)
+	assert.Contains(t, prefixes, PrefixTeamMemberLeaderboard, "should be registered under PrefixTeamMemberLeaderboard")
+}
+
 func TestCacheWithRegistry_LeaderboardInvalidation(t *testing.T) {
 	cache, err := NewCacheWithRegistry(DefaultConfig())
 	assert.NoError(t, err)

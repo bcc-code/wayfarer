@@ -38,11 +38,12 @@ const (
 	PrefixUserStreakActivity       = "userstreak:"
 
 	// Computed data
-	PrefixLeaderboard         = "leaderboard:"
-	PrefixLeaderboardPosition = "leaderboard:position:"
-	PrefixLeaderboardCount    = "leaderboard:count:"
-	PrefixTeamLeaderboardTags = "team:leaderboard:tags:"
-	PrefixScore               = "score:"
+	PrefixLeaderboard           = "leaderboard:"
+	PrefixLeaderboardPosition   = "leaderboard:position:"
+	PrefixLeaderboardCount      = "leaderboard:count:"
+	PrefixTeamMemberLeaderboard = "team:leaderboard:"
+	PrefixTeamLeaderboardTags   = "team:leaderboard:tags:"
+	PrefixScore                 = "score:"
 
 	// Query results
 	PrefixUsersFilter           = "usersfilter:"
@@ -82,6 +83,9 @@ const (
 	PrefixUserConsents   = "userconsents:"
 	PrefixLatestConsents = "latestconsents"
 
+	// Reverse lookups
+	PrefixUserByPersonUUID = "user:personuuid:"
+
 	// External content
 	PrefixExternalContent        = "externalcontent:"
 	PrefixExternalContentsFilter = "externalcontentsfilter:"
@@ -97,6 +101,11 @@ const (
 // UserKey builds a cache key for a user by ID
 func UserKey(userID string) string {
 	return PrefixUser + userID
+}
+
+// UserByPersonUUIDKey builds a cache key for looking up a user by person UUID
+func UserByPersonUUIDKey(personUUID string) string {
+	return PrefixUserByPersonUUID + personUUID
 }
 
 // ChurchKey builds a cache key for a church by ID
@@ -126,7 +135,7 @@ func TeamsByUserKey(userID string) string {
 
 // TeamMemberLeaderboardKey builds a cache key for team member leaderboard
 func TeamMemberLeaderboardKey(teamID string) string {
-	return fmt.Sprintf("%s:leaderboard:%s", PrefixTeam, teamID)
+	return PrefixTeamMemberLeaderboard + teamID
 }
 
 // TeamMemberLeaderboardTagsKey builds a cache key for user-specific leaderboard tags
@@ -209,6 +218,11 @@ func AchievementsByProjectKey(projectID string) string {
 // ContentItemsByAchievementKey builds a cache key for content items by achievement ID
 func ContentItemsByAchievementKey(achievementID string) string {
 	return fmt.Sprintf("%s:items:%s", PrefixAchievement, achievementID)
+}
+
+// ContentItemCountKey builds a cache key for content item count by achievement ID
+func ContentItemCountKey(achievementID string) string {
+	return fmt.Sprintf("%s:itemcount:%s", PrefixAchievement, achievementID)
 }
 
 // UserContentProgressKey builds a cache key for user content progress
@@ -376,11 +390,22 @@ func ExtractUserTag(key string) (string, bool) {
 	if strings.HasPrefix(key, PrefixUser) {
 		return strings.TrimPrefix(key, PrefixUser), true
 	}
-	// Check for user-prefixed relationship keys
-	prefixes := []string{PrefixUserProjects, PrefixUserEvents, PrefixUserRoles}
+	// Check for user-prefixed relationship and progress keys
+	// For composite keys like "usercontent:{userID}:{achievementID}", extract just the userID
+	prefixes := []string{
+		PrefixUserProjects, PrefixUserEvents, PrefixUserRoles,
+		PrefixUserContentProgress, PrefixUserAchievements,
+		PrefixUserStreakActivity, PrefixUserChallengeEnrollments,
+		PrefixUserChallengeCompletions, PrefixUserConsents,
+	}
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(key, prefix) {
-			return strings.TrimPrefix(key, prefix), true
+			remainder := strings.TrimPrefix(key, prefix)
+			// For composite keys, extract just the user ID (first segment)
+			if idx := strings.Index(remainder, ":"); idx > 0 {
+				return remainder[:idx], true
+			}
+			return remainder, true
 		}
 	}
 	return "", false

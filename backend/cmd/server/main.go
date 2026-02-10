@@ -161,9 +161,10 @@ func main() {
 	}
 
 	// Initialize SSF client and sync service
+	var ssfClient *ssf.Client
 	var ssfSyncService *ssf.SyncService
 	if cfg.SSF.APIKey != "" {
-		ssfClient := ssf.New(ssf.Config{
+		ssfClient = ssf.New(ssf.Config{
 			BaseURL:   cfg.SSF.BaseURL,
 			APIKey:    cfg.SSF.APIKey,
 			DebugMode: cfg.SSF.DebugMode,
@@ -296,6 +297,31 @@ func main() {
 		slog.Warn("Email service not configured - RESEND_API_KEY not set")
 	}
 
+	// Content achievement service (shared between auth and webhook handlers)
+	contentAchievementService := &services.ContentAchievementService{
+		DB:             db,
+		Cache:          cacheInstance,
+		PushService:    pushService,
+		Loaders:        dataLoaders,
+		WebhookService: webhookService,
+	}
+
+	// Church resolver (shared between auth, maintenance, and sync)
+	churchResolver := &services.ChurchResolver{
+		DB:            db,
+		MembersClient: membersClient,
+	}
+
+	// User sync service
+	userSyncService := &services.UserSyncService{
+		DB:                        db,
+		Cache:                     cacheInstance,
+		SSFClient:                 ssfClient,
+		MembersClient:             membersClient,
+		ChurchResolver:            churchResolver,
+		ContentAchievementService: contentAchievementService,
+	}
+
 	// Initialize GraphQL resolver
 	apiResolver := &api.Resolver{
 		DB:                 db,
@@ -308,6 +334,7 @@ func main() {
 		WebhookService:     webhookService,
 		FirebaseService:    firebaseService,
 		EmailService:       emailService,
+		UserSyncService:    userSyncService,
 		InstanceID:         cacheSync.InstanceID(),
 	}
 
@@ -408,15 +435,6 @@ func main() {
 	}
 	slog.Info("Profiling endpoints enabled at /debug/pprof")
 
-	// Content achievement service (shared between auth and webhook handlers)
-	contentAchievementService := &services.ContentAchievementService{
-		DB:             db,
-		Cache:          cacheInstance,
-		PushService:    pushService,
-		Loaders:        dataLoaders,
-		WebhookService: webhookService,
-	}
-
 	// Authentication token endpoint (no JWT middleware)
 	authHandler := &handlers.AuthHandler{
 		DB:                        db,
@@ -426,6 +444,8 @@ func main() {
 		MembersClient:             membersClient,
 		RoleService:               roleService,
 		ContentAchievementService: contentAchievementService,
+		ChurchResolver:            churchResolver,
+		UserSyncService:           userSyncService,
 	}
 	router.GET("/token", authHandler.Callback)
 
@@ -439,8 +459,9 @@ func main() {
 
 	// Consent webhook handler for external consent events
 	consentWebhookHandler := &handlers.ConsentWebhookHandler{
-		DB:    db,
-		Cache: cacheInstance,
+		DB:              db,
+		Cache:           cacheInstance,
+		UserSyncService: userSyncService,
 	}
 	router.POST("/api/v1/consent-events", middleware.APIKeyAuth(cfg.APIKey), consentWebhookHandler.HandleConsentEvent)
 
@@ -467,15 +488,20 @@ func main() {
 	// Maintenance handler for syncing user data from Members API
 	maintenanceHandler := &handlers.MaintenanceHandler{
 		DB:                        db,
+		Cache:                     cacheInstance,
 		MembersClient:             membersClient,
+		ChurchResolver:            churchResolver,
 		AuthHandler:               authHandler,
 		ContentAchievementService: contentAchievementService,
+		SSFClient:                 ssfClient,
 	}
 	router.POST("/api/maintenance/sync-user-data", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncUserData)
 	router.POST("/api/maintenance/sync-user/:user_id", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.SyncSingleUser)
+	router.POST("/api/maintenance/backfill-ssf-events", middleware.APIKeyAuth(cfg.APIKey), maintenanceHandler.BackfillSSFEvents)
 	slog.Info("Maintenance endpoints registered",
 		"batch_sync", "POST /api/maintenance/sync-user-data",
 		"single_sync", "POST /api/maintenance/sync-user/:user_id",
+		"backfill_ssf", "POST /api/maintenance/backfill-ssf-events",
 	)
 
 	// Quiz scheduler handler for timed session state transitions

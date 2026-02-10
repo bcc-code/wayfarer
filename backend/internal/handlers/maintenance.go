@@ -5,11 +5,14 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
+	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
 	"github.com/bcc-media/wayfarer/internal/members"
 	"github.com/bcc-media/wayfarer/internal/services"
+	"github.com/bcc-media/wayfarer/internal/ssf"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -18,9 +21,12 @@ import (
 // MaintenanceHandler handles maintenance tasks like syncing user data
 type MaintenanceHandler struct {
 	DB                        *database.DB
+	Cache                     *cache.CacheWithRegistry
 	MembersClient             *members.Client
+	ChurchResolver            *services.ChurchResolver
 	AuthHandler               *AuthHandler
 	ContentAchievementService *services.ContentAchievementService
+	SSFClient                 *ssf.Client
 }
 
 // SyncUserDataResponse contains the results of a user data sync operation
@@ -99,12 +105,17 @@ func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 
 		// Update gender if currently UNKNOWN and member has gender
 		if user.Gender == "UNKNOWN" && member.Gender != "" {
-			newGender = normalizeGender(member.Gender)
+			newGender = members.NormalizeGender(member.Gender)
 		}
 
-		// Update church if using default church and member has affiliation
-		if h.isDefaultChurch(ctx, user.ChurchID) {
-			church, err := h.AuthHandler.findChurchFromAffiliations(ctx, member.Affiliations)
+		// Update church if using default church and member has affiliation (skip if locked)
+		if user.ChurchLockedUntil.Valid && user.ChurchLockedUntil.Time.After(time.Now()) {
+			slog.Debug("maintenance: church update skipped due to lock",
+				"user_id", user.ID,
+				"locked_until", user.ChurchLockedUntil.Time,
+			)
+		} else if h.isDefaultChurch(ctx, user.ChurchID) {
+			church, err := h.ChurchResolver.FindChurchFromAffiliations(ctx, member.Affiliations)
 			if err != nil {
 				slog.Debug("maintenance: no valid church from affiliations",
 					"user_id", user.ID,
@@ -135,6 +146,11 @@ func (h *MaintenanceHandler) SyncUserData(c *gin.Context) {
 			response.Failed++
 			response.Errors = append(response.Errors, "failed to update user "+user.ID+": "+err.Error())
 			continue
+		}
+
+		// Invalidate all user-related cache entries
+		if h.Cache != nil {
+			h.Cache.InvalidateUser(user.ID)
 		}
 
 		slog.Info("maintenance: updated user data",
@@ -202,20 +218,27 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 
 	// Always update gender from member data
 	if member.Gender != "" {
-		newGender = normalizeGender(member.Gender)
+		newGender = members.NormalizeGender(member.Gender)
 	}
 
-	// Attempt to update church from member affiliation
-	church, err := h.AuthHandler.findChurchFromAffiliations(ctx, member.Affiliations)
-	if err != nil {
-		slog.Debug("maintenance: no valid church from affiliations, keeping existing",
+	// Attempt to update church from member affiliation (skip if locked)
+	if user.ChurchLockedUntil.Valid && user.ChurchLockedUntil.Time.After(time.Now()) {
+		slog.Debug("maintenance: church update skipped due to lock",
 			"user_id", userID,
-			"affiliations", member.Affiliations,
-			"error", err,
+			"locked_until", user.ChurchLockedUntil.Time,
 		)
-		// Keep existing church - don't update to default
 	} else {
-		newChurchID = church.ID
+		church, err := h.ChurchResolver.FindChurchFromAffiliations(ctx, member.Affiliations)
+		if err != nil {
+			slog.Debug("maintenance: no valid church from affiliations, keeping existing",
+				"user_id", userID,
+				"affiliations", member.Affiliations,
+				"error", err,
+			)
+			// Keep existing church - don't update to default
+		} else {
+			newChurchID = church.ID
+		}
 	}
 
 	// Update user
@@ -257,6 +280,11 @@ func (h *MaintenanceHandler) SyncSingleUser(c *gin.Context) {
 		slog.Info("maintenance: processed onboarding events", "user_id", userID, "person_uuid", personUUIDStr)
 	}
 
+	// Invalidate all user-related cache entries
+	if h.Cache != nil {
+		h.Cache.InvalidateUser(userID)
+	}
+
 	slog.Info("maintenance: updated user data",
 		"user_id", userID,
 		"new_gender", newGender,
@@ -280,4 +308,227 @@ func (h *MaintenanceHandler) isDefaultChurch(ctx context.Context, churchID strin
 		return false
 	}
 	return church.ExternalID == nil
+}
+
+// BackfillSSFEventsResponse contains the results of a backfill operation
+type BackfillSSFEventsResponse struct {
+	Year                int      `json:"year"`
+	Month               int      `json:"month"`
+	Page                int      `json:"page"`
+	EventsFetched       int      `json:"events_fetched"`
+	EventsProcessed     int      `json:"events_processed"`
+	EventsSkippedNoUser int      `json:"events_skipped_no_user"`
+	EventsSkippedDupe   int      `json:"events_skipped_duplicate"`
+	HasMore             bool     `json:"has_more"`
+	NextPage            int      `json:"next_page,omitempty"`
+	Errors              []string `json:"errors,omitempty"`
+}
+
+// BackfillSSFEvents backfills user content completion events from SSF for a given month/page.
+// This endpoint is designed to be called by an external orchestrator (cron, webhook, manual).
+func (h *MaintenanceHandler) BackfillSSFEvents(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	// Validate SSF client is configured
+	if h.SSFClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "SSF client not configured"})
+		return
+	}
+
+	// Parse and validate year
+	yearStr := c.Query("year")
+	if yearStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "year is required"})
+		return
+	}
+	year, err := strconv.Atoi(yearStr)
+	if err != nil || year < 2000 || year > 2100 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid year"})
+		return
+	}
+
+	// Parse and validate month
+	monthStr := c.Query("month")
+	if monthStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "month is required"})
+		return
+	}
+	month, err := strconv.Atoi(monthStr)
+	if err != nil || month < 1 || month > 12 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid month (1-12)"})
+		return
+	}
+
+	// Parse page (default to 1)
+	page := 1
+	if pageStr := c.Query("page"); pageStr != "" {
+		if parsedPage, err := strconv.Atoi(pageStr); err == nil && parsedPage > 0 {
+			page = parsedPage
+		}
+	}
+
+	slog.Info("maintenance: starting SSF events backfill",
+		"year", year,
+		"month", month,
+		"page", page,
+	)
+
+	// Fetch events from SSF
+	resp, err := h.SSFClient.GetMonthlyContentEvents(ctx, year, month, page)
+	if err != nil {
+		slog.Error("maintenance: failed to fetch SSF events",
+			"year", year,
+			"month", month,
+			"page", page,
+			"error", err,
+		)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch events from SSF"})
+		return
+	}
+
+	response := BackfillSSFEventsResponse{
+		Year:          year,
+		Month:         month,
+		Page:          page,
+		EventsFetched: len(resp.Items),
+		HasMore:       resp.HasMore,
+		Errors:        []string{},
+	}
+
+	if resp.HasMore {
+		response.NextPage = page + 1
+	}
+
+	if len(resp.Items) == 0 {
+		slog.Info("maintenance: no events to process",
+			"year", year,
+			"month", month,
+			"page", page,
+		)
+		c.JSON(http.StatusOK, response)
+		return
+	}
+
+	// Collect unique person_uuids and group events by person
+	eventsByPerson := make(map[string][]ssf.ContentEvent)
+	personUUIDStrings := make(map[string]struct{})
+
+	for _, event := range resp.Items {
+		if event.PersonID == "" {
+			continue
+		}
+		personUUIDStrings[event.PersonID] = struct{}{}
+		eventsByPerson[event.PersonID] = append(eventsByPerson[event.PersonID], event)
+	}
+
+	// Convert to slice for batch lookup
+	personUUIDs := make([]pgtype.UUID, 0, len(personUUIDStrings))
+	for uuidStr := range personUUIDStrings {
+		parsed, err := uuid.Parse(uuidStr)
+		if err != nil {
+			slog.Warn("maintenance: invalid person_id UUID",
+				"person_id", uuidStr,
+				"error", err,
+			)
+			continue
+		}
+		personUUIDs = append(personUUIDs, pgtype.UUID{Bytes: parsed, Valid: true})
+	}
+
+	// Batch lookup users by person_uuids
+	users, err := h.DB.Queries.GetUsersByPersonUUIDs(ctx, personUUIDs)
+	if err != nil {
+		slog.Error("maintenance: failed to lookup users by person_uuids",
+			"error", err,
+		)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to lookup users"})
+		return
+	}
+
+	// Build user map: person_uuid string -> user
+	userByPersonUUID := make(map[string]*sqlc.GetUsersByPersonUUIDsRow, len(users))
+	for _, u := range users {
+		if u.PersonUuid.Valid {
+			uuidStr := uuid.UUID(u.PersonUuid.Bytes).String()
+			userByPersonUUID[uuidStr] = u
+		}
+	}
+
+	// Process events for each person
+	for personUUIDStr, events := range eventsByPerson {
+		user, found := userByPersonUUID[personUUIDStr]
+		if !found {
+			response.EventsSkippedNoUser += len(events)
+			continue
+		}
+
+		// Collect task IDs for this person's events
+		taskIDs := make([]string, len(events))
+		for i, event := range events {
+			taskIDs[i] = event.TaskID
+		}
+
+		// Bulk check which already exist
+		existingTaskIDs, err := h.DB.Queries.GetExistingExternalContentEventTaskIDs(ctx, sqlc.GetExistingExternalContentEventTaskIDsParams{
+			Personid: user.PersonUuid,
+			Taskids:  taskIDs,
+		})
+		if err != nil {
+			slog.Warn("maintenance: failed to check existing events",
+				"user_id", user.ID,
+				"error", err,
+			)
+			response.Errors = append(response.Errors, "failed to check existing events for user "+user.ID)
+			continue
+		}
+
+		existingSet := make(map[string]struct{}, len(existingTaskIDs))
+		for _, id := range existingTaskIDs {
+			existingSet[id] = struct{}{}
+		}
+
+		// Process only new events
+		for _, event := range events {
+			if _, exists := existingSet[event.TaskID]; exists {
+				response.EventsSkippedDupe++
+				continue
+			}
+
+			contentProgress := event.ContentProgress
+			err := h.ContentAchievementService.StoreAndProcessContentEvent(
+				ctx,
+				user.ID,
+				user.PersonUuid,
+				event.TaskID,
+				event.PlanID,
+				&contentProgress,
+				event.Timestamp,
+				"ssf-backfill",
+				true, // force: skip per-event dedup check since we batch-checked above
+			)
+			if err != nil {
+				slog.Warn("maintenance: failed to process content event",
+					"user_id", user.ID,
+					"task_id", event.TaskID,
+					"error", err,
+				)
+				response.Errors = append(response.Errors, "failed to process event "+event.TaskID+": "+err.Error())
+				continue
+			}
+			response.EventsProcessed++
+		}
+	}
+
+	slog.Info("maintenance: SSF events backfill complete",
+		"year", year,
+		"month", month,
+		"page", page,
+		"fetched", response.EventsFetched,
+		"processed", response.EventsProcessed,
+		"skipped_no_user", response.EventsSkippedNoUser,
+		"skipped_duplicate", response.EventsSkippedDupe,
+		"has_more", response.HasMore,
+	)
+
+	c.JSON(http.StatusOK, response)
 }

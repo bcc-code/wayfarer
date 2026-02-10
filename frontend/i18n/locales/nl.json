@@ -22,6 +22,8 @@
     "correctAnswer": "Correct antwoord",
     "yourAnswer": "Jouw antwoord",
     "lockAnswer": "Lock antwoord",
+    "saveAnswer": "Antwoord opslaan",
+    "changeAnswer": "Antwoord wijzigen",
     "questionNumber": "{current} van {total}",
     "continue": "Doorgaan",
     "nextQuestion": "Volgende vraag.",
@@ -30,6 +32,8 @@
     "unavailable": "Deze quiz is momenteel niet beschikbaar.",
     "reviewAnswers": "Zie antwoord",
     "finishReview": "Sluit beoordeling af",
+    "yourNumber": "Je cijfer",
+    "writeYourAnswer": "Schrijf je antwoord...",
     "result": {
       "receivedNoPoints": "Je hebt geen punten verzameld.",
       "receivedPoints": "Je hebt {points} punten verzameld.",
@@ -37,6 +41,10 @@
       "wellDone": "Goed gedaan!",
       "perfect": "Perfect!"
     }
+  },
+  "challenges": {
+    "active": "Actief",
+    "completed": "Klaar"
   },
   "pages": {
     "standings": "Toplijsten",
@@ -161,7 +169,20 @@
       "administrators": "Beheerders",
       "unitsAndPeople": "Units en personen",
       "gameNights": "Game Nights",
-      "comingSoon": "Binnenkort"
+      "comingSoon": "Binnenkort",
+      "kickOff": "Kick-off",
+      "statistics": "Statistieken",
+      "kickOffButton": "Start de unit-onboarding",
+      "kickOffOnboardingDescription": "Deze actie start de unit-onboarding voor de hele lokale gemeente.",
+      "kickOffOnboardingDescriptionWarning": "⚠ Niet starten als jullie nog niet klaar zijn.",
+      "kickOffOnboardingExplanationTitle": "Wat gebeurt er als je start?",
+      "kickOffOnboardingExplanation1": "Alle unit-leiders in de lokale gemeente krijgen een taak in Interact (webapp).",
+      "kickOffOnboardingExplanation2": "Je kunt de naam van de unit wijzigen – je krijgt 300 punten als je het hebt gedaan.",
+      "kickOffConfirmation": "Ik bevestig dat de kick-off nu plaatsvindt en dat we klaar zijn om te starten.",
+      "kickOffOnboardingCountdown": "Start over {seconds} seconde | Start over {seconds} seconden",
+      "kickOffSuccessTitle": "De unit-onboarding is begonnen!",
+      "kickOffSuccessDescription": "Alle unitleiders hebben nu een taak toegewezen gekregen in de app en kunnen de naam van hun unit wijzigen.",
+      "noAccess": "Je hebt geen toegang tot deze pagina omdat je geen beheerder bent. Vraag een andere beheerder om je toegang te geven."
     },
     "admins": {
       "searchPlaceholder": "Zoeken naar beheerders",
@@ -247,6 +268,21 @@
       "excludeFromLeaderboard": "Uitsluiten van rankings",
       "excludeFromLeaderboardTooltip": "Wanneer geactiveerd, wordt deze unit niet weergegeven in rankinglijsten",
       "excludedFromLeaderboard": "Uitgesloten van rankings"
+    },
+    "statistics": {
+      "totalUsersInTeams": "Personen in units",
+      "averageScoresByAgeGroup": "Gemiddelde score per leeftijdsgroep",
+      "averageScoresByAgeGroupDescription": "Hier vind je een overzicht van de gemiddelde scores per leeftijdsgroep. Alleen personen die in een unit zitten, worden meegeteld.",
+      "ageGroup": "Leeftijdsgroep",
+      "users": "Gebruikers",
+      "averageScore": "Gemiddelde score",
+      "yearsOld": "jaar",
+      "noData": "Geen gegevens beschikbaar",
+      "pointsDistribution": "Puntenverdeling",
+      "pointsDistributionDescription": "Hier vind je een overzicht van de scores van alle personen in je lokale gemeente die lid zijn van een unit.",
+      "points": "Punten",
+      "peopleInAUnit": "Personen in een unit",
+      "lastUpdated": "Laatst bijgewerkt"
     }
   }
 }

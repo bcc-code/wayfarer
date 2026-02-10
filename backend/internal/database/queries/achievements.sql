@@ -32,10 +32,15 @@ SELECT
     ) AS content_items,
     -- Streak achievement data
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE a.id = ANY(@ids::text[]);
 
 -- name: GetAchievementsByProjectIDs :many
@@ -59,10 +64,15 @@ SELECT
     -- Type-specific fields needed for model construction
     ca.achievement_id AS content_achievement_id,
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE a.project_id = ANY(@project_ids::text[])
     AND a.hidden = false
 ORDER BY a.project_id, a.sort_order, a.created_at DESC;
@@ -89,10 +99,15 @@ SELECT
     a.updated_at,
     ca.achievement_id AS content_achievement_id,
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE a.project_id = @project_id::text
 ORDER BY a.sort_order, a.created_at DESC;
 
@@ -131,10 +146,15 @@ SELECT
     ) AS content_items,
     -- Streak achievement data
     sa.streak_id,
-    sa.needed_streak
+    sa.needed_streak,
+    -- Quiz achievement data
+    qa.quiz_id,
+    qa.min_score_percentage,
+    qa.require_completion
 FROM achievements a
 LEFT JOIN content_achievements ca ON a.id = ca.achievement_id
 LEFT JOIN streak_achievements sa ON a.id = sa.achievement_id
+LEFT JOIN quiz_achievements qa ON a.id = qa.achievement_id
 WHERE
     (@ids::text[] IS NULL OR a.id = ANY(@ids::text[]))
     AND (@projectid::text = '' OR a.project_id = @projectid::text)
@@ -161,6 +181,34 @@ SELECT id, achievement_id, external_content_id, sort_order
 FROM content_achievement_items
 WHERE achievement_id = ANY(@achievement_ids::text[])
 ORDER BY achievement_id, sort_order;
+
+-- name: GetAchievementCompletionStatus :many
+SELECT
+    cai.achievement_id,
+    COUNT(DISTINCT cai.external_content_id)::int AS item_count,
+    COUNT(DISTINCT ucp.external_content_id)::int AS progress_count
+FROM content_achievement_items cai
+LEFT JOIN user_content_progress ucp
+    ON ucp.achievement_id = cai.achievement_id
+    AND ucp.user_id = @user_id::text
+    AND ucp.external_content_id = cai.external_content_id
+WHERE cai.achievement_id = ANY(@achievement_ids::text[])
+GROUP BY cai.achievement_id;
+
+-- name: GetContentItemCounts :many
+-- Get content item counts per achievement (for caching)
+SELECT achievement_id, COUNT(*)::int AS item_count
+FROM content_achievement_items
+WHERE achievement_id = ANY(@achievement_ids::text[])
+GROUP BY achievement_id;
+
+-- name: GetUserProgressCounts :many
+-- Get user progress counts per achievement
+SELECT achievement_id, COUNT(*)::int AS progress_count
+FROM user_content_progress
+WHERE user_id = @user_id::text
+  AND achievement_id = ANY(@achievement_ids::text[])
+GROUP BY achievement_id;
 
 -- ==================== Create Operations ====================
 
@@ -286,6 +334,13 @@ SELECT EXISTS(
     WHERE user_id = @user_id::text AND achievement_id = @achievement_id::text
 ) AS has_achievement;
 
+-- name: GetUserAwardedAchievementIDs :many
+-- Get which achievements from a list the user already has
+SELECT achievement_id
+FROM user_achievements
+WHERE user_id = @user_id::text
+  AND achievement_id = ANY(@achievement_ids::text[]);
+
 -- name: AwardTeamAchievementBatch :exec
 -- Award achievement to all members of a team in a single query
 INSERT INTO user_achievements (user_id, achievement_id, achieved_at)
@@ -377,12 +432,6 @@ SELECT user_id, achievement_id, external_content_id, completed_at
 FROM user_content_progress
 WHERE user_id = @user_id::text
   AND achievement_id = ANY(@achievement_ids::text[]);
-
--- name: GetUserContentProgressForAchievement :many
-SELECT user_id, achievement_id, external_content_id, completed_at
-FROM user_content_progress
-WHERE user_id = @user_id::text
-  AND achievement_id = @achievement_id::text;
 
 -- name: MarkContentItemCompleted :exec
 INSERT INTO user_content_progress (user_id, achievement_id, external_content_id, completed_at)

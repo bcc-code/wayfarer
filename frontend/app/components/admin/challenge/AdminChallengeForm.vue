@@ -11,11 +11,13 @@ const props = defineProps<{
     image?: string
     url?: string
     buttonText: string
+    publishedAt?: string
     endTime?: string
     visibleAt?: string
     startedAt?: string
     allowSelfCompletion?: boolean
     pluginChallengeId?: string
+    notificationText?: string
   }
   quizData?: QuizFormData
   projectId?: string
@@ -36,11 +38,13 @@ export interface ChallengeFormData {
   image?: string
   url?: string
   buttonText?: string
+  publishedAt?: string
   endTime?: string
   visibleAt?: string
   startedAt?: string
   allowSelfCompletion?: boolean
   pluginChallengeId?: string
+  notificationText?: string
   quiz?: QuizFormData
 }
 
@@ -52,11 +56,13 @@ const schema = z
     image: z.string().optional(),
     url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
     buttonText: z.string().optional(),
+    publishedAt: z.string().optional(),
     endTime: z.string().optional(),
     visibleAt: z.string().optional(),
     startedAt: z.string().optional(),
     allowSelfCompletion: z.boolean().optional(),
     pluginChallengeId: z.string().optional(),
+    notificationText: z.string().optional(),
   })
   .refine(
     (data) =>
@@ -86,11 +92,13 @@ const state = reactive<Schema>({
   image: props.initialData?.image,
   url: props.initialData?.url,
   buttonText: props.initialData?.buttonText ?? '',
+  publishedAt: props.initialData?.publishedAt,
   endTime: props.initialData?.endTime,
   visibleAt: props.initialData?.visibleAt,
   startedAt: props.initialData?.startedAt,
   allowSelfCompletion: props.initialData?.allowSelfCompletion ?? false,
   pluginChallengeId: props.initialData?.pluginChallengeId,
+  notificationText: props.initialData?.notificationText ?? '',
 })
 
 const quizFormData = ref<QuizFormData | undefined>(props.quizData)
@@ -106,11 +114,13 @@ watch(
       state.image = data.image
       state.url = data.url
       state.buttonText = data.buttonText
+      state.publishedAt = data.publishedAt
       state.endTime = data.endTime
       state.visibleAt = data.visibleAt
       state.startedAt = data.startedAt
       state.allowSelfCompletion = data.allowSelfCompletion ?? false
       state.pluginChallengeId = data.pluginChallengeId
+      state.notificationText = data.notificationText ?? ''
     }
   },
   { once: true },
@@ -226,6 +236,31 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
           />
         </UFormField>
         <UFormField
+          name="notificationText"
+          label="Varslingstekst"
+          hint="(valgfritt)"
+          help="Tekst som vises i push-varsler når admin melder bruker på utfordringen. La feltet stå tomt for ingen varsling."
+        >
+          <UInput
+            v-model="state.notificationText"
+            size="xl"
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField
+          name="publishedAt"
+          label="Publiseringstidspunkt"
+          hint="(valgfritt - standard: nå)"
+          help="Når utfordringen blir tilgjengelig for brukere"
+        >
+          <UInput
+            v-model="state.publishedAt"
+            type="datetime-local"
+            size="xl"
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField
           v-if="isEditMode"
           name="visibleAt"
           label="Synlig fra"
@@ -239,7 +274,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             class="w-full"
           />
         </UFormField>
-        <UFormField
+        <!-- <UFormField
           v-if="isEditMode"
           name="startedAt"
           label="Startet"
@@ -265,7 +300,7 @@ function handleSubmit(event: FormSubmitEvent<Schema>) {
             size="xl"
             class="w-full"
           />
-        </UFormField>
+        </UFormField> -->
         <UButton type="submit" size="lg" block>{{ submitLabel }}</UButton>
         <UButton
           v-if="onDelete"

@@ -453,30 +453,45 @@ func (c *Client) GetJobs(filename string) ([]Job, error) {
 		return nil, err
 	}
 
-	req := c.httpClient.R()
+	var allJobs []Job
+	pageNumber := 0
 
-	req.SetPathParam("projectID", c.ProjectUID)
+	for {
+		req := c.httpClient.R()
+		req.SetPathParam("projectID", c.ProjectUID)
 
-	if filename != "" {
-		req.SetQueryParam("filename", filename)
+		if filename != "" {
+			req.SetQueryParam("filename", filename)
+		}
+		req.SetQueryParam("pageNumber", fmt.Sprintf("%d", pageNumber))
+
+		req.SetResult(&JobsList{})
+
+		res, err := req.Get("v1/projects/{projectID}/jobs")
+		if err != nil {
+			return nil, err
+		}
+
+		if res.StatusCode() != 200 {
+			log.Error().
+				Str("projectID", c.ProjectUID).
+				Str("body", string(res.Body())).
+				Int("status", res.StatusCode()).
+				Msg("Unexpected status code when fetching jobs")
+			return nil, fmt.Errorf("unexpected status code: %d", res.StatusCode())
+		}
+
+		result := res.Result().(*JobsList)
+		allJobs = append(allJobs, result.Content...)
+
+		// Check if we've fetched all pages
+		if pageNumber >= result.TotalPages-1 || len(result.Content) == 0 {
+			break
+		}
+		pageNumber++
 	}
 
-	req.SetResult(&JobsList{})
-
-	res, err := req.Get("v1/projects/{projectID}/jobs")
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode() != 200 {
-		log.Error().
-			Str("projectID", c.ProjectUID).
-			Str("body", string(res.Body())).
-			Int("status", res.StatusCode()).Msg("Unexpected status code when fetching jobs")
-		return nil, err
-	}
-
-	return res.Result().(*JobsList).Content, nil
+	return allJobs, nil
 }
 
 func (c *Client) GetFileAsync(ctx context.Context, jobUID string) error {

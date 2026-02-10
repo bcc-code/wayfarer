@@ -42,6 +42,7 @@ type Challenge interface {
 	GetProject() *Project
 	GetEvent() *Event
 	GetButtonText() *string
+	GetNotificationText() string
 	GetPublishedAt() *scalars.DateTime
 	GetVisibleAt() *scalars.DateTime
 	GetStartedAt() *scalars.DateTime
@@ -108,6 +109,12 @@ type AdminDashboardStats struct {
 	ActiveProjectsCount int `json:"activeProjectsCount"`
 }
 
+type AgeGroupStats struct {
+	AgeGroup     string  `json:"ageGroup"`
+	UserCount    int     `json:"userCount"`
+	AverageScore float64 `json:"averageScore"`
+}
+
 type AgeRange struct {
 	Min int `json:"min"`
 	Max int `json:"max"`
@@ -166,6 +173,17 @@ type Church struct {
 	Name     string         `json:"name"`
 	Country  string         `json:"country"`
 	Category ChurchCategory `json:"category"`
+}
+
+type ChurchAdminStatistics struct {
+	ChurchID          string           `json:"churchId"`
+	ChurchName        string           `json:"churchName"`
+	ProjectID         string           `json:"projectId"`
+	ProjectName       string           `json:"projectName"`
+	AgeGroups         []AgeGroupStats  `json:"ageGroups"`
+	TotalUsersInTeams int              `json:"totalUsersInTeams"`
+	UserScores        []UserScore      `json:"userScores"`
+	LastUpdatedAt     scalars.DateTime `json:"lastUpdatedAt"`
 }
 
 type ChurchConnection struct {
@@ -317,6 +335,8 @@ type CreateChallengeInput struct {
 	Description                 *scalars.HTML     `json:"description,omitempty"`
 	Image                       *string           `json:"image,omitempty"`
 	ButtonText                  *string           `json:"buttonText,omitempty"`
+	NotificationText            *string           `json:"notificationText,omitempty"`
+	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
 	RequiresTeamMembership      *bool             `json:"requiresTeamMembership,omitempty"`
@@ -393,19 +413,20 @@ type CreateProjectInput struct {
 }
 
 type CreateQuizAchievementInput struct {
-	Name                 string  `json:"name"`
-	DescriptionPending   string  `json:"descriptionPending"`
-	DescriptionCompleted string  `json:"descriptionCompleted"`
-	NotificationText     string  `json:"notificationText"`
-	ImagePending         string  `json:"imagePending"`
-	ImageCompleted       string  `json:"imageCompleted"`
-	ProjectID            string  `json:"projectId"`
-	ChallengeID          *string `json:"challengeId,omitempty"`
-	Points               int     `json:"points"`
-	Hidden               bool    `json:"hidden"`
-	QuizID               string  `json:"quizId"`
-	MinScorePercentage   *int    `json:"minScorePercentage,omitempty"`
-	RequireCompletion    bool    `json:"requireCompletion"`
+	Name                 string            `json:"name"`
+	DescriptionPending   string            `json:"descriptionPending"`
+	DescriptionCompleted string            `json:"descriptionCompleted"`
+	NotificationText     string            `json:"notificationText"`
+	ImagePending         string            `json:"imagePending"`
+	ImageCompleted       string            `json:"imageCompleted"`
+	ProjectID            string            `json:"projectId"`
+	ChallengeID          *string           `json:"challengeId,omitempty"`
+	Points               int               `json:"points"`
+	Hidden               bool              `json:"hidden"`
+	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
+	QuizID               string            `json:"quizId"`
+	MinScorePercentage   *int              `json:"minScorePercentage,omitempty"`
+	RequireCompletion    bool              `json:"requireCompletion"`
 }
 
 type CreateQuizInput struct {
@@ -608,6 +629,7 @@ type ExternalChallenge struct {
 	Project                     *Project          `json:"project"`
 	Event                       *Event            `json:"event,omitempty"`
 	ButtonText                  string            `json:"buttonText"`
+	NotificationText            string            `json:"notificationText"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
@@ -630,6 +652,7 @@ func (this ExternalChallenge) GetImageObject() *Image            { return this.I
 func (this ExternalChallenge) GetProject() *Project              { return this.Project }
 func (this ExternalChallenge) GetEvent() *Event                  { return this.Event }
 func (this ExternalChallenge) GetButtonText() *string            { return &this.ButtonText }
+func (this ExternalChallenge) GetNotificationText() string       { return this.NotificationText }
 func (this ExternalChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
 func (this ExternalChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
 func (this ExternalChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
@@ -998,6 +1021,7 @@ type PluginChallenge struct {
 	Project                     *Project          `json:"project"`
 	Event                       *Event            `json:"event,omitempty"`
 	ButtonText                  *string           `json:"buttonText,omitempty"`
+	NotificationText            string            `json:"notificationText"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
@@ -1020,6 +1044,7 @@ func (this PluginChallenge) GetImageObject() *Image            { return this.Ima
 func (this PluginChallenge) GetProject() *Project              { return this.Project }
 func (this PluginChallenge) GetEvent() *Event                  { return this.Event }
 func (this PluginChallenge) GetButtonText() *string            { return this.ButtonText }
+func (this PluginChallenge) GetNotificationText() string       { return this.NotificationText }
 func (this PluginChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
 func (this PluginChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
 func (this PluginChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
@@ -1189,7 +1214,7 @@ type QuizAchievement struct {
 	Points               int               `json:"points"`
 	Hidden               bool              `json:"hidden"`
 	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
-	Quiz                 *Quiz             `json:"quiz"`
+	Quiz                 *Quiz             `json:"quiz,omitempty"`
 	MinScorePercentage   *int              `json:"minScorePercentage,omitempty"`
 	RequireCompletion    bool              `json:"requireCompletion"`
 	ChallengeID          *string           `json:"-"`
@@ -1228,6 +1253,7 @@ type QuizChallenge struct {
 	Project                     *Project          `json:"project"`
 	Event                       *Event            `json:"event,omitempty"`
 	ButtonText                  string            `json:"buttonText"`
+	NotificationText            string            `json:"notificationText"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
@@ -1250,6 +1276,7 @@ func (this QuizChallenge) GetImageObject() *Image            { return this.Image
 func (this QuizChallenge) GetProject() *Project              { return this.Project }
 func (this QuizChallenge) GetEvent() *Event                  { return this.Event }
 func (this QuizChallenge) GetButtonText() *string            { return &this.ButtonText }
+func (this QuizChallenge) GetNotificationText() string       { return this.NotificationText }
 func (this QuizChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
 func (this QuizChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
 func (this QuizChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
@@ -1487,6 +1514,7 @@ type SimpleChallenge struct {
 	Project                     *Project          `json:"project"`
 	Event                       *Event            `json:"event,omitempty"`
 	ButtonText                  string            `json:"buttonText"`
+	NotificationText            string            `json:"notificationText"`
 	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
@@ -1509,6 +1537,7 @@ func (this SimpleChallenge) GetImageObject() *Image            { return this.Ima
 func (this SimpleChallenge) GetProject() *Project              { return this.Project }
 func (this SimpleChallenge) GetEvent() *Event                  { return this.Event }
 func (this SimpleChallenge) GetButtonText() *string            { return &this.ButtonText }
+func (this SimpleChallenge) GetNotificationText() string       { return this.NotificationText }
 func (this SimpleChallenge) GetPublishedAt() *scalars.DateTime { return this.PublishedAt }
 func (this SimpleChallenge) GetVisibleAt() *scalars.DateTime   { return this.VisibleAt }
 func (this SimpleChallenge) GetStartedAt() *scalars.DateTime   { return this.StartedAt }
@@ -1650,6 +1679,15 @@ type SuperTeamFilter struct {
 	MaxMembers *int     `json:"maxMembers,omitempty"`
 }
 
+type SyncUserResult struct {
+	User                   *User `json:"user"`
+	ContentEventsProcessed int   `json:"contentEventsProcessed"`
+	GenderUpdated          bool  `json:"genderUpdated"`
+	ChurchUpdated          bool  `json:"churchUpdated"`
+	ChurchLockSkipped      bool  `json:"churchLockSkipped"`
+	PersonUUIDUpdated      bool  `json:"personUuidUpdated"`
+}
+
 type Team struct {
 	ID                  string             `json:"id"`
 	Name                string             `json:"name"`
@@ -1716,6 +1754,8 @@ type UpdateChallengeInput struct {
 	Image                       *string           `json:"image,omitempty"`
 	EventID                     *string           `json:"eventId,omitempty"`
 	ButtonText                  *string           `json:"buttonText,omitempty"`
+	NotificationText            *string           `json:"notificationText,omitempty"`
+	PublishedAt                 *scalars.DateTime `json:"publishedAt,omitempty"`
 	VisibleAt                   *scalars.DateTime `json:"visibleAt,omitempty"`
 	StartedAt                   *scalars.DateTime `json:"startedAt,omitempty"`
 	EndTime                     *scalars.DateTime `json:"endTime,omitempty"`
@@ -1764,6 +1804,22 @@ type UpdateProjectInput struct {
 	StartDate        *scalars.DateTime `json:"startDate,omitempty"`
 	EndDate          *scalars.DateTime `json:"endDate,omitempty"`
 	Branding         *BrandingInput    `json:"branding,omitempty"`
+}
+
+type UpdateQuizAchievementInput struct {
+	Name                 *string           `json:"name,omitempty"`
+	DescriptionPending   *string           `json:"descriptionPending,omitempty"`
+	DescriptionCompleted *string           `json:"descriptionCompleted,omitempty"`
+	NotificationText     *string           `json:"notificationText,omitempty"`
+	ImagePending         *string           `json:"imagePending,omitempty"`
+	ImageCompleted       *string           `json:"imageCompleted,omitempty"`
+	EventID              *string           `json:"eventId,omitempty"`
+	Points               *int              `json:"points,omitempty"`
+	Hidden               *bool             `json:"hidden,omitempty"`
+	AwardableFrom        *scalars.DateTime `json:"awardableFrom,omitempty"`
+	QuizID               *string           `json:"quizId,omitempty"`
+	MinScorePercentage   *int              `json:"minScorePercentage,omitempty"`
+	RequireCompletion    *bool             `json:"requireCompletion,omitempty"`
 }
 
 type UpdateQuizAnswerInput struct {
@@ -1850,26 +1906,27 @@ type UpdateWebhookInput struct {
 }
 
 type User struct {
-	ID            string           `json:"id"`
-	MembersID     string           `json:"membersId"`
-	PersonUUID    *string          `json:"personUuid,omitempty"`
-	Gender        Gender           `json:"gender"`
-	ChurchID      string           `json:"churchId"`
-	Church        *Church          `json:"church"`
-	Birthdate     string           `json:"birthdate"`
-	Age           *int             `json:"age,omitempty"`
-	Email         string           `json:"email"`
-	Name          string           `json:"name"`
-	Image         *string          `json:"image,omitempty"`
-	ImageObject   *Image           `json:"imageObject,omitempty"`
-	Projects      []Project        `json:"projects"`
-	Events        []Event          `json:"events"`
-	Teams         []Team           `json:"teams"`
-	SuperTeams    []SuperTeam      `json:"superTeams"`
-	Roles         []UserRole       `json:"roles"`
-	ConsentStatus *ConsentStatus   `json:"consentStatus"`
-	Language      string           `json:"language"`
-	CreatedAt     scalars.DateTime `json:"createdAt"`
+	ID                string            `json:"id"`
+	MembersID         string            `json:"membersId"`
+	PersonUUID        *string           `json:"personUuid,omitempty"`
+	Gender            Gender            `json:"gender"`
+	ChurchID          string            `json:"churchId"`
+	Church            *Church           `json:"church"`
+	ChurchLockedUntil *scalars.DateTime `json:"churchLockedUntil,omitempty"`
+	Birthdate         string            `json:"birthdate"`
+	Age               *int              `json:"age,omitempty"`
+	Email             string            `json:"email"`
+	Name              string            `json:"name"`
+	Image             *string           `json:"image,omitempty"`
+	ImageObject       *Image            `json:"imageObject,omitempty"`
+	Projects          []Project         `json:"projects"`
+	Events            []Event           `json:"events"`
+	Teams             []Team            `json:"teams"`
+	SuperTeams        []SuperTeam       `json:"superTeams"`
+	Roles             []UserRole        `json:"roles"`
+	ConsentStatus     *ConsentStatus    `json:"consentStatus"`
+	Language          string            `json:"language"`
+	CreatedAt         scalars.DateTime  `json:"createdAt"`
 }
 
 type UserConnection struct {
@@ -1938,6 +1995,12 @@ type UserRole struct {
 	User  *User      `json:"user"`
 	Role  RoleType   `json:"role"`
 	Scope *RoleScope `json:"scope,omitempty"`
+}
+
+type UserScore struct {
+	UserID     string `json:"userId"`
+	Name       string `json:"name"`
+	TotalScore int    `json:"totalScore"`
 }
 
 type Webhook struct {

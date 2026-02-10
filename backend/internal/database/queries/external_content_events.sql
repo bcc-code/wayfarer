@@ -24,6 +24,20 @@ ORDER BY received_at DESC
 LIMIT CASE WHEN @querylimit::int IS NULL THEN NULL ELSE @querylimit::int END
 OFFSET CASE WHEN @queryoffset::int IS NULL THEN 0 ELSE @queryoffset::int END;
 
+-- name: ExternalContentEventExists :one
+-- Single-event check used by the webhook handler.
+SELECT EXISTS(
+    SELECT 1 FROM external_content_events
+    WHERE person_id = @personid::uuid AND task_id = @taskid::text
+) AS exists;
+
+-- name: GetExistingExternalContentEventTaskIDs :many
+-- Batch check: given a person and a list of task_ids, return those that already have events.
+-- Used by syncContentEvents to filter a whole page in one round-trip.
+SELECT DISTINCT task_id
+FROM external_content_events
+WHERE person_id = @personid::uuid AND task_id = ANY(@taskids::text[]);
+
 -- name: GetExternalContentEventsForProcessing :many
 -- Returns one event per task_id (most recent) for a person_id, used when processing
 -- pending events for newly registered users.
