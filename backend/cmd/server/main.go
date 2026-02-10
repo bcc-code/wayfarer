@@ -445,6 +445,7 @@ func main() {
 		RoleService:               roleService,
 		ContentAchievementService: contentAchievementService,
 		ChurchResolver:            churchResolver,
+		UserSyncService:           userSyncService,
 	}
 	router.GET("/token", authHandler.Callback)
 
@@ -458,8 +459,9 @@ func main() {
 
 	// Consent webhook handler for external consent events
 	consentWebhookHandler := &handlers.ConsentWebhookHandler{
-		DB:    db,
-		Cache: cacheInstance,
+		DB:              db,
+		Cache:           cacheInstance,
+		UserSyncService: userSyncService,
 	}
 	router.POST("/api/v1/consent-events", middleware.APIKeyAuth(cfg.APIKey), consentWebhookHandler.HandleConsentEvent)
 

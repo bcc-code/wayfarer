@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"log/slog"
@@ -11,6 +12,7 @@ import (
 	"github.com/bcc-media/wayfarer/internal/cache"
 	"github.com/bcc-media/wayfarer/internal/database"
 	"github.com/bcc-media/wayfarer/internal/database/sqlc"
+	"github.com/bcc-media/wayfarer/internal/services"
 	"github.com/bcc-media/wayfarer/internal/ulid"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -18,10 +20,14 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// SSFConsentKey is the consent key for SSF data sharing
+const SSFConsentKey = "ssf_bccm_data_sharing"
+
 // ConsentWebhookHandler handles external consent event notifications
 type ConsentWebhookHandler struct {
-	DB    *database.DB
-	Cache *cache.CacheWithRegistry
+	DB              *database.DB
+	Cache           *cache.CacheWithRegistry
+	UserSyncService *services.UserSyncService
 }
 
 // ConsentEventRequest represents the incoming webhook payload for consent events
@@ -148,6 +154,27 @@ func (h *ConsentWebhookHandler) HandleConsentEvent(c *gin.Context) {
 
 	// Invalidate user cache (consent status is part of the cached User object)
 	h.Cache.Delete(cache.UserKey(user.ID))
+
+	// Trigger SSF backfill asynchronously when SSF consent is granted
+	if req.ConsentKey == SSFConsentKey && req.Action == "ACCEPTED" && h.UserSyncService != nil {
+		userID := user.ID
+		go func() {
+			bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer cancel()
+			processed, err := h.UserSyncService.SyncContentEventsFromSSF(bgCtx, userID)
+			if err != nil {
+				slog.Error("consent_webhook: SSF backfill failed",
+					"user_id", userID,
+					"error", err,
+				)
+			} else {
+				slog.Info("consent_webhook: SSF backfill completed",
+					"user_id", userID,
+					"events_processed", processed,
+				)
+			}
+		}()
+	}
 
 	slog.Info("consent_webhook: consent event created successfully",
 		"history_id", historyID,
