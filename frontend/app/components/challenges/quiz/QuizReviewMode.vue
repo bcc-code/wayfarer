@@ -102,40 +102,57 @@ defineExpose({ actionState, handlers })
 </script>
 
 <template>
-  <QuizPredefinedQuestion
-    v-if="
-      currentQuestion && currentQuestion.__typename === 'PredefinedQuestion'
-    "
-    ref="currentQuestionRef"
-    :key="`predefined:${currentQuestion.id}`"
-    :question="currentQuestion"
-    :total-questions="questions.length"
-    :current-index="currentQuestionIndex"
-    submission-id=""
-    :readonly="true"
-    :pre-selected-answer-ids="preSelectedAnswerIds"
-    :show-correct-answers="revealCorrectAnswers"
-    :show-previous-button="!isFirstQuestion"
-    :is-last-question="isLastQuestion"
-    @previous="handlePrevious"
-    @next="handleNext"
-  />
-  <QuizOrderingQuestion
-    v-else-if="
-      currentQuestion && currentQuestion.__typename === 'OrderingQuestion'
-    "
-    ref="currentQuestionRef"
-    :key="`ordering:${currentQuestion.id}`"
-    :question="currentQuestion"
-    :total-questions="questions.length"
-    :current-index="currentQuestionIndex"
-    submission-id=""
-    :readonly="true"
-    :pre-submitted-order="preSubmittedOrder"
-    :show-correct-answers="revealCorrectAnswers"
-    :show-previous-button="!isFirstQuestion"
-    :is-last-question="isLastQuestion"
-    @previous="handlePrevious"
-    @next="handleNext"
-  />
+  <div>
+    <div
+      class="flex flex-col items-center justify-center py-6 px-default gap-1 text-center"
+    >
+      <p v-if="questions.length > 1" class="text-caption text-text-muted">
+        {{
+          $t('quiz.questionNumber', {
+            current: currentQuestionIndex + 1,
+            total: questions.length,
+          })
+        }}
+      </p>
+      <h1 class="text-heading text-text-default text-balance text-center">
+        {{ currentQuestion?.questionText }}
+      </h1>
+    </div>
+    <QuizPredefinedQuestion
+      v-if="
+        currentQuestion && currentQuestion.__typename === 'PredefinedQuestion'
+      "
+      ref="currentQuestionRef"
+      :key="`predefined:${currentQuestion.id}`"
+      :question="currentQuestion"
+      :total-questions="questions.length"
+      :current-index="currentQuestionIndex"
+      submission-id=""
+      :readonly="true"
+      :pre-selected-answer-ids="preSelectedAnswerIds"
+      :show-correct-answers="revealCorrectAnswers"
+      :show-previous-button="!isFirstQuestion"
+      :is-last-question="isLastQuestion"
+      @previous="handlePrevious"
+      @next="handleNext"
+    />
+    <QuizOrderingQuestion
+      v-else-if="
+        currentQuestion && currentQuestion.__typename === 'OrderingQuestion'
+      "
+      ref="currentQuestionRef"
+      :key="`ordering:${currentQuestion.id}`"
+      :question="currentQuestion"
+      :total-questions="questions.length"
+      :current-index="currentQuestionIndex"
+      submission-id=""
+      :readonly="true"
+      :pre-submitted-order="preSubmittedOrder"
+      :show-correct-answers="revealCorrectAnswers"
+      :show-previous-button="!isFirstQuestion"
+      :is-last-question="isLastQuestion"
+      @previous="handlePrevious"
+      @next="handleNext"
+    />
+  </div>
 </template>
