@@ -78,6 +78,12 @@ onMounted(() => {
   }
 })
 
+const availableChallengesBadge = computed(() => {
+  return data.value?.myCurrentProject.challenges.filter(
+    (challenge) => !challenge.userCompletedAt,
+  )?.length
+})
+
 const links = computed<NavigationMenuItem[]>(() => [
   {
     label: t('navigation.profile'),
@@ -93,15 +99,21 @@ const links = computed<NavigationMenuItem[]>(() => [
     label: t('navigation.challenges'),
     icon: 'IconChallenges',
     to: { name: 'challenges' },
+    badge: availableChallengesBadge.value,
   },
 ])
 
-// Current project theme
+// Current project config
 gql(`
   query CurrentProject {
     myCurrentProject {
       branding {
         ...BrandingFields
+      }
+      challenges {
+        id
+        userCompletedAt
+        endTime
       }
     }
   }
@@ -212,11 +224,20 @@ const { $pwa } = useNuxtApp()
               class="px-default text-center rounded-navigation-inset text-tiny flex h-14 flex-col items-center justify-center gap-0.5"
               active-class="text-accent-contrast"
             >
-              <UIcon
-                v-if="link.icon"
-                :name="link.icon"
-                class="size-7 shrink-0"
-              />
+              <span class="relative">
+                <UIcon
+                  v-if="link.icon"
+                  :name="link.icon"
+                  class="size-7 shrink-0"
+                />
+
+                <span
+                  v-if="link.badge"
+                  class="rounded-full h-4.5 min-w-4.5 px-1.25 bg-accent-negative flex items-center justify-center absolute -top-0.5 left-5 text-caption text-text-default text-start"
+                >
+                  {{ link.badge }}
+                </span>
+              </span>
               <span class="text-xs">{{ link.label }}</span>
             </NuxtLink>
           </li>

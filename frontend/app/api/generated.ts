@@ -979,6 +979,7 @@ export type Mutation = {
   moveEvent: Event;
   openQuizSession: QuizSession;
   publishChallenge: Challenge;
+  recalculateContentAchievements: RecalculateResult;
   recordStreakActivity: StreakAchievement;
   regenerateJoinCode: Team;
   registerPushSubscription: PushSubscription;
@@ -1417,6 +1418,12 @@ export type MutationOpenQuizSessionArgs = {
 export type MutationPublishChallengeArgs = {
   id: Scalars['ID']['input'];
   publishedAt: Scalars['DateTime']['input'];
+};
+
+
+export type MutationRecalculateContentAchievementsArgs = {
+  achievementId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
 };
 
 
@@ -2438,6 +2445,12 @@ export type QuizSubmissionEdge = {
   __typename?: 'QuizSubmissionEdge';
   cursor: Scalars['String']['output'];
   node: QuizSubmission;
+};
+
+export type RecalculateResult = {
+  __typename?: 'RecalculateResult';
+  awarded: Scalars['Int']['output'];
+  userIds: Array<Scalars['ID']['output']>;
 };
 
 export type RegisterPushSubscriptionInput = {
@@ -3804,7 +3817,12 @@ export type VapidPublicKeyQuery = { __typename?: 'Query', vapidPublicKey: string
 export type CurrentProjectQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } } } };
+export type CurrentProjectQuery = { __typename?: 'Query', myCurrentProject: { __typename?: 'Project', branding: { __typename?: 'Branding', rounding: number, logoImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, bannerImage?: { __typename?: 'Image', url: string, width?: number | null, height?: number | null, blurhash?: string | null } | null, colors: { __typename?: 'Colors', light: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string }, dark: { __typename?: 'ColorSet', accent: string, accentContrast: string, onAccent: string, backgroundDefault: string, backgroundRaised: string, backgroundIndent: string, textDefault: string, textMuted: string, textHint: string, shadowDefault: string, shadowBlank: string, borderDefault: string } } }, challenges: Array<
+      | { __typename?: 'ExternalChallenge', id: string, userCompletedAt?: any | null, endTime?: any | null }
+      | { __typename?: 'PluginChallenge', id: string, userCompletedAt?: any | null, endTime?: any | null }
+      | { __typename?: 'QuizChallenge', id: string, userCompletedAt?: any | null, endTime?: any | null }
+      | { __typename?: 'SimpleChallenge', id: string, userCompletedAt?: any | null, endTime?: any | null }
+    > } };
 
 export type AdminChurchPageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -5436,6 +5454,11 @@ export const CurrentProjectDocument = gql`
   myCurrentProject {
     branding {
       ...BrandingFields
+    }
+    challenges {
+      id
+      userCompletedAt
+      endTime
     }
   }
 }
