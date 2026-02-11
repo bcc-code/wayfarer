@@ -41,7 +41,7 @@ const challengeId = computed(() => {
   return id as string
 })
 
-const { isActive, start, stop, remaining } = useCountdown(5, {
+const { isActive, start, stop, remaining } = useCountdown(10, {
   immediate: false,
   onComplete: async () => {
     await executeMutation({
